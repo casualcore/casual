@@ -1,0 +1,57 @@
+#!/bin/bash
+set -e
+
+#
+# Definera realiseringen.
+#
+IMPLEMENTATION_PATH="/vobs/infrastruktur/itools/imake2make/implementation"
+
+ENGINE="$IMPLEMENTATION_PATH/imake2make.engine";
+HELP="$IMPLEMENTATION_PATH/imake2make.help";
+
+FUNCTION_DEFINITIONS="$IMPLEMENTATION_PATH/imake2make.function_definitions";
+PRE_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.pre_user_config_solaris"
+POST_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.post_user_config_solaris"
+
+PREPARE_FUNTIONS="$IMPLEMENTATION_PATH/imake2make.prepare_function_definitions";
+IMAKE_NORMALIZE="$IMPLEMENTATION_PATH/imake2make.normalize_imakefile";
+
+
+if [[ "$1" == "-help" || "$1" == "-h" || "$1" == "-?" ]]
+then
+	$HELP "$FUNCTION_DEFINITIONS" "$PREPARE_FUNTIONS" ${@:2}
+	exit 0
+fi
+
+
+
+USER_IMAKE_FILE=$1;
+
+#
+# Kolla om användaren har skickat med någon imake/make-fil
+#
+if [[ "$USER_IMAKE_FILE" == "" ]]
+then
+   echo "info: Using default: imakefile" > /dev/stderr;
+   USER_MAKE_FILE="imakefile";
+fi
+
+if [[ ! -f "$USER_IMAKE_FILE" ]]
+then
+   echo "error: Failed to open file: $USER_IMAKE_FILE" > /dev/stderr;
+   exit 1;
+fi
+
+
+USER_MAKE_FILE=${USER_IMAKE_FILE:1}
+
+
+echo "info: generates $USER_MAKE_FILE from $USER_IMAKE_FILE"   
+#
+# Starta motorn
+#
+$ENGINE $FUNCTION_DEFINITIONS $PRE_USER_CONFIG $POST_USER_CONFIG $PREPARE_FUNTIONS $IMAKE_NORMALIZE $USER_IMAKE_FILE $USER_MAKE_FILE;
+
+exit $?
+
+
