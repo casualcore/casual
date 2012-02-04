@@ -1,11 +1,10 @@
 #!/bin/bash
 set -e
 
-INSTALL_PATH=$( dirname $( which $0 ) )
 #
 # Definera realiseringen.
 #
-IMPLEMENTATION_PATH="$INSTALL_PATH/implementation"
+IMPLEMENTATION_PATH="/vobs/infrastruktur/itools/imake2make/implementation"
 
 ENGINE="$IMPLEMENTATION_PATH/imake2make.engine";
 HELP="$IMPLEMENTATION_PATH/imake2make.help";
