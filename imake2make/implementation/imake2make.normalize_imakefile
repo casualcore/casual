@@ -17,7 +17,7 @@ set -e
 ######################################################################
 
 
-def_GCC=/usr/sfw/bin/gcc
+def_GCC=gcc
 
 
 #
@@ -68,7 +68,7 @@ fi
 # ta bort temporären
 rm $PRE_PRECOMPILE_TEMP_FILE;
 
-cat "$POST_PRECOMPILE_TEMP_FILE" | nawk 'BEGIN{
+cat "$POST_PRECOMPILE_TEMP_FILE" | awk 'BEGIN{
 
 }
 

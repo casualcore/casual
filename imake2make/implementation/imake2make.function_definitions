@@ -842,7 +842,7 @@ function internal_dependency_analyzer_domainname( localpath)
 	#
 	# TODO: Support konto, kund, externa_intressenter, arendehantering
 	#
-	echo $localpath | nawk -F"/" '/\/konto\/|\/kund\/|\/externa_intressenter\/|\/arendehantering\//{ print $4; break}{print $3}'
+	echo $localpath | awk -F"/" '/\/konto\/|\/kund\/|\/externa_intressenter\/|\/arendehantering\//{ print $4; break}{print $3}'
 }
 
 

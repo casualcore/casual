@@ -3,7 +3,7 @@
 FUNCTION_FILE=$1;
 
 
-cat "$FUNCTION_FILE" | nawk  '
+cat "$FUNCTION_FILE" | awk  '
 BEGIN{
 	FS="[(,)]";
 	

@@ -1,21 +1,21 @@
 #!/bin/bash
 set -e
 
+INSTALLATION_PATH=$( dirname $( which $0 ) )
 #
 # Definera realiseringen.
 #
-IMPLEMENTATION_PATH="/vobs/infrastruktur/itools/imake2make/implementation"
+IMPLEMENTATION_PATH="$INSTALLATION_PATH/implementation"
 
 ENGINE="$IMPLEMENTATION_PATH/imake2make.engine";
 HELP="$IMPLEMENTATION_PATH/imake2make.help";
 
 FUNCTION_DEFINITIONS="$IMPLEMENTATION_PATH/imake2make.function_definitions";
-PRE_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.pre_user_config_solaris"
-POST_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.post_user_config_solaris"
 
 PREPARE_FUNTIONS="$IMPLEMENTATION_PATH/imake2make.prepare_function_definitions";
 IMAKE_NORMALIZE="$IMPLEMENTATION_PATH/imake2make.normalize_imakefile";
 
+AWK=awk
 
 if [[ "$1" == "-help" || "$1" == "-h" || "$1" == "-?" ]]
 then
@@ -23,6 +23,19 @@ then
 	exit 0
 fi
 
+#
+# Select supported plattforms
+#
+OS=$( uname -s | tr [:upper:] [:lower:] )
+if [[ $OS == "darwin" ]]; then
+	SUFFIX="osx"
+elif [[ $OS == "linux" ]]; then
+	SUFFIX="linux"
+else
+	SUFFIX="solaris"
+fi
+PRE_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.pre_user_config_"$SUFFIX
+POST_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.post_user_config_"$SUFFIX
 
 
 USER_IMAKE_FILE=$1;
@@ -33,7 +46,7 @@ USER_IMAKE_FILE=$1;
 if [[ "$USER_IMAKE_FILE" == "" ]]
 then
    echo "info: Using default: imakefile" > /dev/stderr;
-   USER_MAKE_FILE="imakefile";
+   USER_IMAKE_FILE="imakefile";
 fi
 
 if [[ ! -f "$USER_IMAKE_FILE" ]]

@@ -6,9 +6,10 @@ PREPARE_FUNCTIONS=$2
 #
 # Skapa anpassad "version" av funktionsdefefintionerna
 #
-PREPARED_FUNCTION_FILE=`mktemp /tmp/imake2make_prepared_function_definition_file.XXXXXXXX`;
+PREPARED_FUNCTION_FILE=$( mktemp /tmp/imake2make_prepared_function_definition_file.XXXXXXXX );
 
 $PREPARE_FUNCTIONS $FUNCTION_DEFINITION_FILE > $PREPARED_FUNCTION_FILE
+
 
 #
 # Se till så vi har tillgång till funktionerna. Vi är bara
