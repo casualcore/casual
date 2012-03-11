@@ -687,25 +687,7 @@ function LinkAtmiServerMultipleResources(name,objectfiles,libs,services,resource
 }
 
 
-######################################################################
-##
-## LinkAtmiDatabaseServer(name,objectfiles,libs,services)
-##
-## Länkar en ATMI-server som nyttjar en (db2)databas
-##
-## name  	Namnet på exekverbara utan fil-suffix.
-## 
-## objects  Objektfiler som ska länkas inklusive path och filändelser (obj/bla.o)
-##
-## libs  	libs som exekverbara har beroende mot.
-##
-## services tjänster som servern har realiserat
-##
-######################################################################
-function LinkAtmiDatabaseServer(name,objectfiles,libs,services)
-{
-	LinkAtmiServerResource "$name" "$objectfiles" "$libs" "$services" "TMSUDB2"
-}
+
 
 ######################################################################
 ##
@@ -726,19 +708,6 @@ function LinkAtmiClient(name,objectfiles,libs)
 }
 
 
-######################################################################
-##
-## DefaultService
-##
-## Ser till så att ATMI-servern även exponerar en srvMgrXXX tjänst
-##
-## Denna används förmodligen inte av någon i driften dock...
-##
-######################################################################
-function DefaultService()
-{
-	echo "DEFAULTSRVMGR = -s svrMgr"
-}
 
 
 
@@ -1039,45 +1008,6 @@ function internal_export_file(filename,directory,targetdirectory)
 }
 
 
-######################################################################
-##
-## ExportBegin(path)
-##
-## Checkes out the path specified
-##
-## Path		Domain/Subdomain directory in exportview
-##
-######################################################################
-function ExportBegin(path)
-{
-	echo "export_begin:"
-	echo "	-@cleartool co -nc \"$path\"/bin"
-	echo "	-@cleartool co -nc \"$path\"/inc"
-	echo "	-@cleartool co -nc \"$path\"/lib"
-	echo
-	
-	EXPORT_SUB_TARGETS="$EXPORT_SUB_TARGETS export_begin";
-}
-
-######################################################################
-##
-## ExportEnd(path)                                    
-##                                                    
-## Checks in the path specified                       
-##                                                    
-## Path		Domain/Subdomain directory in exportview  
-##
-######################################################################
-function ExportEnd(path)
-{
-	echo "export_end:"
-	echo "	-@perl /vobs/sfa/komponentvy/infrastruktur/itools/bin/ci_dir_file.pl \"$path\"/bin"
-	echo "	-@perl /vobs/sfa/komponentvy/infrastruktur/itools/bin/ci_dir_file.pl \"$path\"/inc"
-	echo "	-@perl /vobs/sfa/komponentvy/infrastruktur/itools/bin/ci_dir_file.pl \"$path\"/lib"
-	echo
-
-	EXPORT_SUB_TARGETS="$EXPORT_SUB_TARGETS export_end";
-}
 
 ######################################################################
 ## 
@@ -1096,17 +1026,6 @@ function ExportHeaderFileWithDirectory(filename,directory,targetdirectory)
 	EXPORT_HEADER_COMMANDS=$EXPORT_HEADER_COMMANDS"	-@$def_EXPORTCOMMAND $filename $directory/$filename $targetdirectory/inc"$'\n'
 }
 
-######################################################################
-## 
-## ExportHeaderFile(name,path)
-##
-## Exports the header to the path specified
-##
-######################################################################
-function ExportHeaderFile(name,path)
-{
-	ExportHeaderFileWithDirectory "$name" "inc" "$path"	
-}
 
 
 ######################################################################
