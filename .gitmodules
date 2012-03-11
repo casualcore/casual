@@ -1,0 +1,3 @@
+[submodule "tools"]
+	path = tools
+	url = /var/git/repo/tools.git
