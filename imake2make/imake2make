@@ -15,7 +15,7 @@ FUNCTION_DEFINITIONS="$IMPLEMENTATION_PATH/imake2make.function_definitions";
 PREPARE_FUNTIONS="$IMPLEMENTATION_PATH/imake2make.prepare_function_definitions";
 IMAKE_NORMALIZE="$IMPLEMENTATION_PATH/imake2make.normalize_imakefile";
 
-AWK=awk
+export AWK=awk
 
 if [[ "$1" == "-help" || "$1" == "-h" || "$1" == "-?" ]]
 then
@@ -26,10 +26,10 @@ fi
 #
 # Select supported plattforms
 #
-OS=$( uname -s | tr [:upper:] [:lower:] )
-if [[ $OS == "darwin" ]]; then
+export IMAKE_OS=$( uname -s | tr [:upper:] [:lower:] )
+if [[ $IMAKE_OS == "darwin" ]]; then
 	SUFFIX="osx"
-elif [[ $OS == "linux" ]]; then
+elif [[ $IMAKE_OS == "linux" ]]; then
 	SUFFIX="linux"
 else
 	SUFFIX="solaris"

@@ -3,7 +3,7 @@
 FUNCTION_FILE=$1;
 
 
-cat "$FUNCTION_FILE" | awk  '
+$AWK '
 BEGIN{
 	FS="[(,)]";
 	
@@ -136,7 +136,7 @@ function extractFunctionName(value)
 		#
 	}
 	
-}'
+}' "$FUNCTION_FILE"
 
 
 

@@ -28,7 +28,12 @@ def_ExeSuffix=
 def_LibraryPrefix="lib"
 
 def_BNDsuf=".bnd"
-def_LibrarySuffix=".so";
+
+if [[ $IMAKE_OS == "darwin" ]]; then
+	def_LibrarySuffix=".dylib";
+else
+	def_LibrarySuffix=".so";
+fi
 
 def_ArchiveSuffix=".a"
 
@@ -39,11 +44,11 @@ def_CHMOD="chmod"
 
 def_MV="mv";
 
-def_Prep="/vobs/infrastruktur/itools/bin/rfvprep"
+def_Prep="somethinglocal.prep"
 
 def_IMAKE2MAKE="imake2make"
 
-def_EXPORTCOMMAND="perl /vobs/sfa/komponentvy/infrastruktur/itools/bin/exportfile.pl";
+def_EXPORTCOMMAND="perl somethinglocal.pl";
 
 def_Deploy="make.deploy.ksh"
 
@@ -822,30 +827,6 @@ function internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives
 }
 
 
-function internal_dependency_analyzer_link( name, libs)
-{
-	echo "\"$(internal_dependency_analyzer_domainname $PWD)\",\"$name\",\"$PWD/$USER_IMAKE_FILE\"" >> /tmp/dependency_analyzer_binary.del
-
-	for lib in $libs
-	do
-		echo "\"$name\",\"$lib\"" >> /tmp/dependency_analyzer_dependent.del
-	done
-}
-
-function internal_dependency_analyzer_export( name)
-{
-	echo "\"$name\"" >> /tmp/dependency_analyzer_export.del
-}
-
-function internal_dependency_analyzer_domainname( localpath)
-{
-	#
-	# TODO: Support konto, kund, externa_intressenter, arendehantering
-	#
-	echo $localpath | awk -F"/" '/\/konto\/|\/kund\/|\/externa_intressenter\/|\/arendehantering\//{ print $4; break}{print $3}'
-}
-
-
 ######################################################################
 ## 
 ## LinkLibrary(name,objectfiles,libs)
@@ -1127,17 +1108,6 @@ function ExportHeaderFile(name,path)
 	ExportHeaderFileWithDirectory "$name" "inc" "$path"	
 }
 
-######################################################################
-## 
-## DEPRICATED: ExportHeaderfile. Använd ExportHeaderFile istället
-##
-######################################################################
-function ExportHeaderfile(name,path)
-{
-	internal_register_message "warning: DEPRICATED ExportHeaderfile. Använd ExportHeaderFile istället"
-	ExportHeaderFile "$name" "$path"
-}
-
 
 ######################################################################
 ##
@@ -1162,71 +1132,8 @@ function ExportSharedLibrary(name,targetdirectory)
 	#
 	EXPORT_LIBRARIES_TARGETS=$EXPORT_LIBRARIES_TARGETS" $(internal_target_name $name)"
 	
-	#
-	# Dependency Analyzer
-	#
-	[[ $DEPENDENCY_ANALYZER_ON == 1 ]] && internal_dependency_analyzer_export $name	
 }
 
-
-######################################################################
-##
-## ExportBindFile(name,path)
-##
-## DEPRICATED: ExportBindFile exporterar ingenting, ta bort från imakefilen!
-##
-######################################################################
-function ExportBindFile(name,path)
-{
-	internal_register_message "warning: DEPRICATED: ExportBindFile exporterar ingenting, ta bort från imakefilen!"	
-}
-
-######################################################################
-## 
-## DEPRICATED: Använd ExportBindFile istället!
-##
-######################################################################
-function ExportBindfile(name,path)
-{
-	internal_register_message "warning: DEPRICATED ExportBindfile exporterar ingenting, ta bort från imakefilen!"	
-	#ExportBindFile "$name" "$path"
-}
-
-######################################################################
-##
-## ExportExecutable(name,path)
-##
-## DEPRICATED: ExportExecutable exporterar ingenting, ta bort från imakefilen!
-##
-######################################################################
-function ExportExecutable(name,path)
-{
-	internal_register_message "warning: DEPRICATED: ExportExecutable exporterar ingenting, ta bort från imakefilen!"
-}
-
-######################################################################
-##
-## ExportTUXEDOServer(name,path)
-##
-## DEPRICATED ExportTUXEDOServerexporterar ingenting, ta bort från imakefilen!
-##
-######################################################################
-function ExportTUXEDOServer(name,path)
-{
-	internal_register_message "warning: DEPRICATED ExportTUXEDOServer exporterar ingenting, ta bort från imakefilen!"
-}
-
-#####################################################################
-##
-## ExportTUXEDOClient(name,path)
-##
-## DEPRICATED: ExportTUXEDOClient exporterar ingenting, ta bort från imakefilen!
-##
-######################################################################
-function ExportTUXEDOClient(name,path)
-{
-	internal_register_message "warning: DEPRICATED ExportTUXEDOClient exporterar ingenting, ta bort från imakefilen!"
-}
 
 
 function internal_set_LD_LIBRARY_PATH()
@@ -1392,19 +1299,6 @@ function DatabasePrepare(database,username,password,filename,bindname)
 
 ######################################################################
 ## 
-## DatabasePackagePrepare(database,username,password,filename,pkgname,bindname)
-##
-## DEPRICATED: Denna gör exakt samma som DatabasePrepare
-##
-######################################################################
-function DatabasePackagePrepare(database,username,password,filename,pkgname,bindname)
-{
-	internal_register_message "warning: DEPRICATED DatabasePackagePrepare. Denna gör precis samma som DatabasePrepare!"
-	DatabasePrepare $database $username $password $filename $bindname
-}
-
-######################################################################
-## 
 ## Prepare(filename,bindname)
 ##
 ## Producerar bind-filen med den kompilerade sql-koden och 
@@ -1424,28 +1318,6 @@ function DatabasePackagePrepare(database,username,password,filename,pkgname,bind
 ## TODO Implementera
 
 
-######################################################################
-##
-## DEPRICATED SetDependencySharedLibrary 
-## Gör absolut ingenting... Har inte gjort på väldigt länge, om någonsin...
-##
-######################################################################
-function SetDependencySharedLibrary(name,source)
-{
-	internal_register_message "warning: DEPRICATED SetDependencySharedLibrary. Denna gör ingenting. Ta bort från imakefilen!"
-}
-
-######################################################################
-##
-## DEPRICATED SetDependencyExecutable
-## Gör absolut ingenting... Har inte gjort på väldigt länge, om någonsin...
-##
-######################################################################
-function SetDependencyExecutable(name,source)
-{
-	internal_register_message "warning: DEPRICATED SetDependencyExecutable. Denna gör ingenting, ta bort från imakefilen!"
-}
-
 function internal_prepare_old_objectlist(objects)
 {
 	for object in $objects
@@ -1453,180 +1325,4 @@ function internal_prepare_old_objectlist(objects)
 		printf "obj/$object$def_ObjectSuffix "
 	done
 }
-
-
-######################################################################
-## 
-## DEPRICATED: Använd Compile istället!
-##
-######################################################################
-function BuildCPPFileAsSharedLibrary(target,filename,defflags)
-{
-	internal_register_message "warning: DEPRICATED BuildCPPFileAsSharedLibrary. Använd Compile istället!"
-	CompileDirective "src/$filename.cpp" "obj/$filename$def_ObjectSuffix" "$defflags"
-}
-
-######################################################################
-## 
-## DEPRICATED: Använd Compile istället!
-##
-######################################################################
-function BuildCFileAsSharedLibrary(target,filename, defflags)
-{
-	internal_register_message "warning: DEPRICATED BuildCPPFileAsSharedLibrary. Använd Compile istället!"
-	CompileDirective "src/$filename.c" "obj/$filename$def_ObjectSuffix" "$defflags"
-}
-
-
-######################################################################
-## 
-## DEPRICATED: Använd Compile istället!
-##
-######################################################################
-function BuildCPPFileAsExecutable(target,filename,defflags)
-{
-	internal_register_message "warning: DEPRICATED BuildCPPFileAsExecutable. Använd Compile istället!"
-	CompileDirective "src/$filename.cpp" "obj/$filename$def_ObjectSuffix" "$defflags"
-}
-
-
-######################################################################
-## 
-## DEPRICATED: Använd LinkLibrary istället!
-##
-######################################################################
-function BuildSharedLibrary(name,object,projlibs,libs)
-{
-	internal_register_message "warning: DEPRICATED BuildSharedLibrary. Använd LinkLibrary istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkLibrary "$name" "$objectlist" "$projlibs $libs"
-}
-
-
-######################################################################
-## 
-## DEPRICATED: Använd LinkExecutable istället!
-##
-######################################################################
-function BuildExecutable(name,object,projlibs,libs)
-{
-	internal_register_message "warning: DEPRICATED BuildExecutable. Använd LinkExecutable istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkExecutable "$name" "$objectlist" "$projlibs $libs"
-}
-
-#####################################################################
-## 
-## DEPRICATED: Använd LinkLibrary istället!
-##
-######################################################################
-function BuildTUXEDOProxy(name,object,projlibs,libs)	
-{
-	internal_register_message "warning: DEPRICATED BuildTUXEDOProxy. Använd LinkLibrary istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkLibrary "$name" "$objectlist" "$projlibs $libs"
-}
-
-
-#####################################################################
-## 
-## DEPRICATED: Använd LinkAtmiClient istället!
-##
-######################################################################
-function BuildExecutableTUXEDOClient(name,object,projlibs,libs)	
-{
-	internal_register_message "warning: DEPRICATED BuildExecutableTUXEDOClient. Använd LinkAtmiClient istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkAtmiClient  "$name" "$objectlist" "$projlibs $libs"
-}
-
-#####################################################################
-## 
-## DEPRICATED: Använd LinkAtmiDatabaseServer istället!
-##
-######################################################################
-function BuildTUXEDOIServer(name,object,projlibs,libs,services)	
-{
-	internal_register_message "warning: DEPRICATED BuildTUXEDOIServer. Använd LinkAtmiDatabaseServer istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkAtmiDatabaseServer  "$name" "$objectlist" "$projlibs $libs" "$services"
-}
-
-
-#####################################################################
-## 
-## DEPRICATED: Använd LinkLibrary istället!
-##
-######################################################################
-function BuildSharedLibraryTUXEDOClient(name,object,projlibs,libs)
-{
-	internal_register_message "warning: DEPRICATED BuildSharedLibraryTUXEDOClient. Använd LinkLibrary istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkLibrary "$name" "$objectlist" "$projlibs $libs"
-}
-
-####################################################################
-## 
-## DEPRICATED: Använd LinkAtmiServer istället!
-##
-######################################################################
-function BuildTUXEDOServer(name,object, projlibs, libs, services)
-{	
-	internal_register_message "warning: DEPRICATED BuildTUXEDOServer. Använd LinkAtmiServer istället!"
-	
-	objectlist=$(internal_prepare_old_objectlist "$object")
-	LinkAtmiServer "$name" "$objectlist" "$projlibs $libs" "$services"
-}	
-
-
-######################################################################
-## 
-## DEPRICATED: Fyller ingen funktion, ta bort från imakefilen.
-##
-######################################################################
-function DeliverSharedLibrary(name,path)
-{
-	internal_register_message "warning: DEPRICATED DeliverSharedLibrary producerar inget till makefilen."
-}
-
-######################################################################
-## 
-## DEPRICATED: Fyller ingen funktion, ta bort från imakefilen.
-##
-######################################################################
-function DeliverExecutable(name,path)
-{
-	internal_register_message "warning: DEPRICATED DeliverExecutable producerar inget till makefilen."
-}
-
-######################################################################
-## 
-## DEPRICATED: Fyller ingen funktion, ta bort från imakefilen.
-##
-######################################################################
-function DeliverBindFile(name,path)
-{
-	internal_register_message "warning: DEPRICATED DeliverBindFile producerar inget till makefilen."
-}
-
-######################################################################
-## 
-## DEPRICATED: Fyller ingen funktion, ta bort från imakefilen.
-##
-######################################################################
-function DeliverBindfile(name,path)
-{
-	internal_register_message "warning: DEPRICATED DeliverBindfile producerar inget till makefilen."
-}
-
-
-
-
-
 

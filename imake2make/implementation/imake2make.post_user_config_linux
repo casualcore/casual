@@ -32,12 +32,12 @@ endif
 #
 ifdef DEBUG
    COMPILE_DIRECTIVES = -g -c -fPIC 
-   LINK_DIRECTIVES_LIB =  -g -dynamiclib -undefined suppress -flat_namespace -fPIC 
+   LINK_DIRECTIVES_LIB =  -g -shared -fPIC 
    LINK_DIRECTIVES_EXE =  -g -fPIC 
    LINK_DIRECTIVES_ARCHIVE =  -g -fPIC  -xar
 else
    COMPILE_DIRECTIVES =  -c -O3 -fPIC
-   LINK_DIRECTIVES_LIB =  -dynamiclib -undefined suppress -flat_namespace -O3 -fPIC 
+   LINK_DIRECTIVES_LIB =  -shared -O3 -fPIC 
    LINK_DIRECTIVES_EXE =  -O3 -fPIC 
    LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC  -xar
 endif

@@ -68,7 +68,7 @@ fi
 # ta bort temporären
 rm $PRE_PRECOMPILE_TEMP_FILE;
 
-cat "$POST_PRECOMPILE_TEMP_FILE" | awk 'BEGIN{
+$AWK 'BEGIN{
 
 }
 
@@ -160,7 +160,7 @@ cat "$POST_PRECOMPILE_TEMP_FILE" | awk 'BEGIN{
 		printf( "%s\n", resultString);
 	}
 }
-'
+' "$POST_PRECOMPILE_TEMP_FILE" 
 
 # ta bort temporären
 rm $POST_PRECOMPILE_TEMP_FILE
