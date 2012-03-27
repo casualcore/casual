@@ -38,32 +38,32 @@ PRE_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.pre_user_config_"$SUFFIX
 POST_USER_CONFIG="$IMPLEMENTATION_PATH/imake2make.post_user_config_"$SUFFIX
 
 
-USER_IMAKE_FILE=$1;
+USER_CASUAL_MAKE_FILE=$1;
 
 #
 # Kolla om användaren har skickat med någon imake/make-fil
 #
-if [[ "$USER_IMAKE_FILE" == "" ]]
+if [[ "$USER_CASUAL_MAKE_FILE" == "" ]]
 then
-   echo "info: Using default: imakefile" > /dev/stderr;
-   USER_IMAKE_FILE="imakefile";
+   echo "info: Using default: makefile.cmk" > /dev/stderr;
+   USER_CASUAL_MAKE_FILE="makefile.cmk";
 fi
 
-if [[ ! -f "$USER_IMAKE_FILE" ]]
+if [[ ! -f "$USER_CASUAL_MAKE_FILE" ]]
 then
-   echo "error: Failed to open file: $USER_IMAKE_FILE" > /dev/stderr;
+   echo "error: Failed to open file: $USER_CASUAL_MAKE_FILE" > /dev/stderr;
    exit 1;
 fi
 
 
-USER_MAKE_FILE=${USER_IMAKE_FILE:1}
+USER_MAKE_FILE="${USER_CASUAL_MAKE_FILE%.*}".mk
 
 
-echo "info: generates $USER_MAKE_FILE from $USER_IMAKE_FILE"   
+echo "info: generates $USER_MAKE_FILE from $USER_CASUAL_MAKE_FILE"   
 #
 # Starta motorn
 #
-$ENGINE $FUNCTION_DEFINITIONS $PRE_USER_CONFIG $POST_USER_CONFIG $PREPARE_FUNTIONS $IMAKE_NORMALIZE $USER_IMAKE_FILE $USER_MAKE_FILE;
+$ENGINE $FUNCTION_DEFINITIONS $PRE_USER_CONFIG $POST_USER_CONFIG $PREPARE_FUNTIONS $IMAKE_NORMALIZE $USER_CASUAL_MAKE_FILE $USER_MAKE_FILE;
 
 exit $?
 

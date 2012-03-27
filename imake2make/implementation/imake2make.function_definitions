@@ -779,14 +779,14 @@ function internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives
 	echo
 	echo "deploy: $(internal_target_deploy_name $name)"
 	echo 
-	echo "$(internal_target_name $name): $filename | $local_destination_path"
+	echo "$(internal_target_name $name): $filename"
 	echo
 	echo "   objects_$name = $(internal_object_name_list "$objectfiles")"
 	echo "   libs_$name = \$(addprefix -l, $libs)"
 	echo 
 	echo "compile: \$(objects_$name)"
 	echo
-	echo "$filename: \$(objects_$name) $DEPENDENT_TARGETS"
+	echo "$filename: \$(objects_$name) $DEPENDENT_TARGETS | $local_destination_path"
 	echo "	$linker -o $filename \$(objects_$name) \$(LIBRARY_PATHS) \$(DEFAULT_LIBRARY_PATHS) \$(libs_$name) \$(DEFAULT_LIBS) $linkdirectives"
 	echo
 	

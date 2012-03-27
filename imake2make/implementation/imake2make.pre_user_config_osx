@@ -4,66 +4,7 @@
 ##
 ######################################################################
 
-LEVERANS=$(TUXLEV)
 
-EXPORT = /vobs/exportvy
-
-# AHS är depricated. Använd AST
-EXPORT_AHS = $(EXPORT)/arendehantering/arendestyrning
-
-EXPORT_AST = $(EXPORT)/arendehantering/arendestyrning
-EXPORT_DOK = $(EXPORT)/arendehantering/dokumenthantering
-EXPORT_HLP = $(EXPORT)/arendehantering/handlagga
-EXPORT_ARG = $(EXPORT)/arendehantering/arkivering
-EXPORT_IKO = $(EXPORT)/arendehantering/internkontroll
-EXPORT_BVK = $(EXPORT)/arendehantering/bevakning
-EXPORT_DFG = $(EXPORT)/datafangst
-EXPORT_DSP = $(EXPORT)/dataspridning
-EXPORT_AKA = $(EXPORT)/forsakring/akassa
-EXPORT_ASS = $(EXPORT)/forsakring/aktivitetsstod
-EXPORT_AAP = $(EXPORT)/forsakring/alderspension
-EXPORT_A37 = $(EXPORT)/forsakring/alderspension/alderspension37
-EXPORT_A38 = $(EXPORT)/forsakring/alderspension/alderspension38
-EXPORT_UOT = $(EXPORT)/forsakring/utlandsk_pension_och_tjanstepension
-EXPORT_BTP = $(EXPORT)/forsakring/btp
-EXPORT_DOA = $(EXPORT)/forsakring/diagnos_arbetsgivaruppgifter
-EXPORT_ELP = $(EXPORT)/forsakring/efterlevandepension
-EXPORT_FPG = $(EXPORT)/forsakring/foraldrapenning
-EXPORT_ITN = $(EXPORT)/forsakring/intjanandetiden
-EXPORT_PRO = $(EXPORT)/forsakring/pensionsprognos
-EXPORT_PRB = $(EXPORT)/forsakring/pensionsrattochpensionsbehallning
-EXPORT_PPP = $(EXPORT)/forsakring/personligprognos
-EXPORT_PRP = $(EXPORT)/forsakring/premiepension
-EXPORT_SA = $(EXPORT)/forsakring/sjuk_aktivitetsersattning
-EXPORT_SGI = $(EXPORT)/forsakring/sjukpenninggrundande_inkomst
-EXPORT_UBB = $(EXPORT)/forsakring/utbildningsbidrag
-EXPORT_TFP = $(EXPORT)/forsakring/tillfallig_foraldrapenning
-EXPORT_INF = $(EXPORT)/infrastruktur
-EXPORT_XML = $(EXPORT)/infrastruktur/xml4c_3_3_1
-EXPORT_AKR = $(EXPORT)/konto/aterkrav
-EXPORT_BEF = $(EXPORT)/konto/betalningsformedling
-EXPORT_RED = $(EXPORT)/konto/redovisning
-EXPORT_UTB = $(EXPORT)/konto/utbetalning
-EXPORT_BLL = $(EXPORT)/kontorsstod/blankettLager
-EXPORT_EDO = $(EXPORT)/kontorsstod/eDok
-EXPORT_KND = $(EXPORT)/kund
-EXPORT_KUS = $(EXPORT)/kund/kundstatus
-EXPORT_KUF = $(EXPORT)/kund/kundformedling
-EXPORT_KUI = $(EXPORT)/kunskapinfo
-EXPORT_RGL = $(EXPORT)/regler
-EXPORT_ASL = $(EXPORT)/forsakring/arbetsskadelivranta
-EXPORT_EXI = $(EXPORT)/forsakring/extern_samverkan/externa_intressenter
-EXPORT_PMY = $(EXPORT)/forsakring/extern_samverkan/pensionsmyndigheten
-
-
-
-VERKTYG_XALAN = /vobs/verktyg/xalan/1.6/c
-VERKTYG_XERCES = /vobs/verktyg/xerces/2.3.0
-RFVFML		= /vobs/sfa/komponentvy/infrastruktur/generella_komponenter/globalafiler
-RFVSTATUS	= /vobs/sfa/komponentvy/infrastruktur/generella_komponenter/rfvstd1/inc
-
-XERCES_PATH = /vobs/verktyg/xerces
-XERCES_LIBRARY_PATHS = $(XERCES_PATH)/2.3.0/lib $(XERCES_PATH)/3.0.0/lib $(XERCES_PATH)/3.1/lib /vobs/verktyg/xqilla/2.2.4/lib
 
 
 #
@@ -80,7 +21,6 @@ ISOLATED_UNITTEST_DIRECTIVES = --gtest_color=yes
 # Default libs
 #
 DEFAULT_LIBS :=  
-#$(addprefix -l, rfvstd1 rfvtux1 rfvtux2 rfvtux3 meddelandehanterare)
 
 
 ######################################################################
