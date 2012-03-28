@@ -1,0 +1,14 @@
+
+#
+# Build directories
+#
+dependencies/
+obj/
+bin/
+
+#
+# Build files
+#
+*.mk
+
+
