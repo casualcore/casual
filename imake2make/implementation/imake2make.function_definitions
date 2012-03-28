@@ -869,43 +869,38 @@ function LinkExecutable(name,objectfiles,libs)
 
 
 
-function internal_make_target_component(target,component,part)
+function internal_make_target_component(target,casualMakefile)
 {
-	if [ "$part" != "" ]
-	then
-		COMPONENT_MAKEFILE="makefile.$part";
-		local_unique_target="target_${target}_${component}_${part}"
-	else
-		COMPONENT_MAKEFILE="makefile";
-		local_unique_target="target_${target}_${component}"
-	fi
+	USER_CASUAL_MAKE_PATH=`dirname $casualMakefile`
+	USER_CASUAL_MAKE_FILE=`basename $casualMakefile`
+	
+	USER_MAKE_FILE="${USER_CASUAL_MAKE_FILE%.*}".mk
+	
+	local_unique_target=$(internal_convert_path_to_target_name $casualMakefile)_$target
 	
 	#
 	# Fixar till så det blir lite snyggare targets
 	#
-	local_unique_target=${local_unique_target//\//_}
-	local_unique_target=${local_unique_target//./}
+	#local_unique_target=${local_unique_target//\//_}
+	#local_unique_target=${local_unique_target//./}
 	
 	echo "${target}: $local_unique_target"
 	echo
-	echo "$local_unique_target: $component/$COMPONENT_MAKEFILE"
-	echo "	$def_CD $component; \$(MAKE) -f $COMPONENT_MAKEFILE $target"
+	echo "$local_unique_target: $USER_CASUAL_MAKE_PATH/$USER_MAKE_FILE"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; \$(MAKE) -f $USER_MAKE_FILE $target"
 }
 
 ######################################################################
 ## 
-## BuildPartOfComponent(component,part,exportflags)
+## Include(casualMakefile)
 ##
-## Bygger en del av "komponent" beskriven i en annan makefile
+## "includes" another casual-make-file. Though it has little to do with
+## inclusion. Rather it's more like: jump to the spcific file and execute make
 ##
-## component	"path" till komponenten (kan vara ".")
-##	
-## part  	namnet på "del av komponent" (måste ha motsvarande makefils-ändelse)
-##
-## exportflags		Vet inte riktigt vad detta är...
+## casualMakefile	The file to "include"
 ##
 ######################################################################
-function BuildPartOfComponent(component,part,exportflags)
+function Include(casualMakefile)
 {
 	
 	#
@@ -913,45 +908,41 @@ function BuildPartOfComponent(component,part,exportflags)
 	#
 	NoParallel
 	
+	USER_CASUAL_MAKE_PATH=`dirname $casualMakefile`
+	USER_CASUAL_MAKE_FILE=`basename $casualMakefile`
 	
-	if [ "$part" != "" ]
-	then
-		CURRENT_IMAKEFILE="imakefile.$part";
-		CURRENT_MAKEFILE="makefile.$part"
-		local_make_target="target_make_${component}_${part}"
-	else
-		CURRENT_IMAKEFILE="imakefile";
-		CURRENT_MAKEFILE="makefile"
-		local_make_target="targe_make_${component}"
-	fi 
+	USER_MAKE_FILE="${USER_CASUAL_MAKE_FILE%.*}".mk
+	
+	local_make_target=$(internal_convert_path_to_target_name $casualMakefile);
+	
 
 	echo "#"
-	echo "# Om $CURRENT_IMAKEFILE är nyare än $CURRENT_MAKEFILE, producerar vi en ny makefil"
+	echo "# If $USER_CASUAL_MAKE_FILE är nyare än $USER_MAKE_FILE, producerar vi en ny makefil"
 	echo "#"
-	echo "$component/$CURRENT_MAKEFILE: $component/$CURRENT_IMAKEFILE"
-	echo "	$def_CD $component; $def_IMAKE2MAKE $CURRENT_IMAKEFILE"
+	echo "$USER_CASUAL_MAKE_PATH/$USER_MAKE_FILE: $USER_CASUAL_MAKE_PATH/$USER_CASUAL_MAKE_FILE"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; $def_IMAKE2MAKE $USER_CASUAL_MAKE_FILE"
 	echo
-	internal_make_target_component "all" $component $part
+	internal_make_target_component "all" $casualMakefile
 	echo
-	internal_make_target_component "cross" $component $part
+	internal_make_target_component "cross" $casualMakefile
 	echo
-	internal_make_target_component "prep" $component $part
+	internal_make_target_component "prep" $casualMakefile
 	echo
-	internal_make_target_component "deploy" $component $part
+	internal_make_target_component "deploy" $casualMakefile
 	echo
-	internal_make_target_component "test" $component $part
+	internal_make_target_component "test" $casualMakefile
 	echo
-	internal_make_target_component "export_headers" $component $part
+	#internal_make_target_component "export_headers" $casualMakefile
+	#echo
+	#internal_make_target_component "export_libraries" $casualMakefile
+	#echo
+	#internal_make_target_component "export" $casualMakefile
+	#echo
+	internal_make_target_component "clean" $casualMakefile
 	echo
-	internal_make_target_component "export_libraries" $component $part
-	echo
-	internal_make_target_component "export" $component $part
-	echo
-	internal_make_target_component "clean" $component $part
-	echo
-   internal_make_target_component "compile" $component $part
+   internal_make_target_component "compile" $casualMakefile
    echo
-   internal_make_target_component "print_include_paths" $component $part
+   internal_make_target_component "print_include_paths" $casualMakefile
    
    #
 	# Fixar till så det blir lite snyggare targets
@@ -960,13 +951,13 @@ function BuildPartOfComponent(component,part,exportflags)
    
 	echo
 	echo "#"
-	echo "# Producerar alltid $CURRENT_MAKEFILE, även om $CURRENT_IMAKEFILE är äldre"
+	echo "# Producerar alltid $USER_MAKE_FILE, även om $USER_CASUAL_MAKE_FILE är äldre"
 	echo "#"
 	echo "make: $local_make_target"
 	echo
 	echo "$local_make_target:"
-	echo "	$def_CD $component; $def_IMAKE2MAKE $CURRENT_IMAKEFILE"
-	echo "	$def_CD $component; \$(MAKE) -f $CURRENT_MAKEFILE make"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; $def_IMAKE2MAKE $USER_CASUAL_MAKE_FILE"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; \$(MAKE) -f $USER_MAKE_FILE make"
 	echo
 	
 	
