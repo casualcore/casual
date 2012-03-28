@@ -1,0 +1,10 @@
+
+
+EXTRA_INCLUDE_PATHS= include \
+
+
+Compile( source/xatmi_server.cpp, obj/xatmi_server.o)
+
+
+LinkLibrary( casual-xatmi, \
+	obj/xatmi_server.o, )

@@ -1,0 +1,17 @@
+
+
+EXTRA_INCLUDE_PATHS= include \
+	../xatmi/include
+	
+EXTRA_LIB_PATHS= ../xatmi/bin
+
+
+
+Compile( source/template_server.cpp, obj/template_server.o)
+Compile( source/template_server_dispatcher.c, obj/template_server_dispatcher.o)
+
+
+LinkExecutable( test, \
+	obj/template_server.o  \
+	obj/template_server_dispatcher.o, \
+	casual-xatmi)
