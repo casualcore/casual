@@ -23,16 +23,16 @@ extern void casual_test1( TPSVCINFO *transb);
 
 
 
-
-
-
-
 int main( int argc, char** argv)
 {
 
 	struct casual_service_name_mapping mapping[] = { &casual_test1, "casual_test1" };
 
-
+	return casual_startServer(
+			argc,
+			argv,
+			mapping,
+			sizeof( mapping) / sizeof( struct casual_service_name_mapping));
 
 }
 

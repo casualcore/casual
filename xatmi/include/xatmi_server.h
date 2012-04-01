@@ -9,7 +9,7 @@
 #define XATMI_SERVER_H_
 
 #include "xatmi.h"
-
+#include <stddef.h>
 
 struct casual_service_name_mapping
 {
@@ -22,7 +22,7 @@ struct casual_service_name_mapping
 extern "C" {
 #endif
 
-void initServices( struct casual_service_name_mapping* mapping);
+int casual_startServer( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size);
 
 
 #ifdef __cplusplus
