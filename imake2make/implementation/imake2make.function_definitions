@@ -892,15 +892,14 @@ function internal_make_target_component(target,casualMakefile)
 
 ######################################################################
 ## 
-## Include(casualMakefile)
+## Build(casualMakefile)
 ##
-## "includes" another casual-make-file. Though it has little to do with
-## inclusion. Rather it's more like: jump to the spcific file and execute make
+## "builds" another casual-make-file: jumps to the spcific file and execute make
 ##
-## casualMakefile	The file to "include"
+## casualMakefile	The file to build
 ##
 ######################################################################
-function Include(casualMakefile)
+function Build(casualMakefile)
 {
 	
 	#
@@ -932,12 +931,6 @@ function Include(casualMakefile)
 	echo
 	internal_make_target_component "test" $casualMakefile
 	echo
-	#internal_make_target_component "export_headers" $casualMakefile
-	#echo
-	#internal_make_target_component "export_libraries" $casualMakefile
-	#echo
-	#internal_make_target_component "export" $casualMakefile
-	#echo
 	internal_make_target_component "clean" $casualMakefile
 	echo
    internal_make_target_component "compile" $casualMakefile
