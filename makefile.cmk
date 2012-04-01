@@ -1,5 +1,6 @@
 
 
 
-Include(xatmi/makefile.cmk)
-Include(test/makefile.cmk)
+Build( xatmi/makefile.cmk)
+Build( common/makefile.cmk)
+Build( test/makefile.cmk)

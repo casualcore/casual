@@ -1,0 +1,17 @@
+
+
+EXTRA_INCLUDE_PATHS= include \
+	../xatmi/include \
+
+
+EXTRA_LIB_PATHS= ../xatmi/bin \
+
+
+Compile( source/casual_server_context.cpp, obj/casual_server_context.o)
+Compile( source/casual_service_context.cpp, obj/casual_service_context.o)
+
+
+LinkLibrary( casual-common, \
+	obj/casual_server_context.o \
+	obj/casual_service_context.o,\ 
+	casual-xatmi)

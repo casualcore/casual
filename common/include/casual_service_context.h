@@ -8,17 +8,36 @@
 #ifndef CASUAL_SERVICE_CONTEXT_H_
 #define CASUAL_SERVICE_CONTEXT_H_
 
+#include "xatmi.h"
+
+#include <cstddef>
+
+#include <string>
+
 namespace casual
 {
-	namespace calling
+	namespace service
 	{
+
 		struct Context
 		{
+			Context( const std::string& name, tpservice function);
 
-
-		private:
 			Context();
+
+
+			void call( TPSVCINFO* serviceInformation);
+
+			std::string m_name;
+			tpservice m_function;
+			std::size_t m_called;
+
+
 		};
+
+
+
+
 
 
 	}
