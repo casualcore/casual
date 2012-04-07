@@ -1,0 +1,1263 @@
+
+######################################################################
+## 
+## Denna fil utgöra själva mallarna för "imake"
+## 
+## Konventionen är att interna funktioner som nyttjas enbart i denna
+## fil noteras med prefixet internal_. Dessa funktioner kommer inte att kunna
+## mappas mot ett "imake-macro/funktion" så de kan inte missbrukas av användaren
+##
+## casual_make.prepare_function_definitions "transformerar" denna fil så att vi får 
+## ett enkelt gränssnit i casual_make.engine att invokera motsvarande funktion,
+## få fram hur många paramtrar funktionen tar, samt kunna extrahera dokumentation
+## för funktionen och visa användaren om hon/han har gjort något galet.
+##
+## TODO: Lite struligt när vi lägger 'full-path' för varje fil, för att
+## underlätta när man kör stora byggen parallelt. Lite spritt vart vi
+## lägger på nuvarande $PWD, borde normaliseras.
+##
+######################################################################
+
+#
+# Definitioner på "bra att ha grejer" som vi använder i övriga logiken.
+#
+
+def_ObjectSuffix=".o"
+def_ExeSuffix=
+
+def_LibraryPrefix="lib"
+
+def_BNDsuf=".bnd"
+
+if [[ $CASUAL_OS == "darwin" ]]; then
+	def_LibrarySuffix=".dylib";
+else
+	def_LibrarySuffix=".so";
+fi
+
+def_ArchiveSuffix=".a"
+
+def_RM="rm -f ";
+def_CD="cd";
+def_MKDIR_RECURSIVE="mkdir -p";
+def_CHMOD="chmod"
+
+def_MV="mv";
+
+def_Prep="somethinglocal.prep"
+
+def_casual_make="casual_make"
+
+def_EXPORTCOMMAND="perl somethinglocal.pl";
+
+def_Deploy="make.deploy.ksh"
+
+def_CurrentDirectory=$PWD;
+
+def_DependencyDirectory="$def_CurrentDirectory/dependencies";
+
+declare -i def_PARALLEL_MAKE=0;
+declare -i def_LD_LIBRARY_PATH_SET=0;
+
+
+OBJECT_PATHS_FOR_CLEAN="";
+FILES_TO_REMOVE="";
+PATHS_TO_CREATE="";
+MESSAGES="";
+
+EXPORT_HEADER_COMMANDS="";
+EXPORT_LIBRARY_COMMMANDS="";
+EXPORT_FILE_COMMANDS="";
+EXPORT_LIBRARY_TARGETS="";
+
+EXPORT_SUB_TARGETS="";
+
+TARGET_NAME_SEQUENCE=1
+
+
+#
+# Tar bort inledande './' Mest för att det ska 
+# se snyggare ut i makefilen.
+#
+function internal_clean_directory_name(name)
+{
+	echo "${name#./}"
+}
+
+#
+# byter ut alla / mot _
+#
+function internal_convert_path_to_target_name(name)
+{
+	echo "target_$name" | sed 's/[\/\.]/_/g'
+}
+
+
+#
+# Anropas av engine efter det att imake-filen har parsats klart.
+# Denna funktion är alltså till för att vi ska ha möjlighet att producera
+# ackumulerad information.
+#
+function internal_post_make_rules()
+{
+ 
+   #
+   # Skapa target för att ta reda på include-paths och library-paths beroenden.
+	# för att nyttjas i andra sammanhang.
+	# vi skriver till filen som miljövariabeln INCLUDE_PATHS_FILE dikterar.
+   # 
+   echo
+   echo "#"
+	echo "# Skriver vilka include-paths som nyttjas till filen som miljövariabeln INCLUDE_PATHS_FILE dikterar."
+	echo "#"
+   echo "   clean_include_paths = \$(subst -I,, \$(strip \$(INCLUDE_PATHS) \$(DEFAULT_INCLUDE_PATHS)))"
+   echo "print_include_paths:"
+	echo "	@for inc in \$(clean_include_paths); do \\"
+	echo "		if [[ \$\$inc != \"./inc\" ]] ; then \\"
+	echo "		CURRENT_PATH=\`pwd\`; if cd \$\$inc 2>/dev/null; then pwd >> \$\$INCLUDE_PATHS_FILE; cd \$\$CURRENT_PATH; else echo \"error: invalid include path: \$\$inc in \$(THIS_MAKEFILE)\" > /dev/stderr; fi\\"
+	echo "		fi ; \\"
+	echo "	done "
+   echo
+
+	#
+	# Tillhandhåll möjlighet att tvinga sekventiell 
+	# hantering
+	#
+	if [ $def_PARALLEL_MAKE -lt 2 ]
+	then
+		echo
+		echo "#"
+		echo "# Sekventiell hantering går att tvinga"
+		echo "#"
+		echo "ifdef FORCE_NOTPARALLEL"
+		echo ".NOTPARALLEL:"
+		echo "endif"
+		echo
+	fi
+
+	PATHS_TO_CREATE=`echo -e "$PATHS_TO_CREATE" | tr ' ' '\n' | sort | uniq | egrep -v -e "(^[.]?[ ]*$)"`
+	
+	#
+	# Se till att skapa targets för "katalog-skapning"
+	#
+	for path in $PATHS_TO_CREATE
+	do
+		echo
+		echo "$path:"
+		echo "	-$def_MKDIR_RECURSIVE $path"
+		echo "	-$def_CHMOD 777 $path"
+		echo
+	done
+	
+	#
+	# Skapa target för att skapa dependency-katalogen
+	#
+	echo "$def_DependencyDirectory:"
+	echo "	-$def_MKDIR_RECURSIVE $def_DependencyDirectory"
+	echo "	-$def_CHMOD 777 $def_DependencyDirectory"
+	echo
+
+	
+	#
+	# Se till att skapa targets för clean
+	#
+	
+	echo
+	echo "clean:"
+	
+	OBJECT_PATHS_FOR_CLEAN=`echo -e "$OBJECT_PATHS_FOR_CLEAN" | tr ' ' '\n' | sort | uniq | egrep -v -e "(^[.]?[ ]*$)"`
+	
+	for objectpath in $OBJECT_PATHS_FOR_CLEAN
+	do
+		echo "	-$def_RM $objectpath/*.o"
+	done
+	
+	
+	#
+	# Ta bort dependency-filerna
+	#
+	echo "	-$def_RM "$def_DependencyDirectory"/*.d"
+	
+	#
+	# Ta bort de övriga registrerade filerna.
+	#
+	for file in $FILES_TO_REMOVE
+	do
+		echo "	-$def_RM $file"
+	done;
+	
+	
+	#
+	# Generera export-delarna
+	#
+
+	if [ "$EXPORT_HEADER_COMMANDS" != "" ]
+	then
+		echo
+		echo "export_headers: export_begin"
+		echo "$EXPORT_HEADER_COMMANDS"
+		
+		EXPORT_SUB_TARGETS="$EXPORT_SUB_TARGETS export_headers"
+	fi
+	
+	if [ "$EXPORT_LIBRARY_COMMMANDS" != "" ]
+	then
+		echo
+		echo "export_libraries: export_begin $EXPORT_LIBRARIES_TARGETS"
+		echo "$EXPORT_LIBRARY_COMMMANDS"
+		
+		EXPORT_SUB_TARGETS="$EXPORT_SUB_TARGETS export_libraries"
+	fi
+	
+	if [ "$EXPORT_FILE_COMMANDS" != "" ]
+	then
+		echo
+		echo "export_files: export_begin export_headers export_libraries"
+		echo "$EXPORT_FILE_COMMANDS"
+		
+		EXPORT_SUB_TARGETS="$EXPORT_SUB_TARGETS export_files"
+	fi
+	
+	echo
+	echo "export:$EXPORT_SUB_TARGETS"
+	echo
+	
+	
+	#
+	# Skriver ut alla meddelanden som vi samlat på oss.
+	#
+	if [ "$MESSAGES" != "" ]
+	then
+		 echo "`pwd`/$USER_CASUAL_MAKE_FILE:" >/dev/stderr
+		 echo -e "$MESSAGES" | sort | uniq | egrep -v -e "(^[ ]*$)" >/dev/stderr
+	fi	
+}
+
+#
+# Registreringa av filer och paths som ska skapas/tas bort 
+#
+
+function internal_register_object_path_for_clean( objectpath)
+{
+	OBJECT_PATHS_FOR_CLEAN="$OBJECT_PATHS_FOR_CLEAN $objectpath"
+}
+
+function internal_register_file_for_clean( file)
+{
+	FILES_TO_REMOVE="$FILES_TO_REMOVE$file"$'\n'
+}
+
+function internal_register_path_for_create( path)
+{
+	PATHS_TO_CREATE="$PATHS_TO_CREATE $path"	
+}
+
+
+
+
+
+#
+# Registrera varningar, som sedan skrivs till stderr
+# vid "post"
+#
+
+function internal_register_message(message)
+{
+	MESSAGES="$MESSAGES\E[33m$message\E[m"$'\n'
+}
+
+
+#
+# Funktioner för att abstrahera "namn-omvandling"
+#
+
+function internal_normalize_path(path)
+{
+	if [ ${path:0:1} == "/" ]
+	then
+		echo "$path"
+	else
+		echo "$def_CurrentDirectory/$path" 
+	fi
+}
+
+function internal_header_name(name)
+{
+	echo "$name"
+}
+
+function internal_header_name_path(name)
+{
+	echo $(internal_normalize_path "inc/$name")
+}
+
+function internal_shared_library_name(name)
+{
+	echo "$def_LibraryPrefix$name$def_LibrarySuffix"
+}
+
+function internal_shared_library_name_path(name)
+{
+	echo $(internal_normalize_path "bin/$def_LibraryPrefix$name$def_LibrarySuffix")
+}
+
+function internal_archive_name(name)
+{
+	echo "$def_LibraryPrefix$name$def_ArchiveSuffix"
+}
+
+function internal_archive_name_path(name)
+{
+	echo $(internal_normalize_path "bin/$def_LibraryPrefix$name$def_ArchiveSuffix")
+}
+
+
+
+function internal_executable_name(name)
+{
+	echo "$name$def_ExeSuffix"
+}
+
+function internal_executable_name_path(name)
+{
+	echo $(internal_normalize_path "bin/$name$def_ExeSuffix")
+}
+
+function internal_bind_name(name)
+{
+	echo "$name$def_BNDsuf"
+}
+
+function internal_bind_name_path(name)
+{
+	echo $(internal_normalize_path "bin/$name$def_BNDsuf")
+}
+
+function internal_target_name(name)
+{
+	echo "target_$name";
+}
+
+function internal_archive_target_name(name)
+{
+	echo "target_archive_$name";
+}
+
+#
+# Levererar ett unikt target name varje
+# anrop.
+# vilket inte riktigt fungerar nu... Blir fasen samma..
+#
+function internal_unique_target_name(name)
+{
+	
+	echo "$(internal_convert_path_to_target_name $name)_$((TARGET_NAME_SEQUENCE++))";
+}
+
+function internal_object_name_list(objects)
+{
+	echo "\$(addprefix $def_CurrentDirectory/, "$objects")";
+}
+
+function internal_target_deploy_name(name)
+{
+	echo "target_deploy_$name";
+}
+
+function internal_target_isolatedunittest_name(name)
+{
+   echo "target_isolatedunittest_$name";
+}
+
+function internal_cross_object_name(name)
+{
+	#
+	# Ta bort '.o' och lägg till _crosscompile.o
+	#
+	echo $(internal_normalize_path "${name%*.o}_crosscompile$def_ObjectSuffix")
+}
+
+function internal_cross_dependecies(objects)
+{
+	#
+	# Byt ut '.o' mot _crosscompile.o, och lägg dit full path
+	#
+	echo "\$(addprefix $def_CurrentDirectory/, \$(subst .o,_crosscompile$def_ObjectSuffix,"$objects"))"
+}
+
+function internal_dependency_file_name(sourcefile)
+{
+	echo "$def_DependencyDirectory/\$(subst .cpp,.d,\$(notdir $sourcefile))"
+}
+
+
+#
+# Nedan börjar själva funktions-macron, som användaren använder sig av
+# i sin imake-fil
+#
+
+
+######################################################################
+## 
+## NoDefaultLibs()
+##
+## Ser till så att det inte länkas något default
+##
+######################################################################
+function NoDefaultLibs()
+{
+	echo "DEFAULT_LIBS :=";
+	echo
+}
+
+######################################################################
+## 
+## NoDefaultIncludePaths()
+##
+## Ser till så att det inte läggs till någon default include path till 
+## FK:s subdomäner (alltså, inget till vobs/exportvy/...)
+## Påverkar inte det som EXTRA_INCLUDE_PATHS satts till
+##
+######################################################################
+function NoDefaultIncludePaths()
+{
+   echo "DEFAULT_INCLUDE_PATHS :=";
+   echo
+}
+
+######################################################################
+## 
+## NoDefaultLibraryPaths()
+##
+## Ser till så att det inte läggs till någon default library path till
+## FK:s subdomäner (alltså, inget till vobs/exportvy/...)
+## Påverkar inte det som EXTRA_LIB_PATHS satts till 
+##
+######################################################################
+function NoDefaultLibraryPaths()
+{
+   echo "DEFAULT_LIBRARY_PATHS :=";
+   echo
+}
+
+
+######################################################################
+## 
+## NoParallel()
+##
+## Ser till så att ingen parallel byggning tillåts i denna makefil
+##
+######################################################################
+function NoParallel()
+{
+	if [ $def_PARALLEL_MAKE -eq 0 ]
+	then
+		#
+		# Detta kan tyckas lite märkligt, men vi vill att "not-parallel", dvs
+		# sekventiellt, ska alltid kicka in om användaren har valt det.
+		#
+		echo
+		echo "#"
+		echo "# Parallelitet går att overrida"
+		echo "# NOTPARALLEL har alltid förtur, om vi får"
+		echo "# indikation på både parallel och not-parallel"
+		echo "#"
+		echo "ifdef FORCE_NOTPARALLEL"
+		echo ".NOTPARALLEL:"
+		echo "endif"
+		echo "ifndef FORCE_PARALLEL"
+		echo ".NOTPARALLEL:"
+		echo "endif"
+		echo
+		#
+		# Se till så vi inte skriver ut detta igen
+		#
+		def_PARALLEL_MAKE=2
+	fi
+}
+
+######################################################################
+## 
+## Parallel()
+##
+## Ser till så att parallel byggning sker i denna makefil alltid
+## Denna måste vara anropas "först" i imake-filen
+##
+######################################################################
+function Parallel()
+{
+	def_PARALLEL_MAKE=1;
+}
+
+
+#####################################################################
+##
+## CompileDirective(sourcefile,objectfile,directive)
+##
+## kompilerar en kllkodsfil till en objektfil
+##
+## sourcefile	Namnet kllkodsfilen, inklusive path och filndelse (src/minfil.cpp)
+##	
+## objectfile	den resulterade objektfilen inklusinve path och filndelse (obj/minfil.o)
+##
+## directive   Kompileringsdirektiv just för detta TU
+##
+######################################################################
+function CompileDirective(sourcefile,objectfile,directive)
+{
+	local_object_path=$def_CurrentDirectory/$(internal_clean_directory_name `dirname $objectfile`);
+	local_dependency_file=$(internal_dependency_file_name $sourcefile);
+	
+	local_cross_object_file=$(internal_cross_object_name $objectfile);
+	
+	local_source_file=$def_CurrentDirectory/$sourcefile;
+	local_object_file=$def_CurrentDirectory/$objectfile;
+	
+	echo "#"
+	echo "# kompilerar $sourcefile till $objectfile"
+	echo
+	echo "-include $local_dependency_file"
+	echo 
+	echo "$local_object_file : $local_source_file | $def_DependencyDirectory $local_object_path"			                                                            
+	echo "	\$(COMPILER) -o $objectfile $local_source_file  \$(INCLUDE_PATHS) \$(DEFAULT_INCLUDE_PATHS) \$(COMPILE_DIRECTIVES) $directive"
+	echo "	@\$(HEADER_DEPENDENCY_COMMAND) -MT '$local_cross_object_file $local_object_file' \$(INCLUDE_PATHS) \$(DEFAULT_INCLUDE_PATHS) $local_source_file -MF $local_dependency_file"
+	echo 
+	echo "$local_cross_object_file : $local_source_file | $def_DependencyDirectory $local_object_path"			                                                            
+	echo "	\$(CROSSCOMPILER) \$(CROSS_COMPILE_DIRECTIVES) -o $local_cross_object_file $local_source_file \$(INCLUDE_PATHS) \$(DEFAULT_INCLUDE_PATHS) "
+	echo
+	
+	internal_register_object_path_for_clean "$local_object_path"
+	internal_register_path_for_create "$local_object_path"
+
+}	
+
+#####################################################################
+##
+## Compile(sourcefile,objectfile)
+##
+## kompilerar en kllkodsfil till en objektfil
+##
+## sourcefile	Namnet kllkodsfilen, inklusive path och filndelse (src/minfil.cpp)
+##	
+## objectfile	den resulterade objektfilen inklusinve path och filndelse (obj/minfil.o)
+##
+######################################################################
+function Compile(sourcefile,objectfile)
+{
+	CompileDirective $sourcefile $objectfile ""
+
+}	
+
+#
+# Intern hjälpfuntktion för att länka atmi...
+#
+function internal_BASE_LinkATMI(atmibuild, name, predirectives, objectfiles, libs, buildserverdirective)
+{
+	echo "#"
+	echo "#	Länkar $name"
+	
+	#
+	# Vi måste sätta ett annat namn för exekverbara atmi binärers target
+	# då det finns imakefiler som använder samma namn för atmi-binärer och libs
+	# i samma imakefil, och atmi-binären har beroende till libbet -> cirkulära
+	# beroenden... Det skulle vara önskvärt om man särskiljde namnen istället...
+	#
+	atmi_target_name=${name}_atmi
+	
+	internal_library_targets "$libs";
+	
+	#
+	# Dependency Analyzer
+	#
+	[[ $DEPENDENCY_ANALYZER_ON == 1 ]] && internal_dependency_analyzer_link $name "$libs"
+
+	DEPENDENT_TARGETS=$(internal_library_dependencies "$libs")
+	
+	
+	
+	local_destination_path=$(internal_clean_directory_name `dirname $(internal_executable_name_path $name)`)
+	
+	echo
+	echo "all: $(internal_target_name $atmi_target_name)"
+	echo
+	echo "cross: $(internal_cross_dependecies "$objectfiles")"
+	echo 
+	echo "deploy: $(internal_target_deploy_name $atmi_target_name)"
+	echo 
+	echo "$(internal_target_name $atmi_target_name): $(internal_executable_name_path $name) | $local_destination_path"
+	echo
+	echo "   objects_$atmi_target_name = $(internal_object_name_list "$objectfiles")"
+	echo "   libs_$atmi_target_name = \$(addprefix -l, $libs)"
+	echo
+	echo "compile: \$(objects_$atmi_target_name)"
+	echo 
+	echo "$(internal_executable_name_path $name): \$(objects_$atmi_target_name) $DEPENDENT_TARGETS"
+	echo "	$atmibuild -o $(internal_executable_name_path $name) $predirectives -f \"\$(objects_$atmi_target_name)\" -f \"\$(LIBRARY_PATHS) \$(DEFAULT_LIBRARY_PATHS) \$(libs_$atmi_target_name) \$(DEFAULT_LIBS)\" $buildserverdirective -f \"\$(LINK_DIRECTIVES_EXE)\""
+	echo
+	echo "$(internal_target_deploy_name $atmi_target_name):"
+	echo "	-@$def_Deploy $(internal_executable_name $name) exe"
+	echo 
+	internal_register_file_for_clean $(internal_executable_name_path $name)
+	internal_register_path_for_create $local_destination_path
+
+
+}
+
+function internal_print_services_file_dependency(name,services)
+{
+	#
+	# Vi kollar om services till servern är angiven som fil. Om så
+	# ser vi till att få ett beroende till denna fil, för att buildserver och 
+	# omlänkning ska ske om användaren förändrar tjänsteutbudet.
+	#
+	if [[ $services == @* ]]
+	then
+		echo "$(internal_executable_name_path $name): ${services#*@}"
+		echo
+	fi  
+}
+
+######################################################################
+##
+## LinkAtmiServer(name,objectfiles,libs,services)
+##
+## Lnkar en ATMI-server
+##
+## name		Namnet p exekverbara utan fil-suffix.
+##	
+## objects	Objektfiler som ska lnkas
+##
+## libs		libs som exekverbara har beroende mot.
+##
+## services De tjnster som servern exponerar. Ex "tjanst1 tjanst2"
+##
+######################################################################
+function LinkAtmiServer(name,objectfiles,libs,services)
+{
+	internal_BASE_LinkATMI "\$(BUILDSERVER)" "$name" "-s $services \$(DEFAULTSRVMGR)" "$objectfiles" "$libs" ""
+	internal_print_services_file_dependency $name $services
+}
+
+
+######################################################################
+##
+## LinkAtmiServerResource( name, objectfiles, libs, services, resource)
+##
+## Länkar en ATMI-server mot en resurs
+##
+## name  	Namnet på exekverbara utan fil-suffix.
+## 
+## objects  Objektfiler som ska länkas inklusive path och filändelser (obj/bla.o)
+##
+## libs  	libs som exekverbara har beroende mot.
+##
+## services tjänster som servern har realiserat
+##
+## resource	Resurs som servern ska interagera med.
+##
+######################################################################
+function LinkAtmiServerResource(name,objectfiles,libs,services,resource)
+{
+	internal_BASE_LinkATMI "\$(BUILDSERVER)" "$name" "-s $services \$(DEFAULTSRVMGR)" "$objectfiles" "$libs" "-r $resource"
+	internal_print_services_file_dependency $name $services
+}
+
+######################################################################
+##
+## LinkAtmiServerMultipleResources( name, objectfiles, libs, services, resources)
+##
+## Länkar en ATMI-server mot multipla resurser
+##
+## name  	Namnet på exekverbara utan fil-suffix.
+## 
+## objects  Objektfiler som ska länkas inklusive path och filändelser (obj/bla.o)
+##
+## libs  	libs som exekverbara har beroende mot.
+##
+## services tjänster som servern har realiserat
+##
+## resources	[1..N] (unika) Resurser som servern ska interagera med. Alltså
+## 				om man interagerar med två db2-resurser så ska endast en resurs anges (TMSUDB2)
+##
+######################################################################
+function LinkAtmiServerMultipleResources(name,objectfiles,libs,services,resources)
+{
+	internal_BASE_LinkATMI "\$(BUILDSERVER)" "$name" "-s $services \$(DEFAULTSRVMGR)" "$objectfiles" "$libs" "-M \$(addprefix -r , $resources)"
+	internal_print_services_file_dependency $name $services
+}
+
+
+
+
+######################################################################
+##
+## LinkAtmiClient(name,objectfiles,libs)
+##
+## Länkar en ATMI-klient
+##
+## name		Namnet på exekverbara utan fil-suffix.
+##	
+## objects	Objektfiler som ska länkas
+##
+## libs		libs som exekverbara har beroende mot.
+##
+######################################################################
+function LinkAtmiClient(name,objectfiles,libs)
+{
+	internal_BASE_LinkATMI "\$(BUILDCLIENT)" "$name" "" "$objectfiles" "$libs" ""
+}
+
+
+
+
+
+function internal_library_targets( libs)
+{
+	echo
+	
+	#
+	# Skapa dummys som ser till att ingen omlänkning sker om
+	# libbet inte byggs i denna makefil
+	#
+	echo "# INTERMEDIATE-deklaration av targets, för att gmake ska acceptera targets";
+	echo "# om de inte finns definerade \"på riktigt\" i denna makefil.";
+	echo "# Vi måste även ta med archive_targets då vi inte vet om det är ett arkiv eller inte";
+ 	for lib in $libs
+	do
+		echo ".INTERMEDIATE: $(internal_target_name $lib)";
+		echo ".INTERMEDIATE: $(internal_archive_target_name $lib)";
+	done;
+	
+	echo
+	
+	#
+	# Skapa tomma targets för att beroendendet ovan ska funka	
+	#
+	echo "# dummy targets, som kickar in om inte beroendet finns i denna makefil";
+ 	for lib in $libs
+	do
+		echo "$(internal_target_name $lib):";
+		echo "$(internal_archive_target_name $lib):";
+	done;
+	
+}
+
+
+function internal_library_dependencies( libs)
+{
+ 	for lib in $libs
+	do
+		echo -n "$(internal_target_name $lib) $(internal_archive_target_name $lib) ";
+	done;
+}
+
+
+#
+# Intern hjälpfunktion för att länka
+#
+function internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives)
+{
+	echo "#"
+	echo "#	Länkar $name"
+	
+	internal_library_targets "$libs";
+
+	#
+	# Dependency Analyzer
+	#
+	[[ $DEPENDENCY_ANALYZER_ON == 1 ]] && internal_dependency_analyzer_link $name "$libs"
+	
+	DEPENDENT_TARGETS=$(internal_library_dependencies "$libs")
+	
+
+	local_destination_path=$(internal_clean_directory_name `dirname $filename`)
+	
+	echo
+	echo "all: $(internal_target_name $name)"
+	echo
+	echo "cross: $(internal_cross_dependecies "$objectfiles")"
+	echo
+	echo "deploy: $(internal_target_deploy_name $name)"
+	echo 
+	echo "$(internal_target_name $name): $filename"
+	echo
+	echo "   objects_$name = $(internal_object_name_list "$objectfiles")"
+	echo "   libs_$name = \$(addprefix -l, $libs)"
+	echo 
+	echo "compile: \$(objects_$name)"
+	echo
+	echo "$filename: \$(objects_$name) $DEPENDENT_TARGETS | $local_destination_path"
+	if [[ $linker == $ARCHIVER ]]; then
+		echo "	$linker $linkdirectives $filename \$(objects_$name)"
+	else
+		echo "	$linker -o $filename \$(objects_$name) \$(LIBRARY_PATHS) \$(DEFAULT_LIBRARY_PATHS) \$(libs_$name) \$(DEFAULT_LIBS) $linkdirectives"
+	fi
+	echo
+	
+	internal_register_file_for_clean "$filename"
+	internal_register_path_for_create "$local_destination_path"
+
+}
+
+
+######################################################################
+## 
+## LinkLibrary(name,objectfiles,libs)
+##
+## Länkar ett lib
+##
+## name		Namnet på libbet utan lib-prefix och .so - ändelse
+##	
+## objectfiles	Objektfiler som ska länkas, inklusive path och suffix (/obj/bla.o)
+##
+## libs		Andra libbs som libbet har beroende mot.
+##
+######################################################################
+function LinkLibrary(name,objectfiles,libs)
+{
+	internal_base_link "\$(LIBRARY_LINKER)" "$name" "$(internal_shared_library_name_path $name)" "$objectfiles" "$libs" "\$(LINK_DIRECTIVES_LIB)"
+	
+	echo "$(internal_target_deploy_name $name):"
+	echo "	@$def_Deploy $(internal_shared_library_name $name) lib"
+	echo 
+		
+}
+
+######################################################################
+## 
+##  LinkArchive(name,objectfiles)
+##
+## Länkar ett arkiv.
+##
+## name		Namnet på arkivet utan lib-prefix och .a - ändelse
+##	
+## objectfiles	Objektfiler som ska länkas, inklusive path och suffix (/obj/bla.o)
+##
+## libs		Andra libbs som arkivet har beroende mot.
+##
+######################################################################
+function LinkArchive(name,objectfiles)
+{
+
+	echo "#"
+	echo "#	LŠnkar $name"
+	
+	filename=$(internal_archive_name_path $name)
+	
+	local_destination_path=$(internal_clean_directory_name `dirname $filename`)
+	
+	echo
+	echo "all: $(internal_target_name $name)"
+	echo
+	echo "cross: $(internal_cross_dependecies "$objectfiles")"
+	echo
+	echo "deploy: $(internal_target_deploy_name $name)"
+	echo 
+	echo "$(internal_target_name $name): $filename"
+	echo
+	echo "   objects_$name = $(internal_object_name_list "$objectfiles")"
+	echo 
+	echo "compile: \$(objects_$name)"
+	echo
+	echo "$filename: \$(objects_$name) | $local_destination_path"
+	echo "	\$(ARCHIVE_LINKER) $filename \$(objects_$name)"
+	echo
+	
+	internal_register_file_for_clean "$filename"
+	internal_register_path_for_create "$local_destination_path"
+
+   echo "$(internal_target_deploy_name $name):"
+}
+
+######################################################################
+## 
+## LinkExecutable(name,objectfiles,libs)
+##
+## Länkar en exekverbar
+##
+## name		Namnet på exekverbara utan fil-suffix.
+##	
+## objectfiles Objektfiler som ska länkas, inklusive path och suffix (/obj/bla.o)
+##
+## libs		libs som exekverbara har beroende mot.
+##
+######################################################################
+function LinkExecutable(name,objectfiles,libs)
+{
+	internal_base_link "\$(EXECUTABLE_LINKER)" "$name" "$(internal_executable_name_path $name)" "$objectfiles" "$libs" "\$(LINK_DIRECTIVES_EXE)"
+	
+	echo "$(internal_target_deploy_name $name):"
+	echo "	-@$def_Deploy $(internal_executable_name $name) exe"
+	echo 
+}
+
+
+
+
+function internal_make_target_component(target,casualMakefile)
+{
+	USER_CASUAL_MAKE_PATH=`dirname $casualMakefile`
+	USER_CASUAL_MAKE_FILE=`basename $casualMakefile`
+	
+	USER_MAKE_FILE="${USER_CASUAL_MAKE_FILE%.*}".mk
+	
+	local_unique_target=$(internal_convert_path_to_target_name $casualMakefile)_$target
+	
+	#
+	# Fixar till så det blir lite snyggare targets
+	#
+	#local_unique_target=${local_unique_target//\//_}
+	#local_unique_target=${local_unique_target//./}
+	
+	echo "${target}: $local_unique_target"
+	echo
+	echo "$local_unique_target: $USER_CASUAL_MAKE_PATH/$USER_MAKE_FILE"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; \$(MAKE) -f $USER_MAKE_FILE $target"
+}
+
+######################################################################
+## 
+## Include(casualMakefile)
+##
+## "includes" another casual-make-file. Though it has little to do with
+## inclusion. Rather it's more like: jump to the spcific file and execute make
+##
+## casualMakefile	The file to "include"
+##
+######################################################################
+function Include(casualMakefile)
+{
+	
+	#
+	# Se till så vi kör sekventiellt default.
+	#
+	NoParallel
+	
+	USER_CASUAL_MAKE_PATH=`dirname $casualMakefile`
+	USER_CASUAL_MAKE_FILE=`basename $casualMakefile`
+	
+	USER_MAKE_FILE="${USER_CASUAL_MAKE_FILE%.*}".mk
+	
+	local_make_target=$(internal_convert_path_to_target_name $casualMakefile);
+	
+
+	echo "#"
+	echo "# If $USER_CASUAL_MAKE_FILE är nyare än $USER_MAKE_FILE, producerar vi en ny makefil"
+	echo "#"
+	echo "$USER_CASUAL_MAKE_PATH/$USER_MAKE_FILE: $USER_CASUAL_MAKE_PATH/$USER_CASUAL_MAKE_FILE"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; $def_casual_make $USER_CASUAL_MAKE_FILE"
+	echo
+	internal_make_target_component "all" $casualMakefile
+	echo
+	internal_make_target_component "cross" $casualMakefile
+	echo
+	internal_make_target_component "prep" $casualMakefile
+	echo
+	internal_make_target_component "deploy" $casualMakefile
+	echo
+	internal_make_target_component "test" $casualMakefile
+	echo
+	#internal_make_target_component "export_headers" $casualMakefile
+	#echo
+	#internal_make_target_component "export_libraries" $casualMakefile
+	#echo
+	#internal_make_target_component "export" $casualMakefile
+	#echo
+	internal_make_target_component "clean" $casualMakefile
+	echo
+   internal_make_target_component "compile" $casualMakefile
+   echo
+   internal_make_target_component "print_include_paths" $casualMakefile
+   
+   #
+	# Fixar till så det blir lite snyggare targets
+	#
+	local_make_target=${local_make_target//\//_}
+   
+	echo
+	echo "#"
+	echo "# Producerar alltid $USER_MAKE_FILE, även om $USER_CASUAL_MAKE_FILE är äldre"
+	echo "#"
+	echo "make: $local_make_target"
+	echo
+	echo "$local_make_target:"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; $def_casual_make $USER_CASUAL_MAKE_FILE"
+	echo "	$def_CD $USER_CASUAL_MAKE_PATH; \$(MAKE) -f $USER_MAKE_FILE make"
+	echo
+	
+	
+}
+
+
+######################################################################
+## 
+## BuildComponent(component,exportflags)
+##
+## Bygger "komponent" beskriven i en annan makefile
+##
+## component	"path" till komponenten (kan vara ".")
+##
+## exportflags		Vet inte riktigt vad detta är...
+##
+######################################################################
+function BuildComponent(component,exportflags)
+{
+	BuildPartOfComponent "$component" "" "$exportflags"
+}
+
+
+
+
+function internal_export_file(filename,directory,targetdirectory)
+{
+	if [ "$directory" != "" ]
+	then
+		FILE_PATH="$directory/$filename";
+	else
+		FILE_PATH="$filename";
+	fi
+	
+	#
+	# Lägg till commanddot för export. Vi skriver detta sist i makefilen (vid post...)
+	#
+	EXPORT_FILE_COMMANDS=$EXPORT_FILE_COMMANDS"	-@$def_EXPORTCOMMAND $filename $FILE_PATH $targetdirectory"$'\n'
+}
+
+
+
+######################################################################
+## 
+## ExportHeaderFileWithDirectory(filename,directory,targetdirectory)
+##
+## Exports the component to the path specified
+##
+## sourceFilePath	relative file path
+##
+## targetdirectory same as ExportHeaderFile::path
+##
+######################################################################
+function ExportHeaderFileWithDirectory(filename,directory,targetdirectory)
+{
+	#internal_export_file "$filename" "$directory" "$targetdirectory/inc"
+	EXPORT_HEADER_COMMANDS=$EXPORT_HEADER_COMMANDS"	-@$def_EXPORTCOMMAND $filename $directory/$filename $targetdirectory/inc"$'\n'
+}
+
+
+
+######################################################################
+##
+## ExportSharedLibrary(name,path)
+##
+## Exporterar libbet till path
+##
+## name	namnet på libbet
+##
+## targetdirectory	path dit "name" exporteras
+##
+######################################################################
+function ExportSharedLibrary(name,targetdirectory)
+{
+	EXPORT_LIBRARY_COMMMANDS=$EXPORT_LIBRARY_COMMMANDS"	-@$def_EXPORTCOMMAND $(internal_shared_library_name $name) bin/$(internal_shared_library_name $name) $targetdirectory/lib"$'\n'
+	
+	#
+	# Vi spar på oss target-names för de libs som ska exporteras
+	# så att vi på så sätt har möjlighet att enbart bygga dessa
+	# Detta främst för att kunna bygga samtliga subdomäner utan att 
+	# behöva bry oss beroenden mellan dessa
+	#
+	EXPORT_LIBRARIES_TARGETS=$EXPORT_LIBRARIES_TARGETS" $(internal_target_name $name)"
+	
+}
+
+
+
+function internal_set_LD_LIBRARY_PATH()
+{
+   if [ $def_LD_LIBRARY_PATH_SET -eq 0 ]
+   then
+      echo "#"
+      echo "# Sätter LD_LIBRARY_PATH så att isolated-tests kan hitta alla beroenden"
+      echo "# Vi sätter bara denna en gång, även om det är flera isolated som ska testas"
+      echo "#"
+      echo "space :=  "
+      echo "space +=  "
+      echo "formattet_library_path = \$(subst -L,,\$(subst \$(space),:,\$(LIBRARY_PATHS) \$(DEFAULT_LIBRARY_PATHS)))"
+      echo "LD_LIBRARY_PATH=\$(formattet_library_path):\$(PLATFORMLIB_DIR)))"
+      echo 
+      #
+      # Se till så vi inte skriver ut detta igen
+      #
+      def_LD_LIBRARY_PATH_SET=1
+   fi
+}
+
+
+######################################################################
+##
+## Bygger unittest som är tänkt att köras på compile-maskinen.
+## Alltså, det ska vara isolerade tester för att testa av funkitonalitet
+## som inte har någon koppling till någon testmiljö eller liknande.
+##
+## Det skapas ett target för att köra testen
+##
+## name: namn på unittestbinären
+##
+## objectfiles: Objektfilerna som ska länkas. Fulla objektfilsnamn ex. obj/minobejektfil.o
+##
+## libs: Libs som binären är beroende av.
+##
+######################################################################
+function LinkIsolatedUnittest(name,objectfiles,libs)
+{
+	internal_base_link "\$(EXECUTABLE_LINKER)" "$name" "$(internal_executable_name_path $name)" "$objectfiles" "$libs" "\$(ISOLATED_UNITTEST_LIB) \$(LINK_DIRECTIVES_EXE)"
+
+	echo "$(internal_target_deploy_name $name):"
+	echo "	@$def_Deploy $(internal_executable_name $name) client"
+	echo 
+	
+	internal_set_LD_LIBRARY_PATH;
+	
+	echo "test: $(internal_target_isolatedunittest_name $name)"	
+	echo
+	echo "$(internal_target_isolatedunittest_name $name): $(internal_executable_name_path $name)"
+	echo "	$(internal_executable_name_path $name) \$(ISOLATED_UNITTEST_DIRECTIVES)"
+	echo 
+}
+
+
+
+
+
+######################################################################
+##
+## Bygger unittest som är beroende av "miljö"-delar.
+## Alltså, det ska vara tester för att testa av verksamhetsfunkitonalitet
+## som har någon koppling till någon testmiljö eller liknande.
+##
+## Mer eller mindre motsattsen till LinkIsolatedUnittest
+##
+## name: namn på unittestbinären
+##
+## objectfiles: Objektfilerna som ska länkas  Fulla objektfilsnamn ex. obj/minobejektfil.o
+##
+## libs: Libs som binären är beroende av.
+##
+######################################################################
+function LinkDependentUnittest(name,objectfiles,libs)
+{
+	internal_BASE_LinkATMI "\$(BUILDCLIENT)" "$name" "" "$objectfiles" "$libs" "-f\"\$(DEPENDENT_UNITTEST_LIB)\""
+	
+}
+
+######################################################################
+##
+## TargetExecute
+##
+## Skapar ett target (vilket kan var något som även produceras från
+## andra 'macron', ex test) 
+## När target körs så exekveras den exekverbara.
+##
+## target: namn för target. Detta bör vara något av de befintliga target:s
+##
+## executable: fullt kvalificerande namn på den exekverbara
+##
+## options: eventuellt options till den exekverbara
+##
+######################################################################
+function TargetExecute(target,executable,options)
+{
+	internal_set_LD_LIBRARY_PATH;
+	
+	local_target_name=$(internal_unique_target_name $executable)
+	
+
+	echo "$target: $local_target_name"	
+	echo
+	
+	echo "$local_target_name: $(internal_normalize_path $executable)"
+	echo "	@$executable $options"
+	echo 
+}
+
+ 
+######################################################################
+##
+## DatabasePrepare(database,username,password,filename,bindname)
+##
+##
+## Special (hack) handling of bind files!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## the path name must be short, so the bind files are copied to \$(TMP)
+## before bind. Restriction in bind.
+##
+##
+## Special (temporary) fix to handle .pc files that really should be
+## .sqc files. .pc file are copied to .sqc
+##
+##
+## Precompiles a pc file, produces a bind file and binds it agains
+## the database.
+##
+## database 	Name of the database
+## username 	Name of the user
+## password 	The users password
+## filename 	The name of the pc file, without extension
+## bindname 	The package name without extension
+##
+## 2001-06-20/lsu
+## BindFileName now make use of a shell script, rfvprep. The only
+## reason for this change is that rfvprep can take care of db2 prep
+## warnings (error code 2).
+##
+######################################################################
+function DatabasePrepare(database,username,password,filename,bindname)
+{
+	local_bind_path=`dirname $(internal_bind_name_path $bindname)`;
+	echo
+	echo "prep all: $(internal_bind_name_path $bindname)"
+	echo
+	echo "$(internal_bind_name_path $bindname): $def_CurrentDirectory/src/$filename.cpp"
+	echo
+	echo "$def_CurrentDirectory/src/$filename.cpp: $def_CurrentDirectory/src/$filename.sqc | $local_bind_path"
+	echo "	$def_Prep "$database" "$username" "$password" $def_CurrentDirectory/src/$filename.sqc $(internal_bind_name_path $bindname) \$(PREXTRA_HOST_PATHS)"
+	echo "	$def_MV $def_CurrentDirectory/src/$filename.c $def_CurrentDirectory/src/$filename.cpp"
+	echo
+
+	internal_register_file_for_clean $(internal_bind_name_path $bindname)
+	internal_register_file_for_clean "$def_CurrentDirectory/src/$filename.cpp"
+	
+	echo
+	echo "deploy: $(internal_target_deploy_name $bindname)"
+	echo 
+	echo "$(internal_target_deploy_name $bindname):"
+	echo "	-@$def_Deploy $(internal_bind_name $bindname) bnd"	
+}
+
+######################################################################
+## 
+## Prepare(filename,bindname)
+##
+## Producerar bind-filen med den kompilerade sql-koden och 
+## den genererade källkodsfilen utifrån sqc-filen. 
+## Källkodsfilen kommer att ha samma namn och path som sqc-filen, men med 
+## filändelsen .cpp.
+##
+## filename 	sqc-filnamnet, inklusive path och filändelse.
+##                Ex. src/perpersoninfosfhanteraredb.sqc
+##
+## packagename Paketnamnet som den kompilearde sql-koden ligger inom.
+##						bind-filen kommer att ha samma namn, men med filändelsen
+##						bnd. Ex. perpersoninfo, vilket resulterar i bind-filen
+##                obj/perpersoninfo.bnd.
+##
+######################################################################
+## TODO Implementera
+
+
+function internal_prepare_old_objectlist(objects)
+{
+	for object in $objects
+	do
+		printf "obj/$object$def_ObjectSuffix "
+	done
+}
+

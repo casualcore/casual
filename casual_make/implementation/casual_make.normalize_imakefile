@@ -1,0 +1,173 @@
+#!/bin/bash
+set -e
+
+
+######################################################################
+## 
+## Denna fil normaliserar en imake-fil
+## 
+## Målsättningen är att få alla "anrop" till funktioner i en imake-fil
+## ska komma på en rad och ha ':' som avskiljare mellan parametrar, detta 
+## då tjänster deklareras med "tjanst1,tjanst2". Vi vill alltså behålla
+## ',' mellan dessa "sub-parametrar"
+##
+## Exempelvis: 
+##   LinkAtmiServer(someServer:obj1.o obj2.o:lib1.so lib2.so:"tjanst1,tjanst2")	
+##
+######################################################################
+
+
+def_GCC=gcc
+
+
+#
+# Vi använder oss gcc:s precompiler för att ta bort lite kommentarer 
+# hantera ifdefs och sånt. Uppdelade rader kommer på samma rad, vilket är
+# precis vad vi vill.
+# Den verkar vilja ha *.c filer så vi fixar till det först.
+#
+
+
+PRE_PRECOMPILE_TEMP_FILE=`mktemp /tmp/casual_make_pre_precompiled_XXXXXXXX`
+
+#
+# Vi lägger till lite defines som gcc byter ut.
+# vet inte riktigt vart vi ska ha dessa? Ska de ligga här
+# eller ska de vara i en "config-fil" (som då bör vara enbart för
+# precompile defines). Vet inte vad som blir bäst...
+#
+
+echo "
+#define DependOnPlatform(file) file 
+#define NullParameter 
+#define LDLibOS
+#define LDLibDB2 db2
+#define LDLibTUX fml32 fml tux nsl buft db2
+#define SRCFilePath(file) ./src/file
+"> $PRE_PRECOMPILE_TEMP_FILE;
+
+
+cat $1 >> $PRE_PRECOMPILE_TEMP_FILE
+
+POST_PRECOMPILE_TEMP_FILE=`mktemp /tmp/casual_make_post_precompiled.XXXXXXXX`
+
+$def_GCC -w -x c -E $PRE_PRECOMPILE_TEMP_FILE > $POST_PRECOMPILE_TEMP_FILE;
+
+if [ $? -ne 0 ]
+then
+	FQN_IMAKE=`pwd`/$1
+	echo "error: from $FQN_IMAKE" > /dev/stderr;
+	
+	# ta bort temporären
+	rm $PRE_PRECOMPILE_TEMP_FILE;
+	rm $POST_PRECOMPILE_TEMP_FILE;
+	
+	exit 5;
+fi
+
+# ta bort temporären
+rm $PRE_PRECOMPILE_TEMP_FILE;
+
+$AWK 'BEGIN{
+
+}
+
+{
+
+	if( $0 ~ /^#/ )
+	{
+		# precompiled kommentar. Skippa
+		next;
+	}
+	
+	
+	#
+	# Trimma och normalisera raden
+	#
+	
+	# ta bort leading ws
+	gsub(/^[ \t]*/, "", $0);
+	
+	gsub(/[ \t]+/, " ", $0);
+	gsub(/[ \t]*\([ \t]*/, "(", $0);
+	gsub(/[ \t]*[,][ \t]*/, ",", $0);
+	
+	# ta bort trailing ;
+	gsub(/[ \t]*[;][ \t]*$/, "", $0);
+	
+	
+	#
+	# Vi måste se till så vi håller ihop allt som ingår mallan " ("<sträng,dfsl,...>")
+	#
+	
+	resultString = "";
+	
+	while( length( $0 ) > 0)
+	{
+	
+		# sök till slutet vi ska ersätta , med :
+		endIndex = index( $0, "\"" );
+		
+		if( endIndex == 0) { endIndex = length( $0 ); }
+		
+		# vi måste ta ut en temporär sträng. Verkar inte gå på något annat sätt
+		tempString = substr( $0, 0, endIndex );
+			
+		
+		# Ersätt , med :
+		gsub(/[,]/, ":", tempString);
+		
+		# lätt till till resultatet
+		resultString = ( resultString tempString );
+		
+		#printf( "resultString: %s\n", resultString);
+		
+		# Ta bort det vi har "konsumerat" från $0
+		$0 = substr( $0, endIndex + 1);
+		
+		# Sök reda på nästa " för att behålla , mellan dessa
+		endIndex = index( $0, "\"");
+		
+		if( endIndex == 0) { endIndex = length( $0 ); }
+		
+		# lätt till till resultatet
+		resultString = ( resultString substr( $0, 0, endIndex ));
+		
+		# Ta bort det vi har "konsumerat" från $0
+		$0 = substr( $0, endIndex + 1);	
+		
+	}
+	
+	# vi skriver bara ut om vi har nått vettigt att förmedla...
+	if( resultString !~ /^[ \t]*$/ )
+	{
+		#
+		# Kolla att vi har rätt scope för ( och ), alltså att de
+		# överenstämmer med varandra.
+		# Hittar inget bättre sätt att göra detta på än gsub...
+		#
+		scopeStart = resultString;
+		scopeEnd = resultString;
+		
+		if( gsub( /[(]/, "[", scopeStart) !=  gsub( /[)]/, "]", scopeEnd) )
+		{
+			printf( "error: Felaktig rad: %s\n", resultString) > "/dev/stderr";
+			exit 4;
+		}
+		
+		
+		
+		printf( "%s\n", resultString);
+	}
+}
+' "$POST_PRECOMPILE_TEMP_FILE" 
+
+# ta bort temporären
+rm $POST_PRECOMPILE_TEMP_FILE
+
+exit ${PIPESTATUS[1]}
+
+
+
+
+

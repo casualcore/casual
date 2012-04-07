@@ -1,0 +1,212 @@
+#!/bin/bash
+
+FUNCTION_DEFINITION_FILE="$1";
+CONFIGURATION="$2"
+
+PREPARE_FUNCTIONS="$3";
+NORMALIZE_CASUAL_MAKE_FILE="$4";
+
+USER_CASUAL_MAKE_FILE="$5"
+OUTPUT_FILE="$6"
+
+#echo "debug USER_CASUAL_MAKE_FILE: `pwd`/$USER_CASUAL_MAKE_FILE";
+
+
+ERROR=/dev/stderr
+
+OUTPUT_TEMP_FILE="`basename $OUTPUT_FILE`"
+OUTPUT_TEMP_FILE=`mktemp /tmp/casual_make_$OUTPUT_TEMP_FILE.XXXXXXXX`
+
+#
+# Vi börjar med att lägga in de statiska variablerna, då 
+# användarens definitioner i imakefilen kan vara beroende 
+# av dessa.
+#
+echo "CASUALMAKE_PATH = $CASUALMAKE_PATH/.." > $OUTPUT_TEMP_FILE
+
+
+###########################################################
+#
+# Normalisera imake-filen
+#
+###########################################################
+
+#
+# Normalisera imake-filen
+#
+CASUAL_MAKE_FILE=$( $NORMALIZE_CASUAL_MAKE_FILE $USER_CASUAL_MAKE_FILE )
+
+if [ $? -ne 0 ] 
+then 
+	echo -e "\E[31merror: Failed to normalize: $PWD/$USER_CASUAL_MAKE_FILE\E[m" >> $ERROR
+	exit 1; 
+fi
+
+
+#
+# Plocka ut samtliga "variabler" som användaren har specat 
+# 
+echo "$CASUAL_MAKE_FILE" | egrep -e "^[ \t]*[A-Za-z_0-9]+[ ]*[:]?=" >> $OUTPUT_TEMP_FILE
+
+#
+# Plocka ut 'include':s som användaren gör. Detta borde inte förekomma, men 
+# vissa subdomäner har dålig design och är lata...
+#
+
+echo "#" >> $OUTPUT_TEMP_FILE
+echo "# Inkluderingar. Detta borde inte vara nödvändigt i normalfallet, se över." >> $OUTPUT_TEMP_FILE
+echo "#" >> $OUTPUT_TEMP_FILE
+echo "$CASUAL_MAKE_FILE" | egrep -e "^include[ ]+" >> $OUTPUT_TEMP_FILE
+
+#
+# Plocka ut samtliga funktionsanrop (imake-macron). Dessa lägger vi i en
+# tempfil som vi nedan betar av.
+#
+USER_FUNCTION_CALLS_FILE=`mktemp /tmp/casual_make_user_function_calls.XXXXXXXX`;
+echo "$CASUAL_MAKE_FILE" | egrep -e "^[A-Za-z]+[ ]*\(" > $USER_FUNCTION_CALLS_FILE
+
+
+
+###########################################################
+#
+# Förbered det som casual_make äger
+#
+###########################################################
+
+#
+# Skapa anpassad "version" av funktionsdefefintionerna
+#
+PREPARED_FUNCTION_FILE=`mktemp /tmp/casual_make_prepared_function_definition_file.XXXXXXXX`;
+
+
+$PREPARE_FUNCTIONS $FUNCTION_DEFINITION_FILE > $PREPARED_FUNCTION_FILE;
+
+#
+# Läs in funktions-deklartionerna. Så vi har något att jämföra med
+#
+VALID_FUNCTIONS=`egrep -e "^function [A-Za-z]" $FUNCTION_DEFINITION_FILE | cut -d " " -f2`
+
+#
+# Lägg till kompilator/länk-direktivs-variabler till makefilen.
+# denna 
+#
+cat $CONFIGURATION >> $OUTPUT_TEMP_FILE
+
+#
+# Så att vi har tillgång till själva funktionerna som ska utföra
+# jobbet
+#
+source $PREPARED_FUNCTION_FILE;
+
+function finalize()
+{
+	#
+	# Flytta den temporära till den riktiga, oavsett om 
+	# vi är halvfärdig... Vi måste även chmod:a den så
+	# andra har möjlighet att skriva över (i ett annat skede)
+	#
+	mv $OUTPUT_TEMP_FILE $OUTPUT_FILE
+	chmod 666 $OUTPUT_FILE
+	
+	#
+	# Ta bort temporärer
+	#
+	rm $USER_FUNCTION_CALLS_FILE
+	rm $PREPARED_FUNCTION_FILE
+}
+
+
+#
+# Dispatch-funktion som anropar motsvarande funktion
+# som ska producera make-"kod"
+#
+function dispatch_function_call()
+{
+	FUNCTION_CALL=$1;
+	
+	#
+	# Ta bort allt från slutet fram till och med
+	# den parantes '(' som ligger längst bort från
+	# slutet. Dvs behåll enbart funktionsnamnet.
+	#
+	FUNCTION_NAME="${FUNCTION_CALL%%(*}"
+	
+	#
+	# Kolla om det är en definerad gilltig funktion
+	#
+	echo "$VALID_FUNCTIONS" | egrep -e "$FUNCTION_NAME[ ]*[(]" >/dev/null;
+	if [ $? -ne 0 ] 
+	then 
+		echo -e "\E[31merror: $FUNCTION_NAME - is not defined\E[m (`pwd`/$USER_CASUAL_MAKE_FILE)" >> $ERROR
+		finalize 
+		exit 1; 
+	fi
+	
+		
+	#
+	# Ta bort från början fram till och med
+	# den första parantesen '('. Ta sedan bort
+	# från slutet fram till och med den första 
+	# parantesen ')'. Dvs, gehåll enbart 
+	# parameterlistan.
+	#
+	PARAMETERS="${FUNCTION_CALL#*(}"
+	PARAMETERS="${PARAMETERS%*)}";
+
+	declare -i index=0;
+	PARAMETER_ARRAY=;
+	
+	#
+	# Splitta parameterlistan med avseende 
+	# på ','  Lägg in respekteive subset av detta 
+	# split i en array, med [0-n] index. 
+	#
+	
+	while read parameter
+	do 
+	 		PARAMETER_ARRAY[ index]=$parameter;
+			index=$index+1;
+	done < <( echo "$PARAMETERS" | tr ':' '\n') 
+
+	#
+	# Kolla att antalet parametrar överensstämmer 
+	# med vad dispatch-funktionen tar.
+	#
+	parameterCount_$FUNCTION_NAME;
+	if [ $? -ne $index ]
+	then
+		echo -e "\E[31merror: parameter mismatch for: $FUNCTION_NAME\E[m (`pwd`/$USER_CASUAL_MAKE_FILE)" >> $ERROR
+		documentation_$FUNCTION_NAME >> $ERROR
+		finalize
+		exit 2
+	fi
+	
+	
+	#
+	# Dispatch till mall-funktionen
+	#	
+	$FUNCTION_NAME "${PARAMETER_ARRAY[@]}";
+
+	unset PARAMETER_ARRAY;
+}
+
+
+while read user_function_call
+do
+  dispatch_function_call "$user_function_call" >> $OUTPUT_TEMP_FILE
+  
+done < $USER_FUNCTION_CALLS_FILE
+
+
+#
+# Vi lägger till "post-regeln"
+# Innhåller export och clean och lite grejer.
+#
+internal_post_make_rules >> $OUTPUT_TEMP_FILE
+
+#
+# Gör klart.
+#
+finalize
+
+
