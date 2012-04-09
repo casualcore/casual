@@ -1,0 +1,8 @@
+INCLUDE_PATHS = include .
+
+Compile(src/gtest-all.cc,obj/gtest-all.o)
+Compile(src/gtest_main.cc,obj/gtest_main.o)
+
+LinkArchive(gtest, \
+	obj/gtest-all.o \
+	obj/gtest_main.o)
