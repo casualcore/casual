@@ -5,18 +5,6 @@ SENASTUPPDATERAD="20120405"
 
 
 
-##################################################################################
-#
-# Wrapper för make. För att filtrera bort ointressant information
-# och fokusera på error och warnings
-# 
-# Datum	     version	Ändrad av		   Beskrivning
-# -------------------------------------------------------------------------------
-# 20090430     1.0	   Fredrik Eriksson	Första version
-#
-##################################################################################
-
-
 GMAKE_OPTIONS=""
 FORCE_MAKEMAKE=0
 MAKE_PATH="/usr/bin/make"
@@ -151,7 +139,7 @@ then
 	
 	if [[ ! -e $CORRESPONDING_CASUAL_MAKE_FILE ]]
 	then
-		echo "error: Could not find the imakefile '$CORRESPONDING_CASUAL_MAKE_FILE'";
+		echo "error: Could not find the casaul make file '$CORRESPONDING_CASUAL_MAKE_FILE'";
 		exit 1;
 	fi
 
@@ -177,7 +165,7 @@ export CASUAL_OS=$( uname -s | tr [:upper:] [:lower:] )
 AWK=$( chooseAWK )
 
 #
-# Ta reda på antalet CPU:er (viruella). Vilket vi utgår ifrån när vi bästämmer jobs och load
+# Find number of CPU:s to set jobs and load
 #
 
 CPU_COUNT=$( numberOfCPUs )
