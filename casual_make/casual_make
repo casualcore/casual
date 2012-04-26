@@ -7,13 +7,13 @@ export CASUALMAKE_PATH=$( dirname $0 )
 #
 IMPLEMENTATION_PATH="$CASUALMAKE_PATH/implementation"
 
-ENGINE="$IMPLEMENTATION_PATH/casual_make.engine";
-HELP="$IMPLEMENTATION_PATH/casual_make.help";
+ENGINE="$IMPLEMENTATION_PATH/engine";
+HELP="$IMPLEMENTATION_PATH/help";
 
-FUNCTION_DEFINITIONS="$IMPLEMENTATION_PATH/casual_make.function_definitions";
+FUNCTION_DEFINITIONS="$IMPLEMENTATION_PATH/function_definitions";
 
-PREPARE_FUNTIONS="$IMPLEMENTATION_PATH/casual_make.prepare_function_definitions";
-IMAKE_NORMALIZE="$IMPLEMENTATION_PATH/casual_make.normalize_imakefile";
+PREPARE_FUNTIONS="$IMPLEMENTATION_PATH/prepare_function_definitions";
+IMAKE_NORMALIZE="$IMPLEMENTATION_PATH/normalize_imakefile";
 
 export AWK=awk
 
@@ -34,7 +34,7 @@ elif [[ $CASUAL_OS == "linux" ]]; then
 else
 	SUFFIX="solaris"
 fi
-CONFIG="$IMPLEMENTATION_PATH/casual_make.config_"$SUFFIX
+CONFIG="$IMPLEMENTATION_PATH/config_"$SUFFIX
 
 USER_CASUAL_MAKE_FILE=$1;
 

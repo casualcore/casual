@@ -1,0 +1,142 @@
+#!/bin/bash
+
+FUNCTION_FILE=$1;
+
+
+$AWK '
+BEGIN{
+	FS="[(,)]";
+	
+	numberOfComments = 0;
+	
+	inFunction = 0;
+	
+	scopeCount=0;
+	
+}
+
+#
+# 
+#
+function addDocumentation()
+{
+	commentsBuffer[ numberOfComments++] = $0;
+}
+
+function createDocumentationFunction(functionName)
+{	
+	printf( "function documentation_%s\n{\n", functionName);
+	
+	for( i = 0; i < numberOfComments; i++)
+	{
+		printf( "   echo \"%s\"\n", commentsBuffer[i ]);			
+	}
+	
+	printf( "}\n\n");
+	
+	numberOfComments = 0;
+}
+
+function createFunctionSignature(functionName)
+{
+	printf( "function %s\n{\n",functionName);
+		
+	for( idx = 2; idx < NF; ++idx)
+	{
+		if( $idx !~ /^[ ]*$/)
+		{
+			printf( "\t%s=\"$%d\";\n", $idx, idx-1);
+		}
+	}
+	
+	print "";
+}
+
+function createParameterCount(functionName, count)
+{
+	printf( "function parameterCount_%s\n{",functionName);
+	printf( "\n\treturn %d\n}\n\n", count);
+}
+
+function extractFunctionName(value)
+{
+	gsub(/function[ ]+/, "",value);
+	return value; 
+}
+
+{
+
+	#
+	# parsa
+	#
+	if( $0 ~ /^function [A-Za-z_]+\(/ )
+	{
+		functionName = extractFunctionName($1);
+		
+		if( $0 ~ /^function internal_/ )
+		{
+			numberOfComments = 0;
+		}
+		else
+		{
+			#
+			# Skapa dokumentationsfunktion
+			#
+			createDocumentationFunction(functionName);
+		
+			createParameterCount(functionName, NF-2);
+		}
+	
+		
+		createFunctionSignature(functionName); 	
+		
+		inFunction = 1
+
+	}
+	else if( inFunction == 1)
+	{
+		printf( "%s\n", $0);	
+		
+		#
+		# Räkna om vi är klar med funktionen, dvs
+		# vi vill ha lika många '{' som '}'
+		#
+		scopeCount += gsub( /{/, "{");
+		scopeCount -= gsub( /}/, "}");
+		
+		if( scopeCount <= 0)
+		{
+			 inFunction = 0;
+			 scopeCount = 0;
+			 
+			 printf( "}\n\n");
+		}
+	}
+	else if( $0 ~ /^#/ )
+	{
+		addDocumentation();
+				
+	}
+	else if( $0 ~ /[A-Za-z_]+[=]/ )
+	{
+		print $0;
+	}
+	else if( $0 ~ /^[\t ]*$/ )
+	{
+		#
+		# Vi har kommit till en tom rad. Se till reset:a state
+		#
+		numberOfComments = 0;
+	}
+	else
+	{
+		#
+		# Förhoppningsvis äter vi bara upp kravs
+		# vi inte är intresserad av här...
+		#
+	}
+	
+}' "$FUNCTION_FILE"
+
+
+
