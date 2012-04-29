@@ -8,63 +8,119 @@
 #ifndef CASUAL_IPC_H_
 #define CASUAL_IPC_H_
 
+#include "xatmi.h"
+
 #include <string>
+#include <sys/msg.h>
 
 namespace casual
 {
 	namespace ipc
 	{
 
+		//
+		// some platform specific ifdefs?
+		//
+
+		//
+		// System V start
+		//
 		namespace platform
 		{
-			//
-			// Some ifdefs?
-			//
-			const size_t message_size = 2048;
 
-			struct queue_traits
+			typedef int queue_id_type;
+
+			enum
 			{
-				typedef int queue_id_type;
+				message_size = 2048
 			};
 
 		}
 
-		namespace message
-		{
 
-			template< std::size_t size>
-			struct basic_message
+
+
+		namespace meassge
+		{
+			struct Transport
 			{
 				long m_type;
-				char m_payload[ size];
+				char m_payload[ platform::message_size];
 			};
 
-			typedef basic_message< platform::message_size> Message;
+			struct ServiceRequest
+			{
+				char serviceName[ XATMI_SERVICE_NAME_LENGTH];
+				platform::queue_id_type responseQueue;
+			};
 
-			namespace typed
+			void serialize( const ServiceRequest& message, Transport& transport)
 			{
 
-
-
 			}
+
+
 		}
 
 
 
 
-		template< typename T>
-		struct basic_queue
+		struct ServiceCallMessage
 		{
-			typedef T traits_type;
-			typedef typename traits_type queue_id_type;
+			struct
+			{
 
-			basic_queue( queue_id_type id) : m_id( id) {}
+				long flags;
+				int cd;
+			};
 
-			queue_id_type m_id;
+			std::string serviceName;
+
 
 		};
 
-		typedef basic_queue< platform::queue_traits> Queue;
+
+		namespace traits
+		{
+
+			template< std::size_t value>
+			struct basic_message_type
+			{
+				enum
+				{
+					type = value
+				};
+			};
+
+			template< typename T>
+			struct message_type;
+
+			template<>
+			struct message_type< ServiceCallMessage>
+				: public basic_message_type< 2> {};
+
+		}
+
+
+
+
+		struct Queue
+		{
+			typedef platform::queue_id_type queue_id_type;
+
+			Queue( queue_id_type id) : m_id( id) {}
+
+			template< typename M>
+			void send( M& message)
+			{
+				//basic_message
+				//int result = msgsnd( m_id, const void *msgp, size_t msgsz, int msgflg);
+			}
+
+		private:
+			queue_id_type m_id;
+
+		};
 
 	}
 

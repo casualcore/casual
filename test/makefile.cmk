@@ -1,9 +1,9 @@
 
 
-EXTRA_INCLUDE_PATHS= include \
+INCLUDE_PATHS= include \
 	../xatmi/include
 	
-EXTRA_LIB_PATHS= ../xatmi/bin
+LIBRARY_PATHS= ../xatmi/bin
 
 
 

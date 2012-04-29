@@ -1,6 +1,6 @@
 
 
 
-Build( xatmi/makefile.cmk)
 Build( common/makefile.cmk)
+Build( xatmi/makefile.cmk)
 Build( test/makefile.cmk)

@@ -10,6 +10,7 @@
 // TODO:
 #include <iostream>
 
+#include <vector>
 #include <algorithm>
 
 
@@ -41,11 +42,31 @@ namespace local
 
 int casual_startServer( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
 {
+
+	std::vector< std::string> arguments;
+
+	std::copy(
+		argv,
+		argv + argc,
+		std::back_inserter( arguments));
+
+
 	std::for_each(
-			mapping,
-			mapping + size,
-			local::AddServiceContext());
+		mapping,
+		mapping + size,
+		local::AddServiceContext());
+
+
+
 
 
 	return 0;
 }
+
+
+
+
+
+
+
+

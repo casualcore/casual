@@ -1,11 +1,16 @@
 
 
-EXTRA_INCLUDE_PATHS= include \
-	../common/include
+INCLUDE_PATHS= include \
+	../common/include \
+	../utility/include 
 
+LIBRARY_PATHS = ../common/bin
 
+Compile( source/xatmi.cpp, obj/xatmi.o)
 Compile( source/xatmi_server.cpp, obj/xatmi_server.o)
 
 
 LinkLibrary( casual-xatmi, \
-	obj/xatmi_server.o, )
+	obj/xatmi.o \
+	obj/xatmi_server.o, \
+	casual-common)

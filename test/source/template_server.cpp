@@ -15,7 +15,10 @@
 void casual_test1( TPSVCINFO *transb)
 {
 	
-	// Do stuff...
+	char* buffer = tpalloc( "STRING", 0, 500);
+
+
+	buffer = tprealloc( buffer, 3000);
 }
 
 

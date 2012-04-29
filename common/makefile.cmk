@@ -1,17 +1,35 @@
 
 
-EXTRA_INCLUDE_PATHS= include \
+INCLUDE_PATHS= include \
 	../xatmi/include \
+	$(UNITTEST_INCLUDE_PATH) \
 
 
-EXTRA_LIB_PATHS= ../xatmi/bin \
+LIBRARY_PATHS= ../xatmi/bin \
 
 
 Compile( source/casual_server_context.cpp, obj/casual_server_context.o)
 Compile( source/casual_service_context.cpp, obj/casual_service_context.o)
+Compile( source/casual_buffer.cpp, obj/casual_buffer.o)
 
 
 LinkLibrary( casual-common, \
 	obj/casual_server_context.o \
-	obj/casual_service_context.o,\ 
-	casual-xatmi)
+	obj/casual_service_context.o \
+	obj/casual_buffer.o,\ 
+	)
+
+	
+	
+	
+	
+//
+// unittest
+//
+Compile( unittest/source/casual_isolatedunittest_buffer.cpp, obj/casual_isolatedunittest_buffer.o)
+
+
+LinkIsolatedUnittest( casual_common_isolated, \
+	obj/casual_isolatedunittest_buffer.o, \
+	casual-common )	
+
