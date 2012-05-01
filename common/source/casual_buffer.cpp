@@ -71,6 +71,7 @@ namespace casual
 			if( buffer.m_size < size)
 			{
 				buffer.m_memory = ::realloc( buffer.m_memory, size);
+				buffer.m_size = size;
 			}
 
 			return buffer;

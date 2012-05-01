@@ -16,7 +16,11 @@ namespace casual
 
 		struct MemoryNotFound : public std::exception {};
 
-
+		struct EnvironmentVariableNotFound : public std::runtime_error
+		{
+			EnvironmentVariableNotFound( const std::string& description)
+				: std::runtime_error( description) {}
+		};
 
 	}
 

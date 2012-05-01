@@ -1,0 +1,29 @@
+
+
+INCLUDE_PATHS= include \
+	$(UNITTEST_INCLUDE_PATH) \
+
+
+//LIBRARY_PATHS = ../common/bin
+
+Compile( source/casual_utility_uuid.cpp, obj/casual_utility_uuid.o)
+
+
+LinkLibrary( casual_utility, \
+	obj/casual_utility_uuid.o, \
+	)
+
+	
+	
+		
+//
+// unittest
+//
+Compile( unittest/source/casual_isolatedunittet_uuid.cpp, obj/casual_isolatedunittet_uuid.o)
+
+
+LinkIsolatedUnittest( casual_utility_isolated, \
+	obj/casual_isolatedunittet_uuid.o, \
+	casual_utility )	
+
+	

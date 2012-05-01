@@ -29,6 +29,7 @@ namespace casual
 		{
 
 			typedef int queue_id_type;
+			typedef key_t queue_key_type;
 
 			enum
 			{
@@ -40,7 +41,7 @@ namespace casual
 
 
 
-		namespace meassge
+		namespace message
 		{
 			struct Transport
 			{
@@ -107,15 +108,13 @@ namespace casual
 		struct Queue
 		{
 			typedef platform::queue_id_type queue_id_type;
+			typedef platform::queue_key_type queue_key_type;
 
-			Queue( queue_id_type id) : m_id( id) {}
+			Queue( queue_key_type key);
 
-			template< typename M>
-			void send( M& message)
-			{
-				//basic_message
-				//int result = msgsnd( m_id, const void *msgp, size_t msgsz, int msgflg);
-			}
+			void send( message::Transport& message) const;
+
+			void receive( message::Transport& message) const;
 
 		private:
 			queue_id_type m_id;
