@@ -31,10 +31,9 @@ namespace casual
 			typedef int queue_id_type;
 			typedef key_t queue_key_type;
 
-			enum
-			{
-				message_size = 2048
-			};
+
+			const std::size_t message_size = 2048;
+
 
 		}
 
@@ -45,6 +44,8 @@ namespace casual
 		{
 			struct Transport
 			{
+				Transport() : m_size( platform::message_size) {}
+
 				struct Payload
 				{
 					long m_type;
@@ -149,10 +150,15 @@ namespace casual
 			class Queue : public internal::base_queue
 			{
 			public:
+
+				typedef std::size_t Seconds;
+
 				Queue();
 				~Queue();
 
 				bool operator () ( message::Transport& message) const;
+
+				bool operator () ( message::Transport& message, Seconds timout) const;
 
 			private:
 				Queue( const Queue&);

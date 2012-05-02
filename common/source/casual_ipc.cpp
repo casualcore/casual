@@ -14,7 +14,30 @@
 
 
 #include <fstream>
+
 #include <cstdio>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+
+
+// temp
+#include <iostream>
+
+
+
+extern "C"
+{
+	void timeout_handler( int signal)
+	{
+		// TODO: maybe log/trace
+	}
+
+
+
+}
+
+
 
 namespace casual
 {
@@ -101,10 +124,40 @@ namespace casual
 			bool Queue::operator () ( message::Transport& message) const
 			{
 
-				if( msgrcv( m_id, message.raw(), message.size(), 0, 0) == -1)
+				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
+
+				if( result == -1)
 				{
 					throw exception::QueueReceive( error::stringFromErrno());
 				}
+
+				message.m_size = result;
+
+				return true;
+			}
+
+
+			bool Queue::operator () ( message::Transport& message, Seconds timout) const
+			{
+				//
+				// set signal for timout
+				//
+
+				alarm( timout);
+				signal( SIGALRM, timeout_handler);
+
+				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
+
+				if( result == -1)
+				{
+					if( errno == EINTR)
+					{
+						return false;
+					}
+					throw exception::QueueReceive( error::stringFromErrno());
+				}
+
+				message.m_size = result;
 
 				return true;
 			}
