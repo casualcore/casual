@@ -72,8 +72,10 @@ extern "C" {
 #endif
 typedef void( *tpservice)( TPSVCINFO *);
 
-extern char* tpalloc(char* type, char* subtype, long size); // MEMORY
-extern char* tprealloc(char * addr, long size); // MEMORY
+extern char* tpalloc( const char* type, const char* subtype, long size); // MEMORY
+extern char* tprealloc( char * addr, long size); // MEMORY
+
+
 extern int tpcall(char * svc, char* idata, long ilen, char ** odata, long *olen, long flags); // COMMUNICATION
 extern int tpacall(char * svc, char* idata, long ilen, long flags); // COMMUNICATION
 extern int tpgetrply(int *idPtr, char ** odata, long *olen, long flags); // COMMUNICATION

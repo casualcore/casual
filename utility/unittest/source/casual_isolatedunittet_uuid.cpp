@@ -20,11 +20,20 @@ namespace casual
 	namespace utility
 	{
 
-		TEST( casual_utility, uuid)
+		TEST( casual_utility, uuid_unique)
 		{
-			uuid someUuid;
+			Uuid oneUuid;
+			Uuid anotherUuid;
 
-			std::cout << someUuid.getString() << std::endl;
+			EXPECT_FALSE( oneUuid == anotherUuid);
+
+		}
+
+		TEST( casual_utility, uuid_equal)
+		{
+			Uuid oneUuid;
+
+			EXPECT_TRUE( oneUuid == oneUuid);
 
 		}
 

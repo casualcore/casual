@@ -7,10 +7,12 @@ INCLUDE_PATHS= include \
 //LIBRARY_PATHS = ../common/bin
 
 Compile( source/casual_utility_uuid.cpp, obj/casual_utility_uuid.o)
+Compile( source/casual_utility_environment.cpp, obj/casual_utility_environment.o)
 
 
 LinkLibrary( casual_utility, \
-	obj/casual_utility_uuid.o, \
+	obj/casual_utility_uuid.o \
+	obj/casual_utility_environment.o, \
 	)
 
 	

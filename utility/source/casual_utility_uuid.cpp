@@ -13,12 +13,12 @@ namespace casual
 
 	namespace utility
 	{
-		uuid::uuid()
+		Uuid::Uuid()
 		{
 			uuid_generate( m_uuid);
 		}
 
-		std::string uuid::getString() const
+		std::string Uuid::getString() const
 		{
 			uuid_string_t buffer;
 			uuid_unparse_lower( m_uuid, buffer);
@@ -33,17 +33,17 @@ namespace casual
 		}
 		*/
 
-		const uuid_t& uuid::get() const
+		const uuid_t& Uuid::get() const
 		{
 			return m_uuid;
 		}
 
-		bool uuid::operator < ( const uuid& rhs) const
+		bool Uuid::operator < ( const Uuid& rhs) const
 		{
 			return uuid_compare( m_uuid, rhs.m_uuid) < 0;
 		}
 
-		bool uuid::operator == ( const uuid& rhs) const
+		bool Uuid::operator == ( const Uuid& rhs) const
 		{
 			return uuid_compare( m_uuid, rhs.m_uuid) == 0;
 		}

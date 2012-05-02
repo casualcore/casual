@@ -40,6 +40,27 @@ namespace casual
 
 				}
 			}
+
+			const std::string& getRootPath()
+			{
+				static const std::string result = variable::get( "CASUAL_ROOT");
+				return result;
+			}
+
+			std::string getBrokerQueueFileName()
+			{
+				return getRootPath() + "/.casual_broker_queue";
+			}
+
+			const std::string& getTemporaryPath()
+			{
+				static const std::string result = "/tmp";
+				return result;
+			}
+
 		}
 	}
 }
+
+
+

@@ -12,6 +12,8 @@ namespace casual
 	namespace service
 	{
 
+		Context::Context() :  m_called( 0) {}
+
 		Context::Context( const std::string& name, tpservice function)
 			: m_name( name), m_function( function), m_called( 0)
 		{

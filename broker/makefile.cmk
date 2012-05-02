@@ -13,4 +13,4 @@ Compile( source/casual_broker_main.cpp, obj/casual_broker_main.o)
 LinkExecutable( casual_broker, \
 	obj/casual_broker.o \
 	obj/casual_broker_main.o, \
-	casual-common)
+	casual_common)

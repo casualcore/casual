@@ -20,6 +20,11 @@ namespace casual
 				return string == 0 ? "" : string;
 			}
 
+			inline std::string fromCString( const char* string)
+			{
+				return string == 0 ? "" : string;
+			}
+
 		}
 
 

@@ -45,8 +45,18 @@ namespace casual
 		{
 			struct Transport
 			{
-				long m_type;
-				char m_payload[ platform::message_size];
+				struct Payload
+				{
+					long m_type;
+					char m_payload[ platform::message_size];
+				} m_payload;
+
+				void* raw() { return &m_payload;}
+				std::size_t size() { return m_size; }
+
+			//private:
+				std::size_t m_size;
+
 			};
 
 			struct ServiceRequest
@@ -102,24 +112,58 @@ namespace casual
 
 		}
 
-
-
-
-		struct Queue
+		namespace internal
 		{
-			typedef platform::queue_id_type queue_id_type;
-			typedef platform::queue_key_type queue_key_type;
+			class base_queue
+			{
+			public:
+				typedef platform::queue_id_type queue_id_type;
+				typedef platform::queue_key_type queue_key_type;
 
-			Queue( queue_key_type key);
 
-			void send( message::Transport& message) const;
+				queue_key_type getKey() const;
 
-			void receive( message::Transport& message) const;
+			protected:
+				queue_key_type m_key;
+				queue_id_type m_id;
+			};
 
-		private:
-			queue_id_type m_id;
+		}
 
-		};
+
+		namespace send
+		{
+
+			class Queue : public internal::base_queue
+			{
+			public:
+				Queue( queue_key_type key);
+
+				bool operator () ( message::Transport& message) const;
+			};
+
+		}
+
+		namespace receive
+		{
+			class Queue : public internal::base_queue
+			{
+			public:
+				Queue();
+				~Queue();
+
+				bool operator () ( message::Transport& message) const;
+
+			private:
+				Queue( const Queue&);
+				Queue& operator = ( const Queue&);
+
+				std::string m_fileName;
+			};
+		}
+
+
+		send::Queue getBrokerQueue();
 
 	}
 

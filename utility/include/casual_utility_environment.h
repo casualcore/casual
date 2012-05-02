@@ -31,7 +31,16 @@ namespace casual
 					converter >> result;
 					return result;
 				}
+
+
+
 			}
+
+			const std::string& getTemporaryPath();
+
+			const std::string& getRootPath();
+
+			std::string getBrokerQueueFileName();
 
 		}
 

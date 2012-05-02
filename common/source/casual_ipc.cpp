@@ -7,22 +7,124 @@
 
 #include "casual_ipc.h"
 
+#include "casual_utility_environment.h"
+#include "casual_error.h"
+#include "casual_exception.h"
+#include "casual_utility_uuid.h"
+
+
+#include <fstream>
+#include <cstdio>
 
 namespace casual
 {
 	namespace ipc
 	{
-		Queue::Queue(queue_key_type key)
-			: m_id( msgget( key, 0666))
+		namespace internal
 		{
+
+			base_queue::queue_key_type base_queue::getKey() const
+			{
+				return m_key;
+			}
+
 
 		}
 
-		void Queue::send( message::Transport& message) const
+		namespace send
 		{
+			Queue::Queue(queue_key_type key)
+			{
+				m_key = key;
+				m_id = msgget( m_key, 0220);
+
+				if( m_id  == -1)
+				{
+					throw casual::exception::QueueFailed( error::stringFromErrno());
+				}
+			}
+
+
+			bool Queue::operator () ( message::Transport& message) const
+			{
+				if( msgsnd( m_id, message.raw(), message.size(), 0) == -1)
+				{
+					throw casual::exception::QueueSend( error::stringFromErrno());
+				}
+				return true;
+			}
+
+
 
 		}
 
+		namespace receive
+		{
+
+			Queue::Queue()
+				: m_fileName( utility::environment::getTemporaryPath() + "/ipc_queue_" + utility::Uuid().getString())
+			{
+				//
+				// Create queue
+				//
+				std::ofstream ipcQueueFile( m_fileName.c_str());
+
+				m_key = ftok( m_fileName.c_str(), 'X');
+				m_id = msgget( m_key, 0660 | IPC_CREAT);
+
+ 				ipcQueueFile << "key: " << m_key << "\nid:  " << m_id << std::endl;
+
+				if( m_id  == -1)
+				{
+					std::remove( m_fileName.c_str());
+					throw casual::exception::QueueFailed( error::stringFromErrno());
+				}
+
+			}
+
+
+			Queue::~Queue()
+			{
+				//
+				// Destroy queue
+				//
+				msgctl( m_id, IPC_RMID, 0);
+
+				//
+				// remove file
+				//
+				std::remove( m_fileName.c_str());
+			}
+
+
+
+			bool Queue::operator () ( message::Transport& message) const
+			{
+
+				if( msgrcv( m_id, message.raw(), message.size(), 0, 0) == -1)
+				{
+					throw exception::QueueReceive( error::stringFromErrno());
+				}
+
+				return true;
+			}
+
+		}
+
+
+
+		send::Queue getBrokerQueue()
+		{
+			static const std::string brokerFile = utility::environment::getBrokerQueueFileName();
+
+			std::ifstream file( brokerFile.c_str());
+
+			send::Queue::queue_key_type key;
+			file >> key;
+
+			return send::Queue( key);
+
+		}
 
 
 	}

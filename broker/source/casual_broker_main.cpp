@@ -7,7 +7,7 @@
 
 
 #include "casual_broker.h"
-#include "casual_errorhandler.h"
+#include "casual_error.h"
 
 
 
@@ -33,7 +33,7 @@ int main( int argc, char** argv)
 	}
 	catch( ...)
 	{
-		return casual::errorHandler();
+		return casual::error::handler();
 
 	}
 	return 0;

@@ -8,14 +8,17 @@
 #ifndef CASUAL_ERRORHANDLER_H_
 #define CASUAL_ERRORHANDLER_H_
 
+#include <string>
 
 namespace casual
 {
-
-	int errorHandler()
+	namespace error
 	{
-		// TODO:
-		return 0;
+
+		int handler();
+
+		std::string stringFromErrno();
+
 	}
 
 

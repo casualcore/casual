@@ -18,15 +18,15 @@ namespace casual
 	namespace utility
 	{
 
-		struct uuid
+		struct Uuid
 		{
-			uuid();
+			Uuid();
 
 			std::string getString() const;
 			const uuid_t& get() const;
 
-			bool operator < ( const uuid& rhs) const;
-			bool operator == ( const uuid& rhs) const;
+			bool operator < ( const Uuid& rhs) const;
+			bool operator == ( const Uuid& rhs) const;
 
 		private:
 			uuid_t m_uuid;

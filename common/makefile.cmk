@@ -1,23 +1,29 @@
 
 
 INCLUDE_PATHS= include \
+	../utility/include \
 	../xatmi/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 
 LIBRARY_PATHS= ../xatmi/bin \
+	../utility/bin \
 
 
 Compile( source/casual_server_context.cpp, obj/casual_server_context.o)
 Compile( source/casual_service_context.cpp, obj/casual_service_context.o)
 Compile( source/casual_buffer.cpp, obj/casual_buffer.o)
+Compile( source/casual_ipc.cpp, obj/casual_ipc.o)
+Compile( source/casual_error.cpp, obj/casual_error.o)
 
 
-LinkLibrary( casual-common, \
+LinkLibrary( casual_common, \
 	obj/casual_server_context.o \
 	obj/casual_service_context.o \
-	obj/casual_buffer.o,\ 
-	)
+	obj/casual_buffer.o \
+	obj/casual_ipc.o \ 
+	obj/casual_error.o,\ 
+	casual_utility)
 
 	
 	
@@ -27,9 +33,11 @@ LinkLibrary( casual-common, \
 // unittest
 //
 Compile( unittest/source/casual_isolatedunittest_buffer.cpp, obj/casual_isolatedunittest_buffer.o)
+Compile( unittest/source/casual_isolatedunittest_ipc.cpp, obj/casual_isolatedunittest_ipc.o)
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
-	obj/casual_isolatedunittest_buffer.o, \
-	casual-common )	
+	obj/casual_isolatedunittest_buffer.o \
+	obj/casual_isolatedunittest_ipc.o, \
+	casual_utility casual_common )	
 

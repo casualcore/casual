@@ -13,7 +13,7 @@
 
 
 
-char* tpalloc(char* type, char* subtype, long size)
+char* tpalloc( const char* type, const char* subtype, long size)
 {
 	casual::buffer::Buffer& buffer = casual::buffer::Holder::instance().allocate(
 			casual::utility::string::fromCString( type),
