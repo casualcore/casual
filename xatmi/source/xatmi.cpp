@@ -16,8 +16,8 @@
 char* tpalloc( const char* type, const char* subtype, long size)
 {
 	casual::buffer::Buffer& buffer = casual::buffer::Holder::instance().allocate(
-			casual::utility::string::fromCString( type),
-			casual::utility::string::fromCString( subtype),
+			type,
+			subtype,
 			size);
 
 	return static_cast< char*>( buffer.m_memory);
