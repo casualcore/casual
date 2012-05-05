@@ -15,6 +15,7 @@
 #include <set>
 
 #include "casual_ipc.h"
+#include "casual_utility_file.h"
 
 namespace casual
 {
@@ -45,6 +46,7 @@ namespace casual
 			void start();
 
 		private:
+			utility::file::ScopedPath m_brokerQueueFile;
 			ipc::receive::Queue m_receiveQueue;
 
 			std::list< Server> m_servers;

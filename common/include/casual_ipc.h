@@ -10,6 +10,8 @@
 
 #include "xatmi.h"
 
+#include "casual_utility_file.h"
+
 #include <string>
 #include <sys/msg.h>
 
@@ -170,7 +172,7 @@ namespace casual
 				Queue& operator = ( const Queue&);
 				//! @}
 
-				std::string m_fileName;
+				utility::file::ScopedPath m_scopedPath;
 			};
 		}
 

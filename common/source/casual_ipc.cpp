@@ -13,6 +13,7 @@
 #include "casual_utility_uuid.h"
 
 
+
 #include <fstream>
 
 #include <cstdio>
@@ -85,21 +86,20 @@ namespace casual
 		{
 
 			Queue::Queue()
-				: m_fileName( utility::environment::getTemporaryPath() + "/ipc_queue_" + utility::Uuid().getString())
+				: m_scopedPath( utility::environment::getTemporaryPath() + "/ipc_queue_" + utility::Uuid().getString())
 			{
 				//
 				// Create queue
 				//
-				std::ofstream ipcQueueFile( m_fileName.c_str());
+				std::ofstream ipcQueueFile( m_scopedPath.path().c_str());
 
-				m_key = ftok( m_fileName.c_str(), 'X');
+				m_key = ftok( m_scopedPath.path().c_str(), 'X');
 				m_id = msgget( m_key, 0660 | IPC_CREAT);
 
  				ipcQueueFile << "key: " << m_key << "\nid:  " << m_id << std::endl;
 
 				if( m_id  == -1)
 				{
-					std::remove( m_fileName.c_str());
 					throw casual::exception::QueueFailed( error::stringFromErrno());
 				}
 
@@ -112,11 +112,6 @@ namespace casual
 				// Destroy queue
 				//
 				msgctl( m_id, IPC_RMID, 0);
-
-				//
-				// remove file
-				//
-				std::remove( m_fileName.c_str());
 			}
 
 

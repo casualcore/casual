@@ -21,9 +21,23 @@ namespace casual
 			namespace
 			{
 				template< typename Q>
-				void exportBrokerQueueKey( const Q& queue)
+				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
-					std::ofstream brokerQueueFile( utility::environment::getBrokerQueueFileName().c_str());
+					{
+						//
+						// Check if file already exists
+						//
+						std::ifstream exists( path.c_str());
+						if( exists.good())
+						{
+							//
+							// Remove file
+							//
+							utility::file::remove( path);
+						}
+					}
+
+					std::ofstream brokerQueueFile( path.c_str());
 					brokerQueueFile << queue.getKey();
 				}
 
@@ -34,8 +48,12 @@ namespace casual
 
 
 		Broker::Broker( const std::vector< std::string>& arguments)
+			: m_brokerQueueFile( utility::environment::getBrokerQueueFileName())
 		{
-
+			//
+			// Make the key public for others...
+			//
+			local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
 
 		}
 
@@ -46,10 +64,7 @@ namespace casual
 
 		void Broker::start()
 		{
-			//
-			// Make the key public for others...
-			//
-			local::exportBrokerQueueKey( m_receiveQueue);
+
 
 
 		}
