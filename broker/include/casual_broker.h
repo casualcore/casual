@@ -10,19 +10,49 @@
 
 #include <vector>
 #include <string>
+#include <map>
+#include <list>
+#include <set>
+
+#include "casual_ipc.h"
 
 namespace casual
 {
-
-	class Broker
+	namespace broker
 	{
-	public:
-		Broker( const std::vector< std::string>& arguments);
-		~Broker();
 
-		void start();
+		struct Server
+		{
 
-	};
+			long m_pid;
+			std::string m_path;
+			ipc::send::Queue m_queue;
+		};
+
+		struct Service
+		{
+
+			std::size_t m_requested;
+			Server& server;
+		};
+
+		class Broker
+		{
+		public:
+			Broker( const std::vector< std::string>& arguments);
+			~Broker();
+
+			void start();
+
+		private:
+			ipc::receive::Queue m_receiveQueue;
+
+			std::list< Server> m_servers;
+			std::map< std::string, Service> m_services;
+
+
+		};
+	}
 
 }
 

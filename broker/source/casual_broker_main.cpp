@@ -23,7 +23,7 @@ int main( int argc, char** argv)
 			argv + argc,
 			std::back_inserter( arguments));
 
-		casual::Broker broker( arguments);
+		casual::broker::Broker broker( arguments);
 
 
 		broker.start();

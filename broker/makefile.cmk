@@ -2,9 +2,13 @@
 
 INCLUDE_PATHS= include \
 	../common/include \
-	../xatmi/include 
+	../utility/include   \
+	../xatmi/include   \
+	$(UNITTEST_INCLUDE_PATH) \
 
-LIBRARY_PATHS = ../common/bin
+LIBRARY_PATHS = ../common/bin \
+	../utility/bin
+	
 
 Compile( source/casual_broker.cpp, obj/casual_broker.o)
 Compile( source/casual_broker_main.cpp, obj/casual_broker_main.o)
@@ -13,4 +17,18 @@ Compile( source/casual_broker_main.cpp, obj/casual_broker_main.o)
 LinkExecutable( casual_broker, \
 	obj/casual_broker.o \
 	obj/casual_broker_main.o, \
-	casual_common)
+	casual_common casual_utility)
+	
+	
+//
+// unittest
+//
+Compile( unittest/source/casual_isolatedunittest_broker.cpp, obj/casual_isolatedunittest_broker.o)
+
+
+LinkIsolatedUnittest( casual_broker_isolated, \
+	obj/casual_isolatedunittest_broker.o, \
+	casual_utility casual_common )
+	
+	
+

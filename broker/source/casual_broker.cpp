@@ -6,25 +6,53 @@
 //!
 
 #include "casual_broker.h"
-#include "casual_ipc.h"
+#include "casual_utility_environment.h"
+
+#include <fstream>
+
+
 
 namespace casual
 {
-
-
-	Broker::Broker( const std::vector< std::string>& arguments)
+	namespace broker
 	{
+		namespace local
+		{
+			namespace
+			{
+				template< typename Q>
+				void exportBrokerQueueKey( const Q& queue)
+				{
+					std::ofstream brokerQueueFile( utility::environment::getBrokerQueueFileName().c_str());
+					brokerQueueFile << queue.getKey();
+				}
 
-	}
 
-	Broker::~Broker()
-	{
+			}
 
-	}
+		}
 
-	void Broker::start()
-	{
 
+		Broker::Broker( const std::vector< std::string>& arguments)
+		{
+
+
+		}
+
+		Broker::~Broker()
+		{
+
+		}
+
+		void Broker::start()
+		{
+			//
+			// Make the key public for others...
+			//
+			local::exportBrokerQueueKey( m_receiveQueue);
+
+
+		}
 	}
 
 }

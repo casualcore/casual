@@ -60,23 +60,24 @@ namespace casual
 
 			};
 
+			/*
 			struct ServiceRequest
 			{
 				char serviceName[ XATMI_SERVICE_NAME_LENGTH];
 				platform::queue_id_type responseQueue;
 			};
 
-			void serialize( const ServiceRequest& message, Transport& transport)
+			inline void serialize( const ServiceRequest& message, Transport& transport)
 			{
 
 			}
-
+			*/
 
 		}
 
 
 
-
+		/*
 		struct ServiceCallMessage
 		{
 			struct
@@ -90,6 +91,7 @@ namespace casual
 
 
 		};
+
 
 
 		namespace traits
@@ -110,8 +112,8 @@ namespace casual
 			template<>
 			struct message_type< ServiceCallMessage>
 				: public basic_message_type< 2> {};
-
 		}
+		*/
 
 		namespace internal
 		{
@@ -161,8 +163,12 @@ namespace casual
 				bool operator () ( message::Transport& message, Seconds timout) const;
 
 			private:
+				//!
+				//! No value semantics
+				//! @{
 				Queue( const Queue&);
 				Queue& operator = ( const Queue&);
+				//! @}
 
 				std::string m_fileName;
 			};
