@@ -57,6 +57,9 @@ namespace local
 			int m_signal;
 		};
 
+		//
+		// We need to instantiate to register the signals
+		//
 		LastSignal& globalCrap = LastSignal::instance();
 	}
 
@@ -82,13 +85,17 @@ namespace casual
 				const int signal = local::LastSignal::instance().consume();
 				switch( signal)
 				{
-				//
-				// We do nothing for 'no signal' and the alarm-signal.
-				//
 				case 0:
 				case SIGALRM:
+					//
+					// We do nothing for 'no signal' and the alarm-signal.
+					//
 					break;
 				default:
+					//
+					// the rest we throw on, so the rest of the application
+					// can use RAII and other paradigms to do cleaning
+					//
 					throw exception::SignalTerminate( strsignal( signal));
 				}
 			}

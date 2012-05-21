@@ -162,7 +162,11 @@ namespace casual
 
 				bool operator () ( message::Transport& message) const;
 
-				bool operator () ( message::Transport& message, Seconds timout) const;
+				//!
+				//! @param message message to receive
+				//! @param timeout seconds to wait for message
+				//!
+				bool operator () ( message::Transport& message, Seconds timeout) const;
 
 			private:
 				//!

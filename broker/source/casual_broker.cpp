@@ -40,14 +40,10 @@ namespace casual
 							utility::file::remove( path);
 						}
 					}
-
 					std::ofstream brokerQueueFile( path.c_str());
 					brokerQueueFile << queue.getKey();
 				}
-
-
 			}
-
 		}
 
 

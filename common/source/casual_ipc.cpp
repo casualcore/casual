@@ -160,29 +160,6 @@ namespace casual
 			bool Queue::operator () ( message::Transport& message) const
 			{
 
-
-				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
-
-				if( result == -1)
-				{
-					throw exception::QueueReceive( error::stringFromErrno());
-				}
-
-				message.m_size = result;
-
-				return true;
-			}
-
-
-			bool Queue::operator () ( message::Transport& message, Seconds timout) const
-			{
-				//
-				// set signal for timout
-				//
-
-				alarm( timout);
-
-
 				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
 
 				if( result == -1)
@@ -198,6 +175,24 @@ namespace casual
 				message.m_size = result;
 
 				return true;
+			}
+
+
+			bool Queue::operator () ( message::Transport& message, Seconds timout) const
+			{
+				//
+				// set signal for timout
+				//
+				alarm( timout);
+
+				bool result = operator () ( message);
+
+				//
+				// cancel the alarm
+				//
+				alarm( 0);
+
+				return result;
 			}
 
 		}
