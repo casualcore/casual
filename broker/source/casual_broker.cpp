@@ -11,6 +11,10 @@
 #include <fstream>
 
 
+//temp
+#include <iostream>
+
+
 
 namespace casual
 {
@@ -64,6 +68,18 @@ namespace casual
 
 		void Broker::start()
 		{
+			while( true)
+			{
+
+				ipc::message::Transport message;
+				m_receiveQueue( message);
+
+				std::cout << "---- Message Recived ----\n";
+				std::cout << "size: " << message.size() << std::endl;
+				std::cout << "type: " << message.m_payload.m_type << std::endl;
+				std::cout << "payload: " << message.m_payload.m_payload << std::endl;
+
+			}
 
 
 

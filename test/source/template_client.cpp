@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "casual_ipc.h"
 
 
 
@@ -23,16 +24,20 @@ int main( int argc, char** argv)
 		argv + argc,
 		std::back_inserter( arguments));
 
-	std::vector< std::string>::iterator findIter = std::find(
-			arguments.begin(), arguments.end(), "-broker");
 
-	if( findIter != arguments.end() && findIter + 1 != arguments.end())
-	{
-
-	}
+	casual::ipc::send::Queue brokerQueue = casual::ipc::getBrokerQueue();
 
 
+	casual::ipc::message::Transport message;
 
+	message.m_payload.m_type = 10;
+
+	std::copy(
+			arguments.at( 1).begin(),
+			arguments.at( 1).end(),
+			message.m_payload.m_payload);
+
+	brokerQueue( message);
 
 
 }

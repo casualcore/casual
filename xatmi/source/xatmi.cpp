@@ -38,7 +38,7 @@ char* tprealloc(char * addr, long size)
 
 long tptypes(char* ptr, char* type, char* subtype)
 {
-
+	return 0;
 }
 
 

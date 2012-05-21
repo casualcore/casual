@@ -10,6 +10,7 @@
 #include "casual_utility_environment.h"
 #include "casual_error.h"
 #include "casual_exception.h"
+#include "casual_utility_signal.h"
 #include "casual_utility_uuid.h"
 
 
@@ -27,15 +28,55 @@
 
 
 
+
+namespace local
+{
+	namespace
+	{
+
+		struct SignalHandler
+		{
+			static SignalHandler& instance()
+			{
+				static SignalHandler singleton;
+				return singleton;
+			}
+
+		private:
+			int m_last;
+			SignalHandler() {}
+		};
+
+
+	}
+
+
+}
+
+
+
+
+
 extern "C"
 {
+
+	//!
+	//! signal-handlers
+	//! @{
+
 	void timeout_handler( int signal)
 	{
 		// TODO: maybe log/trace
 	}
 
 
+	void terminate_handler( int signal)
+	{
+		// TODO: maybe log/trace
+		std::cerr << "terminate: " << signal << std::endl;
+	}
 
+	//! @}
 }
 
 
@@ -119,6 +160,7 @@ namespace casual
 			bool Queue::operator () ( message::Transport& message) const
 			{
 
+
 				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
 
 				if( result == -1)
@@ -139,7 +181,7 @@ namespace casual
 				//
 
 				alarm( timout);
-				signal( SIGALRM, timeout_handler);
+
 
 				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
 
@@ -147,6 +189,7 @@ namespace casual
 				{
 					if( errno == EINTR)
 					{
+						utility::signal::handle();
 						return false;
 					}
 					throw exception::QueueReceive( error::stringFromErrno());

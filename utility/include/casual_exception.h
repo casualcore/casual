@@ -43,6 +43,17 @@ namespace casual
 		};
 
 
+		struct Signal : public std::runtime_error
+		{
+			Signal( const std::string& description)
+				: std::runtime_error( description) {}
+		};
+
+		struct SignalTerminate : public Signal
+		{
+			SignalTerminate( const std::string& description)
+				: Signal( description) {}
+		};
 
 	}
 

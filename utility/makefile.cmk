@@ -9,12 +9,15 @@ INCLUDE_PATHS= include \
 Compile( source/casual_utility_uuid.cpp, obj/casual_utility_uuid.o)
 Compile( source/casual_utility_environment.cpp, obj/casual_utility_environment.o)
 Compile( source/casual_utility_file.cpp, obj/casual_utility_file.o)
+Compile( source/casual_utility_signal.cpp, obj/casual_utility_signal.o)
+
 
 
 LinkLibrary( casual_utility, \
 	obj/casual_utility_uuid.o \
 	obj/casual_utility_environment.o \
-	obj/casual_utility_file.o, \
+	obj/casual_utility_file.o \
+	obj/casual_utility_signal.o, \
 	)
 
 	

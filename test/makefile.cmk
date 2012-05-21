@@ -1,9 +1,13 @@
 
 
 INCLUDE_PATHS= include \
+	../common/include \
+	../utility/include \
 	../xatmi/include
 	
-LIBRARY_PATHS= ../xatmi/bin
+LIBRARY_PATHS= ../xatmi/bin \
+	../common/bin \
+	../utility/bin \
 
 
 
@@ -15,3 +19,9 @@ LinkExecutable( test, \
 	obj/template_server.o  \
 	obj/template_server_dispatcher.o, \
 	casual-xatmi)
+	
+	
+Compile( source/template_client.cpp, obj/template_client.o)
+
+LinkExecutable( test_client, \
+	obj/template_client.o, casual_common)

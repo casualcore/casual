@@ -19,6 +19,7 @@ extern "C" {
 
 
 extern void casual_test1( TPSVCINFO *transb);
+extern void casual_test2( TPSVCINFO *transb);
 
 
 
@@ -26,7 +27,10 @@ extern void casual_test1( TPSVCINFO *transb);
 int main( int argc, char** argv)
 {
 
-	struct casual_service_name_mapping mapping[] = { &casual_test1, "casual_test1" };
+	struct casual_service_name_mapping mapping[] = {
+			{&casual_test1, "casual_test1"},
+			{&casual_test2, "casual_test2"}
+	};
 
 	return casual_startServer(
 			argc,

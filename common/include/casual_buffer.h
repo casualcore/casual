@@ -20,7 +20,7 @@ namespace casual
 		{
 
 
-			Buffer() : m_memory( 0), m_size( 0) {}
+			Buffer() :  m_size( 0), m_memory( 0) {}
 
 			Buffer( const std::string& type, const std::string& subtype)
 				: m_type( type), m_subtype( subtype), m_size( 0), m_memory( 0) {}

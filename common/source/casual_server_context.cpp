@@ -28,7 +28,7 @@ namespace casual
 		Context::Context()
 		{
 
-		};
+		}
 
 
 	}
