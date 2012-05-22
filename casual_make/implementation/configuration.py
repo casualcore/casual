@@ -17,8 +17,8 @@ class Configuration(object):
     
     def platform(self):
         ''' Decide on which platform this runs '''
-        thisPlatform = os.uname()[0]  
-        if thisPlatform == "Darwin":
+        thisPlatform = os.uname()[0].lower()  
+        if thisPlatform == "darwin":
             thisPlatform = "osx"
         return thisPlatform
 
