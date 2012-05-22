@@ -227,4 +227,6 @@ if __name__ == '__main__':
         #
         sys.stderr.write( '\033[91m' + next_line + '\033[0m')
         sys.stderr.flush()
+        
+    sys.exit( process.returncode)
     
