@@ -1,39 +1,8 @@
-######################################################################
-## 
-## "globala" statiska variabler som kan användas av användaren
-##
-######################################################################
-
-
-
-
-
-#
-# Unittest
-UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
-UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
-ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
-#DEPENDENT_UNITTEST_LIB =$(UNITTEST_LIBRARY_PATH)/gtest_main.a $(UNITTEST_LIBRARY_PATH)/libunittestcommon.a $(UNITTEST_LIBRARY_PATH)/libdependentunittest.a
-
-ISOLATED_UNITTEST_DIRECTIVES = --gtest_color=yes
-
-#
-# Default libs
-#
-DEFAULT_LIBS :=  
-
-
-######################################################################
-## 
-## Användarens variabel-deklarationer. Tas oavkortat från imakefilen:
-##
-######################################################################
-
 
 ######################################################################
 ## 
 ## Compile/Link konfiguration. Dessa kan vara beroende av vad 
-## användaren har angett för direktiv i sin imake-fil
+## anvŠndaren har angett fšr direktiv i sin imake-fil
 ##
 ######################################################################
 
@@ -45,12 +14,12 @@ COMPILER = g++
 CROSSCOMPILER = clang++
 
 #
-# Vi är beroende av att vi använder bash
+# Vi Šr beroende av att vi anvŠnder bash
 #
 SHELL = bash
 
 #
-# Vi särskiljer mellan lib och exe enbart för purify och co.
+# Vi sŠrskiljer mellan lib och exe enbart fšr purify och co.
 #
 LIBRARY_LINKER = g++
 ARCHIVE_LINKER = ar rcs
@@ -63,25 +32,25 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -c -fPIC 
-   LINK_DIRECTIVES_LIB =  -g -dynamiclib -undefined suppress -flat_namespace -fPIC 
-   LINK_DIRECTIVES_EXE =  -g -fPIC 
-   LINK_DIRECTIVES_ARCHIVE =  -g -fPIC 
+	COMPILE_DIRECTIVES = -g -pthread -c  -fpic -DRFV_DEBUG
+   LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
+   LINK_DIRECTIVES_EXE = -g -pthread  -fpic 
+   LINK_DIRECTIVES_ARCHIVE = -g 
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC
-   LINK_DIRECTIVES_LIB =  -dynamiclib -undefined suppress -flat_namespace -O3 -fPIC 
-   LINK_DIRECTIVES_EXE =  -O3 -fPIC 
-   LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC 
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -DRFV_DLL
+   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic
+   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic 
+   LINK_DIRECTIVES_ARCHIVE = 
 endif
 
 #
-# Addera det användaren har definerat
+# Addera det anvŠndaren har definerat
 #
 COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -Wno-long-long -DNOWHAT
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -DNOWHAT -DRFV_DLL -DRFV_DEBUG
 
 BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(TUXDIR)/bin/buildserver -v
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(TUXDIR)/bin/buildclient -v
@@ -93,51 +62,50 @@ PURIFYOPTIONS = -always-use-cache-dir=yes -lazy-load=no
 PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUXLIB_DIR)
 QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
-#
-# ARCHIVER-options
-#
-ARCHIVEROPTIONS = -r
+
 
 #
-# Användarens definerade paths läggs först för ha företräde
-# före default.
-# DB2 måste inkluderas före Tuxedo.
+# AnvŠndarens definerade paths lŠggs fšrst fšr ha fšretrŠde
+# fšre default.
+# DB2 mŒste inkluderas fšre Tuxedo.
 #
-INCLUDE_PATHS := $(INCLUDE_PATHS) 
-LIBRARY_PATHS := $(LIBRARY_PATHS)
+INCLUDE_PATHS := $(EXTRA_INCLUDE_PATHS) $(DB2INCLUDE_DIR) $(TUXINCLUDE_DIR) $(RFVFML)
+BASE_LIBRARY_PATHS := $(EXTRA_LIB_PATHS) /lib64 /usr/lib64 /usr/local/lib64 $(DB2LIB_DIR) $(TUXLIB_DIR)
 
 #
 # Default include/library-paths
 #
-DEFAULT_INCLUDE_PATHS := ./inc 
-DEFAULT_LIBRARY_PATHS := ./bin 
+DEFAULT_INCLUDE_PATHS := ./inc $(EXPORT_INF)/inc $(EXPORT_KUI)/inc $(EXPORT_KND)/inc $(EXPORT_RGL)/inc
+BASE_DEFAULT_LIBRARY_PATHS := ./bin $(EXPORT_INF)/lib $(EXPORT_KUI)/lib $(EXPORT_KND)/lib $(EXPORT_RGL)/lib $(XERCES_LIBRARY_PATHS)
  
 
 
 #
-# Sätt inledande växel för kompilatorn och länkaren.
+# SŠtt inledande vŠxel fšr kompilatorn och lŠnkaren.
 # 
+LIBRARY_PATH_DIRECTIVE=-Wl,-rpath-link=
 INCLUDE_PATHS := $(addprefix -I, $(INCLUDE_PATHS) )
-LIBRARY_PATHS := $(addprefix -L, $(LIBRARY_PATHS) )
+LIBRARY_PATHS := $(addprefix -L, $(BASE_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_LIBRARY_PATHS) )
+
 DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
-DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
+DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(BASE_DEFAULT_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_DEFAULT_LIBRARY_PATHS) )
 
 #
-# För att generera "header-dependencies"
-# Ser till så vi inte får med beroende till db2 och Tuxedo.
+# Fšr att generera "header-dependencies"
+# Ser till sŒ vi inte fŒr med beroende till db2 och Tuxedo.
 #
 HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
 
 
 
 #
-# Om inget target anges förutsätter vi att det är "all" som menas...
+# Om inget target anges fšrutsŠtter vi att det Šr "all" som menas...
 #
 .PHONY all:
 
 
 #
-# Dummy targets för de targets som inte alltid finns i alla
+# Dummy targets fšr de targets som inte alltid finns i alla
 # makefiler.
 #
 .PHONY make:
@@ -148,6 +116,7 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -i
 .PHONY export_libraries:
 .PHONY export_files:
 .PHONY export_end:
+.PHONY export:
 
 
 
@@ -156,8 +125,8 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -i
 
 #
 # Purify och quantify
-# Vi ska länka med just purify/quantify för alla exekverbara...
-# purify/quantify är beroende av att allt byggs...
+# Vi ska lŠnka med just purify/quantify fšr alla exekverbara...
+# purify/quantify Šr beroende av att allt byggs...
 #
 pure: EXECUTABLE_LINKER := $(PURIFY_LINKER)
 pure: all
@@ -166,19 +135,19 @@ quantify: EXECUTABLE_LINKER := $(QUANTIFY_LINKER)
 quantify: all
 
 #
-# Se till så eventuella sub-make-filer får tillgång till 
+# Se till sŒ eventuella sub-make-filer fŒr tillgŒng till 
 # vad vi har satt EXECUTABLE_LINKER till.
 #
 export EXECUTABLE_LINKER
 
 #
-# Test är beroende av att allt är byggt
+# Test Šr beroende av att allt Šr byggt
 #
 test: all
 
 #
-# link är mest för att få likformighet mot "compile".
-# Vi likställer link med "all"
+# link Šr mest fšr att fŒ likformighet mot "compile".
+# Vi likstŠller link med "all"
 #
 link: all
 
@@ -186,7 +155,7 @@ link: all
 
 ######################################################################
 ## 
-## Det transformerade innehållet i imakefilen följer:
+## Det transformerade innehŒllet i imakefilen fšljer:
 ##
 ######################################################################
 
