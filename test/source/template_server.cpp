@@ -21,6 +21,17 @@ void casual_test1( TPSVCINFO *transb)
 	buffer = tprealloc( buffer, 3000);
 }
 
+void casual_test2( TPSVCINFO *transb)
+{
+	//
+	// TODO:
+	// This method right now is just to remove linkage error
+	//
+	char* buffer = tpalloc( "STRING", 0, 500);
+
+
+	buffer = tprealloc( buffer, 3000);
+}
 
 
 

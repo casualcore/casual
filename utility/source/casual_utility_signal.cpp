@@ -9,7 +9,7 @@
 #include "casual_exception.h"
 
 #include <signal.h>
-
+#include <string.h>
 
 extern "C"
 {
