@@ -98,26 +98,28 @@ QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB
 # före default.
 # DB2 måste inkluderas före Tuxedo.
 #
-INCLUDE_PATHS := $(EXTRA_INCLUDE_PATHS) $(DB2INCLUDE_DIR) $(TUXINCLUDE_DIR) $(RFVFML)
-BASE_LIBRARY_PATHS := $(EXTRA_LIB_PATHS) /lib64 /usr/lib64 /usr/local/lib64 $(DB2LIB_DIR) $(TUXLIB_DIR)
+INCLUDE_PATHS := $(INCLUDE_PATHS) 
+LIBRARY_PATHS := $(LIBRARY_PATHS)
 
 #
 # Default include/library-paths
 #
-DEFAULT_INCLUDE_PATHS := ./inc $(EXPORT_INF)/inc $(EXPORT_KUI)/inc $(EXPORT_KND)/inc $(EXPORT_RGL)/inc
-BASE_DEFAULT_LIBRARY_PATHS := ./bin $(EXPORT_INF)/lib $(EXPORT_KUI)/lib $(EXPORT_KND)/lib $(EXPORT_RGL)/lib $(XERCES_LIBRARY_PATHS)
- 
+DEFAULT_INCLUDE_PATHS := ./inc 
+DEFAULT_LIBRARY_PATHS := ./bin 
+  
 
 
 #
 # Sätt inledande växel för kompilatorn och länkaren.
 # 
 LIBRARY_PATH_DIRECTIVE=-Wl,-rpath-link=
+#
+# S‰tt inledande v‰xel fˆr kompilatorn och l‰nkaren.
+# 
 INCLUDE_PATHS := $(addprefix -I, $(INCLUDE_PATHS) )
-LIBRARY_PATHS := $(addprefix -L, $(BASE_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_LIBRARY_PATHS) )
-
+LIBRARY_PATHS := $(addprefix -L, $(LIBRARY_PATHS) )
 DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
-DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(BASE_DEFAULT_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_DEFAULT_LIBRARY_PATHS) )
+DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 
 #
 # För att generera "header-dependencies"
