@@ -139,7 +139,7 @@ def CompileDirective(sourcefile,objectfile,directive):
     local_object_file=def_CurrentDirectory + "/" + objectfile
     
     print "#"
-    print "# kompilerar {0} till {1}".format( sourcefile, objectfile)
+    print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
     print "-include " + local_dependency_file
     print 
@@ -397,7 +397,7 @@ def Build(casualMakefile):
     
 
     print "#"
-    print "# If " + USER_CASUAL_MAKE_FILE + " is newer than " + USER_MAKE_FILE + " , a new makefile is generated"
+    print "# If " + USER_CASUAL_MAKE_FILE + " is newer than " + USER_MAKE_FILE + " , a new makefile is produced"
     print "#"
     print USER_CASUAL_MAKE_PATH +"/" + USER_MAKE_FILE + ": " + USER_CASUAL_MAKE_PATH + "/" + USER_CASUAL_MAKE_FILE
     print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + USER_CASUAL_MAKE_FILE
@@ -426,7 +426,7 @@ def Build(casualMakefile):
    
     print
     print "#"
-    print "# Producerar alltid $USER_MAKE_FILE, aven om $USER_CASUAL_MAKE_FILE ar aldre"
+    print "# Always produce " + USER_MAKE_FILE + " , even if " + USER_CASUAL_MAKE_FILE + " is older."
     print "#"
     print "make: " + local_make_target
     print

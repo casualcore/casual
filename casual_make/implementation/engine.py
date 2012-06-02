@@ -20,6 +20,7 @@ from configuration import Configuration
 from parser import Parser
 from implementation.functiondefinitions import *
 from implementation.internal import debug
+from implementation.preprocess import *
 
 
 class Engine(object):
@@ -37,20 +38,28 @@ class Engine(object):
         #
         self.configuration = Configuration()
         #
-        # Set up parser
-        #
-        self.parser = Parser( casual_makefile)
-        #
         # Select makefile
         #
+        self.casual_makefile = casual_makefile
         self.makefile = open( os.path.splitext(casual_makefile)[0] + ".mk","w")
         
     def run(self):
         debug("Engine running...")
+        
+        data = Preprocess( self.casual_makefile).process()
+        debug(data)
+        #
+        # Set up parser
+        #
+        self.parser = Parser( data)
         #
         # Start normalizing 
         #
         self.parser.normalize()
+        #
+        #
+        #
+        
         #
         # Start by writing CASUALMAKE_PATH
         #

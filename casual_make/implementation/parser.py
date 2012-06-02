@@ -16,11 +16,11 @@ class Parser(object):
     '''
 
 
-    def __init__(self, casual_makefile):
+    def __init__(self, preprocessed_data):
         '''
         Constructor
         '''
-        self.casual_makefile = casual_makefile
+        self.preprocessed_data = preprocessed_data
         self.content=""
         self.defines=""
         
@@ -44,8 +44,7 @@ class Parser(object):
         #
         # Open file and read content
         #
-        casual_makefile=open(self.casual_makefile,"r")
-        content=casual_makefile.read()
+        content=self.preprocessed_data
         #
         # Do some cleaning
         #
@@ -72,8 +71,8 @@ class Parser(object):
     def removeComments(self, indata) :
         """Removing C/C++/#-comments from input"""
         indata=re.sub(r'/\*[\s\S]*\*/', '', indata)
-        indata=re.sub(r'//+.*\n', '', indata)
-        return re.sub("#.*\n","", indata)
+        return re.sub(r'//+.*\n', '', indata)
+        #return re.sub("#.*\n","", indata)
     
     def removeSpacesAndNewlineEscapes(self, indata):
         """Removing extra whitespaces and NewlineEscapes."""

@@ -1,5 +1,7 @@
-Add toolchain/bin to your PATH
+Add tools/bin to your PATH
 
-Build gtest by enter pmake in toolchain directroy
+Build gtest by enter pmake.py in toolchain directroy
 
 More information in http://casual.laz.se/toolchain
+TODO: Create webpage
+
