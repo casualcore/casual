@@ -7,7 +7,7 @@ INCLUDE_PATHS= include \
 	
 LIBRARY_PATHS= ../xatmi/bin \
 	../common/bin \
-	../utility/bin \
+	../utility/bin
 
 
 

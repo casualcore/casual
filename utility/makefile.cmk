@@ -1,4 +1,8 @@
-
+#ifdef __APPLE__
+	UUIDLIB=c
+#else
+	UUIDLIB=uuid
+#endif
 
 INCLUDE_PATHS= include \
 	$(UNITTEST_INCLUDE_PATH) \
@@ -18,7 +22,7 @@ LinkLibrary( casual_utility, \
 	obj/casual_utility_environment.o \
 	obj/casual_utility_file.o \
 	obj/casual_utility_signal.o, \
-	)
+	${UUIDLIB})
 
 	
 	
