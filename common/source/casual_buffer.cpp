@@ -10,6 +10,7 @@
 
 #include <stdexcept>
 #include "casual_exception.h"
+#include <algorithm>
 
 namespace casual
 {
