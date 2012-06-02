@@ -95,6 +95,7 @@ class Parser(object):
     
     def adjustQuotes(self,indata):
         """Add quotes to method arguments"""
+
         utdata=""
         for c in indata:
             if c == '(':
@@ -105,5 +106,9 @@ class Parser(object):
                 utdata = utdata + r'"' + c + r'"'
             else:  
                 utdata = utdata + c
+        #
+        # remove quotes if no argument. i.e. method("")
+        #
+        utdata = re.sub(r'\(\"[ \t]*\"\)',r'()',utdata)
         return self.adjustWhitespace( utdata)    
     
