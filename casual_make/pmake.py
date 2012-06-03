@@ -37,8 +37,8 @@ class  Bcolors:
     
     def disable(self):
         self.HEADER = ''
-        self.OKBLUE = ''
-        self.OKGREEN = ''
+        self.BLUE = ''
+        self.GREEN = ''
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
