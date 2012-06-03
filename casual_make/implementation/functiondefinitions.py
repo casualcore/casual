@@ -534,7 +534,7 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
     print "test: " + internal_target_isolatedunittest_name( name)    
     print
     print internal_target_isolatedunittest_name(name) + ": " +  internal_executable_name_path(name)
-    print "\t LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) " + internal_executable_name_path( name) + " $(ISOLATED_UNITTEST_DIRECTIVES)"
+    print "\t @LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) " + internal_executable_name_path( name) + " $(ISOLATED_UNITTEST_DIRECTIVES)"
     print 
 
 

@@ -27,6 +27,23 @@ FORCE_MAKEMAKE=0
 MAKE_PATH="/usr/bin/make"
 USER_MAKE_FILE=""
 
+class  Bcolors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    
+    def disable(self):
+        self.HEADER = ''
+        self.OKBLUE = ''
+        self.OKGREEN = ''
+        self.WARNING = ''
+        self.FAIL = ''
+        self.ENDC = ''
+
+bcolors=Bcolors()
 
 #
 # Funktion for att kontrollera om det korresponderande argumentet ar
@@ -49,66 +66,42 @@ def numberOfCPUs():
 
 def handleArguments():
     """Supposed to handle arguments. Not implemented yet."""
-    pass
-    #
-#    # Ta reda pa vad anvandaren forsker gora
-#    #
-#    while [ $# -gt 0 ]
-#    do
-#       arg1=$1
-#       arg2=$2
-#       
-#       case "$arg1" in
-#       "-f" | "-file" | "--file" )
-#          arg2kontroll $arg1 $arg2
-#          
-#          USER_MAKE_FILE=$arg2          
-#          shift
-#          shift
-#       ;;
-#       "-debug" )
-#       
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS DEBUG=1"     
-#          shift
-#       ;;
-#       "-release" )
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS RELEASE=1" 
-#          shift
-#       ;;
-#       "-force-parallel" )
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_PARALLEL=1" 
-#          shift
-#       ;;
-#        "-force-notparallel" )
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_NOTPARALLEL=1" 
-#          shift
-#       ;;
-#       "make" )
-#          #
-#          # Anvandaren tvingar en omgenerering av makefiler.
-#            # Kors jarnet parallelt
-#          #
-#          FORCE_MAKEMAKE=1
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_PARALLEL=1 $arg1"
-#          shift
-#       ;;
-#       "clean" | "prep" | "compile" | "export" | "export_headers" | "cross")
-#          #
-#          # clean, prep och compile kan koras i parallel.
-#          #
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_PARALLEL=1 $arg1"
-#          shift
-#       ;;
-#       *)
-#          #
-#          # Vi later det vi inte kanner igen ga vidare till
-#          # gmake i slutandan...
-#          #
-#          GMAKE_OPTIONS="$GMAKE_OPTIONS $arg1"    
-#          shift 
-#       ;; 
-#       esac
-#    done
+    from optparse import OptionParser
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    
+    parser.set_defaults(COLORS=True)
+    parser.set_defaults(USER_MAKE_FILE="makefile.mk")
+    parser.add_option("-f", "--file", dest="USER_MAKE_FILE") 
+    parser.add_option("-d", "--debug", action="store_true", dest="DEBUG")
+    parser.add_option("-r", "--release", action="store_true", dest="RELEASE") 
+    parser.add_option("-p", "--force-parallel", action="store_true", dest="FORCE_PARALLEL") 
+    parser.add_option("-n", "--force-notparallel", action="store_true", dest="FORCE_NOTPARALLEL")
+    parser.add_option("--no-colors", action="store_false", dest="COLORS") 
+    
+    (options, args) = parser.parse_args()
+    
+    if args and args[0] in ("make"):
+        FORCE_MAKEMAKE=1
+        
+    if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross"):
+        options.FORCE_PARALLEL=True
+    
+    return (options, args)
+
+def optionsAsString( options):
+    """Return option list as string"""
+    result=""
+    if options.FORCE_PARALLEL:
+        result = result + " FORCE_PARALLEL=1 "
+    if options.FORCE_NOTPARALLEL:
+        result = result + " FORCE_NOTPARALLEL=1 "                  
+    if options.DEBUG:
+        result = result + " DEBUG=1 "                  
+    if options.RELEASE:
+        result = result + " RELEASE=1 "
+        
+    return result.strip()                
 
 def reformat( line):
     """ reformat output from make and add som colours"""
@@ -120,13 +113,13 @@ def reformat( line):
     link = re.search(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*', line)
     make = re.search(r'^[\S\s]+ -f (\S+.*) .*', line)
     if compiling:
-        return '\033[92m' + 'Compile (' + compiling.group(1) + '): ' + '\033[0m' + compiling.group(4) + '\n'
+        return bcolors.GREEN + 'Compile (' + compiling.group(1) + '): ' + bcolors.ENDC + compiling.group(4) + '\n'
     elif archive:
-        return '\033[94m' + 'Archive (' + archive.group(1) + '): ' + '\033[0m' + archive.group(2) + '\n'
+        return bcolors.BLUE + 'Archive (' + archive.group(1) + '): ' + bcolors.ENDC + archive.group(2) + '\n'
     elif link:
-        return '\033[94m' + 'Link (' + link.group(1) + '): ' + '\033[0m' + link.group(4) + '\n'
+        return bcolors.BLUE + 'Link (' + link.group(1) + '): ' + bcolors.ENDC + link.group(4) + '\n'
     elif make:
-        return 'Current makefile: ' + make.group(1) + '\n'
+        return bcolors.HEADER + 'Current makefile: ' + bcolors.ENDC + make.group(1) + '\n'
     else:
         return line
 
@@ -134,22 +127,21 @@ if __name__ == '__main__':
     #
     # Kolla om anvandaren har skickat med ngon imake/make-fil
     #
-    if USER_MAKE_FILE == "" :
-        USER_MAKE_FILE="makefile.mk"
     
-    USER_MAKE_FILE=os.path.basename( USER_MAKE_FILE)
+    (options, args) = handleArguments()
     
-    #
-    # TODO:
-    #
-    CORRESPONDING_CASUAL_MAKE_FILE="makefile.cmk"; 
+    USER_MAKE_FILE=options.USER_MAKE_FILE
+            
+    CORRESPONDING_CASUAL_MAKE_FILE=os.path.splitext(USER_MAKE_FILE)[0] + ".cmk"; 
     
-    if len(sys.argv) < 2:
-        GMAKE_OPTIONS="all"
+    if len(args) != 1:
+        GMAKE_OPTIONS=optionsAsString( options) + " all"
     else:
-        GMAKE_OPTIONS=sys.argv[1]
+        GMAKE_OPTIONS=optionsAsString( options) + " " + args[0]
 
 
+    if not options.COLORS:
+        bcolors.disable()
     #
     # Kolla om vi ska generera om
     #
@@ -225,9 +217,6 @@ if __name__ == '__main__':
         #
         # Writing in red
         #
-        sys.stderr.write( '\033[91m' + next_line + '\033[0m')
+        sys.stderr.write( bcolors.FAIL + next_line + bcolors.ENDC)
         sys.stderr.flush()
-       
-    process.poll() 
-    sys.exit( process.returncode)
     
