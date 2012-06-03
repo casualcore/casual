@@ -34,7 +34,13 @@ namespace casual
 			Uuid oneUuid;
 
 			EXPECT_TRUE( oneUuid == oneUuid);
+		}
 
+		TEST( casual_utility, uuid_getString)
+		{
+			Uuid oneUuid;
+
+			EXPECT_TRUE( oneUuid.getString().size() == 36);
 		}
 
 	}

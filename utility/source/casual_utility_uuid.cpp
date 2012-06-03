@@ -20,7 +20,7 @@ namespace casual
 
 		std::string Uuid::getString() const
 		{
-			char* buffer;
+			char buffer[ 37];
 			uuid_unparse_lower( m_uuid, buffer);
 			return buffer;
 		}
