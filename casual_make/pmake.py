@@ -46,18 +46,6 @@ class  Bcolors:
 bcolors=Bcolors()
 
 #
-# Funktion for att kontrollera om det korresponderande argumentet ar
-# korrekt
-#
-def arg2kontroll ( arg1, arg2):
-    """ """
-   
-    if arg2 == "" or arg2[0:1] == "-" : 
-        print "\nError:\tWrong usage\n\tno value set to option \"$1\"\n"
-        #printhelp()
-        sys.exit(1)
-
-#
 # Finding out number of CPUs
 #
 def numberOfCPUs():
@@ -219,4 +207,7 @@ if __name__ == '__main__':
         #
         sys.stderr.write( bcolors.FAIL + next_line + bcolors.ENDC)
         sys.stderr.flush()
+    
+    process.poll() 
+    sys.exit( process.returncode)
     
