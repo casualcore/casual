@@ -61,12 +61,12 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-	COMPILE_DIRECTIVES = -g -pthread -c  -fpic -DRFV_DEBUG
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
    LINK_DIRECTIVES_EXE = -g -pthread  -fpic 
    LINK_DIRECTIVES_ARCHIVE = -g 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -DRFV_DLL
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic
    LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic
    LINK_DIRECTIVES_EXE = -pthread -O3 -fpic 
    LINK_DIRECTIVES_ARCHIVE = 
@@ -99,14 +99,13 @@ QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB
 # DB2 måste inkluderas före Tuxedo.
 #
 INCLUDE_PATHS := $(INCLUDE_PATHS) 
-LIBRARY_PATHS := $(LIBRARY_PATHS)
+BASE_LIBRARY_PATHS := $(LIBRARY_PATHS) /lib64 /usr/lib64 /usr/local/lib64 $(DB2LIB_DIR) $(TUXLIB_DIR)
 
 #
 # Default include/library-paths
 #
 DEFAULT_INCLUDE_PATHS := ./inc 
-DEFAULT_LIBRARY_PATHS := ./bin 
-  
+BASE_DEFAULT_LIBRARY_PATHS := ./bin  
 
 
 #
