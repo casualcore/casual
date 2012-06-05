@@ -1,327 +1,217 @@
-#!/bin/bash
+#!/usr/bin/python
 
-SCRIPTVERSION="1.1"
-SENASTUPPDATERAD="20120405"
+'''
+Created on 14 maj 2012
 
+@author: hbergk
+'''
 
+SCRIPTVERSION="2.0"
+SENASTUPPDATERAD="20120514"
 
+#
+# Imports
+#
+import sys
+import os
+import multiprocessing
+from casual_make import Casual_Make
+import subprocess
+import re
+
+#
+# Globals to use
+#
 GMAKE_OPTIONS=""
 FORCE_MAKEMAKE=0
 MAKE_PATH="/usr/bin/make"
+USER_MAKE_FILE=""
 
-#
-# Funktion för att kontrollera om det korresponderande argumentet är
-# korrekt
-#
-function arg2kontroll ()
-{
-   
-   if [ "$2" = "" ] || [ "${2:0:1}" = "-" ] 
-   then
-      printf "\nError:\tWrong usage\n\tno value set to option \"$1\"\n"
-      printhelp
-      exit 0
-   fi
-   
-   return
-}
+class  Bcolors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    
+    def disable(self):
+        self.HEADER = ''
+        self.BLUE = ''
+        self.GREEN = ''
+        self.WARNING = ''
+        self.FAIL = ''
+        self.ENDC = ''
+
+bcolors=Bcolors()
 
 #
 # Finding out number of CPUs
 #
-function numberOfCPUs()
-{
-	if [[ $CASUAL_OS == "darwin" ]]; then
-		echo $( sysctl -n hw.ncpu )
-	else
-		echo $( grep "processor" /proc/cpuinfo | wc -l )
-	fi
-	
-	return
-}
+def numberOfCPUs():
+    """ """    
+    return multiprocessing.cpu_count()
 
-#
-# Choose AWK depending of os
-#
-function chooseAWK()
-{
-	if [[ $CASUAL_OS == "darwin" ]]; then
-		echo "awk"
-	elif [[ $CASUAL_OS == "linux" ]]; then
-		echo "gawk"
-	else
-		echo "awk"
-	fi
-	
-	return
-}
+def handleArguments():
+    """Supposed to handle arguments. Not implemented yet."""
+    from optparse import OptionParser
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    
+    parser.set_defaults(COLORS=True)
+    parser.set_defaults(IGNORE_ERRORS=False)
+    parser.set_defaults(USER_MAKE_FILE="makefile.mk")
+    parser.add_option("-f", "--file", dest="USER_MAKE_FILE") 
+    parser.add_option("-d", "--debug", action="store_true", dest="DEBUG")
+    parser.add_option("-r", "--release", action="store_true", dest="RELEASE") 
+    parser.add_option("-p", "--force-parallel", action="store_true", dest="FORCE_PARALLEL") 
+    parser.add_option("-n", "--force-notparallel", action="store_true", dest="FORCE_NOTPARALLEL")
+    parser.add_option("--no-colors", action="store_false", dest="COLORS") 
+    parser.add_option("-i","--ignore-errors", action="store_true", dest="IGNORE_ERRORS") 
+    
+    (options, args) = parser.parse_args()
+    
+    if args and args[0] in ("make"):
+        FORCE_MAKEMAKE=1
+        
+    if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross"):
+        options.FORCE_PARALLEL=True
+    
+    return (options, args)
 
-#
-# Ta reda på vad användaren försker göra
-#
-while [ $# -gt 0 ]
-do
-   arg1=$1
-   arg2=$2
-   
-   case "$arg1" in
-   "-f" | "-file" | "--file" )
-      arg2kontroll $arg1 $arg2
-      
-      USER_MAKE_FILE=$arg2          
-      shift
-      shift
-   ;;
-   "-debug" )
-   
-      GMAKE_OPTIONS="$GMAKE_OPTIONS DEBUG=1"     
-      shift
-   ;;
-   "-release" )
-      GMAKE_OPTIONS="$GMAKE_OPTIONS RELEASE=1" 
-      shift
-   ;;
-   "-force-parallel" )
-      GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_PARALLEL=1" 
-      shift
-   ;;
-	"-force-notparallel" )
-      GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_NOTPARALLEL=1" 
-      shift
-   ;;
-   "make" )
-      #
-      # Användaren tvingar en omgenerering av makefiler.
-		# Körs järnet parallelt
-      #
-      FORCE_MAKEMAKE=1
-      GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_PARALLEL=1 $arg1"
-      shift
-   ;;
-   "clean" | "prep" | "compile" | "export" | "export_headers" | "cross")
-      #
-      # clean, prep och compile kan köras i parallel.
-      #
-      GMAKE_OPTIONS="$GMAKE_OPTIONS FORCE_PARALLEL=1 $arg1"
-      shift
-   ;;
-   *)
-      #
-      # Vi låter det vi inte känner igen gå vidare till
-      # gmake i slutändan...
-      #
-      GMAKE_OPTIONS="$GMAKE_OPTIONS $arg1"    
-      shift 
-   ;; 
-   esac
-done
+def optionsAsString( options):
+    """Return option list as string"""
+    result=""
+    if options.FORCE_PARALLEL:
+        result = result + " FORCE_PARALLEL=1 "
+    if options.FORCE_NOTPARALLEL:
+        result = result + " FORCE_NOTPARALLEL=1 "                  
+    if options.DEBUG:
+        result = result + " DEBUG=1 "                  
+    if options.RELEASE:
+        result = result + " RELEASE=1 "
+    if options.IGNORE_ERRORS:
+        result = result + " -i "
+        
+    return result.strip()                
 
-#
-# Kolla om användaren har skickat med någon imake/make-fil
-#
-if [[ "$USER_MAKE_FILE" == "" ]]
-then
-   USER_MAKE_FILE="makefile.mk";
-fi
+def reformat( line):
+    """ reformat output from make and add som colours"""
+    #
+    # All regex at once. Takes no time...
+    #
+    compiling = re.search(r'(^(CC)|(g\+\+)) -o (?:\S+\.o) ((\S+\.cc)|(\S+\.cpp)|(\S+\.c)).*', line)
+    archive = re.search(r'(^ar) \S+ (\S+\.a).*', line)
+    link = re.search(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*', line)
+    make = re.search(r'^[\S\s]+ -f (\S+.*) .*', line)
+    if compiling:
+        return bcolors.GREEN + 'Compile (' + compiling.group(1) + '): ' + bcolors.ENDC + compiling.group(4) + '\n'
+    elif archive:
+        return bcolors.BLUE + 'Archive (' + archive.group(1) + '): ' + bcolors.ENDC + archive.group(2) + '\n'
+    elif link:
+        return bcolors.BLUE + 'Link (' + link.group(1) + '): ' + bcolors.ENDC + link.group(4) + '\n'
+    elif make:
+        return bcolors.HEADER + 'Current makefile: ' + bcolors.ENDC + make.group(1) + '\n'
+    else:
+        return line
 
-USER_MAKE_FILE=`basename $USER_MAKE_FILE`
-
-CORRESPONDING_CASUAL_MAKE_FILE="$( basename $USER_MAKE_FILE .mk).cmk"; 
+if __name__ == '__main__':
+    #
+    # Kolla om anvandaren har skickat med ngon imake/make-fil
+    #
+    
+    (options, args) = handleArguments()
+    
+    USER_MAKE_FILE=options.USER_MAKE_FILE
+            
+    CORRESPONDING_CASUAL_MAKE_FILE=os.path.splitext(USER_MAKE_FILE)[0] + ".cmk"; 
+    
+    if len(args) != 1:
+        GMAKE_OPTIONS=optionsAsString( options) + " all"
+    else:
+        GMAKE_OPTIONS=optionsAsString( options) + " " + args[0]
 
 
+    if not options.COLORS:
+        bcolors.disable()
+    #
+    # Kolla om vi ska generera om
+    #
+    if FORCE_MAKEMAKE == 1 or not os.path.isfile( USER_MAKE_FILE)  or os.path.getmtime(USER_MAKE_FILE) < os.path.getmtime(CORRESPONDING_CASUAL_MAKE_FILE) :
+        if not os.path.isfile( CORRESPONDING_CASUAL_MAKE_FILE ):
+            sys.stderr.write( "error: Could not find the casaul make file " + CORRESPONDING_CASUAL_MAKE_FILE)
+            sys.exit( 1)
 
+    print "info: executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
 
-#
-# Kolla om vi ska generera om
-#
-if [[ "$FORCE_MAKEMAKE" -eq 1 || ! -e $USER_MAKE_FILE  || $USER_MAKE_FILE -ot $CORRESPONDING_CASUAL_MAKE_FILE ]]
-then
-	
-	if [[ ! -e $CORRESPONDING_CASUAL_MAKE_FILE ]]
-	then
-		echo "error: Could not find the casaul make file '$CORRESPONDING_CASUAL_MAKE_FILE'";
-		exit 1;
-	fi
-
-	echo "info: executes 'casual_make $CORRESPONDING_CASUAL_MAKE_FILE'" 
-
-	casual_make $CORRESPONDING_CASUAL_MAKE_FILE
-	
-	if [[ $? -ne 0 ]]
-	then
-		echo "error: Could not generate $USER_MAKE_FILE from $CORRESPONDING_CASUAL_MAKE_FILE" >> /dev/stderr;
-		exit 1;
-	fi
-fi
-
-#
-# Detecting system
-#
-export CASUAL_OS=$( uname -s | tr [:upper:] [:lower:] )
-
-#
-# Choosing AWK-dialect
-#
-AWK=$( chooseAWK )
+    try:
+        Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
+        
+    except:
+        sys.stderr.write("error: Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
+        raise
+        sys.exit(1)
 
 #
 # Find number of CPU:s to set jobs and load
 #
 
-CPU_COUNT=$( numberOfCPUs )
+    CPU_COUNT=numberOfCPUs()
 
 
-if (( CPU_COUNT == 0 ))
-then
-	echo "warning: Could not detect how many CPU's the machine has - guess on 2" >> /dev/stderr;
-	CPU_COUNT=2;
-fi
+    if CPU_COUNT == 0:
+        sys.stderr.write( "warning: Could not detect how many CPU's the machine has - guess on 2\n")
+        CPU_COUNT=2
 
 
-#
-# Bash förstår inte flyttal, vi multiplcierar med 3 och dividerar med 2
-# för att åstakomma * 1.5
-#
-JOB_COUNT=$(( CPU_COUNT * 3 ))
-JOB_COUNT=$(( JOB_COUNT / 2 ))
+    JOB_COUNT=CPU_COUNT * 1.5
 
 #
-# Vi kör även max load till 1.5x antal CPU:er. Har ingen aning om detta
-# är en bra siffra...
+# Vi kor aven max load till 1.5x antal CPU:er. Har ingen aning om detta
+# ar en bra siffra...
 #
-MAX_LOAD=$JOB_COUNT
+    MAX_LOAD=JOB_COUNT
 
 
-echo "info: executes '$MAKE_PATH -j $JOB_COUNT -l $MAX_LOAD --no-builtin-rules --no-keep-going $GMAKE_OPTIONS -f $USER_MAKE_FILE'" 
-
-set -e
-
-$MAKE_PATH -j $JOB_COUNT -l $MAX_LOAD $GMAKE_OPTIONS --no-builtin-rules --no-keep-going -f $USER_MAKE_FILE 2>&1 | $AWK --posix 'BEGIN{
-   FS="[ \t]+"
-	errors="";
-}
-
-function extractSource()
-{
-	if( match( $0, /[A-Za-z0-9\/_.]+[.]cpp/) > 0)
-	{
-		return substr( $0, RSTART, RLENGTH);
-	}
-	else
-	{
-		return "no sources found in: " + $0;
-		
-	}
-}
-
-function extractOutputTarget()
-{
-	if( match( $0, /[-]o[ \t]+[A-Za-z0-9\/_.]+/) > 0)
-	{
-		return substr( $0, RSTART + 3, RLENGTH - 3);
-	}
-	else
-	{
-		return "no outupt target found in: " + $0;
-		
-	}
-}
-
-function extractMakefile()
-{
-   for( i = 1 ; i <= NF ; i++)
-   { 
-      #printf "%d: [%s]\n", i, $i 
-      if( $i == "-f")
-      {
-         i++;
-         return $i;
-      }
-   }
-}
-
-function remove( string, pattern)
-{
-   sub( pattern, "", string);
-   return string;
-}
+    print "info: executes " + MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " --no-builtin-rules --no-keep-going " + GMAKE_OPTIONS + " -f " + USER_MAKE_FILE 
 
 
-function printObjectfiles()
-{
-   for( i = 1 ; i <= NF ; i++)
-   { 
-      #printf "%d: [%s]\n", i, $i 
-      if( $i ~ /[a-z][a-zA-z0-9]+\.o[ ]*$/)
-      {
-         printf "\t%s\n", $i
-      }
-   }
-}
+    #
+    # Assemble command
+    #
+    command = MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " " + GMAKE_OPTIONS + " --no-builtin-rules --no-keep-going -f " + USER_MAKE_FILE + '\n' 
+    
+    #
+    # Call commnd
+    #
+    process = subprocess.Popen( command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    output = process.stdout
+    #
+    # Handle stdout from make
+    #
+    while True:
+        next_line = output.readline()
 
+        if not next_line:
+            break
+        sys.stdout.write( reformat( next_line))
+        sys.stdout.flush()
 
-{
-   
-   if( $0 ~ /(^(CC)|(g\+\+))/ &&  $0 ~ /[.]cpp/  &&  $0 ~ /[-]c/)
-   {
-      printf "Compile (%s): %s\n", $1, extractSource();
-      
-      next;
-   }
-   else if( $0 ~ /purify /)
-   {
-      printf "Link and Instrument (purify) (this could take som time...): %s\n", extractOutputTarget();
-   }
-   else if( $0 ~ /buildserver /)
-   {
-      printf "Buildserver (%s): %s\n", remove( $1, "\47"), extractOutputTarget();
-   }
-   else if( $0 ~ /buildclient /)
-   {
-      printf "Buildclient (%s): %s\n", remove( $1, "\47"), extractOutputTarget();
-   }
-   else if( $0 ~ /^g\+\+.*[ ]-o[ ].+-L[^ ]/)
-   {
-      # Vi länkar
-      printf "Link (%s): %s\n", $1, extractOutputTarget();
-      
-      next;
-   }
-   else if( $0 ~ /^cd[ ].*[ ]-f[ ]/)
-   {
-      printf "Current makefile: %s\n", extractMakefile();
-   }
-   else if( $0 ~ /^cd[ ]/)
-   {
-      printf "Current directory: %s\n", $2;
-   }
-	else if( $0 ~ /([Ee]rror)|(ERROR)|(fatal)|(No rule to make target)|([Ii]nvalid)/ )
-   {
-		if( $0 !~ /and ["][0-9]+["] warnings[.]/)
-		{
-			errors = (errors)($0"\n") 
-		}
-		printf "%s\n", $0
-   }
-	else
-	{
-		printf "%s\n", $0
-	}  
-}
-END{
-	#
-	# Vi skriver bara ut de uppsamlade felen om vi har 
-	# hyfsat mycket rader
-	#
-	if( NR > 50 && length( errors) > 0 )
-	{
-		printf "\ncollected potential errors (ie. if an output contains some suspicious strings):\n%s\n", errors;
-	}
-}
-'
-
-# 
-# Se till så vi returnerar det gmake säger...
-#
-exit ${PIPESTATUS[0]}
-
+    #
+    # Handle stderr from make
+    #
+    output = process.stderr
+    while True:
+        next_line = output.readline()
+        if not next_line:
+            break
+        #
+        # Writing in red
+        #
+        sys.stderr.write( bcolors.FAIL + next_line + bcolors.ENDC)
+        sys.stderr.flush()
+    
+    process.poll() 
+    sys.exit( process.returncode)
+    

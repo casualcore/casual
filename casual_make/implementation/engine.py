@@ -13,6 +13,7 @@ This is the module running the "process"
 #
 import re
 import sys
+import traceback
 #
 # Project
 #
@@ -46,8 +47,12 @@ class Engine(object):
     def run(self):
         debug("Engine running...")
         
-        data = Preprocess( self.casual_makefile).process()
-        debug(data)
+        try:
+            data = Preprocess( self.casual_makefile).process()
+            debug(data)
+        except:
+            sys.stderr.write("Error preprocessing " + self.casual_makefile + '\n')
+            sys.exit(2)
         #
         # Set up parser
         #
@@ -98,7 +103,8 @@ class Engine(object):
                     documentation = eval(method).__doc__
                     debug( method)
                 sys.stderr.write( command + '\n' + documentation + '\n')
-                raise
+                traceback.print_exc(0) 
+                sys.exit(2)
         
         #
         # Reset stdout
