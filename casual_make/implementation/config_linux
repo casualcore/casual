@@ -91,7 +91,14 @@ PURIFYOPTIONS = -always-use-cache-dir=yes -lazy-load=no
 PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUXLIB_DIR)
 QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
-
+#
+# VALGRIND
+#
+ifdef VALGRIND
+VALGRIND_CONFIG=valgrind --xml=yes
+else
+VALGRIND_CONFIG=
+endif
 
 #
 # Användarens definerade paths läggs först för ha företräde
@@ -99,7 +106,7 @@ QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB
 # DB2 måste inkluderas före Tuxedo.
 #
 INCLUDE_PATHS := $(INCLUDE_PATHS) 
-BASE_LIBRARY_PATHS := $(LIBRARY_PATHS) /lib64 /usr/lib64 /usr/local/lib64 $(DB2LIB_DIR) $(TUXLIB_DIR)
+BASE_LIBRARY_PATHS := $(LIBRARY_PATHS) /lib64 /usr/lib64 /usr/local/lib64
 
 #
 # Default include/library-paths

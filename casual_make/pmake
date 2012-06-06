@@ -60,6 +60,7 @@ def handleArguments():
     
     parser.set_defaults(COLORS=True)
     parser.set_defaults(IGNORE_ERRORS=False)
+    parser.set_defaults(USE_VALGRIND=False)
     parser.set_defaults(USER_MAKE_FILE="makefile.mk")
     parser.add_option("-f", "--file", dest="USER_MAKE_FILE") 
     parser.add_option("-d", "--debug", action="store_true", dest="DEBUG")
@@ -67,7 +68,8 @@ def handleArguments():
     parser.add_option("-p", "--force-parallel", action="store_true", dest="FORCE_PARALLEL") 
     parser.add_option("-n", "--force-notparallel", action="store_true", dest="FORCE_NOTPARALLEL")
     parser.add_option("--no-colors", action="store_false", dest="COLORS") 
-    parser.add_option("-i","--ignore-errors", action="store_true", dest="IGNORE_ERRORS") 
+    parser.add_option("-i","--ignore-errors", action="store_true", dest="IGNORE_ERRORS")
+    parser.add_option("--use-valgrind", action="store_true", dest="USE_VALGRIND")  
     
     (options, args) = parser.parse_args()
     
@@ -92,6 +94,8 @@ def optionsAsString( options):
         result = result + " RELEASE=1 "
     if options.IGNORE_ERRORS:
         result = result + " -i "
+    if options.USE_VALGRIND:
+        result = result + " VALGRIND=1 "
         
     return result.strip()                
 

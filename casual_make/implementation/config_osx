@@ -94,6 +94,15 @@ PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUX
 QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
 #
+# VALGRIND
+#
+ifdef VALGRIND
+VALGRIND_CONFIG=valgrind --xml=yes
+else
+VALGRIND_CONFIG=
+endif
+
+#
 # ARCHIVER-options
 #
 ARCHIVEROPTIONS = -r
