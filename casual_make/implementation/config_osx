@@ -97,7 +97,7 @@ QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB
 # VALGRIND
 #
 ifdef VALGRIND
-VALGRIND_CONFIG=valgrind --xml=yes
+VALGRIND_CONFIG=valgrind --xml=yes --xml-file=valgrind.xml
 else
 VALGRIND_CONFIG=
 endif
