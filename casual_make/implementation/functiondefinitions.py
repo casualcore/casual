@@ -148,7 +148,7 @@ def CompileDirective(sourcefile,objectfile,directive):
     print "\t@$(HEADER_DEPENDENCY_COMMAND) -MT '{0} {1}' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) {2} -MF {3}".format(local_cross_object_file, local_object_file, local_source_file, local_dependency_file)
     print 
     print local_cross_object_file + ": " + local_source_file + " | " + def_DependencyDirectory + " " + local_object_path                                                                      
-    print "\t$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o " + local_cross_object_file + " " + local_source_file + "$(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) "
+    print "\t$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o " + local_cross_object_file + " " + local_source_file + " $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) "
     print
     
     internal_register_object_path_for_clean( local_object_path)
