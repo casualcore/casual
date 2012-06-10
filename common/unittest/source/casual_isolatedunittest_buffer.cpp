@@ -48,8 +48,11 @@ namespace casual
 
 		}
 
-
-
+                TEST( casual_common, buffer_valgrind)
+                {
+			int* valgrindcheck = new int;
+			EXPECT_TRUE( true);
+		}
 	}
 }
 
