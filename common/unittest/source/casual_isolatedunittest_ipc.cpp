@@ -41,7 +41,10 @@ namespace casual
 			std::string information( "ABC");
 			std::copy( information.begin(), information.end(), transport.m_payload.m_payload);
 			transport.m_payload.m_payload[ information.size()] = '\0';
-			transport.m_size = information.size() + 1;
+
+			EXPECT_TRUE( information == transport.m_payload.m_payload);
+
+			transport.paylodSize( information.size() + 1);
 			transport.m_payload.m_type = 2;
 
 			send( transport);
@@ -53,7 +56,7 @@ namespace casual
 			std::string receivedInformation( response.m_payload.m_payload);
 
 
-			EXPECT_TRUE( information == receivedInformation);
+			EXPECT_TRUE( information == receivedInformation) << "information: " << information << " - receivedInformation: " << receivedInformation;
 			EXPECT_TRUE( transport.size() == response.size());
 		}
 
@@ -82,8 +85,9 @@ namespace casual
 			message::Transport transport;
 
 			std::string information;
-			information.reserve( platform::message_size - 1);
-			for( int count = 0; count < platform::message_size - 1; ++count)
+			information.reserve( message::Transport::payload_max_size - 1);
+
+			for( int count = 0; count < message::Transport::payload_max_size - 1; ++count)
 			{
 				information.push_back( '0');
 			}
@@ -91,7 +95,7 @@ namespace casual
 
 			std::copy( information.begin(), information.end(), transport.m_payload.m_payload);
 			transport.m_payload.m_payload[ information.size()] = '\0';
-			transport.m_size = information.size() + 1;
+			transport.paylodSize( information.size() + 1);
 			transport.m_payload.m_type = 2;
 
 			send( transport);

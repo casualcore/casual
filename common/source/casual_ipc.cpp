@@ -172,7 +172,7 @@ namespace casual
 					throw exception::QueueReceive( error::stringFromErrno());
 				}
 
-				message.m_size = result;
+				message.size( result);
 
 				return true;
 			}

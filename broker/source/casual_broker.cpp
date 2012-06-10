@@ -43,6 +43,7 @@ namespace casual
 					std::ofstream brokerQueueFile( path.c_str());
 					brokerQueueFile << queue.getKey();
 				}
+
 			}
 		}
 

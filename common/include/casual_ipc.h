@@ -11,9 +11,11 @@
 #include "xatmi.h"
 
 #include "casual_utility_file.h"
+#include "casual_utility_uuid.h"
 
 #include <string>
 #include <sys/msg.h>
+#include <string.h>
 
 namespace casual
 {
@@ -32,6 +34,7 @@ namespace casual
 
 			typedef int queue_id_type;
 			typedef key_t queue_key_type;
+			typedef long message_type_type;
 
 
 			const std::size_t message_size = 2048;
@@ -46,19 +49,53 @@ namespace casual
 		{
 			struct Transport
 			{
-				Transport() : m_size( platform::message_size) {}
+				typedef platform::queue_id_type queue_id_type;
+				typedef platform::queue_key_type queue_key_type;
+				typedef platform::message_type_type message_type_type;
+				typedef utility::Uuid::uuid_type correalation_type;
+
+				struct Header
+				{
+					correalation_type m_correlation;
+					long m_count;
+
+				};
+
+				enum
+				{
+					message_max_size = platform::message_size,
+					payload_max_size = platform::message_size - sizeof( Header)
+				};
+
+				Transport() : m_size( message_max_size)
+				{
+				}
 
 				struct Payload
 				{
-					long m_type;
-					char m_payload[ platform::message_size];
+
+					message_type_type m_type;
+
+					Header m_header;
+
+					char m_payload[ message_max_size];
 				} m_payload;
 
 				void* raw() { return &m_payload;}
+
 				std::size_t size() { return m_size; }
 
-			//private:
+				void size( std::size_t size)
+				{
+					m_size = size;
+				}
+
+				std::size_t paylodSize() { return m_size - sizeof( Header);}
+				void paylodSize( std::size_t size) { m_size = size +  sizeof( Header);}
+
+			private:
 				std::size_t m_size;
+
 
 			};
 

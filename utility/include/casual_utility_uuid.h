@@ -14,12 +14,18 @@
 
 namespace casual
 {
+	namespace platform
+	{
+		typedef uuid_t uuid_type;
+	}
 
 	namespace utility
 	{
 
 		struct Uuid
 		{
+			typedef platform::uuid_type uuid_type;
+
 			Uuid();
 
 			std::string getString() const;
@@ -29,7 +35,7 @@ namespace casual
 			bool operator == ( const Uuid& rhs) const;
 
 		private:
-			uuid_t m_uuid;
+			uuid_type m_uuid;
 
 		};
 

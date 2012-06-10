@@ -35,10 +35,12 @@ LinkLibrary( casual_common, \
 //
 Compile( unittest/source/casual_isolatedunittest_buffer.cpp, obj/casual_isolatedunittest_buffer.o)
 Compile( unittest/source/casual_isolatedunittest_ipc.cpp, obj/casual_isolatedunittest_ipc.o)
+Compile( unittest/source/casual_isolatedunittest_archive.cpp, obj/casual_isolatedunittest_archive.o)
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
 	obj/casual_isolatedunittest_buffer.o \
-	obj/casual_isolatedunittest_ipc.o, \
+	obj/casual_isolatedunittest_ipc.o \
+	obj/casual_isolatedunittest_archive.o, \
 	casual_utility casual_common )	
 
