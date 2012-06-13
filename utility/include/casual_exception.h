@@ -42,18 +42,28 @@ namespace casual
 				: std::runtime_error( description) {}
 		};
 
-
-		struct Signal : public std::runtime_error
+		namespace signal
 		{
-			Signal( const std::string& description)
-				: std::runtime_error( description) {}
-		};
+			struct Base : public std::runtime_error
+			{
+				Base( const std::string& description)
+					: std::runtime_error( description) {}
+			};
 
-		struct SignalTerminate : public Signal
-		{
-			SignalTerminate( const std::string& description)
-				: Signal( description) {}
-		};
+			struct Timeout : public Base
+			{
+				Timeout( const std::string& description)
+					: Base( description) {}
+			};
+
+			struct Terminate : public Base
+			{
+				Terminate( const std::string& description)
+					: Base( description) {}
+			};
+
+
+		}
 
 	}
 

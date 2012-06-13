@@ -29,58 +29,6 @@
 
 
 
-namespace local
-{
-	namespace
-	{
-
-		struct SignalHandler
-		{
-			static SignalHandler& instance()
-			{
-				static SignalHandler singleton;
-				return singleton;
-			}
-
-		private:
-			int m_last;
-			SignalHandler() {}
-		};
-
-
-	}
-
-
-}
-
-
-
-
-
-extern "C"
-{
-
-	//!
-	//! signal-handlers
-	//! @{
-
-	void timeout_handler( int signal)
-	{
-		// TODO: maybe log/trace
-	}
-
-
-	void terminate_handler( int signal)
-	{
-		// TODO: maybe log/trace
-		std::cerr << "terminate: " << signal << std::endl;
-	}
-
-	//! @}
-}
-
-
-
 namespace casual
 {
 	namespace ipc

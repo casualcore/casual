@@ -86,17 +86,22 @@ namespace casual
 				switch( signal)
 				{
 				case 0:
-				case SIGALRM:
 					//
 					// We do nothing for 'no signal' and the alarm-signal.
 					//
 					break;
+				case SIGALRM:
+				{
+					throw exception::signal::Timeout( "Timeout occurred");
+				}
 				default:
+				{
 					//
 					// the rest we throw on, so the rest of the application
 					// can use RAII and other paradigms to do cleaning
 					//
-					throw exception::SignalTerminate( strsignal( signal));
+					throw exception::signal::Terminate( strsignal( signal));
+				}
 				}
 			}
 

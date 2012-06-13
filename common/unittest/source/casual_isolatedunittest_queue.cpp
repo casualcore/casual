@@ -10,7 +10,7 @@
 #include "casual_queue.h"
 #include "casual_ipc.h"
 #include "casual_message.h"
-
+#include "casual_exception.h"
 
 //temp
 
@@ -56,6 +56,20 @@ namespace casual
 				ASSERT_TRUE( message.services.size() == 1);
 				EXPECT_TRUE( message.services.front().name == "korv");
 			}
+
+		}
+
+		TEST( casual_common, queue_reader_timeout)
+		{
+			ipc::receive::Queue receive;
+			Reader reader( receive);
+
+			message::ServerConnect message;
+
+			EXPECT_THROW({
+				reader( message, 1);
+			}, exception::signal::Timeout);
+
 
 		}
 	}

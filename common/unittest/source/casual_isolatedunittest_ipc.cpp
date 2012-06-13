@@ -10,6 +10,7 @@
 
 #include "casual_ipc.h"
 #include "casual_utility_signal.h"
+#include "casual_exception.h"
 
 
 //temp
@@ -74,7 +75,9 @@ namespace casual
 			// We don't expect to get any messages, and for the timeout to kick in
 			// after 1s
 			//
-			EXPECT_FALSE( receive( response));
+			EXPECT_THROW({
+				receive( response);
+			}, exception::signal::Timeout);
 
 		}
 

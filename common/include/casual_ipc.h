@@ -98,63 +98,10 @@ namespace casual
 			private:
 				std::size_t m_size;
 
-
 			};
-
-			/*
-			struct ServiceRequest
-			{
-				char serviceName[ XATMI_SERVICE_NAME_LENGTH];
-				platform::queue_id_type responseQueue;
-			};
-
-			inline void serialize( const ServiceRequest& message, Transport& transport)
-			{
-
-			}
-			*/
 
 		}
 
-
-
-		/*
-		struct ServiceCallMessage
-		{
-			struct
-			{
-
-				long flags;
-				int cd;
-			};
-
-			std::string serviceName;
-
-
-		};
-
-
-
-		namespace traits
-		{
-
-			template< std::size_t value>
-			struct basic_message_type
-			{
-				enum
-				{
-					type = value
-				};
-			};
-
-			template< typename T>
-			struct message_type;
-
-			template<>
-			struct message_type< ServiceCallMessage>
-				: public basic_message_type< 2> {};
-		}
-		*/
 
 		namespace internal
 		{
