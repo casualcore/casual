@@ -24,4 +24,4 @@ LinkExecutable( test, \
 Compile( source/template_client.cpp, obj/template_client.o)
 
 LinkExecutable( test_client, \
-	obj/template_client.o, casual_common)
+	obj/template_client.o, casual_common casual_utility)

@@ -10,6 +10,7 @@
 #include "casual_error.h"
 
 
+#include <iostream>
 
 
 int main( int argc, char** argv)
@@ -23,8 +24,11 @@ int main( int argc, char** argv)
 			argv + argc,
 			std::back_inserter( arguments));
 
+		std::cout << "starting" << std::endl;
+
 		casual::broker::Broker broker( arguments);
 
+		std::cout << "starting" << std::endl;
 
 		broker.start();
 

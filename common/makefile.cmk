@@ -15,6 +15,7 @@ Compile( source/casual_server_context.cpp, obj/casual_server_context.o)
 Compile( source/casual_service_context.cpp, obj/casual_service_context.o)
 Compile( source/casual_buffer.cpp, obj/casual_buffer.o)
 Compile( source/casual_ipc.cpp, obj/casual_ipc.o)
+Compile( source/casual_queue.cpp, obj/casual_queue.o)
 Compile( source/casual_error.cpp, obj/casual_error.o)
 
 
@@ -23,6 +24,7 @@ LinkLibrary( casual_common, \
 	obj/casual_service_context.o \
 	obj/casual_buffer.o \
 	obj/casual_ipc.o \ 
+	obj/casual_queue.o \
 	obj/casual_error.o,\ 
 	casual_utility)
 
@@ -36,11 +38,13 @@ LinkLibrary( casual_common, \
 Compile( unittest/source/casual_isolatedunittest_buffer.cpp, obj/casual_isolatedunittest_buffer.o)
 Compile( unittest/source/casual_isolatedunittest_ipc.cpp, obj/casual_isolatedunittest_ipc.o)
 Compile( unittest/source/casual_isolatedunittest_archive.cpp, obj/casual_isolatedunittest_archive.o)
+Compile( unittest/source/casual_isolatedunittest_queue.cpp, obj/casual_isolatedunittest_queue.o)
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
 	obj/casual_isolatedunittest_buffer.o \
 	obj/casual_isolatedunittest_ipc.o \
-	obj/casual_isolatedunittest_archive.o, \
+	obj/casual_isolatedunittest_archive.o \
+	obj/casual_isolatedunittest_queue.o, \
 	casual_utility casual_common )	
 

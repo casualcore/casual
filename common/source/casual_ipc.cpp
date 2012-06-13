@@ -177,6 +177,7 @@ namespace casual
 				return true;
 			}
 
+			/*
 
 			bool Queue::operator () ( message::Transport& message, Seconds timout) const
 			{
@@ -194,6 +195,7 @@ namespace casual
 
 				return result;
 			}
+			*/
 
 		}
 

@@ -7,6 +7,8 @@
 
 #include "casual_broker.h"
 #include "casual_utility_environment.h"
+#include "casual_queue.h"
+
 
 #include <fstream>
 
@@ -65,16 +67,41 @@ namespace casual
 
 		void Broker::start()
 		{
+			queue::Reader queueReader( m_receiveQueue);
+
 			while( true)
 			{
+				std::cout << "---- Reading queue  ----" << std::endl;
 
-				ipc::message::Transport message;
-				m_receiveQueue( message);
+				queue::Reader::message_type_type message_type = queueReader.next();
+				switch( message_type)
+				{
+				case message::ServerConnect::message_type:
+				{
+					message::ServerConnect message;
+					queueReader( message);
 
-				std::cout << "---- Message Recived ----\n";
-				std::cout << "size: " << message.size() << std::endl;
-				std::cout << "type: " << message.m_payload.m_type << std::endl;
-				std::cout << "payload: " << message.m_payload.m_payload << std::endl;
+					std::cout << "---- Message Recived ----\n";
+					std::cout << "message_type: " << message_type << std::endl;
+					std::cout << "queue_key: " << message.queue_key << std::endl;
+					std::cout << "serverPath: " << message.serverPath << std::endl;
+					std::cout << "services.size(): " << message.services.size() << std::endl;
+
+
+					break;
+				}
+				default:
+				{
+					std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+					break;
+				}
+
+
+				}
+
+
+
+
 
 			}
 

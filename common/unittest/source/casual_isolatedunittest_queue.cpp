@@ -9,6 +9,7 @@
 
 #include "casual_queue.h"
 #include "casual_ipc.h"
+#include "casual_message.h"
 
 
 //temp
@@ -21,13 +22,40 @@ namespace casual
 	namespace queue
 	{
 
-		TEST( casual_common, queue_writer)
+		TEST( casual_common, queue_writer_reader)
 		{
 			ipc::receive::Queue receive;
 
 			ipc::send::Queue send( receive.getKey());
 
-			Writer writer( send);
+			{
+				Writer writer( send);
+				message::ServerConnect message;
+
+				message.queue_key = 666;
+				message.serverPath = "banan";
+
+				message::Service service;
+				service.name = "korv";
+				message.services.push_back( service);
+
+				writer( message);
+			}
+
+			{
+				Reader reader( receive);
+
+				message::ServerConnect message;
+
+				EXPECT_TRUE( reader.next() == message::ServerConnect::message_type);
+				reader( message);
+
+				EXPECT_TRUE( message.queue_key == 666);
+				EXPECT_TRUE( message.serverPath == "banan");
+
+				ASSERT_TRUE( message.services.size() == 1);
+				EXPECT_TRUE( message.services.front().name == "korv");
+			}
 
 		}
 	}

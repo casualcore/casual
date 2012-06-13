@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "casual_ipc.h"
+#include "casual_utility_signal.h"
 
 
 //temp
@@ -67,11 +68,13 @@ namespace casual
 
 			message::Transport response;
 
+			utility::signal::scoped::Alarm timeout( 1);
+
 			//
 			// We don't expect to get any messages, and for the timeout to kick in
 			// after 1s
 			//
-			EXPECT_FALSE( receive( response, 1));
+			EXPECT_FALSE( receive( response));
 
 		}
 

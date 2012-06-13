@@ -10,6 +10,8 @@
 
 #include "casual_ipc.h"
 
+#include <vector>
+
 namespace casual
 {
 

@@ -12,6 +12,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <iostream>
+
 namespace casual
 {
 	namespace error
@@ -19,7 +21,7 @@ namespace casual
 
 		int handler()
 		{
-			// TODO:
+			std::cerr << "casual::error::handler called " << std::endl;
 			return 0;
 		}
 

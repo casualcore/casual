@@ -32,7 +32,7 @@ namespace casual
 
 		struct Service
 		{
-
+			std::string m_name;
 			std::size_t m_requested;
 			Server& server;
 		};

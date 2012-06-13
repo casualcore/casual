@@ -8,7 +8,15 @@
 #ifndef CASUAL_ARCHIVE_H_
 #define CASUAL_ARCHIVE_H_
 
+
+
+#include "casual_ipc.h"
+
 #include <vector>
+
+
+// TODO: test
+#include <iostream>
 
 namespace casual
 {
@@ -116,12 +124,20 @@ namespace casual
 				Binary( const buffer_type& buffer) : m_buffer( buffer), m_offset( 0) {}
 
 
-				template< std::size_t size>
-				void add( char (& buffer)[ size])
+
+				void add( ipc::message::Transport& message)
 				{
+					const std::size_t size = message.paylodSize();
+					const std::size_t bufferSize = m_buffer.size();
+
 					m_buffer.resize( m_buffer.size() + size);
 
-					memcpy( &buffer[ m_buffer.size()], &buffer, size);
+					std::copy(
+						message.m_payload.m_payload,
+						message.m_payload.m_payload + size,
+						m_buffer.begin() + bufferSize);
+
+					//memcpy( &m_buffer[ m_buffer.size()], message.m_payload.m_payload, size);
 				}
 
 
@@ -137,6 +153,7 @@ namespace casual
 					read( value);
 					return *this;
 				}
+
 
 			private:
 

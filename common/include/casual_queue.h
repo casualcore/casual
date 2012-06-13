@@ -11,6 +11,10 @@
 #include "casual_ipc.h"
 #include "casual_message.h"
 #include "casual_archive.h"
+#include "casual_utility_signal.h"
+
+
+#include <list>
 
 namespace casual
 {
@@ -19,15 +23,63 @@ namespace casual
 		class Reader
 		{
 		public:
-			typedef ipc::message::Transport::message_type_type message_type_type;
+			typedef ipc::message::Transport transport_type;
+			typedef transport_type::message_type_type message_type_type;
+			typedef std::size_t Seconds;
+
+			typedef std::list< ipc::message::Transport> cache_type;
 
 			Reader( ipc::receive::Queue& queue);
 
-
+			//!
+			//! Gets the next message type.
+			//!
 			message_type_type next();
+
+			//!
+			//! Tries to read a specific message from the queue.
+			//! @attention use next() to determine which message is ready to read.
+			//!
+			template< typename M>
+			void operator () ( M& message)
+			{
+				message_type_type type = message::type( message);
+
+				archive::input::Binary archive;
+
+				correlate( archive, type);
+
+				archive >> message;
+
+			}
+
+			//!
+			//! Tries to read a specific message from the queue.
+			//! @attention use next() to determine which message is ready to read.
+			//!
+			template< typename M>
+			void operator () ( M& message, Seconds timeout)
+			{
+				utility::signal::scoped::Alarm alarm( timeout);
+
+				this->operator ()( message);
+			}
 
 
 		private:
+
+			void correlate( archive::input::Binary& archive, message_type_type type);
+
+
+			//!
+			//! finds and return the first transport-message of a specified type.
+			//!
+			cache_type::iterator first( message_type_type type);
+
+			cache_type::iterator fetchIfEmpty( cache_type::iterator start);
+
+			cache_type& messageCache();
+
 			ipc::receive::Queue& m_queue;
 
 		};
@@ -38,6 +90,10 @@ namespace casual
 		public:
 			Writer( ipc::send::Queue& queue) : m_queue( queue) {}
 
+			//!
+			//! Sends/Writes a message to the queue. which can result in several
+			//! actual ipc-messages.
+			//!
 			template< typename M>
 			void operator () ( M& message)
 			{
@@ -45,7 +101,7 @@ namespace casual
 				ipc::message::Transport transport;
 
 				transport.m_payload.m_type = message::type( message);
-				transport.m_payload.m_header.m_correlation = correlation.get();
+				correlation.get( transport.m_payload.m_header.m_correlation);
 
 				//
 				// Serialize the message
@@ -65,7 +121,7 @@ namespace casual
 
 				for( std::size_t index = 0; index < count; ++index)
 				{
-					transport.m_payload.m_header.m_count = count - index;
+					transport.m_payload.m_header.m_count = count - index -1;
 
 					const std::size_t offset = index *  ipc::message::Transport::payload_max_size;
 					const std::size_t length =
@@ -77,7 +133,7 @@ namespace casual
 					//
 					std::copy(
 						archive.get().begin() + offset,
-						archive.get().begin() + length,
+						archive.get().begin() + offset + length,
 						transport.m_payload.m_payload);
 
 					transport.paylodSize( length);

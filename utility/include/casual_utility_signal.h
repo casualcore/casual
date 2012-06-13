@@ -9,7 +9,7 @@
 #define CASUAL_UTILITY_SIGNAL_H_
 
 
-
+#include <cstddef>
 
 
 namespace casual
@@ -28,6 +28,20 @@ namespace casual
 			//!
 			void handle();
 
+
+			namespace scoped
+			{
+				class Alarm
+				{
+				public:
+					typedef std::size_t Seconds;
+
+					Alarm( Seconds timeout);
+					~Alarm();
+
+				};
+
+			}
 		}
 	}
 }

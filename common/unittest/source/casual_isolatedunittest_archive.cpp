@@ -86,7 +86,35 @@ namespace casual
 
 			output << serverConnect;
 
-			std::cout << "output.size(): " << output.get().size() << std::endl;
+			input::Binary input( output.get());
+
+			message::ServerConnect result;
+
+			input >> result;
+
+			EXPECT_TRUE( result.queue_key == 666) << result.queue_key;
+			EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
+			EXPECT_TRUE( result.services.size() == 3) << result.services.size();
+
+		}
+
+
+		TEST( casual_common, archive_io_big_size)
+		{
+
+			message::ServerConnect serverConnect;
+
+			serverConnect.queue_key = 666;
+			serverConnect.serverPath = "/bla/bla/bla/sever";
+
+
+			message::Service service;
+			service.name = "service1";
+			serverConnect.services.resize( 10000, service);
+
+			output::Binary output;
+
+			output << serverConnect;
 
 			input::Binary input( output.get());
 
@@ -95,8 +123,8 @@ namespace casual
 			input >> result;
 
 			EXPECT_TRUE( result.queue_key == 666) << result.queue_key;
-			EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.queue_key;
-			EXPECT_TRUE( result.services.size() == 3) << result.services.size();
+			EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
+			EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
 
 		}
 

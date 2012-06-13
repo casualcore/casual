@@ -100,6 +100,19 @@ namespace casual
 				}
 			}
 
+			namespace scoped
+			{
+				Alarm::Alarm( Seconds timeout)
+				{
+					alarm( timeout);
+				}
+
+				Alarm::~Alarm()
+				{
+					alarm( 0);
+				}
+			}
+
 		}
 	}
 }

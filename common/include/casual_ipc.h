@@ -57,6 +57,7 @@ namespace casual
 				struct Header
 				{
 					correalation_type m_correlation;
+					std::size_t m_pid;
 					long m_count;
 
 				};
@@ -69,6 +70,7 @@ namespace casual
 
 				Transport() : m_size( message_max_size)
 				{
+					memset( &m_payload, 0, sizeof( Payload));
 				}
 
 				struct Payload
@@ -78,7 +80,7 @@ namespace casual
 
 					Header m_header;
 
-					char m_payload[ message_max_size];
+					char m_payload[ payload_max_size];
 				} m_payload;
 
 				void* raw() { return &m_payload;}
@@ -199,11 +201,13 @@ namespace casual
 
 				bool operator () ( message::Transport& message) const;
 
+				/*
 				//!
 				//! @param message message to receive
 				//! @param timeout seconds to wait for message
 				//!
 				bool operator () ( message::Transport& message, Seconds timeout) const;
+				*/
 
 			private:
 				//!

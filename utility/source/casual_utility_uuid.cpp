@@ -18,6 +18,11 @@ namespace casual
 			uuid_generate( m_uuid);
 		}
 
+		Uuid::Uuid(uuid_type& uuid)
+		{
+			uuid_copy( m_uuid, uuid);
+		}
+
 		std::string Uuid::getString() const
 		{
 			char buffer[ 37];
@@ -33,9 +38,14 @@ namespace casual
 		}
 		*/
 
-		const uuid_t& Uuid::get() const
+		const Uuid::uuid_type& Uuid::get() const
 		{
 			return m_uuid;
+		}
+
+		void Uuid::get( uuid_type& uuid)
+		{
+			uuid_copy( uuid, m_uuid);
 		}
 
 		bool Uuid::operator < ( const Uuid& rhs) const
@@ -49,6 +59,16 @@ namespace casual
 		}
 
 	}
+}
+
+bool operator == ( const casual::utility::Uuid& lhs, const casual::utility::Uuid::uuid_type& rhs)
+{
+	return uuid_compare( lhs.get(), rhs) == 0;
+}
+
+bool operator == ( const casual::utility::Uuid::uuid_type& lhs, const casual::utility::Uuid& rhs)
+{
+	return uuid_compare( lhs, rhs.get()) == 0;
 }
 
 

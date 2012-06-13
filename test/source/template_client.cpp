@@ -9,8 +9,10 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "casual_ipc.h"
+#include "casual_queue.h"
 
 
 
@@ -27,18 +29,30 @@ int main( int argc, char** argv)
 
 	casual::ipc::send::Queue brokerQueue = casual::ipc::getBrokerQueue();
 
+	casual::queue::Writer writer( brokerQueue);
 
-	casual::ipc::message::Transport message;
 
-	message.m_payload.m_type = 10;
+	casual::message::ServerConnect serverConnect;
 
-	std::copy(
-			arguments.at( 1).begin(),
-			arguments.at( 1).end(),
-			message.m_payload.m_payload);
+	serverConnect.queue_key = 666;
+	serverConnect.serverPath = "/bja/bkalj/bkjls/dkfjslj";
 
-	brokerQueue( message);
+	if( arguments.size() > 1)
+	{
+		std::istringstream converter( arguments[ 1]);
+		std::size_t count;
+		converter >> count;
 
+		for( int index = 0; index < count; ++index)
+		{
+			casual::message::Service service;
+			service.name ="sdlkfjslkjdfskldf";
+			serverConnect.services.push_back( service);
+		}
+
+	}
+
+	writer( serverConnect);
 
 }
 
