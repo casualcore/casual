@@ -16,6 +16,8 @@
 
 #include "casual_ipc.h"
 #include "casual_utility_file.h"
+#include "casual_message.h"
+#include "casual_utility_platform.h"
 
 namespace casual
 {
@@ -25,16 +27,25 @@ namespace casual
 		struct Server
 		{
 
-			long m_pid;
+			utility::platform::pid_type m_pid;
 			std::string m_path;
 			ipc::send::Queue::queue_key_type m_queue_key;
 		};
 
+		struct ServerHolder
+		{
+
+		private:
+			std::set< Server> m_servers;
+		};
+
 		struct Service
 		{
+			Service( const Server& server) : m_requested( 0), m_server( server) {}
+
 			std::string m_name;
 			std::size_t m_requested;
-			Server& server;
+			const Server& m_server;
 		};
 
 		class Broker

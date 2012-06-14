@@ -10,15 +10,17 @@
 
 #include "casual_ipc.h"
 
+
+#include "casual_utility_platform.h"
+
 #include <vector>
+
+
 
 namespace casual
 {
-
 	namespace message
 	{
-
-
 		struct Service
 		{
 			std::string name;
@@ -32,13 +34,17 @@ namespace casual
 
 		struct ServerConnect
 		{
+
 			enum
 			{
 				message_type = 2
 			};
 
+			ServerConnect() : pid( utility::platform::getProcessId()) {}
+
 			std::string serverPath;
 			ipc::message::Transport::queue_key_type queue_key;
+			utility::platform::pid_type pid;
 			std::vector< Service> services;
 
 
@@ -47,6 +53,7 @@ namespace casual
 			{
 				archive & serverPath;
 				archive & queue_key;
+				archive & pid;
 				archive & services;
 			}
 		};
