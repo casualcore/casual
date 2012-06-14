@@ -18,6 +18,9 @@
 //uuid
 #include <uuid/uuid.h>
 
+
+#include <string.h>
+
 namespace casual
 {
 	namespace utility
