@@ -61,9 +61,9 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -fprofile-arcs -ftest-coverage
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
-   LINK_DIRECTIVES_EXE = -g -pthread  -fpic 
+   LINK_DIRECTIVES_EXE = -g -pthread  -fpic -lgcov
    LINK_DIRECTIVES_ARCHIVE = -g 
 else
    COMPILE_DIRECTIVES = -pthread -c -O3 -fpic
