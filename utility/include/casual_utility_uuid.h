@@ -10,14 +10,13 @@
 
 #include <uuid/uuid.h>
 
+#include "casual_utility_platform.h"
+
 #include <string>
 
 namespace casual
 {
-	namespace platform
-	{
-		typedef uuid_t uuid_type;
-	}
+
 
 	namespace utility
 	{

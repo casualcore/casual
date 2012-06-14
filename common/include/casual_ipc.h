@@ -12,46 +12,22 @@
 
 #include "casual_utility_file.h"
 #include "casual_utility_uuid.h"
+#include "casual_utility_platform.h"
 
 #include <string>
-#include <sys/msg.h>
-#include <string.h>
 
 namespace casual
 {
 	namespace ipc
 	{
 
-		//
-		// some platform specific ifdefs?
-		//
-
-		//
-		// System V start
-		//
-		namespace platform
-		{
-
-			typedef int queue_id_type;
-			typedef key_t queue_key_type;
-			typedef long message_type_type;
-
-
-			const std::size_t message_size = 2048;
-
-
-		}
-
-
-
-
 		namespace message
 		{
 			struct Transport
 			{
-				typedef platform::queue_id_type queue_id_type;
-				typedef platform::queue_key_type queue_key_type;
-				typedef platform::message_type_type message_type_type;
+				typedef utility::platform::queue_id_type queue_id_type;
+				typedef utility::platform::queue_key_type queue_key_type;
+				typedef utility::platform::message_type_type message_type_type;
 				typedef utility::Uuid::uuid_type correalation_type;
 
 				struct Header
@@ -64,8 +40,8 @@ namespace casual
 
 				enum
 				{
-					message_max_size = platform::message_size,
-					payload_max_size = platform::message_size - sizeof( Header)
+					message_max_size = utility::platform::message_size,
+					payload_max_size = utility::platform::message_size - sizeof( Header)
 				};
 
 				Transport() : m_size( message_max_size)
@@ -108,8 +84,8 @@ namespace casual
 			class base_queue
 			{
 			public:
-				typedef platform::queue_id_type queue_id_type;
-				typedef platform::queue_key_type queue_key_type;
+				typedef utility::platform::queue_id_type queue_id_type;
+				typedef utility::platform::queue_key_type queue_key_type;
 
 
 				queue_key_type getKey() const;

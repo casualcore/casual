@@ -27,7 +27,7 @@ namespace casual
 
 			long m_pid;
 			std::string m_path;
-			ipc::send::Queue m_queue;
+			ipc::send::Queue::queue_key_type m_queue_key;
 		};
 
 		struct Service
