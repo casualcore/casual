@@ -32,20 +32,24 @@ namespace casual
 			ipc::send::Queue::queue_key_type m_queue_key;
 		};
 
+		typedef std::list< Server> Servers;
+
 		struct ServerHolder
 		{
 
 		private:
-			std::set< Server> m_servers;
+			std::list< Server> m_servers;
 		};
 
 		struct Service
 		{
-			Service( const Server& server) : m_requested( 0), m_server( server) {}
+
+			Service() : m_requested( 0) {}
 
 			std::string m_name;
 			std::size_t m_requested;
-			const Server& m_server;
+			std::vector< Servers::iterator> m_servers;
+			std::vector< Servers::iterator>::iterator m_currentServer;
 		};
 
 		class Broker
