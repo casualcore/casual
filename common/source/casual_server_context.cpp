@@ -7,6 +7,9 @@
 
 #include "casual_server_context.h"
 
+#include "casual_message.h"
+#include "casual_queue.h"
+
 namespace casual
 {
 	namespace server
@@ -49,7 +52,7 @@ namespace casual
 
 			while( true)
 			{
-				std::cout << "---- Reading queue  ----" << std::endl;
+				//std::cout << "---- Reading queue  ----" << std::endl;
 
 				queue::Reader queueReader( m_queue);
 				queue::Reader::message_type_type message_type = queueReader.next();
@@ -61,12 +64,7 @@ namespace casual
 					message::ServerConnect message;
 					queueReader( message);
 
-					Servers::iterator serverIterator = m_servers.insert( m_servers.begin(), transform::Server()( message));
 
-					std::for_each(
-						message.services.begin(),
-						message.services.end(),
-						transform::Service( serverIterator, m_services));
 
 					break;
 				}

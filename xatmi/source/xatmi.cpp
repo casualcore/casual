@@ -20,7 +20,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 			subtype,
 			size);
 
-	return static_cast< char*>( buffer.m_memory);
+	return buffer.raw();
 }
 
 char* tprealloc(char * addr, long size)
@@ -30,7 +30,7 @@ char* tprealloc(char * addr, long size)
 		addr,
 		size);
 
-	return static_cast< char*>( buffer.m_memory);
+	return buffer.raw();
 
 }
 

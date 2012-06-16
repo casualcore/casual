@@ -25,6 +25,8 @@ namespace casual
 		class Context
 		{
 		public:
+			typedef std::map< std::string, service::Context> service_mapping_type;
+
 			static Context& instance();
 
 			void add( const service::Context& context);
@@ -33,8 +35,6 @@ namespace casual
 
 
 		private:
-
-			typedef std::map< std::string, service::Context> service_mapping_type;
 
 			Context();
 

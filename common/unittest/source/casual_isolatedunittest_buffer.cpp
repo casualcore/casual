@@ -18,33 +18,30 @@ namespace casual
 	{
 
 
-
-
-
 		TEST( casual_common, buffer_allocate)
 		{
 			Buffer& buffer = Holder::instance().allocate( "STRING", "", 2048);
 
-			EXPECT_TRUE( buffer.m_size == 2048);
+			EXPECT_TRUE( buffer.size() == 2048);
 
-			Holder::instance().deallocate( buffer.m_memory);
+			Holder::instance().deallocate( buffer.raw());
 
 		}
 
 
 		TEST( casual_common, buffer_reallocate)
 		{
-			Buffer buffer = Holder::instance().allocate( "STRING", "", 2048);
+			Buffer* buffer = &Holder::instance().allocate( "STRING", "", 2048);
 
-			EXPECT_TRUE( buffer.m_size == 2048);
-
-
-			buffer = Holder::instance().reallocate( buffer.m_memory, 4096);
-
-			EXPECT_TRUE( buffer.m_size == 4096);
+			EXPECT_TRUE( buffer->size() == 2048);
 
 
-			Holder::instance().deallocate( buffer.m_memory);
+			buffer = &Holder::instance().reallocate( buffer->raw(), 4096);
+
+			EXPECT_TRUE( buffer->size() == 4096);
+
+
+			Holder::instance().deallocate( buffer->raw());
 
 		}
 	}

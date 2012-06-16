@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <cstddef>
 #include <cstdlib>
 
@@ -19,22 +20,47 @@ namespace casual
 	{
 		struct Buffer
 		{
-			Buffer() :  m_size( 0), m_memory( 0) {}
+			Buffer() {}
 
-			Buffer( const std::string& type, const std::string& subtype)
-				: m_type( type), m_subtype( subtype), m_size( 0), m_memory( 0) {}
+			Buffer( const std::string& type, const std::string& subtype, std::size_t size)
+				: m_type( type), m_subtype( subtype), m_memory( size >= 1024 ? size : 1024) {}
+
+			char* raw()
+			{
+				if( m_memory.empty())
+				{
+					return 0;
+				}
+				return &m_memory[ 0];
+			}
+			std::size_t size() const
+			{
+				return m_memory.size();
+			}
+
+			std::size_t reallocate( std::size_t size)
+			{
+				if( m_memory.size() < size)
+				{
+					m_memory.resize( size);
+				}
+				return m_memory.size();
+			}
+
+		private:
+			//Buffer( const Buffer&);
+			Buffer& operator = ( const Buffer&);
 
 			std::string m_type;
 			std::string m_subtype;
-			std::size_t m_size;
-			void* m_memory;
+			std::vector< char> m_memory;
 		};
 
 		class Holder
 		{
 		public:
 
-			typedef std::vector< Buffer> pool_type;
+			typedef std::list< Buffer> pool_type;
 
 			static Holder& instance();
 

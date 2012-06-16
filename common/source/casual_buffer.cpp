@@ -23,9 +23,9 @@ namespace casual
 			{
 				FindBuffer( void* toFind) : m_toFind( toFind) {}
 
-				bool operator () ( const Buffer& buffer)
+				bool operator () ( Buffer& buffer) const
 				{
-					return m_toFind == buffer.m_memory;
+					return m_toFind == buffer.raw();
 				}
 
 				void* m_toFind;
@@ -48,18 +48,7 @@ namespace casual
 		Buffer& Holder::allocate(const std::string& type, const std::string& subtype, std::size_t size)
 		{
 
-			Buffer buffer( type, subtype);
-			buffer.m_size = size >= 1024 ? size : 1024;
-			// TODO validate
-
-			buffer.m_memory = malloc( buffer.m_size);
-
-			if( buffer.m_memory == 0)
-			{
-				throw std::bad_alloc();
-			}
-
-			m_memoryPool.push_back( buffer);
+			m_memoryPool.push_back( Buffer( type, subtype, size));
 			return m_memoryPool.back();
 		}
 
@@ -69,18 +58,14 @@ namespace casual
 		{
 			Buffer& buffer = *get( memory);
 
-			if( buffer.m_size < size)
-			{
-				buffer.m_memory = ::realloc( buffer.m_memory, size);
-				buffer.m_size = size;
-			}
+			buffer.reallocate( size);
 
 			return buffer;
 		}
 
 		Holder::pool_type::iterator Holder::get( void* memory)
 		{
-			std::vector< Buffer>::iterator findIter = std::find_if(
+			pool_type::iterator findIter = std::find_if(
 				m_memoryPool.begin(),
 				m_memoryPool.end(),
 				local::FindBuffer( memory));
@@ -96,8 +81,6 @@ namespace casual
 		void Holder::deallocate( void* memory)
 		{
 			pool_type::iterator buffer = get( memory);
-
-			free( buffer->m_memory);
 
 			m_memoryPool.erase( buffer);
 
