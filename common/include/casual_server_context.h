@@ -10,6 +10,8 @@
 
 #include "casual_service_context.h"
 
+#include "casual_ipc.h"
+
 //
 // std
 //
@@ -27,11 +29,22 @@ namespace casual
 
 			void add( const service::Context& context);
 
+			int start();
+
 
 		private:
+
+			typedef std::map< std::string, service::Context> service_mapping_type;
+
 			Context();
 
-			std::map< std::string, service::Context> m_services;
+			void connect();
+
+			service_mapping_type m_services;
+
+			ipc::receive::Queue m_queue;
+			ipc::send::Queue m_brokerQueue;
+
 
 
 		};

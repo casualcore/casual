@@ -28,13 +28,15 @@ int main( int argc, char** argv)
 
 
 	casual::ipc::send::Queue brokerQueue = casual::ipc::getBrokerQueue();
-
 	casual::queue::Writer writer( brokerQueue);
 
 
+	casual::ipc::receive::Queue myQueue;
+	casual::queue::Reader reader( myQueue);
+
 	casual::message::ServerConnect serverConnect;
 
-	serverConnect.queue_key = 666;
+	serverConnect.serverId.queue_key = myQueue.getKey();
 	serverConnect.serverPath = "/bja/bkalj/bkjls/dkfjslj";
 
 	if( arguments.size() > 1)
@@ -49,7 +51,6 @@ int main( int argc, char** argv)
 			service.name ="sdlkfjslkjdfskldf";
 			serverConnect.services.push_back( service);
 		}
-
 	}
 
 	writer( serverConnect);

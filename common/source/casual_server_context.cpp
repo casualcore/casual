@@ -12,6 +12,24 @@ namespace casual
 	namespace server
 	{
 
+		namespace local
+		{
+			namespace transform
+			{
+				struct Service
+				{
+					message::Service operator () ( const Context::service_mapping_type::value_type& value)
+					{
+						message::Service result;
+
+						result.name = value.first;
+
+						return result;
+					}
+				};
+			}
+		}
+
 
 		Context& Context::instance()
 		{
@@ -25,8 +43,66 @@ namespace casual
 			m_services[ context.m_name] = context;
 		}
 
-		Context::Context()
+		int Context::start()
 		{
+			connect();
+
+			while( true)
+			{
+				std::cout << "---- Reading queue  ----" << std::endl;
+
+				queue::Reader queueReader( m_queue);
+				queue::Reader::message_type_type message_type = queueReader.next();
+
+				switch( message_type)
+				{
+				case message::ServerConnect::message_type:
+				{
+					message::ServerConnect message;
+					queueReader( message);
+
+					Servers::iterator serverIterator = m_servers.insert( m_servers.begin(), transform::Server()( message));
+
+					std::for_each(
+						message.services.begin(),
+						message.services.end(),
+						transform::Service( serverIterator, m_services));
+
+					break;
+				}
+				default:
+				{
+					std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+					break;
+				}
+
+
+				}
+			}
+
+			return 0;
+		}
+
+		Context::Context()
+			: m_brokerQueue( ipc::getBrokerQueue())
+		{
+
+		}
+
+		void Context::connect()
+		{
+			message::ServerConnect message;
+
+			message.serverId.queue_key = m_queue.getKey();
+
+			std::transform(
+				m_services.begin(),
+				m_services.end(),
+				std::back_inserter( message.services),
+				local::transform::Service());
+
+			queue::Writer writer( m_brokerQueue);
+			writer( message);
 
 		}
 

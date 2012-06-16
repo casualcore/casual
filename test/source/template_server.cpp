@@ -6,7 +6,7 @@
 //!
 //!
 //! Only to get a feel for the abstractions needed.
-//! That is, to go "from the outside -> in" istead of the opposite
+//! That is, to go "from the outside -> in" instead of the opposite
 //!
 
 #include "template_server.h"

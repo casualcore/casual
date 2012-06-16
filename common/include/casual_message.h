@@ -32,6 +32,21 @@ namespace casual
 			}
 		};
 
+		struct ServerId
+		{
+			ServerId() : pid( utility::platform::getProcessId()) {}
+
+			ipc::message::Transport::queue_key_type queue_key;
+			utility::platform::pid_type pid;
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				archive & queue_key;
+				archive & pid;
+			}
+		};
+
 		struct ServerConnect
 		{
 
@@ -40,25 +55,76 @@ namespace casual
 				message_type = 2
 			};
 
-			ServerConnect() : pid( utility::platform::getProcessId()) {}
+
 
 			std::string serverPath;
-			ipc::message::Transport::queue_key_type queue_key;
-			utility::platform::pid_type pid;
+			ServerId serverId;
 			std::vector< Service> services;
-
 
 			template< typename A>
 			void serialize( A& archive)
 			{
 				archive & serverPath;
-				archive & queue_key;
-				archive & pid;
+				archive & serverId;
 				archive & services;
 			}
 		};
 
 
+		struct ServiceRequest
+		{
+			enum
+			{
+				message_type = 3
+			};
+
+			std::string requested;
+			std::string current;
+			ServerId server;
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				archive & requested;
+				archive & current;
+				archive & server;
+			}
+		};
+
+
+		struct ServiceResponse
+		{
+			enum
+			{
+				message_type = 4
+			};
+
+			std::string requested;
+			std::vector< ServerId> server;
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				archive & requested;
+				archive & server;
+			}
+		};
+
+		struct Buffer
+		{
+			std::string type;
+
+
+		};
+
+		struct ServiceCall
+		{
+			enum
+			{
+				message_type = 5
+			};
+
+		};
 
 
 		//!

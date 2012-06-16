@@ -6,8 +6,12 @@
 //!
 
 #include "casual_broker.h"
+#include "casual_broker_transform.h"
+
 #include "casual_utility_environment.h"
 #include "casual_queue.h"
+
+
 
 
 #include <fstream>
@@ -46,6 +50,10 @@ namespace casual
 					brokerQueueFile << queue.getKey();
 				}
 
+
+
+
+
 			}
 		}
 
@@ -74,6 +82,7 @@ namespace casual
 				std::cout << "---- Reading queue  ----" << std::endl;
 
 				queue::Reader::message_type_type message_type = queueReader.next();
+
 				switch( message_type)
 				{
 				case message::ServerConnect::message_type:
@@ -81,12 +90,34 @@ namespace casual
 					message::ServerConnect message;
 					queueReader( message);
 
-					std::cout << "---- Message Recived ----\n";
-					std::cout << "message_type: " << message_type << std::endl;
-					std::cout << "queue_key: " << message.queue_key << std::endl;
-					std::cout << "serverPath: " << message.serverPath << std::endl;
-					std::cout << "services.size(): " << message.services.size() << std::endl;
+					Servers::iterator serverIterator = m_servers.insert( m_servers.begin(), transform::Server()( message));
 
+					std::for_each(
+						message.services.begin(),
+						message.services.end(),
+						transform::Service( serverIterator, m_services));
+
+					break;
+				}
+				case message::ServiceRequest::message_type:
+				{
+					message::ServiceRequest message;
+					queueReader( message);
+
+					message::ServiceResponse responseMessage;
+					responseMessage.requested = message.requested;
+
+					service_mapping_type::iterator findIter = m_services.find( message.requested);
+					if( findIter!= m_services.end())
+					{
+						transform::Server transform;
+						Server& server = findIter->second.nextServer();
+
+						responseMessage.server.push_back( transform( findIter->second.nextServer()));
+					}
+
+					ipc::send::Queue responseQueue( message.server.queue_key);
+					queue::Writer writer( responseQueue);
 
 					break;
 				}

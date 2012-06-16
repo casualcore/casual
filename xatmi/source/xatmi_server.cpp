@@ -57,10 +57,7 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
 		local::AddServiceContext());
 
 
-
-
-
-	return 0;
+	return casual::server::Context::instance().start();
 }
 
 

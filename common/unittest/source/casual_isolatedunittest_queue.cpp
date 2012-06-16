@@ -32,7 +32,7 @@ namespace casual
 				Writer writer( send);
 				message::ServerConnect message;
 
-				message.queue_key = 666;
+				message.serverId.queue_key = 666;
 				message.serverPath = "banan";
 
 				message::Service service;
@@ -50,7 +50,7 @@ namespace casual
 				EXPECT_TRUE( reader.next() == message::ServerConnect::message_type);
 				reader( message);
 
-				EXPECT_TRUE( message.queue_key == 666);
+				EXPECT_TRUE( message.serverId.queue_key == 666);
 				EXPECT_TRUE( message.serverPath == "banan");
 
 				ASSERT_TRUE( message.services.size() == 1);

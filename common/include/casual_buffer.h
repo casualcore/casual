@@ -19,8 +19,6 @@ namespace casual
 	{
 		struct Buffer
 		{
-
-
 			Buffer() :  m_size( 0), m_memory( 0) {}
 
 			Buffer( const std::string& type, const std::string& subtype)
