@@ -103,6 +103,13 @@ namespace casual
 					memcpy( &m_buffer[ size], value.c_str(), value.size());
 				}
 
+				void write( std::vector< char>& value)
+				{
+					writePod( value.size());
+
+					m_buffer.insert( m_buffer.end(), value.begin(), value.end());
+				}
+
 				buffer_type m_buffer;
 			};
 
@@ -205,6 +212,18 @@ namespace casual
 						m_buffer.begin() + m_offset,
 						m_buffer.begin() + m_offset + size,
 						value.begin());
+
+					m_offset += size;
+				}
+
+				void read( std::vector< char>& value)
+				{
+					std::string::size_type size;
+					*this >> size;
+
+					value.assign(
+						m_buffer.begin() + m_offset,
+						m_buffer.begin() + m_offset + size);
 
 					m_offset += size;
 				}

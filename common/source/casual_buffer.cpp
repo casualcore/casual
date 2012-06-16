@@ -34,6 +34,8 @@ namespace casual
 
 		}
 
+
+
 		Holder::Holder()
 		{
 
@@ -47,14 +49,20 @@ namespace casual
 
 		Buffer& Holder::allocate(const std::string& type, const std::string& subtype, std::size_t size)
 		{
-
 			m_memoryPool.push_back( Buffer( type, subtype, size));
 			return m_memoryPool.back();
 		}
 
 
+		Buffer& Holder::create()
+		{
+			m_memoryPool.push_back( Buffer());
+			return m_memoryPool.back();
+		}
 
-		Buffer& Holder::reallocate( void* memory, std::size_t size)
+
+
+		Buffer& Holder::reallocate( char* memory, std::size_t size)
 		{
 			Buffer& buffer = *get( memory);
 
@@ -63,7 +71,19 @@ namespace casual
 			return buffer;
 		}
 
-		Holder::pool_type::iterator Holder::get( void* memory)
+		Buffer& Holder::getBuffer( char* memory)
+		{
+			return *get( memory);
+		}
+
+
+		void Holder::clear()
+		{
+			Holder::pool_type empty;
+			empty.swap( m_memoryPool);
+		}
+
+		Holder::pool_type::iterator Holder::get( char* memory)
 		{
 			pool_type::iterator findIter = std::find_if(
 				m_memoryPool.begin(),
@@ -78,7 +98,7 @@ namespace casual
 			return findIter;
 		}
 
-		void Holder::deallocate( void* memory)
+		void Holder::deallocate( char* memory)
 		{
 			pool_type::iterator buffer = get( memory);
 

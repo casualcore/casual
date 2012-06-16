@@ -23,7 +23,7 @@ namespace casual
 			Buffer() {}
 
 			Buffer( const std::string& type, const std::string& subtype, std::size_t size)
-				: m_type( type), m_subtype( subtype), m_memory( size >= 1024 ? size : 1024) {}
+				: m_type( type), m_subtype( subtype), m_memory( size) {}
 
 			char* raw()
 			{
@@ -47,6 +47,16 @@ namespace casual
 				return m_memory.size();
 			}
 
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				archive & m_type;
+				archive & m_subtype;
+				archive & m_memory;
+
+			}
+
 		private:
 			//Buffer( const Buffer&);
 			Buffer& operator = ( const Buffer&);
@@ -66,14 +76,20 @@ namespace casual
 
 			Buffer& allocate( const std::string& type, const std::string& subtype, std::size_t size);
 
-			Buffer& reallocate( void* memory, std::size_t size);
+			Buffer& create();
 
-			void deallocate( void* memory);
+			Buffer& reallocate( char* memory, std::size_t size);
+
+			void deallocate( char* memory);
+
+			Buffer& getBuffer( char* memory);
+
+			void clear();
 
 
 		private:
 
-			pool_type::iterator get( void* memory);
+			pool_type::iterator get( char* memory);
 
 			Holder();
 			pool_type m_memoryPool;

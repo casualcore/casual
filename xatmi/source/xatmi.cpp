@@ -11,6 +11,9 @@
 #include "casual_utility_string.h"
 
 
+#include "casual_server_context.h"
+
+
 
 
 char* tpalloc( const char* type, const char* subtype, long size)
@@ -45,6 +48,27 @@ long tptypes(char* ptr, char* type, char* subtype)
 void tpfree(char* ptr)
 {
 	casual::buffer::Holder::instance().deallocate( ptr);
+}
+
+
+void tpreturn(int rval, long rcode, char* data, long len, long flags)
+{
+	casual::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
+}
+
+int tpcall(char * svc, char* idata, long ilen, char ** odata, long *olen, long flags)
+{
+
+	return 0;
+}
+
+int tpacall(char * svc, char* idata, long ilen, long flags)
+{
+
+}
+int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
+{
+
 }
 
 

@@ -13,6 +13,9 @@
 
 #include "casual_utility_platform.h"
 
+#include "casual_exception.h"
+#include "casual_buffer.h"
+
 #include <vector>
 
 
@@ -110,19 +113,74 @@ namespace casual
 			}
 		};
 
-		struct Buffer
-		{
-			std::string type;
-
-
-		};
-
 		struct ServiceCall
 		{
 			enum
 			{
 				message_type = 5
 			};
+
+			ServiceCall( buffer::Buffer& buffer) : m_buffer( buffer) {}
+
+			std::string service;
+			ServerId reply;
+
+			buffer::Buffer& buffer()
+			{
+				return m_buffer;
+			}
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				archive & service;
+				archive & m_buffer;
+			}
+
+		private:
+			buffer::Buffer& m_buffer;
+		};
+
+		struct ServiceReply
+		{
+			enum
+			{
+				message_type = 6
+			};
+
+			ServiceReply() : m_buffer( 0) {}
+
+			ServiceReply( buffer::Buffer& buffer) : m_buffer( &buffer) {}
+
+			void setBuffer( buffer::Buffer& buffer)
+			{
+				m_buffer = &buffer;
+			}
+
+			void clearBuffer()
+			{
+				m_buffer = 0;
+			}
+
+
+			int returnValue;
+			long userReturnCode;
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				if( m_buffer == 0)
+				{
+					throw exception::NotReallySureWhatToNameThisException();
+				}
+				archive & returnValue;
+				archive & userReturnCode;
+				archive & *m_buffer;
+			}
+
+		private:
+			buffer::Buffer* m_buffer;
+
 
 		};
 

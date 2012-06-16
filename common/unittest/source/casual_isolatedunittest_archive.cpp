@@ -61,6 +61,29 @@ namespace casual
 
 		}
 
+		TEST( casual_common, archive_binary)
+		{
+			std::vector< char> binaryInput;
+
+			for( int index = 0; index < 3000; ++index)
+			{
+				binaryInput.push_back( static_cast< char>( index));
+
+			}
+
+			output::Binary output;
+			output << binaryInput;
+			EXPECT_TRUE( output.get().size() == binaryInput.size() + sizeof( binaryInput.size())) <<  output.get().size();
+
+
+			input::Binary input( output.get());
+
+			std::vector< char> binaryOutput;
+			input >> binaryOutput;
+
+			EXPECT_TRUE( binaryInput == binaryOutput);
+		}
+
 		TEST( casual_common, archive_io)
 		{
 

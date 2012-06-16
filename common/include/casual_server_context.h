@@ -9,8 +9,11 @@
 #define CASUAL_SERVER_CONTEXT_H_
 
 #include "casual_service_context.h"
+#include "casual_message.h"
 
 #include "casual_ipc.h"
+
+#include "casual_utility_platform.h"
 
 //
 // std
@@ -33,6 +36,8 @@ namespace casual
 
 			int start();
 
+			void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
+
 
 		private:
 
@@ -40,12 +45,22 @@ namespace casual
 
 			void connect();
 
+			void handleServiceCall( message::ServiceCall& context);
+
+			service::Context& getService( const std::string& name);
+
+
+			void cleanUp();
+
+
 			service_mapping_type m_services;
 
 			ipc::receive::Queue m_queue;
 			ipc::send::Queue m_brokerQueue;
 
+			utility::platform::long_jump_buffer_type m_long_jump_buffer;
 
+			message::ServiceReply m_reply;
 
 		};
 

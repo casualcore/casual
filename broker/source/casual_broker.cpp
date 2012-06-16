@@ -111,8 +111,6 @@ namespace casual
 					if( findIter!= m_services.end())
 					{
 						transform::Server transform;
-						Server& server = findIter->second.nextServer();
-
 						responseMessage.server.push_back( transform( findIter->second.nextServer()));
 					}
 

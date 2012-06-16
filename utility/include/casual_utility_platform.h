@@ -18,6 +18,8 @@
 //uuid
 #include <uuid/uuid.h>
 
+// longjump
+#include <setjmp.h>
 
 #include <string.h>
 
@@ -51,6 +53,11 @@ namespace casual
 			typedef uuid_t uuid_type;
 
 			typedef pid_t pid_type;
+
+			//
+			// long jump
+			//
+			typedef jmp_buf long_jump_buffer_type;
 
 
 

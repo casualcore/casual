@@ -16,7 +16,13 @@ namespace casual
 	namespace exception
 	{
 
+		//
+		// Serves as a placeholder for later correct exception, whith hopefully a good name...
+		//
+		struct NotReallySureWhatToNameThisException : public std::exception {};
+
 		struct MemoryNotFound : public std::exception {};
+
 
 		struct EnvironmentVariableNotFound : public std::runtime_error
 		{
