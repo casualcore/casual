@@ -20,6 +20,9 @@ namespace casual
 {
 	namespace queue
 	{
+		//!
+		//! TODO: rewrite... lift out the cache somehow... The semantics is quite different between
+		//! blocking and non-blocking -> different types?
 		class Reader
 		{
 		public:
@@ -50,7 +53,21 @@ namespace casual
 				correlate( archive, type);
 
 				archive >> message;
+			}
 
+			template< typename M>
+			bool fetch( M& message)
+			{
+				message_type_type type = message::type( message);
+
+				archive::input::Binary archive;
+
+				if( correlateNonBlock( archive, type))
+				{
+					archive >> message;
+					return true;
+				}
+				return false;
 			}
 
 			//!
@@ -66,9 +83,23 @@ namespace casual
 			}
 
 
+			//!
+			//! Consumes all transport messages that is present on the ipc-queue, and
+			//! stores these to cache.
+			//!
+			//! @note non blocking
+			//!
+			bool consume();
+
+
 		private:
 
 			void correlate( archive::input::Binary& archive, message_type_type type);
+
+			bool correlateNonBlock( archive::input::Binary& archive, message_type_type type);
+
+
+			void internal_correlate( archive::input::Binary& archive, cache_type::iterator start);
 
 
 			//!

@@ -120,9 +120,11 @@ namespace casual
 				message_type = 5
 			};
 
-			ServiceCall( buffer::Buffer& buffer) : m_buffer( buffer) {}
+			ServiceCall( buffer::Buffer& buffer) : timeout( 0),  m_buffer( buffer) {}
 
+			int callCorrelation;
 			std::string service;
+			std::size_t timeout;
 			ServerId reply;
 
 			buffer::Buffer& buffer()
@@ -133,7 +135,9 @@ namespace casual
 			template< typename A>
 			void serialize( A& archive)
 			{
+				archive & callCorrelation;
 				archive & service;
+				archive & timeout;
 				archive & m_buffer;
 			}
 
@@ -162,7 +166,7 @@ namespace casual
 				m_buffer = 0;
 			}
 
-
+			int callCorrelation;
 			int returnValue;
 			long userReturnCode;
 
@@ -173,6 +177,7 @@ namespace casual
 				{
 					throw exception::NotReallySureWhatToNameThisException();
 				}
+				archive & callCorrelation;
 				archive & returnValue;
 				archive & userReturnCode;
 				archive & *m_buffer;

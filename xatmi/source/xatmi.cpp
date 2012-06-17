@@ -11,6 +11,7 @@
 #include "casual_utility_string.h"
 
 
+#include "casual_calling_context.h"
 #include "casual_server_context.h"
 
 
@@ -18,7 +19,7 @@
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-	casual::buffer::Buffer& buffer = casual::buffer::Holder::instance().allocate(
+	casual::buffer::Buffer& buffer = casual::buffer::Context::instance().allocate(
 			type,
 			subtype,
 			size);
@@ -29,7 +30,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 char* tprealloc(char * addr, long size)
 {
 
-	casual::buffer::Buffer& buffer = casual::buffer::Holder::instance().reallocate(
+	casual::buffer::Buffer& buffer = casual::buffer::Context::instance().reallocate(
 		addr,
 		size);
 
@@ -47,7 +48,7 @@ long tptypes(char* ptr, char* type, char* subtype)
 
 void tpfree(char* ptr)
 {
-	casual::buffer::Holder::instance().deallocate( ptr);
+	casual::buffer::Context::instance().deallocate( ptr);
 }
 
 
@@ -58,17 +59,18 @@ void tpreturn(int rval, long rcode, char* data, long len, long flags)
 
 int tpcall(char * svc, char* idata, long ilen, char ** odata, long *olen, long flags)
 {
+	int result = casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
 
-	return 0;
+	return tpgetrply( &result, odata, olen, flags);
 }
 
 int tpacall(char * svc, char* idata, long ilen, long flags)
 {
-
+	return casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
 }
 int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
 {
-
+	return casual::calling::Context::instance().getReply( *idPtr, odata, *olen, flags);
 }
 
 

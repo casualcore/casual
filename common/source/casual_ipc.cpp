@@ -105,9 +105,8 @@ namespace casual
 
 
 
-			bool Queue::operator () ( message::Transport& message) const
+			bool Queue::receive( message::Transport& message, const long flags) const
 			{
-
 				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
 
 				if( result == -1)

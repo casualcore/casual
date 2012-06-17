@@ -66,13 +66,13 @@ namespace casual
 			std::vector< char> m_memory;
 		};
 
-		class Holder
+		class Context
 		{
 		public:
 
 			typedef std::list< Buffer> pool_type;
 
-			static Holder& instance();
+			static Context& instance();
 
 			Buffer& allocate( const std::string& type, const std::string& subtype, std::size_t size);
 
@@ -91,7 +91,7 @@ namespace casual
 
 			pool_type::iterator get( char* memory);
 
-			Holder();
+			Context();
 			pool_type m_memoryPool;
 		};
 

@@ -117,20 +117,24 @@ namespace casual
 			{
 			public:
 
-				typedef std::size_t Seconds;
+				enum
+				{
+					cNoBlocking = utility::platform::cIPC_NO_WAIT
+				};
 
 				Queue();
 				~Queue();
 
-				bool operator () ( message::Transport& message) const;
+				bool operator () ( message::Transport& message) const
+				{
+					return receive( message, 0);
+				}
 
-				/*
-				//!
-				//! @param message message to receive
-				//! @param timeout seconds to wait for message
-				//!
-				bool operator () ( message::Transport& message, Seconds timeout) const;
-				*/
+				bool operator () ( message::Transport& message, const long flags) const
+				{
+					// TODO: constraint on flags?
+					return receive( message, flags);
+				}
 
 			private:
 				//!
@@ -139,6 +143,9 @@ namespace casual
 				Queue( const Queue&);
 				Queue& operator = ( const Queue&);
 				//! @}
+
+
+				bool receive( message::Transport& message, const long flags) const;
 
 				utility::file::ScopedPath m_scopedPath;
 			};

@@ -53,6 +53,20 @@ namespace casual
 					utility::Uuid m_uuid;
 				};
 
+				struct MessageTypeInCache
+				{
+					MessageTypeInCache( Reader::message_type_type type) : m_type( type) {}
+
+					bool operator () ( const ipc::message::Transport& message)
+					{
+						return m_type( message) && message.m_payload.m_header.m_count == 0;
+					}
+
+				private:
+					MessageType m_type;
+				};
+
+
 			}
 
 		}
@@ -68,10 +82,31 @@ namespace casual
 			return current->m_payload.m_type;
 		}
 
+		bool Reader::consume()
+		{
+			ipc::message::Transport transport;
+
+			bool fetched = false;
+
+			while( m_queue( transport, ipc::receive::Queue::cNoBlocking))
+			{
+				messageCache().insert( messageCache().end(), transport);
+				fetched = true;
+			}
+			return fetched;
+
+		}
+
 		void Reader::correlate( archive::input::Binary& archive, message_type_type type)
 		{
 			cache_type::iterator current = first( type);
 
+			internal_correlate( archive, current);
+		}
+
+
+		void Reader::internal_correlate( archive::input::Binary& archive, cache_type::iterator current)
+		{
 			archive.add( *current);
 
 			local::Correlation correlation( current->m_payload.m_header.m_correlation);
@@ -104,6 +139,52 @@ namespace casual
 			}
 		}
 
+
+		bool Reader::correlateNonBlock( archive::input::Binary& archive, message_type_type type)
+		{
+			//
+			// empty queue first
+			//
+			consume();
+
+			//
+			//	check if we can find a message whith the type in cache
+			//
+			cache_type::iterator findIter = std::find_if(
+					messageCache().begin(),
+					messageCache().end(),
+					local::MessageTypeInCache( type));
+
+			if( findIter != messageCache().end())
+			{
+				//
+				// We know the full message lies in cache, use the "blocking" implementation
+				// Though, first we have to find the first message in the cache that correspond to
+				// the same correlation id (since we searched for the last)
+				//
+				findIter = std::find_if(
+					messageCache().begin(),
+					messageCache().end(),
+					local::Correlation( findIter->m_payload.m_header.m_correlation));
+
+				if( findIter != messageCache().end())
+				{
+					internal_correlate( archive, findIter);
+				}
+				else
+				{
+					//
+					// Somehow the cache contains inconsistent data...
+					//
+					throw exception::NotReallySureWhatToNameThisException();
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
 		Reader::cache_type::iterator Reader::first( message_type_type type)
 		{
 			cache_type::iterator current = fetchIfEmpty( messageCache().begin());
@@ -132,6 +213,8 @@ namespace casual
 
 			return start;
 		}
+
+
 
 
 		Reader::cache_type& Reader::messageCache()

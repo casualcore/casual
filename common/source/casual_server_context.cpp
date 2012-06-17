@@ -84,8 +84,10 @@ namespace casual
 				{
 				case message::ServiceCall::message_type:
 				{
-					message::ServiceCall message( buffer::Holder::instance().create());
+					message::ServiceCall message( buffer::Context::instance().create());
 					queueReader( message);
+
+					handleServiceCall( message);
 
 					break;
 				}
@@ -143,6 +145,12 @@ namespace casual
 				// No longjmp has been called, this is the first time in this context
 				// Let's call the user service...
 				//
+
+				//
+				// set the call-correlation
+				//
+				m_reply.callCorrelation = context.callCorrelation;
+
 				service::Context& service = getService( context.service);
 
 				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( context);
@@ -160,8 +168,9 @@ namespace casual
 				writer( m_reply);
 
 				//
-				// TODO: Do some cleanup...
+				// Do some cleanup...
 				//
+				cleanUp();
 
 			}
 		}
@@ -188,7 +197,7 @@ namespace casual
 
 			m_reply.returnValue = rval;
 			m_reply.userReturnCode = rcode;
-			m_reply.setBuffer( buffer::Holder::instance().getBuffer( data));
+			m_reply.setBuffer( buffer::Context::instance().getBuffer( data));
 
 			longjmp( m_long_jump_buffer, 1);
 		}
@@ -196,7 +205,7 @@ namespace casual
 		void Context::cleanUp()
 		{
 			m_reply.clearBuffer();
-			buffer::Holder::instance().clear();
+			buffer::Context::instance().clear();
 		}
 
 

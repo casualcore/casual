@@ -11,6 +11,8 @@
 #include <string>
 #include <sstream>
 
+#include "casual_utility_platform.h"
+
 namespace casual
 {
 	namespace utility
@@ -32,8 +34,6 @@ namespace casual
 					return result;
 				}
 
-
-
 			}
 
 			const std::string& getTemporaryPath();
@@ -41,6 +41,9 @@ namespace casual
 			const std::string& getRootPath();
 
 			std::string getBrokerQueueFileName();
+
+			platform::seconds_type getTime();
+
 
 		}
 

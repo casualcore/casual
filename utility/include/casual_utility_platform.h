@@ -11,6 +11,7 @@
 
 // ipc
 #include <sys/msg.h>
+#include <sys/ipc.h>
 
 // size_t
 #include <cstddef>
@@ -20,6 +21,9 @@
 
 // longjump
 #include <setjmp.h>
+
+// time
+#include <time.h>
 
 #include <string.h>
 
@@ -59,6 +63,16 @@ namespace casual
 			//
 			typedef jmp_buf long_jump_buffer_type;
 
+			//
+			// time
+			//
+			typedef time_t seconds_type;
+
+
+			enum ipc_flags
+			{
+				cIPC_NO_WAIT = IPC_NOWAIT
+			};
 
 
 			pid_type getProcessId();

@@ -12,6 +12,9 @@
 #include <stdlib.h>
 
 
+#include <time.h>
+
+
 namespace casual
 {
 	namespace utility
@@ -56,6 +59,12 @@ namespace casual
 			{
 				static const std::string result = "/tmp";
 				return result;
+			}
+
+
+			platform::seconds_type getTime()
+			{
+				return time( 0);
 			}
 
 		}
