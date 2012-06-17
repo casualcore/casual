@@ -15,7 +15,7 @@
 
 
 #include <fstream>
-
+#include <algorithm>
 
 //temp
 #include <iostream>
