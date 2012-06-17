@@ -14,6 +14,8 @@
 
 #include "xatmi.h"
 
+#include <algorithm>
+
 
 namespace casual
 {

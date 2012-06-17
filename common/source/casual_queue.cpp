@@ -13,6 +13,9 @@
 // temp
 #include <iostream>
 
+
+#include <algorithm>
+
 namespace casual
 {
 	namespace queue
