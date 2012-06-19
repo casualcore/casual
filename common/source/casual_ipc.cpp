@@ -107,44 +107,33 @@ namespace casual
 
 			bool Queue::receive( message::Transport& message, const long flags) const
 			{
-				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, 0);
+				ssize_t result = msgrcv( m_id, message.raw(), message.size(), 0, flags);
 
 				if( result == -1)
 				{
-					if( errno == EINTR)
+					switch( errno)
 					{
-						utility::signal::handle();
-						return false;
+						case EINTR:
+						{
+							utility::signal::handle();
+							return false;
+						}
+						case ENOMSG:
+						{
+							return false;
+						}
+						default:
+						{
+							throw exception::QueueReceive( error::stringFromErrno());
+						}
 					}
-					throw exception::QueueReceive( error::stringFromErrno());
 				}
 
 				message.size( result);
 
-				return true;
+				return result > 0;
 			}
-
-			/*
-
-			bool Queue::operator () ( message::Transport& message, Seconds timout) const
-			{
-				//
-				// set signal for timout
-				//
-				alarm( timout);
-
-				bool result = operator () ( message);
-
-				//
-				// cancel the alarm
-				//
-				alarm( 0);
-
-				return result;
-			}
-			*/
-
-		}
+		} // receive
 
 
 

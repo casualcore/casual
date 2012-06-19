@@ -79,8 +79,8 @@ namespace casual
 			{
 				//std::cout << "---- Reading queue  ----" << std::endl;
 
-				queue::Reader queueReader( m_queue);
-				queue::Reader::message_type_type message_type = queueReader.next();
+				queue::blocking::Reader queueReader( m_queue);
+				queue::message_type_type message_type = queueReader.next();
 
 				switch( message_type)
 				{

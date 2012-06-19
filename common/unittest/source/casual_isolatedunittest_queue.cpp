@@ -22,7 +22,7 @@ namespace casual
 	namespace queue
 	{
 
-		TEST( casual_common, queue_writer_reader)
+		TEST( casual_common, queue_writer_blocking_reader)
 		{
 			ipc::receive::Queue receive;
 
@@ -43,7 +43,7 @@ namespace casual
 			}
 
 			{
-				Reader reader( receive);
+				blocking::Reader reader( receive);
 
 				message::ServerConnect message;
 
@@ -62,14 +62,65 @@ namespace casual
 		TEST( casual_common, queue_reader_timeout)
 		{
 			ipc::receive::Queue receive;
-			Reader reader( receive);
+			blocking::Reader reader( receive);
+
+			utility::signal::scoped::Alarm timeout( 1);
 
 			message::ServerConnect message;
 
 			EXPECT_THROW({
-				reader( message, 1);
+				reader( message);
 			}, exception::signal::Timeout);
 
+
+		}
+
+		TEST( casual_common, queue_non_blocking_reader_no_messages)
+		{
+			ipc::receive::Queue receive;
+			non_blocking::Reader reader( receive);
+
+			message::ServerConnect message;
+
+			EXPECT_FALSE( reader( message));
+
+		}
+
+		TEST( casual_common, queue_non_blocking_reader_message)
+		{
+			ipc::receive::Queue receive;
+			non_blocking::Reader reader( receive);
+
+			ipc::send::Queue send( receive.getKey());
+			Writer writer( send);
+
+			message::ServerConnect sendMessage;
+			sendMessage.serverPath = "banan";
+			writer( sendMessage);
+
+			message::ServerConnect receiveMessage;
+			EXPECT_TRUE( reader( receiveMessage));
+			EXPECT_TRUE( receiveMessage.serverPath == "banan");
+
+		}
+
+		TEST( casual_common, queue_non_blocking_reader_big_message)
+		{
+			ipc::receive::Queue receive;
+			non_blocking::Reader reader( receive);
+
+			ipc::send::Queue send( receive.getKey());
+			Writer writer( send);
+
+			message::ServerConnect sendMessage;
+			sendMessage.serverPath = "banan";
+			sendMessage.services.resize( 200);
+			writer( sendMessage);
+
+			message::ServerConnect receiveMessage;
+			EXPECT_TRUE( reader( receiveMessage));
+			EXPECT_TRUE( receiveMessage.serverPath == "banan");
+			EXPECT_TRUE( receiveMessage.services.size() == 200);
 
 		}
 	}

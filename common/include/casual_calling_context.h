@@ -47,10 +47,10 @@ namespace casual
 			Context();
 
 			ipc::send::Queue m_brokerQueue;
-			queue::Writer m_brokerWriter;
+			//queue::Writer m_brokerWriter;
 
 			ipc::receive::Queue m_localQueue;
-			queue::Reader m_localReader;
+			//queue::Reader m_localReader;
 
 
 			std::vector< internal::Pending> m_pendingReplies;

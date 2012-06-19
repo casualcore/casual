@@ -32,7 +32,7 @@ int main( int argc, char** argv)
 
 
 	casual::ipc::receive::Queue myQueue;
-	casual::queue::Reader reader( myQueue);
+	casual::queue::blocking::Reader reader( myQueue);
 
 	casual::message::ServerConnect serverConnect;
 

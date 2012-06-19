@@ -20,100 +20,103 @@ namespace casual
 {
 	namespace queue
 	{
-		//!
-		//! TODO: rewrite... lift out the cache somehow... The semantics is quite different between
-		//! blocking and non-blocking -> different types?
-		class Reader
+		typedef ipc::message::Transport transport_type;
+		typedef transport_type::message_type_type message_type_type;
+
+		namespace blocking
 		{
-		public:
-			typedef ipc::message::Transport transport_type;
-			typedef transport_type::message_type_type message_type_type;
-			typedef std::size_t Seconds;
-
-			typedef std::list< ipc::message::Transport> cache_type;
-
-			Reader( ipc::receive::Queue& queue);
 
 			//!
-			//! Gets the next message type.
 			//!
-			message_type_type next();
-
 			//!
-			//! Tries to read a specific message from the queue.
-			//! @attention use next() to determine which message is ready to read.
-			//!
-			template< typename M>
-			void operator () ( M& message)
+			class Reader
 			{
-				message_type_type type = message::type( message);
+			public:
 
-				archive::input::Binary archive;
+				Reader( ipc::receive::Queue& queue);
 
-				correlate( archive, type);
+				//!
+				//! Gets the next message type.
+				//!
+				message_type_type next();
 
-				archive >> message;
-			}
-
-			template< typename M>
-			bool fetch( M& message)
-			{
-				message_type_type type = message::type( message);
-
-				archive::input::Binary archive;
-
-				if( correlateNonBlock( archive, type))
+				//!
+				//! Tries to read a specific message from the queue.
+				//! @attention use next() to determine which message is ready to read.
+				//!
+				template< typename M>
+				void operator () ( M& message)
 				{
+					message_type_type type = message::type( message);
+
+					archive::input::Binary archive;
+
+					correlate( archive, type);
+
 					archive >> message;
-					return true;
 				}
-				return false;
-			}
+
+
+			private:
+
+				void correlate( archive::input::Binary& archive, message_type_type type);
+
+				ipc::receive::Queue& m_queue;
+
+			};
+		} // blocking
+
+		namespace non_blocking
+		{
 
 			//!
-			//! Tries to read a specific message from the queue.
-			//! @attention use next() to determine which message is ready to read.
+			//! Non-blocking reader
 			//!
-			template< typename M>
-			void operator () ( M& message, Seconds timeout)
+			class Reader
 			{
-				utility::signal::scoped::Alarm alarm( timeout);
-
-				this->operator ()( message);
-			}
+			public:
 
 
-			//!
-			//! Consumes all transport messages that is present on the ipc-queue, and
-			//! stores these to cache.
-			//!
-			//! @note non blocking
-			//!
-			bool consume();
+				Reader( ipc::receive::Queue& queue);
 
 
-		private:
+				//!
+				//! Tries to read a specific message from the queue.
+				//! non-blocking
+				//! @return true if the specific message-type is read. false otherwise.
+				//!
+				template< typename M>
+				bool operator() ( M& message)
+				{
+					message_type_type type = message::type( message);
 
-			void correlate( archive::input::Binary& archive, message_type_type type);
+					archive::input::Binary archive;
 
-			bool correlateNonBlock( archive::input::Binary& archive, message_type_type type);
+					if( correlate( archive, type))
+					{
+						archive >> message;
+						return true;
+					}
+					return false;
+				}
+
+				//!
+				//! Consumes all transport messages that is present on the ipc-queue, and
+				//! stores these to cache.
+				//!
+				//! @note non blocking
+				//!
+				bool consume();
 
 
-			void internal_correlate( archive::input::Binary& archive, cache_type::iterator start);
+			private:
 
+				bool correlate( archive::input::Binary& archive, message_type_type type);
 
-			//!
-			//! finds and return the first transport-message of a specified type.
-			//!
-			cache_type::iterator first( message_type_type type);
+				ipc::receive::Queue& m_queue;
 
-			cache_type::iterator fetchIfEmpty( cache_type::iterator start);
-
-			cache_type& messageCache();
-
-			ipc::receive::Queue& m_queue;
-
-		};
+			};
+		}
 
 
 		class Writer

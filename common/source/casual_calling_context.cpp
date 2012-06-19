@@ -52,11 +52,12 @@ namespace casual
  	    		serviceLookup.requested = service;
  	    		serviceLookup.server.queue_key = m_localQueue.getKey();
 
- 	    		m_brokerWriter( serviceLookup);
+ 	    		queue::Writer broker( m_brokerQueue);
+ 	    		broker( serviceLookup);
 
  	    		message::ServiceResponse serviceResponse;
-
- 	    		m_localReader( serviceResponse);
+ 	    		queue::blocking::Reader reader( m_localQueue);
+ 	    		reader( serviceResponse);
 
  	    		if( serviceResponse.server.empty())
  	    		{
@@ -108,8 +109,7 @@ namespace casual
  	   }
 
  	   Context::Context()
- 	   	   : m_brokerQueue( ipc::getBrokerQueue()), m_brokerWriter( m_brokerQueue),
- 	   	     m_localReader( m_localQueue)
+ 	   	   : m_brokerQueue( ipc::getBrokerQueue())
  	   {
 
  	   }

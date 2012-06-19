@@ -75,13 +75,13 @@ namespace casual
 
 		void Broker::start()
 		{
-			queue::Reader queueReader( m_receiveQueue);
+			queue::blocking::Reader queueReader( m_receiveQueue);
 
 			while( true)
 			{
 				std::cout << "---- Reading queue  ----" << std::endl;
 
-				queue::Reader::message_type_type message_type = queueReader.next();
+				queue::message_type_type message_type = queueReader.next();
 
 				switch( message_type)
 				{
