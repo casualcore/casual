@@ -1,0 +1,160 @@
+#!/usr/bin/python
+'''
+Created on 22 jun 2012
+
+@author: hbergk
+
+module to produce an atmiserver
+'''
+from string import Template
+import tempfile
+import os
+import subprocess
+import sys
+
+#
+# Template for create extern declaration of services
+#
+extern_declaration = Template('extern void $service( TPSVCINFO *transb);')
+#
+# Template for function/service-mapping
+#
+mapping = Template('{&$service, "$service"}')
+#
+# Template for the actual file defining the main function
+#
+content = Template(
+"""
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <xatmi.h>
+#include <xatmi_server.h>
+
+$extern_declaration_content
+
+int main( int argc, char** argv)
+{
+
+    struct casual_service_name_mapping mapping[] = {
+            $mapping_content
+    };
+
+    return casual_startServer(
+            argc,
+            argv,
+            mapping,
+            sizeof( mapping) / sizeof( struct casual_service_name_mapping));
+
+}
+
+#ifdef __cplusplus
+}
+#endif
+""")
+
+class BuildServer(object):
+    """ """
+    def __init__(self):
+        #
+        # Create a named c file which will be compiled
+        #
+        self.file = tempfile.NamedTemporaryFile(delete=False,suffix=".c")
+        #
+        # Analyze arguments
+        #
+        self.handleArguments()
+        
+    def handleArguments(self):
+        """Argument analyzer"""
+        
+        from optparse import OptionParser
+        usage = "usage: %prog [options] arg"
+        parser = OptionParser(usage)
+        
+        parser.set_defaults(firstfiles=[])
+        parser.set_defaults(verbose=False)
+        parser.add_option("-s", "--services", dest="services")
+        parser.add_option("-o", "--output", dest="output") 
+        parser.add_option("-f", "--firstfiles", action="append", dest="firstfiles") 
+        parser.add_option("-l", "--lastfiles", dest="lastfiles") 
+        parser.add_option("-r", "--resource", dest="resource")
+        parser.add_option("-v", "--verbose", action="store_true", dest="verbose")
+   
+        (self.options, self.args) = parser.parse_args()
+        
+        if not self.options.services:
+            parser.error("No services entered")
+        if not self.options.output:
+            parser.error("No output entered")
+
+    def produceMain(self):
+        """Produce content to the named c file"""     
+        mapping_content=""
+        extern_declaration_content=""
+        #
+        # Loop thru all services
+        #
+        for service in self.options.services.split(','):
+            extern_declaration_content=extern_declaration_content + extern_declaration.substitute(service=service.strip()) + "\n"  
+            mapping_content=mapping_content + mapping.substitute(service=service.strip()) + ",\n"
+        #
+        # remove trailing ","
+        #
+        mapping_content=mapping_content.rstrip(',\n')
+        #
+        # replace variables in template and write file
+        #
+        self.file.write(content.substitute( extern_declaration_content=extern_declaration_content, mapping_content=mapping_content))
+        self.file.close()
+        
+    def runCommand(self,command):
+        """Running the compile/link command"""
+        if self.options.verbose:
+            print command
+        try:
+            process = subprocess.Popen( command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except:
+            raise
+        
+        (stdoutdata, stderrdata) = process.communicate() 
+        
+        if stdoutdata:
+            print stdoutdata
+            
+        if process.returncode:
+            print stderrdata
+            sys.exit( process.returncode)
+        
+    def CC_compile(self):
+        objectfilename = os.path.splitext(self.file.name)[0] + ".o"
+        if not os.getenv("CASUAL_HOME"):
+            sys.stderr.write("CASUAL_HOME: Empty\n")
+            exit (-2)
+            
+        #
+        # Compile templatefile
+        #
+        command = os.getenv("CC") + " -o " + objectfilename + " " + self.file.name + " -I" + os.getenv("CASUAL_PATH") + "/xatmi/include -c"    
+        self.runCommand(command)        
+        
+        #
+        # Link executable server
+        #
+        command = os.getenv("CC") + " -o " + self.options.output + " " + objectfilename + " " + " ".join( self.options.firstfiles)
+        self.runCommand(command)
+
+        #
+        # Cleanup
+        #
+        os.unlink(self.file.name)
+        os.unlink(objectfilename)
+    
+if __name__ == '__main__':
+    build=BuildServer()
+    build.produceMain()
+    build.CC_compile()
+    
+    
+    

@@ -63,9 +63,9 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -c -fPIC 
-   LINK_DIRECTIVES_LIB =  -g -dynamiclib -fPIC 
-   LINK_DIRECTIVES_EXE =  -g -fPIC 
+   COMPILE_DIRECTIVES = -g -c -fPIC -fprofile-arcs -ftest-coverage
+   LINK_DIRECTIVES_LIB =  -g -dynamiclib -fPIC -fprofile-arcs
+   LINK_DIRECTIVES_EXE =  -g -fPIC -lgcov -fprofile-arcs
    LINK_DIRECTIVES_ARCHIVE =  -g -fPIC 
 else
    COMPILE_DIRECTIVES =  -c -O3 -fPIC
@@ -83,8 +83,8 @@ LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
 CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -Wno-long-long -DNOWHAT
 
-BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(TUXDIR)/bin/buildserver -v
-BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(TUXDIR)/bin/buildclient -v
+BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
+BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
 
 #
 # Purify
@@ -108,9 +108,7 @@ endif
 ARCHIVEROPTIONS = -r
 
 #
-# Användarens definerade paths läggs först för ha företräde
-# före default.
-# DB2 måste inkluderas före Tuxedo.
+#
 #
 INCLUDE_PATHS := $(INCLUDE_PATHS) 
 LIBRARY_PATHS := $(LIBRARY_PATHS)

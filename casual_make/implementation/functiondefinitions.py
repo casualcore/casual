@@ -197,7 +197,7 @@ def LinkAtmiServer(name,objectfiles,libs,services):
 ######################################################################
     """
 
-    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, "-s " + services, "$(DEFAULTSRVMGR)", objectfiles, libs, "")
+    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, "-s \"" + services + "\"", objectfiles, libs, "")
     internal_print_services_file_dependency( name, services)
 
 

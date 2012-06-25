@@ -97,13 +97,22 @@ class Parser(object):
         """Add quotes to method arguments"""
 
         utdata=""
+        quote = False
         for c in indata:
             if c == '(':
                 utdata = utdata + c + r'"'
+                quote = not quote
             elif c ==')':
                 utdata = utdata + r'"' + c
+                quote = not quote
             elif c == ',':
-                utdata = utdata + r'"' + c + r'"'
+                if quote:
+                    utdata = utdata + r'"' + c + r'"'
+                else:
+                    utdata = utdata + c
+            elif c == '"':
+                #utdata = utdata + c
+                quote = not quote
             else:  
                 utdata = utdata + c
         #
