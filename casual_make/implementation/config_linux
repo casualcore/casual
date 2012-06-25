@@ -61,7 +61,7 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -fprofile-arcs -ftest-coverage
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -fprofile-arcs -ftest-coverage -Wall -pedantic -Wno-long-long -DNOWHAT
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic -fprofile-arcs
    LINK_DIRECTIVES_EXE = -g -pthread  -fpic -lgcov -fprofile-arcs
    LINK_DIRECTIVES_ARCHIVE = -g 
@@ -79,7 +79,7 @@ COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -DNOWHAT -DRFV_DLL -DRFV_DEBUG
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -DNOWHAT
 
 BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
