@@ -136,7 +136,7 @@ class BuildServer(object):
         #
         # Compile templatefile
         #
-        command = os.getenv("CC") + " -o " + objectfilename + " " + self.file.name + " -I" + os.getenv("CASUAL_PATH") + "/xatmi/include -c"    
+        command = os.getenv("CC") + " -o " + objectfilename + " " + self.file.name + " -I" + os.getenv("CASUAL_HOME") + "/xatmi/include -c"    
         self.runCommand(command)        
         
         #
