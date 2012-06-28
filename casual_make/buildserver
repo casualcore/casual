@@ -127,7 +127,7 @@ class BuildServer(object):
             print stderrdata
             sys.exit( process.returncode)
         
-    def CC_compile(self):
+    def compileAndlink(self):
         objectfilename = os.path.splitext(self.file.name)[0] + ".o"
         if not os.getenv("CASUAL_HOME"):
             sys.stderr.write("CASUAL_HOME: Empty\n")
@@ -154,7 +154,7 @@ class BuildServer(object):
 if __name__ == '__main__':
     build=BuildServer()
     build.produceMain()
-    build.CC_compile()
+    build.compileAndlink()
     
     
     
