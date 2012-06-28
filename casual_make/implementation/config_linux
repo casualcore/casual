@@ -61,10 +61,10 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -fprofile-arcs -ftest-coverage -Wall -pedantic -Wno-long-long -Wno-variadic-macros -pg
-   LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic -fprofile-arcs  -pg
-   LINK_DIRECTIVES_EXE = -g -pthread  -fpic -lgcov -fprofile-arcs  -pg
-   LINK_DIRECTIVES_ARCHIVE = -g  -pg
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -fprofile-arcs -ftest-coverage -Wall -pedantic -Wno-long-long -Wno-variadic-macros 
+   LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic -fprofile-arcs  
+   LINK_DIRECTIVES_EXE = -g -pthread  -fpic -lgcov -fprofile-arcs  
+   LINK_DIRECTIVES_ARCHIVE = -g  
 else
    COMPILE_DIRECTIVES = -pthread -c -O3 -fpic
    LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic
