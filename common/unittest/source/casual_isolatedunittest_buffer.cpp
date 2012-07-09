@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_buffer.h"
+#include "casual_buffer_context.h"
 
 
 namespace casual

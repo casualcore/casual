@@ -57,6 +57,11 @@ namespace casual
 
 			}
 
+			void clear()
+			{
+				m_memory.clear();
+			}
+
 		private:
 			//Buffer( const Buffer&);
 			Buffer& operator = ( const Buffer&);
@@ -95,6 +100,30 @@ namespace casual
 			pool_type m_memoryPool;
 		};
 
+
+		namespace scoped
+		{
+			struct Deallocator
+			{
+				Deallocator( Buffer& buffer) : m_memory( buffer.raw())
+				{
+
+				}
+
+				~Deallocator()
+				{
+					Context::instance().deallocate( m_memory);
+				}
+
+				void release()
+				{
+					m_memory = 0;
+				}
+
+			private:
+				char* m_memory;
+			};
+		}
 
 
 	}

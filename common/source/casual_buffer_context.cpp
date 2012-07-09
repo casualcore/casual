@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "casual_buffer.h"
+#include "casual_buffer_context.h"
 
 
 #include <stdexcept>
@@ -100,9 +100,12 @@ namespace casual
 
 		void Context::deallocate( char* memory)
 		{
-			pool_type::iterator buffer = get( memory);
+		   if( memory != 0)
+		   {
+            pool_type::iterator buffer = get( memory);
 
-			m_memoryPool.erase( buffer);
+            m_memoryPool.erase( buffer);
+		   }
 
 		}
 

@@ -117,6 +117,8 @@ namespace casual
 					ipc::send::Queue responseQueue( message.server.queue_key);
 					queue::Writer writer( responseQueue);
 
+					writer( responseMessage);
+
 					break;
 				}
 				default:

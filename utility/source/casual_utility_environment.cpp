@@ -67,6 +67,13 @@ namespace casual
 				return time( 0);
 			}
 
+			std::string getDomainName()
+			{
+				//
+				// TODO: Maybe store the domainname in broker-queue-file?
+				return "domain-1";
+			}
+
 		}
 	}
 }

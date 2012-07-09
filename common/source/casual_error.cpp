@@ -12,7 +12,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <iostream>
+#include "casual_logger.h"
 
 namespace casual
 {
@@ -21,8 +21,16 @@ namespace casual
 
 		int handler()
 		{
-			std::cerr << "casual::error::handler called " << std::endl;
-			return 0;
+			try
+			{
+				throw;
+			}
+			catch( const std::exception& exception)
+			{
+				logger::error << "exception: " << exception.what();
+			}
+
+			return -1;
 		}
 
 

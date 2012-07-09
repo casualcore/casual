@@ -8,6 +8,8 @@
 #ifndef CASUAL_UTILITY_STRING_H_
 #define CASUAL_UTILITY_STRING_H_
 
+#include <string>
+
 namespace casual
 {
 

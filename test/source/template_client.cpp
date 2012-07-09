@@ -10,9 +10,9 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <iostream>
 
-#include "casual_ipc.h"
-#include "casual_queue.h"
+#include "xatmi.h"
 
 
 
@@ -26,34 +26,28 @@ int main( int argc, char** argv)
 		argv + argc,
 		std::back_inserter( arguments));
 
-
-	casual::ipc::send::Queue brokerQueue = casual::ipc::getBrokerQueue();
-	casual::queue::Writer writer( brokerQueue);
-
-
-	casual::ipc::receive::Queue myQueue;
-	casual::queue::blocking::Reader reader( myQueue);
-
-	casual::message::ServerConnect serverConnect;
-
-	serverConnect.serverId.queue_key = myQueue.getKey();
-	serverConnect.serverPath = "/bja/bkalj/bkjls/dkfjslj";
-
-	if( arguments.size() > 1)
+	if( arguments.size() < 2)
 	{
-		std::istringstream converter( arguments[ 1]);
-		std::size_t count;
-		converter >> count;
-
-		for( int index = 0; index < count; ++index)
-		{
-			casual::message::Service service;
-			service.name ="sdlkfjslkjdfskldf";
-			serverConnect.services.push_back( service);
-		}
+	   std::cerr << "need at least 1 argument" << std::endl;
+	   return 1;
 	}
 
-	writer( serverConnect);
+
+	char* buffer = tpalloc( "STRING", "", 1024);
+
+	const std::string& argument = arguments[ 1];
+
+	std::copy( argument.begin(), argument.end(), buffer);
+	buffer[ argument.size()] = '\0';
+
+
+	long size = 0;
+	tpcall( "casual_test1", buffer, 0, &buffer, &size, 0);
+
+	std::cout << std::endl << "reply: " << buffer << std::endl;
+
+	tpfree( buffer);
+
 
 }
 

@@ -14,7 +14,7 @@
 #include "casual_utility_platform.h"
 
 #include "casual_exception.h"
-#include "casual_buffer.h"
+#include "casual_buffer_context.h"
 
 #include <vector>
 
@@ -122,7 +122,7 @@ namespace casual
 
 			ServiceCall( buffer::Buffer& buffer) : timeout( 0),  m_buffer( buffer) {}
 
-			int callCorrelation;
+			int callDescriptor;
 			std::string service;
 			std::size_t timeout;
 			ServerId reply;
@@ -135,9 +135,10 @@ namespace casual
 			template< typename A>
 			void serialize( A& archive)
 			{
-				archive & callCorrelation;
+				archive & callDescriptor;
 				archive & service;
 				archive & timeout;
+				archive & reply;
 				archive & m_buffer;
 			}
 
@@ -161,12 +162,18 @@ namespace casual
 				m_buffer = &buffer;
 			}
 
-			void clearBuffer()
+			buffer::Buffer& getBuffer()
+			{
+				return *m_buffer;
+			}
+
+
+			void releaseBuffer()
 			{
 				m_buffer = 0;
 			}
 
-			int callCorrelation;
+			int callDescriptor;
 			int returnValue;
 			long userReturnCode;
 
@@ -177,7 +184,7 @@ namespace casual
 				{
 					throw exception::NotReallySureWhatToNameThisException();
 				}
-				archive & callCorrelation;
+				archive & callDescriptor;
 				archive & returnValue;
 				archive & userReturnCode;
 				archive & *m_buffer;

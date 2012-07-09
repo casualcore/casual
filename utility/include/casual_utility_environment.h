@@ -44,6 +44,8 @@ namespace casual
 
 			platform::seconds_type getTime();
 
+			std::string getDomainName();
+
 
 		}
 

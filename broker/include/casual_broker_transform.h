@@ -26,7 +26,7 @@ namespace casual
 
 					result.m_path = message.serverPath;
 					result.m_pid = message.serverId.pid;
-					result.m_queue_key = message.serverId.pid;
+					result.m_queue_key = message.serverId.queue_key;
 
 					return result;
 				}

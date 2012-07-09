@@ -13,9 +13,16 @@
 
 #include "casual_utility_platform.h"
 
+#include <set>
+#include <map>
+
 
 namespace casual
 {
+   namespace server
+   {
+      class Context;
+   }
 
 	namespace calling
 	{
@@ -28,6 +35,11 @@ namespace casual
 				int callDescriptor;
 				seconds_type called;
 				seconds_type timeout;
+
+				bool operator < ( const Pending& rhs) const
+				{
+					return callDescriptor < rhs.callDescriptor;
+				}
 			};
 		}
 
@@ -41,21 +53,44 @@ namespace casual
 
 			int asyncCall( const std::string& service, char* idata, long ilen, long flags);
 
-			int getReply( int& idPtr, char** odata, long& olen, long flags);
+			int getReply( int* idPtr, char** odata, long& olen, long flags);
+
+			void clean();
 
 		private:
+
+			friend class casual::server::Context;
+
+			ipc::send::Queue& brokerQueue();
+			ipc::receive::Queue& receiveQueue();
+
+
+
+			typedef std::set< internal::Pending> pending_calls_type;
+			typedef std::map< int, message::ServiceReply> reply_cache_type;
+
 			Context();
 
+			reply_cache_type::iterator find( int callDescriptor);
+
+			reply_cache_type::iterator fetch( int callDescriptor);
+
+			reply_cache_type::iterator add( message::ServiceReply& reply);
+
+
+			void consume();
+
+
 			ipc::send::Queue m_brokerQueue;
-			//queue::Writer m_brokerWriter;
-
-			ipc::receive::Queue m_localQueue;
-			//queue::Reader m_localReader;
+			ipc::receive::Queue m_receiveQueue;
 
 
-			std::vector< internal::Pending> m_pendingReplies;
-			std::vector< message::ServiceReply> m_replyCache;
+			pending_calls_type m_pendingReplies;
 
+
+			reply_cache_type m_replyCache;
+
+			int m_callingDescriptor;
 
 		};
 	}

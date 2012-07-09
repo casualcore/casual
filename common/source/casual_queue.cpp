@@ -155,8 +155,6 @@ namespace casual
 			{
 				local::cache_type::iterator current = local::fetchIfEmpty( m_queue, local::messageCache().begin());
 
-				const message_type_type type = current->m_payload.m_type;
-
 				return current->m_payload.m_type;
 			}
 
@@ -198,7 +196,7 @@ namespace casual
 				consume();
 
 				//
-				//	check if we can find a message whith the type in cache
+				//	check if we can find a message with the type in cache
 				//
 				local::cache_type::iterator findIter = std::find_if(
 						local::messageCache().begin(),

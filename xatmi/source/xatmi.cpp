@@ -7,7 +7,7 @@
 
 #include "xatmi.h"
 
-#include "casual_buffer.h"
+#include "casual_buffer_context.h"
 #include "casual_utility_string.h"
 
 
@@ -20,8 +20,8 @@
 char* tpalloc( const char* type, const char* subtype, long size)
 {
 	casual::buffer::Buffer& buffer = casual::buffer::Context::instance().allocate(
-			type,
-			subtype,
+			type ? type : "",
+			subtype ? subtype : "",
 			size);
 
 	return buffer.raw();
@@ -57,20 +57,20 @@ void tpreturn(int rval, long rcode, char* data, long len, long flags)
 	casual::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
 }
 
-int tpcall(char * svc, char* idata, long ilen, char ** odata, long *olen, long flags)
+int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen, long flags)
 {
 	int result = casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
 
 	return tpgetrply( &result, odata, olen, flags);
 }
 
-int tpacall(char * svc, char* idata, long ilen, long flags)
+int tpacall( const char * svc, char* idata, long ilen, long flags)
 {
 	return casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
 }
 int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
 {
-	return casual::calling::Context::instance().getReply( *idPtr, odata, *olen, flags);
+	return casual::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
 }
 
 

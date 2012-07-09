@@ -25,6 +25,9 @@
 // time
 #include <time.h>
 
+// syslog
+#include <syslog.h>
+
 #include <string.h>
 
 namespace casual
@@ -78,6 +81,26 @@ namespace casual
 			pid_type getProcessId();
 
 
+
+			enum logger_priority
+			{
+				//! system is unusable
+				cLOG_emergency = LOG_EMERG,
+				//! action must be taken immediately
+				cLOG_alert = LOG_ALERT,
+				//! critical conditions
+				cLOG_critical = LOG_CRIT,
+				//! error conditions
+				cLOG_error= LOG_ERR,
+				//! warning conditions
+				cLOG_warning = LOG_WARNING,
+				//! normal, but significant, condition
+				cLOG_notice = LOG_NOTICE,
+				//! informational message
+				cLOG_info = LOG_INFO,
+				//! debug-level message
+				cLOG_debug = LOG_DEBUG
+			};
 
 
 

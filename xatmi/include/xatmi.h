@@ -76,8 +76,8 @@ extern char* tpalloc( const char* type, const char* subtype, long size); // MEMO
 extern char* tprealloc( char * addr, long size); // MEMORY
 
 
-extern int tpcall(char * svc, char* idata, long ilen, char ** odata, long *olen, long flags); // COMMUNICATION
-extern int tpacall(char * svc, char* idata, long ilen, long flags); // COMMUNICATION
+extern int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen, long flags); // COMMUNICATION
+extern int tpacall( const char * svc, char* idata, long ilen, long flags); // COMMUNICATION
 extern int tpgetrply(int *idPtr, char ** odata, long *olen, long flags); // COMMUNICATION
 extern int tpcancel(int id); // COMMUNICATION
 extern long tptypes(char* ptr, char* type, char* subtype); // MEMORY

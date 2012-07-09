@@ -55,8 +55,9 @@ namespace casual
 
 			service_mapping_type m_services;
 
-			ipc::receive::Queue m_queue;
-			ipc::send::Queue m_brokerQueue;
+			ipc::send::Queue& m_brokerQueue;
+			ipc::receive::Queue& m_queue;
+
 
 			utility::platform::long_jump_buffer_type m_long_jump_buffer;
 

@@ -9,7 +9,12 @@
 
 #include "casual_message.h"
 #include "casual_queue.h"
-#include "casual_buffer.h"
+#include "casual_logger.h"
+#include "casual_error.h"
+
+#include "casual_buffer_context.h"
+#include "casual_calling_context.h"
+
 
 
 #include "xatmi.h"
@@ -73,41 +78,53 @@ namespace casual
 
 		int Context::start()
 		{
-			connect();
+		   try
+		   {
+            connect();
 
-			while( true)
-			{
-				//std::cout << "---- Reading queue  ----" << std::endl;
+            while( true)
+            {
+               //std::cout << "---- Reading queue  ----" << std::endl;
 
-				queue::blocking::Reader queueReader( m_queue);
-				queue::message_type_type message_type = queueReader.next();
+               queue::blocking::Reader queueReader( m_queue);
+               queue::message_type_type message_type = queueReader.next();
 
-				switch( message_type)
-				{
-				case message::ServiceCall::message_type:
-				{
-					message::ServiceCall message( buffer::Context::instance().create());
-					queueReader( message);
+               switch( message_type)
+               {
+               case message::ServiceCall::message_type:
+               {
+                  message::ServiceCall message( buffer::Context::instance().create());
+                  queueReader( message);
 
-					handleServiceCall( message);
-
-					break;
-				}
-				default:
-				{
-					std::cerr << "message_type: " << message_type << " not valid" << std::endl;
-					break;
-				}
+                  logger::debug << "service call: " << message.service << " cd: " << message.callDescriptor
+                        << " caller pid: " << message.reply.pid << " caller queue: " << message.reply.queue_key;
 
 
-				}
-			}
+                  handleServiceCall( message);
+
+                  break;
+               }
+               default:
+               {
+                  std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+                  break;
+               }
+
+
+               }
+            }
+		   }
+		   catch( ...)
+		   {
+		      return error::handler();
+		   }
 
 			return 0;
 		}
 
 		Context::Context()
-			: m_brokerQueue( ipc::getBrokerQueue())
+			: m_brokerQueue( calling::Context::instance().brokerQueue()),
+			  m_queue( calling::Context::instance().receiveQueue())
 		{
 
 		}
@@ -151,7 +168,7 @@ namespace casual
 				//
 				// set the call-correlation
 				//
-				m_reply.callCorrelation = context.callCorrelation;
+				m_reply.callDescriptor = context.callDescriptor;
 
 				service::Context& service = getService( context.service);
 
@@ -206,7 +223,7 @@ namespace casual
 
 		void Context::cleanUp()
 		{
-			m_reply.clearBuffer();
+			m_reply.releaseBuffer();
 			buffer::Context::instance().clear();
 		}
 
