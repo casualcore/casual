@@ -35,8 +35,6 @@ def_Prep="somethinglocal.prep"
 #
 def_casual_make="casual_make.py"
 
-def_EXPORTCOMMAND="perl somethinglocal.pl";
-
 def_Deploy="make.deploy.ksh"
 
 def_CurrentDirectory=os.getcwd()
@@ -52,12 +50,6 @@ filesToRemove=set()
 pathsToCreate=set()
 messages=set()
 
-exportHeaderCommands=set()
-exportLibraryCommands=set()
-exportFileCommands=set()
-exportLibraryTargets=set()
-
-exportSubTarget=set()
 
 targetSequence=1
 
@@ -160,35 +152,6 @@ def internal_post_make_rules():
         print "\t-" + def_RM + " " + filename
     
     
-    #
-    # Generera export-delarna
-    #
-
-    if exportHeaderCommands :
-        print
-        print "export_headers: export_begin"
-        print exportHeaderCommands
-        
-        exportSubTarget.add("export_headers")
-    
-    if exportLibraryCommands :
-        print
-        print "export_libraries: export_begin $EXPORT_LIBRARIES_TARGETS"
-        print exportLibraryCommands
-        
-        exportSubTarget.add("export_libraries")
-    
-    if exportFileCommands :
-        print
-        print "export_files: export_begin export_headers export_libraries"
-        print exportFileCommands
-        
-        exportSubTarget.add("export_files")
-    
-    print
-    print "export: ",
-    for f in exportSubTarget: print f,
-    print
     
     
     #
@@ -367,17 +330,6 @@ def internal_set_LD_LIBRARY_PATH():
         #
         #def_LD_LIBRARY_PATH_SET=1
 
-def internal_export_file(filename,directory,targetdirectory):
-
-    if directory != "" :
-        FILE_PATH=directory + "/" + filename
-    else:
-        FILE_PATH=filename
-    
-    #
-    # Lagg till commanddot for export. Vi skriver detta sist i makefilen (vid post...)
-    #
-    exportFileCommands.add("\t-@" + def_EXPORTCOMMAND + " " + filename + " " + FILE_PATH + " " + targetdirectory)
 
 def internal_prepare_old_objectlist(objects):
 

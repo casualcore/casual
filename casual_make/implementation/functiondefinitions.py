@@ -434,74 +434,6 @@ def Build(casualMakefile):
     print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + USER_CASUAL_MAKE_FILE
     print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" +  "$(MAKE) -f " + USER_MAKE_FILE + " make"
     print
-    
-    
-
-
-
-
-def BuildComponent(component,exportflags):
-    """
-######################################################################
-## 
-## BuildComponent(component,exportflags)
-##
-## Bygger "komponent" beskriven i en annan makefile
-##
-## component    "path" till komponenten (kan vara ".")
-##
-## exportflags        Vet inte riktigt vad detta ar...
-##
-######################################################################
-    """
-    pass
-    #BuildPartOfComponent(component, "", exportflags)
-
-
-
-def ExportHeaderFileWithDirectory(filename,directory,targetdirectory):
-    """
-######################################################################
-## 
-## ExportHeaderFileWithDirectory(filename,directory,targetdirectory)
-##
-## Exports the component to the path specified
-##
-## sourceFilePath    relative file path
-##
-## targetdirectory same as ExportHeaderFile::path
-##
-######################################################################
-    """
-    #internal_export_file "$filename" "$directory" "$targetdirectory/inc"
-    exportHeaderCommands.add("\t-@" + def_EXPORTCOMMAND + " " + filename +  directory + "/" + filename + " " + targetdirectory + "/inc")
-
-
-
-
-
-def ExportSharedLibrary(name,targetdirectory):
-    """
-######################################################################
-##
-## ExportSharedLibrary(name,path)
-##
-## Exporterar libbet till path
-##
-## name    namnet pa libbet
-##
-## targetdirectory    path dit "name" exporteras
-##
-######################################################################    """
-    exportLibraryCommands.add("\t-@" + def_EXPORTCOMMAND +" " + internal_shared_library_name( name) + "bin/" + internal_shared_library_name(name) + targetdirectory +"/lib")
-    
-    #
-    # Vi spar pa oss target-names for de libs som ska exporteras
-    # sa att vi pa sa satt har mojlighet att enbart bygga dessa
-    # Detta framst for att kunna bygga samtliga subdomaner utan att 
-    # behova bry oss beroenden mellan dessa
-    #
-    exportLibraryTargets.add( internal_target_name( name))
 
 
 def LinkIsolatedUnittest(name,objectfiles,libs):
@@ -564,21 +496,6 @@ def LinkDependentUnittest(name,objectfiles,libs):
     
 
 
-######################################################################
-##
-## TargetExecute
-##
-## Skapar ett target (vilket kan var nagot som aven produceras fran
-## andra 'macron', ex test) 
-## Nar target kors sa exekveras den exekverbara.
-##
-## target: namn for target. Detta bor vara nogot av de befintliga target:s
-##
-## executable: fullt kvalificerande namn pa den exekverbara
-##
-## options: eventuellt options till den exekverbara
-##
-######################################################################
 def TargetExecute(target,executable,options):
     """
 ######################################################################

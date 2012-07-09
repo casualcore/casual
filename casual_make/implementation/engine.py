@@ -100,8 +100,16 @@ class Engine(object):
                 searchMethod = re.search(r'(\w+)[ \t]*\(', command)
                 if searchMethod:
                     method = searchMethod.group(1)
-                    documentation = eval(method).__doc__
-                    debug( method)
+                    try:
+                        documentation = eval(method).__doc__
+                        debug( method)
+                    except:
+                        #
+                        # No documentation means probably no method
+                        #
+                        traceback.print_exc(0) 
+                        sys.exit(2)
+                        
                 sys.stderr.write( command + '\n' + documentation + '\n')
                 traceback.print_exc(0) 
                 sys.exit(2)
