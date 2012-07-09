@@ -17,6 +17,11 @@
 
 #include "xatmi.h"
 
+//
+// std
+//
+#include <algorithm>
+
 namespace casual
 {
 
@@ -64,7 +69,10 @@ namespace casual
 
             local::UnusedCallingDescriptor finder;
 
-            pending_calls_type::iterator findIter = std::find_if( m_pendingReplies.begin(), m_pendingReplies.end(), local::UnusedCallingDescriptor());
+            pending_calls_type::iterator findIter = std::find_if(
+                  m_pendingReplies.begin(),
+                  m_pendingReplies.end(),
+                  local::UnusedCallingDescriptor());
 
             if( findIter == m_pendingReplies.end())
             {
