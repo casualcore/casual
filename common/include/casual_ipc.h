@@ -72,6 +72,10 @@ namespace casual
 				void paylodSize( std::size_t size) { m_size = size +  sizeof( Header);}
 
 			private:
+
+				//Transport( const Transport&);
+				//Transport& operator = ( const Transport&);
+
 				std::size_t m_size;
 
 			};

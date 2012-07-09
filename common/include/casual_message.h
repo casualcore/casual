@@ -167,11 +167,12 @@ namespace casual
 				return *m_buffer;
 			}
 
-
+			/*
 			void releaseBuffer()
 			{
 				m_buffer = 0;
 			}
+			*/
 
 			int callDescriptor;
 			int returnValue;

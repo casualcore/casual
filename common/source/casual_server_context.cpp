@@ -84,7 +84,6 @@ namespace casual
 
             while( true)
             {
-               //std::cout << "---- Reading queue  ----" << std::endl;
 
                queue::blocking::Reader queueReader( m_queue);
                queue::message_type_type message_type = queueReader.next();
@@ -175,6 +174,11 @@ namespace casual
 				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( context);
 				service.call( &serviceInformation);
 
+				//
+				// User service returned, not by tpreturn. Is this valid?
+				//
+				throw exception::NotReallySureWhatToNameThisException();
+
 			}
 			else
 			{
@@ -223,7 +227,6 @@ namespace casual
 
 		void Context::cleanUp()
 		{
-			m_reply.releaseBuffer();
 			buffer::Context::instance().clear();
 		}
 
