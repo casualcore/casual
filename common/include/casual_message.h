@@ -35,12 +35,18 @@ namespace casual
 			}
 		};
 
+		//!
+		//! Represents id for a server.
+		//!
 		struct ServerId
 		{
+		   typedef utility::platform::pid_type pid_type;
+		   typedef ipc::message::Transport::queue_key_type queue_key_type;
+
 			ServerId() : pid( utility::platform::getProcessId()) {}
 
-			ipc::message::Transport::queue_key_type queue_key;
-			utility::platform::pid_type pid;
+			queue_key_type queue_key;
+			pid_type pid;
 
 			template< typename A>
 			void serialize( A& archive)
@@ -50,15 +56,16 @@ namespace casual
 			}
 		};
 
+		//!
+		//! Represent the message that is sent from servers to
+		//! register with the broker
+		//!
 		struct ServerConnect
 		{
-
 			enum
 			{
 				message_type = 2
 			};
-
-
 
 			std::string serverPath;
 			ServerId serverId;
@@ -74,11 +81,70 @@ namespace casual
 		};
 
 
+		struct ServerDisconnect
+      {
+         enum
+         {
+            message_type = 3
+         };
+
+         ServerId serverId;
+
+         template< typename A>
+         void serialize( A& archive)
+         {
+            archive & serverId;
+         }
+      };
+
+		struct ServiceAdvertise
+      {
+         enum
+         {
+            message_type = 4
+         };
+
+         std::string serverPath;
+         ServerId serverId;
+         std::vector< Service> services;
+
+         template< typename A>
+         void serialize( A& archive)
+         {
+            archive & serverPath;
+            archive & serverId;
+            archive & services;
+         }
+      };
+
+		struct ServiceUnadvertise
+      {
+         enum
+         {
+            message_type = 5
+         };
+
+         ServerId serverId;
+         std::vector< Service> services;
+
+         template< typename A>
+         void serialize( A& archive)
+         {
+            archive & serverId;
+            archive & services;
+         }
+      };
+
+
+		//!
+		//! Represent "service-name-lookup" request.
+		//! TODO: need a better name?
+		//!
 		struct ServiceRequest
 		{
 			enum
 			{
-				message_type = 3
+				message_type = 10
 			};
 
 			std::string requested;
@@ -95,11 +161,15 @@ namespace casual
 		};
 
 
+		//!
+      //! Represent "service-name-lookup" response.
+      //! TODO: need a better name?
+      //!
 		struct ServiceResponse
 		{
 			enum
 			{
-				message_type = 4
+				message_type = 11
 			};
 
 			std::string requested;
@@ -113,11 +183,14 @@ namespace casual
 			}
 		};
 
+		//!
+		//! Represents a service call. via tp(a)call
+		//!
 		struct ServiceCall
 		{
 			enum
 			{
-				message_type = 5
+				message_type = 20
 			};
 
 			ServiceCall( buffer::Buffer& buffer) : timeout( 0),  m_buffer( buffer) {}
@@ -146,11 +219,14 @@ namespace casual
 			buffer::Buffer& m_buffer;
 		};
 
+		//!
+		//! Represent service reply.
+		//!
 		struct ServiceReply
 		{
 			enum
 			{
-				message_type = 6
+				message_type = 21
 			};
 
 			ServiceReply() : m_buffer( 0) {}
@@ -167,12 +243,6 @@ namespace casual
 				return *m_buffer;
 			}
 
-			/*
-			void releaseBuffer()
-			{
-				m_buffer = 0;
-			}
-			*/
 
 			int callDescriptor;
 			int returnValue;
@@ -193,9 +263,32 @@ namespace casual
 
 		private:
 			buffer::Buffer* m_buffer;
-
-
 		};
+
+		//!
+		//!
+		//!
+		struct ServiceACK
+      {
+         enum
+         {
+            message_type = 22
+         };
+
+         typedef long Microseconds;
+
+         std::string service;
+         ServerId server;
+         Microseconds time;
+
+         template< typename A>
+         void serialize( A& archive)
+         {
+            archive & service;
+            archive & server;
+            archive & time;
+         }
+      };
 
 
 		//!
@@ -208,9 +301,8 @@ namespace casual
 		}
 
 
-	}
-
-}
+	} // message
+} // casual
 
 
 

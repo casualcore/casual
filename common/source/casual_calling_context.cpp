@@ -14,6 +14,7 @@
 #include "casual_message.h"
 #include "casual_queue.h"
 #include "casual_error.h"
+#include "casual_exception.h"
 
 #include "xatmi.h"
 
@@ -110,7 +111,7 @@ namespace casual
 
             if( serviceResponse.server.empty())
             {
-               throw exception::NotReallySureWhatToNameThisException();
+               throw exception::service::NoEntry( service);
             }
 
             //

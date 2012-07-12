@@ -1,4 +1,7 @@
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/CASUAL_HOME/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/CASUAL_HOME/operation=append
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/CASUAL_HOME/value=${ProjDirPath}
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/operation=replace
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/value=/bin\:/usr/bin\:/usr/sbin\:/sbin\:${ProjDirPath}/../tools/bin

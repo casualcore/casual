@@ -12,7 +12,7 @@
 #include <string>
 #include <map>
 #include <list>
-#include <set>
+#include <deque>
 
 #include "casual_ipc.h"
 #include "casual_utility_file.h"
@@ -27,51 +27,70 @@ namespace casual
 		struct Server
 		{
 
-			Server() : m_requested( 0) {}
+		   typedef message::ServerId::pid_type pid_type;
 
-			utility::platform::pid_type m_pid;
-			std::string m_path;
-			std::size_t m_requested;
-			ipc::send::Queue::queue_key_type m_queue_key;
+			Server() : pid( 0), queue_key( 0), idle( true) {}
+
+			pid_type pid;
+			std::string path;
+			message::ServerId::queue_key_type queue_key;
+			bool idle;
+			//std::set< std::string> services;
+
+
+			bool operator < ( const Server& rhs) const
+			{
+			   return pid < rhs.pid;
+			}
 		};
 
-		typedef std::list< Server> Servers;
+		typedef std::map< Server::pid_type, Server> server_mapping_type;
 
 
 
 		struct Service
 		{
-			Service( const std::string& name) : m_name( name), m_requested( 0) {}
+			Service( const std::string& name) : name( name) {}
 
-			void add( Servers::iterator server)
+			Service() {}
+
+			void add( Server* server)
 			{
-				m_servers.push_back( server);
-				m_currentServer = m_servers.begin();
+				servers.push_back( server);
+				m_currentServer = servers.begin();
 			}
 
-			Server& nextServer()
+			const Server& nextServer()
 			{
-				if( m_currentServer == m_servers.end())
+				if( m_currentServer == servers.end())
 				{
-					m_currentServer = m_servers.begin();
+					m_currentServer = servers.begin();
 				}
-				Servers::iterator result = *m_currentServer++;
-				return *result;
+
+				return **m_currentServer++;
 			}
+
+			std::string name;
+			std::vector< Server*> servers;
 
 		private:
-			std::string m_name;
-			std::size_t m_requested;
-			std::vector< Servers::iterator> m_servers;
-			std::vector< Servers::iterator>::iterator m_currentServer;
+
+			std::vector< Server*>::iterator m_currentServer;
 		};
 
+		struct State
+		{
+		   typedef std::map< std::string, Service> service_mapping_type;
+		   typedef std::deque< message::ServiceRequest> pending_requests_type;
+
+		   server_mapping_type servers;
+		   service_mapping_type services;
+		   pending_requests_type pending;
+		};
 
 		class Broker
 		{
 		public:
-
-			typedef std::map< std::string, Service> service_mapping_type;
 
 			Broker( const std::vector< std::string>& arguments);
 			~Broker();
@@ -82,9 +101,7 @@ namespace casual
 			utility::file::ScopedPath m_brokerQueueFile;
 			ipc::receive::Queue m_receiveQueue;
 
-			Servers m_servers;
-			service_mapping_type m_services;
-
+			State m_state;
 
 		};
 	}

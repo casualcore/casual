@@ -115,6 +115,11 @@ namespace casual
 		   }
 		   catch( ...)
 		   {
+		      //
+		      // Vi need to disconnect from the broker
+		      //
+		      disconnect();
+
 		      return error::handler();
 		   }
 
@@ -126,6 +131,15 @@ namespace casual
 			  m_queue( calling::Context::instance().receiveQueue())
 		{
 
+		}
+
+		void Context::disconnect()
+		{
+		   message::ServerDisconnect message;
+
+		   // TODO we cant block here...
+		   queue::Writer writer( m_brokerQueue);
+		   writer( message);
 		}
 
 		void Context::connect()
@@ -160,7 +174,7 @@ namespace casual
 			if( jumpState == 0)
 			{
 				//
-				// No longjmp has been called, this is the first time in this context
+				// No longjmp has been called, this is the first time in this "service call"
 				// Let's call the user service...
 				//
 

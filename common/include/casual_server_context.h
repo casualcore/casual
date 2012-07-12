@@ -45,6 +45,8 @@ namespace casual
 
 			void connect();
 
+			void disconnect();
+
 			void handleServiceCall( message::ServiceCall& context);
 
 			service::Context& getService( const std::string& name);

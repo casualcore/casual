@@ -6,7 +6,7 @@
 //!
 
 #include "casual_broker.h"
-#include "casual_broker_transform.h"
+#include "casual_broker_implementation.h"
 
 #include "casual_utility_environment.h"
 #include "casual_queue.h"
@@ -73,68 +73,95 @@ namespace casual
 
 		}
 
-		void Broker::start()
-		{
-			queue::blocking::Reader queueReader( m_receiveQueue);
+      void Broker::start()
+      {
+         queue::blocking::Reader queueReader( m_receiveQueue);
 
-			while( true)
-			{
-				std::cout << "---- Reading queue  ----" << std::endl;
+         bool working = true;
 
-				queue::message_type_type message_type = queueReader.next();
+         while( working)
+         {
 
-				switch( message_type)
-				{
-				case message::ServerConnect::message_type:
-				{
-					message::ServerConnect message;
-					queueReader( message);
+            queue::message_type_type message_type = queueReader.next();
 
-					Servers::iterator serverIterator = m_servers.insert( m_servers.begin(), transform::Server()( message));
+            switch( message_type)
+            {
+               case message::ServiceAdvertise::message_type:
+               {
+                  message::ServiceAdvertise message;
+                  queueReader( message);
 
-					std::for_each(
-						message.services.begin(),
-						message.services.end(),
-						transform::Service( serverIterator, m_services));
+                  state::advertiseService( message, m_state);
 
-					break;
-				}
-				case message::ServiceRequest::message_type:
-				{
-					message::ServiceRequest message;
-					queueReader( message);
+                  break;
+               }
+               case message::ServiceUnadvertise::message_type:
+               {
+                  message::ServiceUnadvertise message;
+                  queueReader( message);
 
-					message::ServiceResponse responseMessage;
-					responseMessage.requested = message.requested;
+                  state::unadvertiseService( message, m_state);
 
-					service_mapping_type::iterator findIter = m_services.find( message.requested);
-					if( findIter!= m_services.end())
-					{
-						transform::Server transform;
-						responseMessage.server.push_back( transform( findIter->second.nextServer()));
-					}
+                  break;
+               }
+               case message::ServerDisconnect::message_type:
+               {
+                  message::ServerDisconnect message;
+                  queueReader( message);
 
-					ipc::send::Queue responseQueue( message.server.queue_key);
-					queue::Writer writer( responseQueue);
+                  state::removeServer( message, m_state);
 
-					writer( responseMessage);
+                  break;
+               }
+               case message::ServiceRequest::message_type:
+               {
+                  message::ServiceRequest message;
+                  queueReader( message);
 
-					break;
-				}
-				default:
-				{
-					std::cerr << "message_type: " << message_type << " not valid" << std::endl;
-					break;
-				}
+                  //
+                  // Request service
+                  //
+                  std::vector< message::ServiceResponse> response = state::requestService( message, m_state);
+
+                  ipc::send::Queue responseQueue( message.server.queue_key);
+                  queue::Writer writer( responseQueue);
+
+                  //
+                  // Write 0..1 presence of response
+                  //
+                  std::for_each(
+                        response.begin(),
+                        response.end(),
+                        writer);
+
+                  break;
+               }
+               case message::ServiceACK::message_type:
+               {
+                  //
+                  // Some service is done.
+                  // * Release the "lock" on that server
+                  // * Check if there are pending service request
+                  //
+                  message::ServiceACK message;
+                  queueReader( message);
+
+                  state::serviceDone( message, m_state);
 
 
-				}
 
 
+                  break;
+               }
+               default:
+               {
+                  std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+                  break;
+               }
 
+            }
 
-
-			}
+         }
 
 
 

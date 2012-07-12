@@ -11,18 +11,172 @@
 #include <gtest/gtest.h>
 
 #include "casual_broker.h"
+#include "casual_broker_implementation.h"
 
 
 namespace casual
 {
 
-	namespace utility
+	namespace broker
 	{
 
-		TEST( casual_broker, somestuff)
-		{
+	   namespace local
+	   {
+	      State initializeState()
+	      {
+	         State state;
 
+	         state.servers[ 10].path = "a/b/c";
+	         state.servers[ 10].pid = 10;
+	         state.servers[ 10].queue_key = 10;
+
+	         state.servers[ 20].path = "d/e/f";
+            state.servers[ 20].pid = 20;
+            state.servers[ 20].queue_key = 20;
+
+	         state.services[ "service1"].name = "service1";
+	         state.services[ "service1"].servers.push_back( &state.servers[ 10]);
+	         state.services[ "service1"].servers.push_back( &state.servers[ 20]);
+
+	         state.services[ "service2"].name = "service2";
+            state.services[ "service2"].servers.push_back( &state.servers[ 10]);
+            state.services[ "service2"].servers.push_back( &state.servers[ 20]);
+
+	         return state;
+	      }
+
+	   }
+
+
+		TEST( casual_broker, server_disconnect)
+		{
+		   State state = local::initializeState();
+
+		   message::ServerDisconnect message;
+		   message.serverId.pid = 20;
+
+		   state::removeServer( message, state);
+
+		   EXPECT_TRUE( state.servers.size() == 1);
+		   EXPECT_TRUE( state.servers[ 10].pid == 10);
+
+		   EXPECT_TRUE( state.services.size() == 2);
+		   ASSERT_TRUE( state.services[ "service1"].servers.size() == 1);
+		   EXPECT_TRUE( state.services[ "service1"].servers.front()->pid == 10);
 		}
+
+		TEST( casual_broker, advertise_new_services_current_server)
+      {
+         State state = local::initializeState();
+
+         //
+         // Add two new services to server "10"
+         //
+         message::ServiceAdvertise message;
+         message.serverId.pid = 10;
+         message.services.resize( 2);
+         message.services.at( 0).name = "service3";
+         message.services.at( 1).name = "service4";
+
+
+         state::advertiseService( message, state);
+
+         EXPECT_TRUE( state.servers.size() == 2);
+         EXPECT_TRUE( state.servers[ 10].pid == 10);
+
+         EXPECT_TRUE( state.services.size() == 4);
+         ASSERT_TRUE( state.services[ "service3"].servers.size() == 1);
+         EXPECT_TRUE( state.services[ "service3"].servers.front()->pid == 10);
+
+         ASSERT_TRUE( state.services[ "service4"].servers.size() == 1);
+         EXPECT_TRUE( state.services[ "service4"].servers.front()->pid == 10);
+      }
+
+		TEST( casual_broker, advertise_new_services_new_server)
+      {
+         State state = local::initializeState();
+
+         //
+         // Add two new services to NEW server 30
+         //
+         message::ServiceAdvertise message;
+         message.serverId.pid = 30;
+         message.services.resize( 2);
+         message.services.at( 0).name = "service3";
+         message.services.at( 1).name = "service4";
+
+
+         state::advertiseService( message, state);
+
+         EXPECT_TRUE( state.servers.size() == 3);
+         EXPECT_TRUE( state.servers[ 30].pid == 30);
+
+         EXPECT_TRUE( state.services.size() == 4);
+         ASSERT_TRUE( state.services[ "service3"].servers.size() == 1);
+         EXPECT_TRUE( state.services[ "service3"].servers.front()->pid == 30);
+
+         ASSERT_TRUE( state.services[ "service4"].servers.size() == 1);
+         EXPECT_TRUE( state.services[ "service4"].servers.front()->pid == 30);
+      }
+
+
+		TEST( casual_broker, advertise_current_services_new_server)
+      {
+         State state = local::initializeState();
+
+         //
+         // Add two new services to NEW server 30
+         //
+         message::ServiceAdvertise message;
+         message.serverId.pid = 30;
+         message.services.resize( 2);
+         message.services.at( 0).name = "service1";
+         message.services.at( 1).name = "service2";
+
+
+         state::advertiseService( message, state);
+
+         EXPECT_TRUE( state.servers.size() == 3);
+         EXPECT_TRUE( state.servers[ 30].pid == 30);
+
+         EXPECT_TRUE( state.services.size() == 2);
+         ASSERT_TRUE( state.services[ "service1"].servers.size() == 3);
+         EXPECT_TRUE( state.services[ "service1"].servers.at( 2)->pid == 30);
+
+         ASSERT_TRUE( state.services[ "service2"].servers.size() == 3);
+         EXPECT_TRUE( state.services[ "service2"].servers.at( 2)->pid == 30);
+      }
+
+
+		TEST( casual_broker, unadvertise_service)
+      {
+         State state = local::initializeState();
+
+         //
+         // Add two new services to NEW server 30
+         //
+         message::ServiceUnadvertise message;
+         message.serverId.pid = 20;
+         message.services.resize( 2);
+         message.services.at( 0).name = "service1";
+         message.services.at( 1).name = "service2";
+
+         state::unadvertiseService( message, state);
+
+         //
+         // Even if all server "20"'s services are unadvertised, we keep the
+         // server.
+         //
+         EXPECT_TRUE( state.servers.size() == 2);
+         EXPECT_TRUE( state.servers[ 20].pid == 20);
+
+         EXPECT_TRUE( state.services.size() == 2);
+         ASSERT_TRUE( state.services[ "service1"].servers.size() == 1);
+         EXPECT_TRUE( state.services[ "service1"].servers.at( 0)->pid == 10);
+
+         ASSERT_TRUE( state.services[ "service2"].servers.size() == 1);
+         EXPECT_TRUE( state.services[ "service2"].servers.at( 0)->pid == 10);
+      }
 
 
 	}

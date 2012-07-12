@@ -71,6 +71,16 @@ namespace casual
 
 		}
 
+		namespace service
+		{
+		   struct NoEntry : public std::runtime_error
+         {
+		      NoEntry( const std::string& description)
+               : std::runtime_error( description) {}
+         };
+
+		}
+
 	}
 
 }
