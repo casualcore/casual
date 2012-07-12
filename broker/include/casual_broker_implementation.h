@@ -10,6 +10,15 @@
 
 #include "casual_broker.h"
 
+#include "casual_message.h"
+
+//
+// std
+//
+#include <algorithm>
+#include <vector>
+#include <string>
+
 
 namespace casual
 {
