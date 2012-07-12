@@ -148,7 +148,7 @@ namespace casual
 			// Let the broker know about us, and our services...
 			//
 
-			message::ServerConnect message;
+			message::ServiceAdvertise message;
 
 			message.serverId.queue_key = m_queue.getKey();
 
@@ -196,13 +196,26 @@ namespace casual
 			}
 			else
 			{
+
+
 				//
 				// User has called tpreturn.
+			   // Send reply to caller
 				//
 				ipc::send::Queue replyQueue( context.reply.queue_key);
-				queue::Writer writer( replyQueue);
+				queue::Writer replyWriter( replyQueue);
+				replyWriter( m_reply);
 
-				writer( m_reply);
+				//
+				// Send ACK to broker
+				//
+				message::ServiceACK ack;
+				ack.server = getId();
+				ack.service = context.service;
+				// TODO: ack.time
+
+				queue::Writer brokerWriter( m_brokerQueue);
+				brokerWriter( ack);
 
 				//
 				// Do some cleanup...
@@ -239,7 +252,48 @@ namespace casual
 			longjmp( m_long_jump_buffer, 1);
 		}
 
-		void Context::cleanUp()
+		void Context::advertiseService( const std::string& name, tpservice function)
+      {
+		   message::ServiceAdvertise message;
+
+		   message.serverId = getId();
+		   // TODO: message.serverPath =
+		   message.services.push_back( message::Service( name));
+
+		   // TODO: make it consistence safe...
+		   queue::Writer writer( m_brokerQueue);
+		   writer( message);
+
+		   add( service::Context( name, function));
+      }
+
+		void Context::unadvertiseService( const std::string& name)
+      {
+		   if( m_services.erase( name) != 1)
+		   {
+		      throw exception::NotReallySureWhatToNameThisException();
+		   }
+
+		   message::ServiceUnadvertise message;
+		   message.serverId = getId();
+		   message.services.push_back( message::Service( name));
+
+		   queue::Writer writer( m_brokerQueue);
+		   writer( message);
+      }
+
+
+      message::ServerId Context::getId()
+      {
+         message::ServerId result;
+         result.queue_key = m_queue.getKey();
+         result.pid = utility::platform::getProcessId();
+
+         return result;
+      }
+
+
+      void Context::cleanUp()
 		{
 			buffer::Context::instance().clear();
 		}

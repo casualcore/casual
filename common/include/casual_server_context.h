@@ -15,6 +15,9 @@
 
 #include "casual_utility_platform.h"
 
+
+#include "xatmi.h"
+
 //
 // std
 //
@@ -38,6 +41,10 @@ namespace casual
 
 			void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
 
+			void advertiseService( const std::string& name, tpservice function);
+
+			void unadvertiseService( const std::string& name);
+
 
 		private:
 
@@ -51,6 +58,7 @@ namespace casual
 
 			service::Context& getService( const std::string& name);
 
+			message::ServerId getId();
 
 			void cleanUp();
 

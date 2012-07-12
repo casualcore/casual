@@ -143,6 +143,11 @@ namespace casual
 
 			std::ifstream file( brokerFile.c_str());
 
+			if( file.fail())
+			{
+			   throw exception::NotReallySureWhatToNameThisException();
+			}
+
 			send::Queue::queue_key_type key;
 			file >> key;
 

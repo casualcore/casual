@@ -30,7 +30,7 @@ namespace casual
 
 			{
 				Writer writer( send);
-				message::ServerConnect message;
+				message::ServiceAdvertise message;
 
 				message.serverId.queue_key = 666;
 				message.serverPath = "banan";
@@ -45,9 +45,9 @@ namespace casual
 			{
 				blocking::Reader reader( receive);
 
-				message::ServerConnect message;
+				message::ServiceAdvertise message;
 
-				EXPECT_TRUE( reader.next() == message::ServerConnect::message_type);
+				EXPECT_TRUE( reader.next() == message::ServiceAdvertise::message_type);
 				reader( message);
 
 				EXPECT_TRUE( message.serverId.queue_key == 666);
@@ -66,7 +66,7 @@ namespace casual
 
 			utility::signal::scoped::Alarm timeout( 1);
 
-			message::ServerConnect message;
+			message::ServiceAdvertise message;
 
 			EXPECT_THROW({
 				reader( message);
@@ -80,7 +80,7 @@ namespace casual
 			ipc::receive::Queue receive;
 			non_blocking::Reader reader( receive);
 
-			message::ServerConnect message;
+			message::ServiceAdvertise message;
 
 			EXPECT_FALSE( reader( message));
 
@@ -94,11 +94,11 @@ namespace casual
 			ipc::send::Queue send( receive.getKey());
 			Writer writer( send);
 
-			message::ServerConnect sendMessage;
+			message::ServiceAdvertise sendMessage;
 			sendMessage.serverPath = "banan";
 			writer( sendMessage);
 
-			message::ServerConnect receiveMessage;
+			message::ServiceAdvertise receiveMessage;
 			EXPECT_TRUE( reader( receiveMessage));
 			EXPECT_TRUE( receiveMessage.serverPath == "banan");
 
@@ -112,12 +112,12 @@ namespace casual
 			ipc::send::Queue send( receive.getKey());
 			Writer writer( send);
 
-			message::ServerConnect sendMessage;
+			message::ServiceAdvertise sendMessage;
 			sendMessage.serverPath = "banan";
 			sendMessage.services.resize( 200);
 			writer( sendMessage);
 
-			message::ServerConnect receiveMessage;
+			message::ServiceAdvertise receiveMessage;
 			EXPECT_TRUE( reader( receiveMessage));
 			EXPECT_TRUE( receiveMessage.serverPath == "banan");
 			EXPECT_TRUE( receiveMessage.services.size() == 200);

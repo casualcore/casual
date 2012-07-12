@@ -14,6 +14,8 @@
 #include "casual_calling_context.h"
 #include "casual_server_context.h"
 
+#include "casual_error.h"
+
 
 
 
@@ -76,12 +78,27 @@ int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
 
 int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
 {
-
+   try
+   {
+      casual::server::Context::instance().advertiseService( svcname, func);
+   }
+   catch( ...)
+   {
+      return casual::error::handler();
+   }
    return 0;
 }
 
 int tpunadvertise( const char* svcname)
 {
+   try
+   {
+      casual::server::Context::instance().unadvertiseService( svcname);
+   }
+   catch( ...)
+   {
+      return casual::error::handler();
+   }
    return 0;
 }
 

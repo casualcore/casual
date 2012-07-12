@@ -12,6 +12,8 @@
 
 #include "casual_utility_platform.h"
 
+#include "casual_exception.h"
+
 
 // temp
 #include <fstream>
@@ -52,8 +54,12 @@ namespace casual
 							//
 							// Open log
 							//
-						   m_output.open( ( utility::environment::getRootPath() + "/casual.log").c_str());
+						   m_output.open( ( utility::environment::getRootPath() + "/casual.log").c_str(), std::ios::app | std::ios::out);
 
+						   if( m_output.fail())
+						   {
+						      throw exception::NotReallySureWhatToNameThisException();
+						   }
 
 							//openlog( m_domain.c_str(), LOG_PID, LOG_USER);
 

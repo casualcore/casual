@@ -87,7 +87,7 @@ namespace casual
 		TEST( casual_common, archive_io)
 		{
 
-			message::ServerConnect serverConnect;
+			message::ServiceAdvertise serverConnect;
 
 			serverConnect.serverId.queue_key = 666;
 			serverConnect.serverPath = "/bla/bla/bla/sever";
@@ -111,7 +111,7 @@ namespace casual
 
 			input::Binary input( output.get());
 
-			message::ServerConnect result;
+			message::ServiceAdvertise result;
 
 			input >> result;
 
@@ -125,7 +125,7 @@ namespace casual
 		TEST( casual_common, archive_io_big_size)
 		{
 
-			message::ServerConnect serverConnect;
+			message::ServiceAdvertise serverConnect;
 
 			serverConnect.serverId.queue_key = 666;
 			serverConnect.serverPath = "/bla/bla/bla/sever";
@@ -141,7 +141,7 @@ namespace casual
 
 			input::Binary input( output.get());
 
-			message::ServerConnect result;
+			message::ServiceAdvertise result;
 
 			input >> result;
 

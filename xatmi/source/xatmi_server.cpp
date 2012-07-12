@@ -14,6 +14,7 @@
 
 #include "casual_service_context.h"
 #include "casual_server_context.h"
+#include "casual_error.h"
 
 
 namespace local
@@ -40,22 +41,29 @@ namespace local
 
 int casual_startServer( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
 {
+   try
+   {
 
-	std::vector< std::string> arguments;
+      std::vector< std::string> arguments;
 
-	std::copy(
-		argv,
-		argv + argc,
-		std::back_inserter( arguments));
-
-
-	std::for_each(
-		mapping,
-		mapping + size,
-		local::AddServiceContext());
+      std::copy(
+         argv,
+         argv + argc,
+         std::back_inserter( arguments));
 
 
-	return casual::server::Context::instance().start();
+      std::for_each(
+         mapping,
+         mapping + size,
+         local::AddServiceContext());
+
+	   return casual::server::Context::instance().start();
+	}
+	catch( ...)
+	{
+	   return casual::error::handler();
+	}
+	return 0;
 }
 
 

@@ -26,6 +26,10 @@ namespace casual
 	{
 		struct Service
 		{
+		   Service() {}
+
+		   Service( const std::string& name_) : name( name_) {}
+
 			std::string name;
 
 			template< typename A>
@@ -53,30 +57,6 @@ namespace casual
 			{
 				archive & queue_key;
 				archive & pid;
-			}
-		};
-
-		//!
-		//! Represent the message that is sent from servers to
-		//! register with the broker
-		//!
-		struct ServerConnect
-		{
-			enum
-			{
-				message_type = 2
-			};
-
-			std::string serverPath;
-			ServerId serverId;
-			std::vector< Service> services;
-
-			template< typename A>
-			void serialize( A& archive)
-			{
-				archive & serverPath;
-				archive & serverId;
-				archive & services;
 			}
 		};
 
