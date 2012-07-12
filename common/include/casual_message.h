@@ -193,7 +193,7 @@ namespace casual
 				message_type = 20
 			};
 
-			ServiceCall( buffer::Buffer& buffer) : timeout( 0),  m_buffer( buffer) {}
+			ServiceCall( buffer::Buffer& buffer) : callDescriptor( 0), timeout( 0),  m_buffer( buffer) {}
 
 			int callDescriptor;
 			std::string service;
@@ -229,9 +229,9 @@ namespace casual
 				message_type = 21
 			};
 
-			ServiceReply() : m_buffer( 0) {}
+			ServiceReply() : callDescriptor( 0), returnValue( 0), m_buffer( 0) {}
 
-			ServiceReply( buffer::Buffer& buffer) : m_buffer( &buffer) {}
+			ServiceReply( buffer::Buffer& buffer) : callDescriptor( 0), returnValue( 0), m_buffer( &buffer) {}
 
 			void setBuffer( buffer::Buffer& buffer)
 			{

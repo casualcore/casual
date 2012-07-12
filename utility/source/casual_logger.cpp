@@ -74,7 +74,7 @@ namespace casual
 			// We can't rely on RVO, so we have to release logging-responsibility for
 			// rhs.
 			//
-			Proxy::Proxy( const Proxy& rhs) : m_message( rhs.m_message.str()), m_log( true)
+			Proxy::Proxy( const Proxy& rhs) : m_message( rhs.m_message.str()), m_priority( rhs.m_priority), m_log( true)
 			{
 				rhs.m_log = false;
 			}
