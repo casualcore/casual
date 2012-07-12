@@ -68,9 +68,21 @@ int tpacall( const char * svc, char* idata, long ilen, long flags)
 {
 	return casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
 }
+
 int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
 {
 	return casual::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
+}
+
+int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
+{
+
+   return 0;
+}
+
+int tpunadvertise( const char* svcname)
+{
+   return 0;
 }
 
 

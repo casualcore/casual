@@ -7,8 +7,6 @@
 
 #include "xatmi_server.h"
 
-// TODO:
-#include <iostream>
 
 #include <vector>
 #include <algorithm>

@@ -82,9 +82,11 @@ extern int tpgetrply(int *idPtr, char ** odata, long *olen, long flags); // COMM
 extern int tpcancel(int id); // COMMUNICATION
 extern long tptypes(char* ptr, char* type, char* subtype); // MEMORY
 extern void tpfree(char* ptr); // MEMORY
+
 extern void tpreturn(int rval, long rcode, char* data, long len, long flags); // TJJ ADDED
-extern int tpadvertise(char * svcname, void(*func)(TPSVCINFO *)); // SERVER
-extern int tpunadvertise(char * svcname); // SERVER
+
+extern int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *)); // SERVER
+extern int tpunadvertise( const char* svcname); // SERVER
 
 extern int tpsend(int id, char* idata, long ilen, long flags, long *revent); // COMMUNICATION
 extern int tprecv(int id, char ** odata, long *olen, long flags, long* event); // COMMUNICATION

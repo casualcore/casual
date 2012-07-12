@@ -214,6 +214,89 @@ namespace casual
          EXPECT_TRUE( response.at( 0).server.at( 0).queue_key == 10);
       }
 
+		TEST( casual_broker, service_request_pending)
+      {
+         State state = local::initializeState();
+
+         // make servers busy
+         state.servers[ 10].idle = false;
+         state.servers[ 20].idle = false;
+
+         message::ServiceRequest message;
+         message.requested = "service1";
+         message.server.pid = 30;
+         message.server.queue_key = 30;
+
+         std::vector< message::ServiceResponse> response = state::requestService( message, state);
+
+         EXPECT_TRUE( response.empty());
+
+         // we should have a pending request
+         ASSERT_TRUE( state.pending.size() == 1);
+         EXPECT_TRUE( state.pending.at( 0).requested == "service1");
+         EXPECT_TRUE( state.pending.at( 0).server.pid == 30);
+         EXPECT_TRUE( state.pending.at( 0).server.queue_key == 30);
+
+      }
+
+		TEST( casual_broker, service_done)
+      {
+         State state = local::initializeState();
+
+         // make server busy
+         state.servers[ 10].idle = false;
+
+         message::ServiceACK message;
+         message.service = "service1";
+         message.server.pid = 10;
+         message.server.queue_key = 10;
+
+         std::vector< state::PendingResponse> response = state::serviceDone( message, state);
+
+         EXPECT_TRUE( response.empty());
+         EXPECT_TRUE( state.servers[ 10].idle == true);
+      }
+
+		TEST( casual_broker, service_done_pending_requests)
+      {
+         State state = local::initializeState();
+
+         // make servers busy
+         state.servers[ 10].idle = false;
+         state.servers[ 20].idle = false;
+
+         // make sure we have a pending request
+         message::ServiceRequest request;
+         request.requested = "service1";
+         request.server.pid = 30;
+         request.server.queue_key = 30;
+
+         state.pending.push_back( request);
+
+         // server "10" is ready for action...
+         message::ServiceACK message;
+         message.service = "service1";
+         message.server.pid = 10;
+         message.server.queue_key = 10;
+
+         // we should get the pending response
+         std::vector< state::PendingResponse> response = state::serviceDone( message, state);
+
+         // The server should still be busy
+         EXPECT_TRUE( state.servers[ 10].idle == false);
+
+         ASSERT_TRUE( response.size() == 1);
+         // pending queue response is sent to
+         EXPECT_TRUE( response.front().first == 30);
+         // response sent to queue "30"
+         EXPECT_TRUE( response.front().second.requested == "service1");
+         ASSERT_TRUE( response.front().second.server.size() == 1);
+         EXPECT_TRUE( response.front().second.server.front().pid == 10);
+         EXPECT_TRUE( response.front().second.server.front().queue_key == 10);
+
+
+      }
+
 
 	}
 }

@@ -208,6 +208,9 @@ namespace casual
             }
 		   }
 
+		   //!
+         //! Unadvertise 0..N services for a server.
+         //!
 		   void unadvertiseService( const message::ServiceUnadvertise& message, State& state)
 		   {
 		      internal::removeServices(
@@ -219,6 +222,9 @@ namespace casual
 		   }
 
 
+		   //!
+         //! Advertise 0..N services for a server.
+         //!
 		   void advertiseService( const message::ServiceAdvertise& message, State& state)
 		   {
 
@@ -239,6 +245,9 @@ namespace casual
 
 		   }
 
+		   //!
+		   //! Removes a server, and its advertised services from the broker
+		   //!
 		   void removeServer( const message::ServerDisconnect& message, State& state)
          {
 
@@ -265,6 +274,14 @@ namespace casual
 		      state.servers.erase( message.serverId.pid);
          }
 
+		   //!
+         //! Tries to find the corresponding server to the service requested.
+		   //!
+		   //! @return 0..1 message::ServiceResponse
+		   //! - 0 occurrence, No idle servers, request is stacked to pending. No response is sent.
+		   //! - 1 occurrence, idle server found, or service not found at all (ie TPENOENT).
+		   //!      either way, response is sent to requested queue.
+         //!
 		   std::vector< message::ServiceResponse> requestService( const message::ServiceRequest& message, State& state)
 		   {
 		      std::vector< message::ServiceResponse> result;
@@ -317,6 +334,14 @@ namespace casual
 
 		   typedef std::pair< message::ServerId::queue_key_type, message::ServiceResponse> PendingResponse;
 
+		   //!
+		   //! When a service is done.
+		   //! - Mark the corresponding server as idle
+		   //! - Check if there are any pending requests
+		   //! - if so, mark the server as busy again, and return the response
+		   //!
+		   //! @return 0..1 pending responses.
+		   //!
 		   std::vector< PendingResponse> serviceDone( message::ServiceACK& message, State& state)
 		   {
 		      std::vector< PendingResponse> result;
@@ -348,6 +373,11 @@ namespace casual
 		               response.server.push_back( message.server);
 
 		               result.push_back( std::make_pair( pendingIter->server.queue_key, response));
+
+		               //
+		               // The server is busy again... No rest for the wicked...
+		               //
+		               findIter->second.idle = false;
 
 
 		               //
