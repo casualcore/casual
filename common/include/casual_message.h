@@ -229,9 +229,9 @@ namespace casual
 				message_type = 21
 			};
 
-			ServiceReply() : callDescriptor( 0), returnValue( 0), m_buffer( 0) {}
+			ServiceReply() : callDescriptor( 0), returnValue( 0), userReturnCode( 0), m_buffer( 0) {}
 
-			ServiceReply( buffer::Buffer& buffer) : callDescriptor( 0), returnValue( 0), m_buffer( &buffer) {}
+			ServiceReply( buffer::Buffer& buffer) : callDescriptor( 0), returnValue( 0), userReturnCode( 0), m_buffer( &buffer) {}
 
 			void setBuffer( buffer::Buffer& buffer)
 			{
