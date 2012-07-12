@@ -179,5 +179,41 @@ namespace casual
       }
 
 
+		TEST( casual_broker, extract_services)
+      {
+         State state = local::initializeState();
+
+         std::vector< std::string> result = extract::services( 10, state);
+
+         ASSERT_TRUE( result.size() == 2);
+         EXPECT_TRUE( result.at( 0) == "service1");
+         EXPECT_TRUE( result.at( 1) == "service2");
+
+      }
+
+		TEST( casual_broker, service_request)
+      {
+         State state = local::initializeState();
+
+         message::ServiceRequest message;
+         message.requested = "service1";
+         message.server.pid = 30;
+         message.server.queue_key = 30;
+
+         std::vector< message::ServiceResponse> response = state::requestService( message, state);
+
+         // server should not be idle
+         EXPECT_TRUE( state.servers[ 10].idle == false);
+         // other server should still be idle
+         EXPECT_TRUE( state.servers[ 20].idle == true);
+
+         ASSERT_TRUE( response.size() == 1);
+         EXPECT_TRUE( response.at( 0).requested == "service1");
+         ASSERT_TRUE( response.at( 0).server.size() == 1);
+         EXPECT_TRUE( response.at( 0).server.at( 0).pid == 10);
+         EXPECT_TRUE( response.at( 0).server.at( 0).queue_key == 10);
+      }
+
+
 	}
 }

@@ -123,16 +123,13 @@ namespace casual
                   //
                   std::vector< message::ServiceResponse> response = state::requestService( message, m_state);
 
-                  ipc::send::Queue responseQueue( message.server.queue_key);
-                  queue::Writer writer( responseQueue);
+                  if( !response.empty())
+                  {
+                     ipc::send::Queue responseQueue( message.server.queue_key);
+                     queue::Writer writer( responseQueue);
 
-                  //
-                  // Write 0..1 presence of response
-                  //
-                  std::for_each(
-                        response.begin(),
-                        response.end(),
-                        writer);
+                     writer( response.front());
+                  }
 
                   break;
                }
@@ -146,10 +143,15 @@ namespace casual
                   message::ServiceACK message;
                   queueReader( message);
 
-                  state::serviceDone( message, m_state);
+                  std::vector< state::PendingResponse> response = state::serviceDone( message, m_state);
 
+                  if( !response.empty())
+                  {
+                     ipc::send::Queue responseQueue( response.front().first);
+                     queue::Writer writer( responseQueue);
 
-
+                     writer( response.front().second);
+                  }
 
                   break;
                }

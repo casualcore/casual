@@ -67,7 +67,7 @@ namespace casual
 		         return server->pid == m_pid;
             }
 
-		      bool operator () ( const std::pair< std::string, broker::Service>& service) const
+		      bool operator () ( const State::service_mapping_type::value_type & service) const
             {
                return std::find_if(
                      service.second.servers.begin(),
@@ -91,7 +91,49 @@ namespace casual
 
 		   } // server
 
+		   struct Pending
+		   {
+		      Pending( const std::vector< std::string>& services) : m_services( services) {}
+
+		      bool operator () ( const message::ServiceRequest& request)
+		      {
+		         return std::binary_search( m_services.begin(), m_services.end(), request.requested);
+		      }
+
+		      std::vector< std::string> m_services;
+		   };
+
 		} // find
+
+		namespace extract
+		{
+
+		   //!
+		   //! Extract the services associated with the specific server
+		   //!
+		   //! @return a sorted range with the services.
+		   //!
+		   std::vector< std::string> services( message::ServerId::pid_type pid, State& state)
+         {
+		      std::vector< std::string> result;
+
+		      State::service_mapping_type::iterator current = state.services.begin();
+
+		      while( ( current = std::find_if(
+		            current,
+		            state.services.end(),
+		            find::Server( pid))) != state.services.end())
+		      {
+		         result.push_back( current->first);
+		         ++current;
+		      }
+
+		      std::sort( result.begin(), result.end());
+
+		      return result;
+         }
+
+		}
 
 		namespace state
 		{
@@ -244,7 +286,7 @@ namespace casual
 		            //
 		            // flag it as not idle.
 		            //
-		            (*idleServer)->idle;
+		            (*idleServer)->idle = false;
 
 		            message::ServiceResponse response;
 		            response.requested = message.requested;
@@ -273,8 +315,12 @@ namespace casual
 		      return result;
 		   }
 
-		   void serviceDone( message::ServiceACK& message, State& state)
+		   typedef std::pair< message::ServerId::queue_key_type, message::ServiceResponse> PendingResponse;
+
+		   std::vector< PendingResponse> serviceDone( message::ServiceACK& message, State& state)
 		   {
+		      std::vector< PendingResponse> result;
+
 		      //
 		      // find server and flag it as idle
 		      //
@@ -287,18 +333,40 @@ namespace casual
 		         if( !state.pending.empty())
 		         {
 		            //
-		            // There are pendning requests
+		            // There are pending requests, check if there is one that is
+		            // waiting for a service that this, now idle, server has advertised.
 		            //
+		            State::pending_requests_type::iterator pendingIter = std::find_if(
+		                  state.pending.begin(),
+		                  state.pending.end(),
+		                  find::Pending( extract::services( message.server.pid, state)));
 
+		            if( pendingIter != state.pending.end())
+		            {
+		               message::ServiceResponse response;
+		               response.requested = pendingIter->requested;
+		               response.server.push_back( message.server);
+
+		               result.push_back( std::make_pair( pendingIter->server.queue_key, response));
+
+
+		               //
+		               // Remove pending
+		               //
+		               state.pending.erase( pendingIter);
+		            }
 		         }
 		      }
 		      else
 		      {
-		         // TODO: log this?
+		         // TODO: log this? This can only happen if there are some logic error or
+		         // the system is in a inconsistent state.
 		      }
+
+		      return result;
 		   }
 
-		}
+		} // state
 
 
 	} // broker
