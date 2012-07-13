@@ -21,6 +21,20 @@
 
 #include <algorithm>
 
+extern "C"
+{
+   int tpsvrinit(int argc, char **argv)
+   {
+      casual::logger::debug << "internal tpsvrinit called";
+      return 0;
+   }
+
+   void tpsvrdone()
+   {
+      casual::logger::debug << "internal tpsvrdone called";
+   }
+}
+
 
 namespace casual
 {
@@ -83,6 +97,13 @@ namespace casual
 		   {
             connect();
 
+            // TODO: Temp
+            //int argc = 0;
+            //char** argv = 0;
+
+            //tpsvrinit( argc, argv);
+
+
             while( true)
             {
 
@@ -116,6 +137,8 @@ namespace casual
 		   }
 		   catch( ...)
 		   {
+		      //tpsvrdone();
+
 		      //
 		      // Vi need to disconnect from the broker
 		      //

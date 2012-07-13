@@ -36,6 +36,12 @@ namespace local
 }
 
 
+extern "C"
+{
+   int tpsvrinit(int argc, char **argv);
+
+   void tpsvrdone();
+}
 
 
 
@@ -57,10 +63,13 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
          mapping + size,
          local::AddServiceContext());
 
+      tpsvrinit( argc, argv);
+
 	   return casual::server::Context::instance().start();
 	}
 	catch( ...)
 	{
+	   tpsvrdone();
 	   return casual::error::handler();
 	}
 	return 0;

@@ -18,6 +18,7 @@
 
 extern "C"
 {
+   int tpsvrinit(int argc, char **argv);
 
 	void casual_test1( TPSVCINFO *transb);
 	void casual_test2( TPSVCINFO *transb);
