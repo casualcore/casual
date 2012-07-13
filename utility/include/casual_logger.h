@@ -65,6 +65,7 @@ namespace casual
 				mutable bool m_log;
 			};
 
+
 			template< int priority>
 			class basic_logger
 			{
@@ -73,7 +74,9 @@ namespace casual
 				template< typename T>
 				Proxy operator << ( const T& value)
 				{
-					return Proxy( priority) << value;
+				   Proxy proxy( priority);
+				   proxy << value;
+					return proxy;
 				}
 
 			};
@@ -84,9 +87,13 @@ namespace casual
 
 		extern internal::basic_logger< utility::platform::cLOG_debug> debug;
 
+		extern internal::basic_logger< utility::platform::cLOG_info> information;
+
 		extern internal::basic_logger< utility::platform::cLOG_warning> warning;
 
 		extern internal::basic_logger< utility::platform::cLOG_error> error;
+
+
 
 
 

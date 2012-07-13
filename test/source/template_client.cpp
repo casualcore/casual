@@ -42,12 +42,16 @@ int main( int argc, char** argv)
 
 
 	long size = 0;
-	tpcall( "casual_test1", buffer, 0, &buffer, &size, 0);
+	int cd1 = tpacall( "casual_test1", buffer, 0, 0);
+	int cd2 = tpacall( "casual_test2", buffer, 0, 0);
 
-	std::cout << std::endl << "reply: " << buffer << std::endl;
+	tpgetrply( &cd1, &buffer, &size, 0);
+	std::cout << std::endl << "reply1: " << buffer << std::endl;
+
+	tpgetrply( &cd2, &buffer, &size, 0);
+	std::cout << std::endl << "reply2: " << buffer << std::endl;
 
 	tpfree( buffer);
-
 
 }
 

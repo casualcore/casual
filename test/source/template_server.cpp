@@ -11,17 +11,20 @@
 
 #include "template_server.h"
 
+
+#include "casual_logger.h"
+
 #include <iostream>
 
 
 #include "xatmi.h"
 
-void casual_test1( TPSVCINFO *transb)
+void casual_test1( TPSVCINFO *serviceContext)
 {
 
-   std::cout << "transb->name: " << transb->name << std::endl;
-   std::cout << "transb->cd: " << transb->cd << std::endl;
-   std::cout << "transb->data: " << transb->data << std::endl;
+   std::cout << "transb->name: " << serviceContext->name << std::endl;
+   std::cout << "transb->cd: " << serviceContext->cd << std::endl;
+   std::cout << "transb->data: " << serviceContext->data << std::endl;
 	
 	char* buffer = tpalloc( "STRING", 0, 500);
 	buffer = tprealloc( buffer, 3000);
@@ -36,16 +39,9 @@ void casual_test1( TPSVCINFO *transb)
 
 }
 
-void casual_test2( TPSVCINFO *transb)
+void casual_test2( TPSVCINFO *serviceContext)
 {
-	//
-	// TODO:
-	// This method right now is just to remove linkage error
-	//
-	char* buffer = tpalloc( "STRING", 0, 500);
-
-
-	buffer = tprealloc( buffer, 3000);
+	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
 
 

@@ -15,7 +15,7 @@ Compile( source/template_server.cpp, obj/template_server.o)
 
 LinkAtmiServer(test, \
 	obj/template_server.o, \
-	casual-xatmi, \
+	casual-xatmi casual_utility, \
 	"casual_test1,casual_test2")
 	
 	
@@ -23,3 +23,15 @@ Compile( source/template_client.cpp, obj/template_client.o)
 
 LinkExecutable( test_client, \
 	obj/template_client.o, casual_common casual_utility casual-xatmi)
+	
+
+
+
+Compile( source/test_multicall.cpp, obj/test_multicall.o)
+
+LinkExecutable( test_multicall_client, \
+	obj/test_multicall.o, casual_common casual_utility casual-xatmi)
+	
+	
+	
+	

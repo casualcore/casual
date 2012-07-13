@@ -53,6 +53,7 @@ namespace casual
 						strncpy( result.name, &message.service[ 0], message.service.size());
 						result.data = message.buffer().raw();
 						result.len = message.buffer().size();
+						result.cd = message.callDescriptor;
 						result.flags = 0;
 
 						return result;

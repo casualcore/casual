@@ -39,18 +39,66 @@ namespace casual
 
 						void log( int priority, const std::string& message)
 						{
-							//syslog( priority, "casual: %s", message.c_str());
-						   m_output << message << std::endl;
+							//syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
+
+						   m_output << m_prefix;
+
+						   // TODO: Temp while we roll our own...
+						   switch( priority)
+						   {
+						      case utility::platform::cLOG_debug:
+						      {
+						         m_output << "debug - ";
+						         break;
+						      }
+						      case utility::platform::cLOG_info:
+                        {
+                           m_output << "information - ";
+                           break;
+                        }
+						      case utility::platform::cLOG_warning:
+                        {
+                           m_output << "warning - ";
+                           break;
+                        }
+						      case utility::platform::cLOG_error:
+                        {
+                           m_output << "error - ";
+                           break;
+                        }
+						   }
+
+						   m_output <<  message << std::endl;
+						}
+
+						bool active( int priority) const
+						{
+						   return m_mask & priority == priority;
 						}
 
 					private:
 						~Context()
 						{
-							//closelog();
+							// closelog();
 						}
 
-						Context() : m_domain( utility::environment::getDomainName())
+						Context() : m_mask( 0)
 						{
+						   if( utility::environment::variable::exists( "CASUAL_LOG"))
+						   {
+						      const std::string log = utility::environment::variable::get( "CASUAL_LOG");
+
+						      if( log.find( "debug") != std::string::npos) m_mask |= utility::platform::cLOG_debug;
+						      if( log.find( "information") != std::string::npos) m_mask |= utility::platform::cLOG_info;
+						      if( log.find( "warning") != std::string::npos) m_mask |= utility::platform::cLOG_warning;
+						      if( log.find( "error") != std::string::npos) m_mask |= utility::platform::cLOG_error;
+						   }
+
+						   std::ostringstream prefix;
+						   prefix << "<time> " << utility::environment::getDomainName() << ":" << utility::platform::getProcessId() << ": ";
+						   m_prefix = prefix.str();
+
+
 							//
 							// Open log
 							//
@@ -61,11 +109,14 @@ namespace casual
 						      throw exception::NotReallySureWhatToNameThisException();
 						   }
 
-							//openlog( m_domain.c_str(), LOG_PID, LOG_USER);
+
+							//openlog( "casual", LOG_PID, LOG_USER);
 
 						}
 						std::ofstream m_output;
-						std::string m_domain;
+						std::string m_prefix;
+						int m_mask;
+
 					};
 
 
@@ -74,25 +125,26 @@ namespace casual
 			}
 
 
-			Proxy::Proxy( int priority) : m_priority( priority), m_log( true) {}
+			Proxy::Proxy( int priority) : m_priority( priority), m_log( local::Context::instance().active( priority)) {}
 
 			//
 			// We can't rely on RVO, so we have to release logging-responsibility for
 			// rhs.
 			//
-			Proxy::Proxy( const Proxy& rhs) : m_message( rhs.m_message.str()), m_priority( rhs.m_priority), m_log( true)
+			Proxy::Proxy( const Proxy& rhs) : m_message( rhs.m_message.str()), m_priority( rhs.m_priority), m_log( local::Context::instance().active( m_priority))
 			{
 				rhs.m_log = false;
 			}
 
 			//
-			// Will be called when the full expression has "run", and this rvalue
+			// Will be called when the full expression has completed, and this rvalue
 			// will be destructed.
 			//
 			Proxy::~Proxy()
 			{
 				if( m_log)
 				{
+
 					local::Context::instance().log( m_priority, m_message.str());
 				}
 			}
@@ -100,6 +152,8 @@ namespace casual
 		} // internal
 
       internal::basic_logger< utility::platform::cLOG_debug> debug;
+
+      internal::basic_logger< utility::platform::cLOG_info> information;
 
       internal::basic_logger< utility::platform::cLOG_warning> warning;
 

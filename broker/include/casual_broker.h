@@ -57,25 +57,10 @@ namespace casual
 			void add( Server* server)
 			{
 				servers.push_back( server);
-				m_currentServer = servers.begin();
-			}
-
-			const Server& nextServer()
-			{
-				if( m_currentServer == servers.end())
-				{
-					m_currentServer = servers.begin();
-				}
-
-				return **m_currentServer++;
 			}
 
 			std::string name;
 			std::vector< Server*> servers;
-
-		private:
-
-			std::vector< Server*>::iterator m_currentServer;
 		};
 
 		struct State
