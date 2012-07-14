@@ -26,16 +26,20 @@ namespace casual
 	{
 		struct Service
 		{
-		   Service() {}
+		   typedef int Seconds;
 
-		   Service( const std::string& name_) : name( name_) {}
+		   Service() : timeout( 0) {}
+
+		   Service( const std::string& name_) : name( name_),timeout( 0) {}
 
 			std::string name;
+			Seconds timeout;
 
 			template< typename A>
 			void serialize( A& archive)
 			{
 				archive & name;
+				archive & timeout;
 			}
 		};
 
@@ -147,18 +151,20 @@ namespace casual
       //!
 		struct ServiceResponse
 		{
+
 			enum
 			{
 				message_type = 11
 			};
 
-			std::string requested;
+			Service service;
+
 			std::vector< ServerId> server;
 
 			template< typename A>
 			void serialize( A& archive)
 			{
-				archive & requested;
+				archive & service;
 				archive & server;
 			}
 		};
@@ -173,11 +179,10 @@ namespace casual
 				message_type = 20
 			};
 
-			ServiceCall( buffer::Buffer& buffer) : callDescriptor( 0), timeout( 0),  m_buffer( buffer) {}
+			ServiceCall( buffer::Buffer& buffer) : callDescriptor( 0),  m_buffer( buffer) {}
 
 			int callDescriptor;
-			std::string service;
-			std::size_t timeout;
+			Service service;
 			ServerId reply;
 
 			buffer::Buffer& buffer()
@@ -190,7 +195,6 @@ namespace casual
 			{
 				archive & callDescriptor;
 				archive & service;
-				archive & timeout;
 				archive & reply;
 				archive & m_buffer;
 			}

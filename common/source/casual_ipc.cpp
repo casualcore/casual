@@ -57,15 +57,33 @@ namespace casual
 				}
 			}
 
+         bool Queue::send( message::Transport& message, const long flags) const
+         {
 
-			bool Queue::operator () ( message::Transport& message) const
-			{
-				if( msgsnd( m_id, message.raw(), message.size(), 0) == -1)
-				{
-					throw casual::exception::QueueSend( error::stringFromErrno());
-				}
-				return true;
-			}
+            ssize_t result = msgsnd( m_id, message.raw(), message.size(), flags);
+
+            if( result == -1)
+            {
+               switch( errno)
+               {
+                  case EINTR:
+                  {
+                     utility::signal::handle();
+                     return false;
+                  }
+                  case ENOMSG:
+                  {
+                     return false;
+                  }
+                  default:
+                  {
+                     throw exception::QueueSend( error::stringFromErrno());
+                  }
+               }
+            }
+
+            return true;
+         }
 
 
 

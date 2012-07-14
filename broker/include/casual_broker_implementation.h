@@ -315,7 +315,7 @@ namespace casual
 		            (*idleServer)->idle = false;
 
 		            message::ServiceResponse response;
-		            response.requested = message.requested;
+		            response.service = message.requested;
 		            response.server.push_back( transform::Server()( **idleServer));
 
 		            result.push_back( response);
@@ -334,7 +334,7 @@ namespace casual
 		         // Service not found. We propagate this by having 0 presence of server in the response
 		         //
 		         message::ServiceResponse response;
-		         response.requested = message.requested;
+		         response.service = message.requested;
 		         result.push_back( response);
 
 		      }
@@ -378,7 +378,7 @@ namespace casual
 		            if( pendingIter != state.pending.end())
 		            {
 		               message::ServiceResponse response;
-		               response.requested = pendingIter->requested;
+		               response.service = pendingIter->requested;
 		               response.server.push_back( message.server);
 
 		               result.push_back( std::make_pair( pendingIter->server.queue_key, response));

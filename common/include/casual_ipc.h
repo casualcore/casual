@@ -110,7 +110,19 @@ namespace casual
 			public:
 				Queue( queue_key_type key);
 
-				bool operator () ( message::Transport& message) const;
+				bool operator () ( message::Transport& message) const
+				{
+				   return send( message, 0);
+				}
+
+				bool operator () ( message::Transport& message, const long flags) const
+            {
+               return send( message, flags);
+            }
+
+			private:
+
+				bool send( message::Transport& message, const long flags) const;
 			};
 
 		}

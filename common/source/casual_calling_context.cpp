@@ -41,9 +41,11 @@ namespace casual
             {
                if( value.callDescriptor - unused > 1)
                {
-                  unused = value.callDescriptor + 1;
+                  ++unused;
                   return true;
                }
+
+               unused = value.callDescriptor + 1;
                return false;
             }
 
@@ -68,12 +70,13 @@ namespace casual
             // which is a extreme high number of pending replies. But, we have to handle it...
             //
 
+            // TODO: this is not standard-conformant...
             local::UnusedCallingDescriptor finder;
 
             pending_calls_type::iterator findIter = std::find_if(
                   m_pendingReplies.begin(),
                   m_pendingReplies.end(),
-                  local::UnusedCallingDescriptor());
+                  finder);
 
             if( findIter == m_pendingReplies.end())
             {
@@ -105,6 +108,7 @@ namespace casual
             queue::Writer broker( m_brokerQueue);
             broker( serviceLookup);
 
+
             message::ServiceResponse serviceResponse;
             queue::blocking::Reader reader( m_receiveQueue);
             reader( serviceResponse);
@@ -121,7 +125,7 @@ namespace casual
             messageCall.callDescriptor = allocateCallingDescriptor();
             messageCall.reply.queue_key = m_receiveQueue.getKey();
 
-            messageCall.service = serviceResponse.requested;
+            messageCall.service = serviceResponse.service.name;
 
             //
             // Store the pending-call information
@@ -273,7 +277,14 @@ namespace casual
                {
                   if( m_deallocate)
                   {
-                     buffer::Context::instance().deallocate( m_reply.getBuffer().raw());
+                     try
+                     {
+                        buffer::Context::instance().deallocate( m_reply.getBuffer().raw());
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                     }
                   }
                }
 

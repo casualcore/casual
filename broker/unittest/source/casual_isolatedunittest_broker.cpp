@@ -208,7 +208,7 @@ namespace casual
          EXPECT_TRUE( state.servers[ 20].idle == true);
 
          ASSERT_TRUE( response.size() == 1);
-         EXPECT_TRUE( response.at( 0).requested == "service1");
+         EXPECT_TRUE( response.at( 0).service.name == "service1");
          ASSERT_TRUE( response.at( 0).server.size() == 1);
          EXPECT_TRUE( response.at( 0).server.at( 0).pid == 10);
          EXPECT_TRUE( response.at( 0).server.at( 0).queue_key == 10);
@@ -289,7 +289,7 @@ namespace casual
          // pending queue response is sent to
          EXPECT_TRUE( response.front().first == 30);
          // response sent to queue "30"
-         EXPECT_TRUE( response.front().second.requested == "service1");
+         EXPECT_TRUE( response.front().second.service.name == "service1");
          ASSERT_TRUE( response.front().second.server.size() == 1);
          EXPECT_TRUE( response.front().second.server.front().pid == 10);
          EXPECT_TRUE( response.front().second.server.front().queue_key == 10);

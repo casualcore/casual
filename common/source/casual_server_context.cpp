@@ -64,7 +64,7 @@ namespace casual
 					{
 						TPSVCINFO result;
 
-						strncpy( result.name, &message.service[ 0], message.service.size());
+						strncpy( result.name, &message.service.name[ 0], message.service.name.size());
 						result.data = message.buffer().raw();
 						result.len = message.buffer().size();
 						result.cd = message.callDescriptor;
@@ -117,7 +117,7 @@ namespace casual
                   message::ServiceCall message( buffer::Context::instance().create());
                   queueReader( message);
 
-                  logger::debug << "service call: " << message.service << " cd: " << message.callDescriptor
+                  logger::debug << "service call: " << message.service.name << " cd: " << message.callDescriptor
                         << " caller pid: " << message.reply.pid << " caller queue: " << message.reply.queue_key;
 
 
@@ -207,7 +207,7 @@ namespace casual
 				//
 				m_reply.callDescriptor = context.callDescriptor;
 
-				service::Context& service = getService( context.service);
+				service::Context& service = getService( context.service.name);
 
 				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( context);
 				service.call( &serviceInformation);
@@ -235,7 +235,7 @@ namespace casual
 				//
 				message::ServiceACK ack;
 				ack.server = getId();
-				ack.service = context.service;
+				ack.service = context.service.name;
 				// TODO: ack.time
 
 				queue::Writer brokerWriter( m_brokerQueue);
