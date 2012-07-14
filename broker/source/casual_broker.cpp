@@ -126,7 +126,7 @@ namespace casual
                   if( !response.empty())
                   {
                      ipc::send::Queue responseQueue( message.server.queue_key);
-                     queue::Writer writer( responseQueue);
+                     queue::blocking::Writer writer( responseQueue);
 
                      writer( response.front());
                   }
@@ -148,7 +148,7 @@ namespace casual
                   if( !response.empty())
                   {
                      ipc::send::Queue responseQueue( response.front().first);
-                     queue::Writer writer( responseQueue);
+                     queue::blocking::Writer writer( responseQueue);
 
                      writer( response.front().second);
                   }
@@ -162,15 +162,12 @@ namespace casual
                }
 
             }
-
          }
-
-
-
 		}
-	}
 
-}
+	} // broker
+
+} // casual
 
 
 

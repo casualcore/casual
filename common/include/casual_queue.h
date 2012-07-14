@@ -26,6 +26,37 @@ namespace casual
 		namespace blocking
 		{
 
+		   class Writer
+         {
+         public:
+            Writer( ipc::send::Queue& queue);
+
+            //!
+            //! Sends/Writes a message to the queue. which can result in several
+            //! actual ipc-messages.
+            //!
+            template< typename M>
+            void operator () ( M& message)
+            {
+               //
+               // Serialize the message
+               //
+               archive::output::Binary archive;
+               archive << message;
+
+               message_type_type type = message::type( message);
+
+               send( archive, type);
+
+            }
+         private:
+
+            void send( archive::output::Binary& archive, message_type_type type);
+
+            ipc::send::Queue& m_queue;
+         };
+
+
 			//!
 			//!
 			//!
@@ -68,6 +99,42 @@ namespace casual
 
 		namespace non_blocking
 		{
+		   //!
+		   //! Non blocking writer. There are only a few cases where we use this semantic
+		   //!
+		   class Writer
+         {
+         public:
+            Writer( ipc::send::Queue& queue);
+
+            //!
+            //! Sends/Writes a message to the queue. which can result in several
+            //! actual ipc-messages.
+            //!
+            //! @note non-blocking
+            //! @return true if the whole message is sent. false otherwise
+            //!
+            template< typename M>
+            bool operator () ( M& message)
+            {
+               //
+               // Serialize the message
+               //
+               archive::output::Binary archive;
+               archive << message;
+
+               message_type_type type = message::type( message);
+
+               return send( archive, type);
+
+            }
+         private:
+
+            bool send( archive::output::Binary& archive, message_type_type type);
+
+            ipc::send::Queue& m_queue;
+         };
+
 
 			//!
 			//! Non-blocking reader
@@ -116,75 +183,12 @@ namespace casual
 				ipc::receive::Queue& m_queue;
 
 			};
-		}
 
+		} // non_blocking
 
-		class Writer
-		{
-		public:
-			Writer( ipc::send::Queue& queue) : m_queue( queue) {}
+	} // queue
 
-			//!
-			//! Sends/Writes a message to the queue. which can result in several
-			//! actual ipc-messages.
-			//!
-			template< typename M>
-			void operator () ( M& message)
-			{
-				utility::Uuid correlation;
-				ipc::message::Transport transport;
-
-				transport.m_payload.m_type = message::type( message);
-				correlation.get( transport.m_payload.m_header.m_correlation);
-
-				//
-				// Serialize the message
-				//
-				archive::output::Binary archive;
-				archive << message;
-
-				//
-				// Figure out how many transport-messages we have to use
-				//
-				std::size_t count = archive.get().size() / ipc::message::Transport::payload_max_size;
-
-				if( archive.get().size() % ipc::message::Transport::payload_max_size != 0)
-				{
-					count += 1;
-				}
-
-				for( std::size_t index = 0; index < count; ++index)
-				{
-					transport.m_payload.m_header.m_count = count - index -1;
-
-					const std::size_t offset = index *  ipc::message::Transport::payload_max_size;
-					const std::size_t length =
-							archive.get().size() - offset < ipc::message::Transport::payload_max_size ?
-									archive.get().size() - offset : ipc::message::Transport::payload_max_size;
-
-					//
-					// Copy payload
-					//
-					std::copy(
-						archive.get().begin() + offset,
-						archive.get().begin() + offset + length,
-						transport.m_payload.m_payload);
-
-					transport.paylodSize( length);
-
-					m_queue( transport);
-				}
-			}
-
-		private:
-			ipc::send::Queue& m_queue;
-
-		};
-
-
-	}
-
-}
+} // casual
 
 
 #endif /* CASUAL_QUEUE_H_ */

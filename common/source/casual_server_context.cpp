@@ -161,8 +161,10 @@ namespace casual
 		{
 		   message::ServerDisconnect message;
 
-		   // TODO we cant block here...
-		   queue::Writer writer( m_brokerQueue);
+		   //
+		   // we cant block here...
+		   //
+		   queue::non_blocking::Writer writer( m_brokerQueue);
 		   writer( message);
 		}
 
@@ -182,7 +184,7 @@ namespace casual
 				std::back_inserter( message.services),
 				local::transform::Service());
 
-			queue::Writer writer( m_brokerQueue);
+			queue::blocking::Writer writer( m_brokerQueue);
 			writer( message);
 
 		}
@@ -227,7 +229,7 @@ namespace casual
 			   // Send reply to caller
 				//
 				ipc::send::Queue replyQueue( context.reply.queue_key);
-				queue::Writer replyWriter( replyQueue);
+				queue::blocking::Writer replyWriter( replyQueue);
 				replyWriter( m_reply);
 
 				//
@@ -238,7 +240,7 @@ namespace casual
 				ack.service = context.service.name;
 				// TODO: ack.time
 
-				queue::Writer brokerWriter( m_brokerQueue);
+				queue::blocking::Writer brokerWriter( m_brokerQueue);
 				brokerWriter( ack);
 
 				//
@@ -285,7 +287,7 @@ namespace casual
 		   message.services.push_back( message::Service( name));
 
 		   // TODO: make it consistence safe...
-		   queue::Writer writer( m_brokerQueue);
+		   queue::blocking::Writer writer( m_brokerQueue);
 		   writer( message);
 
 		   add( service::Context( name, function));
@@ -302,7 +304,7 @@ namespace casual
 		   message.serverId = getId();
 		   message.services.push_back( message::Service( name));
 
-		   queue::Writer writer( m_brokerQueue);
+		   queue::blocking::Writer writer( m_brokerQueue);
 		   writer( message);
       }
 

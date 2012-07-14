@@ -29,7 +29,7 @@ namespace casual
 			ipc::send::Queue send( receive.getKey());
 
 			{
-				Writer writer( send);
+				blocking::Writer writer( send);
 				message::ServiceAdvertise message;
 
 				message.serverId.queue_key = 666;
@@ -92,7 +92,7 @@ namespace casual
 			non_blocking::Reader reader( receive);
 
 			ipc::send::Queue send( receive.getKey());
-			Writer writer( send);
+			blocking::Writer writer( send);
 
 			message::ServiceAdvertise sendMessage;
 			sendMessage.serverPath = "banan";
@@ -110,7 +110,7 @@ namespace casual
 			non_blocking::Reader reader( receive);
 
 			ipc::send::Queue send( receive.getKey());
-			Writer writer( send);
+			blocking::Writer writer( send);
 
 			message::ServiceAdvertise sendMessage;
 			sendMessage.serverPath = "banan";

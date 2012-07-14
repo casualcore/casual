@@ -143,12 +143,74 @@ namespace casual
 				}
 
 
-			}
 
-		}
+				bool write( archive::output::Binary& archive, message_type_type type, ipc::send::Queue& queue, const long flags)
+            {
+
+               utility::Uuid correlation;
+               ipc::message::Transport transport;
+
+               transport.m_payload.m_type = type;
+               correlation.get( transport.m_payload.m_header.m_correlation);
+
+               //
+               // Figure out how many transport-messages we have to use
+               //
+               std::size_t count = archive.get().size() / ipc::message::Transport::payload_max_size;
+
+               if( archive.get().size() % ipc::message::Transport::payload_max_size != 0)
+               {
+                  count += 1;
+               }
+
+               for( std::size_t index = 0; index < count; ++index)
+               {
+                  transport.m_payload.m_header.m_count = count - index -1;
+
+                  const std::size_t offset = index *  ipc::message::Transport::payload_max_size;
+                  const std::size_t length =
+                        archive.get().size() - offset < ipc::message::Transport::payload_max_size ?
+                              archive.get().size() - offset : ipc::message::Transport::payload_max_size;
+
+                  //
+                  // Copy payload
+                  //
+                  std::copy(
+                     archive.get().begin() + offset,
+                     archive.get().begin() + offset + length,
+                     transport.m_payload.m_payload);
+
+                  transport.paylodSize( length);
+
+                  if( !queue( transport, flags))
+                  {
+                     //
+                     // We faild to send part of message (non blocking). No need to try send the rest of
+                     // the message...
+                     //
+                     return false;
+                  }
+               }
+               return true;
+
+            }
+			} // <unnamed>
+
+		} // local
+
 
 		namespace blocking
 		{
+
+		   Writer::Writer( ipc::send::Queue& queue) : m_queue( queue) {}
+
+		   void Writer::send( archive::output::Binary& archive, message_type_type type)
+		   {
+		      local::write( archive, type, m_queue, 0);
+		   }
+
+
+
 			Reader::Reader( ipc::receive::Queue& queue) : m_queue( queue) {}
 
 			message_type_type Reader::next()
@@ -171,6 +233,14 @@ namespace casual
 
 		namespace non_blocking
 		{
+		   Writer::Writer( ipc::send::Queue& queue) : m_queue( queue) {}
+
+         bool Writer::send( archive::output::Binary& archive, message_type_type type)
+         {
+            return local::write( archive, type, m_queue, ipc::receive::Queue::cNoBlocking);
+         }
+
+
 			Reader::Reader( ipc::receive::Queue& queue) : m_queue( queue) {}
 
 			bool Reader::consume()

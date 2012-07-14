@@ -105,7 +105,7 @@ namespace casual
             serviceLookup.requested = service;
             serviceLookup.server.queue_key = m_receiveQueue.getKey();
 
-            queue::Writer broker( m_brokerQueue);
+            queue::blocking::Writer broker( m_brokerQueue);
             broker( serviceLookup);
 
 
@@ -136,7 +136,7 @@ namespace casual
             m_pendingReplies.insert( pendingReply);
 
             ipc::send::Queue callQueue( serviceResponse.server.front().queue_key);
-            queue::Writer callWriter( callQueue);
+            queue::blocking::Writer callWriter( callQueue);
 
             callWriter( messageCall);
 

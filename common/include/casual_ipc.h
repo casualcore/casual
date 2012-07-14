@@ -108,6 +108,12 @@ namespace casual
 			class Queue : public internal::base_queue
 			{
 			public:
+
+			   enum
+            {
+               cNoBlocking = utility::platform::cIPC_NO_WAIT
+            };
+
 				Queue( queue_key_type key);
 
 				bool operator () ( message::Transport& message) const
