@@ -7,7 +7,7 @@ Created on 14 maj 2012
 '''
 
 SCRIPTVERSION="2.0"
-SENASTUPPDATERAD="20120514"
+SENASTUPPDATERAD="20120715"
 
 #
 # Imports
@@ -64,6 +64,7 @@ def handleArguments():
     parser.set_defaults(USER_MAKE_FILE="makefile.mk")
     parser.add_option("-f", "--file", dest="USER_MAKE_FILE") 
     parser.add_option("-d", "--debug", action="store_true", dest="DEBUG")
+    parser.add_option("-a", "--analyze", action="store_true", dest="ANALYZE")
     parser.add_option("-r", "--release", action="store_true", dest="RELEASE") 
     parser.add_option("-p", "--force-parallel", action="store_true", dest="FORCE_PARALLEL") 
     parser.add_option("-n", "--force-notparallel", action="store_true", dest="FORCE_NOTPARALLEL")
@@ -89,7 +90,9 @@ def optionsAsString( options):
     if options.FORCE_NOTPARALLEL:
         result = result + " FORCE_NOTPARALLEL=1 "                  
     if options.DEBUG:
-        result = result + " DEBUG=1 "                  
+        result = result + " DEBUG=1 "
+    if options.ANALYZE:
+        result = result + " ANALYZE=1 "                     
     if options.RELEASE:
         result = result + " RELEASE=1 "
     if options.IGNORE_ERRORS:
