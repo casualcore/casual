@@ -297,7 +297,7 @@ namespace casual
 
 		      State::service_mapping_type::iterator serviceFound = state.services.find( message.requested);
 
-		      if( serviceFound != state.services.end())
+		      if( serviceFound != state.services.end() && !state.servers.empty())
 		      {
 		         //
 		         // Try to find an idle server.
@@ -315,7 +315,7 @@ namespace casual
 		            (*idleServer)->idle = false;
 
 		            message::ServiceResponse response;
-		            response.service = message.requested;
+		            response.service = serviceFound->second.information;
 		            response.server.push_back( transform::Server()( **idleServer));
 
 		            result.push_back( response);
@@ -331,10 +331,11 @@ namespace casual
 		      else
 		      {
 		         //
-		         // Service not found. We propagate this by having 0 presence of server in the response
+		         // Server (queue) that hosts the requested service is not found.
+		         // We propagate this by having 0 occurrence of server in the response
 		         //
 		         message::ServiceResponse response;
-		         response.service = message.requested;
+		         response.service.name = message.requested;
 		         result.push_back( response);
 
 		      }
@@ -377,17 +378,29 @@ namespace casual
 
 		            if( pendingIter != state.pending.end())
 		            {
-		               message::ServiceResponse response;
-		               response.service = pendingIter->requested;
-		               response.server.push_back( message.server);
+		               //
+		               // We now know that there are one idle server that has advertised the
+		               // requested service (we just marked it as idle...).
+		               // We can use the normal request to get the response
+		               //
 
-		               result.push_back( std::make_pair( pendingIter->server.queue_key, response));
+		               std::vector< message::ServiceResponse> response = requestService( *pendingIter, state);
+
+		               if( response.empty())
+		               {
+		                  //
+		                  // Something is very wrong!
+		                  //
+		                  state.pending.pop_back();
+		                  throw exception::NotReallySureWhatToNameThisException();
+		               }
+
+		               result.push_back( std::make_pair( pendingIter->server.queue_key, response.front()));
 
 		               //
 		               // The server is busy again... No rest for the wicked...
 		               //
 		               findIter->second.idle = false;
-
 
 		               //
 		               // Remove pending

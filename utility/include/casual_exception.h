@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "casual_utility_platform.h"
+
 namespace casual
 {
 	namespace exception
@@ -54,19 +56,28 @@ namespace casual
 			{
 				Base( const std::string& description)
 					: std::runtime_error( description) {}
+
+				virtual utility::platform::signal_type getSignal() const = 0;
 			};
 
-			struct Timeout : public Base
+			template< utility::platform::signal_type signal>
+			struct basic_signal : public Base
 			{
-				Timeout( const std::string& description)
-					: Base( description) {}
+			   basic_signal( const std::string& description)
+			      : Base( description) {}
+
+			   basic_signal()
+			      : Base( utility::platform::getSignalDescription( signal)) {}
+
+			   utility::platform::signal_type getSignal() const
+			   {
+			      return signal;
+			   }
 			};
 
-			struct Terminate : public Base
-			{
-				Terminate( const std::string& description)
-					: Base( description) {}
-			};
+			typedef basic_signal< utility::platform::cSignal_Alarm> Timeout;
+
+			typedef basic_signal< utility::platform::cSignal_Alarm> Terminate;
 
 
 		}
@@ -77,6 +88,24 @@ namespace casual
          {
 		      NoEntry( const std::string& description)
                : std::runtime_error( description) {}
+         };
+
+		   struct NoMessage : public std::runtime_error
+		   {
+		      NoMessage()
+		         : std::runtime_error( "No messages") {}
+		   };
+
+		   struct Timeout : public std::runtime_error
+         {
+		      Timeout()
+               : std::runtime_error( "Timeout occurred") {}
+         };
+
+		   struct InvalidDescriptor : public std::runtime_error
+         {
+		      InvalidDescriptor()
+               : std::runtime_error( "Invalid descriptor") {}
          };
 
 		}

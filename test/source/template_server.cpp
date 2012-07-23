@@ -16,22 +16,31 @@
 
 #include <iostream>
 
+#include <unistd.h>
+
+
+
 
 #include "xatmi.h"
 
 void casual_test1( TPSVCINFO *serviceContext)
 {
 
-   std::cout << "transb->name: " << serviceContext->name << std::endl;
-   std::cout << "transb->cd: " << serviceContext->cd << std::endl;
-   std::cout << "transb->data: " << serviceContext->data << std::endl;
-	
-	char* buffer = tpalloc( "STRING", 0, 500);
-	buffer = tprealloc( buffer, 3000);
 
-	std::string test = "bla bla bla";
-	std::copy( test.begin(), test.end(), buffer);
-	buffer[ test.size()] = '\0';
+   char* buffer = tpalloc( "STRING", 0, 500);
+   buffer = tprealloc( buffer, 3000);
+
+   {
+      std::cout << "transb->name: " << serviceContext->name << std::endl;
+      std::cout << "transb->cd: " << serviceContext->cd << std::endl;
+      std::cout << "transb->data: " << serviceContext->data << std::endl;
+
+
+
+      std::string test = "bla bla bla";
+      std::copy( test.begin(), test.end(), buffer);
+      buffer[ test.size()] = '\0';
+   }
 
 
 	tpreturn( TPSUCCESS, 0, buffer, 3000, 0);
@@ -41,6 +50,9 @@ void casual_test1( TPSVCINFO *serviceContext)
 
 void casual_test2( TPSVCINFO *serviceContext)
 {
+
+   //sleep( 1);
+
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
 

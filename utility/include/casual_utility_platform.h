@@ -28,7 +28,17 @@
 // syslog
 #include <syslog.h>
 
+
+// signal
+#include <signal.h>
+
 #include <string.h>
+
+
+//
+// std
+//
+#include <string>
 
 namespace casual
 {
@@ -102,8 +112,15 @@ namespace casual
 				cLOG_debug = LOG_DEBUG
 			};
 
+			typedef int signal_type;
 
+			static const signal_type cSignal_Alarm = SIGALRM;
+			static const signal_type cSignal_Terminate = SIGTERM;
+			static const signal_type cSignal_Kill = SIGKILL;
+			static const signal_type cSignal_Quit = SIGQUIT;
+			static const signal_type cSignal_Interupt = SIGINT;
 
+			std::string getSignalDescription( signal_type);
 
 
 

@@ -34,11 +34,11 @@ namespace casual
             state.servers[ 20].pid = 20;
             state.servers[ 20].queue_key = 20;
 
-	         state.services[ "service1"].name = "service1";
+	         state.services[ "service1"].information.name = "service1";
 	         state.services[ "service1"].servers.push_back( &state.servers[ 10]);
 	         state.services[ "service1"].servers.push_back( &state.servers[ 20]);
 
-	         state.services[ "service2"].name = "service2";
+	         state.services[ "service2"].information.name = "service2";
             state.services[ "service2"].servers.push_back( &state.servers[ 10]);
             state.services[ "service2"].servers.push_back( &state.servers[ 20]);
 

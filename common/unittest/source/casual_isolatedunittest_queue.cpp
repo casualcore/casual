@@ -64,7 +64,7 @@ namespace casual
 			ipc::receive::Queue receive;
 			blocking::Reader reader( receive);
 
-			utility::signal::scoped::Alarm timeout( 1);
+			utility::signal::alarm::Scoped timeout( 1);
 
 			message::ServiceAdvertise message;
 

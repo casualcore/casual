@@ -6,10 +6,14 @@
 //!
 
 #include "casual_utility_signal.h"
+#include "casual_utility_platform.h"
 #include "casual_exception.h"
 
 #include <signal.h>
 #include <string.h>
+
+
+#include <stack>
 
 extern "C"
 {
@@ -28,33 +32,37 @@ namespace local
 				return singleton;
 			}
 
-			void set( int signal)
+			void add( int signal)
 			{
-				m_signal = signal;
+			   m_signals.push( signal);
 			}
 
 			int consume()
 			{
-				int temp = m_signal;
-				m_signal = 0;
-				return temp;
+			   if( !m_signals.empty())
+			   {
+			      int temp = m_signals.top();
+               m_signals.pop();
+               return temp;
+			   }
+			   return 0;
 			}
 
 		private:
-			LastSignal() : m_signal( 0)
+			LastSignal()
 			{
 				//
 				// Register all the signals
 				//
-				signal( SIGALRM, casual_common_signal_handler);
+				signal( casual::utility::platform::cSignal_Alarm, casual_common_signal_handler);
 
-				signal( SIGTERM, casual_common_signal_handler);
-				signal( SIGKILL, casual_common_signal_handler);
-				signal( SIGQUIT, casual_common_signal_handler);
-				signal( SIGINT, casual_common_signal_handler);
+				signal( casual::utility::platform::cSignal_Terminate, casual_common_signal_handler);
+				signal( casual::utility::platform::cSignal_Kill, casual_common_signal_handler);
+				signal( casual::utility::platform::cSignal_Quit, casual_common_signal_handler);
+				signal( casual::utility::platform::cSignal_Interupt, casual_common_signal_handler);
 
 			}
-			int m_signal;
+			std::stack< int> m_signals;
 		};
 
 		//
@@ -69,7 +77,7 @@ namespace local
 
 void casual_common_signal_handler( int signal)
 {
-	local::globalCrap.set( signal);
+	local::globalCrap.add( signal);
 }
 
 
@@ -85,39 +93,47 @@ namespace casual
 				const int signal = local::LastSignal::instance().consume();
 				switch( signal)
 				{
-				case 0:
-					//
-					// We do nothing for 'no signal' and the alarm-signal.
-					//
-					break;
-				case SIGALRM:
-				{
-					throw exception::signal::Timeout( "Timeout occurred");
-				}
-				default:
-				{
-					//
-					// the rest we throw on, so the rest of the application
-					// can use RAII and other paradigms to do cleaning
-					//
-					throw exception::signal::Terminate( strsignal( signal));
-				}
+               case 0:
+                  //
+                  // We do nothing for 'no signal' and the alarm-signal.
+                  //
+                  break;
+               case SIGALRM:
+               {
+                  throw exception::signal::Timeout( "Timeout occurred");
+               }
+               default:
+               {
+                  //
+                  // the rest we throw on, so the rest of the application
+                  // can use RAII and other paradigms to do cleaning
+                  //
+                  throw exception::signal::Terminate( strsignal( signal));
+               }
 				}
 			}
 
-			namespace scoped
+			namespace alarm
 			{
-				Alarm::Alarm( Seconds timeout)
+				Scoped::Scoped( Seconds timeout)
 				{
-					alarm( timeout);
+					::alarm( timeout);
 				}
 
-				Alarm::~Alarm()
+				Scoped::~Scoped()
 				{
-					alarm( 0);
+					::alarm( 0);
 				}
+			}
+
+			void alarm::set( utility::platform::seconds_type timeout)
+			{
+			   ::alarm( timeout);
 			}
 
 		}
 	}
 }
+
+
+

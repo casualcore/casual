@@ -30,16 +30,14 @@ namespace casual
 		{
 			struct Pending
 			{
+			   Pending() : callDescriptor( 0), called( 0), timeout( 0) {}
 				typedef utility::platform::seconds_type seconds_type;
 
 				int callDescriptor;
 				seconds_type called;
 				seconds_type timeout;
 
-				bool operator < ( const Pending& rhs) const
-				{
-					return callDescriptor < rhs.callDescriptor;
-				}
+
 			};
 		}
 
@@ -66,7 +64,7 @@ namespace casual
 
 
 
-			typedef std::set< internal::Pending> pending_calls_type;
+			typedef std::set< int> pending_calls_type;
 			typedef std::map< int, message::ServiceReply> reply_cache_type;
 
 			Context();
@@ -77,6 +75,8 @@ namespace casual
 
 			reply_cache_type::iterator add( message::ServiceReply& reply);
 
+			message::ServiceResponse serviceQueue( const std::string& service);
+
 
 			void consume();
 
@@ -85,7 +85,7 @@ namespace casual
 			ipc::receive::Queue m_receiveQueue;
 
 
-			pending_calls_type m_pendingReplies;
+			pending_calls_type m_pendingCalls;
 
 
 			reply_cache_type m_replyCache;

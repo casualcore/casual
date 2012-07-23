@@ -11,6 +11,8 @@
 
 #include <cstddef>
 
+#include "casual_utility_platform.h"
+
 
 namespace casual
 {
@@ -20,27 +22,30 @@ namespace casual
 		namespace signal
 		{
 
+
+
+
 			//!
 			//! Throws if there has been a signal received.
-			//! @note does not throw on SIGALRM
 			//!
-			//! @throw exception::SignalTerminate
+			//! @throw subtype to exception::signal::Base
 			//!
 			void handle();
 
 
-			namespace scoped
+			namespace alarm
 			{
-				class Alarm
+				class Scoped
 				{
 				public:
 					typedef std::size_t Seconds;
 
-					Alarm( Seconds timeout);
-					~Alarm();
+					Scoped( Seconds timeout);
+					~Scoped();
 
 				};
 
+				void set( utility::platform::seconds_type timeout);
 			}
 		}
 	}

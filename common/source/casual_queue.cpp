@@ -25,14 +25,83 @@ namespace casual
 
 			namespace
 			{
-				typedef std::list< ipc::message::Transport> cache_type;
-				typedef ipc::message::Transport transport_type;
-				typedef transport_type::message_type_type message_type_type;
+
+			   typedef std::list< ipc::message::Transport> cache_type;
+            typedef ipc::message::Transport transport_type;
+            typedef transport_type::message_type_type message_type_type;
+
+            /*
+			   template< typename Q>
+			   class cache_signal_queue
+			   {
+			   public:
+			      cache_signal_queue( Q& queue) : m_queue( queue) {}
+
+			      void operator () ( ipc::message::Transport& message)
+			      {
+			         try
+			         {
+			            m_queue( message);
+			         }
+			         catch( const exception::signal::Base& signal)
+			         {
+			            m_signals.push_back( signal.getSignal());
+
+			            //
+			            // Continue recursive
+			            //
+			            operator ()( message);
+			         }
+
+			      }
+
+			   private:
+			      Q& m_queue;
+			      std::vector< utility::platform::signal_type> m_signals;
+			   };
+			   */
+
 
 				cache_type& messageCache()
 				{
 					static cache_type singleton;
 					return singleton;
+				}
+
+
+				namespace scoped
+				{
+				   struct CacheEraser
+				   {
+
+				      void add( cache_type::iterator iterator)
+				      {
+				         m_toBeErased.push_back( iterator);
+				      }
+
+				      void erase()
+				      {
+				         std::for_each(
+				               m_toBeErased.begin(),
+				               m_toBeErased.end(),
+				               Eraser());
+
+				         m_toBeErased.clear();
+				      }
+
+				   private:
+
+				      struct Eraser
+				      {
+				         void operator() ( cache_type::iterator value) const
+				         {
+				            messageCache().erase( value);
+				         }
+				      };
+
+				      std::vector< cache_type::iterator> m_toBeErased;
+				   };
+
 				}
 
 
@@ -76,18 +145,42 @@ namespace casual
 					MessageType m_type;
 				};
 
+
+				template< typename Q>
+            cache_type::iterator fetchIfEmpty( Q& queue, cache_type::iterator start)
+            {
+               if( start == messageCache().end())
+               {
+                  ipc::message::Transport transport;
+
+                  queue( transport);
+
+                  return messageCache().insert( start, transport);
+               }
+
+               return start;
+            }
+
 				template< typename Q>
 				void correlate( Q& queue, archive::input::Binary& archive, cache_type::iterator current)
 				{
+
+				   //
+				   // We make sure we get back to the same state we where in if there is an exception (signal).
+				   // That is, we don't erase anything until where done.
+				   //
+				   scoped::CacheEraser eraser;
+
 					archive.add( *current);
+					eraser.add( current);
 
 					local::Correlation correlation( current->m_payload.m_header.m_correlation);
 					int count = current->m_payload.m_header.m_count;
 
 					//
-					// Erase the consumed transport message from cache
+					// We move forward
 					//
-					current = messageCache().erase( current);
+					++current;
 
 					//
 					// Fetch transport messages until "count" is zero, ie there are no correlated
@@ -107,24 +200,18 @@ namespace casual
 
 						archive.add( *current);
 						count = current->m_payload.m_header.m_count;
-						current = messageCache().erase( current);
-					}
-				}
 
-				template< typename Q>
-				cache_type::iterator fetchIfEmpty( Q& queue, cache_type::iterator start)
-				{
-					if( start == messageCache().end())
-					{
-						ipc::message::Transport transport;
-
-						queue( transport);
-
-						return messageCache().insert( start, transport);
+						eraser.add( current++);
 					}
 
-					return start;
+					//
+					// We're done, lets make the change permanent.
+					//
+					eraser.erase();
+
 				}
+
+
 
 				template< typename Q>
 				cache_type::iterator first( Q& queue, message_type_type type)

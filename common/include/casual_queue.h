@@ -29,6 +29,9 @@ namespace casual
 		   class Writer
          {
          public:
+
+		      typedef void result_type;
+
             Writer( ipc::send::Queue& queue);
 
             //!
@@ -63,6 +66,8 @@ namespace casual
 			class Reader
 			{
 			public:
+
+		      typedef void result_type;
 
 				Reader( ipc::receive::Queue& queue);
 
@@ -105,6 +110,9 @@ namespace casual
 		   class Writer
          {
          public:
+
+		      typedef bool result_type;
+
             Writer( ipc::send::Queue& queue);
 
             //!
@@ -143,6 +151,7 @@ namespace casual
 			{
 			public:
 
+		      typedef bool result_type;
 
 				Reader( ipc::receive::Queue& queue);
 

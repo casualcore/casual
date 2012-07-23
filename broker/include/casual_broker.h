@@ -35,7 +35,6 @@ namespace casual
 			std::string path;
 			message::ServerId::queue_key_type queue_key;
 			bool idle;
-			//std::set< std::string> services;
 
 
 			bool operator < ( const Server& rhs) const
@@ -50,7 +49,7 @@ namespace casual
 
 		struct Service
 		{
-			Service( const std::string& name) : name( name) {}
+			Service( const std::string& name) : information( name) {}
 
 			Service() {}
 
@@ -59,7 +58,7 @@ namespace casual
 				servers.push_back( server);
 			}
 
-			std::string name;
+			message::Service information;
 			std::vector< Server*> servers;
 		};
 

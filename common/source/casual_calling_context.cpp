@@ -22,6 +22,7 @@
 // std
 //
 #include <algorithm>
+#include <cassert>
 
 namespace casual
 {
@@ -52,7 +53,192 @@ namespace casual
             int unused;
          };
 
+
+         class Timeout
+         {
+         public:
+            typedef utility::platform::seconds_type seconds_type;
+
+            Timeout( int a_callDescriptor, seconds_type a_timeout, seconds_type a_registred)
+               : callDescriptor( a_callDescriptor), timeout( a_timeout), registred( a_registred) {}
+
+
+
+            utility::platform::seconds_type endTime() const
+            {
+               return registred + timeout;
+            }
+
+            bool operator < ( const Timeout& rhs) const
+            {
+               return endTime() < rhs.endTime();
+            }
+
+            struct Transform
+            {
+               int operator () ( const Timeout& value) const
+               {
+                  return value.callDescriptor;
+               }
+            };
+
+            const int callDescriptor;
+            const seconds_type timeout;
+            const seconds_type registred;
+
+
+         };
+
+
+         // TOOD: This type should probably be in it's own TU
+         class PendingTimeout
+         {
+         public:
+            static PendingTimeout& instance()
+            {
+               static PendingTimeout singleton;
+               return singleton;
+            }
+
+            void add( const Timeout& pending)
+            {
+               //
+               // We only register if there is a timeout
+               //
+               if( pending.timeout != 0)
+               {
+
+                  if( m_pending.insert( pending).first == m_pending.begin())
+                  {
+                     //
+                     // The pending we inserted is the one that will timeout first, we have
+                     // to (re)set the alarm
+                     //
+                     const utility::platform::seconds_type timeout = pending.endTime() - utility::environment::getTime();
+
+                     utility::signal::alarm::set( timeout > 0 ? timeout : 1);
+                  }
+
+               }
+            }
+
+
+
+            void timeout()
+            {
+               assert( !m_pending.empty());
+
+               const utility::platform::seconds_type time = utility::environment::getTime();
+
+               //
+               // Find all (at least one) pending that has a timeout.
+               // TODO: There might be a glitch if the timeout is set very close to a "full second", not sure
+               // if we are safe.
+               //
+               std::set< Timeout>::iterator passedEnd = std::find_if(
+                     m_pending.begin(),
+                     m_pending.end(),
+                     Passed( time));
+
+               assert( passedEnd != m_pending.begin());
+
+               //
+               // Transfer the pending to timeouts...
+               //
+               std::transform(
+                     m_pending.begin(),
+                     passedEnd,
+                     std::inserter( m_timeouts, m_timeouts.begin()),
+                     Timeout::Transform());
+
+               m_pending.erase(
+                     m_pending.begin(),
+                     passedEnd);
+
+               if( !m_pending.empty())
+               {
+                  //
+                  // register a new alarm
+                  //
+                  utility::signal::alarm::set( m_pending.begin()->endTime() - time);
+
+               }
+               else
+               {
+                  //
+                  // No more pending, reset the alarm
+                  //
+                  utility::signal::alarm::set( 0);
+               }
+            }
+
+            void check( const int callDescriptor)
+            {
+               std::set< int>::iterator findIter = m_timeouts.find( callDescriptor);
+
+               if( findIter != m_timeouts.end())
+               {
+                  m_timeouts.erase( findIter);
+                  throw exception::service::Timeout();
+               }
+            }
+
+         private:
+
+            struct Passed
+            {
+               Passed( utility::platform::seconds_type time) : m_time( time) {}
+
+               bool operator () ( const Timeout& value)
+               {
+                  return m_time > value.endTime();
+               }
+            private:
+               const utility::platform::seconds_type m_time;
+            };
+
+
+            std::set< Timeout> m_pending;
+            std::set< int> m_timeouts;
+         };
       }
+
+      namespace local
+      {
+
+         template< typename Q, typename T>
+         typename Q::result_type timeoutWrapper( Q& queue, T& value)
+         {
+            try
+            {
+               return queue( value);
+            }
+            catch( const exception::signal::Timeout&)
+            {
+               PendingTimeout::instance().timeout();
+               return timeoutWrapper( queue, value);
+            }
+         }
+
+         template< typename Q, typename T>
+         typename Q::result_type timeoutWrapper( Q& queue, T& value, int callDescriptor)
+         {
+            try
+            {
+               return queue( value);
+            }
+            catch( const exception::signal::Timeout&)
+            {
+               PendingTimeout::instance().timeout();
+               PendingTimeout::instance().check( callDescriptor);
+
+               return timeoutWrapper( queue, value, callDescriptor);
+            }
+         }
+
+
+      }
+
 
       Context& Context::instance()
       {
@@ -69,7 +255,10 @@ namespace casual
             // This is highly unlikely, since there have to be std::max< int> pending replies,
             // which is a extreme high number of pending replies. But, we have to handle it...
             //
+            // TODO: We don't try to handle it until we can unit test it.
+            throw exception::NotReallySureWhatToNameThisException();
 
+            /*
             // TODO: this is not standard-conformant...
             local::UnusedCallingDescriptor finder;
 
@@ -84,6 +273,7 @@ namespace casual
             }
 
             return finder.unused;
+            */
          }
          return m_callingDescriptor++;
       }
@@ -93,25 +283,22 @@ namespace casual
          try
          {
 
+            // TODO validate
+
             //
             // get the buffer
             //
             buffer::Buffer& buffer = buffer::Context::instance().getBuffer( idata);
 
+            const int callDescriptor = allocateCallingDescriptor();
+
+            const utility::platform::seconds_type time = utility::environment::getTime();
+
+
             //
             // Get a queue corresponding to the service
             //
-            message::ServiceRequest serviceLookup;
-            serviceLookup.requested = service;
-            serviceLookup.server.queue_key = m_receiveQueue.getKey();
-
-            queue::blocking::Writer broker( m_brokerQueue);
-            broker( serviceLookup);
-
-
-            message::ServiceResponse serviceResponse;
-            queue::blocking::Reader reader( m_receiveQueue);
-            reader( serviceResponse);
+            message::ServiceResponse serviceResponse = serviceQueue( service);
 
             if( serviceResponse.server.empty())
             {
@@ -119,28 +306,35 @@ namespace casual
             }
 
             //
+            // Keep track of (ev.) coming timeouts
+            //
+            local::PendingTimeout::instance().add(
+                  local::Timeout( callDescriptor, serviceResponse.service.timeout, time));
+
+
+            //
             // Call the service
             //
             message::ServiceCall messageCall( buffer);
-            messageCall.callDescriptor = allocateCallingDescriptor();
+            messageCall.callDescriptor = callDescriptor;
             messageCall.reply.queue_key = m_receiveQueue.getKey();
 
-            messageCall.service = serviceResponse.service.name;
+            messageCall.service = serviceResponse.service;
 
-            //
-            // Store the pending-call information
-            //
-            internal::Pending pendingReply;
-            pendingReply.callDescriptor = messageCall.callDescriptor;
-            pendingReply.called = utility::environment::getTime();
-            m_pendingReplies.insert( pendingReply);
+
 
             ipc::send::Queue callQueue( serviceResponse.server.front().queue_key);
             queue::blocking::Writer callWriter( callQueue);
 
-            callWriter( messageCall);
+            local::timeoutWrapper( callWriter, messageCall, callDescriptor);
 
-            return messageCall.callDescriptor;
+
+            //
+            // Add the descriptor to pending
+            //
+            m_pendingCalls.insert( callDescriptor);
+
+            return callDescriptor;
 
          }
          catch( ...)
@@ -152,75 +346,85 @@ namespace casual
 
       int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
       {
-         try
+         //
+         // TODO: validate input...
+
+         if( utility::flag< TPGETANY>( flags))
          {
-            //
-            // TODO: validate input...
-
-            if( utility::flag< TPGETANY>( flags))
-            {
-               *idPtr = 0;
-            }
-
-            //
-            // TODO: Should we care if odata is a valid buffer? As of now, we pretty much
-            // have no use for the users buffer.
-            //
-            // get the buffer
-            //
-            buffer::Buffer& buffer = buffer::Context::instance().getBuffer( *odata);
-
-            buffer::scoped::Deallocator deallocate( buffer);
-
-            //
-            // Vi fetch all on the queue.
-            //
-            consume();
-
-            //
-            // First we treat the call as a NOBLOCK call. Later we block if requested
-            //
-
-            //
-            //
-            //
-            reply_cache_type::iterator replyIter = find( *idPtr);
-
-            if( replyIter == m_replyCache.end())
-            {
-               if( !utility::flag< TPNOBLOCK>( flags))
-               {
-                  //
-                  // We block
-                  //
-                  replyIter = fetch( *idPtr);
-               }
-               else
-               {
-                  //
-                  // No message yet for the user...
-                  // Don't deallocate buffer
-                  //
-                  deallocate.release();
-
-               }
-            }
-
-
-            //
-            // We deliver the message
-            //
-            *idPtr = replyIter->first;
-            *odata = replyIter->second.getBuffer().raw();
-            olen = replyIter->second.getBuffer().size();
-
-
-
+            *idPtr = 0;
          }
-         catch( ...)
+         else
          {
-            return error::handler();
+            if( m_pendingCalls.find( *idPtr) == m_pendingCalls.end())
+            {
+               throw exception::service::InvalidDescriptor();
+            }
          }
+
+         //
+         // TODO: Should we care if odata is a valid buffer? As of now, we pretty much
+         // have no use for the users buffer.
+         //
+         // get the buffer
+         //
+         buffer::Buffer& buffer = buffer::Context::instance().getBuffer( *odata);
+
+         buffer::scoped::Deallocator deallocate( buffer);
+
+         //
+         // Vi fetch all on the queue.
+         //
+         consume();
+
+         //
+         // First we treat the call as a NOBLOCK call. Later we block if requested
+         //
+
+         //
+         //
+         //
+         reply_cache_type::iterator replyIter = find( *idPtr);
+
+         if( replyIter == m_replyCache.end())
+         {
+            if( !utility::flag< TPNOBLOCK>( flags))
+            {
+               //
+               // We block
+               //
+               replyIter = fetch( *idPtr);
+            }
+            else
+            {
+               //
+               // No message yet for the user...
+               // Don't deallocate buffer
+               //
+               deallocate.release();
+               throw exception::service::NoMessage();
+
+            }
+         }
+
+
+         //
+         // We deliver the message
+         //
+         *idPtr = replyIter->first;
+         *odata = replyIter->second.getBuffer().raw();
+         olen = replyIter->second.getBuffer().size();
+
+         //
+         // We remove our representation
+         //
+         m_pendingCalls.erase( *idPtr);
+         m_replyCache.erase( replyIter);
+
+         //
+         // Check if there has been an timeout
+         //
+         local::PendingTimeout::instance().check( *idPtr);
+
 
          return 0;
       }
@@ -315,11 +519,11 @@ namespace casual
                message::ServiceReply reply( buffer::Context::instance().create());
 
                //
-               // Use guard if we get a signal.
+               // Use guard if we get a timeout (or other signal).
                //
                local::scoped::ReplyGuard guard( reply);
 
-               reader( reply);
+               local::timeoutWrapper( reader, reply, callDescriptor);
 
                fetchIter = add( reply);
                guard.release();
@@ -340,6 +544,27 @@ namespace casual
 
       }
 
+      message::ServiceResponse Context::serviceQueue( const std::string& service)
+      {
+         //
+         // Get a queue corresponding to the service
+         //
+         message::ServiceRequest serviceLookup;
+         serviceLookup.requested = service;
+         serviceLookup.server.queue_key = m_receiveQueue.getKey();
+
+         queue::blocking::Writer broker( m_brokerQueue);
+         local::timeoutWrapper( broker, serviceLookup);
+
+
+         message::ServiceResponse result;
+         queue::blocking::Reader reader( m_receiveQueue);
+         local::timeoutWrapper( reader, result);
+
+         return result;
+
+      }
+
       void Context::consume()
       {
          //
@@ -351,7 +576,7 @@ namespace casual
 
          queue::non_blocking::Reader reader( m_receiveQueue);
 
-         while( reader( reply))
+         while( local::timeoutWrapper( reader, reply))
          {
 
             add( reply);

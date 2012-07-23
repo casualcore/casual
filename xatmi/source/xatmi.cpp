@@ -56,24 +56,57 @@ void tpfree(char* ptr)
 
 void tpreturn(int rval, long rcode, char* data, long len, long flags)
 {
-	casual::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
+   try
+   {
+      casual::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
+   }
+   catch( ...)
+   {
+      casual::error::handler();
+   }
 }
 
 int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen, long flags)
 {
-	int result = casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+   try
+   {
 
-	return tpgetrply( &result, odata, olen, flags);
+      int callDescriptor = casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+
+      return casual::calling::Context::instance().getReply( &callDescriptor, odata, *olen, flags);
+
+   }
+   catch( ...)
+   {
+      return casual::error::handler();
+   }
+   return 0; // remove warning in eclipse
 }
 
 int tpacall( const char * svc, char* idata, long ilen, long flags)
 {
-	return casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+   try
+   {
+      return casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+   }
+	catch( ...)
+   {
+      return casual::error::handler();
+   }
+   return 0; // remove warning in eclipse
 }
 
 int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
 {
-	return casual::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
+   try
+   {
+      return casual::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
+   }
+   catch( ...)
+   {
+      return casual::error::handler();
+   }
+   return 0; // remove warning in eclipse
 }
 
 int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
@@ -86,7 +119,7 @@ int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
    {
       return casual::error::handler();
    }
-   return 0;
+   return 0; // remove warning in eclipse
 }
 
 int tpunadvertise( const char* svcname)
@@ -99,7 +132,7 @@ int tpunadvertise( const char* svcname)
    {
       return casual::error::handler();
    }
-   return 0;
+   return 0; // remove warning in eclipse
 }
 
 

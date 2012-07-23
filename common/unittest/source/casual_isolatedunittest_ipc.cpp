@@ -69,7 +69,7 @@ namespace casual
 
 			message::Transport response;
 
-			utility::signal::scoped::Alarm timeout( 1);
+			utility::signal::alarm::Scoped timeout( 1);
 
 			//
 			// We don't expect to get any messages, and for the timeout to kick in

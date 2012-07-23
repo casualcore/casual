@@ -73,7 +73,7 @@ namespace casual
 
 						bool active( int priority) const
 						{
-						   return m_mask & priority == priority;
+						   return ( m_mask & priority) == priority;
 						}
 
 					private:

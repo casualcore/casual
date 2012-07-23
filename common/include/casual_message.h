@@ -30,7 +30,7 @@ namespace casual
 
 		   Service() : timeout( 0) {}
 
-		   Service( const std::string& name_) : name( name_),timeout( 0) {}
+		   explicit Service( const std::string& name_) : name( name_), timeout( 0) {}
 
 			std::string name;
 			Seconds timeout;

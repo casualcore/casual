@@ -38,6 +38,11 @@ namespace casual
 				return local::getProcessId();
 			}
 
+			std::string getSignalDescription( signal_type signal)
+			{
+			   return strsignal( signal);
+			}
+
 		}
 	}
 }
