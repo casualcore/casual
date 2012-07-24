@@ -132,14 +132,15 @@ namespace casual
 
                //
                // Find all (at least one) pending that has a timeout.
-               // TODO: There might be a glitch if the timeout is set very close to a "full second", not sure
-               // if we are safe.
                //
                std::set< Timeout>::iterator passedEnd = std::find_if(
                      m_pending.begin(),
                      m_pending.end(),
                      Passed( time));
 
+               //
+               // TODO: There might be a glitch if the timeout is set very close to a "full second", not sure
+               // if we are safe.
                assert( passedEnd != m_pending.begin());
 
                //
