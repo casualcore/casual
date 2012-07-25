@@ -17,7 +17,7 @@ Compile( source/casual_calling_context.cpp, obj/casual_calling_context.o)
 Compile( source/casual_buffer_context.cpp, obj/casual_buffer_context.o)
 Compile( source/casual_ipc.cpp, obj/casual_ipc.o)
 Compile( source/casual_queue.cpp, obj/casual_queue.o)
-Compile( source/casual_error.cpp, obj/casual_error.o)
+
 
 
 LinkLibrary( casual_common, \
@@ -26,8 +26,7 @@ LinkLibrary( casual_common, \
 	obj/casual_calling_context.o \
 	obj/casual_buffer_context.o \
 	obj/casual_ipc.o \ 
-	obj/casual_queue.o \
-	obj/casual_error.o,\ 
+	obj/casual_queue.o,\ 
 	casual_utility)
 
 	

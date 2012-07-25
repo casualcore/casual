@@ -381,7 +381,7 @@ namespace casual
 						//
 						// Somehow the cache contains inconsistent data...
 						//
-						throw exception::NotReallySureWhatToNameThisException();
+						throw exception::xatmi::SystemError( "inconsistent state in 'queue cache'");
 					}
 
 					return true;

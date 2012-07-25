@@ -56,8 +56,6 @@ namespace casual
 
 			void handleServiceCall( message::ServiceCall& context);
 
-			service::Context& getService( const std::string& name);
-
 			message::ServerId getId();
 
 			void cleanUp();

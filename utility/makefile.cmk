@@ -17,6 +17,7 @@ Compile( source/casual_utility_file.cpp, obj/casual_utility_file.o)
 Compile( source/casual_utility_signal.cpp, obj/casual_utility_signal.o)
 Compile( source/casual_utility_platform.cpp, obj/casual_utility_platform.o)
 Compile( source/casual_logger.cpp, obj/casual_logger.o)
+Compile( source/casual_error.cpp, obj/casual_error.o)
 
 
 
@@ -26,7 +27,8 @@ LinkLibrary( casual_utility, \
 	obj/casual_utility_file.o \
 	obj/casual_utility_signal.o \
 	obj/casual_utility_platform.o \
-	 obj/casual_logger.o, \
+	obj/casual_logger.o \
+	obj/casual_error.o, \
 	${UUIDLIB})
 
 	

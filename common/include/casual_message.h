@@ -190,6 +190,11 @@ namespace casual
 				return m_buffer;
 			}
 
+			const buffer::Buffer& buffer() const
+         {
+            return m_buffer;
+         }
+
 			template< typename A>
 			void serialize( A& archive)
 			{
@@ -237,7 +242,7 @@ namespace casual
 			{
 				if( m_buffer == 0)
 				{
-					throw exception::NotReallySureWhatToNameThisException();
+					throw exception::xatmi::SystemError( "Not a valid buffer for ServiceReply");
 				}
 				archive & callDescriptor;
 				archive & returnValue;

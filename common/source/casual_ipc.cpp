@@ -163,7 +163,7 @@ namespace casual
 
 			if( file.fail())
 			{
-			   throw exception::NotReallySureWhatToNameThisException();
+			   throw exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
 			}
 
 			send::Queue::queue_key_type key;

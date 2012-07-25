@@ -257,7 +257,7 @@ namespace casual
             // which is a extreme high number of pending replies. But, we have to handle it...
             //
             // TODO: We don't try to handle it until we can unit test it.
-            throw exception::NotReallySureWhatToNameThisException();
+            throw exception::xatmi::LimitReached( "No free call descriptors");
 
             /*
             // TODO: this is not standard-conformant...
@@ -270,7 +270,7 @@ namespace casual
 
             if( findIter == m_pendingReplies.end())
             {
-               throw exception::NotReallySureWhatToNameThisException();
+               throw exception::xatmi::LimitReached( "No free call descriptors");
             }
 
             return finder.unused;
@@ -301,7 +301,7 @@ namespace casual
 
          if( serviceResponse.server.empty())
          {
-            throw exception::xatmi::NoEntry( service);
+            throw exception::xatmi::service::NoEntry( service);
          }
 
          //
@@ -349,7 +349,7 @@ namespace casual
          {
             if( m_pendingCalls.find( *idPtr) == m_pendingCalls.end())
             {
-               throw exception::xatmi::InvalidDescriptor();
+               throw exception::xatmi::service::InvalidDescriptor();
             }
          }
 

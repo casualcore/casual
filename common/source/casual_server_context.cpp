@@ -60,7 +60,7 @@ namespace casual
 
 				struct ServiceInformation
 				{
-					TPSVCINFO operator () ( message::ServiceCall& message)
+					TPSVCINFO operator () ( message::ServiceCall& message) const
 					{
 						TPSVCINFO result;
 
@@ -112,26 +112,24 @@ namespace casual
 
                switch( message_type)
                {
-               case message::ServiceCall::message_type:
-               {
-                  message::ServiceCall message( buffer::Context::instance().create());
-                  queueReader( message);
+                  case message::ServiceCall::message_type:
+                  {
+                     message::ServiceCall message( buffer::Context::instance().create());
+                     queueReader( message);
 
-                  logger::debug << "service call: " << message.service.name << " cd: " << message.callDescriptor
-                        << " caller pid: " << message.reply.pid << " caller queue: " << message.reply.queue_key;
-
-
-                  handleServiceCall( message);
-
-                  break;
-               }
-               default:
-               {
-                  std::cerr << "message_type: " << message_type << " not valid" << std::endl;
-                  break;
-               }
+                     logger::debug << "service call: " << message.service.name << " cd: " << message.callDescriptor
+                           << " caller pid: " << message.reply.pid << " caller queue: " << message.reply.queue_key;
 
 
+                     handleServiceCall( message);
+
+                     break;
+                  }
+                  default:
+                  {
+                     std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+                     break;
+                  }
                }
             }
 		   }
@@ -162,7 +160,7 @@ namespace casual
 		   message::ServerDisconnect message;
 
 		   //
-		   // we cant block here...
+		   // we can't block here...
 		   //
 		   queue::non_blocking::Writer writer( m_brokerQueue);
 		   writer( message);
@@ -209,15 +207,20 @@ namespace casual
 				//
 				m_reply.callDescriptor = context.callDescriptor;
 
-				service::Context& service = getService( context.service.name);
+				service_mapping_type::iterator findIter = m_services.find( context.service.name);
+
+            if( findIter == m_services.end())
+            {
+               throw exception::xatmi::SystemError( "Service [" + context.service.name + "] not present at server - inconsistency between broker and server");
+            }
 
 				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( context);
-				service.call( &serviceInformation);
+				findIter->second.call( &serviceInformation);
 
 				//
-				// User service returned, not by tpreturn. Is this valid?
+				// User service returned, not by tpreturn. The standard does not mention this situation, what to do?
 				//
-				throw exception::NotReallySureWhatToNameThisException();
+				throw exception::xatmi::service::Error( "Service: " + context.service.name + " did not call tpreturn");
 
 			}
 			else
@@ -240,6 +243,8 @@ namespace casual
 				ack.service = context.service.name;
 				// TODO: ack.time
 
+				// TODO: Switch the above to queue writes, to gain some performance?
+
 				queue::blocking::Writer brokerWriter( m_brokerQueue);
 				brokerWriter( ack);
 
@@ -251,17 +256,6 @@ namespace casual
 			}
 		}
 
-		service::Context& Context::getService( const std::string& name)
-		{
-			service_mapping_type::iterator findIter = m_services.find( name);
-
-			if( findIter == m_services.end())
-			{
-				throw exception::NotReallySureWhatToNameThisException();
-			}
-
-			return findIter->second;
-		}
 
 		void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)
 		{
@@ -280,24 +274,46 @@ namespace casual
 
 		void Context::advertiseService( const std::string& name, tpservice function)
       {
-		   message::ServiceAdvertise message;
 
-		   message.serverId = getId();
-		   // TODO: message.serverPath =
-		   message.services.push_back( message::Service( name));
+		   //
+		   // validate
+		   //
 
-		   // TODO: make it consistence safe...
-		   queue::blocking::Writer writer( m_brokerQueue);
-		   writer( message);
+		   service_mapping_type::iterator findIter = m_services.find( name);
 
-		   add( service::Context( name, function));
+		   if( findIter != m_services.end())
+		   {
+		      //
+		      // service name is already advertised
+		      // No error if it's the same function
+		      //
+		      if( findIter->second.m_function != function)
+		      {
+		         throw exception::xatmi::service::AllreadyAdvertised( "service name: " + name);
+		      }
+
+		   }
+		   else
+		   {
+            message::ServiceAdvertise message;
+
+            message.serverId = getId();
+            // TODO: message.serverPath =
+            message.services.push_back( message::Service( name));
+
+            // TODO: make it consistence safe...
+            queue::blocking::Writer writer( m_brokerQueue);
+            writer( message);
+
+            add( service::Context( name, function));
+		   }
       }
 
 		void Context::unadvertiseService( const std::string& name)
       {
 		   if( m_services.erase( name) != 1)
 		   {
-		      throw exception::NotReallySureWhatToNameThisException();
+		      throw exception::xatmi::service::NoEntry( "service name: " + name);
 		   }
 
 		   message::ServiceUnadvertise message;

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "casual_utility_platform.h"
+#include "casual_error.h"
 #include "xatmi.h"
 
 namespace casual
@@ -20,7 +21,7 @@ namespace casual
 	{
 
 		//
-		// Serves as a placeholder for later correct exception, whith hopefully a good name...
+		// Serves as a placeholder for later correct exception, which hopefully a good name...
 		//
 		struct NotReallySureWhatToNameThisException : public std::exception {};
 
@@ -94,26 +95,92 @@ namespace casual
             virtual int code() const throw() = 0;
          };
 
+		   namespace severity
+		   {
+            template< int severity>
+            struct Severity : public Base
+            {
+               Severity( const std::string& description)
+                  : Base( description) {}
+            };
 
-		   template< int xatmi_error>
-		   struct basic_exeption : public Base
+            typedef Severity< utility::platform::cLOG_critical> Critical;
+            typedef Severity< utility::platform::cLOG_info> Information;
+            typedef Severity< utility::platform::cLOG_debug> User;
+
+		   }
+
+		   template< int xatmi_error, typename B>
+		   struct basic_exeption : public B
 		   {
 		      basic_exeption( const std::string& description)
-		         : Base( description) {}
+		         : B( description) {}
 
 		      basic_exeption()
-               : Base( "TODO") {}
+               : B( "No additional information") {}
 
 		      int code() const throw() { return xatmi_error;}
 		   };
 
-		   typedef basic_exeption< TPENOENT> NoEntry;
+		   /*
+            #define TPEEVENT 22  <-- not supported right now
 
-		   typedef basic_exeption< TPEBLOCK> NoMessage;
+		    */
 
-		   typedef basic_exeption< TPETIME> Timeout;
 
-		   typedef basic_exeption< TPEBADDESC> InvalidDescriptor;
+		   typedef basic_exeption< TPEBLOCK, severity::User> NoMessage;
+
+		   typedef basic_exeption< TPELIMIT, severity::Information> LimitReached;
+
+		   typedef basic_exeption< TPEINVAL, severity::Information> InvalidArguments;
+
+		   typedef basic_exeption< TPEOS, severity::Critical> OperatingSystemError;
+
+		   typedef basic_exeption< TPEPROTO, severity::Critical> ProtocollError;
+
+		   namespace service
+		   {
+		      typedef basic_exeption< TPEBADDESC, severity::Information> InvalidDescriptor;
+
+            typedef basic_exeption< TPESVCERR, severity::Critical> Error;
+
+            typedef basic_exeption< TPESVCFAIL, severity::User> Fail;
+
+            typedef basic_exeption< TPENOENT, severity::User> NoEntry;
+
+            typedef basic_exeption< TPEMATCH, severity::User> AllreadyAdvertised;
+		   }
+
+		   typedef basic_exeption< TPESYSTEM, severity::Critical> SystemError;
+
+		   typedef basic_exeption< TPETIME, severity::User> Timeout;
+
+		   typedef basic_exeption< TPETRAN, severity::User> TransactionNotSupported;
+
+		   typedef basic_exeption< TPGOTSIG, severity::Information> Signal;
+
+		   namespace buffer
+		   {
+
+            typedef basic_exeption< TPEITYPE, severity::Information> TypeNotSupported;
+
+            typedef basic_exeption< TPEOTYPE, severity::Information> TypeNotExpected;
+
+		   }
+
+		   namespace conversational
+		   {
+		      // TODO: Currently not supported...
+
+		   }
+
+
+
+
+
+
+
+
 
 
 		}

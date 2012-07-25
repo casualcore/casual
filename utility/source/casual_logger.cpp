@@ -102,11 +102,13 @@ namespace casual
 							//
 							// Open log
 							//
-						   m_output.open( ( utility::environment::getRootPath() + "/casual.log").c_str(), std::ios::app | std::ios::out);
+						   const std::string logfileName = utility::environment::getRootPath() + "/casual.log";
+
+						   m_output.open( logfileName.c_str(), std::ios::app | std::ios::out);
 
 						   if( m_output.fail())
 						   {
-						      throw exception::NotReallySureWhatToNameThisException();
+						      throw exception::xatmi::SystemError( "Could not open the log-file: " + logfileName);
 						   }
 
 
