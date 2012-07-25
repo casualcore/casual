@@ -5,6 +5,7 @@
 #endif
 
 INCLUDE_PATHS= include \
+	../xatmi/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "casual_utility_platform.h"
+#include "xatmi.h"
 
 namespace casual
 {
@@ -82,31 +83,38 @@ namespace casual
 
 		}
 
-		namespace service
+		namespace xatmi
 		{
-		   struct NoEntry : public std::runtime_error
+
+		   struct Base : public std::runtime_error
          {
-		      NoEntry( const std::string& description)
+            Base( const std::string& description)
                : std::runtime_error( description) {}
+
+            virtual int code() const throw() = 0;
          };
 
-		   struct NoMessage : public std::runtime_error
+
+		   template< int xatmi_error>
+		   struct basic_exeption : public Base
 		   {
-		      NoMessage()
-		         : std::runtime_error( "No messages") {}
+		      basic_exeption( const std::string& description)
+		         : Base( description) {}
+
+		      basic_exeption()
+               : Base( "TODO") {}
+
+		      int code() const throw() { return xatmi_error;}
 		   };
 
-		   struct Timeout : public std::runtime_error
-         {
-		      Timeout()
-               : std::runtime_error( "Timeout occurred") {}
-         };
+		   typedef basic_exeption< TPENOENT> NoEntry;
 
-		   struct InvalidDescriptor : public std::runtime_error
-         {
-		      InvalidDescriptor()
-               : std::runtime_error( "Invalid descriptor") {}
-         };
+		   typedef basic_exeption< TPEBLOCK> NoMessage;
+
+		   typedef basic_exeption< TPETIME> Timeout;
+
+		   typedef basic_exeption< TPEBADDESC> InvalidDescriptor;
+
 
 		}
 

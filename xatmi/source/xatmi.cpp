@@ -17,6 +17,11 @@
 #include "casual_error.h"
 
 
+//
+// Define globals
+//
+int tperrno = 0;
+long tpurcode = 0;
 
 
 char* tpalloc( const char* type, const char* subtype, long size)
@@ -133,6 +138,11 @@ int tpunadvertise( const char* svcname)
       return casual::error::handler();
    }
    return 0; // remove warning in eclipse
+}
+
+const char* tperrnostring( int error)
+{
+   return casual::error::tperrnoStringRepresentation( error).c_str();
 }
 
 

@@ -19,6 +19,8 @@ namespace casual
 
 		std::string stringFromErrno();
 
+		const std::string& tperrnoStringRepresentation( int error);
+
 	}
 
 

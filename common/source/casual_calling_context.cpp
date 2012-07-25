@@ -180,7 +180,7 @@ namespace casual
                if( findIter != m_timeouts.end())
                {
                   m_timeouts.erase( findIter);
-                  throw exception::service::Timeout();
+                  throw exception::xatmi::Timeout();
                }
             }
 
@@ -281,68 +281,59 @@ namespace casual
 
       int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
       {
-         try
+
+         // TODO validate
+
+         //
+         // get the buffer
+         //
+         buffer::Buffer& buffer = buffer::Context::instance().getBuffer( idata);
+
+         const int callDescriptor = allocateCallingDescriptor();
+
+         const utility::platform::seconds_type time = utility::environment::getTime();
+
+
+         //
+         // Get a queue corresponding to the service
+         //
+         message::ServiceResponse serviceResponse = serviceQueue( service);
+
+         if( serviceResponse.server.empty())
          {
-
-            // TODO validate
-
-            //
-            // get the buffer
-            //
-            buffer::Buffer& buffer = buffer::Context::instance().getBuffer( idata);
-
-            const int callDescriptor = allocateCallingDescriptor();
-
-            const utility::platform::seconds_type time = utility::environment::getTime();
-
-
-            //
-            // Get a queue corresponding to the service
-            //
-            message::ServiceResponse serviceResponse = serviceQueue( service);
-
-            if( serviceResponse.server.empty())
-            {
-               throw exception::service::NoEntry( service);
-            }
-
-            //
-            // Keep track of (ev.) coming timeouts
-            //
-            local::PendingTimeout::instance().add(
-                  local::Timeout( callDescriptor, serviceResponse.service.timeout, time));
-
-
-            //
-            // Call the service
-            //
-            message::ServiceCall messageCall( buffer);
-            messageCall.callDescriptor = callDescriptor;
-            messageCall.reply.queue_key = m_receiveQueue.getKey();
-
-            messageCall.service = serviceResponse.service;
-
-
-
-            ipc::send::Queue callQueue( serviceResponse.server.front().queue_key);
-            queue::blocking::Writer callWriter( callQueue);
-
-            local::timeoutWrapper( callWriter, messageCall, callDescriptor);
-
-
-            //
-            // Add the descriptor to pending
-            //
-            m_pendingCalls.insert( callDescriptor);
-
-            return callDescriptor;
-
+            throw exception::xatmi::NoEntry( service);
          }
-         catch( ...)
-         {
-            return error::handler();
-         }
-         return 0;
+
+         //
+         // Keep track of (ev.) coming timeouts
+         //
+         local::PendingTimeout::instance().add(
+               local::Timeout( callDescriptor, serviceResponse.service.timeout, time));
+
+
+         //
+         // Call the service
+         //
+         message::ServiceCall messageCall( buffer);
+         messageCall.callDescriptor = callDescriptor;
+         messageCall.reply.queue_key = m_receiveQueue.getKey();
+
+         messageCall.service = serviceResponse.service;
+
+
+
+         ipc::send::Queue callQueue( serviceResponse.server.front().queue_key);
+         queue::blocking::Writer callWriter( callQueue);
+
+         local::timeoutWrapper( callWriter, messageCall, callDescriptor);
+
+
+         //
+         // Add the descriptor to pending
+         //
+         m_pendingCalls.insert( callDescriptor);
+
+         return callDescriptor;
       }
 
       int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
@@ -358,7 +349,7 @@ namespace casual
          {
             if( m_pendingCalls.find( *idPtr) == m_pendingCalls.end())
             {
-               throw exception::service::InvalidDescriptor();
+               throw exception::xatmi::InvalidDescriptor();
             }
          }
 
@@ -402,7 +393,7 @@ namespace casual
                // Don't deallocate buffer
                //
                deallocate.release();
-               throw exception::service::NoMessage();
+               throw exception::xatmi::NoMessage();
 
             }
          }

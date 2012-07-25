@@ -93,8 +93,22 @@ extern int tprecv(int id, char ** odata, long *olen, long flags, long* event); /
 extern int tpconnect(char * svc, char* idata, long ilen, long flags); // COMMUNICATION
 extern int tpdiscon(int id); // COMMUNICATION
 
+extern int tperrno;
+extern long tpurcode;
+/*
+ * Not sure what blacktie uses this for...
+ *
 extern  int _get_tperrno(void); // CLIENT
 extern  long _get_tpurcode(void); // CLIENT
+*/
+
+
+/*
+ * "extended"
+ */
+extern const char* tperrnostring( int error);
+
+
 #ifdef __cplusplus
 }
 #endif
