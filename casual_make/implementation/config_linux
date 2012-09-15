@@ -1,6 +1,6 @@
 ######################################################################
 ## 
-## "globala" statiska variabler som kan användas av användaren
+## "globala" statiska variabler som kan anvï¿½ndas av anvï¿½ndaren
 ##
 ######################################################################
 
@@ -24,14 +24,14 @@ DEFAULT_LIBS :=
 
 ######################################################################
 ## 
-## Användarens variabel-deklarationer. Tas oavkortat från imakefilen:
+## Anvï¿½ndarens variabel-deklarationer. Tas oavkortat frï¿½n imakefilen:
 ##
 ######################################################################
 
 ######################################################################
 ## 
 ## Compile/Link konfiguration. Dessa kan vara beroende av vad 
-## anvŠndaren har angett fšr direktiv i sin imake-fil
+## anvï¿½ndaren har angett fï¿½r direktiv i sin imake-fil
 ##
 ######################################################################
 
@@ -43,12 +43,12 @@ COMPILER = g++
 CROSSCOMPILER = clang++
 
 #
-# Vi Šr beroende av att vi anvŠnder bash
+# Vi ï¿½r beroende av att vi anvï¿½nder bash
 #
 SHELL = bash
 
 #
-# Vi sŠrskiljer mellan lib och exe enbart fšr purify och co.
+# Vi sï¿½rskiljer mellan lib och exe enbart fï¿½r purify och co.
 #
 LIBRARY_LINKER = g++
 ARCHIVE_LINKER = ar rcs
@@ -80,13 +80,13 @@ else
 endif
 
 #
-# Addera det anvŠndaren har definerat
+# Addera det anvï¿½ndaren har definerat
 #
 COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -DNOWHAT
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT
 
 BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
@@ -108,9 +108,9 @@ VALGRIND_CONFIG=
 endif
 
 #
-# AnvŠndarens definerade paths lŠggs fšrst fšr ha fšretrŠde
-# fšre default.
-# DB2 mŒste inkluderas fšre Tuxedo.
+# Anvï¿½ndarens definerade paths lï¿½ggs fï¿½rst fï¿½r ha fï¿½retrï¿½de
+# fï¿½re default.
+# DB2 mï¿½ste inkluderas fï¿½re Tuxedo.
 #
 INCLUDE_PATHS := $(INCLUDE_PATHS) 
 BASE_LIBRARY_PATHS := $(LIBRARY_PATHS) /lib64 /usr/lib64 /usr/local/lib64
@@ -123,11 +123,11 @@ BASE_DEFAULT_LIBRARY_PATHS := ./bin
 
 
 #
-# SŠtt inledande vŠxel fšr kompilatorn och lŠnkaren.
+# Sï¿½tt inledande vï¿½xel fï¿½r kompilatorn och lï¿½nkaren.
 # 
 LIBRARY_PATH_DIRECTIVE=-Wl,-rpath-link=
 #
-# Sätt inledande växel för kompilatorn och länkaren.
+# Sï¿½tt inledande vï¿½xel fï¿½r kompilatorn och lï¿½nkaren.
 # 
 INCLUDE_PATHS := $(addprefix -I, $(INCLUDE_PATHS) )
 LIBRARY_PATHS := $(addprefix -L, $(BASE_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_LIBRARY_PATHS) )
@@ -135,21 +135,21 @@ DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
 DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(BASE_DEFAULT_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_DEFAULT_LIBRARY_PATHS) )
 
 #
-# Fšr att generera "header-dependencies"
-# Ser till sŒ vi inte fŒr med beroende till db2 och Tuxedo.
+# Fï¿½r att generera "header-dependencies"
+# Ser till sï¿½ vi inte fï¿½r med beroende till db2 och Tuxedo.
 #
 HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
 
 
 
 #
-# Om inget target anges fšrutsŠtter vi att det Šr "all" som menas...
+# Om inget target anges fï¿½rutsï¿½tter vi att det ï¿½r "all" som menas...
 #
 .PHONY all:
 
 
 #
-# Dummy targets fšr de targets som inte alltid finns i alla
+# Dummy targets fï¿½r de targets som inte alltid finns i alla
 # makefiler.
 #
 .PHONY make:
@@ -169,8 +169,8 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -i
 
 #
 # Purify och quantify
-# Vi ska lŠnka med just purify/quantify fšr alla exekverbara...
-# purify/quantify Šr beroende av att allt byggs...
+# Vi ska lï¿½nka med just purify/quantify fï¿½r alla exekverbara...
+# purify/quantify ï¿½r beroende av att allt byggs...
 #
 pure: EXECUTABLE_LINKER := $(PURIFY_LINKER)
 pure: all
@@ -179,19 +179,19 @@ quantify: EXECUTABLE_LINKER := $(QUANTIFY_LINKER)
 quantify: all
 
 #
-# Se till sŒ eventuella sub-make-filer fŒr tillgŒng till 
+# Se till sï¿½ eventuella sub-make-filer fï¿½r tillgï¿½ng till 
 # vad vi har satt EXECUTABLE_LINKER till.
 #
 export EXECUTABLE_LINKER
 
 #
-# Test Šr beroende av att allt Šr byggt
+# Test ï¿½r beroende av att allt ï¿½r byggt
 #
 test: all
 
 #
-# link Šr mest fšr att fŒ likformighet mot "compile".
-# Vi likstŠller link med "all"
+# link ï¿½r mest fï¿½r att fï¿½ likformighet mot "compile".
+# Vi likstï¿½ller link med "all"
 #
 link: all
 
@@ -199,7 +199,7 @@ link: all
 
 ######################################################################
 ## 
-## Det transformerade innehŒllet i imakefilen fšljer:
+## Det transformerade innehï¿½llet i imakefilen fï¿½ljer:
 ##
 ######################################################################
 
