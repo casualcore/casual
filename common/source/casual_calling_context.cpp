@@ -254,7 +254,7 @@ namespace casual
             //
             // all calling descriptors are used, vi have to reuse.
             // This is highly unlikely, since there have to be std::max< int> pending replies,
-            // which is a extreme high number of pending replies. But, we have to handle it...
+            // which is a extreme high number. But, we have to handle it...
             //
             // TODO: We don't try to handle it until we can unit test it.
             throw exception::xatmi::LimitReached( "No free call descriptors");
@@ -331,7 +331,7 @@ namespace casual
          //
          // Add the descriptor to pending
          //
-         m_pendingCalls.insert( callDescriptor);
+         m_state.pendingCalls.insert( callDescriptor);
 
          return callDescriptor;
       }
@@ -347,7 +347,7 @@ namespace casual
          }
          else
          {
-            if( m_pendingCalls.find( *idPtr) == m_pendingCalls.end())
+            if( m_state.pendingCalls.find( *idPtr) == m_state.pendingCalls.end())
             {
                throw exception::xatmi::service::InvalidDescriptor();
             }
@@ -377,7 +377,7 @@ namespace casual
          //
          reply_cache_type::iterator replyIter = find( *idPtr);
 
-         if( replyIter == m_replyCache.end())
+         if( replyIter == m_state.replyCache.end())
          {
             if( !utility::flag< TPNOBLOCK>( flags))
             {
@@ -409,8 +409,8 @@ namespace casual
          //
          // We remove our representation
          //
-         m_pendingCalls.erase( *idPtr);
-         m_replyCache.erase( replyIter);
+         m_state.pendingCalls.erase( *idPtr);
+         m_state.replyCache.erase( replyIter);
 
          //
          // Check if there has been an timeout
@@ -426,7 +426,7 @@ namespace casual
          m_callingDescriptor = 10;
 
          //
-         // TODO: Do some cleaning on buffers, pending replys and such...
+         // TODO: Do some cleaning on buffers, pending replies and such...
          //
 
       }
@@ -453,9 +453,9 @@ namespace casual
       {
          if( callDescriptor == 0)
          {
-            return m_replyCache.begin();
+            return m_state.replyCache.begin();
          }
-         return m_replyCache.find( callDescriptor);
+         return m_state.replyCache.find( callDescriptor);
       }
 
       namespace local
@@ -501,7 +501,7 @@ namespace casual
       {
          reply_cache_type::iterator fetchIter = find( callDescriptor);
 
-         if( fetchIter == m_replyCache.end())
+         if( fetchIter == m_state.replyCache.end())
          {
             queue::blocking::Reader reader( m_receiveQueue);
 
@@ -532,7 +532,7 @@ namespace casual
 
          // TODO: Check if the calling descriptor is already received...
 
-         return m_replyCache.insert( std::make_pair( reply.callDescriptor, reply)).first;
+         return m_state.replyCache.insert( std::make_pair( reply.callDescriptor, reply)).first;
 
       }
 

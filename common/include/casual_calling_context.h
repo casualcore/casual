@@ -41,6 +41,18 @@ namespace casual
 			};
 		}
 
+
+		struct State
+      {
+		   typedef std::set< int> pending_calls_type;
+		   typedef std::map< int, message::ServiceReply> reply_cache_type;
+
+         pending_calls_type pendingCalls;
+         reply_cache_type replyCache;
+
+         int currentCallingDescriptor;
+      };
+
 		class Context
 		{
 		public:
@@ -85,10 +97,7 @@ namespace casual
 			ipc::receive::Queue m_receiveQueue;
 
 
-			pending_calls_type m_pendingCalls;
-
-
-			reply_cache_type m_replyCache;
+			State m_state;
 
 			int m_callingDescriptor;
 

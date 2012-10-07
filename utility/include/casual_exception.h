@@ -110,22 +110,19 @@ namespace casual
 
 		   }
 
-		   template< int xatmi_error, typename B>
-		   struct basic_exeption : public B
+		   template< int xatmi_error, typename base_type>
+		   struct basic_exeption : public base_type
 		   {
 		      basic_exeption( const std::string& description)
-		         : B( description) {}
+		         : base_type( description) {}
 
 		      basic_exeption()
-               : B( "No additional information") {}
+               : base_type( "No additional information") {}
 
 		      int code() const throw() { return xatmi_error;}
 		   };
 
-		   /*
-            #define TPEEVENT 22  <-- not supported right now
 
-		    */
 
 
 		   typedef basic_exeption< TPEBLOCK, severity::User> NoMessage;
@@ -171,6 +168,8 @@ namespace casual
 		   namespace conversational
 		   {
 		      // TODO: Currently not supported...
+
+		     // #define TPEEVENT 22  <-- not supported right now
 
 		   }
 
