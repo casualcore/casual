@@ -1,0 +1,14 @@
+
+
+INCLUDE_PATHS= include \
+	$(UNITTEST_INCLUDE_PATH) \
+
+//
+// unittest
+//
+Compile( unittest/source/casual_isolatedunittest_namevaluepair.cpp, obj/casual_isolatedunittest_namevaluepair.o)
+
+
+LinkIsolatedUnittest( casual_sf_isolated, \
+	obj/casual_isolatedunittest_namevaluepair.o, \
+	 )
