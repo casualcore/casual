@@ -28,9 +28,12 @@
 // syslog
 #include <syslog.h>
 
-
 // signal
 #include <signal.h>
+
+// alarm
+#include <unistd.h>
+
 
 #include <string.h>
 
