@@ -19,9 +19,11 @@ namespace casual
 	{
 		long someLong = 10;
 
-		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).getName() == std::string( "someLong"));
-		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).getConstValue() == 10);
-		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).getValue() == 10);
+		auto nvp = CASUAL_MAKE_NVP( someLong);
+
+		EXPECT_TRUE( nvp.getName() == std::string( "someLong"));
+		EXPECT_TRUE( nvp.getConstValue() == 10);
+		EXPECT_TRUE( nvp.getValue() == 10);
 	}
 
 	TEST( casual_sf_NameValuePair, instansiation_const)

@@ -7,18 +7,25 @@
 
 #include <iostream>
 
+#include <utility>
+#include <type_traits>
 
 namespace casual
 {
 	namespace sf
     {
 
+	//std::true_type
+
+	   template <typename T, typename R>
+		class NameValuePair;
+
 
 	   //!
 	   //!
 	   //!
 	   template <typename T>
-	   class NameValuePair : public std::pair< const char*, T*>
+	   class NameValuePair< T, std::true_type> : public std::pair< const char*, T*>
 	   {
 
 		 public:
@@ -43,7 +50,7 @@ namespace casual
 	   };
 
 	   template <typename T>
-	   class NameValuePair< const T> : public std::pair< const char*, const T*>
+	   class NameValuePair< const T, std::true_type> : public std::pair< const char*, const T*>
 	   {
 
 		 public:
@@ -64,13 +71,13 @@ namespace casual
 
 
 	   template <typename T>
-	   class NameRValuePair : public std::pair< const char*, T>
+	   class NameValuePair< T, std::false_type> : public std::pair< const char*, T>
 	   {
 
 		 public:
 
-			 explicit NameRValuePair (const char* name, T&& value)
-			  :  std::pair< const char*, T>( name, std::move( value)) {}
+			 explicit NameValuePair (const char* name, T&& value)
+			  :  std::pair< const char*, T>( name, std::forward( value)) {}
 
 			 const char* getName () const
 			 {
@@ -84,40 +91,13 @@ namespace casual
 	   };
 
 
-	   namespace internal
-	   {
-	   	   template< typename T>
-	   	   struct traits
-	   	   {
-	   		   typedef const T& value_type;
-	   		static void print() { std::cout << "T" << std::endl; }
-	   	   };
-
-			template< typename T>
-			struct traits< const T&>
-			{
-				typedef const T& value_type;
-				static void print() { std::cout << "const T&" << std::endl; }
-			};
-
-			template< typename T>
-			struct traits< T&>
-			{
-				typedef T& value_type;
-				static void print() { std::cout << "T&" << std::endl; }
-			};
-
-	   }
-
-
-
-
 	   template< typename T>
-	   NameValuePair< T> makeNameValuePair( const char* name, T& value)
+	   NameValuePair< T, typename std::is_lvalue_reference<T>::type> makeNameValuePair( const char* name, T&& value)
 	   {
-		  return NameValuePair< T>( name, value);
+		  return NameValuePair< T, typename std::is_lvalue_reference<T>::type>( name, std::forward< T>( value));
 	   }
 
+	   /*
 
 	   template< typename T>
 	   NameValuePair< const T> makeNameValuePair( const char* name, const T& value)
@@ -128,9 +108,9 @@ namespace casual
 	   template< typename T>
 	   NameRValuePair< const T> makeNameValuePair( const char* name, const T&& value)
 	   {
-		  return NameRValuePair< const T>( name, std::move( value));
+		  return NameRValuePair< const T>( name, std::forward( value));
 	   }
-
+      */
 
     } // sf
 } // casual

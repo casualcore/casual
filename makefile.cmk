@@ -5,3 +5,5 @@ Build( common/makefile.cmk)
 Build( xatmi/makefile.cmk)
 Build( test/makefile.cmk)
 Build( broker/makefile.cmk)
+
+Build( serviceframework/makefile.cmk)
