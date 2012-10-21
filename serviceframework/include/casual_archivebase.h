@@ -13,44 +13,47 @@ namespace casual
 	namespace sf
 	{
 
-	  class ArchiveBase
-	  {
+	   namespace archive
+	   {
 
-		public:
+         class Base
+         {
 
-		    ArchiveBase();
-			virtual ~ArchiveBase();
+         public:
 
-		protected:
+            Base();
+            virtual ~Base();
 
-			void handleStart (const char* name);
+         //protected:
 
-			void handleEnd (const char* name);
+            void handleStart( const char* name);
 
-			void handleContainerStart ();
+            void handleEnd( const char* name);
 
-			void handleContainerEnd ();
+            void handleContainerStart();
 
-			void handleSerialtypeStart ();
+            void handleContainerEnd();
 
-			void handleSerialtypeEnd ();
+            void handleSerialtypeStart();
 
-		private:
+            void handleSerialtypeEnd();
 
+         private:
 
-			virtual void handle_start (const char* name);
+            virtual void handle_start( const char* name) = 0;
 
-			virtual void handle_end (const char* name);
+            virtual void handle_end( const char* name) = 0;
 
-			virtual void handle_container_start ();
+            virtual void handle_container_start() = 0;
 
-			virtual void handle_container_end ();
+            virtual void handle_container_end() = 0;
 
-			virtual void handle_serialtype_start ();
+            virtual void handle_serialtype_start() = 0;
 
-			virtual void handle_serialtype_end ();
+            virtual void handle_serialtype_end() = 0;
 
-	  };
+         };
+	   }
 
 	} // sf
 } // casual

@@ -1,14 +1,13 @@
 
 #ifndef CASUAL_NAMEVALUEPAIR_H
-#define sCASUAL_NAMEVALUEPAIR_H 1
+#define CASUAL_NAMEVALUEPAIR_H 1
 
 
 #include <utility>
 
-#include <iostream>
-
-#include <utility>
 #include <type_traits>
+
+#include <map>
 
 namespace casual
 {
@@ -77,7 +76,7 @@ namespace casual
 		 public:
 
 			 explicit NameValuePair (const char* name, T&& value)
-			  :  std::pair< const char*, T>( name, std::forward( value)) {}
+			  :  std::pair< const char*, T>( name, std::forward< T>( value)) {}
 
 			 const char* getName () const
 			 {
@@ -88,29 +87,28 @@ namespace casual
 			 {
 				 return this->second;
 			 }
+
+			 T& getValue () const
+         {
+           return *( this->second);
+         }
 	   };
 
-
-	   template< typename T>
-	   NameValuePair< T, typename std::is_lvalue_reference<T>::type> makeNameValuePair( const char* name, T&& value)
+	   namespace internal
 	   {
-		  return NameValuePair< T, typename std::is_lvalue_reference<T>::type>( name, std::forward< T>( value));
-	   }
+	      template< typename T>
+	      struct nvp_traits
+	      {
+	         typedef NameValuePair< typename std::remove_reference< T>::type, typename std::is_lvalue_reference<T>::type> type;
+	      };
 
-	   /*
-
-	   template< typename T>
-	   NameValuePair< const T> makeNameValuePair( const char* name, const T& value)
-	   {
-		  return NameValuePair< const T>( name, value);
 	   }
 
 	   template< typename T>
-	   NameRValuePair< const T> makeNameValuePair( const char* name, const T&& value)
+	   typename internal::nvp_traits< T>::type makeNameValuePair( const char* name, T&& value)
 	   {
-		  return NameRValuePair< const T>( name, std::forward( value));
+		  return typename internal::nvp_traits< T>::type( name, std::forward< T>( value));
 	   }
-      */
 
     } // sf
 } // casual

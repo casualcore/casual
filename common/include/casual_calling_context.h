@@ -14,7 +14,7 @@
 #include "casual_utility_platform.h"
 
 #include <set>
-#include <map>
+#include <unordered_map>
 
 
 namespace casual
@@ -45,7 +45,7 @@ namespace casual
 		struct State
       {
 		   typedef std::set< int> pending_calls_type;
-		   typedef std::map< int, message::ServiceReply> reply_cache_type;
+		   typedef std::unordered_map< int, message::ServiceReply> reply_cache_type;
 
          pending_calls_type pendingCalls;
          reply_cache_type replyCache;
@@ -77,7 +77,7 @@ namespace casual
 
 
 			typedef std::set< int> pending_calls_type;
-			typedef std::map< int, message::ServiceReply> reply_cache_type;
+			typedef std::unordered_map< int, message::ServiceReply> reply_cache_type;
 
 			Context();
 

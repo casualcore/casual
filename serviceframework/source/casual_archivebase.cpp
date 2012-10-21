@@ -5,88 +5,55 @@
  *      Author: lazan
  */
 
-
 #include "casual_archivebase.h"
-
 
 namespace casual
 {
-	namespace sf
-	{
-		ArchiveBase::ArchiveBase()
-		{
+   namespace sf
+   {
+      namespace archive
+      {
+         Base::Base()
+         {
 
-		}
-		virtual ArchiveBase::~ArchiveBase()
-		{
+         }
 
-		}
+         Base::~Base()
+         {
 
-		void ArchiveBase::handleStart (const char* name)
-		{
-			handle_start( name);
-		}
+         }
 
-		void ArchiveBase::handleEnd (const char* name)
-		{
-			handle_end( name);
-		}
+         void Base::handleStart( const char* name)
+         {
+            handle_start( name);
+         }
 
+         void Base::handleEnd( const char* name)
+         {
+            handle_end( name);
+         }
 
-		void ArchiveBase::handleContainerStart()
-		{
-			handle_container_start();
-		}
+         void Base::handleContainerStart()
+         {
+            handle_container_start();
+         }
 
-		void ArchiveBase::handleContainerEnd()
-		{
-			handle_container_end();
-		}
+         void Base::handleContainerEnd()
+         {
+            handle_container_end();
+         }
 
-		void ArchiveBase::handleSerialtypeStart()
-		{
-			handle_serialtype_start();
-		}
+         void Base::handleSerialtypeStart()
+         {
+            handle_serialtype_start();
+         }
 
-		void ArchiveBase::handleSerialtypeEnd()
-		{
-			handle_serialtype_end();
-		}
+         void Base::handleSerialtypeEnd()
+         {
+            handle_serialtype_end();
+         }
+      }
 
-
-
-
-		void ArchiveBase::handle_start(const char* name)
-		{
-			// no op
-		}
-
-		void ArchiveBase::handle_end(const char* name)
-		{
-			// no op
-		}
-
-
-		void ArchiveBase::handle_container_start()
-		{
-			// no op
-		}
-
-		void ArchiveBase::handle_container_end()
-		{
-			// no op
-		}
-
-		void ArchiveBase::handle_serialtype_start()
-		{
-			// no op
-		}
-
-		void ArchiveBase::handle_serialtype_end()
-		{
-			// no op
-		}
-
-	}
+   }
 }
 

@@ -3,12 +3,28 @@
 INCLUDE_PATHS= include \
 	$(UNITTEST_INCLUDE_PATH) \
 
+
+
+Compile( source/casual_archivebase.cpp, obj/casual_archivebase.o)
+Compile( source/casual_archivewriter.cpp, obj/casual_archivewriter.o)
+
+
+LinkLibrary( casual_sf,\
+    obj/casual_archivebase.o \
+    obj/casual_archivewriter.o,\
+    )
+
+
+
 //
 // unittest
 //
 Compile( unittest/source/casual_isolatedunittest_namevaluepair.cpp, obj/casual_isolatedunittest_namevaluepair.o)
+Compile( unittest/source/casual_isolatedunittest_archive.cpp, obj/casual_isolatedunittest_archive.o)
 
 
 LinkIsolatedUnittest( casual_sf_isolated, \
-	obj/casual_isolatedunittest_namevaluepair.o, \
-	 )
+	obj/casual_isolatedunittest_namevaluepair.o \
+	obj/casual_isolatedunittest_archive.o, \
+	casual_sf)
+	

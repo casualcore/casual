@@ -4,6 +4,6 @@ environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/CASUA
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/CASUAL_HOME/value=${ProjDirPath}
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/delimiter=\:
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/operation=replace
-environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/value=/bin\:/usr/bin\:/usr/sbin\:/sbin\:${ProjDirPath}/../tools/bin
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/PATH/value=/bin\:/opt/local/bin\:/usr/bin\:/usr/sbin\:/sbin\:${ProjDirPath}/../tools/bin
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/append=true
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.2086429961/appendContributed=true

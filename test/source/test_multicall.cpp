@@ -50,7 +50,15 @@ int main( int argc, char** argv)
 
    for( long index = 0; index < calls; ++index )
    {
-      callDescriptors.push_back( tpacall( "casual_test2", buffer, 0, 0));
+      const int cd = tpacall( "casual_test2", buffer, 0, 0);
+      if( cd != -1)
+      {
+         callDescriptors.push_back( cd);
+      }
+      else
+      {
+         std::cerr << "tpacall returned -1" << std::endl;
+      }
    }
 
 
@@ -61,8 +69,14 @@ int main( int argc, char** argv)
    for( ; callIter != callDescriptors.end(); ++callIter)
    {
       long size = 0;
-      tpgetrply( &*callIter, &buffer, &size, 0);
-      std::cout << std::endl << "reply "<< ++reply << ": " << buffer << std::endl;
+      if( tpgetrply( &*callIter, &buffer, &size, 0) != -1)
+      {
+         //std::cout << std::endl << "reply "<< ++reply << ": " << buffer << std::endl;
+      }
+      else
+      {
+         std::cerr << "tpgetrply returned -1" << std::endl;
+      }
 
    }
 

@@ -42,8 +42,8 @@ namespace casual
 
 	TEST( casual_sf_NameValuePair, instansiation_rvalue)
 	{
-		EXPECT_TRUE( CASUAL_MAKE_NVP( local::getLong( 10)).getName() == std::string( "local::getLong( 10)"));
-		EXPECT_TRUE( CASUAL_MAKE_NVP( local::getLong( 10)).getConstValue() == 10);
+		EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).getName() == std::string( "10L"));
+		EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).getConstValue() == 10);
 	}
 
 

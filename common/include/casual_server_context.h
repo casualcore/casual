@@ -21,7 +21,7 @@
 //
 // std
 //
-#include <map>
+#include <unordered_map>
 
 namespace casual
 {
@@ -31,7 +31,7 @@ namespace casual
 		class Context
 		{
 		public:
-			typedef std::map< std::string, service::Context> service_mapping_type;
+			typedef std::unordered_map< std::string, service::Context> service_mapping_type;
 
 			static Context& instance();
 
