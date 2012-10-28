@@ -99,7 +99,8 @@ namespace casual
          {
             archive.handleSerialtypeStart();
 
-            value.serialize( archive);
+            // TODO: Can we get rid of const-cast?
+            const_cast< T&>( value).serialize( archive);
 
             archive.handleSerialtypeEnd();
          }

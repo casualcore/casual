@@ -31,6 +31,11 @@ namespace casual
 
                }
 
+            const T& policy() const
+            {
+               return m_writerArcive;
+            }
+
 
          private:
 
