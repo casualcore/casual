@@ -51,7 +51,10 @@ namespace casual
             writePOD( value);
          }
 
-         //void write (const unsigned long& value);
+         void Writer::write (const unsigned long value)
+         {
+            writePOD( static_cast< long>( value));
+         }
 
          void Writer::write( const float value)
          {

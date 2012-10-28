@@ -10,13 +10,11 @@
 
 #include "casual_archivebase.h"
 #include "casual_namevaluepair.h"
+#include "casual_archive_traits.h"
 
-#include <string>
-#include <vector>
-#include <map>
-#include <list>
-#include <deque>
-#include <set>
+
+#include <utility>
+
 
 namespace casual
 {
@@ -72,7 +70,7 @@ namespace casual
 
             void write( const long value);
 
-            //void write (const unsigned long& value);
+            void write (const unsigned long value);
 
             void write( const float value);
 
@@ -84,33 +82,63 @@ namespace casual
 
             void write( const std::vector< char>& value);
 
-            template< typename T>
-            void write( const T& value);
-
-            template< typename T>
-            void write( const std::vector< T>& value);
-
-            template< typename T>
-            void write( const std::list< T>& value);
-
-            template< typename T>
-            void write( const std::deque< T>& value);
-
-            template< typename T>
-            void write( const std::set< T>& value);
-
-            template< typename K, typename V>
-            void write( const std::map< K, V>& value);
-
-            template< typename K, typename V>
-            void write( const std::pair< K, V>& valuePair);
-
-            template< typename T>
-            void marshalStdContainer( const T& container);
-
-            template< typename T>
-            friend Writer& operator <<( Writer& archive, const NameValuePair< T, std::true_type> && nameValuePair);
          };
+
+
+         template< typename T>
+         typename std::enable_if< traits::is_pod< T>::value, void>::type
+         serialize( Writer& archive, const T& value)
+         {
+            archive.write( value);
+         }
+
+
+         template< typename T>
+         typename std::enable_if< traits::is_serializible< T>::value, void>::type
+         serialize( Writer& archive, const T& value)
+         {
+            archive.handleSerialtypeStart();
+
+            value.serialize( archive);
+
+            archive.handleSerialtypeEnd();
+         }
+
+         template< typename K, typename V>
+         void serialize( Writer& archive, const std::pair< K, V>& value)
+         {
+            archive << makeNameValuePair( "key", value.first);
+            archive << makeNameValuePair( "value", value.second);
+         }
+
+
+         template< typename T>
+         typename std::enable_if< traits::is_container< T >::value, void>::type
+         serialize( Writer& archive, const T& container)
+         {
+            archive.handleContainerStart();
+
+            archive << makeNameValuePair( "size", container.size());
+
+            for( auto element : container)
+            {
+               archive << makeNameValuePair( "element", element);
+            }
+
+            archive.handleContainerEnd();
+         }
+
+
+
+         template< typename T>
+         inline void serialize( Writer& archive, const char* name, const T& value)
+         {
+            archive.handleStart( name);
+
+            serialize( archive, value);
+
+            archive.handleEnd( name);
+         }
 
          template< typename T>
          Writer& operator &( Writer& archive, T&& nameValuePair)
@@ -118,33 +146,11 @@ namespace casual
             return operator << ( archive, std::forward< T>( nameValuePair));
          }
 
-         template< typename T>
-         inline void serialize( Writer& archive, const T& value)
+
+         template< typename T, typename RV>
+         Writer& operator <<( Writer& archive, const NameValuePair< T, RV>&& nameValuePair)
          {
-            archive.write( value);
-         }
-
-         template< typename T>
-         Writer& operator <<( Writer& archive, const NameValuePair< T, std::true_type> && nameValuePair)
-         {
-            archive.handleStart( nameValuePair.getName());
-
-            serialize( archive, nameValuePair.getConstValue());
-
-            archive.handleEnd( nameValuePair.getName());
-
-            return archive;
-         }
-
-         template< typename T>
-         Writer& operator <<( Writer& archive, const NameValuePair< T, std::false_type> && nameValuePair)
-         {
-
-            archive.handleStart( nameValuePair.getName());
-
-            serialize( archive, nameValuePair.getConstValue());
-
-            archive.handleEnd( nameValuePair.getName());
+            serialize( archive, nameValuePair.getName(), nameValuePair.getConstValue());
 
             return archive;
          }
