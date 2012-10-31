@@ -61,19 +61,19 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -Wall -pedantic -Wno-long-long -Wno-variadic-macros 
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++11
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
    LINK_DIRECTIVES_EXE = -g -pthread  -fpic
    LINK_DIRECTIVES_ARCHIVE = -g  
 
    ifdef ANALYZE
-      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage
+      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage -std=c++11
       LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) -fprofile-arcs
       LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) -lgcov -fprofile-arcs
    endif
 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++11
    LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic
    LINK_DIRECTIVES_EXE = -pthread -O3 -fpic 
    LINK_DIRECTIVES_ARCHIVE = 
@@ -86,7 +86,7 @@ COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT -std=c++11
 
 BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
@@ -134,11 +134,8 @@ LIBRARY_PATHS := $(addprefix -L, $(BASE_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_P
 DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
 DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(BASE_DEFAULT_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_DEFAULT_LIBRARY_PATHS) )
 
-#
-# F�r att generera "header-dependencies"
-# Ser till s� vi inte f�r med beroende till db2 och Tuxedo.
-#
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
+
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
 
 
 
