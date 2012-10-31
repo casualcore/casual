@@ -7,11 +7,13 @@ INCLUDE_PATHS= include \
 
 Compile( source/casual_archivebase.cpp, obj/casual_archivebase.o)
 Compile( source/casual_archivewriter.cpp, obj/casual_archivewriter.o)
+Compile( source/casual_archivereader.cpp, obj/casual_archivereader.o)
 
 
 LinkLibrary( casual_sf,\
     obj/casual_archivebase.o \
-    obj/casual_archivewriter.o,\
+    obj/casual_archivewriter.o \
+    obj/casual_archivereader.o,\
     )
 
 

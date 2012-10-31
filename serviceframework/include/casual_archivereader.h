@@ -85,6 +85,10 @@ namespace casual
          };
 
 
+         template< typename T, typename RV>
+         Reader& operator >>( Reader& archive, const NameValuePair< T, RV>&& nameValuePair);
+
+
          template< typename T>
          typename std::enable_if< traits::is_pod< T>::value, void>::type
          serialize( Reader& archive, T& value)
@@ -104,12 +108,16 @@ namespace casual
             archive.handleSerialtypeEnd();
          }
 
+
          template< typename K, typename V>
          void serialize( Reader& archive, std::pair< K, V>& value)
          {
-            archive >> makeNameValuePair( "key", value.first);
+            typedef typename std::remove_const< K>::type key_type;
+
+            archive >> makeNameValuePair( "key", const_cast< key_type&>( value.first));
             archive >> makeNameValuePair( "value", value.second);
          }
+
 
 
          template< typename T>
@@ -118,12 +126,12 @@ namespace casual
          {
             archive.handleContainerStart();
 
-            long size = 0;
+            std::size_t size = 0;
             archive >> CASUAL_MAKE_NVP( size);
 
             container.resize( size);
 
-            for( auto element : container)
+            for( auto& element : container)
             {
                archive >> CASUAL_MAKE_NVP( element);
             }
@@ -131,18 +139,18 @@ namespace casual
             archive.handleContainerEnd();
          }
 
+
+
          template< typename T>
          typename std::enable_if< traits::is_associative_container< T >::value, void>::type
          serialize( Reader& archive, T& container)
          {
             archive.handleContainerStart();
 
-            long size = 0;
+            std::size_t size = 0;
             archive >> CASUAL_MAKE_NVP( size);
 
-            container.reserve( size);
-
-            for( std::size_t count = 0; count < size; ++count)
+            for( std::size_t index = 0; index < size; ++index)
             {
                typename T::value_type element;
                archive >> CASUAL_MAKE_NVP( element);

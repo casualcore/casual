@@ -52,34 +52,43 @@ namespace casual
 
 
          template< typename T>
-         struct is_associative_container : public std::integral_constant< bool, false> {};
+         struct is_associative_set_container : public std::integral_constant< bool, false> {};
 
          template< typename T>
-         struct is_associative_container< std::set< T>> : public std::integral_constant< bool, true> {};
+         struct is_associative_set_container< std::set< T>> : public std::integral_constant< bool, true> {};
 
          template< typename T>
-         struct is_associative_container< std::multiset< T>> : public std::integral_constant< bool, true> {};
+         struct is_associative_set_container< std::multiset< T>> : public std::integral_constant< bool, true> {};
 
+         template< typename T>
+         struct is_associative_set_container< std::unordered_set< T>> : public std::integral_constant< bool, true> {};
 
-         template< typename K, typename V>
-         struct is_associative_container< std::map< K, V>> : public std::integral_constant< bool, true> {};
-
-         template< typename K, typename V>
-         struct is_associative_container< std::multimap< K, V>> : public std::integral_constant< bool, true> {};
+         template< typename T>
+         struct is_associative_set_container< std::unordered_multiset< T>> : public std::integral_constant< bool, true> {};
 
 
          template< typename T>
-         struct is_associative_container< std::unordered_set< T>> : public std::integral_constant< bool, true> {};
+         struct is_associative_map_container : public std::integral_constant< bool, false> {};
+
+         template< typename K, typename V>
+         struct is_associative_map_container< std::map< K, V>> : public std::integral_constant< bool, true> {};
+
+         template< typename K, typename V>
+         struct is_associative_map_container< std::multimap< K, V>> : public std::integral_constant< bool, true> {};
+
+         template< typename K, typename V>
+         struct is_associative_map_container< std::unordered_map< K, V>> : public std::integral_constant< bool, true> {};
+
+         template< typename K, typename V>
+         struct is_associative_map_container< std::unordered_multimap< K, V>> : public std::integral_constant< bool, true> {};
+
 
          template< typename T>
-         struct is_associative_container< std::unordered_multiset< T>> : public std::integral_constant< bool, true> {};
+         struct is_associative_container : public std::integral_constant< bool,
+            is_associative_set_container< T>::value || is_associative_map_container< T>::value> {};
 
 
-         template< typename K, typename V>
-         struct is_associative_container< std::unordered_map< K, V>> : public std::integral_constant< bool, true> {};
 
-         template< typename K, typename V>
-         struct is_associative_container< std::unordered_multimap< K, V>> : public std::integral_constant< bool, true> {};
 
 
 

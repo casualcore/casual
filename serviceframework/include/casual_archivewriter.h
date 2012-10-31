@@ -84,6 +84,9 @@ namespace casual
 
          };
 
+         template< typename T, typename RV>
+         Writer& operator <<( Writer& archive, const NameValuePair< T, RV>&& nameValuePair);
+
 
          template< typename T>
          typename std::enable_if< traits::is_pod< T>::value, void>::type
@@ -123,7 +126,7 @@ namespace casual
 
             for( auto element : container)
             {
-               archive << makeNameValuePair( "element", element);
+               archive << CASUAL_MAKE_NVP( element);
             }
 
             archive.handleContainerEnd();
