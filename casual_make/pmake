@@ -58,6 +58,7 @@ def handleArguments():
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
     
+    parser.set_defaults(FORCE_MAKEMAKE=0)
     parser.set_defaults(COLORS=True)
     parser.set_defaults(IGNORE_ERRORS=False)
     parser.set_defaults(USE_VALGRIND=False)
@@ -75,7 +76,7 @@ def handleArguments():
     (options, args) = parser.parse_args()
     
     if args and args[0] in ("make"):
-        FORCE_MAKEMAKE=1
+        options.FORCE_MAKEMAKE=1
         
     if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross"):
         options.FORCE_PARALLEL=True
@@ -133,8 +134,11 @@ if __name__ == '__main__':
     (options, args) = handleArguments()
     
     USER_MAKE_FILE=options.USER_MAKE_FILE
+    FORCE_MAKEMAKE=options.FORCE_MAKEMAKE;
             
     CORRESPONDING_CASUAL_MAKE_FILE=os.path.splitext(USER_MAKE_FILE)[0] + ".cmk"; 
+    
+    
     
     if len(args) != 1:
         GMAKE_OPTIONS=optionsAsString( options) + " all"
@@ -144,6 +148,7 @@ if __name__ == '__main__':
 
     if not options.COLORS:
         bcolors.disable()
+    
     #
     # Kolla om vi ska generera om
     #
@@ -152,15 +157,15 @@ if __name__ == '__main__':
             sys.stderr.write( "error: Could not find the casaul make file " + CORRESPONDING_CASUAL_MAKE_FILE)
             sys.exit( 1)
 
-    print "info: executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
-
-    try:
-        Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
-        
-    except:
-        sys.stderr.write("error: Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
-        raise
-        sys.exit(1)
+        print "info: executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
+	
+        try:
+	        Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
+	        
+        except:
+	        sys.stderr.write("error: Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
+	        raise
+	        sys.exit(1)
 
 #
 # Find number of CPU:s to set jobs and load

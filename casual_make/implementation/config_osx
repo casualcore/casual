@@ -13,7 +13,6 @@
 UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
 UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
 ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
-#DEPENDENT_UNITTEST_LIB =$(UNITTEST_LIBRARY_PATH)/gtest_main.a $(UNITTEST_LIBRARY_PATH)/libunittestcommon.a $(UNITTEST_LIBRARY_PATH)/libdependentunittest.a
 
 ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=yes
 
@@ -63,19 +62,19 @@ endif
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -c -fPIC -Wall -pedantic -Wno-long-long -Wno-variadic-macros
+   COMPILE_DIRECTIVES = -g -c -fPIC -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++11
    LINK_DIRECTIVES_LIB =  -g -dynamiclib -fPIC 
    LINK_DIRECTIVES_EXE =  -g -fPIC 
    LINK_DIRECTIVES_ARCHIVE =  -g -fPIC
    
    ifdef ANALYZE
-      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage
+      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage -std=c++11
       LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) -fprofile-arcs
       LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) -lgcov -fprofile-arcs
    endif
    
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC
+   COMPILE_DIRECTIVES =  -c -O3 -fPIC -std=c++11
    LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC 
    LINK_DIRECTIVES_EXE =  -O3 -fPIC 
    LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC 
@@ -88,7 +87,7 @@ COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -Wno-long-long -DNOWHAT
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -Wno-long-long -std=c++11 -DNOWHAT
 
 BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
@@ -140,7 +139,7 @@ DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 # För att generera "header-dependencies"
 # Ser till så vi inte får med beroende till db2 och Tuxedo.
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
 
 
 
