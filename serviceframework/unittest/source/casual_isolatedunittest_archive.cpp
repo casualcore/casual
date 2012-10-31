@@ -60,28 +60,33 @@ namespace casual
 
       }
 
-      template< typename T>
-      void write( T&& value, std::size_t size)
+      void write( const char* data, std::size_t size)
       {
 
-         const char* data = reinterpret_cast< const char*>( &value);
+         while( m_offset + size > m_buffer.size() )
+         {
+            m_buffer.resize( m_buffer.size() * 2);
+         }
 
-         m_buffer.insert( m_buffer.end(), data, data + size);
+         std::copy( data, data + size, ( &m_buffer[ 0]) + m_offset);
+
+         m_offset += size;
       }
 
 
 
       template< typename T>
-      void write( T&& value)
+      void write( T& value)
       {
-         write( value, sizeof( T));
+         write( reinterpret_cast< const char*>( &value), sizeof( T));
       }
 
       void write( const std::string& value)
       {
-         write( value.size());
+         std::size_t size = value.size();
+         write( size);
 
-         m_buffer.insert( m_buffer.end(), value.begin(), value.end());
+         write( value.data(), size);
 
       }
 
@@ -122,6 +127,10 @@ namespace casual
          auto start = m_buffer.begin() + m_offset;
 
          value.assign( start, start + size);
+
+         m_offset += size;
+
+
       }
 
       void read( std::wstring& value)
@@ -135,7 +144,7 @@ namespace casual
       }
 
 
-      std::vector< char> m_buffer;
+      std::vector< char> m_buffer = std::vector< char>( 64);
       std::size_t m_offset = 0;
    };
 
@@ -208,14 +217,14 @@ namespace casual
       sf::archive::basic_reader< TestPolicy> reader( writer.policy());
 
       reader >> CASUAL_MAKE_NVP( result);
-     /*
-      ASSERT_TRUE( result.size() == 4) << "result.size(): " << result.size();
-      EXPECT_TRUE( result.at( 0) == 1);
-      EXPECT_TRUE( result.at( 1) == 2);
-      EXPECT_TRUE( result.at( 2) == 3);
-      EXPECT_TRUE( result.at( 3) == 4);
 
-*/
+      ASSERT_TRUE( result.size() == 4) << "result.size(): " << result.size();
+      EXPECT_TRUE( result.at( 1) == "test 1");
+      EXPECT_TRUE( result.at( 2) == "test 2");
+      EXPECT_TRUE( result.at( 3) == "test 3");
+      EXPECT_TRUE( result.at( 4) == "test 4");
+
+
    }
 
    struct Serializible
