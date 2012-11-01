@@ -331,6 +331,9 @@ def LinkArchive(name,objectfiles):
     print
     print "deploy: " + internal_target_deploy_name( name)
     print 
+    print "specification: "
+    print "\techo 'Hans'"
+    print
     print internal_target_name(name) + ": " + filename
     print
     print "objects_" + name + " = " + internal_object_name_list( objectfiles)
@@ -369,6 +372,19 @@ def LinkExecutable(name,objectfiles,libs):
     print "\t-@" + def_Deploy + " " + internal_executable_name(name) + " exe"
     print 
 
+def Include( includefile):
+    """
+######################################################################
+## 
+## Include( includefile)
+##
+##
+## includefile        File with additional config
+##
+######################################################################
+    """
+    print "include " + includefile
+
 
 def Build(casualMakefile):
     """
@@ -405,6 +421,8 @@ def Build(casualMakefile):
     internal_make_target_component("all", casualMakefile)
     print
     internal_make_target_component("cross", casualMakefile)
+    print
+    internal_make_target_component("specification", casualMakefile)
     print
     internal_make_target_component("prep", casualMakefile)
     print
