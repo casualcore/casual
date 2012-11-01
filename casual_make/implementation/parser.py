@@ -23,6 +23,7 @@ class Parser(object):
         self.preprocessed_data = preprocessed_data
         self.content=""
         self.defines=""
+        self.includes=""
         
     def normalize(self):
         '''
@@ -56,6 +57,11 @@ class Parser(object):
         self.defines = self.extractDefines( content)
         content = self.removeDefines(content)
         #
+        # Extract includes from file
+        #
+        self.includes = self.extractIncludes( content)
+        content = self.removeIncludes(content)
+        #
         # Adjust quotes in statements. 
         #
         content = self.adjustQuotes(content)
@@ -87,6 +93,14 @@ class Parser(object):
     def removeDefines(self, indata):
         """Remove the definestatements"""
         return re.sub(r'(\S+[ \t]*=[ \t]*.*)\n','',indata)
+
+    def extractIncludes(self, indata):
+        """Extracting the include statements"""
+        return re.findall(r'[ \t]*Include[ \t]*\((.*)\)',indata)
+               
+    def removeIncludes(self, indata):
+        """Remove the include statements"""
+        return re.sub(r'[ \t]*Include[ \t]*\((.*)\).*\n','',indata)
 
     def adjustWhitespace(self,indata):
         """Remove starting and trailing whitespaces"""

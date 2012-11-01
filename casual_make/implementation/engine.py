@@ -70,6 +70,12 @@ class Engine(object):
         #
         self.makefile.write( "CASUALMAKE_PATH = " + os.path.dirname(os.path.abspath(sys.argv[0])) + "/..\n")
         #
+        # Print out includes in makefile
+        #
+        if self.parser.includes:
+            for include in self.parser.includes: 
+                self.makefile.write( "include " + include + "\n")
+        #
         # Print out all detected defines in makefile
         #
         for define in self.parser.defines: 

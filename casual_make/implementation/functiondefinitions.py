@@ -372,20 +372,6 @@ def LinkExecutable(name,objectfiles,libs):
     print "\t-@" + def_Deploy + " " + internal_executable_name(name) + " exe"
     print 
 
-def Include( includefile):
-    """
-######################################################################
-## 
-## Include( includefile)
-##
-##
-## includefile        File with additional config
-##
-######################################################################
-    """
-    print "include " + includefile
-
-
 def Build(casualMakefile):
     """
 ######################################################################
