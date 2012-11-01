@@ -1,10 +1,10 @@
-
+Include( ../casual.env)
 
 INCLUDE_PATHS= include \
-    ../../../Development/third-party/yaml-cpp/include \
+    $(YAML_INCLUDE_PATH) \
 	$(UNITTEST_INCLUDE_PATH) \
 
-LIBRARY_PATHS= ../../../Development/third-party/yaml-cpp/build
+LIBRARY_PATHS= $(YAML_LIBRARY_PATH)
 
 
 Compile( source/casual_archivebase.cpp, obj/casual_archivebase.o)
