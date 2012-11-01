@@ -33,6 +33,7 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.1871677645" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.461321777" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/tools/unittest/gtest/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/Users/Lazan/Development/third-party/yaml-cpp/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1323567008" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>

@@ -70,11 +70,6 @@ namespace casual
             readPOD( value);
          }
 
-         void Reader::read( std::wstring& value)
-         {
-            readPOD( value);
-         }
-
          void Reader::read( std::vector< char>& value)
          {
             readPOD( value);

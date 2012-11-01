@@ -1,8 +1,10 @@
 
 
 INCLUDE_PATHS= include \
+    ../../../Development/third-party/yaml-cpp/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
+LIBRARY_PATHS= ../../../Development/third-party/yaml-cpp/build
 
 
 Compile( source/casual_archivebase.cpp, obj/casual_archivebase.o)
@@ -24,11 +26,13 @@ LinkLibrary( casual_sf,\
 Compile( unittest/source/casual_isolatedunittest_namevaluepair.cpp, obj/casual_isolatedunittest_namevaluepair.o)
 Compile( unittest/source/casual_isolatedunittest_archive.cpp, obj/casual_isolatedunittest_archive.o)
 Compile( unittest/source/casual_isolatedunittest_traits.cpp, obj/casual_isolatedunittest_traits.o)
+Compile( unittest/source/casual_isolatedunittest_yaml_archive.cpp, obj/casual_isolatedunittest_yaml_archive.o)
 
 
 LinkIsolatedUnittest( casual_sf_isolated, \
 	obj/casual_isolatedunittest_namevaluepair.o \
 	obj/casual_isolatedunittest_archive.o \
-	obj/casual_isolatedunittest_traits.o, \
-	casual_sf)
+	obj/casual_isolatedunittest_traits.o \
+	obj/casual_isolatedunittest_yaml_archive.o, \
+	casual_sf yaml-cpp)
 	

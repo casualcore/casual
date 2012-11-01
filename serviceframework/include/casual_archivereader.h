@@ -47,8 +47,6 @@ namespace casual
 
             virtual void readPOD( std::string& value) = 0;
 
-            virtual void readPOD( std::wstring& value) = 0;
-
             virtual void readPOD( std::vector< char>& value) = 0;
 
          public:
@@ -77,8 +75,6 @@ namespace casual
             void read( double& value);
 
             void read( std::string& value);
-
-            void read( std::wstring& value);
 
             void read( std::vector< char>& value);
 

@@ -76,7 +76,7 @@ namespace casual
 
 
       template< typename T>
-      void write( T& value)
+      void write( const T& value)
       {
          write( reinterpret_cast< const char*>( &value), sizeof( T));
       }
@@ -90,10 +90,6 @@ namespace casual
 
       }
 
-      void write( const std::wstring& value)
-      {
-         // do nadas
-      }
 
       void write( const std::vector< char>& value)
       {

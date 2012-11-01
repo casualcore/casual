@@ -71,11 +71,6 @@ namespace casual
             writePOD( value);
          }
 
-         void Writer::write( const std::wstring& value)
-         {
-            writePOD( value);
-         }
-
          void Writer::write( const std::vector< char>& value)
          {
             writePOD( value);

@@ -47,8 +47,6 @@ namespace casual
 
             virtual void writePOD( const std::string& value) = 0;
 
-            virtual void writePOD( const std::wstring& value) = 0;
-
             virtual void writePOD( const std::vector< char>& value) = 0;
 
          public:
@@ -77,8 +75,6 @@ namespace casual
             void write( const double value);
 
             void write( const std::string& value);
-
-            void write( const std::wstring& value);
 
             void write( const std::vector< char>& value);
 

@@ -108,11 +108,6 @@ namespace casual
                m_readerArcive.read( value);
             }
 
-            void readPOD( std::wstring& value)
-            {
-               m_readerArcive.read( value);
-            }
-
             void readPOD( std::vector< char>& value)
             {
                m_readerArcive.read( value);
