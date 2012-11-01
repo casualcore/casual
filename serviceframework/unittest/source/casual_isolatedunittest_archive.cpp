@@ -10,8 +10,7 @@
 
 
 #include "casual_namevaluepair.h"
-#include "casual_basic_writer.h"
-#include "casual_basic_reader.h"
+#include "casual_sf_basic_archive.h"
 
 
 #include <string>

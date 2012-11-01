@@ -9,7 +9,7 @@
 #define CASUAL_ARCHIVE_YAML_POLICY_H_
 
 #include "casual_policy_base.h"
-#include "casual_basic_writer.h"
+#include "casual_sf_basic_archive.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -23,11 +23,58 @@ namespace casual
       {
          namespace yaml
          {
-            class Reader
+            class Reader : public Base
             {
+            public:
+
+               Reader( std::istream& input) : m_parser( input) {}
+
+               inline void handle_start( const char* name)
+               {
+                  m_currentRole = name;
+               }
+
+               inline void handle_end( const char* name) { /* no op */}
+
+               inline void handle_container_start()
+               {
+               }
+
+               inline void handle_container_end()
+               {
+
+
+               }
+
+               inline void handle_serialtype_start()
+               {
+
+
+               }
+
+               inline void handle_serialtype_end()
+               {
+
+               }
+
+               template< typename T>
+               void write( const T& value)
+               {
+
+               }
 
 
 
+               void write( const std::vector< char>& value)
+               {
+                  // do nada
+               }
+
+
+            private:
+
+               YAML::Parser m_parser;
+               std::string m_currentRole;
             };
 
 

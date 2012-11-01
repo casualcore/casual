@@ -7,15 +7,11 @@ INCLUDE_PATHS= include \
 LIBRARY_PATHS= ../../../Development/third-party/yaml-cpp/build
 
 
-Compile( source/casual_archivebase.cpp, obj/casual_archivebase.o)
-Compile( source/casual_archivewriter.cpp, obj/casual_archivewriter.o)
-Compile( source/casual_archivereader.cpp, obj/casual_archivereader.o)
+Compile( source/casual_sf_archive_base.cpp, obj/casual_sf_archive_base.o)
 
 
 LinkLibrary( casual_sf,\
-    obj/casual_archivebase.o \
-    obj/casual_archivewriter.o \
-    obj/casual_archivereader.o,\
+    obj/casual_sf_archive_base.o,\
     )
 
 
