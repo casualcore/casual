@@ -30,9 +30,9 @@ namespace casual
             handle_end( name);
          }
 
-         void Base::handleContainerStart()
+         std::size_t Base::handleContainerStart( std::size_t size)
          {
-            handle_container_start();
+            return handle_container_start( size);
          }
 
          void Base::handleContainerEnd()

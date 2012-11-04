@@ -10,6 +10,8 @@
 
 #include <string>
 
+#include <regex>
+
 
 namespace casual
 {
@@ -43,7 +45,7 @@ namespace casual
 				operator const std::string& ();
 			};
 
-
+			std::string find( const std::string& path, const std::regex& search);
 		}
 
 	}

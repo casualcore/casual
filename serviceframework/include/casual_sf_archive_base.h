@@ -36,7 +36,7 @@ namespace casual
 
             void handleEnd( const char* name);
 
-            void handleContainerStart();
+            std::size_t handleContainerStart( std::size_t size);
 
             void handleContainerEnd();
 
@@ -50,7 +50,7 @@ namespace casual
 
             virtual void handle_end( const char* name) = 0;
 
-            virtual void handle_container_start() = 0;
+            virtual std::size_t handle_container_start( std::size_t size) = 0;
 
             virtual void handle_container_end() = 0;
 
@@ -152,8 +152,12 @@ namespace casual
          {
             typedef typename std::remove_const< K>::type key_type;
 
+            archive.handleSerialtypeStart();
+
             archive >> makeNameValuePair( "key", const_cast< key_type&>( value.first));
             archive >> makeNameValuePair( "value", value.second);
+
+            archive.handleSerialtypeEnd();
          }
 
 
@@ -162,12 +166,7 @@ namespace casual
          typename std::enable_if< traits::is_sequence_container< T >::value, void>::type
          serialize( Reader& archive, T& container)
          {
-            archive.handleContainerStart();
-
-            std::size_t size = 0;
-            archive >> CASUAL_MAKE_NVP( size);
-
-            container.resize( size);
+            container.resize( archive.handleContainerStart( 0));
 
             for( auto& element : container)
             {
@@ -183,10 +182,7 @@ namespace casual
          typename std::enable_if< traits::is_associative_container< T >::value, void>::type
          serialize( Reader& archive, T& container)
          {
-            archive.handleContainerStart();
-
-            std::size_t size = 0;
-            archive >> CASUAL_MAKE_NVP( size);
+            std::size_t size = archive.handleContainerStart( 0);
 
             for( std::size_t index = 0; index < size; ++index)
             {
@@ -314,8 +310,12 @@ namespace casual
          template< typename K, typename V>
          void serialize( Writer& archive, const std::pair< K, V>& value)
          {
+            archive.handleSerialtypeStart();
+
             archive << makeNameValuePair( "key", value.first);
             archive << makeNameValuePair( "value", value.second);
+
+            archive.handleSerialtypeEnd();
          }
 
 
@@ -323,9 +323,7 @@ namespace casual
          typename std::enable_if< traits::is_container< T >::value, void>::type
          serialize( Writer& archive, const T& container)
          {
-            archive.handleContainerStart();
-
-            archive << makeNameValuePair( "size", container.size());
+            archive.handleContainerStart( container.size());
 
             for( auto element : container)
             {

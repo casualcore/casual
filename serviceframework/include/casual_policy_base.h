@@ -25,7 +25,7 @@ namespace casual
 
             inline void handle_end( const char* name) { /* no op */}
 
-            inline void handle_container_start() { /* no op */}
+            //inline std::size_t handle_container_start( std::size_t size) { /* no op */}
 
             inline void handle_container_end() { /* no op */}
 

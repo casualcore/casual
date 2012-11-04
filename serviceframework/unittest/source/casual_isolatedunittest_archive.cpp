@@ -22,11 +22,11 @@
 namespace casual
 {
 
-   struct TestPolicy
+   struct TestPolicyBase
    {
-      TestPolicy() {}
+      TestPolicyBase() {}
 
-      TestPolicy( const TestPolicy& rhs) : m_buffer( rhs.m_buffer) {}
+      TestPolicyBase( const TestPolicyBase& rhs) : m_buffer( rhs.m_buffer) {}
 
 
       void handle_start( const char* name)
@@ -35,11 +35,6 @@ namespace casual
       }
 
       void handle_end( const char* name)
-      {
-
-      }
-
-      void handle_container_start()
       {
 
       }
@@ -58,6 +53,75 @@ namespace casual
       {
 
       }
+
+
+      std::vector< char> m_buffer = std::vector< char>( 64);
+      std::size_t m_offset = 0;
+   };
+
+
+   struct TestReaderPolicy : public TestPolicyBase
+   {
+      template< typename T>
+      TestReaderPolicy( T&& value) : TestPolicyBase( std::forward< T>( value)) {}
+
+      template< typename T>
+      void read( T& value, std::size_t size)
+      {
+
+         char* data = reinterpret_cast< char*>( &value);
+
+         auto start = m_buffer.begin() + m_offset;
+
+         std::copy( start, start + size, data);
+
+         m_offset += size;
+      }
+
+      template< typename T>
+      void read( T& value)
+      {
+         read( value, sizeof( T));
+      }
+
+      void read( std::string& value)
+      {
+         std::size_t size;
+         read( size);
+
+         auto start = m_buffer.begin() + m_offset;
+
+         value.assign( start, start + size);
+
+         m_offset += size;
+      }
+
+      std::size_t handle_container_start( std::size_t size)
+      {
+         read( size);
+         return size;
+      }
+
+
+      void read( std::wstring& value)
+      {
+         // do nadas
+      }
+
+      void read( std::vector< char>& value)
+      {
+         // do nada
+      }
+   };
+
+
+   struct TestWriterPolicy : public TestPolicyBase
+   {
+      TestWriterPolicy() {}
+
+      template< typename T>
+      TestWriterPolicy( T&& value) : TestPolicyBase( std::forward< T>( value)) {}
+      //using TestPolicyBase::TestPolicyBase;
 
       void write( const char* data, std::size_t size)
       {
@@ -89,66 +153,26 @@ namespace casual
 
       }
 
+      std::size_t handle_container_start( std::size_t size)
+      {
+         write( size);
+         return size;
+      }
+
 
       void write( const std::vector< char>& value)
       {
          // do nada
       }
-
-      template< typename T>
-      void read( T& value, std::size_t size)
-      {
-
-         char* data = reinterpret_cast< char*>( &value);
-
-         auto start = m_buffer.begin() + m_offset;
-
-         std::copy( start, start + size, data);
-
-         m_offset += size;
-      }
-
-      template< typename T>
-      void read( T& value)
-      {
-         read( value, sizeof( T));
-      }
-
-      void read( std::string& value)
-      {
-         std::size_t size;
-         read( size);
-
-         auto start = m_buffer.begin() + m_offset;
-
-         value.assign( start, start + size);
-
-         m_offset += size;
-
-
-      }
-
-      void read( std::wstring& value)
-      {
-         // do nadas
-      }
-
-      void read( std::vector< char>& value)
-      {
-         // do nada
-      }
-
-
-      std::vector< char> m_buffer = std::vector< char>( 64);
-      std::size_t m_offset = 0;
    };
+
 
 
 
    TEST( casual_sf_ArchiveWriter_serialize, pod)
    {
 
-      sf::archive::basic_writer< TestPolicy> writer;
+      sf::archive::basic_writer< TestWriterPolicy> writer;
 
       writer << CASUAL_MAKE_NVP( 10);
    }
@@ -157,11 +181,11 @@ namespace casual
    TEST( casual_sf_archive_serialize, pod)
    {
 
-      sf::archive::basic_writer< TestPolicy> writer;
+      sf::archive::basic_writer< TestWriterPolicy> writer;
 
       writer << CASUAL_MAKE_NVP( 34L);
 
-      sf::archive::basic_reader< TestPolicy> reader( writer.policy());
+      sf::archive::basic_reader< TestReaderPolicy> reader( writer.policy());
 
       long result;
 
@@ -176,7 +200,7 @@ namespace casual
    TEST( casual_sf_ArchiveWriter_serialize, vector_long)
    {
 
-      sf::archive::basic_writer< TestPolicy> writer;
+      sf::archive::basic_writer< TestWriterPolicy> writer;
 
       std::vector< long> someInts = { 1, 2, 3, 4 };
 
@@ -184,7 +208,7 @@ namespace casual
 
       std::vector< long> result;
 
-      sf::archive::basic_reader< TestPolicy> reader( writer.policy());
+      sf::archive::basic_reader< TestReaderPolicy> reader( writer.policy());
 
       reader >> CASUAL_MAKE_NVP( result);
 
@@ -200,7 +224,7 @@ namespace casual
    TEST( casual_sf_ArchiveWriter_serialize, map_long_string)
    {
 
-      sf::archive::basic_writer< TestPolicy> writer;
+      sf::archive::basic_writer< TestWriterPolicy> writer;
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
 
@@ -209,7 +233,7 @@ namespace casual
 
       std::map< long, std::string> result;
 
-      sf::archive::basic_reader< TestPolicy> reader( writer.policy());
+      sf::archive::basic_reader< TestReaderPolicy> reader( writer.policy());
 
       reader >> CASUAL_MAKE_NVP( result);
 
@@ -240,7 +264,7 @@ namespace casual
    TEST( casual_sf_ArchiveWriter_serialize, serializible)
    {
 
-      sf::archive::basic_writer< TestPolicy> writer;
+      sf::archive::basic_writer< TestWriterPolicy> writer;
 
       Serializible value;
       value.someLong = 23;

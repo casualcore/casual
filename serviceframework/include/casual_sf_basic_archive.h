@@ -46,7 +46,7 @@ namespace casual
 
             void handle_end( const char* name) { m_readerArcive.handle_end( name); }
 
-            void handle_container_start() { m_readerArcive.handle_container_start(); }
+            std::size_t handle_container_start( std::size_t size) { return m_readerArcive.handle_container_start( size); }
 
             void handle_container_end() {m_readerArcive.handle_container_end();}
 
@@ -99,6 +99,8 @@ namespace casual
             void handle_start( const char* name) { m_writerArcive.handle_start( name); }
 
             void handle_end( const char* name) { m_writerArcive.handle_end( name); }
+
+            std::size_t handle_container_start( std::size_t size) { return m_writerArcive.handle_container_start( size); }
 
             void handle_container_start() { m_writerArcive.handle_container_start();}
 

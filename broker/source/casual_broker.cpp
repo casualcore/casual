@@ -61,10 +61,17 @@ namespace casual
 		Broker::Broker( const std::vector< std::string>& arguments)
 			: m_brokerQueueFile( utility::environment::getBrokerQueueFileName())
 		{
-			//
+
+		   //
+		   // Try to find configuration file
+		   //
+
+
+		   //
 			// Make the key public for others...
 			//
 			local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
+
 
 		}
 

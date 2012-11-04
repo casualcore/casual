@@ -26,12 +26,44 @@ namespace casual
          template< typename A>
          void serialize( A& archive)
          {
-            archive << CASUAL_MAKE_NVP( someLong);
-            archive << CASUAL_MAKE_NVP( someString);
+            archive & CASUAL_MAKE_NVP( someLong);
+            archive & CASUAL_MAKE_NVP( someString);
 
          }
+
+         static std::string yaml()
+         {
+            std::string result = "value:\n";
+            result += "   someLong: 234\n";
+            result += "   someString: bla bla bla bla\n";
+
+            return result;
+         }
       };
+
+
+
+
    }
+
+
+   TEST( casual_sf_yaml_archive, read_serializible)
+   {
+      std::istringstream stream( local::Serializible::yaml());
+
+      sf::archive::YamlReader reader( stream);
+
+      local::Serializible value;
+
+      reader >> CASUAL_MAKE_NVP( value);
+
+      EXPECT_TRUE( value.someLong == 234) << "value.someLong: " << value.someLong;
+      EXPECT_TRUE( value.someString == "bla bla bla bla") << "value.someLong: " << value.someString;
+
+   }
+
+
+
 
    TEST( casual_sf_yaml_archive, vector_pod)
    {

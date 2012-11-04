@@ -9,6 +9,9 @@
 #include <cstdio>
 
 
+
+#include <dirent.h>
+
 namespace casual
 {
 
@@ -43,6 +46,31 @@ namespace casual
 				return path();
 			}
 
+
+			std::string find( const std::string& path, const std::regex& search)
+			{
+			   std::string result;
+
+			   DIR* directory = opendir( path.c_str());
+
+			   if( directory)
+			   {
+			      struct dirent* element = nullptr;
+			      while( ( element = readdir( directory)) != nullptr)
+			      {
+			         if( std::regex_match( element->d_name, search))
+			         {
+			            result = path + "/";
+			            result += element->d_name;
+			            break;
+			         }
+			      }
+
+			      closedir( directory);
+			   }
+
+			   return result;
+			}
 
 		}
 

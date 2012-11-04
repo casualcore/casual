@@ -13,6 +13,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <istream>
+
 namespace casual
 {
 
@@ -27,7 +29,17 @@ namespace casual
             {
             public:
 
-               Reader( std::istream& input) : m_parser( input) {}
+               Reader( std::istream& input)
+               {
+                  YAML::Parser parser( input);
+
+                  if( !parser.GetNextDocument( m_document))
+                  {
+                     // TODO: Handle error
+                  }
+
+                  m_nodeStack.push_back( &m_document);
+               }
 
                inline void handle_start( const char* name)
                {
@@ -36,36 +48,89 @@ namespace casual
 
                inline void handle_end( const char* name) { /* no op */}
 
-               inline void handle_container_start()
+               inline std::size_t handle_container_start( std::size_t size)
                {
+                  const YAML::Node* containerNode = m_nodeStack.back()->FindValue( m_currentRole);
+
+                  m_nodeStack.push_back( containerNode);
+
+                  if( containerNode)
+                  {
+                     size = containerNode->size();
+
+                     for( std::size_t index = size; index > 0; --index)
+                     {
+                        m_nodeStack.push_back( &(*containerNode)[ index - 1] );
+                     }
+
+                  }
+                  else
+                  {
+                     // TODO: Handle with policy
+                  }
+
+
+
+                  return size;
                }
 
                inline void handle_container_end()
                {
-
+                  m_nodeStack.pop_back();
 
                }
 
                inline void handle_serialtype_start()
                {
+                  if( m_nodeStack.back()->Type() == YAML::NodeType::Map)
+                  {
+                     const YAML::Node* serialNode = m_nodeStack.back()->FindValue( m_currentRole);
+                     if( serialNode != nullptr)
+                     {
+                        m_nodeStack.push_back( serialNode);
+                     }
+
+                  }
+                  else
+                  {
+                     m_nodeStack.push_back(  m_nodeStack.back());
+                  }
 
 
                }
 
                inline void handle_serialtype_end()
                {
-
+                  m_nodeStack.pop_back();
                }
 
                template< typename T>
-               void write( const T& value)
+               void read( T& value)
                {
+                  if( m_nodeStack.back()->Type() == YAML::NodeType::Map)
+                  {
+                     const YAML::Node* valueNode = m_nodeStack.back()->FindValue( m_currentRole);
+
+                     if( valueNode)
+                     {
+                        (*valueNode) >> value;
+                     }
+                     else
+                     {
+                        // TODO:
+                     }
+
+                  }
+                  else
+                  {
+                     (*m_nodeStack.back()) >> value;
+                  }
 
                }
 
 
 
-               void write( const std::vector< char>& value)
+               void read( const std::vector< char>& value)
                {
                   // do nada
                }
@@ -73,12 +138,13 @@ namespace casual
 
             private:
 
-               YAML::Parser m_parser;
-               std::string m_currentRole;
+               YAML::Node m_document;
+               std::deque< const YAML::Node*> m_nodeStack;
+               const char* m_currentRole;
             };
 
 
-            class Writer : public Base
+            class Writer
             {
 
             public:
@@ -97,7 +163,7 @@ namespace casual
 
                inline void handle_end( const char* name) { /* no op */}
 
-               inline void handle_container_start()
+               inline std::size_t handle_container_start( std::size_t size)
                {
                   if( m_emitterStack.top() == YAML::BeginMap)
                   {
@@ -107,6 +173,8 @@ namespace casual
                   }
                   m_output << YAML::BeginSeq;
                   m_emitterStack.push( YAML::BeginSeq);
+
+                  return size;
                }
 
                inline void handle_container_end()
@@ -172,6 +240,12 @@ namespace casual
 
       } // policy
 
+      namespace archive
+      {
+
+         typedef archive::basic_reader< policy::yaml::Reader> YamlReader;
+
+      }
 
       namespace archive
       {
