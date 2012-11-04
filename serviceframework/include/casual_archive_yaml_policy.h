@@ -124,6 +124,7 @@ namespace casual
                   else
                   {
                      (*m_nodeStack.back()) >> value;
+                     m_nodeStack.pop_back();
                   }
 
                }

@@ -65,37 +65,58 @@ namespace casual
 
 
 
-   TEST( casual_sf_yaml_archive, vector_pod)
+   TEST( casual_sf_yaml_archive, write_read_vector_pod)
    {
       YAML::Emitter output;
 
       sf::archive::YamlWriter writer( output);
 
-      std::vector< long> value = { 1, 2, 34, 45, 34, 34, 23};
+      {
+         std::vector< long> values = { 1, 2, 34, 45, 34, 34, 23};
+         writer << CASUAL_MAKE_NVP( values);
+      }
 
-      writer << CASUAL_MAKE_NVP( value);
+      std::istringstream stream( output.c_str());
+      sf::archive::YamlReader reader( stream);
 
-      output << YAML::EndMap;
 
-      EXPECT_TRUE( false) << "output: " << output.c_str();
+      std::vector< long> values;
+      reader >> CASUAL_MAKE_NVP( values);
 
+
+
+      ASSERT_TRUE( values.size() == 7) << "size: " << values.size() << output.c_str();
+      EXPECT_TRUE( values.at( 0) == 1);
+      EXPECT_TRUE( values.at( 1) == 2);
+      EXPECT_TRUE( values.at( 2) == 34) << "values.at( 2): " << values.at( 2);
+      EXPECT_TRUE( values.at( 3) == 45);
+      EXPECT_TRUE( values.at( 4) == 34);
+      EXPECT_TRUE( values.at( 5) == 34);
+      EXPECT_TRUE( values.at( 6) == 23);
    }
 
-   TEST( casual_sf_yaml_archive, vector_serializible)
+   TEST( casual_sf_yaml_archive, write_read_vector_serializible)
    {
       YAML::Emitter output;
 
       sf::archive::YamlWriter writer( output);
 
-      std::vector< local::Serializible> value = { { 324, "sklfjslkf"}, { 234, "jl fsjsl flsjf skljdf"}};
+      {
+         std::vector< local::Serializible> values = { { 123, "one two three"}, { 456, "four five six"}};
+         writer << CASUAL_MAKE_NVP( values);
+      }
 
-      writer << CASUAL_MAKE_NVP( value);
+      std::istringstream stream( output.c_str());
+      sf::archive::YamlReader reader( stream);
 
-      //output << YAML::EndMap;
+      std::vector< local::Serializible> values;
+      reader >> CASUAL_MAKE_NVP( values);
 
-
-
-      EXPECT_TRUE( false) << "output: " << output.c_str();
+      ASSERT_TRUE( values.size() == 2);
+      EXPECT_TRUE( values.at( 0).someLong == 123);
+      EXPECT_TRUE( values.at( 0).someString == "one two three");
+      EXPECT_TRUE( values.at( 1).someLong == 456);
+      EXPECT_TRUE( values.at( 1).someString == "four five six");
 
    }
 
@@ -103,40 +124,58 @@ namespace casual
    {
       struct Composite
       {
-         Composite() : someValues( { { 324, "sklfjslkf"}, { 234, "jl fsjsl flsjf skljdf"}}) {}
-
          std::string someString;
          std::vector< Serializible> someValues;
 
          template< typename A>
          void serialize( A& archive)
          {
-            archive << CASUAL_MAKE_NVP( someString);
-            archive << CASUAL_MAKE_NVP( someValues);
+            archive & CASUAL_MAKE_NVP( someString);
+            archive & CASUAL_MAKE_NVP( someValues);
 
          }
       };
 
    }
 
-   TEST( casual_sf_yaml_archive, map_complex)
+   TEST( casual_sf_yaml_archive, write_read_map_complex)
    {
       YAML::Emitter output;
 
       sf::archive::YamlWriter writer( output);
 
-      std::map< long, local::Composite> value;
-      value[ 10].someString = "kalle";
-      value[ 2342].someString = "Charlie";
+      {
+         std::map< long, local::Composite> values;
+         values[ 10].someString = "kalle";
+         values[ 10].someValues = { { 1, "one"}, { 2, "two"}};
+         values[ 2342].someString = "Charlie";
+         values[ 2342].someValues = { { 3, "three"}, { 4, "four"}};
+
+         writer << CASUAL_MAKE_NVP( values);
+      }
 
 
-      writer << CASUAL_MAKE_NVP( value);
+      std::istringstream stream( output.c_str());
+      sf::archive::YamlReader reader( stream);
 
-      //output << YAML::EndMap;
+      std::map< long, local::Composite> values;
+      reader >> CASUAL_MAKE_NVP( values);
 
 
+      ASSERT_TRUE( values.size() == 2) << output.c_str();
+      EXPECT_TRUE( values.at( 10).someString == "kalle");
+      EXPECT_TRUE( values.at( 10).someValues.at( 0).someLong == 1);
+      EXPECT_TRUE( values.at( 10).someValues.at( 0).someString == "one");
+      EXPECT_TRUE( values.at( 10).someValues.at( 1).someLong == 2);
+      EXPECT_TRUE( values.at( 10).someValues.at( 1).someString == "two");
 
-      EXPECT_TRUE( false) << "output: " << output.c_str();
+      EXPECT_TRUE( values.at( 2342).someString == "Charlie");
+      EXPECT_TRUE( values.at( 2342).someValues.at( 0).someLong == 3);
+      EXPECT_TRUE( values.at( 2342).someValues.at( 0).someString == "three");
+      EXPECT_TRUE( values.at( 2342).someValues.at( 1).someLong == 4);
+      EXPECT_TRUE( values.at( 2342).someValues.at( 1).someString == "four");
+
+
 
    }
 }
