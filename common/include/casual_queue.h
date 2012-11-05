@@ -10,7 +10,7 @@
 
 #include "casual_ipc.h"
 #include "casual_message.h"
-#include "casual_archive.h"
+#include "casual_marshal.h"
 #include "casual_utility_signal.h"
 
 
@@ -44,7 +44,7 @@ namespace casual
                //
                // Serialize the message
                //
-               archive::output::Binary archive;
+               marshal::output::Binary archive;
                archive << message;
 
                message_type_type type = message::type( message);
@@ -54,7 +54,7 @@ namespace casual
             }
          private:
 
-            void send( archive::output::Binary& archive, message_type_type type);
+            void send( marshal::output::Binary& archive, message_type_type type);
 
             ipc::send::Queue& m_queue;
          };
@@ -85,7 +85,7 @@ namespace casual
 				{
 					message_type_type type = message::type( message);
 
-					archive::input::Binary archive;
+					marshal::input::Binary archive;
 
 					correlate( archive, type);
 
@@ -95,7 +95,7 @@ namespace casual
 
 			private:
 
-				void correlate( archive::input::Binary& archive, message_type_type type);
+				void correlate( marshal::input::Binary& archive, message_type_type type);
 
 				ipc::receive::Queue& m_queue;
 
@@ -128,7 +128,7 @@ namespace casual
                //
                // Serialize the message
                //
-               archive::output::Binary archive;
+               marshal::output::Binary archive;
                archive << message;
 
                message_type_type type = message::type( message);
@@ -138,7 +138,7 @@ namespace casual
             }
          private:
 
-            bool send( archive::output::Binary& archive, message_type_type type);
+            bool send( marshal::output::Binary& archive, message_type_type type);
 
             ipc::send::Queue& m_queue;
          };
@@ -166,7 +166,7 @@ namespace casual
 				{
 					message_type_type type = message::type( message);
 
-					archive::input::Binary archive;
+					marshal::input::Binary archive;
 
 					if( correlate( archive, type))
 					{
@@ -187,7 +187,7 @@ namespace casual
 
 			private:
 
-				bool correlate( archive::input::Binary& archive, message_type_type type);
+				bool correlate( marshal::input::Binary& archive, message_type_type type);
 
 				ipc::receive::Queue& m_queue;
 

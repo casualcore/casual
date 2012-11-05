@@ -24,6 +24,8 @@ namespace casual
 	namespace broker
 	{
 
+
+
 		struct Server
 		{
 
@@ -43,7 +45,7 @@ namespace casual
 			}
 		};
 
-		typedef std::unordered_map< Server::pid_type, Server> server_mapping_type;
+
 
 
 		struct Service
@@ -63,6 +65,7 @@ namespace casual
 
 		struct State
 		{
+		   typedef std::unordered_map< Server::pid_type, Server> server_mapping_type;
 		   typedef std::unordered_map< std::string, Service> service_mapping_type;
 		   typedef std::deque< message::ServiceRequest> pending_requests_type;
 

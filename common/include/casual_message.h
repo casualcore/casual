@@ -36,7 +36,7 @@ namespace casual
 			Seconds timeout;
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & name;
 				archive & timeout;
@@ -57,7 +57,7 @@ namespace casual
 			pid_type pid;
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & queue_key;
 				archive & pid;
@@ -75,7 +75,7 @@ namespace casual
          ServerId serverId;
 
          template< typename A>
-         void serialize( A& archive)
+         void marshal( A& archive)
          {
             archive & serverId;
          }
@@ -93,7 +93,7 @@ namespace casual
          std::vector< Service> services;
 
          template< typename A>
-         void serialize( A& archive)
+         void marshal( A& archive)
          {
             archive & serverPath;
             archive & serverId;
@@ -112,7 +112,7 @@ namespace casual
          std::vector< Service> services;
 
          template< typename A>
-         void serialize( A& archive)
+         void marshal( A& archive)
          {
             archive & serverId;
             archive & services;
@@ -136,7 +136,7 @@ namespace casual
 			ServerId server;
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & requested;
 				archive & current;
@@ -162,7 +162,7 @@ namespace casual
 			std::vector< ServerId> server;
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & service;
 				archive & server;
@@ -196,7 +196,7 @@ namespace casual
          }
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & callDescriptor;
 				archive & service;
@@ -238,7 +238,7 @@ namespace casual
 			long userReturnCode;
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				if( m_buffer == 0)
 				{
@@ -271,7 +271,7 @@ namespace casual
          Microseconds time;
 
          template< typename A>
-         void serialize( A& archive)
+         void marshal( A& archive)
          {
             archive & service;
             archive & server;

@@ -20,7 +20,7 @@
 
 namespace casual
 {
-	namespace archive
+	namespace marshal
 	{
 		namespace output
 		{
@@ -52,7 +52,7 @@ namespace casual
 				template< typename T>
 				void write( T& value)
 				{
-					value.serialize( *this);
+					value.marshal( *this);
 				}
 
 				void write( long& value)
@@ -167,7 +167,7 @@ namespace casual
 				template< typename T>
 				void read( T& value)
 				{
-					value.serialize( *this);
+					value.marshal( *this);
 				}
 
 				void read( long& value)

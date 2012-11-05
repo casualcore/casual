@@ -7,12 +7,12 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_archive.h"
+#include "casual_marshal.h"
 #include "casual_message.h"
 
 namespace casual
 {
-	namespace archive
+	namespace marshal
 	{
 
 		/*

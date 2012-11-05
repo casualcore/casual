@@ -241,7 +241,7 @@ namespace casual
             // If the server is not registered before, it will be added now... Otherwise
 		      // we use the current one...
             //
-            server_mapping_type::iterator serverIterator = state.servers.insert(
+            State::server_mapping_type::iterator serverIterator = state.servers.insert(
                   std::make_pair( message.serverId.pid, transform::Server()( message))).first;
 
             //
@@ -359,7 +359,7 @@ namespace casual
 		      //
 		      // find server and flag it as idle
 		      //
-		      server_mapping_type::iterator findIter = state.servers.find( message.server.pid);
+		      State::server_mapping_type::iterator findIter = state.servers.find( message.server.pid);
 
 		      if( findIter != state.servers.end())
 		      {
