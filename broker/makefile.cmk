@@ -1,13 +1,20 @@
 
 
+Include( $(CASUAL_BUILD_ENVIRONMENT))
+
+
 INCLUDE_PATHS= include \
 	../common/include \
 	../utility/include   \
-	../xatmi/include   \
+	../xatmi/include \
+	../serviceframework/include \
 	$(UNITTEST_INCLUDE_PATH) \
+	$(YAML_INCLUDE_PATH) \
 
 LIBRARY_PATHS = ../common/bin \
-	../utility/bin
+    ../serviceframework/bin \
+	../utility/bin \
+	$(YAML_LIBRARY_PATH)
 	
 
 Compile( source/casual_broker.cpp, obj/casual_broker.o)
@@ -17,18 +24,20 @@ Compile( source/casual_broker_main.cpp, obj/casual_broker_main.o)
 LinkExecutable( casual_broker, \
 	obj/casual_broker.o \
 	obj/casual_broker_main.o, \
-	casual_common casual_utility)
+	casual_common casual_utility casual_sf)
 	
 	
 //
 // unittest
 //
 Compile( unittest/source/casual_isolatedunittest_broker.cpp, obj/casual_isolatedunittest_broker.o)
+Compile( unittest/source/casual_isolatedunittest_broker_confguration.cpp, obj/casual_isolatedunittest_broker_confguration.o)
 
 
 LinkIsolatedUnittest( casual_broker_isolated, \
-	obj/casual_isolatedunittest_broker.o, \
-	casual_utility casual_common )
+	obj/casual_isolatedunittest_broker.o \
+	obj/casual_isolatedunittest_broker_confguration.o, \
+	casual_utility casual_common casual_sf)
 	
 	
 

@@ -24,7 +24,7 @@ int main( int argc, char** argv)
 			argv + argc,
 			std::back_inserter( arguments));
 
-		std::cout << "starting" << std::endl;
+		std::cout << "Instantiate" << std::endl;
 
 		casual::broker::Broker broker( arguments);
 

@@ -102,8 +102,6 @@ namespace casual
 
             std::size_t handle_container_start( std::size_t size) { return m_writerArcive.handle_container_start( size); }
 
-            void handle_container_start() { m_writerArcive.handle_container_start();}
-
             void handle_container_end() { m_writerArcive.handle_container_end();}
 
             void handle_serialtype_start() { m_writerArcive.handle_serialtype_start();}

@@ -91,8 +91,10 @@ namespace casual
 						      if( log.find( "debug") != std::string::npos) m_mask |= utility::platform::cLOG_debug;
 						      if( log.find( "information") != std::string::npos) m_mask |= utility::platform::cLOG_info;
 						      if( log.find( "warning") != std::string::npos) m_mask |= utility::platform::cLOG_warning;
-						      if( log.find( "error") != std::string::npos) m_mask |= utility::platform::cLOG_error;
+						      //if( log.find( "error") != std::string::npos) m_mask |= utility::platform::cLOG_error;
+
 						   }
+						   m_mask |= utility::platform::cLOG_error;
 
 						   std::ostringstream prefix;
 						   prefix << "<time> " << utility::environment::getDomainName() << ":" << utility::platform::getProcessId() << ": ";

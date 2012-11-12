@@ -9,6 +9,8 @@
 #include <cstdio>
 
 
+//TODO: temp
+#include <iostream>
 
 #include <dirent.h>
 
@@ -58,6 +60,8 @@ namespace casual
 			      struct dirent* element = nullptr;
 			      while( ( element = readdir( directory)) != nullptr)
 			      {
+			         std::cout << "file: '" << element->d_name << "'" << std::endl;
+
 			         if( std::regex_match( element->d_name, search))
 			         {
 			            result = path + "/";

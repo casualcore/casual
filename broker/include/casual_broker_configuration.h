@@ -12,6 +12,7 @@
 
 #include <limits>
 
+#include <list>
 
 namespace casual
 {
@@ -58,6 +59,7 @@ namespace casual
          };
 
 
+
          struct Service
          {
             std::string name;
@@ -71,11 +73,77 @@ namespace casual
             }
          };
 
-      }
+
+         struct Default
+         {
+            Default()
+            {
+               server.instances = 1;
+               server.limits.min = 0;
+               server.limits.max = 10;
+
+               service.timeout = 90;
+            }
+
+            Server server;
+            Service service;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( server);
+               archive & CASUAL_MAKE_NVP( service);
+            }
+         };
+
+         struct Settings
+         {
+            Default casual_default;
+            std::list< Server> servers;
+            std::list< Service> services;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & sf::makeNameValuePair( "default", casual_default);
+               archive & CASUAL_MAKE_NVP( servers);
+               archive & CASUAL_MAKE_NVP( services);
+            }
 
 
-   }
-}
+         };
+
+         namespace complement
+         {
+            struct Default
+            {
+               Default( const configuration::Default& casual_default) : m_casual_default( casual_default) {}
+
+               void operator () ( configuration::Server& server) const
+               {
+                  if( server.instances == cUnset) server.instances = m_casual_default.server.instances;
+                  if( server.limits.min == cUnset) server.limits.min = m_casual_default.server.limits.min;
+                  if( server.limits.max == cUnset) server.limits.max = m_casual_default.server.limits.max;
+               }
+
+               void operator () ( configuration::Service& service) const
+               {
+                  if( service.timeout == cUnset) service.timeout = m_casual_default.service.timeout;
+               }
+
+            private:
+               configuration::Default m_casual_default;
+            };
+         } // complement
+
+         namespace validate
+         {
+
+         }
+
+      } // configuration
+   } // broker
+} // casual
 
 
 #endif /* CASUAL_BROKER_CONFIGURATION_H_ */

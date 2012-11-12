@@ -14,6 +14,8 @@
 #include <list>
 #include <deque>
 
+#include "casual_broker_configuration.h"
+
 #include "casual_ipc.h"
 #include "casual_utility_file.h"
 #include "casual_message.h"
@@ -72,6 +74,8 @@ namespace casual
 		   server_mapping_type servers;
 		   service_mapping_type services;
 		   pending_requests_type pending;
+
+		   configuration::Settings configuration;
 		};
 
 		class Broker
