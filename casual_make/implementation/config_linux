@@ -67,9 +67,9 @@ ifdef DEBUG
    LINK_DIRECTIVES_ARCHIVE = -g  
 
    ifdef ANALYZE
-      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage -std=c++11
-      LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) -fprofile-arcs
-      LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) -lgcov -fprofile-arcs
+      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -O0 -coverage
+      LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) -O0 -coverage
+      LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) -O0 -coverage
    endif
 
 else
