@@ -162,7 +162,7 @@ namespace casual
             }
 
 				template< typename Q>
-				void correlate( Q& queue, archive::input::Binary& archive, cache_type::iterator current)
+				void correlate( Q& queue, marshal::input::Binary& archive, cache_type::iterator current)
 				{
 
 				   //
@@ -231,7 +231,7 @@ namespace casual
 
 
 
-				bool write( archive::output::Binary& archive, message_type_type type, ipc::send::Queue& queue, const long flags)
+				bool write( marshal::output::Binary& archive, message_type_type type, ipc::send::Queue& queue, const long flags)
             {
 
                utility::Uuid correlation;
@@ -291,7 +291,7 @@ namespace casual
 
 		   Writer::Writer( ipc::send::Queue& queue) : m_queue( queue) {}
 
-		   void Writer::send( archive::output::Binary& archive, message_type_type type)
+		   void Writer::send( marshal::output::Binary& archive, message_type_type type)
 		   {
 		      local::write( archive, type, m_queue, 0);
 		   }
@@ -309,7 +309,7 @@ namespace casual
 
 
 
-			void Reader::correlate( archive::input::Binary& archive, message_type_type type)
+			void Reader::correlate( marshal::input::Binary& archive, message_type_type type)
 			{
 				local::cache_type::iterator current = local::first( m_queue, type);
 
@@ -322,7 +322,7 @@ namespace casual
 		{
 		   Writer::Writer( ipc::send::Queue& queue) : m_queue( queue) {}
 
-         bool Writer::send( archive::output::Binary& archive, message_type_type type)
+         bool Writer::send( marshal::output::Binary& archive, message_type_type type)
          {
             return local::write( archive, type, m_queue, ipc::receive::Queue::cNoBlocking);
          }
@@ -345,7 +345,7 @@ namespace casual
 
 			}
 
-			bool Reader::correlate( archive::input::Binary& archive, message_type_type type)
+			bool Reader::correlate( marshal::input::Binary& archive, message_type_type type)
 			{
 				//
 				// empty queue first

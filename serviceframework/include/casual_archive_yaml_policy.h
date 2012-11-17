@@ -126,14 +126,11 @@ namespace casual
                      (*m_nodeStack.back()) >> value;
                      m_nodeStack.pop_back();
                   }
-
                }
-
-
 
                void read( const std::vector< char>& value)
                {
-                  // do nada
+                  // TODO:
                }
 
 

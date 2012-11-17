@@ -12,11 +12,12 @@ LIBRARY_PATHS= $(YAML_LIBRARY_PATH)
 
 
 Compile( source/casual_sf_archive_base.cpp, obj/casual_sf_archive_base.o)
-
+Compile( source/casual_sf_force_instantiation.cpp, obj/casual_sf_force_instantiation.o)
 
 LinkLibrary( casual_sf,\
-    obj/casual_sf_archive_base.o,\
-    )
+    obj/casual_sf_archive_base.o \
+    obj/casual_sf_force_instantiation.o,\
+    yaml-cpp)
 
 
 
@@ -34,5 +35,5 @@ LinkIsolatedUnittest( casual_sf_isolated, \
 	obj/casual_isolatedunittest_archive.o \
 	obj/casual_isolatedunittest_traits.o \
 	obj/casual_isolatedunittest_yaml_archive.o, \
-	casual_sf yaml-cpp)
+	casual_sf)
 	

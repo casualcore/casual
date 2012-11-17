@@ -14,6 +14,8 @@
 #include <list>
 #include <deque>
 
+#include "casual_broker_configuration.h"
+
 #include "casual_ipc.h"
 #include "casual_utility_file.h"
 #include "casual_message.h"
@@ -23,6 +25,8 @@ namespace casual
 {
 	namespace broker
 	{
+
+
 
 		struct Server
 		{
@@ -43,7 +47,7 @@ namespace casual
 			}
 		};
 
-		typedef std::unordered_map< Server::pid_type, Server> server_mapping_type;
+
 
 
 		struct Service
@@ -63,12 +67,15 @@ namespace casual
 
 		struct State
 		{
+		   typedef std::unordered_map< Server::pid_type, Server> server_mapping_type;
 		   typedef std::unordered_map< std::string, Service> service_mapping_type;
 		   typedef std::deque< message::ServiceRequest> pending_requests_type;
 
 		   server_mapping_type servers;
 		   service_mapping_type services;
 		   pending_requests_type pending;
+
+		   configuration::Settings configuration;
 		};
 
 		class Broker

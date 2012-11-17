@@ -49,7 +49,7 @@ namespace casual
 
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & m_type;
 				archive & m_subtype;

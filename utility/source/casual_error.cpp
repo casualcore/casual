@@ -95,6 +95,10 @@ namespace casual
 			   // TODO: tperrno = TPESYSTEM;
 			   logger::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what();
          }
+			catch( ...)
+			{
+			   logger::error << "unknown exception caught";
+			}
 
 
 			return -1;

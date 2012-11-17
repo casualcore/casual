@@ -11,6 +11,7 @@
 #include "casual_utility_environment.h"
 #include "casual_queue.h"
 
+#include "casual_archive_yaml_policy.h"
 #include "casual_logger.h"
 
 
@@ -37,7 +38,7 @@ namespace casual
 						//
 						// Check if file already exists
 						//
-						std::ifstream exists( path.c_str());
+						std::ifstream exists( path);
 						if( exists.good())
 						{
 							//
@@ -46,7 +47,7 @@ namespace casual
 							utility::file::remove( path);
 						}
 					}
-					std::ofstream brokerQueueFile( path.c_str());
+					std::ofstream brokerQueueFile( path);
 					brokerQueueFile << queue.getKey();
 				}
 
@@ -64,7 +65,30 @@ namespace casual
 
 		   //
 		   // Try to find configuration file
+		   // TODO: you should be able to pass the configurationfile as an argument.
 		   //
+		   const std::string configFile =
+		         utility::file::find( utility::environment::getRootPath(), std::regex( "casual_config.yaml" ));
+
+		   if( ! configFile.empty())
+		   {
+
+		      logger::information << "using configuration file: " << configFile;
+
+		      // TODO:
+		      std::ifstream configStream( configFile);
+		      sf::archive::YamlReader reader( configStream);
+
+		      reader >> sf::makeNameValuePair( "broker", m_state.configuration);
+		   }
+		   else
+		   {
+		      logger::information << "no configuration file was found - using default";
+		   }
+
+		   logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
+
+
 
 
 		   //
@@ -150,14 +174,15 @@ namespace casual
                   message::ServiceACK message;
                   queueReader( message);
 
-                  std::vector< state::PendingResponse> response = state::serviceDone( message, m_state);
+                  std::vector< state::PendingResponse> pending = state::serviceDone( message, m_state);
 
-                  if( !response.empty())
+                  if( !pending.empty())
                   {
-                     ipc::send::Queue responseQueue( response.front().first);
+                     ipc::send::Queue responseQueue( pending.front().first);
                      queue::blocking::Writer writer( responseQueue);
 
-                     writer( response.front().second);
+                     // TODO: What if we can't write to the queue?
+                     writer( pending.front().second);
                   }
 
                   break;
