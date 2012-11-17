@@ -279,6 +279,57 @@ namespace casual
          }
       };
 
+		//!
+		//! Used to advertise the monitorserver
+		//!
+		struct MonitorAdvertise
+		{
+			enum
+			{
+				message_type = 30
+			};
+
+			ServerId serverId;
+
+			template<typename A>
+			void serialize(A& archive)
+			{
+				archive & serverId;
+			}
+		};
+
+		//!
+		//! TODO: unadvertise #31
+		//!
+
+		//!
+		//! Call to monitorserver with statistics
+		//!
+		struct MonitorCall
+        {
+			enum
+			{
+				message_type = 32
+			};
+
+			std::string parentService;
+			std::string service;
+			std::string callChainId;
+			std::string transactionId;
+			std::string startTime;
+			std::string endTime;
+
+			template< typename A>
+			void serialize( A& archive)
+			{
+				archive & parentService;
+				archive & service;
+				archive & callChainId;
+				archive & transactionId;
+				archive & startTime;
+				archive & endTime;
+			}
+        };
 
 		//!
 		//! Deduce witch type of message it is.

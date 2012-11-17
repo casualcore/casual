@@ -1,0 +1,33 @@
+
+INCLUDE_PATHS= include \
+	../common/include \
+	../xatmi/include \
+	../utility/include
+
+
+LIBRARY_PATHS = ../common/bin ../utility/bin
+
+Compile( source/casual_monitor.cpp, obj/casual_monitor.o)
+Compile( source/casual_monitor_main.cpp, obj/casual_monitor_main.o)
+
+
+LinkExecutable( casual_monitor, \
+	obj/casual_monitor.o \
+	 obj/casual_monitor_main.o, \
+	casual_common \
+	casual_utility )
+
+	
+	
+		
+//
+// unittest
+//
+//Compile( unittest/source/casual_isolatedunittet_uuid.cpp, obj/casual_isolatedunittet_uuid.o)
+
+
+// LinkIsolatedUnittest( casual_utility_isolated, \
+//	obj/casual_isolatedunittet_uuid.o, \
+//	casual_utility )	
+
+	

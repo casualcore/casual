@@ -11,7 +11,7 @@
 #include "casual_utility_environment.h"
 #include "casual_queue.h"
 
-
+#include "casual_logger.h"
 
 
 #include <fstream>
@@ -162,6 +162,19 @@ namespace casual
 
                   break;
                }
+
+               case message::MonitorAdvertise::message_type:
+               {
+            	  //
+            	  // TODO: Implement handling
+            	  //
+                  message::MonitorAdvertise message;
+                  queueReader( message);
+
+            	  logger::debug << "Monitor Advertise";
+                  break;
+               }
+
                default:
                {
                   std::cerr << "message_type: " << message_type << " not valid" << std::endl;
