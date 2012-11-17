@@ -71,15 +71,20 @@ namespace casual
 		   const std::string configFile =
 		         utility::file::find( utility::environment::getRootPath(), std::regex( "casual_config.yaml" ));
 
-		   logger::debug << "rootpath: " << utility::environment::getRootPath();
-		   logger::debug << "configFile: " << configFile;
-
-		   if( !configFile.empty())
+		   if( ! configFile.empty())
 		   {
+
+		      logger::information << "using configuration file: " << configFile;
+
+		      // TODO:
 		      std::ifstream configStream( configFile);
 		      sf::archive::YamlReader reader( configStream);
 
 		      reader >> sf::makeNameValuePair( "broker", m_state.configuration);
+		   }
+		   else
+		   {
+		      logger::information << "no configuration file was found - using default";
 		   }
 
 		   logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
