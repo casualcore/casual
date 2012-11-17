@@ -29,8 +29,8 @@ namespace casual
 			void start();
 
 		private:
-			ipc::receive::Queue& m_receiveQueue;
 			ipc::send::Queue& m_brokerQueue;
+			ipc::receive::Queue& m_receiveQueue;
 		};
 
 		class Context
@@ -42,8 +42,8 @@ namespace casual
 		private:
 			Context();
 
-			ipc::receive::Queue m_receiveQueue;
 			ipc::send::Queue m_brokerQueue;
+			ipc::receive::Queue m_receiveQueue;
 		};
 
 	}

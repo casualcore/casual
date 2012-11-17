@@ -22,8 +22,8 @@ namespace
 	//
 	std::ostream& operator<<( std::ostream& os, const casual::message::MonitorCall& message)
 	{
-		os << message.parentService << std::endl;
-		os << message.service << std::endl;
+		os << "parentService: " << message.parentService << std::endl;
+		os << "service: " << message.service << std::endl;
 		//
 		// TODO: etc...
 		//
@@ -75,6 +75,15 @@ Monitor::Monitor(const std::vector<std::string>& arguments) :
 
 Monitor::~Monitor()
 {
+	//
+	// Tell broker that monitor is down...
+	//
+	message::MonitorUnadvertise message;
+
+	message.serverId.queue_key = m_receiveQueue.getKey();
+
+	queue::blocking::Writer writer( m_brokerQueue);
+	writer(message);
 
 }
 

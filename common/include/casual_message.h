@@ -292,15 +292,30 @@ namespace casual
 			ServerId serverId;
 
 			template<typename A>
-			void serialize(A& archive)
+			void marshal(A& archive)
 			{
 				archive & serverId;
 			}
 		};
 
 		//!
-		//! TODO: unadvertise #31
+		//! Used to unadvertise the monitorserver
 		//!
+		struct MonitorUnadvertise
+		{
+			enum
+			{
+				message_type = 31
+			};
+
+			ServerId serverId;
+
+			template<typename A>
+			void marshal(A& archive)
+			{
+				archive & serverId;
+			}
+		};
 
 		//!
 		//! Call to monitorserver with statistics
@@ -320,7 +335,7 @@ namespace casual
 			std::string endTime;
 
 			template< typename A>
-			void serialize( A& archive)
+			void marshal( A& archive)
 			{
 				archive & parentService;
 				archive & service;

@@ -200,6 +200,18 @@ namespace casual
                   break;
                }
 
+               case message::MonitorUnadvertise::message_type:
+               {
+            	  //
+            	  // TODO: Implement handling
+            	  //
+                  message::MonitorUnadvertise message;
+                  queueReader( message);
+
+            	  logger::debug << "Monitor Unadvertise";
+                  break;
+               }
+
                default:
                {
                   std::cerr << "message_type: " << message_type << " not valid" << std::endl;
