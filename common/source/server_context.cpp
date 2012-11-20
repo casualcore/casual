@@ -5,15 +5,15 @@
 //!     Author: Lazan
 //!
 
-#include "casual_server_context.h"
+#include "common/server_context.h"
 
-#include "casual_message.h"
-#include "casual_queue.h"
+#include "common/message.h"
+#include "common/queue.h"
 #include "casual_logger.h"
 #include "casual_error.h"
 
-#include "casual_buffer_context.h"
-#include "casual_calling_context.h"
+#include "common/buffer_context.h"
+#include "common/calling_context.h"
 
 
 

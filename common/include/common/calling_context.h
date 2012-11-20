@@ -9,7 +9,7 @@
 #define CASUAL_CALLING_CONTEXT_H_
 
 
-#include "casual_queue.h"
+#include "common/queue.h"
 
 #include "casual_utility_platform.h"
 

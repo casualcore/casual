@@ -8,13 +8,13 @@
 #ifndef CASUAL_MESSAGES_H_
 #define CASUAL_MESSAGES_H_
 
-#include "casual_ipc.h"
-
+#include "common/ipc.h"
+#include "common/buffer_context.h"
 
 #include "casual_utility_platform.h"
 
 #include "casual_exception.h"
-#include "casual_buffer_context.h"
+
 
 #include <vector>
 

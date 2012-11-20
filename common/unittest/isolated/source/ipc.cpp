@@ -8,7 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_ipc.h"
+#include "common/ipc.h"
+
+
 #include "casual_utility_signal.h"
 #include "casual_exception.h"
 

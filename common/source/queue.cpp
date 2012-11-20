@@ -5,9 +5,8 @@
 //!     Author: Lazan
 //!
 
-#include "casual_queue.h"
-
-#include "casual_ipc.h"
+#include "common/queue.h"
+#include "common/ipc.h"
 
 
 // temp

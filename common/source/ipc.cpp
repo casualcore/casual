@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "casual_ipc.h"
+#include "common/ipc.h"
 
 #include "casual_utility_environment.h"
 #include "casual_error.h"

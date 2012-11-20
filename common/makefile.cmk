@@ -11,22 +11,22 @@ LIBRARY_PATHS= ../xatmi/bin \
 
 
 
-Compile( source/casual_server_context.cpp, obj/casual_server_context.o)
-Compile( source/casual_service_context.cpp, obj/casual_service_context.o)
-Compile( source/casual_calling_context.cpp, obj/casual_calling_context.o)
-Compile( source/casual_buffer_context.cpp, obj/casual_buffer_context.o)
-Compile( source/casual_ipc.cpp, obj/casual_ipc.o)
-Compile( source/casual_queue.cpp, obj/casual_queue.o)
+Compile( source/server_context.cpp, obj/server_context.o)
+Compile( source/service_context.cpp, obj/service_context.o)
+Compile( source/calling_context.cpp, obj/calling_context.o)
+Compile( source/buffer_context.cpp, obj/buffer_context.o)
+Compile( source/ipc.cpp, obj/ipc.o)
+Compile( source/queue.cpp, obj/queue.o)
 
 
 
 LinkLibrary( casual_common, \
-	obj/casual_server_context.o \
-	obj/casual_service_context.o \
-	obj/casual_calling_context.o \
-	obj/casual_buffer_context.o \
-	obj/casual_ipc.o \ 
-	obj/casual_queue.o,\ 
+	obj/server_context.o \
+	obj/service_context.o \
+	obj/calling_context.o \
+	obj/buffer_context.o \
+	obj/ipc.o \ 
+	obj/queue.o,\ 
 	casual_utility)
 
 	
@@ -36,16 +36,16 @@ LinkLibrary( casual_common, \
 //
 // unittest
 //
-Compile( unittest/source/casual_isolatedunittest_buffer.cpp, obj/casual_isolatedunittest_buffer.o)
-Compile( unittest/source/casual_isolatedunittest_ipc.cpp, obj/casual_isolatedunittest_ipc.o)
-Compile( unittest/source/casual_isolatedunittest_marshal.cpp, obj/casual_isolatedunittest_marshal.o)
-Compile( unittest/source/casual_isolatedunittest_queue.cpp, obj/casual_isolatedunittest_queue.o)
+Compile( unittest/isolated/source/buffer.cpp, unittest/isolated/obj/buffer.o)
+Compile( unittest/isolated/source/ipc.cpp, unittest/isolated/obj/ipc.o)
+Compile( unittest/isolated/source/marshal.cpp, unittest/isolated/obj/marshal.o)
+Compile( unittest/isolated/source/queue.cpp, unittest/isolated/obj/queue.o)
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
-	obj/casual_isolatedunittest_buffer.o \
-	obj/casual_isolatedunittest_ipc.o \
-	obj/casual_isolatedunittest_marshal.o \
-	obj/casual_isolatedunittest_queue.o, \
+	unittest/isolated/obj/buffer.o \
+	unittest/isolated/obj/ipc.o \
+	unittest/isolated/obj/marshal.o \
+	unittest/isolated/obj/queue.o, \
 	casual_utility casual_common )	
 

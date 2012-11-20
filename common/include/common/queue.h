@@ -8,9 +8,9 @@
 #ifndef CASUAL_QUEUE_H_
 #define CASUAL_QUEUE_H_
 
-#include "casual_ipc.h"
-#include "casual_message.h"
-#include "casual_marshal.h"
+#include "common/ipc.h"
+#include "common/message.h"
+#include "common/marshal.h"
 #include "casual_utility_signal.h"
 
 

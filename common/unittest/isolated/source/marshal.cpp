@@ -7,8 +7,8 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_marshal.h"
-#include "casual_message.h"
+#include "common/marshal.h"
+#include "common/message.h"
 
 namespace casual
 {

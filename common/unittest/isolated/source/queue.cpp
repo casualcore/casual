@@ -7,9 +7,10 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_queue.h"
-#include "casual_ipc.h"
-#include "casual_message.h"
+#include "common/queue.h"
+#include "common/ipc.h"
+#include "common/message.h"
+
 #include "casual_exception.h"
 
 //temp

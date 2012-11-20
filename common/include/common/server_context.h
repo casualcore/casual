@@ -8,10 +8,9 @@
 #ifndef CASUAL_SERVER_CONTEXT_H_
 #define CASUAL_SERVER_CONTEXT_H_
 
-#include "casual_service_context.h"
-#include "casual_message.h"
-
-#include "casual_ipc.h"
+#include "common/service_context.h"
+#include "common/message.h"
+#include "common/ipc.h"
 
 #include "casual_utility_platform.h"
 
