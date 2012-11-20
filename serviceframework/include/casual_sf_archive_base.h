@@ -11,6 +11,8 @@
 #include "casual_namevaluepair.h"
 #include "casual_archive_traits.h"
 
+#include "casual_sf_common_types.h"
+
 
 #include <utility>
 
@@ -21,6 +23,8 @@ namespace casual
    {
       namespace archive
       {
+
+
 
          class Base
          {
@@ -89,7 +93,7 @@ namespace casual
 
             virtual void readPOD( std::string& value) = 0;
 
-            virtual void readPOD( std::vector< char>& value) = 0;
+            virtual void readPOD( binary_type& value) = 0;
 
          public:
             void read( bool& value);
@@ -118,7 +122,7 @@ namespace casual
 
             void read( std::string& value);
 
-            void read( std::vector< char>& value);
+            void read( binary_type& value);
 
          };
 
@@ -231,6 +235,7 @@ namespace casual
 
          public:
 
+
             Writer();
             virtual ~Writer();
 
@@ -250,7 +255,7 @@ namespace casual
 
             virtual void writePOD( const std::string& value) = 0;
 
-            virtual void writePOD( const std::vector< char>& value) = 0;
+            virtual void writePOD( const binary_type& value) = 0;
 
          public:
             void write( const bool value);
@@ -279,7 +284,7 @@ namespace casual
 
             void write( const std::string& value);
 
-            void write( const std::vector< char>& value);
+            void write( const binary_type& value);
 
          };
 

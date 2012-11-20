@@ -14,14 +14,14 @@ namespace casual
 {
    namespace sf
    {
-         template class archive::basic_reader< policy::yaml::Reader>;
+         template class archive::basic_reader< policy::reader::Yaml< policy::reader::Relaxed> >;
 
-         template class archive::basic_writer< policy::yaml::Writer>;
+         template class archive::basic_writer< policy::writer::Yaml>;
 
          void someTest()
          {
-            std::istream* bla;
-            archive::basic_reader< policy::yaml::Reader> test( *bla);
+            std::istream* bla = nullptr;
+            archive::basic_reader< policy::reader::Yaml< policy::reader::Relaxed> > test( *bla);
          }
 
    } // sf

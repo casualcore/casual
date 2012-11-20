@@ -10,8 +10,14 @@
 
 #include "casual_policy_base.h"
 #include "casual_sf_basic_archive.h"
+#include "casual_sf_reader_policy.h"
+
+#include "casual_sf_common_types.h"
+
+#include "casual_sf_archivebuffer.h"
 
 #include <yaml-cpp/yaml.h>
+#include <yaml-cpp/binary.h>
 
 #include <istream>
 
@@ -23,19 +29,39 @@ namespace casual
 
       namespace policy
       {
-         namespace yaml
+         namespace reader
          {
-            class Reader : public Base
+            template< typename S = std::ifstream>
+            struct Buffer
+            {
+               typedef S stream_type;
+
+               Buffer( stream_type& stream) : m_stream( stream) {}
+
+               std::istream& archiveBuffer()
+               {
+                  return m_stream;
+               }
+
+            private:
+               stream_type& m_stream;
+            };
+
+
+            template< typename P>
+            class Yaml : public Base
             {
             public:
 
-               Reader( std::istream& input)
+               typedef P policy_type;
+
+               Yaml( std::istream& input)
                {
                   YAML::Parser parser( input);
 
                   if( !parser.GetNextDocument( m_document))
                   {
-                     // TODO: Handle error
+                     m_policy.initalization();
                   }
 
                   m_nodeStack.push_back( &m_document);
@@ -66,7 +92,7 @@ namespace casual
                   }
                   else
                   {
-                     // TODO: Handle with policy
+                     size = m_policy.container( m_currentRole);
                   }
 
 
@@ -89,6 +115,10 @@ namespace casual
                      {
                         m_nodeStack.push_back( serialNode);
                      }
+                     else
+                     {
+                        m_policy.serialtype( m_currentRole);
+                     }
 
                   }
                   else
@@ -107,46 +137,79 @@ namespace casual
                template< typename T>
                void read( T& value)
                {
+                  typedef T value_type;
                   if( m_nodeStack.back()->Type() == YAML::NodeType::Map)
                   {
                      const YAML::Node* valueNode = m_nodeStack.back()->FindValue( m_currentRole);
 
                      if( valueNode)
                      {
-                        (*valueNode) >> value;
+                        readValue( *valueNode, value);
                      }
                      else
                      {
-                        // TODO:
+                        m_policy.value( m_currentRole, value);
                      }
 
                   }
                   else
                   {
-                     (*m_nodeStack.back()) >> value;
+                     readValue(*m_nodeStack.back(), value);
                      m_nodeStack.pop_back();
                   }
                }
 
-               void read( const std::vector< char>& value)
-               {
-                  // TODO:
-               }
+
+
+
 
 
             private:
 
+               template< typename C>
+               void copyBinary( YAML::Binary& binary, C& container)
+               {
+                  const unsigned char* data = binary.data();
+                  container.assign( data, data + binary.size());
+               }
+
+
+               void copyBinary( YAML::Binary& binary, std::vector< unsigned char>& container)
+               {
+                  binary.swap( container);
+               }
+
+
+               template< typename T>
+               void readValue( const YAML::Node& node, T& value)
+               {
+                  node >> value;
+               }
+
+               void readValue( const YAML::Node& node, binary_type& value)
+               {
+                  YAML::Binary binary;
+                  node >> binary;
+                  copyBinary( binary, value);
+
+               }
+
                YAML::Node m_document;
                std::deque< const YAML::Node*> m_nodeStack;
                const char* m_currentRole;
+
+               policy_type m_policy;
             };
 
+         } // reader
 
-            class Writer
+         namespace writer
+         {
+            class Yaml
             {
 
             public:
-               Writer( YAML::Emitter& output) : m_output( output)
+               Yaml( YAML::Emitter& output) : m_output( output)
                {
                   m_output << YAML::BeginMap;
                   m_emitterStack.push( YAML::BeginMap);
@@ -208,23 +271,33 @@ namespace casual
                   if( m_emitterStack.top() == YAML::BeginMap)
                   {
                      m_output << YAML::Key << m_currentRole;
-                     m_output << YAML::Value << value;
+                     m_output << YAML::Value;
                   }
-                  else
-                  {
-                     m_output << value;
-                  }
+                  writeValue( value);
                }
 
 
 
-               void write( const std::vector< char>& value)
-               {
-                  // do nada
-               }
 
 
             private:
+
+               template< typename T>
+               void writeValue( const T& value)
+               {
+                  m_output << value;
+               }
+
+               void writeValue( const binary_type& value)
+               {
+                  // TODO: can we cast an be conformant?
+                  const unsigned char* data = value.empty() ? nullptr : reinterpret_cast< const unsigned char*>( &value[ 0]);
+                  YAML::Binary binary( data, value.size());
+                  m_output << binary;
+               }
+
+
+
 
                YAML::Emitter& m_output;
                std::string m_currentRole;
@@ -234,21 +307,36 @@ namespace casual
             };
 
 
-         }
+         } // writer
 
       } // policy
 
       namespace archive
       {
+         namespace reader
+         {
 
-         typedef archive::basic_reader< policy::yaml::Reader> YamlReader;
+
+            typedef archive::basic_reader< policy::reader::Yaml< policy::reader::Relaxed> > YamlRelaxed;
+            typedef archive::basic_reader< policy::reader::Yaml< policy::reader::Strict> > YamlStrict;
+
+            namespace holder
+            {
+               typedef sf::archive::Holder< YamlRelaxed, policy::reader::Buffer<> > YamlRelaxed;
+            }
+
+         }
 
       }
 
       namespace archive
       {
+         namespace writer
+         {
+            typedef archive::basic_writer< policy::writer::Yaml> Yaml;
+         }
 
-         typedef archive::basic_writer< policy::yaml::Writer> YamlWriter;
+
 
       }
 

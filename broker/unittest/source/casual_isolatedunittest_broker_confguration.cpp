@@ -62,7 +62,7 @@ broker:
       {
          std::istringstream stream( local::yaml::getDefault());
 
-         sf::archive::YamlReader reader( stream);
+         sf::archive::reader::YamlRelaxed reader( stream);
 
          configuration::Settings broker;
 
@@ -80,7 +80,7 @@ broker:
       {
          std::istringstream stream( local::yaml::getDefault());
 
-         sf::archive::YamlReader reader( stream);
+         sf::archive::reader::YamlRelaxed reader( stream);
 
          configuration::Settings broker;
 

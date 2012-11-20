@@ -113,7 +113,7 @@ namespace casual
             readPOD( value);
          }
 
-         void Reader::read( std::vector< char>& value)
+         void Reader::read( binary_type& value)
          {
             readPOD( value);
          }
@@ -177,7 +177,7 @@ namespace casual
             writePOD( value);
          }
 
-         void Writer::write( const std::vector< char>& value)
+         void Writer::write( const binary_type& value)
          {
             writePOD( value);
          }

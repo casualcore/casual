@@ -11,6 +11,7 @@
 #include "casual_utility_environment.h"
 #include "casual_queue.h"
 
+#include "casual_sf_archivebuffer.h"
 #include "casual_archive_yaml_policy.h"
 
 #include "casual_logger.h"
@@ -78,7 +79,7 @@ namespace casual
 
 		      // TODO:
 		      std::ifstream configStream( configFile);
-		      sf::archive::YamlReader reader( configStream);
+		      sf::archive::reader::holder::YamlRelaxed reader( configStream);
 
 		      reader >> sf::makeNameValuePair( "broker", m_state.configuration);
 		   }
