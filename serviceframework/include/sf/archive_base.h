@@ -8,10 +8,9 @@
 #ifndef CASUAL_SF_ARCHIVEBASE_H_
 #define CASUAL_SF_ARCHIVEBASE_H_
 
-#include "casual_namevaluepair.h"
-#include "casual_archive_traits.h"
-
-#include "casual_sf_common_types.h"
+#include "sf/namevaluepair.h"
+#include "sf/archive_traits.h"
+#include "sf/common_types.h"
 
 
 #include <utility>

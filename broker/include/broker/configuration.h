@@ -8,7 +8,7 @@
 #ifndef CASUAL_BROKER_CONFIGURATION_H_
 #define CASUAL_BROKER_CONFIGURATION_H_
 
-#include "casual_sf_archive_base.h"
+#include "sf/archive_base.h"
 
 #include <limits>
 

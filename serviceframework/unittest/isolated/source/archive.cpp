@@ -9,8 +9,8 @@
 #include <gtest/gtest.h>
 
 
-#include "casual_namevaluepair.h"
-#include "casual_sf_basic_archive.h"
+#include "sf/namevaluepair.h"
+#include "sf/basic_archive.h"
 
 
 #include <string>

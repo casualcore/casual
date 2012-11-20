@@ -8,9 +8,9 @@
 #ifndef CASUAL_BROKER_TRANSFORM_H_
 #define CASUAL_BROKER_TRANSFORM_H_
 
-#include "casual_broker.h"
+#include "broker/broker.h"
 
-#include "casual_message.h"
+#include "common/message.h"
 
 //
 // std

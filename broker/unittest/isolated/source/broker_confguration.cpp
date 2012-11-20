@@ -9,9 +9,9 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_broker_configuration.h"
+#include "broker/configuration.h"
 
-#include "casual_archive_yaml_policy.h"
+#include "sf/archive_yaml_policy.h"
 
 
 namespace casual

@@ -1,6 +1,6 @@
 
 
-#include "casual_sf_archive_base.h"
+#include "sf/archive_base.h"
 
 namespace casual
 {

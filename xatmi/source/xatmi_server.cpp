@@ -12,9 +12,11 @@
 #include <algorithm>
 
 
-#include "casual_service_context.h"
-#include "casual_server_context.h"
-#include "casual_error.h"
+#include "common/service_context.h"
+#include "common/server_context.h"
+
+
+#include "utility/error.h"
 
 
 namespace local

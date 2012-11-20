@@ -11,9 +11,8 @@
 #include "common/ipc.h"
 #include "common/buffer_context.h"
 
-#include "casual_utility_platform.h"
-
-#include "casual_exception.h"
+#include "utility/platform.h"
+#include "utility/exception.h"
 
 
 #include <vector>

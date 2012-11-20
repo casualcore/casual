@@ -10,13 +10,10 @@
 #include "common/queue.h"
 
 
-#include "casual_utility_environment.h"
-
-#include "casual_utility_flag.h"
-
-
-#include "casual_error.h"
-#include "casual_exception.h"
+#include "utility/environment.h"
+#include "utility/flag.h"
+#include "utility/error.h"
+#include "utility/exception.h"
 
 #include "xatmi.h"
 

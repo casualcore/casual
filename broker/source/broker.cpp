@@ -5,16 +5,18 @@
 //!     Author: Lazan
 //!
 
-#include "casual_broker.h"
-#include "casual_broker_implementation.h"
+#include "broker/broker.h"
+#include "broker/broker_implementation.h"
 
-#include "casual_utility_environment.h"
-#include "casual_queue.h"
+#include "utility/environment.h"
+#include "utility/logger.h"
 
-#include "casual_sf_archivebuffer.h"
-#include "casual_archive_yaml_policy.h"
+#include "common/queue.h"
 
-#include "casual_logger.h"
+#include "sf/archivebuffer.h"
+#include "sf/archive_yaml_policy.h"
+
+
 
 
 #include <fstream>

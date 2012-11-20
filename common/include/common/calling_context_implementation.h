@@ -9,9 +9,8 @@
 #define CASUAL_CALLING_CONTEXT_IMPLEMENTATION_H_
 
 
-#include "casual_calling_context.h"
-
-#include "casual_message.h"
+#include "common/calling_context.h"
+#include "common/message.h"
 
 namespace casual
 {

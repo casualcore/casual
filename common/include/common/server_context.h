@@ -12,7 +12,7 @@
 #include "common/message.h"
 #include "common/ipc.h"
 
-#include "casual_utility_platform.h"
+#include "utility/platform.h"
 
 
 #include "xatmi.h"

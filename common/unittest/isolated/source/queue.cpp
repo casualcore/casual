@@ -11,7 +11,7 @@
 #include "common/ipc.h"
 #include "common/message.h"
 
-#include "casual_exception.h"
+#include "utility/exception.h"
 
 //temp
 

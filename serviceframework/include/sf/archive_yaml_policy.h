@@ -8,13 +8,11 @@
 #ifndef CASUAL_ARCHIVE_YAML_POLICY_H_
 #define CASUAL_ARCHIVE_YAML_POLICY_H_
 
-#include "casual_policy_base.h"
-#include "casual_sf_basic_archive.h"
-#include "casual_sf_reader_policy.h"
-
-#include "casual_sf_common_types.h"
-
-#include "casual_sf_archivebuffer.h"
+#include "sf/policy_base.h"
+#include "sf/basic_archive.h"
+#include "sf/reader_policy.h"
+#include "sf/common_types.h"
+#include "sf/archivebuffer.h"
 
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>

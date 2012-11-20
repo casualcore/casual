@@ -8,7 +8,7 @@
 #ifndef CASUAL_READER_POLICY_H_
 #define CASUAL_READER_POLICY_H_
 
-#include "casual_sf_exception.h"
+#include "sf/exception.h"
 
 namespace casual
 {

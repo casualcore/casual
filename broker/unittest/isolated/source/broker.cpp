@@ -10,8 +10,8 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_broker.h"
-#include "casual_broker_implementation.h"
+#include "broker/broker.h"
+#include "broker/broker_implementation.h"
 
 
 namespace casual

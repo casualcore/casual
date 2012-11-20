@@ -10,9 +10,9 @@
 
 #include "xatmi.h"
 
-#include "casual_utility_file.h"
-#include "casual_utility_uuid.h"
-#include "casual_utility_platform.h"
+#include "utility/file.h"
+#include "utility/uuid.h"
+#include "utility/platform.h"
 
 #include <string>
 

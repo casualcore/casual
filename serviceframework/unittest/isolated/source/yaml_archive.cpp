@@ -10,10 +10,9 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "casual_archive_yaml_policy.h"
-#include "casual_sf_exception.h"
-
-#include "casual_sf_common_types.h"
+#include "sf/archive_yaml_policy.h"
+#include "sf/exception.h"
+#include "sf/common_types.h"
 
 
 namespace casual

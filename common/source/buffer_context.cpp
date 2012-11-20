@@ -7,9 +7,10 @@
 
 #include "common/buffer_context.h"
 
+#include "utility/exception.h"
 
 #include <stdexcept>
-#include "casual_exception.h"
+
 #include <algorithm>
 
 namespace casual

@@ -14,12 +14,14 @@
 #include <list>
 #include <deque>
 
-#include "casual_broker_configuration.h"
+#include "broker/configuration.h"
 
-#include "casual_ipc.h"
-#include "casual_utility_file.h"
-#include "casual_message.h"
-#include "casual_utility_platform.h"
+#include "utility/file.h"
+#include "utility/platform.h"
+
+#include "common/ipc.h"
+#include "common/message.h"
+
 
 namespace casual
 {

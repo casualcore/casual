@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 
-#include "casual_archive_traits.h"
+#include "sf/archive_traits.h"
 
 #include <vector>
 
