@@ -11,7 +11,7 @@
 
 #include <cstddef>
 
-#include "casual_utility_platform.h"
+#include "utility/platform.h"
 
 
 namespace casual

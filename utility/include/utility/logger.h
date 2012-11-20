@@ -17,7 +17,7 @@
 //
 #include <sstream>
 
-#include "casual_utility_platform.h"
+#include "utility/platform.h"
 
 namespace casual
 {

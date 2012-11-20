@@ -8,11 +8,14 @@
 #ifndef CASUAL_EXCEPTION_H_
 #define CASUAL_EXCEPTION_H_
 
+
+
+#include "utility/platform.h"
+#include "utility/error.h"
+
 #include <stdexcept>
 #include <string>
 
-#include "casual_utility_platform.h"
-#include "casual_error.h"
 #include "xatmi.h"
 
 namespace casual

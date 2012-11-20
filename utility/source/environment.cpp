@@ -6,8 +6,8 @@
 //!
 
 
-#include "casual_utility_environment.h"
-#include "casual_exception.h"
+#include "utility/environment.h"
+#include "utility/exception.h"
 
 #include <stdlib.h>
 

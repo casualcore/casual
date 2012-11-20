@@ -8,15 +8,13 @@
 #ifndef CASUAL_UTILITY_FLAG_H_
 #define CASUAL_UTILITY_FLAG_H_
 
-#include "casual_utility_platform.h"
-
 namespace casual
 {
 	namespace utility
 	{
 
 		template< std::size_t flags, typename T>
-		inline bool flag( T value)
+		constexpr inline bool flag( T value)
 		{
 			return ( value & flags) == flags;
 		}

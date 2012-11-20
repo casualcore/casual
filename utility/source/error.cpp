@@ -6,15 +6,15 @@
 //!
 
 
-#include "casual_error.h"
+#include "utility/error.h"
+#include "utility/logger.h"
+#include "utility/exception.h"
 
 
 #include <string.h>
 #include <errno.h>
 
 
-#include "casual_logger.h"
-#include "casual_exception.h"
 
 #include "xatmi.h"
 

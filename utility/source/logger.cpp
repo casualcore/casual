@@ -6,13 +6,10 @@
 //!
 
 
-#include "casual_logger.h"
-
-#include "casual_utility_environment.h"
-
-#include "casual_utility_platform.h"
-
-#include "casual_exception.h"
+#include "utility/logger.h"
+#include "utility/environment.h"
+#include "utility/platform.h"
+#include "utility/exception.h"
 
 
 // temp

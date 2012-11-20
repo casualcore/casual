@@ -10,7 +10,7 @@
 
 #include <uuid/uuid.h>
 
-#include "casual_utility_platform.h"
+#include "utility/platform.h"
 
 #include <string>
 

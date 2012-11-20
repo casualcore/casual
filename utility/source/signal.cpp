@@ -5,9 +5,9 @@
 //!     Author: Lazan
 //!
 
-#include "casual_utility_signal.h"
-#include "casual_utility_platform.h"
-#include "casual_exception.h"
+#include "utility/signal.h"
+#include "utility/platform.h"
+#include "utility/exception.h"
 
 #include <signal.h>
 #include <string.h>
