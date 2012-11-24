@@ -264,7 +264,7 @@ namespace casual
                   std::copy(
                      archive.get().begin() + offset,
                      archive.get().begin() + offset + length,
-                     transport.m_payload.m_payload);
+                     transport.m_payload.m_payload.data());
 
                   transport.paylodSize( length);
 
@@ -299,11 +299,15 @@ namespace casual
 
 			Reader::Reader( ipc::receive::Queue& queue) : m_queue( queue) {}
 
-			message_type_type Reader::next()
+			marshal::input::Binary Reader::next()
 			{
 				local::cache_type::iterator current = local::fetchIfEmpty( m_queue, local::messageCache().begin());
 
-				return current->m_payload.m_type;
+				marshal::input::Binary archive;
+
+				correlate( archive, current->m_payload.m_type);
+
+				return archive;
 			}
 
 
@@ -380,7 +384,7 @@ namespace casual
 						//
 						// Somehow the cache contains inconsistent data...
 						//
-						throw exception::xatmi::SystemError( "inconsistent state in 'queue cache'");
+						throw utility::exception::xatmi::SystemError( "inconsistent state in 'queue cache'");
 					}
 
 					return true;

@@ -93,7 +93,7 @@ namespace casual
 
 			if( findIter == m_memoryPool.end())
 			{
-				throw exception::MemoryNotFound();
+				throw utility::exception::MemoryNotFound();
 			}
 
 			return findIter;

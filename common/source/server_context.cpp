@@ -25,13 +25,13 @@ extern "C"
 {
    int tpsvrinit(int argc, char **argv)
    {
-      casual::logger::debug << "internal tpsvrinit called";
+      casual::utility::logger::debug << "internal tpsvrinit called";
       return 0;
    }
 
    void tpsvrdone()
    {
-      casual::logger::debug << "internal tpsvrdone called";
+      casual::utility::logger::debug << "internal tpsvrdone called";
    }
 }
 
@@ -108,16 +108,18 @@ namespace casual
             {
 
                queue::blocking::Reader queueReader( m_queue);
-               queue::message_type_type message_type = queueReader.next();
 
-               switch( message_type)
+               auto marshal = queueReader.next();
+
+               switch( marshal.type())
                {
                   case message::ServiceCall::message_type:
                   {
                      message::ServiceCall message( buffer::Context::instance().create());
-                     queueReader( message);
 
-                     logger::debug << "service call: " << message.service.name << " cd: " << message.callDescriptor
+                     marshal >> message;
+
+                     utility::logger::debug << "service call: " << message.service.name << " cd: " << message.callDescriptor
                            << " caller pid: " << message.reply.pid << " caller queue: " << message.reply.queue_key;
 
 
@@ -127,7 +129,7 @@ namespace casual
                   }
                   default:
                   {
-                     std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+                     std::cerr << "message_type: " << marshal.type() << " not valid" << std::endl;
                      break;
                   }
                }
@@ -142,7 +144,7 @@ namespace casual
 		      //
 		      disconnect();
 
-		      return error::handler();
+		      return utility::error::handler();
 		   }
 
 			return 0;
@@ -211,7 +213,7 @@ namespace casual
 
             if( findIter == m_services.end())
             {
-               throw exception::xatmi::SystemError( "Service [" + context.service.name + "] not present at server - inconsistency between broker and server");
+               throw utility::exception::xatmi::SystemError( "Service [" + context.service.name + "] not present at server - inconsistency between broker and server");
             }
 
 				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( context);
@@ -220,7 +222,7 @@ namespace casual
 				//
 				// User service returned, not by tpreturn. The standard does not mention this situation, what to do?
 				//
-				throw exception::xatmi::service::Error( "Service: " + context.service.name + " did not call tpreturn");
+				throw utility::exception::xatmi::service::Error( "Service: " + context.service.name + " did not call tpreturn");
 
 			}
 			else
@@ -289,7 +291,7 @@ namespace casual
 		      //
 		      if( findIter->second.m_function != function)
 		      {
-		         throw exception::xatmi::service::AllreadyAdvertised( "service name: " + name);
+		         throw utility::exception::xatmi::service::AllreadyAdvertised( "service name: " + name);
 		      }
 
 		   }
@@ -313,7 +315,7 @@ namespace casual
       {
 		   if( m_services.erase( name) != 1)
 		   {
-		      throw exception::xatmi::service::NoEntry( "service name: " + name);
+		      throw utility::exception::xatmi::service::NoEntry( "service name: " + name);
 		   }
 
 		   message::ServiceUnadvertise message;

@@ -73,13 +73,17 @@ namespace casual
 				Reader( ipc::receive::Queue& queue);
 
 				//!
-				//! Gets the next message type.
+				//! Gets the next binary-message from queue.
+				//! @return binary-marshal that can be used to deserialize an actual message.
 				//!
-				message_type_type next();
+				marshal::input::Binary next();
 
 				//!
 				//! Tries to read a specific message from the queue.
-				//! @attention use next() to determine which message is ready to read.
+				//! If other message types is consumed before the requested type
+				//! they will be cached.
+				//!
+				//! @attention Will block until the specific message-type can be read from the queue
 				//!
 				template< typename M>
 				void operator () ( M& message)

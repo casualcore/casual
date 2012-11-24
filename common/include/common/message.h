@@ -241,7 +241,7 @@ namespace casual
 			{
 				if( m_buffer == 0)
 				{
-					throw exception::xatmi::SystemError( "Not a valid buffer for ServiceReply");
+					throw utility::exception::xatmi::SystemError( "Not a valid buffer for ServiceReply");
 				}
 				archive & callDescriptor;
 				archive & returnValue;

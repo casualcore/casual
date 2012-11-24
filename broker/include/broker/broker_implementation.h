@@ -392,7 +392,7 @@ namespace casual
 		                  // Something is very wrong!
 		                  //
 		                  state.pending.pop_back();
-		                  throw exception::xatmi::SystemError( "Inconsistency in pending replies");
+		                  throw utility::exception::xatmi::SystemError( "Inconsistency in pending replies");
 		               }
 
 		               result.push_back( std::make_pair( pendingIter->server.queue_key, response.front()));

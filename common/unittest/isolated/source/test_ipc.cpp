@@ -42,10 +42,10 @@ namespace casual
 			message::Transport transport;
 
 			std::string information( "ABC");
-			std::copy( information.begin(), information.end(), transport.m_payload.m_payload);
-			transport.m_payload.m_payload[ information.size()] = '\0';
 
-			EXPECT_TRUE( information == transport.m_payload.m_payload);
+			transport.m_payload.m_payload = message::Transport::payload_type{ 'A', 'B', 'C'};
+
+			EXPECT_TRUE( information == transport.m_payload.m_payload.data());
 
 			transport.paylodSize( information.size() + 1);
 			transport.m_payload.m_type = 2;
@@ -56,7 +56,7 @@ namespace casual
 
 			receive( response);
 
-			std::string receivedInformation( response.m_payload.m_payload);
+			std::string receivedInformation{ response.m_payload.m_payload.data()};
 
 
 			EXPECT_TRUE( information == receivedInformation) << "information: " << information << " - receivedInformation: " << receivedInformation;
@@ -78,7 +78,7 @@ namespace casual
 			//
 			EXPECT_THROW({
 				receive( response);
-			}, exception::signal::Timeout);
+			}, utility::exception::signal::Timeout);
 
 		}
 
@@ -100,7 +100,7 @@ namespace casual
 			}
 
 
-			std::copy( information.begin(), information.end(), transport.m_payload.m_payload);
+			std::copy( information.begin(), information.end(), transport.m_payload.m_payload.data());
 			transport.m_payload.m_payload[ information.size()] = '\0';
 			transport.paylodSize( information.size() + 1);
 			transport.m_payload.m_type = 2;
@@ -111,7 +111,7 @@ namespace casual
 
 			receive( response);
 
-			std::string receivedInformation( response.m_payload.m_payload);
+			std::string receivedInformation{ response.m_payload.m_payload.data()};
 
 
 			EXPECT_TRUE( information == receivedInformation);// << "information: " << information;

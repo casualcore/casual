@@ -65,7 +65,7 @@ void tpreturn(int rval, long rcode, char* data, long len, long flags)
    }
    catch( ...)
    {
-      casual::error::handler();
+      casual::utility::error::handler();
    }
 }
 
@@ -81,7 +81,7 @@ int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen,
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -94,7 +94,7 @@ int tpacall( const char * svc, char* idata, long ilen, long flags)
    }
 	catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -107,7 +107,7 @@ int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -120,7 +120,7 @@ int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -133,14 +133,14 @@ int tpunadvertise( const char* svcname)
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
 
 const char* tperrnostring( int error)
 {
-   return casual::error::tperrnoStringRepresentation( error).c_str();
+   return casual::utility::error::tperrnoStringRepresentation( error).c_str();
 }
 
 

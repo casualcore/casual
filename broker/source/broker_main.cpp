@@ -39,7 +39,7 @@ int main( int argc, char** argv)
 	}
 	catch( ...)
 	{
-		return casual::error::handler();
+		return casual::utility::error::handler();
 
 	}
 	return 0;

@@ -72,7 +72,7 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
 	catch( ...)
 	{
 	   tpsvrdone();
-	   return casual::error::handler();
+	   return casual::utility::error::handler();
 	}
 	return 0;
 }

@@ -46,10 +46,12 @@ namespace casual
 			{
 				blocking::Reader reader( receive);
 
-				message::ServiceAdvertise message;
+				auto marshal = reader.next();
 
-				EXPECT_TRUE( reader.next() == message::ServiceAdvertise::message_type);
-				reader( message);
+				EXPECT_TRUE( marshal.type() == message::ServiceAdvertise::message_type);
+
+				message::ServiceAdvertise message;
+				marshal >> message;
 
 				EXPECT_TRUE( message.serverId.queue_key == 666);
 				EXPECT_TRUE( message.serverPath == "banan");
@@ -71,7 +73,7 @@ namespace casual
 
 			EXPECT_THROW({
 				reader( message);
-			}, exception::signal::Timeout);
+			}, utility::exception::signal::Timeout);
 
 
 		}

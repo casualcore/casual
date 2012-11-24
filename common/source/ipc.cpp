@@ -53,7 +53,7 @@ namespace casual
 
 				if( m_id  == -1)
 				{
-					throw casual::exception::QueueFailed( error::stringFromErrno());
+					throw utility::exception::QueueFailed( utility::error::stringFromErrno());
 				}
 			}
 
@@ -77,7 +77,7 @@ namespace casual
                   }
                   default:
                   {
-                     throw exception::QueueSend( error::stringFromErrno());
+                     throw utility::exception::QueueSend( utility::error::stringFromErrno());
                   }
                }
             }
@@ -107,7 +107,7 @@ namespace casual
 
 				if( m_id  == -1)
 				{
-					throw casual::exception::QueueFailed( error::stringFromErrno());
+					throw utility::exception::QueueFailed( utility::error::stringFromErrno());
 				}
 
 			}
@@ -142,7 +142,7 @@ namespace casual
 						}
 						default:
 						{
-							throw exception::QueueReceive( error::stringFromErrno());
+							throw utility::exception::QueueReceive( utility::error::stringFromErrno());
 						}
 					}
 				}
@@ -163,7 +163,7 @@ namespace casual
 
 			if( file.fail())
 			{
-			   throw exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
+			   throw utility::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
 			}
 
 			send::Queue::queue_key_type key;

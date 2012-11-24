@@ -69,7 +69,7 @@ namespace casual
 		   if( ! configFile.empty())
 		   {
 
-		      logger::information << "broker: using configuration file: " << configFile;
+		      utility::logger::information << "broker: using configuration file: " << configFile;
 
 		      //
 		      // Create the reader and deserialize configuration
@@ -84,10 +84,10 @@ namespace casual
 		   }
 		   else
 		   {
-		      logger::information << "broker: no configuration file was found - using default";
+		      utility::logger::information << "broker: no configuration file was found - using default";
 		   }
 
-		   logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
+		   utility::logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
 
 
 
@@ -114,14 +114,14 @@ namespace casual
          while( working)
          {
 
-            queue::message_type_type message_type = queueReader.next();
+            auto marshal = queueReader.next();
 
-            switch( message_type)
+            switch( marshal.type())
             {
                case message::ServiceAdvertise::message_type:
                {
                   message::ServiceAdvertise message;
-                  queueReader( message);
+                  marshal >> message;
 
                   state::advertiseService( message, m_state);
 
@@ -130,7 +130,7 @@ namespace casual
                case message::ServiceUnadvertise::message_type:
                {
                   message::ServiceUnadvertise message;
-                  queueReader( message);
+                  marshal >> message;
 
                   state::unadvertiseService( message, m_state);
 
@@ -139,7 +139,7 @@ namespace casual
                case message::ServerDisconnect::message_type:
                {
                   message::ServerDisconnect message;
-                  queueReader( message);
+                  marshal >> message;
 
                   state::removeServer( message, m_state);
 
@@ -148,7 +148,7 @@ namespace casual
                case message::ServiceRequest::message_type:
                {
                   message::ServiceRequest message;
-                  queueReader( message);
+                  marshal >> message;
 
                   //
                   // Request service
@@ -173,7 +173,7 @@ namespace casual
                   // * Check if there are pending service request
                   //
                   message::ServiceACK message;
-                  queueReader( message);
+                  marshal >> message;
 
                   std::vector< state::PendingResponse> pending = state::serviceDone( message, m_state);
 
@@ -182,7 +182,7 @@ namespace casual
                      ipc::send::Queue responseQueue( pending.front().first);
                      queue::blocking::Writer writer( responseQueue);
 
-                     // TODO: What if we can't write to the queue?
+                     // TODO: What if we can't write to the queue? The queue is blocking
                      writer( pending.front().second);
                   }
 
@@ -190,7 +190,7 @@ namespace casual
                }
                default:
                {
-                  std::cerr << "message_type: " << message_type << " not valid" << std::endl;
+                  utility::logger::error << "message_type: " << " not recognized - action: discard";
                   break;
                }
 

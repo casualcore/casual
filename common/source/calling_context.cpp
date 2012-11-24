@@ -179,7 +179,7 @@ namespace casual
                if( findIter != m_timeouts.end())
                {
                   m_timeouts.erase( findIter);
-                  throw exception::xatmi::Timeout();
+                  throw utility::exception::xatmi::Timeout();
                }
             }
 
@@ -213,7 +213,7 @@ namespace casual
             {
                return queue( value);
             }
-            catch( const exception::signal::Timeout&)
+            catch( const utility::exception::signal::Timeout&)
             {
                PendingTimeout::instance().timeout();
                return timeoutWrapper( queue, value);
@@ -227,7 +227,7 @@ namespace casual
             {
                return queue( value);
             }
-            catch( const exception::signal::Timeout&)
+            catch( const utility::exception::signal::Timeout&)
             {
                PendingTimeout::instance().timeout();
                PendingTimeout::instance().check( callDescriptor);
@@ -256,7 +256,7 @@ namespace casual
             // which is a extreme high number. But, we have to handle it...
             //
             // TODO: We don't try to handle it until we can unit test it.
-            throw exception::xatmi::LimitReached( "No free call descriptors");
+            throw utility::exception::xatmi::LimitReached( "No free call descriptors");
 
             /*
             // TODO: this is not standard-conformant...
@@ -300,7 +300,7 @@ namespace casual
 
          if( serviceResponse.server.empty())
          {
-            throw exception::xatmi::service::NoEntry( service);
+            throw utility::exception::xatmi::service::NoEntry( service);
          }
 
          //
@@ -348,7 +348,7 @@ namespace casual
          {
             if( m_state.pendingCalls.find( *idPtr) == m_state.pendingCalls.end())
             {
-               throw exception::xatmi::service::InvalidDescriptor();
+               throw utility::exception::xatmi::service::InvalidDescriptor();
             }
          }
 
@@ -392,7 +392,7 @@ namespace casual
                // Don't deallocate buffer
                //
                deallocate.release();
-               throw exception::xatmi::NoMessage();
+               throw utility::exception::xatmi::NoMessage();
 
             }
          }
@@ -478,7 +478,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        utility::error::handler();
                      }
                   }
                }

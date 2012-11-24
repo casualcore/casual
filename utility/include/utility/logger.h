@@ -8,9 +8,7 @@
 #ifndef CASUAL_LOGGER_H_
 #define CASUAL_LOGGER_H_
 
-
 #include <string>
-
 
 //
 // TODO: Temp, we will not use iostream later on!
@@ -21,86 +19,85 @@
 
 namespace casual
 {
-	namespace logger
-	{
+   namespace utility
+   {
+      namespace logger
+      {
 
-		namespace internal
-		{
-			//
-			// TODO: When common version of supported compilers have better support
-			// for C++11, change the semantics of this class to only use move-semantics.
-			//
-			class Proxy
-			{
-			public:
+         namespace internal
+         {
+            //
+            // Proxy-type that logs when full expression has ended.
+            //
+            class Proxy
+            {
+            public:
 
-				Proxy( int priority);
+               Proxy( int priority);
+               Proxy( const Proxy&) = delete;
+               Proxy& operator = ( const Proxy&) = delete;
 
-				//
-				// We can't rely on RVO, so we have to release logging-responsibility for
-				// rhs.
-				//
-				Proxy( const Proxy& rhs);
+               //
+               // We can't rely on RVO, so we have to release logging-responsibility for
+               // rhs.
+               //
+               Proxy( Proxy&& rhs);
 
-				//
-				// Will be called when the full expression has "run", and this rvalue
-				// will be destructed.
-				//
-				~Proxy();
+               //
+               // Will be called when the full expression has "run", and this rvalue
+               // will be destructed.
+               //
+               ~Proxy();
 
-				template< typename T>
-				Proxy& operator << ( const T& value)
-				{
-					m_message << value;
-					return *this;
-				}
+               template< typename T>
+               Proxy& operator << ( T&& value)
+               {
+                  m_message << std::forward< T>( value);
+                  return *this;
+               }
 
-			private:
-				//
-				// TODO: We should use something else, hence not have any
-				// dependencies to iostream
-				//
-				std::ostringstream m_message;
-				int m_priority;
-				mutable bool m_log;
-			};
+            private:
+               //
+               // TODO: We should use something else, hence not have any
+               // dependencies to iostream
+               //
+               std::ostringstream m_message;
+               int m_priority;
+               mutable bool m_log;
+            };
 
+            template< int priority>
+            class basic_logger
+            {
+            public:
 
-			template< int priority>
-			class basic_logger
-			{
-			public:
+               //!
+               //! @return proxy-type that logs when full expression has ended.
+               //!
+               template< typename T>
+               Proxy operator <<( T&& value)
+               {
+                  Proxy proxy( priority);
+                  proxy << std::forward< T>( value);
+                  return proxy;
+               }
 
-				template< typename T>
-				Proxy operator << ( const T& value)
-				{
-				   Proxy proxy( priority);
-				   proxy << value;
-					return proxy;
-				}
+            };
 
-			};
+         } // internal
 
-		} // internal
+         extern internal::basic_logger< utility::platform::cLOG_debug> debug;
 
+         extern internal::basic_logger< utility::platform::cLOG_info> information;
 
+         extern internal::basic_logger< utility::platform::cLOG_warning> warning;
 
-		extern internal::basic_logger< utility::platform::cLOG_debug> debug;
+         extern internal::basic_logger< utility::platform::cLOG_error> error;
 
-		extern internal::basic_logger< utility::platform::cLOG_info> information;
+      } // logger
 
-		extern internal::basic_logger< utility::platform::cLOG_warning> warning;
-
-		extern internal::basic_logger< utility::platform::cLOG_error> error;
-
-
-
-
-
-	} // logger
+   } // utility
 
 } // casual
-
-
 
 #endif /* CASUAL_LOGGER_H_ */

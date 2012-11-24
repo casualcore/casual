@@ -49,7 +49,7 @@ namespace casual
 
 			output << someString;
 
-			input::Binary input( output.get());
+			input::Binary input( std::move( output));
 
 			long resultLong;
 			input >> resultLong;
@@ -76,7 +76,7 @@ namespace casual
 			EXPECT_TRUE( output.get().size() == binaryInput.size() + sizeof( binaryInput.size())) <<  output.get().size();
 
 
-			input::Binary input( output.get());
+			input::Binary input( std::move( output));
 
 			std::vector< char> binaryOutput;
 			input >> binaryOutput;
@@ -109,7 +109,7 @@ namespace casual
 
 			output << serverConnect;
 
-			input::Binary input( output.get());
+			input::Binary input( std::move( output));
 
 			message::ServiceAdvertise result;
 
@@ -139,7 +139,7 @@ namespace casual
 
 			output << serverConnect;
 
-			input::Binary input( output.get());
+			input::Binary input( std::move( output));
 
 			message::ServiceAdvertise result;
 

@@ -14,7 +14,10 @@
 #include "utility/uuid.h"
 #include "utility/platform.h"
 
+#include "common/types.h"
+
 #include <string>
+#include <array>
 
 namespace casual
 {
@@ -30,6 +33,7 @@ namespace casual
 				typedef utility::platform::message_type_type message_type_type;
 				typedef utility::Uuid::uuid_type correalation_type;
 
+
 				struct Header
 				{
 					correalation_type m_correlation;
@@ -44,8 +48,13 @@ namespace casual
 					payload_max_size = utility::platform::message_size - sizeof( Header)
 				};
 
+				static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
+
+				typedef std::array< char, payload_max_size> payload_type;
+
 				Transport() : m_size( message_max_size)
 				{
+				   //static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
 					memset( &m_payload, 0, sizeof( Payload));
 				}
 
@@ -56,8 +65,10 @@ namespace casual
 
 					Header m_header;
 
-					char m_payload[ payload_max_size];
+					payload_type m_payload;
+
 				} m_payload;
+
 
 				void* raw() { return &m_payload;}
 
@@ -73,13 +84,8 @@ namespace casual
 
 			private:
 
-				//Transport( const Transport&);
-				//Transport& operator = ( const Transport&);
-
 				std::size_t m_size;
-
 			};
-
 		}
 
 

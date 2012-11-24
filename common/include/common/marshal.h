@@ -30,6 +30,11 @@ namespace casual
 			{
 				typedef common::binary_type buffer_type;
 
+				Binary() = default;
+				Binary( Binary&&) = default;
+				Binary( const Binary&) = delete;
+				Binary& operator = ( const Binary&) = delete;
+
 				const buffer_type& get() const
 				{
 					return m_buffer;
@@ -124,26 +129,42 @@ namespace casual
 			{
 				typedef common::binary_type buffer_type;
 				typedef buffer_type::size_type offest_type;
+				typedef ipc::message::Transport transport_type;
+				typedef transport_type::message_type_type message_type_type;
 
-				Binary() : m_offset( 0) {}
+
+				Binary() = default;
+            Binary( Binary&&) = default;
+            Binary( const Binary&) = delete;
+            Binary& operator = ( const Binary&) = delete;
+
 
 				//!
 				//! Only for unittest
 				//!
-				Binary( const buffer_type& buffer) : m_buffer( buffer), m_offset( 0) {}
+				Binary( output::Binary&& rhs)
+            {
+				   m_buffer = std::move( rhs.get());
+            }
 
-
-
-				void add( ipc::message::Transport& message)
+				message_type_type type() const
 				{
+				   return m_messageType;
+				}
+
+
+
+				void add( transport_type& message)
+				{
+				   m_messageType = message.m_payload.m_type;
 					const std::size_t size = message.paylodSize();
 					const std::size_t bufferSize = m_buffer.size();
 
 					m_buffer.resize( m_buffer.size() + size);
 
 					std::copy(
-						message.m_payload.m_payload,
-						message.m_payload.m_payload + size,
+						message.m_payload.m_payload.begin(),
+						message.m_payload.m_payload.begin() + size,
 						m_buffer.begin() + bufferSize);
 
 					//memcpy( &m_buffer[ m_buffer.size()], message.m_payload.m_payload, size);
@@ -238,7 +259,8 @@ namespace casual
 				}
 
 				buffer_type m_buffer;
-				offest_type m_offset;
+				offest_type m_offset = 0;
+				message_type_type m_messageType = 0;
 			};
 
 		} // output
