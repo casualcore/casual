@@ -13,9 +13,7 @@
 
 #include "common/queue.h"
 
-#include "sf/archivebuffer.h"
-#include "sf/archive_yaml_policy.h"
-
+#include "sf/archive_maker.h"
 
 
 
@@ -54,11 +52,6 @@ namespace casual
 					std::ofstream brokerQueueFile( path);
 					brokerQueueFile << queue.getKey();
 				}
-
-
-
-
-
 			}
 		}
 
@@ -71,23 +64,27 @@ namespace casual
 		   // Try to find configuration file
 		   // TODO: you should be able to pass the configurationfile as an argument.
 		   //
-		   const std::string configFile =
-		         utility::file::find( utility::environment::getRootPath(), std::regex( "casual_config.yaml" ));
+		   const std::string configFile = utility::environment::getDefaultConfigurationFile();
 
 		   if( ! configFile.empty())
 		   {
 
-		      logger::information << "using configuration file: " << configFile;
+		      logger::information << "broker: using configuration file: " << configFile;
 
-		      // TODO:
-		      std::ifstream configStream( configFile);
-		      sf::archive::reader::holder::YamlRelaxed reader( configStream);
-
+		      //
+		      // Create the reader and deserialize configuration
+		      //
+		      auto reader = sf::archive::reader::makeFromFile( configFile);
 		      reader >> sf::makeNameValuePair( "broker", m_state.configuration);
+
+		      //
+		      // Make sure we've got valid configuration
+		      //
+		      configuration::validate( m_state.configuration);
 		   }
 		   else
 		   {
-		      logger::information << "no configuration file was found - using default";
+		      logger::information << "broker: no configuration file was found - using default";
 		   }
 
 		   logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();

@@ -8,7 +8,7 @@
 #ifndef CASUAL_BROKER_CONFIGURATION_H_
 #define CASUAL_BROKER_CONFIGURATION_H_
 
-#include "sf/archive_base.h"
+#include "sf/namevaluepair.h"
 
 #include <limits>
 
@@ -136,10 +136,12 @@ namespace casual
             };
          } // complement
 
-         namespace validate
+
+         inline void validate( const Settings& settings)
          {
 
          }
+
 
       } // configuration
    } // broker

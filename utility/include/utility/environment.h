@@ -46,6 +46,8 @@ namespace casual
 
 			std::string getDomainName();
 
+			std::string getDefaultConfigurationFile();
+
 
 		}
 

@@ -45,7 +45,26 @@ namespace casual
 				operator const std::string& ();
 			};
 
+			//!
+			//! Find the first file that matches search
+			//!
+			//! @param path The path to search
+			//! @param search regexp to match file names
+			//!
 			std::string find( const std::string& path, const std::regex& search);
+
+
+			//!
+			//! @return filename or directory portion of pathname
+			//!
+			std::string basename( const std::string& path);
+
+			//!
+			//! @return the extension of the file. ex. yaml for file configuration.yaml
+			//!
+			std::string extension( const std::string& file);
+
+
 		}
 
 	}

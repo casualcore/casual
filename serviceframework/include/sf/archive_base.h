@@ -10,7 +10,8 @@
 
 #include "sf/namevaluepair.h"
 #include "sf/archive_traits.h"
-#include "sf/common_types.h"
+
+#include "common/types.h"
 
 
 #include <utility>
@@ -92,7 +93,7 @@ namespace casual
 
             virtual void readPOD( std::string& value) = 0;
 
-            virtual void readPOD( binary_type& value) = 0;
+            virtual void readPOD( common::binary_type& value) = 0;
 
          public:
             void read( bool& value);
@@ -121,7 +122,7 @@ namespace casual
 
             void read( std::string& value);
 
-            void read( binary_type& value);
+            void read( common::binary_type& value);
 
          };
 
@@ -254,7 +255,7 @@ namespace casual
 
             virtual void writePOD( const std::string& value) = 0;
 
-            virtual void writePOD( const binary_type& value) = 0;
+            virtual void writePOD( const common::binary_type& value) = 0;
 
          public:
             void write( const bool value);
@@ -283,7 +284,7 @@ namespace casual
 
             void write( const std::string& value);
 
-            void write( const binary_type& value);
+            void write( const common::binary_type& value);
 
          };
 

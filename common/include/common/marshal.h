@@ -11,6 +11,8 @@
 
 
 #include "common/ipc.h"
+#include "common/types.h"
+
 
 #include <vector>
 
@@ -26,7 +28,7 @@ namespace casual
 		{
 			struct Binary
 			{
-				typedef std::vector< char> buffer_type;
+				typedef common::binary_type buffer_type;
 
 				const buffer_type& get() const
 				{
@@ -120,8 +122,8 @@ namespace casual
 
 			struct Binary
 			{
-				typedef std::vector< char> buffer_type;
-				typedef std::vector< char>::size_type offest_type;
+				typedef common::binary_type buffer_type;
+				typedef buffer_type::size_type offest_type;
 
 				Binary() : m_offset( 0) {}
 

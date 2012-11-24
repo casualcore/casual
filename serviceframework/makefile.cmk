@@ -5,6 +5,7 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 
 
 INCLUDE_PATHS= include \
+    ../common/include \
     $(YAML_INCLUDE_PATH) \
 	$(UNITTEST_INCLUDE_PATH) \
 
@@ -24,16 +25,16 @@ LinkLibrary( casual_sf,\
 //
 // unittest
 //
-Compile( unittest/isolated/source/namevaluepair.cpp, unittest/isolated/obj/namevaluepair.o)
-Compile( unittest/isolated/source/archive.cpp, unittest/isolated/obj/archive.o)
-Compile( unittest/isolated/source/traits.cpp, unittest/isolated/obj/traits.o)
-Compile( unittest/isolated/source/yaml_archive.cpp, unittest/isolated/obj/yaml_archive.o)
+Compile( unittest/isolated/source/test_namevaluepair.cpp, unittest/isolated/obj/test_namevaluepair.o)
+Compile( unittest/isolated/source/test_archive.cpp, unittest/isolated/obj/test_archive.o)
+Compile( unittest/isolated/source/test_traits.cpp, unittest/isolated/obj/test_traits.o)
+Compile( unittest/isolated/source/test_yaml_archive.cpp, unittest/isolated/obj/test_yaml_archive.o)
 
 
 LinkIsolatedUnittest( casual_sf_isolated, \
-	unittest/isolated/obj/namevaluepair.o \
-	unittest/isolated/obj/archive.o \
-	unittest/isolated/obj/traits.o \
-	unittest/isolated/obj/yaml_archive.o, \
+	unittest/isolated/obj/test_namevaluepair.o \
+	unittest/isolated/obj/test_archive.o \
+	unittest/isolated/obj/test_traits.o \
+	unittest/isolated/obj/test_yaml_archive.o, \
 	casual_sf)
 	

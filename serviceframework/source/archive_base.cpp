@@ -113,7 +113,7 @@ namespace casual
             readPOD( value);
          }
 
-         void Reader::read( binary_type& value)
+         void Reader::read( common::binary_type& value)
          {
             readPOD( value);
          }
@@ -177,7 +177,7 @@ namespace casual
             writePOD( value);
          }
 
-         void Writer::write( const binary_type& value)
+         void Writer::write( const common::binary_type& value)
          {
             writePOD( value);
          }
