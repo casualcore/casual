@@ -45,7 +45,7 @@ namespace casual
 		struct State
       {
 		   typedef std::unordered_set< int> pending_calls_type;
-		   typedef std::unordered_map< int, message::ServiceReply> reply_cache_type;
+		   typedef std::unordered_map< int, message::service::Reply> reply_cache_type;
 
          pending_calls_type pendingCalls;
          reply_cache_type replyCache;
@@ -87,9 +87,9 @@ namespace casual
 
 			reply_cache_type::iterator fetch( int callDescriptor);
 
-			reply_cache_type::iterator add( message::ServiceReply& reply);
+			reply_cache_type::iterator add( message::service::Reply& reply);
 
-			message::ServiceResponse serviceQueue( const std::string& service);
+			message::service::name::lookup::Reply serviceQueue( const std::string& service);
 
 
 			void consume();

@@ -53,9 +53,9 @@ namespace casual
 
 			void disconnect();
 
-			void handleServiceCall( message::ServiceCall& context);
+			void handleServiceCall( message::service::Call& context);
 
-			message::ServerId getId();
+			message::server::Id getId();
 
 			void cleanUp();
 
@@ -68,7 +68,7 @@ namespace casual
 
 			utility::platform::long_jump_buffer_type m_long_jump_buffer;
 
-			message::ServiceReply m_reply;
+			message::service::Reply m_reply;
 
 		};
 

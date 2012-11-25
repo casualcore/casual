@@ -33,13 +33,13 @@ namespace casual
 		struct Server
 		{
 
-		   typedef message::ServerId::pid_type pid_type;
+		   typedef message::server::Id::pid_type pid_type;
 
 			Server() : pid( 0), queue_key( 0), idle( true) {}
 
 			pid_type pid;
 			std::string path;
-			message::ServerId::queue_key_type queue_key;
+			message::server::Id::queue_key_type queue_key;
 			bool idle;
 
 
@@ -71,7 +71,7 @@ namespace casual
 		{
 		   typedef std::unordered_map< Server::pid_type, Server> server_mapping_type;
 		   typedef std::unordered_map< std::string, Service> service_mapping_type;
-		   typedef std::deque< message::ServiceRequest> pending_requests_type;
+		   typedef std::deque< message::service::name::lookup::Request> pending_requests_type;
 
 		   server_mapping_type servers;
 		   service_mapping_type services;

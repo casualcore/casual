@@ -60,7 +60,7 @@ namespace casual
 
 				struct ServiceInformation
 				{
-					TPSVCINFO operator () ( message::ServiceCall& message) const
+					TPSVCINFO operator () ( message::service::Call& message) const
 					{
 						TPSVCINFO result;
 
@@ -113,9 +113,9 @@ namespace casual
 
                switch( marshal.type())
                {
-                  case message::ServiceCall::message_type:
+                  case message::service::Call::message_type:
                   {
-                     message::ServiceCall message( buffer::Context::instance().create());
+                     message::service::Call message( buffer::Context::instance().create());
 
                      marshal >> message;
 
@@ -159,7 +159,7 @@ namespace casual
 
 		void Context::disconnect()
 		{
-		   message::ServerDisconnect message;
+		   message::server::Disconnect message;
 
 		   //
 		   // we can't block here...
@@ -174,7 +174,7 @@ namespace casual
 			// Let the broker know about us, and our services...
 			//
 
-			message::ServiceAdvertise message;
+			message::service::Advertise message;
 
 			message.serverId.queue_key = m_queue.getKey();
 
@@ -190,7 +190,7 @@ namespace casual
 		}
 
 
-		void Context::handleServiceCall( message::ServiceCall& context)
+		void Context::handleServiceCall( message::service::Call& message)
 		{
 			//
 			// Prepare for tpreturn.
@@ -207,22 +207,22 @@ namespace casual
 				//
 				// set the call-correlation
 				//
-				m_reply.callDescriptor = context.callDescriptor;
+				m_reply.callDescriptor = message.callDescriptor;
 
-				service_mapping_type::iterator findIter = m_services.find( context.service.name);
+				service_mapping_type::iterator findIter = m_services.find( message.service.name);
 
             if( findIter == m_services.end())
             {
-               throw utility::exception::xatmi::SystemError( "Service [" + context.service.name + "] not present at server - inconsistency between broker and server");
+               throw utility::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
             }
 
-				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( context);
+				TPSVCINFO serviceInformation = local::transform::ServiceInformation()( message);
 				findIter->second.call( &serviceInformation);
 
 				//
 				// User service returned, not by tpreturn. The standard does not mention this situation, what to do?
 				//
-				throw utility::exception::xatmi::service::Error( "Service: " + context.service.name + " did not call tpreturn");
+				throw utility::exception::xatmi::service::Error( "Service: " + message.service.name + " did not call tpreturn");
 
 			}
 			else
@@ -233,16 +233,16 @@ namespace casual
 				// User has called tpreturn.
 			   // Send reply to caller
 				//
-				ipc::send::Queue replyQueue( context.reply.queue_key);
+				ipc::send::Queue replyQueue( message.reply.queue_key);
 				queue::blocking::Writer replyWriter( replyQueue);
 				replyWriter( m_reply);
 
 				//
 				// Send ACK to broker
 				//
-				message::ServiceACK ack;
+				message::service::ACK ack;
 				ack.server = getId();
-				ack.service = context.service.name;
+				ack.service = message.service.name;
 				// TODO: ack.time
 
 				// TODO: Switch the above to queue writes, to gain some performance?
@@ -297,7 +297,7 @@ namespace casual
 		   }
 		   else
 		   {
-            message::ServiceAdvertise message;
+            message::service::Advertise message;
 
             message.serverId = getId();
             // TODO: message.serverPath =
@@ -318,7 +318,7 @@ namespace casual
 		      throw utility::exception::xatmi::service::NoEntry( "service name: " + name);
 		   }
 
-		   message::ServiceUnadvertise message;
+		   message::service::Unadvertise message;
 		   message.serverId = getId();
 		   message.services.push_back( message::Service( name));
 
@@ -327,9 +327,9 @@ namespace casual
       }
 
 
-      message::ServerId Context::getId()
+      message::server::Id Context::getId()
       {
-         message::ServerId result;
+         message::server::Id result;
          result.queue_key = m_queue.getKey();
          result.pid = utility::platform::getProcessId();
 

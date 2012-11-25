@@ -31,7 +31,7 @@ namespace casual
 
 			{
 				blocking::Writer writer( send);
-				message::ServiceAdvertise message;
+				message::service::Advertise message;
 
 				message.serverId.queue_key = 666;
 				message.serverPath = "banan";
@@ -48,9 +48,9 @@ namespace casual
 
 				auto marshal = reader.next();
 
-				EXPECT_TRUE( marshal.type() == message::ServiceAdvertise::message_type);
+				EXPECT_TRUE( marshal.type() == message::service::Advertise::message_type);
 
-				message::ServiceAdvertise message;
+				message::service::Advertise message;
 				marshal >> message;
 
 				EXPECT_TRUE( message.serverId.queue_key == 666);
@@ -69,7 +69,7 @@ namespace casual
 
 			utility::signal::alarm::Scoped timeout( 1);
 
-			message::ServiceAdvertise message;
+			message::service::Advertise message;
 
 			EXPECT_THROW({
 				reader( message);
@@ -83,7 +83,7 @@ namespace casual
 			ipc::receive::Queue receive;
 			non_blocking::Reader reader( receive);
 
-			message::ServiceAdvertise message;
+			message::service::Advertise message;
 
 			EXPECT_FALSE( reader( message));
 
@@ -97,11 +97,11 @@ namespace casual
 			ipc::send::Queue send( receive.getKey());
 			blocking::Writer writer( send);
 
-			message::ServiceAdvertise sendMessage;
+			message::service::Advertise sendMessage;
 			sendMessage.serverPath = "banan";
 			writer( sendMessage);
 
-			message::ServiceAdvertise receiveMessage;
+			message::service::Advertise receiveMessage;
 			EXPECT_TRUE( reader( receiveMessage));
 			EXPECT_TRUE( receiveMessage.serverPath == "banan");
 
@@ -115,12 +115,12 @@ namespace casual
 			ipc::send::Queue send( receive.getKey());
 			blocking::Writer writer( send);
 
-			message::ServiceAdvertise sendMessage;
+			message::service::Advertise sendMessage;
 			sendMessage.serverPath = "banan";
 			sendMessage.services.resize( 150);
 			writer( sendMessage);
 
-			message::ServiceAdvertise receiveMessage;
+			message::service::Advertise receiveMessage;
 			EXPECT_TRUE( reader( receiveMessage));
 			EXPECT_TRUE( receiveMessage.serverPath == "banan");
 			EXPECT_TRUE( receiveMessage.services.size() == 150);

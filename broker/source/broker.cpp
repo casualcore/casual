@@ -118,42 +118,42 @@ namespace casual
 
             switch( marshal.type())
             {
-               case message::ServiceAdvertise::message_type:
+               case message::service::Advertise::message_type:
                {
-                  message::ServiceAdvertise message;
+                  message::service::Advertise message;
                   marshal >> message;
 
                   state::advertiseService( message, m_state);
 
                   break;
                }
-               case message::ServiceUnadvertise::message_type:
+               case message::service::Unadvertise::message_type:
                {
-                  message::ServiceUnadvertise message;
+                  message::service::Unadvertise message;
                   marshal >> message;
 
                   state::unadvertiseService( message, m_state);
 
                   break;
                }
-               case message::ServerDisconnect::message_type:
+               case message::server::Disconnect::message_type:
                {
-                  message::ServerDisconnect message;
+                  message::server::Disconnect message;
                   marshal >> message;
 
                   state::removeServer( message, m_state);
 
                   break;
                }
-               case message::ServiceRequest::message_type:
+               case message::service::name::lookup::Request::message_type:
                {
-                  message::ServiceRequest message;
+                  message::service::name::lookup::Request message;
                   marshal >> message;
 
                   //
                   // Request service
                   //
-                  std::vector< message::ServiceResponse> response = state::requestService( message, m_state);
+                  std::vector< message::service::name::lookup::Reply> response = state::requestService( message, m_state);
 
                   if( !response.empty())
                   {
@@ -165,14 +165,14 @@ namespace casual
 
                   break;
                }
-               case message::ServiceACK::message_type:
+               case message::service::ACK::message_type:
                {
                   //
                   // Some service is done.
                   // * Release the "lock" on that server
                   // * Check if there are pending service request
                   //
-                  message::ServiceACK message;
+                  message::service::ACK message;
                   marshal >> message;
 
                   std::vector< state::PendingResponse> pending = state::serviceDone( message, m_state);

@@ -296,9 +296,9 @@ namespace casual
          //
          // Get a queue corresponding to the service
          //
-         message::ServiceResponse serviceResponse = serviceQueue( service);
+         message::service::name::lookup::Reply lookup = serviceQueue( service);
 
-         if( serviceResponse.server.empty())
+         if( lookup.server.empty())
          {
             throw utility::exception::xatmi::service::NoEntry( service);
          }
@@ -307,21 +307,21 @@ namespace casual
          // Keep track of (ev.) coming timeouts
          //
          local::PendingTimeout::instance().add(
-               local::Timeout( callDescriptor, serviceResponse.service.timeout, time));
+               local::Timeout( callDescriptor, lookup.service.timeout, time));
 
 
          //
          // Call the service
          //
-         message::ServiceCall messageCall( buffer);
+         message::service::Call messageCall( buffer);
          messageCall.callDescriptor = callDescriptor;
          messageCall.reply.queue_key = m_receiveQueue.getKey();
 
-         messageCall.service = serviceResponse.service;
+         messageCall.service = lookup.service;
 
 
 
-         ipc::send::Queue callQueue( serviceResponse.server.front().queue_key);
+         ipc::send::Queue callQueue( lookup.server.front().queue_key);
          queue::blocking::Writer callWriter( callQueue);
 
          local::timeoutWrapper( callWriter, messageCall, callDescriptor);
@@ -463,7 +463,7 @@ namespace casual
          {
             struct ReplyGuard
             {
-               ReplyGuard( message::ServiceReply& reply)
+               ReplyGuard( message::service::Reply& reply)
                      : m_reply( reply), m_deallocate( true)
                {
                }
@@ -489,7 +489,7 @@ namespace casual
                }
 
             private:
-               message::ServiceReply& m_reply;
+               message::service::Reply& m_reply;
                bool m_deallocate;
 
             };
@@ -507,7 +507,7 @@ namespace casual
             do
             {
 
-               message::ServiceReply reply( buffer::Context::instance().create());
+               message::service::Reply reply( buffer::Context::instance().create());
 
                //
                // Use guard if we get a timeout (or other signal).
@@ -525,7 +525,7 @@ namespace casual
          return fetchIter;
       }
 
-      Context::reply_cache_type::iterator Context::add( message::ServiceReply& reply)
+      Context::reply_cache_type::iterator Context::add( message::service::Reply& reply)
       {
          // TODO: Check if the received message is pending
 
@@ -535,12 +535,12 @@ namespace casual
 
       }
 
-      message::ServiceResponse Context::serviceQueue( const std::string& service)
+      message::service::name::lookup::Reply Context::serviceQueue( const std::string& service)
       {
          //
          // Get a queue corresponding to the service
          //
-         message::ServiceRequest serviceLookup;
+         message::service::name::lookup::Request serviceLookup;
          serviceLookup.requested = service;
          serviceLookup.server.queue_key = m_receiveQueue.getKey();
 
@@ -548,7 +548,7 @@ namespace casual
          local::timeoutWrapper( broker, serviceLookup);
 
 
-         message::ServiceResponse result;
+         message::service::name::lookup::Reply result;
          queue::blocking::Reader reader( m_receiveQueue);
          local::timeoutWrapper( reader, result);
 
@@ -562,7 +562,7 @@ namespace casual
          // pop from queue until it's empty (at least empty for callReplies)
          //
 
-         message::ServiceReply reply( buffer::Context::instance().create());
+         message::service::Reply reply( buffer::Context::instance().create());
          local::scoped::ReplyGuard guard( reply);
 
          queue::non_blocking::Reader reader( m_receiveQueue);
