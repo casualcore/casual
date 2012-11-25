@@ -12,7 +12,6 @@
 #include <memory>
 
 #include "sf/archive_base.h"
-#include "sf/archive_yaml_policy.h"
 
 namespace casual
 {
@@ -28,36 +27,6 @@ namespace casual
                holder_base() {};
                virtual ~holder_base() {};
                virtual Reader& reader() = 0;
-            };
-
-
-
-            template< typename A, typename S>
-            class basic_holder : public holder_base
-            {
-            public:
-
-               typedef A archive_type;
-               typedef S source_type;
-
-
-               template< typename... Arguments>
-               basic_holder( Arguments&&... arguments)
-                  : m_source( std::forward< Arguments>( arguments)...),
-                    m_archive( m_source.archiveBuffer())
-               {
-               }
-
-
-               Reader& reader()
-               {
-                  return m_archive;
-               }
-
-            private:
-               source_type m_source;
-               archive_type m_archive;
-
             };
 
 
@@ -90,38 +59,20 @@ namespace casual
                std::unique_ptr< holder_base> m_base;
             };
 
-            /*
-            std::unique_ptr< holder_base> makeHolder( std::istream& stream)
-            {
-              typedef basic_holder< YamlRelaxed, policy::reader::Buffer<> > YamlRelaxedHolder;
 
-              return std::unique_ptr< holder_base>( new YamlRelaxedHolder( stream));
-            }
-            */
+            Holder makeFromFile( const std::string& filename);
 
+         } // reader
 
-            Holder makeFromFile( const std::string& filename)
-            {
-               auto extension = utility::file::extension( filename);
-
-               if( extension == "yaml")
-               {
-
-                  typedef basic_holder< YamlRelaxed, policy::reader::Buffer > YamlRelaxedHolder;
-
-                  return Holder( std::unique_ptr< holder_base>( new YamlRelaxedHolder( filename)));
-               }
-
-               throw exception::Validation( "could not deduce protocol for file " + filename);
-            }
-
+         namespace writer
+         {
 
          }
-      }
 
-   }
 
-}
+      } // archive
+   } // sf
+} // casual
 
 
 

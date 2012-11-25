@@ -6,20 +6,22 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 
 INCLUDE_PATHS= include \
     ../common/include \
+    ../utility/include \
     $(YAML_INCLUDE_PATH) \
 	$(UNITTEST_INCLUDE_PATH) \
 
-LIBRARY_PATHS= $(YAML_LIBRARY_PATH)
+LIBRARY_PATHS= ../common/bin \
+    ../utility/bin \ 
+    $(YAML_LIBRARY_PATH)
 
 
 Compile( source/archive_base.cpp, obj/archive_base.o)
-Compile( source/force_instantiation.cpp, obj/force_instantiation.o)
+Compile( source/archive_maker.cpp, obj/archive_maker.o)
 
 LinkLibrary( casual_sf,\
     obj/archive_base.o \
-    obj/force_instantiation.o,\
-    yaml-cpp)
-
+    obj/archive_maker.o, \
+    casual_utility yaml-cpp)
 
 
 //

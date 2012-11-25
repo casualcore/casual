@@ -65,7 +65,6 @@ int main( int argc, char** argv)
 
    std::vector< int>::iterator callIter = callDescriptors.begin();
 
-   std::size_t reply = 0;
    for( ; callIter != callDescriptors.end(); ++callIter)
    {
       long size = 0;

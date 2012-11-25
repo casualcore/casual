@@ -201,6 +201,23 @@ namespace casual
 
          namespace writer
          {
+
+            struct Buffer
+            {
+               //typedef S stream_type;
+
+               Buffer( const std::string& file) : m_stream( file) {}
+
+               std::istream& archiveBuffer()
+               {
+                  return m_stream;
+               }
+
+            private:
+               std::ifstream m_stream;
+            };
+
+
             class Yaml
             {
 
