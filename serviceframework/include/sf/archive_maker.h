@@ -19,46 +19,60 @@ namespace casual
    {
       namespace archive
       {
-         namespace reader
+         namespace holder
          {
-            class holder_base
+            template< typename A>
+            class base
             {
             public:
-               holder_base() {};
-               virtual ~holder_base() {};
-               virtual Reader& reader() = 0;
+               typedef A archive_type;
+
+               base() = default;
+               virtual ~base() = default;
+               virtual archive_type& archive() = 0;
             };
 
 
-            class Holder
+            template< typename A>
+            class holder
             {
             public:
-               Holder( std::unique_ptr< holder_base>&& base) : m_base( std::move( base)) {}
-               ~Holder() {}
+               typedef A archive_type;
+               typedef base< archive_type> base_type;
+               typedef std::unique_ptr< base_type> base_value_type;
+
+
+               holder( base_value_type&& base) : m_base( std::move( base)) {}
+               ~holder() {}
 
                template< typename T>
-               Holder& operator & ( T&& value)
+               holder& operator & ( T&& value)
                {
-                  m_base->reader() & std::forward< T>( value);
+                  m_base->archive() & std::forward< T>( value);
                   return *this;
                }
 
                template< typename T>
-               Holder& operator >> ( T&& value)
+               holder& operator >> ( T&& value)
                {
-                  m_base->reader() >> std::forward< T>( value);
+                  m_base->archive() >> std::forward< T>( value);
                   return *this;
                }
 
-               Holder( Holder&& rhs)
+               holder( holder&& rhs)
                {
                   m_base = std::move( rhs.m_base);
                }
 
             private:
-               std::unique_ptr< holder_base> m_base;
+               base_value_type m_base;
             };
+         }
 
+         namespace reader
+         {
+
+            typedef holder::holder< Reader> Holder;
 
             Holder makeFromFile( const std::string& filename);
 
@@ -66,6 +80,9 @@ namespace casual
 
          namespace writer
          {
+            typedef holder::holder< Writer> Holder;
+
+
 
          }
 

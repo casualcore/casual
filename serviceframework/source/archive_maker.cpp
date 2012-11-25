@@ -16,28 +16,28 @@ namespace casual
    {
       namespace archive
       {
-         namespace reader
+         namespace holder
          {
-
-
-            template< typename A, typename S>
-            class basic_holder : public holder_base
+            template< typename B, typename A, typename S>
+            class basic : public base< B>
             {
             public:
-
+               typedef B base_type;
                typedef A archive_type;
                typedef S source_type;
 
 
+               ~basic() noexcept {};
+
                template< typename... Arguments>
-               basic_holder( Arguments&&... arguments)
+               basic( Arguments&&... arguments)
                   : m_source( std::forward< Arguments>( arguments)...),
                     m_archive( m_source.archiveBuffer())
                {
                }
 
 
-               Reader& reader()
+               archive_type& archive() override
                {
                   return m_archive;
                }
@@ -49,6 +49,16 @@ namespace casual
             };
 
 
+         }
+
+         namespace reader
+         {
+
+            template< typename A, typename S>
+            using basic_holder = holder::basic< Reader, A, S>;
+
+
+
             Holder makeFromFile( const std::string& filename)
             {
                auto extension = utility::file::extension( filename);
@@ -57,7 +67,8 @@ namespace casual
                {
                   typedef basic_holder< YamlRelaxed, policy::reader::Buffer > YamlRelaxedHolder;
 
-                  return Holder( std::unique_ptr< holder_base>( new YamlRelaxedHolder( filename)));
+
+                  return Holder( Holder::base_value_type( new YamlRelaxedHolder( filename)));
                }
 
                throw exception::Validation( "could not deduce protocol for file " + filename);

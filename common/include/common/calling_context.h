@@ -58,7 +58,7 @@ namespace casual
 		public:
 			static Context& instance();
 
-			int allocateCallingDescriptor();
+
 
 
 			int asyncCall( const std::string& service, char* idata, long ilen, long flags);
@@ -68,6 +68,8 @@ namespace casual
 			void clean();
 
 		private:
+
+			int allocateCallingDescriptor();
 
 			friend class casual::server::Context;
 

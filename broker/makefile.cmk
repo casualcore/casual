@@ -30,13 +30,13 @@ LinkExecutable( casual_broker, \
 //
 // unittest
 //
-Compile( unittest/isolated/source/broker.cpp, unittest/isolated/obj/broker.o)
-Compile( unittest/isolated/source/broker_confguration.cpp, unittest/isolated/obj/broker_confguration.o)
+Compile( unittest/isolated/source/test_broker.cpp, unittest/isolated/obj/test_broker.o)
+Compile( unittest/isolated/source/test_broker_confguration.cpp, unittest/isolated/obj/test_broker_confguration.o)
 
 
 LinkIsolatedUnittest( casual_broker_isolated, \
-	unittest/isolated/obj/broker.o \
-	unittest/isolated/obj/broker_confguration.o, \
+	unittest/isolated/obj/test_broker.o \
+	unittest/isolated/obj/test_broker_confguration.o, \
 	casual_utility casual_common casual_sf)
 	
 	
