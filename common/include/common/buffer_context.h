@@ -8,11 +8,10 @@
 #ifndef CASUAL_BUFFER_H_
 #define CASUAL_BUFFER_H_
 
+#include "common/types.h"
+
 #include <string>
-#include <vector>
 #include <list>
-#include <cstddef>
-#include <cstdlib>
 
 namespace casual
 {
@@ -25,11 +24,30 @@ namespace casual
 			Buffer( const std::string& type, const std::string& subtype, std::size_t size)
 				: m_type( type), m_subtype( subtype), m_memory( size) {}
 
+
+			Buffer( const Buffer&) = delete;
+		   Buffer& operator = ( const Buffer&) = delete;
+
+         Buffer( Buffer&& rhs)
+		      : m_type{ std::move( rhs.m_type)},
+              m_subtype{ std::move( rhs.m_subtype)},
+              m_memory{ std::move( rhs.m_memory)}
+         {
+         }
+
+		   Buffer& operator = ( Buffer&& rhs)
+		   {
+		      m_type = std::move( rhs.m_type);
+		      m_subtype = std::move( rhs.m_subtype);
+		      m_memory = std::move( rhs.m_memory);
+		      return *this;
+		   }
+
 			char* raw()
 			{
 				if( m_memory.empty())
 				{
-					return 0;
+					return nullptr;
 				}
 				return &m_memory[ 0];
 			}
@@ -57,18 +75,14 @@ namespace casual
 
 			}
 
-			void clear()
-			{
-				m_memory.clear();
-			}
+
 
 		private:
-			//Buffer( const Buffer&);
-			Buffer& operator = ( const Buffer&);
+
 
 			std::string m_type;
 			std::string m_subtype;
-			std::vector< char> m_memory;
+			common::binary_type m_memory;
 		};
 
 		class Context
@@ -105,7 +119,7 @@ namespace casual
 		{
 			struct Deallocator
 			{
-				Deallocator( Buffer& buffer) : m_memory( buffer.raw())
+				Deallocator( char* buffer) : m_memory( buffer)
 				{
 
 				}

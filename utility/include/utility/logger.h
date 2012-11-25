@@ -88,6 +88,8 @@ namespace casual
 
          extern internal::basic_logger< utility::platform::cLOG_debug> debug;
 
+         extern internal::basic_logger< utility::platform::cLOG_debug> trace;
+
          extern internal::basic_logger< utility::platform::cLOG_info> information;
 
          extern internal::basic_logger< utility::platform::cLOG_warning> warning;

@@ -156,6 +156,8 @@ namespace casual
 
          internal::basic_logger< utility::platform::cLOG_debug> debug;
 
+         internal::basic_logger< utility::platform::cLOG_debug> trace;
+
          internal::basic_logger< utility::platform::cLOG_info> information;
 
          internal::basic_logger< utility::platform::cLOG_warning> warning;

@@ -8,6 +8,7 @@
 #include "common/buffer_context.h"
 
 #include "utility/exception.h"
+#include "utility/logger.h"
 
 #include <stdexcept>
 
@@ -50,14 +51,18 @@ namespace casual
 
 		Buffer& Context::allocate(const std::string& type, const std::string& subtype, std::size_t size)
 		{
-			m_memoryPool.push_back( Buffer( type, subtype, size));
+
+			m_memoryPool.emplace_back( type, subtype, size);
+
+			utility::logger::debug << "allocates type: " << type << " subtype: " << subtype << "adress: " << static_cast< void*>( m_memoryPool.back().raw()) << " size: " << size;
+
 			return m_memoryPool.back();
 		}
 
 
 		Buffer& Context::create()
 		{
-			m_memoryPool.push_back( Buffer());
+			m_memoryPool.emplace_back();
 			return m_memoryPool.back();
 		}
 
@@ -66,6 +71,8 @@ namespace casual
 		Buffer& Context::reallocate( char* memory, std::size_t size)
 		{
 			Buffer& buffer = *get( memory);
+
+			 utility::logger::debug << "reallocates: " << static_cast< void*>( memory) << " size: " << size;
 
 			buffer.reallocate( size);
 
@@ -86,7 +93,7 @@ namespace casual
 
 		Context::pool_type::iterator Context::get( char* memory)
 		{
-			pool_type::iterator findIter = std::find_if(
+			auto findIter = std::find_if(
 				m_memoryPool.begin(),
 				m_memoryPool.end(),
 				local::FindBuffer( memory));
@@ -101,6 +108,8 @@ namespace casual
 
 		void Context::deallocate( char* memory)
 		{
+		   utility::logger::debug << "deallocates: " << static_cast< void*>( memory);
+
 		   if( memory != 0)
 		   {
             pool_type::iterator buffer = get( memory);

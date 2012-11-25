@@ -14,6 +14,7 @@
 #include "utility/flag.h"
 #include "utility/error.h"
 #include "utility/exception.h"
+#include "utility/trace.h"
 
 #include "xatmi.h"
 
@@ -280,6 +281,9 @@ namespace casual
 
       int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
       {
+         utility::Trace trace( "calling::Context::asyncCall");
+
+
 
          // TODO validate
 
@@ -335,8 +339,15 @@ namespace casual
          return callDescriptor;
       }
 
+
+
       int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
       {
+         utility::Trace trace( "calling::Context::getReply");
+
+         // TOOD: Temp
+         utility::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
+
          //
          // TODO: validate input...
 
@@ -356,11 +367,11 @@ namespace casual
          // TODO: Should we care if odata is a valid buffer? As of now, we pretty much
          // have no use for the users buffer.
          //
-         // get the buffer
-         //
-         buffer::Buffer& buffer = buffer::Context::instance().getBuffer( *odata);
 
-         buffer::scoped::Deallocator deallocate( buffer);
+         //
+         // Make sure we dallocate user-buffer.
+         //
+         buffer::scoped::Deallocator deallocate( *odata);
 
          //
          // Vi fetch all on the queue.
@@ -404,6 +415,9 @@ namespace casual
          *idPtr = replyIter->first;
          *odata = replyIter->second.getBuffer().raw();
          olen = replyIter->second.getBuffer().size();
+
+         // TOOD: Temp
+         utility::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
 
          //
          // We remove our representation
