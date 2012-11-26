@@ -9,23 +9,27 @@
 
 namespace casual
 {
-	namespace service
-	{
+   namespace common
+   {
+      namespace service
+      {
 
-		Context::Context() :  m_function( 0), m_called( 0) {}
+         Context::Context() :  m_function( 0), m_called( 0) {}
 
-		Context::Context( const std::string& name, tpservice function)
-			: m_name( name), m_function( function), m_called( 0)
-		{
+         Context::Context( const std::string& name, tpservice function)
+            : m_name( name), m_function( function), m_called( 0)
+         {
 
-		}
+         }
 
-		void Context::call(TPSVCINFO* serviceInformation)
-		{
-			++m_called;
-			(*m_function)( serviceInformation);
-		}
-	}
-}
+         void Context::call(TPSVCINFO* serviceInformation)
+         {
+            ++m_called;
+            (*m_function)( serviceInformation);
+         }
+
+      } // service
+   } // common
+} // casual
 
 

@@ -21,287 +21,290 @@
 
 namespace casual
 {
-	namespace message
-	{
-		struct Service
-		{
-		   typedef int Seconds;
+   namespace common
+   {
 
-		   Service() = default;
-
-		   explicit Service( const std::string& name_) : name( name_), timeout( 0) {}
-
-			std::string name;
-			Seconds timeout = 0;
-
-			template< typename A>
-			void marshal( A& archive)
-			{
-				archive & name;
-				archive & timeout;
-			}
-		};
-
-		namespace server
-		{
-
-         //!
-         //! Represents id for a server.
-         //!
-         struct Id
+      namespace message
+      {
+         struct Service
          {
-            typedef utility::platform::pid_type pid_type;
-            typedef ipc::message::Transport::queue_key_type queue_key_type;
+            typedef int Seconds;
 
-            Id() : pid( utility::platform::getProcessId()) {}
+            Service() = default;
 
-            queue_key_type queue_key;
-            pid_type pid;
+            explicit Service( const std::string& name_) : name( name_), timeout( 0) {}
+
+            std::string name;
+            Seconds timeout = 0;
 
             template< typename A>
             void marshal( A& archive)
             {
-               archive & queue_key;
-               archive & pid;
+               archive & name;
+               archive & timeout;
             }
          };
 
-
-         struct Disconnect
+         namespace server
          {
-            enum
+
+            //!
+            //! Represents id for a server.
+            //!
+            struct Id
             {
-               message_type = 3
-            };
+               typedef utility::platform::pid_type pid_type;
+               typedef ipc::message::Transport::queue_key_type queue_key_type;
 
-            Id serverId;
+               Id() : pid( utility::platform::getProcessId()) {}
 
-            template< typename A>
-            void marshal( A& archive)
-            {
-               archive & serverId;
-            }
-         };
-		}
+               queue_key_type queue_key;
+               pid_type pid;
 
-
-		namespace service
-		{
-
-         struct Advertise
-         {
-            enum
-            {
-               message_type = 4
-            };
-
-            std::string serverPath;
-            server::Id serverId;
-            std::vector< Service> services;
-
-            template< typename A>
-            void marshal( A& archive)
-            {
-               archive & serverPath;
-               archive & serverId;
-               archive & services;
-            }
-         };
-
-         struct Unadvertise
-         {
-            enum
-            {
-               message_type = 5
-            };
-
-            server::Id serverId;
-            std::vector< Service> services;
-
-            template< typename A>
-            void marshal( A& archive)
-            {
-               archive & serverId;
-               archive & services;
-            }
-         };
-
-
-         namespace name
-         {
-            namespace lookup
-            {
-               //!
-               //! Represent "service-name-lookup" request.
-               //!
-               struct Request
+               template< typename A>
+               void marshal( A& archive)
                {
-                  enum
-                  {
-                     message_type = 10
-                  };
+                  archive & queue_key;
+                  archive & pid;
+               }
+            };
 
-                  std::string requested;
-                  std::string current;
-                  server::Id server;
 
-                  template< typename A>
-                  void marshal( A& archive)
-                  {
-                     archive & requested;
-                     archive & current;
-                     archive & server;
-                  }
+            struct Disconnect
+            {
+               enum
+               {
+                  message_type = 3
                };
 
+               Id serverId;
 
-               //!
-               //! Represent "service-name-lookup" response.
-               //!
-               struct Reply
+               template< typename A>
+               void marshal( A& archive)
                {
-
-                  enum
-                  {
-                     message_type = 11
-                  };
-
-                  Service service;
-
-                  std::vector< server::Id> server;
-
-                  template< typename A>
-                  void marshal( A& archive)
-                  {
-                     archive & service;
-                     archive & server;
-                  }
-               };
-            }
+                  archive & serverId;
+               }
+            };
          }
 
-         //!
-         //! Represents a service call. via tp(a)call
-         //!
-         struct Call
+
+         namespace service
          {
-            enum
+
+            struct Advertise
             {
-               message_type = 20
-            };
-
-            Call( buffer::Buffer& buffer) : m_buffer( buffer) {}
-
-            int callDescriptor = 0;
-            Service service;
-            server::Id reply;
-
-            buffer::Buffer& buffer()
-            {
-               return m_buffer;
-            }
-
-            const buffer::Buffer& buffer() const
-            {
-               return m_buffer;
-            }
-
-            template< typename A>
-            void marshal( A& archive)
-            {
-               archive & callDescriptor;
-               archive & service;
-               archive & reply;
-               archive & m_buffer;
-            }
-
-         private:
-            buffer::Buffer& m_buffer;
-         };
-
-         //!
-         //! Represent service reply.
-         //!
-         struct Reply
-         {
-            enum
-            {
-               message_type = 21
-            };
-
-            Reply() = default;
-
-            Reply( buffer::Buffer& buffer) : m_buffer( &buffer) {}
-
-            void setBuffer( buffer::Buffer& buffer)
-            {
-               m_buffer = &buffer;
-            }
-
-            buffer::Buffer& getBuffer()
-            {
-               return *m_buffer;
-            }
-
-
-            int callDescriptor = 0;
-            int returnValue = 0;
-            long userReturnCode = 0;
-
-            template< typename A>
-            void marshal( A& archive)
-            {
-               if( m_buffer == nullptr)
+               enum
                {
-                  throw utility::exception::xatmi::SystemError( "Not a valid buffer for ServiceReply");
+                  message_type = 4
+               };
+
+               std::string serverPath;
+               server::Id serverId;
+               std::vector< Service> services;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & serverPath;
+                  archive & serverId;
+                  archive & services;
                }
-               archive & callDescriptor;
-               archive & returnValue;
-               archive & userReturnCode;
-               archive & *m_buffer;
-            }
+            };
 
-         private:
-            buffer::Buffer* m_buffer = nullptr;
-         };
-
-         //!
-         //! Represent the reply to the broker when a server is done handling
-         //! a service-call and is ready for new calls
-         //!
-         struct ACK
-         {
-            enum
+            struct Unadvertise
             {
-               message_type = 22
+               enum
+               {
+                  message_type = 5
+               };
+
+               server::Id serverId;
+               std::vector< Service> services;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & serverId;
+                  archive & services;
+               }
             };
 
 
-            std::string service;
-            server::Id server;
-
-
-            template< typename A>
-            void marshal( A& archive)
+            namespace name
             {
-               archive & service;
-               archive & server;
+               namespace lookup
+               {
+                  //!
+                  //! Represent "service-name-lookup" request.
+                  //!
+                  struct Request
+                  {
+                     enum
+                     {
+                        message_type = 10
+                     };
+
+                     std::string requested;
+                     std::string current;
+                     server::Id server;
+
+                     template< typename A>
+                     void marshal( A& archive)
+                     {
+                        archive & requested;
+                        archive & current;
+                        archive & server;
+                     }
+                  };
+
+
+                  //!
+                  //! Represent "service-name-lookup" response.
+                  //!
+                  struct Reply
+                  {
+
+                     enum
+                     {
+                        message_type = 11
+                     };
+
+                     Service service;
+
+                     std::vector< server::Id> server;
+
+                     template< typename A>
+                     void marshal( A& archive)
+                     {
+                        archive & service;
+                        archive & server;
+                     }
+                  };
+               }
             }
-         };
-		}
+
+            //!
+            //! Represents a service call. via tp(a)call
+            //!
+            struct Call
+            {
+               enum
+               {
+                  message_type = 20
+               };
+
+               Call( buffer::Buffer& buffer) : m_buffer( buffer) {}
+
+               int callDescriptor = 0;
+               Service service;
+               server::Id reply;
+
+               buffer::Buffer& buffer()
+               {
+                  return m_buffer;
+               }
+
+               const buffer::Buffer& buffer() const
+               {
+                  return m_buffer;
+               }
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & callDescriptor;
+                  archive & service;
+                  archive & reply;
+                  archive & m_buffer;
+               }
+
+            private:
+               buffer::Buffer& m_buffer;
+            };
+
+            //!
+            //! Represent service reply.
+            //!
+            struct Reply
+            {
+               enum
+               {
+                  message_type = 21
+               };
+
+               Reply() = default;
+
+               Reply( buffer::Buffer& buffer) : m_buffer( &buffer) {}
+
+               void setBuffer( buffer::Buffer& buffer)
+               {
+                  m_buffer = &buffer;
+               }
+
+               buffer::Buffer& getBuffer()
+               {
+                  return *m_buffer;
+               }
 
 
-		//!
-		//! Deduce witch type of message it is.
-		//!
-		template< typename M>
-		ipc::message::Transport::message_type_type type( const M& message)
-		{
-			return M::message_type;
-		}
+               int callDescriptor = 0;
+               int returnValue = 0;
+               long userReturnCode = 0;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  if( m_buffer == nullptr)
+                  {
+                     throw utility::exception::xatmi::SystemError( "Not a valid buffer for ServiceReply");
+                  }
+                  archive & callDescriptor;
+                  archive & returnValue;
+                  archive & userReturnCode;
+                  archive & *m_buffer;
+               }
+
+            private:
+               buffer::Buffer* m_buffer = nullptr;
+            };
+
+            //!
+            //! Represent the reply to the broker when a server is done handling
+            //! a service-call and is ready for new calls
+            //!
+            struct ACK
+            {
+               enum
+               {
+                  message_type = 22
+               };
 
 
-	} // message
+               std::string service;
+               server::Id server;
+
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & service;
+                  archive & server;
+               }
+            };
+         }
+
+
+         //!
+         //! Deduce witch type of message it is.
+         //!
+         template< typename M>
+         ipc::message::Transport::message_type_type type( const M& message)
+         {
+            return M::message_type;
+         }
+
+      } // message
+	} //common
 } // casual
 
 

@@ -16,6 +16,17 @@ namespace casual
    {
       typedef std::vector< char> binary_type;
 
+      typedef const char* raw_buffer_type;
+
+      namespace transform
+      {
+         inline char* public_buffer( raw_buffer_type buffer)
+         {
+            return const_cast< char*>( buffer);
+         }
+
+      }
+
    }
 
 }

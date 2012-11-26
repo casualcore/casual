@@ -25,8 +25,11 @@
 
 
 
+
 namespace casual
 {
+   using namespace common;
+
 	namespace broker
 	{
 		namespace local

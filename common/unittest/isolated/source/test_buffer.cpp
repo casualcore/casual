@@ -13,37 +13,39 @@
 
 namespace casual
 {
+   namespace common
+   {
 
-	namespace buffer
-	{
-
-
-		TEST( casual_common, buffer_allocate)
-		{
-			Buffer& buffer = Context::instance().allocate( "STRING", "", 2048);
-
-			EXPECT_TRUE( buffer.size() == 2048);
-
-			Context::instance().deallocate( buffer.raw());
-
-		}
+      namespace buffer
+      {
 
 
-		TEST( casual_common, buffer_reallocate)
-		{
-			Buffer* buffer = &Context::instance().allocate( "STRING", "", 2048);
+         TEST( casual_common, buffer_allocate)
+         {
+            const char* buffer = Context::instance().allocate( "STRING", "", 2048);
 
-			EXPECT_TRUE( buffer->size() == 2048);
+            EXPECT_TRUE( buffer != nullptr);
+
+            Context::instance().deallocate( buffer);
+
+         }
 
 
-			buffer = &Context::instance().reallocate( buffer->raw(), 4096);
+         TEST( casual_common, buffer_reallocate)
+         {
+            const char* buffer = Context::instance().allocate( "STRING", "", 2048);
 
-			EXPECT_TRUE( buffer->size() == 4096);
+            EXPECT_TRUE( buffer != nullptr);
+
+            const char* buffer2 = Context::instance().reallocate( buffer, 4096);
+
+            EXPECT_TRUE( buffer2 != buffer);
 
 
-			Context::instance().deallocate( buffer->raw());
+            Context::instance().deallocate( buffer2);
 
-		}
+         }
+      }
 	}
 }
 

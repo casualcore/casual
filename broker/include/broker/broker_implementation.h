@@ -20,8 +20,10 @@
 #include <string>
 
 
+
 namespace casual
 {
+   using namespace common;
 
 	namespace broker
 	{
@@ -50,7 +52,7 @@ namespace casual
 				}
 
 
-				casual::message::server::Id operator () ( const casual::broker::Server& value) const
+				message::server::Id operator () ( const casual::broker::Server& value) const
 				{
 					casual::message::server::Id result;
 

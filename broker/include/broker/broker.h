@@ -33,13 +33,13 @@ namespace casual
 		struct Server
 		{
 
-		   typedef message::server::Id::pid_type pid_type;
+		   typedef common::message::server::Id::pid_type pid_type;
 
 			Server() : pid( 0), queue_key( 0), idle( true) {}
 
 			pid_type pid;
 			std::string path;
-			message::server::Id::queue_key_type queue_key;
+			common::message::server::Id::queue_key_type queue_key;
 			bool idle;
 
 
@@ -63,7 +63,7 @@ namespace casual
 				servers.push_back( server);
 			}
 
-			message::Service information;
+			common::message::Service information;
 			std::vector< Server*> servers;
 		};
 
@@ -71,7 +71,7 @@ namespace casual
 		{
 		   typedef std::unordered_map< Server::pid_type, Server> server_mapping_type;
 		   typedef std::unordered_map< std::string, Service> service_mapping_type;
-		   typedef std::deque< message::service::name::lookup::Request> pending_requests_type;
+		   typedef std::deque< common::message::service::name::lookup::Request> pending_requests_type;
 
 		   server_mapping_type servers;
 		   service_mapping_type services;
@@ -91,7 +91,7 @@ namespace casual
 
 		private:
 			utility::file::ScopedPath m_brokerQueueFile;
-			ipc::receive::Queue m_receiveQueue;
+			common::ipc::receive::Queue m_receiveQueue;
 
 			State m_state;
 

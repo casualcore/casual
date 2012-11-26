@@ -24,58 +24,59 @@
 
 namespace casual
 {
-	namespace server
-	{
+   namespace common
+   {
+      namespace server
+      {
 
-		class Context
-		{
-		public:
-			typedef std::unordered_map< std::string, service::Context> service_mapping_type;
+         class Context
+         {
+         public:
+            typedef std::unordered_map< std::string, service::Context> service_mapping_type;
 
-			static Context& instance();
+            static Context& instance();
 
-			void add( const service::Context& context);
+            void add( const service::Context& context);
 
-			int start();
+            int start();
 
-			void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
+            void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
 
-			void advertiseService( const std::string& name, tpservice function);
+            void advertiseService( const std::string& name, tpservice function);
 
-			void unadvertiseService( const std::string& name);
-
-
-		private:
-
-			Context();
-
-			void connect();
-
-			void disconnect();
-
-			void handleServiceCall( message::service::Call& context);
-
-			message::server::Id getId();
-
-			void cleanUp();
+            void unadvertiseService( const std::string& name);
 
 
-			service_mapping_type m_services;
+         private:
 
-			ipc::send::Queue& m_brokerQueue;
-			ipc::receive::Queue& m_queue;
+            Context();
+
+            void connect();
+
+            void disconnect();
+
+            void handleServiceCall( message::service::Call& context);
+
+            message::server::Id getId();
+
+            void cleanUp();
 
 
-			utility::platform::long_jump_buffer_type m_long_jump_buffer;
+            service_mapping_type m_services;
 
-			message::service::Reply m_reply;
+            ipc::send::Queue& m_brokerQueue;
+            ipc::receive::Queue& m_queue;
 
-		};
 
+            utility::platform::long_jump_buffer_type m_long_jump_buffer;
 
-	}
+            message::service::Reply m_reply;
 
-}
+         };
+
+      } // server
+	} // common
+} // casual
 
 
 

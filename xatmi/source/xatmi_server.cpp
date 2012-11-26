@@ -27,9 +27,9 @@ namespace local
 		{
 			void operator () ( const casual_service_name_mapping& mapping)
 			{
-				casual::service::Context context( mapping.m_name, mapping.m_functionPointer);
+				casual::common::service::Context context( mapping.m_name, mapping.m_functionPointer);
 
-				casual::server::Context::instance().add( context);
+				casual::common::server::Context::instance().add( context);
 
 			}
 		};
@@ -67,7 +67,7 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
 
       tpsvrinit( argc, argv);
 
-	   return casual::server::Context::instance().start();
+	   return casual::common::server::Context::instance().start();
 	}
 	catch( ...)
 	{
