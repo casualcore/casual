@@ -95,6 +95,14 @@ namespace casual
 
             Buffer& getBuffer( raw_buffer_type memory);
 
+            //!
+            //! @return the buffer, after it has been erased from the pool
+            //!
+            //!
+            Buffer extractBuffer( raw_buffer_type memory);
+
+            Buffer& add( Buffer&& buffer);
+
             void clear();
 
 

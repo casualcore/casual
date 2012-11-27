@@ -346,9 +346,6 @@ namespace casual
          {
             utility::Trace trace( "calling::Context::getReply");
 
-            // TOOD: Temp
-            utility::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
-
             //
             // TODO: validate input...
 
@@ -369,10 +366,6 @@ namespace casual
             // have no use for the users buffer.
             //
 
-            //
-            // Make sure we dallocate user-buffer.
-            //
-            buffer::scoped::Deallocator deallocate( *odata);
 
             //
             // Vi fetch all on the queue.
@@ -383,10 +376,7 @@ namespace casual
             // First we treat the call as a NOBLOCK call. Later we block if requested
             //
 
-            //
-            //
-            //
-            reply_cache_type::iterator replyIter = find( *idPtr);
+            auto replyIter = find( *idPtr);
 
             if( replyIter == m_state.replyCache.end())
             {
@@ -399,26 +389,29 @@ namespace casual
                }
                else
                {
-                  //
-                  // No message yet for the user...
-                  // Don't deallocate buffer
-                  //
-                  deallocate.release();
                   throw utility::exception::xatmi::NoMessage();
-
                }
             }
 
+            message::service::Reply reply = std::move( replyIter->second);
 
             //
             // We deliver the message
             //
-            *idPtr = replyIter->first;
-            *odata = common::transform::public_buffer( replyIter->second.getBuffer().raw());
-            olen = replyIter->second.getBuffer().size();
+            *idPtr = reply.callDescriptor;
+            *odata = common::transform::public_buffer( reply.buffer.raw());
+            olen = reply.buffer.size();
+
 
             // TOOD: Temp
             utility::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
+
+            //
+            // Add the buffer to the pool
+            //
+            buffer::Context::instance().add( std::move( reply.buffer));
+
+
 
             //
             // We remove our representation
@@ -472,44 +465,7 @@ namespace casual
             return m_state.replyCache.find( callDescriptor);
          }
 
-         namespace local
-         {
-            namespace scoped
-            {
-               struct ReplyGuard
-               {
-                  ReplyGuard( message::service::Reply& reply)
-                        : m_reply( reply), m_deallocate( true)
-                  {
-                  }
 
-                  ~ReplyGuard()
-                  {
-                     if( m_deallocate)
-                     {
-                        try
-                        {
-                           buffer::Context::instance().deallocate( m_reply.getBuffer().raw());
-                        }
-                        catch( ...)
-                        {
-                           utility::error::handler();
-                        }
-                     }
-                  }
-
-                  void release()
-                  {
-                     m_deallocate = false;
-                  }
-
-               private:
-                  message::service::Reply& m_reply;
-                  bool m_deallocate;
-
-               };
-            }
-         }
 
          Context::reply_cache_type::iterator Context::fetch( int callDescriptor)
          {
@@ -522,17 +478,11 @@ namespace casual
                do
                {
 
-                  message::service::Reply reply( buffer::Context::instance().create());
-
-                  //
-                  // Use guard if we get a timeout (or other signal).
-                  //
-                  local::scoped::ReplyGuard guard( reply);
+                  message::service::Reply reply;
 
                   local::timeoutWrapper( reader, reply, callDescriptor);
 
-                  fetchIter = add( reply);
-                  guard.release();
+                  fetchIter = add( std::move( reply));
 
                } while( fetchIter->first != callDescriptor);
             }
@@ -540,13 +490,13 @@ namespace casual
             return fetchIter;
          }
 
-         Context::reply_cache_type::iterator Context::add( message::service::Reply& reply)
+         Context::reply_cache_type::iterator Context::add( message::service::Reply&& reply)
          {
             // TODO: Check if the received message is pending
 
             // TODO: Check if the calling descriptor is already received...
 
-            return m_state.replyCache.insert( std::make_pair( reply.callDescriptor, reply)).first;
+            return m_state.replyCache.emplace( reply.callDescriptor, std::move( reply)).first;
 
          }
 
@@ -577,20 +527,18 @@ namespace casual
             // pop from queue until it's empty (at least empty for callReplies)
             //
 
-            message::service::Reply reply( buffer::Context::instance().create());
-            local::scoped::ReplyGuard guard( reply);
-
-            queue::non_blocking::Reader reader( m_receiveQueue);
-
-            while( local::timeoutWrapper( reader, reply))
+            while( true)
             {
+               message::service::Reply reply;
 
-               add( reply);
+               queue::non_blocking::Reader reader( m_receiveQueue);
 
-               //
-               // create new buffer
-               //
-               reply.setBuffer( buffer::Context::instance().create());
+               if( ! local::timeoutWrapper( reader, reply))
+               {
+                  break;
+               }
+
+               add( std::move( reply));
             }
 
          }

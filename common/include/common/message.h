@@ -193,21 +193,12 @@ namespace casual
                   message_type = 20
                };
 
-               Call( buffer::Buffer& buffer) : m_buffer( buffer) {}
+               Call( buffer::Buffer& buffer_) : buffer( buffer_) {}
 
                int callDescriptor = 0;
                Service service;
                server::Id reply;
-
-               buffer::Buffer& buffer()
-               {
-                  return m_buffer;
-               }
-
-               const buffer::Buffer& buffer() const
-               {
-                  return m_buffer;
-               }
+               buffer::Buffer& buffer;
 
                template< typename A>
                void marshal( A& archive)
@@ -215,11 +206,8 @@ namespace casual
                   archive & callDescriptor;
                   archive & service;
                   archive & reply;
-                  archive & m_buffer;
+                  archive & buffer;
                }
-
-            private:
-               buffer::Buffer& m_buffer;
             };
 
             //!
@@ -233,39 +221,45 @@ namespace casual
                };
 
                Reply() = default;
+               Reply( Reply&&) = default;
 
-               Reply( buffer::Buffer& buffer) : m_buffer( &buffer) {}
-
-               void setBuffer( buffer::Buffer& buffer)
+               /*
+                * should generate by defuatl
+               Reply( buffer::Buffer&& buffer) : m_buffer( std::move( buffer)) {}
+               Reply& operator = ( buffer::Buffer&& buffer)
                {
-                  m_buffer = &buffer;
+
                }
 
+               */
+
+               Reply( const Reply&) = delete;
+               Reply& operator = ( const Reply&) = delete;
+
+
+               /*
                buffer::Buffer& getBuffer()
                {
                   return *m_buffer;
                }
+               */
 
 
                int callDescriptor = 0;
                int returnValue = 0;
                long userReturnCode = 0;
+               buffer::Buffer buffer;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  if( m_buffer == nullptr)
-                  {
-                     throw utility::exception::xatmi::SystemError( "Not a valid buffer for ServiceReply");
-                  }
+
                   archive & callDescriptor;
                   archive & returnValue;
                   archive & userReturnCode;
-                  archive & *m_buffer;
+                  archive & buffer;
                }
 
-            private:
-               buffer::Buffer* m_buffer = nullptr;
             };
 
             //!

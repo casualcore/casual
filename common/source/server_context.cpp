@@ -67,9 +67,9 @@ namespace casual
                   {
                      TPSVCINFO result;
 
-                     strncpy( result.name, &message.service.name[ 0], message.service.name.size());
-                     result.data = common::transform::public_buffer( message.buffer().raw());
-                     result.len = message.buffer().size();
+                     strncpy( result.name, message.service.name.data(), sizeof( result.name) );
+                     result.data = common::transform::public_buffer( message.buffer.raw());
+                     result.len = message.buffer.size();
                      result.cd = message.callDescriptor;
                      result.flags = 0;
 
@@ -272,7 +272,7 @@ namespace casual
 
             m_reply.returnValue = rval;
             m_reply.userReturnCode = rcode;
-            m_reply.setBuffer( buffer::Context::instance().getBuffer( data));
+            m_reply.buffer = buffer::Context::instance().extractBuffer( data);
 
             longjmp( m_long_jump_buffer, 1);
          }

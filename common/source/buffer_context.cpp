@@ -90,6 +90,21 @@ namespace casual
          }
 
 
+         Buffer Context::extractBuffer( raw_buffer_type memory)
+         {
+            auto iter = get( memory);
+            Buffer buffer = std::move( *iter);
+            m_memoryPool.erase( iter);
+            return buffer;
+         }
+
+
+         Buffer& Context::add( Buffer&& buffer)
+         {
+            m_memoryPool.push_back( std::move( buffer));
+            return m_memoryPool.back();
+         }
+
          void Context::clear()
          {
             Context::pool_type empty;

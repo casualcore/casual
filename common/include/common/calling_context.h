@@ -91,7 +91,7 @@ namespace casual
 
             reply_cache_type::iterator fetch( int callDescriptor);
 
-            reply_cache_type::iterator add( message::service::Reply& reply);
+            reply_cache_type::iterator add( message::service::Reply&& reply);
 
             message::service::name::lookup::Reply serviceQueue( const std::string& service);
 
