@@ -6,11 +6,11 @@
 //!
 
 #include "xatmi.h"
-#include "transform.h"
 
 #include "common/buffer_context.h"
 #include "common/calling_context.h"
 #include "common/server_context.h"
+#include "common/types.h"
 
 
 #include "utility/string.h"
@@ -31,7 +31,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 			subtype ? subtype : "",
 			size);
 
-	return casual::xatmi::transform::buffer( buffer);
+	return casual::common::transform::public_buffer( buffer);
 }
 
 char* tprealloc(char * addr, long size)
@@ -41,7 +41,7 @@ char* tprealloc(char * addr, long size)
 		addr,
 		size);
 
-	return casual::xatmi::transform::buffer( buffer);
+	return casual::common::transform::public_buffer( buffer);
 
 }
 

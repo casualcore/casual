@@ -36,6 +36,8 @@ namespace casual
 
             static Context& instance();
 
+            Context( const Context&) = delete;
+
             void add( const service::Context& context);
 
             int start();
