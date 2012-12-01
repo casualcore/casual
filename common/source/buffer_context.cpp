@@ -64,17 +64,10 @@ namespace casual
          }
 
 
-         Buffer& Context::create()
-         {
-            m_memoryPool.emplace_back();
-            return m_memoryPool.back();
-         }
-
-
 
          raw_buffer_type Context::reallocate( raw_buffer_type memory, std::size_t size)
          {
-            Buffer& buffer = *get( memory);
+            Buffer& buffer = get( memory);
 
             buffer.reallocate( size);
 
@@ -84,15 +77,17 @@ namespace casual
             return buffer.raw();
          }
 
-         Buffer& Context::getBuffer( raw_buffer_type memory)
+
+         Buffer& Context::get( raw_buffer_type memory)
          {
-            return *get( memory);
+            return *getFromPool( memory);
          }
 
 
-         Buffer Context::extractBuffer( raw_buffer_type memory)
+
+         Buffer Context::extract( raw_buffer_type memory)
          {
-            auto iter = get( memory);
+            auto iter = getFromPool( memory);
             Buffer buffer = std::move( *iter);
             m_memoryPool.erase( iter);
             return buffer;
@@ -111,7 +106,7 @@ namespace casual
             empty.swap( m_memoryPool);
          }
 
-         Context::pool_type::iterator Context::get( raw_buffer_type memory)
+         Context::pool_type::iterator Context::getFromPool( raw_buffer_type memory)
          {
             auto findIter = std::find_if(
                m_memoryPool.begin(),
@@ -132,7 +127,7 @@ namespace casual
 
             if( memory != 0)
             {
-               pool_type::iterator buffer = get( memory);
+               auto buffer = getFromPool( memory);
 
                m_memoryPool.erase( buffer);
             }

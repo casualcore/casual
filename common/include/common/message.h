@@ -195,6 +195,14 @@ namespace casual
 
                Call( buffer::Buffer& buffer_) : buffer( buffer_) {}
 
+               Call( Call&&) = default;
+               Call& operator = ( Call&&) = default;
+
+               Call() = delete;
+               Call( const Call&) = delete;
+               Call& operator = ( const Call&) = delete;
+
+
                int callDescriptor = 0;
                Service service;
                server::Id reply;

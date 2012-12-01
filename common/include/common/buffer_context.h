@@ -27,9 +27,14 @@ namespace casual
                : m_type( type), m_subtype( subtype), m_memory( size) {}
 
 
+            Buffer( Buffer&& rhs) = default;
+            Buffer& operator = ( Buffer&& rhs) = default;
+
+
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
+            /*
             Buffer( Buffer&& rhs)
                : m_type{ std::move( rhs.m_type)},
                  m_subtype{ std::move( rhs.m_subtype)},
@@ -44,6 +49,7 @@ namespace casual
                m_memory = std::move( rhs.m_memory);
                return *this;
             }
+            */
 
             inline raw_buffer_type raw() const
             {
@@ -83,23 +89,24 @@ namespace casual
 
             typedef std::list< Buffer> pool_type;
 
+            Context( const Context&) = delete;
+            Context& operator = ( const Context&) = delete;
+
             static Context& instance();
 
             raw_buffer_type allocate( const std::string& type, const std::string& subtype, std::size_t size);
-
-            Buffer& create();
 
             raw_buffer_type reallocate( raw_buffer_type memory, std::size_t size);
 
             void deallocate( raw_buffer_type memory);
 
-            Buffer& getBuffer( raw_buffer_type memory);
+            Buffer& get( raw_buffer_type memory);
 
             //!
             //! @return the buffer, after it has been erased from the pool
             //!
             //!
-            Buffer extractBuffer( raw_buffer_type memory);
+            Buffer extract( raw_buffer_type memory);
 
             Buffer& add( Buffer&& buffer);
 
@@ -108,7 +115,7 @@ namespace casual
 
          private:
 
-            pool_type::iterator get( raw_buffer_type memory);
+            pool_type::iterator getFromPool( raw_buffer_type memory);
 
             Context();
             pool_type m_memoryPool;

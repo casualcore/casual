@@ -291,7 +291,7 @@ namespace casual
             //
             // get the buffer
             //
-            buffer::Buffer& buffer = buffer::Context::instance().getBuffer( idata);
+            buffer::Buffer& buffer = buffer::Context::instance().get( idata);
 
             const int callDescriptor = allocateCallingDescriptor();
 

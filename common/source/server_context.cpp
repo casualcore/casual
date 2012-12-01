@@ -118,7 +118,7 @@ namespace casual
                   {
                      case message::service::Call::message_type:
                      {
-                        message::service::Call message( buffer::Context::instance().create());
+                        message::service::Call message( buffer::Context::instance().add( buffer::Buffer()));
 
                         marshal >> message;
 
@@ -220,6 +220,12 @@ namespace casual
                }
 
                TPSVCINFO serviceInformation = local::transform::ServiceInformation()( message);
+
+               //
+               // Before we call the user function we have to add the buffer to the "buffer-pool"
+               //
+               buffer::Context::instance().add( std::move( message.buffer));
+
                findIter->second.call( &serviceInformation);
 
                //
@@ -272,7 +278,7 @@ namespace casual
 
             m_reply.returnValue = rval;
             m_reply.userReturnCode = rcode;
-            m_reply.buffer = buffer::Context::instance().extractBuffer( data);
+            m_reply.buffer = buffer::Context::instance().extract( data);
 
             longjmp( m_long_jump_buffer, 1);
          }
