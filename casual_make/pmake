@@ -111,7 +111,9 @@ def reformat( line):
     compiling = re.search(r'(^(CC)|(g\+\+)) -o (?:\S+\.o) ((\S+\.cc)|(\S+\.cpp)|(\S+\.c)).*', line)
     archive = re.search(r'(^ar) \S+ (\S+\.a).*', line)
     link = re.search(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*', line)
-    make = re.search(r'^[\S\s]+ -f (.*make.*) .*', line)
+    make1 = re.search(r'^[\S\s]+ -f (.*make.*) .*', line)
+    make2 = re.search(r'(^make\[.*\]:)(.*)', line)
+    rm = re.search(r'^rm -f (.*)', line)
     buildserver = re.search(r'^([\S\s]+) [\S\s]+buildserver[\S\s]+-o (\S+) .*', line)
     if compiling:
         return bcolors.GREEN + 'Compile (' + compiling.group(1) + '): ' + bcolors.ENDC + compiling.group(4) + '\n'
@@ -119,12 +121,16 @@ def reformat( line):
         return bcolors.BLUE + 'Archive (' + archive.group(1) + '): ' + bcolors.ENDC + archive.group(2) + '\n'
     elif link:
         return bcolors.BLUE + 'Link (' + link.group(1) + '): ' + bcolors.ENDC + link.group(4) + '\n'
-    elif make:
-        return bcolors.HEADER + 'Current makefile: ' + bcolors.ENDC + make.group(1) + '\n'
+    elif make1:
+        return bcolors.HEADER + 'Current makefile: ' + bcolors.ENDC + make1.group(1) + '\n'
+    elif make2:
+        return bcolors.HEADER + make2.group(1) + bcolors.ENDC + make2.group(2) + '\n'
+    elif rm:
+        return bcolors.HEADER + 'rm -f' + bcolors.ENDC + rm.group(1) + '\n'
     elif buildserver:
         return bcolors.BLUE + 'Buildserver (' + buildserver.group(1) + '): ' + bcolors.ENDC + buildserver.group(2) + '\n'
     else:
-        return line
+        return bcolors.FAIL + line + bcolors.ENDC
 
 if __name__ == '__main__':
     #
@@ -199,34 +205,10 @@ if __name__ == '__main__':
     #
     # Call command
     #
-    process = subprocess.Popen( command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen( command.split(), bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     
-    output = process.stdout
-    #
-    # Handle stdout from make
-    #
-    while True:
-        next_line = output.readline()
-
-        if not next_line:
-            break
-        sys.stdout.write( reformat( next_line))
-        sys.stdout.flush()
-
-    #
-    # Handle stderr from make
-    #
-    output = process.stderr
-    while True:
-        next_line = output.readline()
-        if not next_line:
-            break
-        #
-        # Writing in red
-        #
-        sys.stderr.write( bcolors.FAIL + next_line + bcolors.ENDC)
-        sys.stderr.flush()
+    while process.poll() is None:
+        print reformat( process.stdout.readline()),
     
-    process.poll() 
     sys.exit( process.returncode)
     
