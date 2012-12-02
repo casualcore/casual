@@ -12,6 +12,7 @@
 #include "utility/logger.h"
 
 #include "common/queue.h"
+#include "common/message_dispatch.h"
 
 #include "sf/archive_maker.h"
 
@@ -110,6 +111,15 @@ namespace casual
 
       void Broker::start()
       {
+         common::dispatch::Handler handler;
+
+         handler.add< handle::Advertise>( m_state);
+         handler.add< handle::Disconnect>( m_state);
+         handler.add< handle::Unadvertise>( m_state);
+         handler.add< handle::ServiceLookup>( m_state);
+         handler.add< handle::ACK>( m_state);
+
+
          queue::blocking::Reader queueReader( m_receiveQueue);
 
          bool working = true;
@@ -119,85 +129,11 @@ namespace casual
 
             auto marshal = queueReader.next();
 
-            switch( marshal.type())
+            if( ! handler.dispatch( marshal))
             {
-               case message::service::Advertise::message_type:
-               {
-                  message::service::Advertise message;
-                  marshal >> message;
-
-                  state::advertiseService( message, m_state);
-
-                  break;
-               }
-               case message::service::Unadvertise::message_type:
-               {
-                  message::service::Unadvertise message;
-                  marshal >> message;
-
-                  state::unadvertiseService( message, m_state);
-
-                  break;
-               }
-               case message::server::Disconnect::message_type:
-               {
-                  message::server::Disconnect message;
-                  marshal >> message;
-
-                  state::removeServer( message, m_state);
-
-                  break;
-               }
-               case message::service::name::lookup::Request::message_type:
-               {
-                  message::service::name::lookup::Request message;
-                  marshal >> message;
-
-                  //
-                  // Request service
-                  //
-                  std::vector< message::service::name::lookup::Reply> response = state::requestService( message, m_state);
-
-                  if( !response.empty())
-                  {
-                     ipc::send::Queue responseQueue( message.server.queue_key);
-                     queue::blocking::Writer writer( responseQueue);
-
-                     writer( response.front());
-                  }
-
-                  break;
-               }
-               case message::service::ACK::message_type:
-               {
-                  //
-                  // Some service is done.
-                  // * Release the "lock" on that server
-                  // * Check if there are pending service request
-                  //
-                  message::service::ACK message;
-                  marshal >> message;
-
-                  std::vector< state::PendingResponse> pending = state::serviceDone( message, m_state);
-
-                  if( !pending.empty())
-                  {
-                     ipc::send::Queue responseQueue( pending.front().first);
-                     queue::blocking::Writer writer( responseQueue);
-
-                     // TODO: What if we can't write to the queue? The queue is blocking
-                     writer( pending.front().second);
-                  }
-
-                  break;
-               }
-               default:
-               {
-                  utility::logger::error << "message_type: " << " not recognized - action: discard";
-                  break;
-               }
-
+               utility::logger::error << "message_type: " << " not recognized - action: discard";
             }
+
          }
 		}
 

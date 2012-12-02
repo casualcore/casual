@@ -11,6 +11,7 @@
 #include "broker/broker.h"
 
 #include "common/message.h"
+#include "common/queue.h"
 
 //
 // std
@@ -177,6 +178,7 @@ namespace casual
                State::service_mapping_type& m_serviceMapping;
             };
 
+
             void removeService( const std::string& name, broker::Server::pid_type pid, State& state)
             {
                State::service_mapping_type::iterator findIter = state.services.find( name);
@@ -217,210 +219,12 @@ namespace casual
                   removeService( start->name, pid, state);
                }
             }
-		   }
 
-		   //!
-         //! Unadvertise 0..N services for a server.
-         //!
-		   void unadvertiseService( const message::service::Unadvertise& message, State& state)
-		   {
-		      internal::removeServices(
-		            message.services.begin(),
-		            message.services.end(),
-		            message.serverId.pid,
-		            state);
-
-		   }
-
-
-		   //!
-         //! Advertise 0..N services for a server.
-         //!
-		   void advertiseService( const message::service::Advertise& message, State& state)
-		   {
-
-            //
-            // If the server is not registered before, it will be added now... Otherwise
-		      // we use the current one...
-            //
-            State::server_mapping_type::iterator serverIterator = state.servers.insert(
-                  std::make_pair( message.serverId.pid, transform::Server()( message))).first;
-
-            //
-            // Add all the services, with this corresponding server
-            //
-            std::for_each(
-               message.services.begin(),
-               message.services.end(),
-               internal::Service( &serverIterator->second, state.services));
-
-		   }
-
-		   //!
-		   //! Removes a server, and its advertised services from the broker
-		   //!
-		   void removeServer( const message::server::Disconnect& message, State& state)
-         {
-
-		      //
-		      // Find all corresponding services this server have advertise
-		      //
-
-		      State::service_mapping_type::iterator start = state.services.begin();
-
-		      while( ( start = std::find_if(
-		            start,
-		            state.services.end(),
-		            find::Server( message.serverId.pid))) != state.services.end())
-		      {
-		         //
-		         // remove the service
-		         //
-		         internal::removeService( start->first, message.serverId.pid, state);
-		      }
-
-		      //
-		      // Remove the server
-		      //
-		      state.servers.erase( message.serverId.pid);
-         }
-
-		   //!
-         //! Tries to find the corresponding server to the service requested.
-		   //!
-		   //! @return 0..1 message::ServiceResponse
-		   //! - 0 occurrence, No idle servers, request is stacked to pending. No response is sent.
-		   //! - 1 occurrence, idle server found, or service not found at all (ie TPENOENT).
-		   //!      either way, response is sent to requested queue.
-         //!
-		   std::vector< message::service::name::lookup::Reply> requestService( const message::service::name::lookup::Request& message, State& state)
-		   {
-		      std::vector<  message::service::name::lookup::Reply> result;
-
-		      auto serviceFound = state.services.find( message.requested);
-
-		      if( serviceFound != state.services.end() && !state.servers.empty())
-		      {
-		         //
-		         // Try to find an idle server.
-		         //
-		         auto idleServer = std::find_if(
-		               serviceFound->second.servers.begin(),
-		               serviceFound->second.servers.end(),
-		               find::server::Idle());
-
-		         if( idleServer != serviceFound->second.servers.end())
-		         {
-		            //
-		            // flag it as not idle.
-		            //
-		            (*idleServer)->idle = false;
-
-		            message::service::name::lookup::Reply reply;
-		            reply.service = serviceFound->second.information;
-		            reply.server.push_back( transform::Server()( **idleServer));
-
-		            result.push_back( reply);
-		         }
-		         else
-		         {
-		            //
-		            // All servers are busy, we stack the request
-		            //
-		            state.pending.push_back( message);
-		         }
-		      }
-		      else
-		      {
-		         //
-		         // Server (queue) that hosts the requested service is not found.
-		         // We propagate this by having 0 occurrence of server in the response
-		         //
-		         message::service::name::lookup::Reply reply;
-		         reply.service.name = message.requested;
-		         result.push_back( reply);
-
-		      }
-		      return result;
-		   }
-
-		   typedef std::pair< broker::Server::pid_type, message::service::name::lookup::Reply> PendingResponse;
-
-		   //!
-		   //! When a service is done.
-		   //! - Mark the corresponding server as idle
-		   //! - Check if there are any pending requests
-		   //! - if so, mark the server as busy again, and return the response
-		   //!
-		   //! @return 0..1 pending responses.
-		   //!
-		   std::vector< PendingResponse> serviceDone( message::service::ACK& message, State& state)
-		   {
-		      std::vector< PendingResponse> result;
-
-		      //
-		      // find server and flag it as idle
-		      //
-		      auto findIter = state.servers.find( message.server.pid);
-
-		      if( findIter != state.servers.end())
-		      {
-		         findIter->second.idle = true;
-
-		         if( !state.pending.empty())
-		         {
-		            //
-		            // There are pending requests, check if there is one that is
-		            // waiting for a service that this, now idle, server has advertised.
-		            //
-		            auto pendingIter = std::find_if(
-		                  state.pending.begin(),
-		                  state.pending.end(),
-		                  find::Pending( extract::services( message.server.pid, state)));
-
-		            if( pendingIter != state.pending.end())
-		            {
-		               //
-		               // We now know that there are one idle server that has advertised the
-		               // requested service (we just marked it as idle...).
-		               // We can use the normal request to get the response
-		               //
-
-		               auto response = requestService( *pendingIter, state);
-
-		               if( response.empty())
-		               {
-		                  //
-		                  // Something is very wrong!
-		                  //
-		                  state.pending.pop_back();
-		                  throw utility::exception::xatmi::SystemError( "Inconsistency in pending replies");
-		               }
-
-		               result.push_back( std::make_pair( pendingIter->server.queue_key, response.front()));
-
-		               //
-		               // The server is busy again... No rest for the wicked...
-		               //
-		               findIter->second.idle = false;
-
-		               //
-		               // Remove pending
-		               //
-		               state.pending.erase( pendingIter);
-		            }
-		         }
-		      }
-		      else
-		      {
-		         // TODO: log this? This can only happen if there are some logic error or
-		         // the system is in a inconsistent state.
-		      }
-
-		      return result;
 		   }
 
 		} // state
+
+
 
 		namespace handle
 		{
@@ -433,16 +237,14 @@ namespace casual
 		   };
 
 
+		   //!
+         //! Advertise 0..N services for a server.
+         //!
 		   struct Advertise : public Base
 		   {
 		      typedef message::service::Advertise message_type;
 
 		      Advertise( State& state) : Base( state) {}
-
-		      message_type createMessage()
-		      {
-		         return message_type{};
-		      }
 
 		      void dispatch( message_type& message)
 		      {
@@ -461,10 +263,205 @@ namespace casual
                   message.services.end(),
                   state::internal::Service( &serverIterator->second, m_state.services));
 
-
 		      }
 
 		   };
+
+		   //!
+         //! Unadvertise 0..N services for a server.
+         //!
+		   struct Unadvertise : public Base
+         {
+            typedef message::service::Unadvertise message_type;
+
+            Unadvertise( State& state) : Base( state) {}
+
+            void dispatch( message_type& message)
+            {
+               state::internal::removeServices(
+                  message.services.begin(),
+                  message.services.end(),
+                  message.serverId.pid,
+                  m_state);
+
+            }
+         };
+
+		   //!
+		   //! A server is disconnected
+		   //!
+		   struct Disconnect : public Base
+         {
+            typedef message::server::Disconnect message_type;
+
+            Disconnect( State& state) : Base( state) {}
+
+            void dispatch( message_type& message)
+            {
+               //
+               // Find all corresponding services this server have advertise
+               //
+
+               auto start = m_state.services.begin();
+
+               while( ( start = std::find_if(
+                     start,
+                     m_state.services.end(),
+                     find::Server( message.serverId.pid))) != m_state.services.end())
+               {
+                  //
+                  // remove the service
+                  //
+                  state::internal::removeService( start->first, message.serverId.pid, m_state);
+               }
+
+               //
+               // Remove the server
+               //
+               m_state.servers.erase( message.serverId.pid);
+            }
+         };
+
+
+
+		   //!
+         //! Looks up a service-name
+         //!
+         template< typename Q>
+         struct basic_servicelookup : public Base
+         {
+            typedef message::service::name::lookup::Request message_type;
+
+            typedef Q queue_writer_type;
+
+            basic_servicelookup( State& state) : Base( state) {}
+
+            void dispatch( message_type& message)
+            {
+               auto serviceFound = m_state.services.find( message.requested);
+
+               if( serviceFound != m_state.services.end() && ! m_state.servers.empty())
+               {
+                  //
+                  // Try to find an idle server.
+                  //
+                  auto idleServer = std::find_if(
+                        serviceFound->second.servers.begin(),
+                        serviceFound->second.servers.end(),
+                        find::server::Idle());
+
+                  if( idleServer != serviceFound->second.servers.end())
+                  {
+                     //
+                     // flag it as not idle.
+                     //
+                     (*idleServer)->idle = false;
+
+                     message::service::name::lookup::Reply reply;
+                     reply.service = serviceFound->second.information;
+                     reply.server.push_back( transform::Server()( **idleServer));
+
+                     queue_writer_type writer( message.server.queue_key);
+
+                     writer( reply);
+                  }
+                  else
+                  {
+                     //
+                     // All servers are busy, we stack the request
+                     //
+                     m_state.pending.push_back( message);
+                  }
+               }
+               else
+               {
+                  //
+                  // Server (queue) that hosts the requested service is not found.
+                  // We propagate this by having 0 occurrence of server in the response
+                  //
+                  message::service::name::lookup::Reply reply;
+                  reply.service.name = message.requested;
+
+                  queue_writer_type writer( message.server.queue_key);
+                  writer( reply);
+
+               }
+
+            }
+         };
+
+         typedef basic_servicelookup< common::queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ServiceLookup;
+
+
+         //!
+         //! Handles ACK from services.
+         //!
+         //! if there are pending request for the "acked-service" we
+         //! send response directly
+         //!
+         template< typename Q>
+         struct basic_ack : public Base
+         {
+            typedef Q queue_writer_type;
+            typedef basic_servicelookup< Q> servicelookup_type;
+
+            typedef message::service::ACK message_type;
+
+            basic_ack( State& state) : Base( state) {}
+
+            void dispatch( message_type& message)
+            {
+               //
+               // find server and flag it as idle
+               //
+               auto findIter = m_state.servers.find( message.server.pid);
+
+               if( findIter != m_state.servers.end())
+               {
+                  findIter->second.idle = true;
+
+                  if( ! m_state.pending.empty())
+                  {
+                     //
+                     // There are pending requests, check if there is one that is
+                     // waiting for a service that this, now idle, server has advertised.
+                     //
+                     auto pendingIter = std::find_if(
+                           m_state.pending.begin(),
+                           m_state.pending.end(),
+                           find::Pending( extract::services( message.server.pid, m_state)));
+
+                     if( pendingIter != m_state.pending.end())
+                     {
+                        //
+                        // We now know that there are one idle server that has advertised the
+                        // requested service (we just marked it as idle...).
+                        // We can use the normal request to get the response
+                        //
+                        servicelookup_type serviceLookup( m_state);
+                        serviceLookup.dispatch( *pendingIter);
+
+                        //
+                        // Remove pending
+                        //
+                        m_state.pending.erase( pendingIter);
+                     }
+                  }
+               }
+               else
+               {
+                  // TODO: log this? This can only happen if there are some logic error or
+                  // the system is in a inconsistent state.
+               }
+            }
+         };
+
+
+         typedef basic_ack< common::queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ACK;
+
+
+
+
 
 		}
 
