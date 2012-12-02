@@ -38,7 +38,7 @@ namespace casual
 
             Context( const Context&) = delete;
 
-            void add( const service::Context& context);
+            void add( service::Context&& context);
 
             int start();
 

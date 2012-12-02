@@ -28,12 +28,14 @@ namespace casual
 				RemoveGuard( const std::string& path);
 				~RemoveGuard();
 
+				RemoveGuard( RemoveGuard&&) = default;
+
+				RemoveGuard( const RemoveGuard&) = delete;
+			   RemoveGuard& operator = ( const RemoveGuard&) = delete;
+
 				const std::string& path() const;
 
 			private:
-				RemoveGuard( const RemoveGuard&);
-				RemoveGuard& operator = ( const RemoveGuard&);
-
 				const std::string m_path;
 			};
 

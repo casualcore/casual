@@ -87,10 +87,10 @@ namespace casual
             return singleton;
          }
 
-         void Context::add( const service::Context& context)
+         void Context::add( service::Context&& context)
          {
             // TODO: add validation
-            m_services[ context.m_name] = context;
+            m_services.emplace( context.m_name, std::move( context));
          }
 
 
@@ -132,7 +132,7 @@ namespace casual
                      }
                      default:
                      {
-                        std::cerr << "message_type: " << marshal.type() << " not valid" << std::endl;
+                        utility::logger::error << "message_type: " << marshal.type() << " not valid";
                         break;
                      }
                   }

@@ -25,14 +25,14 @@ namespace casual
          {
             Context( const std::string& name, tpservice function);
 
-            Context();
+            Context( Context&&) = default;
 
 
             void call( TPSVCINFO* serviceInformation);
 
             std::string m_name;
             tpservice m_function;
-            std::size_t m_called;
+            std::size_t m_called = 0;
 
 
          };

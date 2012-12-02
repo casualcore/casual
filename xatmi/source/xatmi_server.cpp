@@ -29,7 +29,7 @@ namespace local
 			{
 				casual::common::service::Context context( mapping.m_name, mapping.m_functionPointer);
 
-				casual::common::server::Context::instance().add( context);
+				casual::common::server::Context::instance().add( std::move( context));
 
 			}
 		};

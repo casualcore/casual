@@ -24,7 +24,10 @@ namespace casual
 		{
 			void remove( const std::string& path)
 			{
-				std::remove( path.c_str());
+			   if( ! path.empty())
+				{
+			      std::remove( path.c_str());
+				}
 			}
 
 			RemoveGuard::RemoveGuard( const std::string& path)

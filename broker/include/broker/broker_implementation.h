@@ -422,6 +422,52 @@ namespace casual
 
 		} // state
 
+		namespace handle
+		{
+		   struct Base
+		   {
+		   protected:
+		      Base( State& state) : m_state( state) {}
+
+		      State& m_state;
+		   };
+
+
+		   struct Advertise : public Base
+		   {
+		      typedef message::service::Advertise message_type;
+
+		      Advertise( State& state) : Base( state) {}
+
+		      message_type createMessage()
+		      {
+		         return message_type{};
+		      }
+
+		      void dispatch( message_type& message)
+		      {
+		         //
+               // If the server is not registered before, it will be added now... Otherwise
+               // we use the current one...
+               //
+               State::server_mapping_type::iterator serverIterator = m_state.servers.insert(
+                     std::make_pair( message.serverId.pid, transform::Server()( message))).first;
+
+               //
+               // Add all the services, with this corresponding server
+               //
+               std::for_each(
+                  message.services.begin(),
+                  message.services.end(),
+                  state::internal::Service( &serverIterator->second, m_state.services));
+
+
+		      }
+
+		   };
+
+		}
+
 
 	} // broker
 } // casual

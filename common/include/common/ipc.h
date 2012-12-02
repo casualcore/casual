@@ -99,12 +99,21 @@ namespace casual
                typedef utility::platform::queue_id_type queue_id_type;
                typedef utility::platform::queue_key_type queue_key_type;
 
+               base_queue() = default;
+
+               base_queue( base_queue&& rhs)
+               {
+                  m_key = rhs.m_key;
+                  m_id = rhs.m_id;
+                  rhs.m_key = 0;
+                  rhs.m_id = 0;
+               }
 
                queue_key_type getKey() const;
 
             protected:
-               queue_key_type m_key;
-               queue_id_type m_id;
+               queue_key_type m_key = 0;
+               queue_id_type m_id = 0;
             };
 
          }
@@ -123,6 +132,13 @@ namespace casual
                };
 
                Queue( queue_key_type key);
+
+               Queue( Queue&&) = default;
+
+
+               Queue( const Queue&) = delete;
+               Queue& operator = ( const Queue&) = delete;
+
 
                bool operator () ( message::Transport& message) const
                {
@@ -155,6 +171,12 @@ namespace casual
                Queue();
                ~Queue();
 
+               Queue( Queue&&) = default;
+
+               Queue( const Queue&) = delete;
+               Queue& operator = ( const Queue&) = delete;
+
+
                bool operator () ( message::Transport& message) const
                {
                   return receive( message, 0);
@@ -167,12 +189,6 @@ namespace casual
                }
 
             private:
-               //!
-               //! No value semantics
-               //! @{
-               Queue( const Queue&);
-               Queue& operator = ( const Queue&);
-               //! @}
 
 
                bool receive( message::Transport& message, const long flags) const;
