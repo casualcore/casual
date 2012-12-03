@@ -12,7 +12,7 @@
 #include "template_server.h"
 
 
-#include "casual_logger.h"
+#include "utility/logger.h"
 
 #include <iostream>
 
