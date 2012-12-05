@@ -75,12 +75,6 @@ namespace casual
 
             int allocateCallingDescriptor();
 
-            friend class server::Context;
-
-            ipc::send::Queue& brokerQueue();
-            ipc::receive::Queue& receiveQueue();
-
-
 
             typedef State::pending_calls_type pending_calls_type;
             typedef State::reply_cache_type reply_cache_type;
@@ -99,13 +93,13 @@ namespace casual
             void consume();
 
 
-            ipc::send::Queue m_brokerQueue;
-            ipc::receive::Queue m_receiveQueue;
+            ipc::send::Queue& m_brokerQueue = ipc::getBrokerQueue();
+            ipc::receive::Queue& m_receiveQueue = ipc::getReceiveQueue();
 
 
             State m_state;
 
-            int m_callingDescriptor;
+            int m_callingDescriptor = 10;
 
          };
       } // calling

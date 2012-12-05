@@ -50,7 +50,7 @@ namespace casual
             {
                struct Service
                {
-                  message::Service operator () ( const Context::service_mapping_type::value_type& value)
+                  message::Service operator () ( const State::service_mapping_type::value_type& value)
                   {
                      message::Service result;
 
@@ -61,22 +61,7 @@ namespace casual
                };
 
 
-               struct ServiceInformation
-               {
-                  TPSVCINFO operator () ( message::service::Call& message) const
-                  {
-                     TPSVCINFO result;
 
-                     strncpy( result.name, message.service.name.data(), sizeof( result.name) );
-                     result.data = common::transform::public_buffer( message.buffer.raw());
-                     result.len = message.buffer.size();
-                     result.cd = message.callDescriptor;
-                     result.flags = 0;
-
-                     return result;
-                  }
-
-               };
             }
          }
 
@@ -87,75 +72,19 @@ namespace casual
             return singleton;
          }
 
+         /*
          void Context::add( service::Context&& context)
          {
             // TODO: add validation
-            m_services.emplace( context.m_name, std::move( context));
+            m_state.services.emplace( context.m_name, std::move( context));
          }
 
-
-         int Context::start()
-         {
-            try
-            {
-               connect();
-
-               // TODO: Temp
-               //int argc = 0;
-               //char** argv = 0;
-
-               //tpsvrinit( argc, argv);
+         */
 
 
-               while( true)
-               {
 
-                  queue::blocking::Reader queueReader( m_queue);
-
-                  auto marshal = queueReader.next();
-
-                  switch( marshal.type())
-                  {
-                     case message::service::Call::message_type:
-                     {
-                        message::service::Call message( buffer::Context::instance().add( buffer::Buffer()));
-
-                        marshal >> message;
-
-                        utility::logger::debug << "service call: " << message.service.name << " cd: " << message.callDescriptor
-                              << " caller pid: " << message.reply.pid << " caller queue: " << message.reply.queue_key;
-
-
-                        handleServiceCall( message);
-
-                        break;
-                     }
-                     default:
-                     {
-                        utility::logger::error << "message_type: " << marshal.type() << " not valid";
-                        break;
-                     }
-                  }
-               }
-            }
-            catch( ...)
-            {
-               //tpsvrdone();
-
-               //
-               // Vi need to disconnect from the broker
-               //
-               disconnect();
-
-               return utility::error::handler();
-            }
-
-            return 0;
-         }
 
          Context::Context()
-            : m_brokerQueue( calling::Context::instance().brokerQueue()),
-              m_queue( calling::Context::instance().receiveQueue())
          {
 
          }
@@ -167,7 +96,7 @@ namespace casual
             //
             // we can't block here...
             //
-            queue::non_blocking::Writer writer( m_brokerQueue);
+            queue::non_blocking::Writer writer( ipc::getBrokerQueue());
             writer( message);
          }
 
@@ -179,92 +108,17 @@ namespace casual
 
             message::service::Advertise message;
 
-            message.serverId.queue_key = m_queue.getKey();
+            message.serverId.queue_key = ipc::getReceiveQueue().getKey();
 
             std::transform(
-               m_services.begin(),
-               m_services.end(),
+               m_state.services.begin(),
+               m_state.services.end(),
                std::back_inserter( message.services),
                local::transform::Service());
 
-            queue::blocking::Writer writer( m_brokerQueue);
+            queue::blocking::Writer writer( ipc::getBrokerQueue());
             writer( message);
 
-         }
-
-
-         void Context::handleServiceCall( message::service::Call& message)
-         {
-            //
-            // Prepare for tpreturn.
-            //
-            int jumpState = setjmp( m_long_jump_buffer);
-
-            if( jumpState == 0)
-            {
-               //
-               // No longjmp has been called, this is the first time in this "service call"
-               // Let's call the user service...
-               //
-
-               //
-               // set the call-correlation
-               //
-               m_reply.callDescriptor = message.callDescriptor;
-
-               service_mapping_type::iterator findIter = m_services.find( message.service.name);
-
-               if( findIter == m_services.end())
-               {
-                  throw utility::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
-               }
-
-               TPSVCINFO serviceInformation = local::transform::ServiceInformation()( message);
-
-               //
-               // Before we call the user function we have to add the buffer to the "buffer-pool"
-               //
-               buffer::Context::instance().add( std::move( message.buffer));
-
-               findIter->second.call( &serviceInformation);
-
-               //
-               // User service returned, not by tpreturn. The standard does not mention this situation, what to do?
-               //
-               throw utility::exception::xatmi::service::Error( "Service: " + message.service.name + " did not call tpreturn");
-
-            }
-            else
-            {
-
-
-               //
-               // User has called tpreturn.
-               // Send reply to caller
-               //
-               ipc::send::Queue replyQueue( message.reply.queue_key);
-               queue::blocking::Writer replyWriter( replyQueue);
-               replyWriter( m_reply);
-
-               //
-               // Send ACK to broker
-               //
-               message::service::ACK ack;
-               ack.server = getId();
-               ack.service = message.service.name;
-               // TODO: ack.time
-
-               // TODO: Switch the above to queue writes, to gain some performance?
-
-               queue::blocking::Writer brokerWriter( m_brokerQueue);
-               brokerWriter( ack);
-
-               //
-               // Do some cleanup...
-               //
-               cleanUp();
-
-            }
          }
 
 
@@ -276,11 +130,11 @@ namespace casual
             // via longjump...
             //
 
-            m_reply.returnValue = rval;
-            m_reply.userReturnCode = rcode;
-            m_reply.buffer = buffer::Context::instance().extract( data);
+            m_state.reply.returnValue = rval;
+            m_state.reply.userReturnCode = rcode;
+            m_state.reply.buffer = buffer::Context::instance().extract( data);
 
-            longjmp( m_long_jump_buffer, 1);
+            longjmp( m_state.long_jump_buffer, 1);
          }
 
          void Context::advertiseService( const std::string& name, tpservice function)
@@ -290,9 +144,9 @@ namespace casual
             // validate
             //
 
-            service_mapping_type::iterator findIter = m_services.find( name);
+            auto findIter = m_state.services.find( name);
 
-            if( findIter != m_services.end())
+            if( findIter != m_state.services.end())
             {
                //
                // service name is already advertised
@@ -308,34 +162,35 @@ namespace casual
             {
                message::service::Advertise message;
 
-               message.serverId = getId();
+               message.serverId.queue_key = ipc::getReceiveQueue().getKey();
                // TODO: message.serverPath =
                message.services.push_back( message::Service( name));
 
                // TODO: make it consistence safe...
-               queue::blocking::Writer writer( m_brokerQueue);
+               queue::blocking::Writer writer( ipc::getBrokerQueue());
                writer( message);
 
-               add( service::Context( name, function));
+               m_state.services.emplace( name, service::Context( name, function));
             }
          }
 
          void Context::unadvertiseService( const std::string& name)
          {
-            if( m_services.erase( name) != 1)
+            if( m_state.services.erase( name) != 1)
             {
                throw utility::exception::xatmi::service::NoEntry( "service name: " + name);
             }
 
             message::service::Unadvertise message;
-            message.serverId = getId();
+            message.serverId.queue_key = ipc::getReceiveQueue().getKey();
             message.services.push_back( message::Service( name));
 
-            queue::blocking::Writer writer( m_brokerQueue);
+            queue::blocking::Writer writer( ipc::getBrokerQueue());
             writer( message);
          }
 
 
+         /*
          message::server::Id Context::getId()
          {
             message::server::Id result;
@@ -344,9 +199,15 @@ namespace casual
 
             return result;
          }
+         */
+
+         State& Context::getState()
+         {
+            return m_state;
+         }
 
 
-         void Context::cleanUp()
+         void Context::finalize()
          {
             buffer::Context::instance().clear();
          }

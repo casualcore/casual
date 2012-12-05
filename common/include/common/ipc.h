@@ -198,7 +198,9 @@ namespace casual
          }
 
 
-         send::Queue getBrokerQueue();
+         send::Queue& getBrokerQueue();
+
+         receive::Queue& getReceiveQueue();
 
       }
    }

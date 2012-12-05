@@ -120,7 +120,10 @@ namespace casual
                //
                // Destroy queue
                //
-               msgctl( m_id, IPC_RMID, 0);
+               if( m_id != 0)
+               {
+                  msgctl( m_id, IPC_RMID, 0);
+               }
             }
 
 
@@ -155,24 +158,41 @@ namespace casual
             }
          } // receive
 
-
-
-         send::Queue getBrokerQueue()
+         namespace local
          {
-            static const std::string brokerFile = utility::environment::getBrokerQueueFileName();
-
-            std::ifstream file( brokerFile.c_str());
-
-            if( file.fail())
+            namespace
             {
-               throw utility::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
+               send::Queue initializeBrokerQueue()
+               {
+                  static const std::string brokerFile = utility::environment::getBrokerQueueFileName();
+
+                  std::ifstream file( brokerFile.c_str());
+
+                  if( file.fail())
+                  {
+                     throw utility::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
+                  }
+
+                  send::Queue::queue_key_type key;
+                  file >> key;
+
+                  return send::Queue( key);
+
+               }
             }
+         }
 
-            send::Queue::queue_key_type key;
-            file >> key;
 
-            return send::Queue( key);
+         send::Queue& getBrokerQueue()
+         {
+            static send::Queue brokerQueue = local::initializeBrokerQueue();
+            return brokerQueue;
+         }
 
+         receive::Queue& getReceiveQueue()
+         {
+            static receive::Queue singleton;
+            return singleton;
          }
 
       } // ipc

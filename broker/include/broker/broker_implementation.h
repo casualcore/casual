@@ -390,7 +390,7 @@ namespace casual
             }
          };
 
-         typedef basic_servicelookup< common::queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ServiceLookup;
+         typedef basic_servicelookup< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ServiceLookup;
 
 
          //!
@@ -457,7 +457,7 @@ namespace casual
          };
 
 
-         typedef basic_ack< common::queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ACK;
+         typedef basic_ack< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ACK;
 
 
 

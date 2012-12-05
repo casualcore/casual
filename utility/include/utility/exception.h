@@ -36,7 +36,7 @@ namespace casual
          struct EnvironmentVariableNotFound : public std::runtime_error
          {
             EnvironmentVariableNotFound( const std::string& description)
-               : std::runtime_error( description) {}
+               : std::runtime_error( "environment variable not found: " + description) {}
          };
 
          struct QueueFailed : public std::runtime_error

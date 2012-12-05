@@ -203,10 +203,7 @@ namespace casual
                std::set< Timeout> m_pending;
                std::set< int> m_timeouts;
             };
-         }
 
-         namespace local
-         {
 
             template< typename Q, typename T>
             typename Q::result_type timeoutWrapper( Q& queue, T& value)
@@ -239,7 +236,21 @@ namespace casual
             }
 
 
-         }
+            struct buffer_guard
+            {
+               buffer_guard( buffer::Buffer& buffer) : m_buffer( buffer) {}
+
+               ~buffer_guard()
+               {
+                  // TODO: noexcept?
+                  buffer::Context::instance().add( std::move( m_buffer));
+               }
+
+            private:
+               buffer::Buffer& m_buffer;
+            };
+
+         } // local
 
 
          Context& Context::instance()
@@ -288,10 +299,7 @@ namespace casual
 
             // TODO validate
 
-            //
-            // get the buffer
-            //
-            buffer::Buffer& buffer = buffer::Context::instance().get( idata);
+
 
             const int callDescriptor = allocateCallingDescriptor();
 
@@ -318,12 +326,11 @@ namespace casual
             //
             // Call the service
             //
-            message::service::Call messageCall( buffer);
+
+            message::service::caller::Call messageCall( buffer::Context::instance().get( idata));
             messageCall.callDescriptor = callDescriptor;
             messageCall.reply.queue_key = m_receiveQueue.getKey();
-
             messageCall.service = lookup.service;
-
 
 
             ipc::send::Queue callQueue( lookup.server.front().queue_key);
@@ -396,6 +403,14 @@ namespace casual
             message::service::Reply reply = std::move( replyIter->second);
 
             //
+            // Get the user allocated buffer
+            //
+            buffer::Buffer userBuffer = buffer::Context::instance().extract( *odata);
+
+            // TODO: Check if the user accept different buffer-types, and compare types
+            // i.e. reply.buffer == userBuffer
+
+            //
             // We deliver the message
             //
             *idPtr = reply.callDescriptor;
@@ -439,20 +454,8 @@ namespace casual
          }
 
          Context::Context()
-               : m_brokerQueue( ipc::getBrokerQueue()), m_callingDescriptor( 10)
          {
 
-         }
-
-
-         ipc::send::Queue& Context::brokerQueue()
-         {
-            return m_brokerQueue;
-         }
-
-         ipc::receive::Queue& Context::receiveQueue()
-         {
-            return m_receiveQueue;
          }
 
 

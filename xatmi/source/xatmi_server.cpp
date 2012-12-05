@@ -14,25 +14,30 @@
 
 #include "common/service_context.h"
 #include "common/server_context.h"
+#include "common/message_dispatch.h"
 
 
 #include "utility/error.h"
+#include "utility/logger.h"
 
 
-namespace local
+using namespace casual;
+
+namespace
 {
-	namespace
+	namespace local
 	{
-		struct AddServiceContext
-		{
-			void operator () ( const casual_service_name_mapping& mapping)
-			{
-				casual::common::service::Context context( mapping.m_name, mapping.m_functionPointer);
+	   namespace transform
+	   {
+         struct ServiceContext
+         {
+            common::service::Context operator () ( const casual_service_name_mapping& mapping) const
+            {
+               return common::service::Context( mapping.m_name, mapping.m_functionPointer);
 
-				casual::common::server::Context::instance().add( std::move( context));
-
-			}
-		};
+            }
+         };
+	   }
 	}
 
 }
@@ -60,14 +65,38 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
          std::back_inserter( arguments));
 
 
-      std::for_each(
-         mapping,
-         mapping + size,
-         local::AddServiceContext());
+      // TODO: Handle arguments
 
       tpsvrinit( argc, argv);
 
-	   return casual::common::server::Context::instance().start();
+      std::vector< common::service::Context> serviceContext;
+
+      std::transform(
+         mapping,
+         mapping + size,
+         std::back_inserter( serviceContext),
+         local::transform::ServiceContext());
+
+
+      //
+      // Start the message-pump
+      //
+      common::dispatch::Handler handler;
+
+      handler.add< common::callee::handle::Call>( serviceContext);
+
+      common::queue::blocking::Reader queueReader( common::ipc::getReceiveQueue());
+
+      while( true)
+      {
+
+         auto marshal = queueReader.next();
+
+         if( ! handler.dispatch( marshal))
+         {
+            utility::logger::error << "message: " << marshal.type() << " not recognized - action: discard";
+         }
+      }
 	}
 	catch( ...)
 	{

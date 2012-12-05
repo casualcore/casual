@@ -32,6 +32,7 @@ namespace casual
          };
 
 
+
          template< typename H>
          class basic_handler : public base_handler
          {
