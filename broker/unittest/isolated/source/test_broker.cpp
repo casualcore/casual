@@ -52,7 +52,7 @@ namespace casual
 		{
 		   State state = local::initializeState();
 
-		   message::ServerDisconnect message;
+		   message::server::Disconnect message;
 		   message.serverId.pid = 20;
 
 		   state::removeServer( message, state);
@@ -72,7 +72,7 @@ namespace casual
          //
          // Add two new services to server "10"
          //
-         message::ServiceAdvertise message;
+         message::service::Advertise message;
          message.serverId.pid = 10;
          message.services.resize( 2);
          message.services.at( 0).name = "service3";
@@ -99,7 +99,7 @@ namespace casual
          //
          // Add two new services to NEW server 30
          //
-         message::ServiceAdvertise message;
+         message::service::Advertise message;
          message.serverId.pid = 30;
          message.services.resize( 2);
          message.services.at( 0).name = "service3";
@@ -127,7 +127,7 @@ namespace casual
          //
          // Add two new services to NEW server 30
          //
-         message::ServiceAdvertise message;
+         message::service::Advertise message;
          message.serverId.pid = 30;
          message.services.resize( 2);
          message.services.at( 0).name = "service1";
@@ -155,7 +155,7 @@ namespace casual
          //
          // Add two new services to NEW server 30
          //
-         message::ServiceUnadvertise message;
+         message::service::Unadvertise message;
          message.serverId.pid = 20;
          message.services.resize( 2);
          message.services.at( 0).name = "service1";
@@ -195,12 +195,12 @@ namespace casual
       {
          State state = local::initializeState();
 
-         message::ServiceRequest message;
+         message::service::name::lookup::Request message;
          message.requested = "service1";
          message.server.pid = 30;
          message.server.queue_key = 30;
 
-         std::vector< message::ServiceResponse> response = state::requestService( message, state);
+         auto response = state::requestService( message, state);
 
          // server should not be idle
          EXPECT_TRUE( state.servers[ 10].idle == false);
@@ -222,12 +222,12 @@ namespace casual
          state.servers[ 10].idle = false;
          state.servers[ 20].idle = false;
 
-         message::ServiceRequest message;
+         message::service::name::lookup::Request message;
          message.requested = "service1";
          message.server.pid = 30;
          message.server.queue_key = 30;
 
-         std::vector< message::ServiceResponse> response = state::requestService( message, state);
+         auto response = state::requestService( message, state);
 
          EXPECT_TRUE( response.empty());
 
@@ -246,12 +246,12 @@ namespace casual
          // make server busy
          state.servers[ 10].idle = false;
 
-         message::ServiceACK message;
+         message::service::ACK message;
          message.service = "service1";
          message.server.pid = 10;
          message.server.queue_key = 10;
 
-         std::vector< state::PendingResponse> response = state::serviceDone( message, state);
+         auto response = state::serviceDone( message, state);
 
          EXPECT_TRUE( response.empty());
          EXPECT_TRUE( state.servers[ 10].idle == true);
@@ -266,7 +266,7 @@ namespace casual
          state.servers[ 20].idle = false;
 
          // make sure we have a pending request
-         message::ServiceRequest request;
+         message::service::name::lookup::Request request;
          request.requested = "service1";
          request.server.pid = 30;
          request.server.queue_key = 30;
@@ -274,13 +274,13 @@ namespace casual
          state.pending.push_back( request);
 
          // server "10" is ready for action...
-         message::ServiceACK message;
+         message::service::ACK message;
          message.service = "service1";
          message.server.pid = 10;
          message.server.queue_key = 10;
 
          // we should get the pending response
-         std::vector< state::PendingResponse> response = state::serviceDone( message, state);
+         auto response = state::serviceDone( message, state);
 
          // The server should still be busy
          EXPECT_TRUE( state.servers[ 10].idle == false);

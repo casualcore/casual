@@ -70,7 +70,7 @@ namespace casual
 
             void readPOD ( std::string& value) { m_readerArcive.read( value);}
 
-            void readPOD( binary_type& value) { m_readerArcive.read( value);}
+            void readPOD( common::binary_type& value) { m_readerArcive.read( value);}
 
             T m_readerArcive;
 
@@ -124,7 +124,7 @@ namespace casual
 
             void writePOD (const std::string& value) { m_writerArcive.write( value);}
 
-            void writePOD (const binary_type& value) { m_writerArcive.write( value);}
+            void writePOD (const common::binary_type& value) { m_writerArcive.write( value);}
 
             T m_writerArcive;
 

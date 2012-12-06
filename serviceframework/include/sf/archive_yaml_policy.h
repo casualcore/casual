@@ -11,13 +11,12 @@
 #include "sf/policy_base.h"
 #include "sf/basic_archive.h"
 #include "sf/reader_policy.h"
-#include "sf/common_types.h"
-#include "sf/archivebuffer.h"
+#include "common/types.h"
 
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>
 
-#include <istream>
+#include <fstream>
 
 namespace casual
 {
@@ -29,12 +28,11 @@ namespace casual
       {
          namespace reader
          {
-            template< typename S = std::ifstream>
             struct Buffer
             {
-               typedef S stream_type;
+               //typedef S stream_type;
 
-               Buffer( stream_type& stream) : m_stream( stream) {}
+               Buffer( const std::string& file) : m_stream( file) {}
 
                std::istream& archiveBuffer()
                {
@@ -42,7 +40,7 @@ namespace casual
                }
 
             private:
-               stream_type& m_stream;
+               std::ifstream m_stream;
             };
 
 
@@ -184,7 +182,7 @@ namespace casual
                   node >> value;
                }
 
-               void readValue( const YAML::Node& node, binary_type& value)
+               void readValue( const YAML::Node& node, common::binary_type& value)
                {
                   YAML::Binary binary;
                   node >> binary;
@@ -203,6 +201,23 @@ namespace casual
 
          namespace writer
          {
+
+            struct Buffer
+            {
+               //typedef S stream_type;
+
+               Buffer( const std::string& file) : m_stream( file) {}
+
+               std::istream& archiveBuffer()
+               {
+                  return m_stream;
+               }
+
+            private:
+               std::ifstream m_stream;
+            };
+
+
             class Yaml
             {
 
@@ -286,7 +301,7 @@ namespace casual
                   m_output << value;
                }
 
-               void writeValue( const binary_type& value)
+               void writeValue( const common::binary_type& value)
                {
                   // TODO: can we cast an be conformant?
                   const unsigned char* data = value.empty() ? nullptr : reinterpret_cast< const unsigned char*>( &value[ 0]);
@@ -318,10 +333,12 @@ namespace casual
             typedef archive::basic_reader< policy::reader::Yaml< policy::reader::Relaxed> > YamlRelaxed;
             typedef archive::basic_reader< policy::reader::Yaml< policy::reader::Strict> > YamlStrict;
 
+            /*
             namespace holder
             {
                typedef sf::archive::Holder< YamlRelaxed, policy::reader::Buffer<> > YamlRelaxed;
             }
+            */
 
          }
 

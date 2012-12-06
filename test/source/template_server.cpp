@@ -59,7 +59,7 @@ void casual_test2( TPSVCINFO *serviceContext)
 
 int tpsvrinit(int argc, char **argv)
 {
-   casual::logger::debug << "USER tpsvrinit called";
+   casual::utility::logger::debug << "USER tpsvrinit called";
    return 0;
 }
 

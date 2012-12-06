@@ -77,6 +77,23 @@ namespace casual
 			   return result;
 			}
 
+			std::string basename( const std::string& path)
+			{
+			   auto basenameEnd = std::find( path.rbegin(), path.rend(), '/');
+
+			   return std::string( basenameEnd.base(), path.end());
+			}
+
+			std::string extension( const std::string& file)
+			{
+			   const std::string base = basename( file);
+
+			   auto extensionEnd = std::find( base.rbegin(), base.rend(), '.');
+
+			   return std::string( extensionEnd.base(), base.end());
+
+			}
+
 		}
 
 	}

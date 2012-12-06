@@ -24,58 +24,61 @@
 
 namespace casual
 {
-	namespace server
-	{
+   namespace common
+   {
+      namespace server
+      {
 
-		class Context
-		{
-		public:
-			typedef std::unordered_map< std::string, service::Context> service_mapping_type;
+         class Context
+         {
+         public:
+            typedef std::unordered_map< std::string, service::Context> service_mapping_type;
 
-			static Context& instance();
+            static Context& instance();
 
-			void add( const service::Context& context);
+            Context( const Context&) = delete;
 
-			int start();
+            void add( const service::Context& context);
 
-			void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
+            int start();
 
-			void advertiseService( const std::string& name, tpservice function);
+            void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
 
-			void unadvertiseService( const std::string& name);
+            void advertiseService( const std::string& name, tpservice function);
 
-
-		private:
-
-			Context();
-
-			void connect();
-
-			void disconnect();
-
-			void handleServiceCall( message::ServiceCall& context);
-
-			message::ServerId getId();
-
-			void cleanUp();
+            void unadvertiseService( const std::string& name);
 
 
-			service_mapping_type m_services;
+         private:
 
-			ipc::send::Queue& m_brokerQueue;
-			ipc::receive::Queue& m_queue;
+            Context();
+
+            void connect();
+
+            void disconnect();
+
+            void handleServiceCall( message::service::Call& context);
+
+            message::server::Id getId();
+
+            void cleanUp();
 
 
-			utility::platform::long_jump_buffer_type m_long_jump_buffer;
+            service_mapping_type m_services;
 
-			message::ServiceReply m_reply;
+            ipc::send::Queue& m_brokerQueue;
+            ipc::receive::Queue& m_queue;
 
-		};
 
+            utility::platform::long_jump_buffer_type m_long_jump_buffer;
 
-	}
+            message::service::Reply m_reply;
 
-}
+         };
+
+      } // server
+	} // common
+} // casual
 
 
 

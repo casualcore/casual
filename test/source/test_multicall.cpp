@@ -63,15 +63,12 @@ int main( int argc, char** argv)
 
 
 
-   std::vector< int>::iterator callIter = callDescriptors.begin();
-
-   std::size_t reply = 0;
-   for( ; callIter != callDescriptors.end(); ++callIter)
+   for( auto cd : callDescriptors)
    {
       long size = 0;
-      if( tpgetrply( &*callIter, &buffer, &size, 0) != -1)
+      if( tpgetrply( &cd, &buffer, &size, 0) != -1)
       {
-         //std::cout << std::endl << "reply "<< ++reply << ": " << buffer << std::endl;
+         std::cout << std::endl << "cd: "<< cd << ": " << buffer << std::endl;
       }
       else
       {

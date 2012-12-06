@@ -8,6 +8,7 @@
 
 #include "utility/environment.h"
 #include "utility/exception.h"
+#include "utility/file.h"
 
 #include <stdlib.h>
 
@@ -72,6 +73,11 @@ namespace casual
 				//
 				// TODO: Maybe store the domainname in broker-queue-file?
 				return "domain-1";
+			}
+
+			std::string getDefaultConfigurationFile()
+			{
+			   return utility::file::find( getRootPath(), std::regex( "casual_config.(yaml|xml)" ));
 			}
 
 		}

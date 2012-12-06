@@ -7,13 +7,13 @@ INCLUDE_PATHS= include \
 
 LIBRARY_PATHS = ../common/bin ../utility/bin
 
-Compile( source/casual_monitor.cpp, obj/casual_monitor.o)
-Compile( source/casual_monitor_main.cpp, obj/casual_monitor_main.o)
+Compile( source/monitor.cpp, obj/monitor.o)
+Compile( source/monitor_main.cpp, obj/monitor_main.o)
 
 
 LinkExecutable( casual_monitor, \
-	obj/casual_monitor.o \
-	 obj/casual_monitor_main.o, \
+	obj/monitor.o \
+	 obj/monitor_main.o, \
 	casual_common \
 	casual_utility )
 

@@ -36,16 +36,16 @@ LinkLibrary( casual_common, \
 //
 // unittest
 //
-Compile( unittest/isolated/source/buffer.cpp, unittest/isolated/obj/buffer.o)
-Compile( unittest/isolated/source/ipc.cpp, unittest/isolated/obj/ipc.o)
-Compile( unittest/isolated/source/marshal.cpp, unittest/isolated/obj/marshal.o)
-Compile( unittest/isolated/source/queue.cpp, unittest/isolated/obj/queue.o)
+Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
+Compile( unittest/isolated/source/test_ipc.cpp, unittest/isolated/obj/test_ipc.o)
+Compile( unittest/isolated/source/test_marshal.cpp, unittest/isolated/obj/test_marshal.o)
+Compile( unittest/isolated/source/test_queue.cpp, unittest/isolated/obj/test_queue.o)
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
-	unittest/isolated/obj/buffer.o \
-	unittest/isolated/obj/ipc.o \
-	unittest/isolated/obj/marshal.o \
-	unittest/isolated/obj/queue.o, \
+	unittest/isolated/obj/test_buffer.o \
+	unittest/isolated/obj/test_ipc.o \
+	unittest/isolated/obj/test_marshal.o \
+	unittest/isolated/obj/test_queue.o, \
 	casual_utility casual_common )	
 

@@ -8,129 +8,147 @@
 #ifndef CASUAL_BUFFER_H_
 #define CASUAL_BUFFER_H_
 
+#include "common/types.h"
+
 #include <string>
-#include <vector>
 #include <list>
-#include <cstddef>
-#include <cstdlib>
 
 namespace casual
 {
-	namespace buffer
-	{
-		struct Buffer
-		{
-			Buffer() {}
+   namespace common
+   {
+      namespace buffer
+      {
+         struct Buffer
+         {
+            Buffer() {}
 
-			Buffer( const std::string& type, const std::string& subtype, std::size_t size)
-				: m_type( type), m_subtype( subtype), m_memory( size) {}
-
-			char* raw()
-			{
-				if( m_memory.empty())
-				{
-					return 0;
-				}
-				return &m_memory[ 0];
-			}
-			std::size_t size() const
-			{
-				return m_memory.size();
-			}
-
-			std::size_t reallocate( std::size_t size)
-			{
-				if( m_memory.size() < size)
-				{
-					m_memory.resize( size);
-				}
-				return m_memory.size();
-			}
+            Buffer( const std::string& type, const std::string& subtype, std::size_t size)
+               : m_type( type), m_subtype( subtype), m_memory( size) {}
 
 
-			template< typename A>
-			void marshal( A& archive)
-			{
-				archive & m_type;
-				archive & m_subtype;
-				archive & m_memory;
-
-			}
-
-			void clear()
-			{
-				m_memory.clear();
-			}
-
-		private:
-			//Buffer( const Buffer&);
-			Buffer& operator = ( const Buffer&);
-
-			std::string m_type;
-			std::string m_subtype;
-			std::vector< char> m_memory;
-		};
-
-		class Context
-		{
-		public:
-
-			typedef std::list< Buffer> pool_type;
-
-			static Context& instance();
-
-			Buffer& allocate( const std::string& type, const std::string& subtype, std::size_t size);
-
-			Buffer& create();
-
-			Buffer& reallocate( char* memory, std::size_t size);
-
-			void deallocate( char* memory);
-
-			Buffer& getBuffer( char* memory);
-
-			void clear();
+            Buffer( Buffer&& rhs) = default;
+            Buffer& operator = ( Buffer&& rhs) = default;
 
 
-		private:
+            Buffer( const Buffer&) = delete;
+            Buffer& operator = ( const Buffer&) = delete;
 
-			pool_type::iterator get( char* memory);
+            /*
+            Buffer( Buffer&& rhs)
+               : m_type{ std::move( rhs.m_type)},
+                 m_subtype{ std::move( rhs.m_subtype)},
+                 m_memory{ std::move( rhs.m_memory)}
+            {
+            }
 
-			Context();
-			pool_type m_memoryPool;
-		};
+            Buffer& operator = ( Buffer&& rhs)
+            {
+               m_type = std::move( rhs.m_type);
+               m_subtype = std::move( rhs.m_subtype);
+               m_memory = std::move( rhs.m_memory);
+               return *this;
+            }
+            */
+
+            inline raw_buffer_type raw() const
+            {
+               return m_memory.data();
+            }
+            std::size_t size() const
+            {
+               return m_memory.size();
+            }
+
+            inline raw_buffer_type reallocate( std::size_t size)
+            {
+               if( m_memory.size() < size)
+               {
+                  m_memory.resize( size);
+               }
+               return raw();
+            }
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & m_type;
+               archive & m_subtype;
+               archive & m_memory;
+            }
+
+         private:
+            std::string m_type;
+            std::string m_subtype;
+            common::binary_type m_memory;
+         };
+
+         class Context
+         {
+         public:
+
+            typedef std::list< Buffer> pool_type;
+
+            Context( const Context&) = delete;
+            Context& operator = ( const Context&) = delete;
+
+            static Context& instance();
+
+            raw_buffer_type allocate( const std::string& type, const std::string& subtype, std::size_t size);
+
+            raw_buffer_type reallocate( raw_buffer_type memory, std::size_t size);
+
+            void deallocate( raw_buffer_type memory);
+
+            Buffer& get( raw_buffer_type memory);
+
+            //!
+            //! @return the buffer, after it has been erased from the pool
+            //!
+            //!
+            Buffer extract( raw_buffer_type memory);
+
+            Buffer& add( Buffer&& buffer);
+
+            void clear();
 
 
-		namespace scoped
-		{
-			struct Deallocator
-			{
-				Deallocator( Buffer& buffer) : m_memory( buffer.raw())
-				{
+         private:
 
-				}
+            pool_type::iterator getFromPool( raw_buffer_type memory);
 
-				~Deallocator()
-				{
-					Context::instance().deallocate( m_memory);
-				}
-
-				void release()
-				{
-					m_memory = 0;
-				}
-
-			private:
-				char* m_memory;
-			};
-		}
+            Context();
+            pool_type m_memoryPool;
+         };
 
 
-	}
+         namespace scoped
+         {
+            struct Deallocator
+            {
+               Deallocator( char* buffer) : m_memory( buffer)
+               {
 
+               }
 
+               ~Deallocator()
+               {
+                  Context::instance().deallocate( m_memory);
+               }
 
-}
+               void release()
+               {
+                  m_memory = 0;
+               }
+
+            private:
+               char* m_memory;
+            };
+         }
+
+      } // buffer
+	} // common
+} // casual
 
 
 

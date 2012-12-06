@@ -16,34 +16,29 @@
 
 namespace casual
 {
-	namespace service
-	{
+   namespace common
+   {
+      namespace service
+      {
 
-		struct Context
-		{
-			Context( const std::string& name, tpservice function);
+         struct Context
+         {
+            Context( const std::string& name, tpservice function);
 
-			Context();
-
-
-			void call( TPSVCINFO* serviceInformation);
-
-			std::string m_name;
-			tpservice m_function;
-			std::size_t m_called;
+            Context();
 
 
-		};
+            void call( TPSVCINFO* serviceInformation);
+
+            std::string m_name;
+            tpservice m_function;
+            std::size_t m_called;
 
 
-
-
-
-
-	}
-
-
-}
+         };
+      } // service
+   } // common
+} // casual
 
 
 #endif /* CASUAL_SERVICE_CONTEXT_H_ */

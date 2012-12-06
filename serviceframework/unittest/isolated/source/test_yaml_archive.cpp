@@ -12,7 +12,8 @@
 
 #include "sf/archive_yaml_policy.h"
 #include "sf/exception.h"
-#include "sf/common_types.h"
+
+#include "common/types.h"
 
 
 namespace casual
@@ -45,7 +46,7 @@ value:
 
       struct Binary : public Serializible
       {
-         sf::binary_type binary;
+         common::binary_type binary;
 
          template< typename A>
          void serialize( A& archive)

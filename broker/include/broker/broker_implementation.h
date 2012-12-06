@@ -20,8 +20,10 @@
 #include <string>
 
 
+
 namespace casual
 {
+   using namespace common;
 
 	namespace broker
 	{
@@ -38,7 +40,7 @@ namespace casual
 			struct Server
 			{
 
-				casual::broker::Server operator () ( const message::ServiceAdvertise& message) const
+				casual::broker::Server operator () ( const message::service::Advertise& message) const
 				{
 					casual::broker::Server result;
 
@@ -50,9 +52,9 @@ namespace casual
 				}
 
 
-				casual::message::ServerId operator () ( const casual::broker::Server& value) const
+				message::server::Id operator () ( const casual::broker::Server& value) const
 				{
-					casual::message::ServerId result;
+					casual::message::server::Id result;
 
 					result.pid = value.pid;
 					result.queue_key = value.queue_key;
@@ -69,7 +71,7 @@ namespace casual
 		{
 		   struct Server
 		   {
-		      Server( message::ServerId::pid_type pid) : m_pid( pid) {}
+		      Server( broker::Server::pid_type pid) : m_pid( pid) {}
 
 		      bool operator () ( const broker::Server* server)
             {
@@ -85,7 +87,7 @@ namespace casual
             }
 
 		   private:
-		      message::ServerId::pid_type m_pid;
+		      broker::Server::pid_type m_pid;
 		   };
 
 		   namespace server
@@ -104,7 +106,7 @@ namespace casual
 		   {
 		      Pending( const std::vector< std::string>& services) : m_services( services) {}
 
-		      bool operator () ( const message::ServiceRequest& request)
+		      bool operator () ( const message::service::name::lookup::Request& request)
 		      {
 		         return std::binary_search( m_services.begin(), m_services.end(), request.requested);
 		      }
@@ -122,7 +124,7 @@ namespace casual
 		   //!
 		   //! @return a sorted range with the services.
 		   //!
-		   std::vector< std::string> services( message::ServerId::pid_type pid, State& state)
+		   std::vector< std::string> services( broker::Server::pid_type pid, State& state)
          {
 		      std::vector< std::string> result;
 
@@ -175,7 +177,7 @@ namespace casual
                State::service_mapping_type& m_serviceMapping;
             };
 
-            void removeService( const std::string& name, message::ServerId::pid_type pid, State& state)
+            void removeService( const std::string& name, broker::Server::pid_type pid, State& state)
             {
                State::service_mapping_type::iterator findIter = state.services.find( name);
 
@@ -208,7 +210,7 @@ namespace casual
             }
 
             template< typename Iter>
-            void removeServices( Iter start, Iter end, message::ServerId::pid_type pid, State& state)
+            void removeServices( Iter start, Iter end, broker::Server::pid_type pid, State& state)
             {
                for( ; start != end; ++start)
                {
@@ -220,7 +222,7 @@ namespace casual
 		   //!
          //! Unadvertise 0..N services for a server.
          //!
-		   void unadvertiseService( const message::ServiceUnadvertise& message, State& state)
+		   void unadvertiseService( const message::service::Unadvertise& message, State& state)
 		   {
 		      internal::removeServices(
 		            message.services.begin(),
@@ -234,7 +236,7 @@ namespace casual
 		   //!
          //! Advertise 0..N services for a server.
          //!
-		   void advertiseService( const message::ServiceAdvertise& message, State& state)
+		   void advertiseService( const message::service::Advertise& message, State& state)
 		   {
 
             //
@@ -257,7 +259,7 @@ namespace casual
 		   //!
 		   //! Removes a server, and its advertised services from the broker
 		   //!
-		   void removeServer( const message::ServerDisconnect& message, State& state)
+		   void removeServer( const message::server::Disconnect& message, State& state)
          {
 
 		      //
@@ -291,18 +293,18 @@ namespace casual
 		   //! - 1 occurrence, idle server found, or service not found at all (ie TPENOENT).
 		   //!      either way, response is sent to requested queue.
          //!
-		   std::vector< message::ServiceResponse> requestService( const message::ServiceRequest& message, State& state)
+		   std::vector< message::service::name::lookup::Reply> requestService( const message::service::name::lookup::Request& message, State& state)
 		   {
-		      std::vector< message::ServiceResponse> result;
+		      std::vector<  message::service::name::lookup::Reply> result;
 
-		      State::service_mapping_type::iterator serviceFound = state.services.find( message.requested);
+		      auto serviceFound = state.services.find( message.requested);
 
 		      if( serviceFound != state.services.end() && !state.servers.empty())
 		      {
 		         //
 		         // Try to find an idle server.
 		         //
-		         std::vector< Server*>::iterator idleServer = std::find_if(
+		         auto idleServer = std::find_if(
 		               serviceFound->second.servers.begin(),
 		               serviceFound->second.servers.end(),
 		               find::server::Idle());
@@ -314,11 +316,11 @@ namespace casual
 		            //
 		            (*idleServer)->idle = false;
 
-		            message::ServiceResponse response;
-		            response.service = serviceFound->second.information;
-		            response.server.push_back( transform::Server()( **idleServer));
+		            message::service::name::lookup::Reply reply;
+		            reply.service = serviceFound->second.information;
+		            reply.server.push_back( transform::Server()( **idleServer));
 
-		            result.push_back( response);
+		            result.push_back( reply);
 		         }
 		         else
 		         {
@@ -334,15 +336,15 @@ namespace casual
 		         // Server (queue) that hosts the requested service is not found.
 		         // We propagate this by having 0 occurrence of server in the response
 		         //
-		         message::ServiceResponse response;
-		         response.service.name = message.requested;
-		         result.push_back( response);
+		         message::service::name::lookup::Reply reply;
+		         reply.service.name = message.requested;
+		         result.push_back( reply);
 
 		      }
 		      return result;
 		   }
 
-		   typedef std::pair< message::ServerId::queue_key_type, message::ServiceResponse> PendingResponse;
+		   typedef std::pair< broker::Server::pid_type, message::service::name::lookup::Reply> PendingResponse;
 
 		   //!
 		   //! When a service is done.
@@ -352,14 +354,14 @@ namespace casual
 		   //!
 		   //! @return 0..1 pending responses.
 		   //!
-		   std::vector< PendingResponse> serviceDone( message::ServiceACK& message, State& state)
+		   std::vector< PendingResponse> serviceDone( message::service::ACK& message, State& state)
 		   {
 		      std::vector< PendingResponse> result;
 
 		      //
 		      // find server and flag it as idle
 		      //
-		      State::server_mapping_type::iterator findIter = state.servers.find( message.server.pid);
+		      auto findIter = state.servers.find( message.server.pid);
 
 		      if( findIter != state.servers.end())
 		      {
@@ -371,7 +373,7 @@ namespace casual
 		            // There are pending requests, check if there is one that is
 		            // waiting for a service that this, now idle, server has advertised.
 		            //
-		            State::pending_requests_type::iterator pendingIter = std::find_if(
+		            auto pendingIter = std::find_if(
 		                  state.pending.begin(),
 		                  state.pending.end(),
 		                  find::Pending( extract::services( message.server.pid, state)));
@@ -384,7 +386,7 @@ namespace casual
 		               // We can use the normal request to get the response
 		               //
 
-		               std::vector< message::ServiceResponse> response = requestService( *pendingIter, state);
+		               auto response = requestService( *pendingIter, state);
 
 		               if( response.empty())
 		               {
@@ -392,7 +394,7 @@ namespace casual
 		                  // Something is very wrong!
 		                  //
 		                  state.pending.pop_back();
-		                  throw exception::xatmi::SystemError( "Inconsistency in pending replies");
+		                  throw utility::exception::xatmi::SystemError( "Inconsistency in pending replies");
 		               }
 
 		               result.push_back( std::make_pair( pendingIter->server.queue_key, response.front()));

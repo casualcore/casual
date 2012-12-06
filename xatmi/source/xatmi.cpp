@@ -10,6 +10,8 @@
 #include "common/buffer_context.h"
 #include "common/calling_context.h"
 #include "common/server_context.h"
+#include "common/types.h"
+
 
 #include "utility/string.h"
 #include "utility/error.h"
@@ -24,22 +26,22 @@ long tpurcode = 0;
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-	casual::buffer::Buffer& buffer = casual::buffer::Context::instance().allocate(
+	auto&& buffer = casual::common::buffer::Context::instance().allocate(
 			type ? type : "",
 			subtype ? subtype : "",
 			size);
 
-	return buffer.raw();
+	return casual::common::transform::public_buffer( buffer);
 }
 
 char* tprealloc(char * addr, long size)
 {
 
-	casual::buffer::Buffer& buffer = casual::buffer::Context::instance().reallocate(
+   auto&& buffer = casual::common::buffer::Context::instance().reallocate(
 		addr,
 		size);
 
-	return buffer.raw();
+	return casual::common::transform::public_buffer( buffer);
 
 }
 
@@ -53,7 +55,7 @@ long tptypes(char* ptr, char* type, char* subtype)
 
 void tpfree(char* ptr)
 {
-	casual::buffer::Context::instance().deallocate( ptr);
+	casual::common::buffer::Context::instance().deallocate( ptr);
 }
 
 
@@ -61,11 +63,11 @@ void tpreturn(int rval, long rcode, char* data, long len, long flags)
 {
    try
    {
-      casual::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
+      casual::common::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
    }
    catch( ...)
    {
-      casual::error::handler();
+      casual::utility::error::handler();
    }
 }
 
@@ -74,14 +76,14 @@ int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen,
    try
    {
 
-      int callDescriptor = casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+      int callDescriptor = casual::common::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
 
-      return casual::calling::Context::instance().getReply( &callDescriptor, odata, *olen, flags);
+      return casual::common::calling::Context::instance().getReply( &callDescriptor, odata, *olen, flags);
 
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -90,11 +92,11 @@ int tpacall( const char * svc, char* idata, long ilen, long flags)
 {
    try
    {
-      return casual::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+      return casual::common::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
    }
 	catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -103,11 +105,11 @@ int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
 {
    try
    {
-      return casual::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
+      return casual::common::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -116,11 +118,11 @@ int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
 {
    try
    {
-      casual::server::Context::instance().advertiseService( svcname, func);
+      casual::common::server::Context::instance().advertiseService( svcname, func);
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -129,18 +131,18 @@ int tpunadvertise( const char* svcname)
 {
    try
    {
-      casual::server::Context::instance().unadvertiseService( svcname);
+      casual::common::server::Context::instance().unadvertiseService( svcname);
    }
    catch( ...)
    {
-      return casual::error::handler();
+      return casual::utility::error::handler();
    }
    return 0; // remove warning in eclipse
 }
 
 const char* tperrnostring( int error)
 {
-   return casual::error::tperrnoStringRepresentation( error).c_str();
+   return casual::utility::error::tperrnoStringRepresentation( error).c_str();
 }
 
 

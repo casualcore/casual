@@ -19,91 +19,98 @@
 
 namespace casual
 {
-   namespace server
+   namespace common
    {
-      class Context;
-   }
-
-	namespace calling
-	{
-		namespace internal
-		{
-			struct Pending
-			{
-			   Pending() : callDescriptor( 0), called( 0), timeout( 0) {}
-				typedef utility::platform::seconds_type seconds_type;
-
-				int callDescriptor;
-				seconds_type called;
-				seconds_type timeout;
 
 
-			};
-		}
-
-
-		struct State
+      namespace server
       {
-		   typedef std::unordered_set< int> pending_calls_type;
-		   typedef std::unordered_map< int, message::ServiceReply> reply_cache_type;
+         class Context;
+      }
 
-         pending_calls_type pendingCalls;
-         reply_cache_type replyCache;
+      namespace calling
+      {
+         namespace internal
+         {
+            struct Pending
+            {
+               Pending() : callDescriptor( 0), called( 0), timeout( 0) {}
+               typedef utility::platform::seconds_type seconds_type;
 
-         int currentCallingDescriptor;
-      };
-
-		class Context
-		{
-		public:
-			static Context& instance();
-
-			int allocateCallingDescriptor();
-
-
-			int asyncCall( const std::string& service, char* idata, long ilen, long flags);
-
-			int getReply( int* idPtr, char** odata, long& olen, long flags);
-
-			void clean();
-
-		private:
-
-			friend class casual::server::Context;
-
-			ipc::send::Queue& brokerQueue();
-			ipc::receive::Queue& receiveQueue();
+               int callDescriptor;
+               seconds_type called;
+               seconds_type timeout;
 
 
-
-			typedef State::pending_calls_type pending_calls_type;
-			typedef State::reply_cache_type reply_cache_type;
-
-			Context();
-
-			reply_cache_type::iterator find( int callDescriptor);
-
-			reply_cache_type::iterator fetch( int callDescriptor);
-
-			reply_cache_type::iterator add( message::ServiceReply& reply);
-
-			message::ServiceResponse serviceQueue( const std::string& service);
+            };
+         }
 
 
-			void consume();
+         struct State
+         {
+            typedef std::unordered_set< int> pending_calls_type;
+            typedef std::unordered_map< int, message::service::Reply> reply_cache_type;
+
+            pending_calls_type pendingCalls;
+            reply_cache_type replyCache;
+
+            int currentCallingDescriptor;
+         };
+
+         class Context
+         {
+         public:
+            static Context& instance();
 
 
-			ipc::send::Queue m_brokerQueue;
-			ipc::receive::Queue m_receiveQueue;
 
 
-			State m_state;
+            int asyncCall( const std::string& service, char* idata, long ilen, long flags);
 
-			int m_callingDescriptor;
+            int getReply( int* idPtr, char** odata, long& olen, long flags);
 
-		};
-	}
-}
+            void clean();
+
+         private:
+
+            int allocateCallingDescriptor();
+
+            friend class server::Context;
+
+            ipc::send::Queue& brokerQueue();
+            ipc::receive::Queue& receiveQueue();
+
+
+
+            typedef State::pending_calls_type pending_calls_type;
+            typedef State::reply_cache_type reply_cache_type;
+
+            Context();
+
+            reply_cache_type::iterator find( int callDescriptor);
+
+            reply_cache_type::iterator fetch( int callDescriptor);
+
+            reply_cache_type::iterator add( message::service::Reply&& reply);
+
+            message::service::name::lookup::Reply serviceQueue( const std::string& service);
+
+
+            void consume();
+
+
+            ipc::send::Queue m_brokerQueue;
+            ipc::receive::Queue m_receiveQueue;
+
+
+            State m_state;
+
+            int m_callingDescriptor;
+
+         };
+      } // calling
+	} // common
+} // casual
 
 
 #endif /* CASUAL_CALLING_CONTEXT_H_ */

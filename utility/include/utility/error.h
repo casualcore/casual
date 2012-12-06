@@ -12,18 +12,19 @@
 
 namespace casual
 {
-	namespace error
-	{
+   namespace utility
+   {
+      namespace error
+      {
 
-		int handler();
+         int handler();
 
-		std::string stringFromErrno();
+         std::string stringFromErrno();
 
-		const std::string& tperrnoStringRepresentation( int error);
+         const std::string& tperrnoStringRepresentation( int error);
 
-	}
-
-
+      }
+   }
 }
 
 
