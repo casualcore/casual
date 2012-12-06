@@ -184,30 +184,24 @@ namespace casual
                }
             }
 
-            //!
-            //! Represents a service call. via tp(a)call
-            //!
-            struct Call
+            struct base_call
             {
                enum
                {
                   message_type = 20
                };
 
-               Call( buffer::Buffer& buffer_) : buffer( buffer_) {}
+               base_call() = default;
 
-               Call( Call&&) = default;
-               Call& operator = ( Call&&) = default;
+               base_call( base_call&&) = default;
+               base_call& operator = ( base_call&&) = default;
 
-               Call() = delete;
-               Call( const Call&) = delete;
-               Call& operator = ( const Call&) = delete;
-
+               base_call( const base_call&) = delete;
+               base_call& operator = ( const base_call&) = delete;
 
                int callDescriptor = 0;
                Service service;
                server::Id reply;
-               buffer::Buffer& buffer;
 
                template< typename A>
                void marshal( A& archive)
@@ -215,9 +209,68 @@ namespace casual
                   archive & callDescriptor;
                   archive & service;
                   archive & reply;
-                  archive & buffer;
                }
             };
+
+            namespace callee
+            {
+
+               //!
+               //! Represents a service call. via tp(a)call
+               //!
+               struct Call : public base_call
+               {
+
+
+                  Call() = default;
+                  //Call( buffer::Buffer&& buffer_) : buffer( std::move( buffer_)) {}
+
+                  Call( Call&&) = default;
+                  Call& operator = ( Call&&) = default;
+
+                  Call( const Call&) = delete;
+                  Call& operator = ( const Call&) = delete;
+
+                  buffer::Buffer buffer;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     base_call::marshal( archive);
+                     archive & buffer;
+                  }
+               };
+            }
+
+            namespace caller
+            {
+               struct Call : public base_call
+               {
+
+
+                  //Call() = default;
+                  Call( buffer::Buffer& buffer_) : buffer( buffer_) {}
+
+                  Call( Call&&) = default;
+                  Call& operator = ( Call&&) = default;
+
+                  Call( const Call&) = delete;
+                  Call& operator = ( const Call&) = delete;
+
+                  buffer::Buffer& buffer;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     base_call::marshal( archive);
+                     archive & buffer;
+                  }
+               };
+
+            }
+
+
+
 
             //!
             //! Represent service reply.
@@ -337,9 +390,9 @@ namespace casual
 			};
 
 			//!
-			//! Call to monitorserver with statistics
+			//! Notify monitorserver with statistics
 			//!
-			struct Call
+			struct NotifyStats
 			 {
 				enum
 				{
@@ -348,8 +401,15 @@ namespace casual
 
 				std::string parentService;
 				std::string service;
+				//
+				// Should be Uuid
+				//
 				std::string callchainId;
+
 				std::string transactionId;
+				//
+				// Should be some kind of chrono
+				//
 				std::string startTime;
 				std::string endTime;
 

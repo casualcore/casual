@@ -91,7 +91,7 @@ namespace casual
 
 		private:
 			utility::file::ScopedPath m_brokerQueueFile;
-			common::ipc::receive::Queue m_receiveQueue;
+			common::ipc::receive::Queue& m_receiveQueue = common::ipc::getReceiveQueue();
 
 			State m_state;
 

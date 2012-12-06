@@ -37,7 +37,7 @@ namespace casual
                }
 
 
-               archive_type& archive() override
+               virtual archive_type& archive() override
                {
                   return m_archive;
                }

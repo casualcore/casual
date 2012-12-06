@@ -202,6 +202,44 @@ namespace casual
             };
 
          } // non_blocking
+
+
+         template< typename I, typename Q>
+         struct basic_queue
+         {
+            typedef I ipc_queue_type;
+            typedef Q queue_type;
+
+            template< typename... Args>
+            basic_queue( Args&& ...args) : m_ipcQueue( std::forward< Args>( args)...), m_queue( m_ipcQueue) {}
+
+            basic_queue( basic_queue&&) = default;
+
+
+            /*
+             * TODO: Why does not this work?
+            template< typename T>
+            auto operator () ( T& value) -> decltype( m_queue( value))
+            {
+               return m_queue( value);
+            }
+            */
+
+
+            template< typename T>
+            void operator () ( T&& value)
+            {
+               return m_queue( std::forward< T>( value));
+            }
+
+
+
+         private:
+            ipc_queue_type m_ipcQueue;
+            queue_type m_queue;
+         };
+
+
       } // queue
    } // common
 } // casual

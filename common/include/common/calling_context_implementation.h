@@ -9,13 +9,13 @@
 #define CASUAL_CALLING_CONTEXT_IMPLEMENTATION_H_
 
 
-#include "common/calling_context.h"
-#include "common/message.h"
+//#include "common/calling_context.h"
+//#include "common/message.h"
 
+/*
 namespace casual
 {
-
-   namespace calling
+   namespace callee
    {
       namespace state
       {
@@ -139,7 +139,7 @@ namespace casual
    } // calling
 
 } // casual
-
+*/
 
 
 

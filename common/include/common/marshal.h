@@ -16,9 +16,14 @@
 
 #include <vector>
 
+//
+// We need to get private stuff for unittest
+//
+#include "gtest/gtest_prod.h"
+
 
 // TODO: test
-#include <iostream>
+//#include <iostream>
 
 namespace casual
 {
@@ -188,6 +193,9 @@ namespace casual
 
 
             private:
+
+               FRIEND_TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch);
+               FRIEND_TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler);
 
                template< typename T>
                void read( T& value)

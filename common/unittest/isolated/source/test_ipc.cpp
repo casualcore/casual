@@ -44,7 +44,7 @@ namespace casual
 
             std::string information( "ABC");
 
-            transport.m_payload.m_payload = message::Transport::payload_type{ 'A', 'B', 'C'};
+            transport.m_payload.m_payload = message::Transport::payload_type{ { 'A', 'B', 'C' } };
 
             EXPECT_TRUE( information == transport.m_payload.m_payload.data());
 

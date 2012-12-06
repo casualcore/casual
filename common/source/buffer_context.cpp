@@ -67,7 +67,7 @@ namespace casual
 
          raw_buffer_type Context::reallocate( raw_buffer_type memory, std::size_t size)
          {
-            Buffer& buffer = get( memory);
+            auto& buffer = *getFromPool( memory);
 
             buffer.reallocate( size);
 
@@ -78,11 +78,11 @@ namespace casual
          }
 
 
+
          Buffer& Context::get( raw_buffer_type memory)
          {
             return *getFromPool( memory);
          }
-
 
 
          Buffer Context::extract( raw_buffer_type memory)
@@ -92,7 +92,6 @@ namespace casual
             m_memoryPool.erase( iter);
             return buffer;
          }
-
 
          Buffer& Context::add( Buffer&& buffer)
          {

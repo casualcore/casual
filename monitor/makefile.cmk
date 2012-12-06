@@ -2,7 +2,8 @@
 INCLUDE_PATHS= include \
 	../common/include \
 	../xatmi/include \
-	../utility/include
+	../utility/include \
+	$(UNITTEST_INCLUDE_PATH)
 
 
 LIBRARY_PATHS = ../common/bin ../utility/bin
