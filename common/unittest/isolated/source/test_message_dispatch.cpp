@@ -56,7 +56,7 @@ namespace casual
 
       //
       // We have to be in the same ns as marshal::input so the friend-declaration
-      // for input::Banary kicks in.
+      // for input::Binary kicks in.
       //
       namespace marshal
       {

@@ -37,11 +37,11 @@ LinkLibrary( casual_utility, \
 //
 // unittest
 //
-Compile( unittest/isolated/source/uuid.cpp, unittest/isolated/obj/uuid.o)
+Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
 
 
 LinkIsolatedUnittest( casual_utility_isolated, \
-	unittest/isolated/obj/uuid.o, \
+	unittest/isolated/obj/test_uuid.o, \
 	casual_utility )	
 
 	

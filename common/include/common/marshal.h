@@ -13,8 +13,12 @@
 #include "common/ipc.h"
 #include "common/types.h"
 
+#include "utility/uuid.h"
+
+
 
 #include <vector>
+#include <cassert>
 
 //
 // We need to get private stuff for unittest
@@ -22,11 +26,39 @@
 #include "gtest/gtest_prod.h"
 
 
-// TODO: test
-//#include <iostream>
 
 namespace casual
 {
+
+   template< typename M, typename T>
+   void marshal_value( M& marshler, T& value)
+   {
+      value.marshal( marshler);
+   }
+
+   template< typename M, typename T>
+   void unmarshal_value( M& unmarshler, T& value)
+   {
+      value.marshal( unmarshler);
+   }
+
+   //!
+   //! Overload for Uuid
+   //!
+   template< typename M>
+   void marshal_value( M& marshler, utility::Uuid& value)
+   {
+      marshler << value.get();
+   }
+
+   template< typename M>
+   void unmarshal_value( M& unmarshler, utility::Uuid& value)
+   {
+      unmarshler >> value.get();
+   }
+
+
+
    namespace common
    {
       namespace marshal
@@ -51,7 +83,8 @@ namespace casual
                template< typename T>
                Binary& operator & ( T& value)
                {
-                  return this->operator << ( value);
+                  //return *this << std::forward< T>( value);
+                  return *this << value;
                }
 
                template< typename T>
@@ -64,28 +97,22 @@ namespace casual
             private:
 
                template< typename T>
-               void write( T& value)
+               typename std::enable_if< ! std::is_pod< T>::value>::type
+               write( T& value)
                {
-                  value.marshal( *this);
-               }
-
-               void write( long& value)
-               {
-                  writePod( value);
-               }
-
-               void write( std::size_t& value)
-               {
-                  writePod( value);
-               }
-
-               void write( int& value)
-               {
-                  writePod( value);
+                  casual::marshal_value( *this, value);
                }
 
                template< typename T>
-               void writePod( T value)
+               typename std::enable_if< std::is_pod< T>::value>::type
+               write( T& value)
+               {
+                  writePod( value);
+               }
+
+
+               template< typename T>
+               void writePod( T&& value)
                {
                   Binary::buffer_type::size_type size = m_buffer.size();
 
@@ -99,25 +126,23 @@ namespace casual
                {
                   writePod( value.size());
 
-                  typename std::vector< T>::iterator current = value.begin();
-
-                  for(; current != value.end(); ++current)
+                  for( auto& current : value)
                   {
-                     *this << *current;
+                     *this << current;
                   }
                }
 
                void write( std::string& value)
                {
                   writePod( value.size());
-                  Binary::buffer_type::size_type size = m_buffer.size();
+                  const Binary::buffer_type::size_type size = m_buffer.size();
 
                   m_buffer.resize( size + value.size());
 
                   memcpy( &m_buffer[ size], value.c_str(), value.size());
                }
 
-               void write( std::vector< char>& value)
+               void write( common::binary_type& value)
                {
                   writePod( value.size());
 
@@ -181,7 +206,7 @@ namespace casual
                template< typename T>
                Binary& operator & ( T& value)
                {
-                  return this->operator >>( value);
+                  return *this >> value;
                }
 
                template< typename T>
@@ -198,11 +223,20 @@ namespace casual
                FRIEND_TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler);
 
                template< typename T>
-               void read( T& value)
+               typename std::enable_if< ! std::is_pod< T>::value>::type
+               read( T& value)
                {
-                  value.marshal( *this);
+                  casual::unmarshal_value( *this, value);
                }
 
+               template< typename T>
+               typename std::enable_if< std::is_pod< T>::value>::type
+               read( T& value)
+               {
+                  readPod( value);
+               }
+
+               /*
                void read( long& value)
                {
                   readPod( value);
@@ -217,6 +251,7 @@ namespace casual
                {
                   readPod( value);
                }
+               */
 
                template< typename T>
                void read( std::vector< T>& value)
@@ -226,11 +261,9 @@ namespace casual
 
                   value.resize( size);
 
-                  typename std::vector< T>::iterator current = value.begin();
-
-                  for(; current != value.end(); ++current)
+                  for( auto& current : value)
                   {
-                     *this >> *current;
+                     *this >> current;
                   }
                }
 
@@ -249,7 +282,7 @@ namespace casual
                   m_offset += size;
                }
 
-               void read( std::vector< char>& value)
+               void read( common::binary_type& value)
                {
                   std::string::size_type size;
                   *this >> size;
@@ -264,9 +297,19 @@ namespace casual
                template< typename T>
                void readPod( T& value)
                {
+                  assert( m_buffer.size() >= ( sizeof( T) +  m_offset));
+
                   memcpy( &value, &m_buffer[ m_offset], sizeof( T));
                   m_offset += sizeof( T);
                }
+
+               /*
+               void read( utility::Uuid& value)
+               {
+                  read( value.get());
+               }
+               */
+
 
                buffer_type m_buffer;
                offest_type m_offset = 0;
@@ -274,7 +317,7 @@ namespace casual
             };
 
          } // output
-      } // archive
+      } // marshal
    } // common
 } // casual
 

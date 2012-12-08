@@ -30,20 +30,17 @@ namespace casual
 			return buffer;
 		}
 
-		/*
-		std::string uuid::generate()
-		{
-			uuid result;
-			return result.getString();
-		}
-		*/
-
 		const Uuid::uuid_type& Uuid::get() const
 		{
 			return m_uuid;
 		}
 
-		void Uuid::get( uuid_type& uuid)
+		Uuid::uuid_type& Uuid::get()
+      {
+         return m_uuid;
+      }
+
+		void Uuid::set( uuid_type& uuid)
 		{
 			uuid_copy( uuid, m_uuid);
 		}

@@ -30,10 +30,12 @@ namespace casual
 
 			std::string getString() const;
 			const uuid_type& get() const;
-			void get( uuid_type& uuid);
+			uuid_type& get();
+			void set( uuid_type& uuid);
 
 			bool operator < ( const Uuid& rhs) const;
 			bool operator == ( const Uuid& rhs) const;
+
 
 		private:
 			uuid_type m_uuid;

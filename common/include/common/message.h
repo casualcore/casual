@@ -17,6 +17,7 @@
 
 
 #include <vector>
+#include <chrono>
 
 
 
@@ -401,17 +402,13 @@ namespace casual
 
 				std::string parentService;
 				std::string service;
-				//
-				// Should be Uuid
-				//
-				std::string callchainId;
+
+				utility::Uuid callchainId;
 
 				std::string transactionId;
-				//
-				// Should be some kind of chrono
-				//
-				std::string startTime;
-				std::string endTime;
+
+				common::time_type start;
+				common::time_type end;
 
 				template< typename A>
 				void marshal( A& archive)
@@ -420,8 +417,8 @@ namespace casual
 					archive & service;
 					archive & callchainId;
 					archive & transactionId;
-					archive & startTime;
-					archive & endTime;
+					archive & start;
+					archive & end;
 				}
 			 };
          }

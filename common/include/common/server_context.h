@@ -81,8 +81,6 @@ namespace casual
             void disconnect();
 
 
-
-
             State m_state;
          };
 
@@ -90,14 +88,8 @@ namespace casual
 
       namespace callee
       {
-
-
-
-
-
          namespace handle
          {
-
 
             //!
             //!

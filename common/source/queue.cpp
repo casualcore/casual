@@ -239,7 +239,7 @@ namespace casual
                   ipc::message::Transport transport;
 
                   transport.m_payload.m_type = type;
-                  correlation.get( transport.m_payload.m_header.m_correlation);
+                  correlation.set( transport.m_payload.m_header.m_correlation);
 
                   //
                   // Figure out how many transport-messages we have to use
