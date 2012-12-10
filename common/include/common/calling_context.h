@@ -54,7 +54,7 @@ namespace casual
             pending_calls_type pendingCalls;
             reply_cache_type replyCache;
 
-            utility::Uuid callId;
+            utility::Uuid callId = utility::Uuid::make();
 
             int currentCallingDescriptor;
          };
@@ -75,7 +75,7 @@ namespace casual
 
             void setCallId( const utility::Uuid& uuid);
 
-            State& getState() { return m_state;}
+            //State& getState() { return m_state;}
 
          private:
 
