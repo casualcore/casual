@@ -54,6 +54,8 @@ namespace casual
             pending_calls_type pendingCalls;
             reply_cache_type replyCache;
 
+            utility::Uuid callId;
+
             int currentCallingDescriptor;
          };
 
@@ -70,6 +72,10 @@ namespace casual
             int getReply( int* idPtr, char** odata, long& olen, long flags);
 
             void clean();
+
+            void setCallId( const utility::Uuid& uuid);
+
+            State& getState() { return m_state;}
 
          private:
 

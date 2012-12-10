@@ -14,6 +14,8 @@
 #include "common/queue.h"
 #include "common/transform.h"
 
+#include "common/calling_context.h"
+
 #include "utility/platform.h"
 
 
@@ -54,18 +56,24 @@ namespace casual
 
             Context( const Context&) = delete;
 
-            //void add( service::Context&& context);
 
-
-
+            //!
+            //! Being called from tpreturn
+            //!
             void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
 
+            //!
+            //! Being called from tpadvertise
+            //!
             void advertiseService( const std::string& name, tpservice function);
 
+            //!
+            //! Being called from tpunadvertise
+            //!
             void unadvertiseService( const std::string& name);
 
             //!
-            //!
+            //! Share state with calle::handle::basic_call
             //!
             State& getState();
 
@@ -75,11 +83,6 @@ namespace casual
          private:
 
             Context();
-
-            void connect();
-
-            void disconnect();
-
 
             State m_state;
          };
@@ -92,7 +95,7 @@ namespace casual
          {
 
             //!
-            //!
+            //! Handles XATMI-calls
             //!
             template< typename P>
             struct basic_call
@@ -104,6 +107,10 @@ namespace casual
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
 
+               //!
+               //! Advertise @p services to the broker build a dispatch-table for
+               //! coming XATMI-calls
+               //!
                basic_call( std::vector< service::Context>& services)
                {
                   message::service::Advertise message;
@@ -123,6 +130,9 @@ namespace casual
                   brokerWriter( message);
                }
 
+               //!
+               //! Sends a message::server::Disconnect to the broker
+               //!
                ~basic_call() noexcept
                {
                   message::server::Disconnect message;
@@ -137,10 +147,20 @@ namespace casual
                }
 
 
+               //!
+               //! Handles the actual XATM-call from another process. Dispatch
+               //! to the registered function, and "waits" for tpreturn (long-jump)
+               //! to send the reply.
+               //!
                void dispatch( message_type& message)
                {
 
                   server::State& state = server::Context::instance().getState();
+
+                  //
+                  // Set the call-chain-id for this "chain"
+                  //
+                  calling::Context::instance().setCallId( message.callId);
 
                   //
                   // Prepare for tpreturn.
@@ -221,6 +241,10 @@ namespace casual
             {
 
 
+               //!
+               //! Default policy for basic_call. Only broker and unittest have to define another
+               //! policy
+               //!
                struct queue_policy
                {
                   template< typename W>
@@ -236,17 +260,16 @@ namespace casual
                   static ipc::receive::Queue::queue_key_type receiveKey() { return ipc::getReceiveQueue().getKey(); }
 
                };
-            }
+            } // basic
 
+            //!
+            //! Handle service calls from other proceses and does a dispatch to
+            //! the register XATMI functions.
+            //!
             typedef basic_call< basic::queue_policy> Call;
 
-
          } // handle
-
-
       } // callee
-
-
 	} // common
 } // casual
 

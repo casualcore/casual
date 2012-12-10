@@ -26,6 +26,9 @@ namespace casual
 			typedef platform::uuid_type uuid_type;
 
 			Uuid();
+
+			Uuid& operator = ( const Uuid&) = default;
+
 			Uuid( uuid_type& uuid);
 
 			std::string getString() const;
@@ -35,6 +38,11 @@ namespace casual
 
 			bool operator < ( const Uuid& rhs) const;
 			bool operator == ( const Uuid& rhs) const;
+
+
+			static const Uuid& empty();
+
+			static Uuid make();
 
 
 		private:
