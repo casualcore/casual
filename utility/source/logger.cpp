@@ -10,8 +10,13 @@
 #include "utility/platform.h"
 #include "utility/exception.h"
 
+
+#include <chrono>
+
 // temp
 #include <fstream>
+#include <iomanip>
+
 
 namespace casual
 {
@@ -37,7 +42,24 @@ namespace casual
                      {
                         //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
-                        m_output << m_prefix;
+                        auto timepoint = std::chrono::system_clock::now();
+                        auto seconds = std::chrono::system_clock::to_time_t( timepoint);
+                        auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( timepoint.time_since_epoch());
+
+                        auto tm = std::gmtime( &seconds);
+
+                        /* TODO: put_time is not implemented in g++ yet
+                        m_output << std::put_time( tm, "%H:%M:%S.") << ms.count() % 1000 << "|" << utility::environment::getDomainName()
+                          << utility::platform::getProcessId() << "|";
+                          */
+                        m_output << std::setw( 2) << std::setfill( '0') << std::left << tm->tm_hour << ":"
+                           << std::setw( 2) << std::setfill( '0') << std::left << tm->tm_min << ":"
+                           << std::setw( 2) << std::setfill( '0') << std::left << tm->tm_sec << "."
+                           << std::setw( 3) << std::setfill( '0') << std::left << ms.count() % 1000 << "|" << utility::environment::getDomainName() << "|" << utility::environment::getExecutablePath() << "|"
+                           << utility::platform::getProcessId() << "|";
+
+
+
 
                         // TODO: Temp while we roll our own...
                         switch( priority)
@@ -75,7 +97,7 @@ namespace casual
                   private:
                      ~Context()
                      {
-                        // closelog();
+
                      }
 
                      Context()
@@ -91,14 +113,9 @@ namespace casual
                               m_mask |= utility::platform::cLOG_info;
                            if( log.find( "warning") != std::string::npos)
                               m_mask |= utility::platform::cLOG_warning;
-                           //if( log.find( "error") != std::string::npos) m_mask |= utility::platform::cLOG_error;
-
                         }
-                        m_mask |= utility::platform::cLOG_error;
 
-                        std::ostringstream prefix;
-                        prefix << "<time> " << utility::environment::getDomainName() << ":" << utility::platform::getProcessId() << ": ";
-                        m_prefix = prefix.str();
+                        m_mask |= utility::platform::cLOG_error;
 
                         //
                         // Open log
@@ -112,11 +129,8 @@ namespace casual
                            throw exception::xatmi::SystemError( "Could not open the log-file: " + logfileName);
                         }
 
-                        //openlog( "casual", LOG_PID, LOG_USER);
-
                      }
                      std::ofstream m_output;
-                     std::string m_prefix;
                      int m_mask;
 
                   };
@@ -134,7 +148,11 @@ namespace casual
             // We can't rely on RVO, so we have to release logging-responsibility for
             // rhs.
             //
-            Proxy::Proxy( Proxy&& rhs) : m_message( rhs.m_message.str()), m_priority( rhs.m_priority), m_log( local::Context::instance().active( m_priority))
+            Proxy::Proxy( Proxy&& rhs)
+               : // TODO: Not implemented in gcc m_message( std::move( rhs.m_message)),
+                 m_message( rhs.m_message.str()),
+                 m_priority( std::move( rhs.m_priority)),
+                 m_log( std::move( m_log))
             {
                rhs.m_log = false;
             }

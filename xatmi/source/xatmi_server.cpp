@@ -19,6 +19,7 @@
 
 #include "utility/error.h"
 #include "utility/logger.h"
+#include "utility/environment.h"
 
 
 using namespace casual;
@@ -65,7 +66,7 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
          std::back_inserter( arguments));
 
 
-      // TODO: Handle arguments
+      utility::environment::setExecutablePath( arguments.at( 0));
 
       tpsvrinit( argc, argv);
 

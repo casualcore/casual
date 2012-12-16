@@ -95,7 +95,7 @@ namespace casual
          {
 
             Queue::Queue()
-               : m_scopedPath( utility::environment::getTemporaryPath() + "/ipc_queue_" + utility::Uuid().getString())
+               : m_scopedPath( utility::environment::getTemporaryPath() + "/ipc_queue_" + utility::Uuid::make().getString())
             {
                //
                // Create queue

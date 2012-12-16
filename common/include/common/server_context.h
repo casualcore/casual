@@ -17,6 +17,7 @@
 #include "common/calling_context.h"
 
 #include "utility/platform.h"
+#include "utility/logger.h"
 
 
 #include "xatmi.h"
@@ -115,6 +116,7 @@ namespace casual
                {
                   message::service::Advertise message;
                   message.serverId.queue_key = queue_policy::receiveKey();
+
 
                   for( auto&& service : services)
                   {
