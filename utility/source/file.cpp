@@ -91,6 +91,7 @@ namespace casual
 			{
 			   const std::string base = basename( file);
 
+
 			   auto extensionEnd = std::find( base.rbegin(), base.rend(), '.');
 
 			   return std::string( extensionEnd.base(), base.end());

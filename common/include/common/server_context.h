@@ -13,6 +13,7 @@
 #include "common/ipc.h"
 #include "common/queue.h"
 #include "common/transform.h"
+#include "common/types.h"
 
 #include "common/calling_context.h"
 
@@ -26,6 +27,7 @@
 // std
 //
 #include <unordered_map>
+
 
 namespace casual
 {
@@ -46,6 +48,8 @@ namespace casual
             utility::platform::long_jump_buffer_type long_jump_buffer;
 
             message::service::Reply reply;
+            message::monitor::Notify monitor;
+
          };
 
          class Context
@@ -160,9 +164,19 @@ namespace casual
                   server::State& state = server::Context::instance().getState();
 
                   //
+                  // Set starttime. TODO: Should we try to get the startime earlier? Hence, at ipc-queue level?
+                  //
+                  if( message.service.monitor_queue != 0)
+                  {
+                     state.monitor.start = common::clock_type::now();
+                  }
+
+
+                  //
                   // Set the call-chain-id for this "chain"
                   //
                   calling::Context::instance().setCallId( message.callId);
+
 
                   //
                   // Prepare for tpreturn.
@@ -187,6 +201,9 @@ namespace casual
                      {
                         throw utility::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
                      }
+
+
+                     calling::Context::instance().setCurrentService( message.service.name);
 
                      TPSVCINFO serviceInformation = transform::ServiceInformation()( message);
 
@@ -229,6 +246,29 @@ namespace casual
                      // Do some cleanup...
                      //
                      server::Context::instance().finalize();
+
+                     //
+                     // Take end time
+                     //
+                     if( message.service.monitor_queue != 0)
+                     {
+                        state.monitor.end = common::clock_type::now();
+                        state.monitor.callId = message.callId;
+                        state.monitor.service = message.service.name;
+                        state.monitor.parentService = message.callee;
+
+                        ipc::send::Queue queue( message.service.monitor_queue);
+                        queue::non_blocking::Writer writer( queue);
+
+                        if( ! writer( state.monitor))
+                        {
+                           utility::logger::warning << "could not write to monitor queue";
+                        }
+
+                     }
+
+
+
 
                   }
 

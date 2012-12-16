@@ -80,7 +80,7 @@ namespace casual
 
             auto findIter = m_state.services.find( name);
 
-            if( findIter != m_state.services.end())
+            if( findIter != std::end( m_state.services))
             {
                //
                // service name is already advertised
@@ -98,7 +98,7 @@ namespace casual
 
                message.serverId.queue_key = ipc::getReceiveQueue().getKey();
                // TODO: message.serverPath =
-               message.services.push_back( message::Service( name));
+               message.services.emplace_back( name);
 
                // TODO: make it consistence safe...
                queue::blocking::Writer writer( ipc::getBrokerQueue());

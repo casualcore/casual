@@ -37,7 +37,7 @@ namespace casual
 		{
 			struct NotifyStats
 			{
-				typedef common::message::monitor::NotifyStats message_type;
+				typedef common::message::monitor::Notify message_type;
 
 	            void dispatch( message_type& message);
 

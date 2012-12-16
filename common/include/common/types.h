@@ -42,8 +42,8 @@ namespace casual
    template< typename M>
    void marshal_value( M& marshler, common::time_type& value)
    {
-
-      marshler << value.time_since_epoch().count();
+      auto time = value.time_since_epoch().count();
+      marshler << time;
    }
 
    template< typename M>

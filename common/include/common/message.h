@@ -30,18 +30,21 @@ namespace casual
             typedef int Seconds;
 
             Service() = default;
+            Service& operator = (const Service& rhs) = default;
 
-            explicit Service( const std::string& name_) : name( name_), timeout( 0)
+            explicit Service( const std::string& name_) : name( name_)
             {}
 
             std::string name;
             Seconds timeout = 0;
+            utility::platform::queue_key_type monitor_queue = 0;
 
             template< typename A>
             void marshal( A& archive)
             {
                archive & name;
                archive & timeout;
+               archive & monitor_queue;
             }
          };
 
@@ -199,6 +202,7 @@ namespace casual
                Service service;
                server::Id reply;
                utility::Uuid callId;
+               std::string callee;
 
                template< typename A>
                void marshal( A& archive)
@@ -207,6 +211,7 @@ namespace casual
                   archive & service;
                   archive & reply;
                   archive & callId;
+                  archive & callee;
                }
             };
 
@@ -365,7 +370,7 @@ namespace casual
             //!
             //! Notify monitorserver with statistics
             //!
-            struct NotifyStats
+            struct Notify
             {
                enum
                {

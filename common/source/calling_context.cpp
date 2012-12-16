@@ -256,6 +256,11 @@ namespace casual
             }
          }
 
+         void Context::setCurrentService( const std::string& service)
+         {
+            m_state.currentService = service;
+         }
+
          int Context::allocateCallingDescriptor()
          {
             if( m_callingDescriptor < 10)
@@ -329,6 +334,7 @@ namespace casual
             messageCall.reply.queue_key = m_receiveQueue.getKey();
             messageCall.service = lookup.service;
             messageCall.callId = m_state.callId;
+            messageCall.callee = m_state.currentService;
 
 
             ipc::send::Queue callQueue( lookup.server.front().queue_key);

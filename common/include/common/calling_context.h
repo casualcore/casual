@@ -57,6 +57,8 @@ namespace casual
             utility::Uuid callId = utility::Uuid::make();
 
             int currentCallingDescriptor;
+
+            std::string currentService;
          };
 
          class Context
@@ -74,6 +76,8 @@ namespace casual
             void clean();
 
             void setCallId( const utility::Uuid& uuid);
+
+            void setCurrentService( const std::string& service);
 
             //State& getState() { return m_state;}
 

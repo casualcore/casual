@@ -78,6 +78,10 @@ namespace casual
 		   pending_requests_type pending;
 
 		   configuration::Settings configuration;
+
+		   // TODO: Temp
+		   utility::platform::queue_key_type monitorQueue = 0;
+
 		};
 
 		class Broker

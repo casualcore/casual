@@ -116,6 +116,7 @@ namespace casual
          handler.add< handle::Unadvertise>( m_state);
          handler.add< handle::ServiceLookup>( m_state);
          handler.add< handle::ACK>( m_state);
+         handler.add< handle::MonitorConnect>( m_state);
 
 
          queue::blocking::Reader queueReader( m_receiveQueue);
@@ -129,7 +130,7 @@ namespace casual
 
             if( ! handler.dispatch( marshal))
             {
-               utility::logger::error << "message_type: " << " not recognized - action: discard";
+               utility::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
             }
 
          }
