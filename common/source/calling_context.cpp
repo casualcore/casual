@@ -235,21 +235,6 @@ namespace casual
                }
             }
 
-
-            struct buffer_guard
-            {
-               buffer_guard( buffer::Buffer& buffer) : m_buffer( buffer) {}
-
-               ~buffer_guard()
-               {
-                  // TODO: noexcept?
-                  buffer::Context::instance().add( std::move( m_buffer));
-               }
-
-            private:
-               buffer::Buffer& m_buffer;
-            };
-
          } // local
 
 
@@ -257,6 +242,23 @@ namespace casual
          {
             static Context singleton;
             return singleton;
+         }
+
+         void Context::setCallId( const utility::Uuid& uuid)
+         {
+            if( uuid == utility::Uuid::empty())
+            {
+               m_state.callId = utility::Uuid::make();
+            }
+            else
+            {
+               m_state.callId = uuid;
+            }
+         }
+
+         void Context::setCurrentService( const std::string& service)
+         {
+            m_state.currentService = service;
          }
 
          int Context::allocateCallingDescriptor()
@@ -331,6 +333,8 @@ namespace casual
             messageCall.callDescriptor = callDescriptor;
             messageCall.reply.queue_key = m_receiveQueue.getKey();
             messageCall.service = lookup.service;
+            messageCall.callId = m_state.callId;
+            messageCall.callee = m_state.currentService;
 
 
             ipc::send::Queue callQueue( lookup.server.front().queue_key);

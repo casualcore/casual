@@ -80,6 +80,30 @@ namespace casual
 			   return utility::file::find( getRootPath(), std::regex( "casual_config.(yaml|xml)" ));
 			}
 
+			namespace local
+			{
+			   namespace
+			   {
+			      std::string& executablePath()
+			      {
+			         static std::string path;
+			         return path;
+			      }
+
+
+			   }
+			}
+
+			void setExecutablePath( const std::string& path)
+			{
+			   local::executablePath() = path;
+			}
+
+			const std::string& getExecutablePath()
+			{
+			   return local::executablePath();
+			}
+
 		}
 	}
 }

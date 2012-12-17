@@ -181,7 +181,7 @@ namespace casual
 
             void removeService( const std::string& name, broker::Server::pid_type pid, State& state)
             {
-               State::service_mapping_type::iterator findIter = state.services.find( name);
+               auto findIter = state.services.find( name);
 
                if( findIter != state.services.end())
                {
@@ -191,7 +191,7 @@ namespace casual
 
                   typedef std::vector< broker::Server*> servers_type;
 
-                  servers_type::iterator serversEnd = std::remove_if(
+                  auto serversEnd = std::remove_if(
                         findIter->second.servers.begin(),
                         findIter->second.servers.end(),
                         find::Server( pid));
@@ -286,7 +286,7 @@ namespace casual
                // If the server is not registered before, it will be added now... Otherwise
                // we use the current one...
                //
-               State::server_mapping_type::iterator serverIterator = m_state.servers.insert(
+               auto serverIterator = m_state.servers.insert(
                      std::make_pair( message.serverId.pid, transform::Server()( message))).first;
 
                //
@@ -320,6 +320,20 @@ namespace casual
 
             }
          };
+
+		   struct MonitorConnect : public Base
+		   {
+		      typedef message::monitor::Advertise message_type;
+
+		      MonitorConnect( State& state) : Base( state) {}
+
+		      void dispatch( message_type& message)
+            {
+		         //TODO: Temp
+               m_state.monitorQueue = message.serverId.queue_key;
+            }
+		   };
+
 
 		   //!
 		   //! A server is disconnected
@@ -393,7 +407,9 @@ namespace casual
 
                      message::service::name::lookup::Reply reply;
                      reply.service = serviceFound->second.information;
+                     reply.service.monitor_queue = m_state.monitorQueue;
                      reply.server.push_back( transform::Server()( **idleServer));
+
 
                      queue_writer_type writer( message.server.queue_key);
 

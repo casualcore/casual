@@ -40,84 +40,18 @@ namespace casual
 {
    namespace common
    {
-
       namespace server
       {
-
-         namespace local
-         {
-            namespace transform
-            {
-               struct Service
-               {
-                  message::Service operator () ( const State::service_mapping_type::value_type& value)
-                  {
-                     message::Service result;
-
-                     result.name = value.first;
-
-                     return result;
-                  }
-               };
-
-
-
-            }
-         }
-
-
          Context& Context::instance()
          {
             static Context singleton;
             return singleton;
          }
 
-         /*
-         void Context::add( service::Context&& context)
-         {
-            // TODO: add validation
-            m_state.services.emplace( context.m_name, std::move( context));
-         }
-
-         */
-
-
 
 
          Context::Context()
          {
-
-         }
-
-         void Context::disconnect()
-         {
-            message::server::Disconnect message;
-
-            //
-            // we can't block here...
-            //
-            queue::non_blocking::Writer writer( ipc::getBrokerQueue());
-            writer( message);
-         }
-
-         void Context::connect()
-         {
-            //
-            // Let the broker know about us, and our services...
-            //
-
-            message::service::Advertise message;
-
-            message.serverId.queue_key = ipc::getReceiveQueue().getKey();
-
-            std::transform(
-               m_state.services.begin(),
-               m_state.services.end(),
-               std::back_inserter( message.services),
-               local::transform::Service());
-
-            queue::blocking::Writer writer( ipc::getBrokerQueue());
-            writer( message);
 
          }
 
@@ -146,7 +80,7 @@ namespace casual
 
             auto findIter = m_state.services.find( name);
 
-            if( findIter != m_state.services.end())
+            if( findIter != std::end( m_state.services))
             {
                //
                // service name is already advertised
@@ -164,7 +98,7 @@ namespace casual
 
                message.serverId.queue_key = ipc::getReceiveQueue().getKey();
                // TODO: message.serverPath =
-               message.services.push_back( message::Service( name));
+               message.services.emplace_back( name);
 
                // TODO: make it consistence safe...
                queue::blocking::Writer writer( ipc::getBrokerQueue());
@@ -189,17 +123,6 @@ namespace casual
             writer( message);
          }
 
-
-         /*
-         message::server::Id Context::getId()
-         {
-            message::server::Id result;
-            result.queue_key = m_queue.getKey();
-            result.pid = utility::platform::getProcessId();
-
-            return result;
-         }
-         */
 
          State& Context::getState()
          {

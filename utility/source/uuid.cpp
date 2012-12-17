@@ -13,9 +13,23 @@ namespace casual
 
 	namespace utility
 	{
+
+	   const Uuid& Uuid::empty()
+	   {
+	      static const Uuid empty;
+	      return empty;
+	   }
+
+	   Uuid Uuid::make()
+	   {
+	      Uuid result;
+	      uuid_generate( result.m_uuid);
+	      return result;
+	   }
+
 		Uuid::Uuid()
 		{
-			uuid_generate( m_uuid);
+		   memset( &m_uuid, 0, sizeof( m_uuid));
 		}
 
 		Uuid::Uuid(uuid_type& uuid)

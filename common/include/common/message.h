@@ -17,11 +17,8 @@
 #include "utility/exception.h"
 #include "utility/uuid.h"
 
-
 #include <vector>
 #include <chrono>
-
-
 
 namespace casual
 {
@@ -35,17 +32,21 @@ namespace casual
             typedef int Seconds;
 
             Service() = default;
+            Service& operator = (const Service& rhs) = default;
 
-            explicit Service( const std::string& name_) : name( name_), timeout( 0) {}
+            explicit Service( const std::string& name_) : name( name_)
+            {}
 
             std::string name;
             Seconds timeout = 0;
+            utility::platform::queue_key_type monitor_queue = 0;
 
             template< typename A>
             void marshal( A& archive)
             {
                archive & name;
                archive & timeout;
+               archive & monitor_queue;
             }
          };
 
@@ -60,7 +61,10 @@ namespace casual
                typedef utility::platform::pid_type pid_type;
                typedef ipc::message::Transport::queue_key_type queue_key_type;
 
-               Id() : pid( utility::platform::getProcessId()) {}
+               Id()
+                     : pid( utility::platform::getProcessId())
+               {
+               }
 
                queue_key_type queue_key;
                pid_type pid;
@@ -72,7 +76,6 @@ namespace casual
                   archive & pid;
                }
             };
-
 
             struct Disconnect
             {
@@ -90,7 +93,6 @@ namespace casual
                }
             };
          }
-
 
          namespace service
          {
@@ -133,7 +135,6 @@ namespace casual
                }
             };
 
-
             namespace name
             {
                namespace lookup
@@ -149,18 +150,15 @@ namespace casual
                      };
 
                      std::string requested;
-                     std::string current;
                      server::Id server;
 
                      template< typename A>
                      void marshal( A& archive)
                      {
                         archive & requested;
-                        archive & current;
                         archive & server;
                      }
                   };
-
 
                   //!
                   //! Represent "service-name-lookup" response.
@@ -205,6 +203,8 @@ namespace casual
                int callDescriptor = 0;
                Service service;
                server::Id reply;
+               utility::Uuid callId;
+               std::string callee;
 
                template< typename A>
                void marshal( A& archive)
@@ -212,6 +212,8 @@ namespace casual
                   archive & callDescriptor;
                   archive & service;
                   archive & reply;
+                  archive & callId;
+                  archive & callee;
                }
             };
 
@@ -221,12 +223,10 @@ namespace casual
                //!
                //! Represents a service call. via tp(a)call
                //!
-               struct Call : public base_call
+               struct Call: public base_call
                {
 
-
                   Call() = default;
-                  //Call( buffer::Buffer&& buffer_) : buffer( std::move( buffer_)) {}
 
                   Call( Call&&) = default;
                   Call& operator = ( Call&&) = default;
@@ -242,17 +242,17 @@ namespace casual
                      base_call::marshal( archive);
                      archive & buffer;
                   }
-               };
-            }
+               };}
 
             namespace caller
             {
-               struct Call : public base_call
+               struct Call: public base_call
                {
 
-
-                  //Call() = default;
-                  Call( buffer::Buffer& buffer_) : buffer( buffer_) {}
+                  Call( buffer::Buffer& buffer_)
+                        : buffer( buffer_)
+                  {
+                  }
 
                   Call( Call&&) = default;
                   Call& operator = ( Call&&) = default;
@@ -272,9 +272,6 @@ namespace casual
 
             }
 
-
-
-
             //!
             //! Represent service reply.
             //!
@@ -288,27 +285,9 @@ namespace casual
                Reply() = default;
                Reply( Reply&&) = default;
 
-               /*
-                * should generate by defuatl
-               Reply( buffer::Buffer&& buffer) : m_buffer( std::move( buffer)) {}
-               Reply& operator = ( buffer::Buffer&& buffer)
-               {
-
-               }
-
-               */
 
                Reply( const Reply&) = delete;
                Reply& operator = ( const Reply&) = delete;
-
-
-               /*
-               buffer::Buffer& getBuffer()
-               {
-                  return *m_buffer;
-               }
-               */
-
 
                int callDescriptor = 0;
                int returnValue = 0;
@@ -338,10 +317,8 @@ namespace casual
                   message_type = 22
                };
 
-
                std::string service;
                server::Id server;
-
 
                template< typename A>
                void marshal( A& archive)
@@ -354,77 +331,77 @@ namespace casual
 
          namespace monitor
          {
-			 //!
-			 //! Used to advertise the monitorserver
-			 //!
-			 struct Advertise
-			 {
-				enum
-				{
-					message_type = 30
-				};
+            //!
+            //! Used to advertise the monitorserver
+            //!
+            struct Advertise
+            {
+               enum
+               {
+                  message_type = 30
+               };
 
-				server::Id serverId;
-				std::string name;
+               server::Id serverId;
+               std::string name;
 
-				template<typename A>
-				void marshal(A& archive)
-				{
-					archive & serverId;
-					archive & name;
-				}
-			};
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & serverId;
+                  archive & name;
+               }
+            };
 
-			//!
-			//! Used to unadvertise the monitorserver
-			//!
-			struct Unadvertise
-			{
-				enum
-				{
-					message_type = 31
-				};
+            //!
+            //! Used to unadvertise the monitorserver
+            //!
+            struct Unadvertise
+            {
+               enum
+               {
+                  message_type = 31
+               };
 
-				server::Id serverId;
+               server::Id serverId;
 
-				template<typename A>
-				void marshal(A& archive)
-				{
-					archive & serverId;
-				}
-			};
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & serverId;
+               }
+            };
 
-			//!
-			//! Notify monitorserver with statistics
-			//!
-			struct NotifyStats
-			 {
-				enum
-				{
-					message_type = 32
-				};
+            //!
+            //! Notify monitorserver with statistics
+            //!
+            struct Notify
+            {
+               enum
+               {
+                  message_type = 32
+               };
 
-				std::string parentService;
-				std::string service;
+               std::string parentService;
+               std::string service;
 
-				utility::Uuid callchainId;
+               utility::Uuid callId;
 
-				std::string transactionId;
+               std::string transactionId;
 
-				common::time_type start;
-				common::time_type end;
+               common::time_type start;
+               common::time_type end;
 
-				template< typename A>
-				void marshal( A& archive)
-				{
-					archive & parentService;
-					archive & service;
-					archive & callchainId;
-					archive & transactionId;
-					archive & start;
-					archive & end;
-				}
-			 };
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & parentService;
+                  archive & service;
+                  archive & callId;
+                  archive & transactionId;
+                  archive & start;
+                  archive & end;
+               }
+            };
          }
          //!
          //! Deduce witch type of message it is.
@@ -435,9 +412,7 @@ namespace casual
             return M::message_type;
          }
       } // message
-	} //common
+   } //common
 } // casual
-
-
 
 #endif /* CASUAL_IPC_MESSAGES_H_ */

@@ -25,7 +25,7 @@ namespace
 	//
 	// Just temporary
 	//
-	std::ostream& operator<<( std::ostream& os, const message::monitor::NotifyStats& message)
+	std::ostream& operator<<( std::ostream& os, const message::monitor::Notify& message)
 	{
 		os << "parentService: " << message.parentService << std::endl;
 		os << "service: " << message.service << std::endl;

@@ -54,7 +54,11 @@ namespace casual
             pending_calls_type pendingCalls;
             reply_cache_type replyCache;
 
+            utility::Uuid callId = utility::Uuid::make();
+
             int currentCallingDescriptor;
+
+            std::string currentService;
          };
 
          class Context
@@ -70,6 +74,12 @@ namespace casual
             int getReply( int* idPtr, char** odata, long& olen, long flags);
 
             void clean();
+
+            void setCallId( const utility::Uuid& uuid);
+
+            void setCurrentService( const std::string& service);
+
+            //State& getState() { return m_state;}
 
          private:
 

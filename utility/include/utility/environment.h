@@ -48,6 +48,10 @@ namespace casual
 
 			std::string getDefaultConfigurationFile();
 
+			void setExecutablePath( const std::string& path);
+
+			const std::string& getExecutablePath();
+
 
 		}
 

@@ -40,10 +40,10 @@ namespace casual
 
 			namespace handle
 			{
-				struct NotifyStats
+				struct Notify
 				{
-					typedef common::message::monitor::NotifyStats message_type;
-					NotifyStats( MonitorDB& db_ ) : monitorDB( db_)
+					typedef common::message::monitor::Notify message_type;
+					Notify( MonitorDB& db_ ) : monitorDB( db_)
 					{
 					};
 
