@@ -78,9 +78,9 @@ namespace monitor
 
 	namespace handle
 	{
-		void NotifyStats::dispatch( const message_type& message)
+		void Notify::dispatch( const message_type& message)
 		{
-			static const std::string cMethodname("NotifyStats::dispatch");
+			static const std::string cMethodname("Notify::dispatch");
 			utility::Trace trace(cMethodname);
 
 			message >> monitorDB;
@@ -133,7 +133,7 @@ namespace monitor
 
 		common::dispatch::Handler handler;
 
-		handler.add< handle::NotifyStats>( m_monitordb);
+		handler.add< handle::Notify>( m_monitordb);
 
 		queue::blocking::Reader queueReader(m_receiveQueue);
 

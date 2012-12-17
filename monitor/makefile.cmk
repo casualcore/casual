@@ -10,13 +10,16 @@ LIBRARY_PATHS = ../common/bin ../utility/bin
 
 Compile( source/monitor.cpp, obj/monitor.o)
 Compile( source/monitor_main.cpp, obj/monitor_main.o)
+Compile( source/monitordb.cpp, obj/monitordb.o)
 
 
 LinkExecutable( casual_monitor, \
 	obj/monitor.o \
-	 obj/monitor_main.o, \
+	obj/monitor_main.o \
+	obj/monitordb.o, \
 	casual_common \
-	casual_utility )
+	casual_utility \
+	sqlite3 )
 
 	
 	
@@ -24,11 +27,14 @@ LinkExecutable( casual_monitor, \
 //
 // unittest
 //
-//Compile( unittest/source/casual_isolatedunittet_uuid.cpp, obj/casual_isolatedunittet_uuid.o)
+Compile( unittest/isolated/source/test_monitor.cpp, unittest/isolated/obj/test_monitor.o)
 
 
-// LinkIsolatedUnittest( casual_utility_isolated, \
-//	obj/casual_isolatedunittet_uuid.o, \
-//	casual_utility )	
+LinkIsolatedUnittest( casual_monitor_isolated, \
+	unittest/isolated/obj/test_monitor.o \
+	obj/monitordb.o, \
+	casual_utility \
+	casual_common \
+	sqlite3)	
 
 	

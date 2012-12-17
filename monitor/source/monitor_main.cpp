@@ -25,9 +25,7 @@ int main( int argc, char** argv)
 
 		std::cout << "starting" << std::endl;
 
-		casual::statistics::Monitor monitor( arguments);
-
-		std::cout << "starting" << std::endl;
+		casual::statistics::monitor::Monitor monitor( arguments);
 
 		monitor.start();
 

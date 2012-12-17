@@ -237,25 +237,24 @@ namespace casual
 		   };
 
 		   //!
-         //! MonitorAdvertise
-         //!
-		   struct MonitorAdvertise : public Base
+           //! MonitorConnect
+           //!
+		   struct MonitorConnect : public Base
 		   {
 		      typedef message::monitor::Advertise message_type;
 
-		      MonitorAdvertise( State& state) : Base( state) {}
+		      MonitorConnect( State& state) : Base( state) {}
 
 		      void dispatch( message_type& message)
-		      {
-		    	  //
-		    	  // TODO:
-		    	  //
-		      }
-
+            {
+		         //TODO: Temp
+               m_state.monitorQueue = message.serverId.queue_key;
+            }
 		   };
+
 		   //!
-         //! MonitorUnadvertise
-         //!
+           //! MonitorUnadvertise
+           //!
 		   struct MonitorUnadvertise : public Base
 		   {
 		      typedef message::monitor::Unadvertise message_type;
@@ -270,6 +269,7 @@ namespace casual
 		      }
 
 		   };
+
 
 		   //!
          //! Advertise 0..N services for a server.
@@ -320,20 +320,6 @@ namespace casual
 
             }
          };
-
-		   struct MonitorConnect : public Base
-		   {
-		      typedef message::monitor::Advertise message_type;
-
-		      MonitorConnect( State& state) : Base( state) {}
-
-		      void dispatch( message_type& message)
-            {
-		         //TODO: Temp
-               m_state.monitorQueue = message.serverId.queue_key;
-            }
-		   };
-
 
 		   //!
 		   //! A server is disconnected
