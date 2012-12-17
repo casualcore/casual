@@ -52,10 +52,10 @@ namespace casual
                         m_output << std::put_time( tm, "%H:%M:%S.") << ms.count() % 1000 << "|" << utility::environment::getDomainName()
                           << utility::platform::getProcessId() << "|";
                           */
-                        m_output << std::setw( 2) << std::setfill( '0') << std::left << tm->tm_hour << ":"
-                           << std::setw( 2) << std::setfill( '0') << std::left << tm->tm_min << ":"
-                           << std::setw( 2) << std::setfill( '0') << std::left << tm->tm_sec << "."
-                           << std::setw( 3) << std::setfill( '0') << std::left << ms.count() % 1000 << "|" << utility::environment::getDomainName() << "|" << utility::environment::getExecutablePath() << "|"
+                        m_output << std::right << std::setfill( '0') << std::setw( 2) << tm->tm_hour << ":"
+                           << std::setw( 2) << tm->tm_min << ":"
+                           << std::setw( 2) << tm->tm_sec << "."
+                           << std::setw( 3) << ms.count() % 1000 << "|" << utility::environment::getDomainName() << "|" << utility::environment::getExecutablePath() << "|"
                            << utility::platform::getProcessId() << "|";
 
 
