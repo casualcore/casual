@@ -10,6 +10,8 @@
 
 #include "common/ipc.h"
 #include "common/buffer_context.h"
+#include "common/types.h"
+
 
 #include "utility/platform.h"
 #include "utility/exception.h"
@@ -363,11 +365,13 @@ namespace casual
 				};
 
 				server::Id serverId;
+				std::string name;
 
 				template<typename A>
 				void marshal(A& archive)
 				{
 					archive & serverId;
+					archive & name;
 				}
 			};
 

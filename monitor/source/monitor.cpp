@@ -10,6 +10,7 @@
 #include "common/message.h"
 #include "common/message_dispatch.h"
 #include "utility/logger.h"
+#include "utility/trace.h"
 
 #include <vector>
 #include <string>
@@ -40,6 +41,8 @@ namespace casual
 {
 namespace statistics
 {
+namespace monitor
+{
 	namespace local
 	{
 		namespace
@@ -57,76 +60,97 @@ namespace statistics
     				return m_receiveQueue;
     			}
 
+    			MonitorDB& monitorDB()
+    			{
+    				return m_monitordb;
+    			}
+
     		private:
     			Context()
     			{
     			}
 
     			common::ipc::receive::Queue m_receiveQueue;
+    			MonitorDB m_monitordb;
     		};
 		}
 	}
 
 	namespace handle
 	{
-		void NotifyStats::dispatch( message_type& message)
+		void NotifyStats::dispatch( const message_type& message)
 		{
-			std::cout << message;
+			static const std::string cMethodname("NotifyStats::dispatch");
+			utility::Trace trace(cMethodname);
+
+			message >> monitorDB;
 		}
 	}
 
-Monitor::Monitor(const std::vector<std::string>& arguments) :
-		m_receiveQueue( local::Context::instance().receiveQueue())
-{
+	Monitor::Monitor(const std::vector<std::string>& arguments) :
+			m_receiveQueue( local::Context::instance().receiveQueue()),
+			m_monitordb( local::Context::instance().monitorDB())
+	{
+		static const std::string cMethodname("Monitor::Monitor");
+		utility::Trace trace(cMethodname);
 
-	//
-	// Make the key public for others...
-	//
-	message::monitor::Advertise message;
+		//
+		// TODO: Use a correct argumentlist handler
+		//
+		const std::string name = !arguments.empty() ? arguments.front() : std::string("");
+		//
+		// Make the key public for others...
+		//
+		message::monitor::Advertise message;
 
-	message.serverId.queue_key = m_receiveQueue.getKey();
+		message.name = name;
+		message.serverId.queue_key = m_receiveQueue.getKey();
 
-	queue::blocking::Writer writer( ipc::getBrokerQueue());
-	writer(message);
-}
+		queue::blocking::Writer writer( ipc::getBrokerQueue());
+		writer(message);
+	}
 
-Monitor::~Monitor()
-{
-	//
-	// Tell broker that monitor is down...
-	//
-	message::monitor::Unadvertise message;
+	Monitor::~Monitor()
+	{
+		static const std::string cMethodname("Monitor::~Monitor");
+		utility::Trace trace(cMethodname);
+		//
+		// Tell broker that monitor is down...
+		//
+		message::monitor::Unadvertise message;
 
-	message.serverId.queue_key = m_receiveQueue.getKey();
+		message.serverId.queue_key = m_receiveQueue.getKey();
 
-	queue::blocking::Writer writer( ipc::getBrokerQueue());
-	writer(message);
+		queue::blocking::Writer writer( ipc::getBrokerQueue());
+		writer(message);
 
-}
+	}
 
-void Monitor::start()
-{
+	void Monitor::start()
+	{
+		static const std::string cMethodname("Monitor::start");
+		utility::Trace trace(cMethodname);
 
-    common::dispatch::Handler handler;
+		common::dispatch::Handler handler;
 
-    handler.add< handle::NotifyStats>();
+		handler.add< handle::NotifyStats>( m_monitordb);
 
-	queue::blocking::Reader queueReader(m_receiveQueue);
+		queue::blocking::Reader queueReader(m_receiveQueue);
 
-    bool working = true;
+		bool working = true;
 
-     while( working)
-     {
+		while( working)
+		{
+			auto marshal = queueReader.next();
 
-        auto marshal = queueReader.next();
+			if( ! handler.dispatch( marshal))
+			{
+			   utility::logger::error << "message_type: " << " not recognized - action: discard";
+			}
+		}
+	}
 
-        if( ! handler.dispatch( marshal))
-        {
-           utility::logger::error << "message_type: " << " not recognized - action: discard";
-        }
-
-     }
-}
+} // monitor
 
 } // statistics
 

@@ -236,6 +236,40 @@ namespace casual
 		      State& m_state;
 		   };
 
+		   //!
+         //! MonitorAdvertise
+         //!
+		   struct MonitorAdvertise : public Base
+		   {
+		      typedef message::monitor::Advertise message_type;
+
+		      MonitorAdvertise( State& state) : Base( state) {}
+
+		      void dispatch( message_type& message)
+		      {
+		    	  //
+		    	  // TODO:
+		    	  //
+		      }
+
+		   };
+		   //!
+         //! MonitorUnadvertise
+         //!
+		   struct MonitorUnadvertise : public Base
+		   {
+		      typedef message::monitor::Unadvertise message_type;
+
+		      MonitorUnadvertise( State& state) : Base( state) {}
+
+		      void dispatch( message_type& message)
+		      {
+		    	  //
+		    	  // TODO:
+		    	  //
+		      }
+
+		   };
 
 		   //!
          //! Advertise 0..N services for a server.
