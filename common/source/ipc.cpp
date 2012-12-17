@@ -73,7 +73,7 @@ namespace casual
                         utility::signal::handle();
                         return false;
                      }
-                     case ENOMSG:
+                     case EAGAIN:
                      {
                         return false;
                      }
