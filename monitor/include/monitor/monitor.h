@@ -31,6 +31,15 @@ namespace casual
 				Monitor( const std::vector< std::string>& arguments);
 				~Monitor();
 
+				//!
+				//! Reading nonblocking. Used to boost performance writing to
+				//! database. Realizes dynamic commit size
+				//!
+				void nonBlockingRead( int maxNumberOfMessages) const;
+
+				//!
+				//! Start the server
+				//!
 				void start();
 
 			private:
@@ -40,8 +49,13 @@ namespace casual
 
 			namespace handle
 			{
+				//!
+				//! Used with the dispatch handler to handle relevant
+				//! messages from queue
+				//!
 				struct Notify
 				{
+				public:
 					typedef common::message::monitor::Notify message_type;
 					Notify( MonitorDB& db_ ) : monitorDB( db_)
 					{

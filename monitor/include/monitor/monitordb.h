@@ -26,6 +26,9 @@ namespace casual
 
 				~MonitorDB();
 
+				void begin() const;
+				void commit() const;
+
 				void insert( const common::message::monitor::Notify& message);
 			private:
 				//

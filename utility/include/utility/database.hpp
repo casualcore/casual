@@ -75,6 +75,12 @@ public:
     /** Definition of a database table row. **/
     typedef std::map<std::string, std::vector<std::string>> Row;
 
+
+    /** Transaction support **/
+    void begin() const { sqlite3_exec(database_, "BEGIN", 0, 0, 0); }
+    void rollback() const { sqlite3_exec(database_, "ROLLBACK", 0, 0, 0); }
+    void commit() const { sqlite3_exec(database_, "COMMIT", 0, 0, 0); }
+
     /**
      * SQL Query, non-responsive version.
      *

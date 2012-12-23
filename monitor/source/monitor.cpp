@@ -87,6 +87,26 @@ namespace monitor
 		}
 	}
 
+	void Monitor::nonBlockingRead( int maxNumberOfMessages) const
+	{
+		handle::Notify notifier( m_monitordb);
+
+		queue::non_blocking::Reader queueReader( m_receiveQueue);
+		for (auto i=0; i < maxNumberOfMessages; i++)
+		{
+			message::monitor::Notify message;
+			if ( queueReader( message))
+			{
+				notifier.dispatch( message);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+	}
+
 	Monitor::Monitor(const std::vector<std::string>& arguments) :
 			m_receiveQueue( local::Context::instance().receiveQueue()),
 			m_monitordb( local::Context::instance().monitorDB())
@@ -143,10 +163,16 @@ namespace monitor
 		{
 			auto marshal = queueReader.next();
 
+			m_monitordb.begin();
+
 			if( ! handler.dispatch( marshal))
 			{
 			   utility::logger::error << "message_type: " << " not recognized - action: discard";
 			}
+
+			nonBlockingRead( 1000);
+
+			m_monitordb.commit();
 		}
 	}
 

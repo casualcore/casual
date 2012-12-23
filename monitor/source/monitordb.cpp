@@ -55,6 +55,21 @@ namespace monitor
 		utility::Trace trace(cMethodname);
 	}
 
+	void MonitorDB::begin() const
+	{
+		static const std::string cMethodname("MonitorDB::begin()");
+		utility::Trace trace(cMethodname);
+		m_database.begin();
+	}
+
+	void MonitorDB::commit() const
+	{
+		static const std::string cMethodname("MonitorDB::commit()");
+		utility::Trace trace(cMethodname);
+		m_database.commit();
+	}
+
+
 	void MonitorDB::createTable()
 	{
 		static const std::string cMethodname("MonitorDB::createTable");
@@ -89,8 +104,8 @@ namespace monitor
 				message.parentService,
 				message.callId.getString(),
 				message.transactionId,
-				message.start.time_since_epoch().count(),
-				message.end.time_since_epoch().count()))
+				std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
+				std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count()))
 		{
 			throw std::runtime_error( m_database.error());
 		}
