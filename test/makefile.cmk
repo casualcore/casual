@@ -3,11 +3,13 @@
 INCLUDE_PATHS= include \
 	../common/include \
 	../utility/include \
+	../serviceframework/include \
 	../xatmi/include
 	
 LIBRARY_PATHS= ../xatmi/bin \
 	../common/bin \
-	../utility/bin
+	../utility/bin \
+	../serviceframework/bin
 
 
 
@@ -29,6 +31,21 @@ LinkExecutable(test, \
     casual-xatmi casual_utility)	
 	
 */
+
+
+//
+// compile and link the sf-template-server
+//
+Compile( source/template_sf_server.cpp, obj/template_sf_server.o)
+Compile( source/template_sf_server_implementation.cpp, obj/template_sf_server_implementation.o)
+
+LinkAtmiServer(sf_test, \
+    obj/template_sf_server.o \
+    obj/template_sf_server_implementation.o, \
+    casual-xatmi \
+    casual_utility \
+    casual_sf, \
+    "casual_sf_test1,casual_sf_test2")
 
 
 	

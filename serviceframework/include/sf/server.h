@@ -22,16 +22,16 @@ namespace casual
          class Interface
          {
          public:
-            std::unique_ptr< service::Interface> service( );
+            std::unique_ptr< service::Interface> service( TPSVCINFO* serviceInfo);
 
             virtual ~Interface();
 
          private:
 
-            virtual std::unique_ptr< service::Interface> doService() = 0;
+            virtual std::unique_ptr< service::Interface> doGetService( TPSVCINFO* serviceInfo) = 0;
          };
 
-         std::unique_ptr< Interface> create();
+         std::unique_ptr< Interface> create( int argc, char **argv);
 
 
       } // server

@@ -3,9 +3,10 @@
 Build( utility/makefile.cmk)
 Build( common/makefile.cmk)
 Build( xatmi/makefile.cmk)
-Build( test/makefile.cmk)
 
 Build( serviceframework/makefile.cmk)
+
+Build( test/makefile.cmk)
 
 Build( broker/makefile.cmk)
 Build( monitor/makefile.cmk)

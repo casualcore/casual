@@ -6,6 +6,7 @@
 //!
 
 #include "sf/server.h"
+#include "sf/service_implementation.h"
 
 namespace casual
 {
@@ -15,9 +16,9 @@ namespace casual
       {
 
 
-         std::unique_ptr< service::Interface> Interface::service()
+         std::unique_ptr< service::Interface> Interface::service( TPSVCINFO* serviceInfo)
          {
-            return doService();
+            return doGetService( serviceInfo);
          }
 
          Interface::~Interface()
@@ -29,10 +30,10 @@ namespace casual
          {
 
          private:
-            std::unique_ptr< service::Interface> doService()
+            std::unique_ptr< service::Interface> doGetService( TPSVCINFO* serviceInfo) override
             {
                // TODO:
-               return std::unique_ptr< service::Interface>( new service::Interface{});
+               return std::unique_ptr< service::Interface>( new service::implementation::Base{});
             }
 
          };

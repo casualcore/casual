@@ -10,7 +10,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "sf/archive_yaml_policy.h"
+#include "sf/archive_yaml_implementation.h"
 #include "sf/exception.h"
 
 #include "common/types.h"
@@ -65,7 +65,7 @@ value:
    {
       std::istringstream stream( local::Serializible::yaml());
 
-      sf::archive::reader::YamlRelaxed reader( stream);
+      sf::archive::yaml::reader::Relaxed reader( stream);
 
       local::Serializible value;
 
@@ -81,7 +81,7 @@ value:
    {
       std::istringstream stream( local::Serializible::yaml());
 
-      sf::archive::reader::YamlStrict reader( stream);
+      sf::archive::yaml::reader::Strict reader( stream);
 
       local::Serializible value;
 
@@ -96,7 +96,7 @@ value:
    {
       std::istringstream stream( local::Serializible::yaml());
 
-      sf::archive::reader::YamlStrict reader( stream);
+      sf::archive::yaml::reader::Strict reader( stream);
 
       local::Serializible wrongRoleName;
 
@@ -109,7 +109,7 @@ value:
    {
       YAML::Emitter output;
 
-      sf::archive::writer::Yaml writer( output);
+      sf::archive::yaml::writer::Strict writer( output);
 
       {
          std::vector< long> values = { 1, 2, 34, 45, 34, 34, 23};
@@ -117,7 +117,7 @@ value:
       }
 
       std::istringstream stream( output.c_str());
-      sf::archive::reader::YamlRelaxed reader( stream);
+      sf::archive::yaml::reader::Relaxed reader( stream);
 
 
       std::vector< long> values;
@@ -139,7 +139,7 @@ value:
    {
       YAML::Emitter output;
 
-      sf::archive::writer::Yaml writer( output);
+      sf::archive::yaml::writer::Strict writer( output);
 
       {
          std::vector< local::Serializible> values = { { 123, "one two three"}, { 456, "four five six"}};
@@ -147,7 +147,7 @@ value:
       }
 
       std::istringstream stream( output.c_str());
-      sf::archive::reader::YamlRelaxed reader( stream);
+      sf::archive::yaml::reader::Relaxed reader( stream);
 
       std::vector< local::Serializible> values;
       reader >> CASUAL_MAKE_NVP( values);
@@ -182,7 +182,7 @@ value:
    {
       YAML::Emitter output;
 
-      sf::archive::writer::Yaml writer( output);
+      sf::archive::yaml::writer::Strict writer( output);
 
       {
          std::map< long, local::Composite> values;
@@ -196,7 +196,7 @@ value:
 
 
       std::istringstream stream( output.c_str());
-      sf::archive::reader::YamlRelaxed reader( stream);
+      sf::archive::yaml::reader::Relaxed reader( stream);
 
       std::map< long, local::Composite> values;
       reader >> CASUAL_MAKE_NVP( values);
@@ -220,7 +220,7 @@ value:
    TEST( casual_sf_yaml_archive, write_read_binary)
    {
       YAML::Emitter output;
-      sf::archive::writer::Yaml writer( output);
+      sf::archive::yaml::writer::Strict writer( output);
 
       {
          local::Binary value;
@@ -233,7 +233,7 @@ value:
       }
 
       std::istringstream stream( output.c_str());
-      sf::archive::reader::YamlRelaxed reader( stream);
+      sf::archive::yaml::reader::Relaxed reader( stream);
 
       local::Binary value;
       reader >> CASUAL_MAKE_NVP( value);

@@ -11,7 +11,7 @@
 
 #include "broker/configuration.h"
 
-#include "sf/archive_yaml_policy.h"
+#include "sf/archive_yaml_implementation.h"
 
 
 namespace casual
@@ -62,7 +62,7 @@ broker:
       {
          std::istringstream stream( local::yaml::getDefault());
 
-         sf::archive::reader::YamlRelaxed reader( stream);
+         sf::archive::yaml::reader::Relaxed reader( stream);
 
          configuration::Settings broker;
 
@@ -80,7 +80,7 @@ broker:
       {
          std::istringstream stream( local::yaml::getDefault());
 
-         sf::archive::reader::YamlRelaxed reader( stream);
+         sf::archive::yaml::reader::Relaxed reader( stream);
 
          configuration::Settings broker;
 

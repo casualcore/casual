@@ -5,8 +5,8 @@
  *      Author: lazan
  */
 
-#ifndef CASUAL_SF_ARCHIVEBASE_H_
-#define CASUAL_SF_ARCHIVEBASE_H_
+#ifndef CASUAL_SF_ARCHIVE_H_
+#define CASUAL_SF_ARCHIVE_H_
 
 #include "sf/namevaluepair.h"
 #include "sf/archive_traits.h"

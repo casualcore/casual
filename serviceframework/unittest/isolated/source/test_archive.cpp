@@ -185,7 +185,7 @@ namespace casual
 
       writer << CASUAL_MAKE_NVP( 34L);
 
-      sf::archive::basic_reader< TestReaderPolicy> reader( writer.policy());
+      sf::archive::basic_reader< TestReaderPolicy> reader( writer.implementation());
 
       long result;
 
@@ -208,7 +208,7 @@ namespace casual
 
       std::vector< long> result;
 
-      sf::archive::basic_reader< TestReaderPolicy> reader( writer.policy());
+      sf::archive::basic_reader< TestReaderPolicy> reader( writer.implementation());
 
       reader >> CASUAL_MAKE_NVP( result);
 
@@ -233,7 +233,7 @@ namespace casual
 
       std::map< long, std::string> result;
 
-      sf::archive::basic_reader< TestReaderPolicy> reader( writer.policy());
+      sf::archive::basic_reader< TestReaderPolicy> reader( writer.implementation());
 
       reader >> CASUAL_MAKE_NVP( result);
 

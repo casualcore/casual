@@ -6,7 +6,7 @@
 //!
 
 #include "sf/archive_maker.h"
-#include "sf/archive_yaml_policy.h"
+#include "sf/archive_yaml_implementation.h"
 
 #include "utility/file.h"
 
@@ -65,7 +65,7 @@ namespace casual
 
                if( extension == "yaml")
                {
-                  typedef basic_holder< YamlRelaxed, policy::reader::Buffer > YamlRelaxedHolder;
+                  typedef basic_holder< yaml::reader::Relaxed, yaml::reader::Buffer > YamlRelaxedHolder;
 
 
                   return Holder( Holder::base_value_type( new YamlRelaxedHolder( filename)));

@@ -17,16 +17,18 @@ LIBRARY_PATHS= ../common/bin \
     $(YAML_LIBRARY_PATH)
 
 
-Compile( source/archive_base.cpp, obj/archive_base.o)
+Compile( source/archive.cpp, obj/archive.o)
 Compile( source/archive_maker.cpp, obj/archive_maker.o)
 Compile( source/buffer.cpp, obj/buffer.o)
 Compile( source/server.cpp, obj/server.o)
+Compile( source/service.cpp, obj/service.o)
 
 LinkLibrary( casual_sf,\
-    obj/archive_base.o \
+    obj/archive.o \
     obj/archive_maker.o \
     obj/buffer.o \
-    obj/server.o, \
+    obj/server.o \
+    obj/service.o, \
     casual_utility yaml-cpp casual-xatmi)
 
 
