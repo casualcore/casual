@@ -49,21 +49,6 @@ int casual_initialize_server( int argc, char** argv, struct casual_service_name_
    try
    {
 
-
-   }
-   catch( ...)
-   {
-      return casual::utility::error::handler();
-   }
-   return 0;
-}
-
-
-int casual_startServer( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
-{
-   try
-   {
-
       std::vector< std::string> arguments;
 
       std::copy(
@@ -74,23 +59,37 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
 
       utility::environment::setExecutablePath( arguments.at( 0));
 
-      //tpsvrinit( argc, argv);
-
       std::vector< common::service::Context> serviceContext;
 
       std::transform(
-         mapping,
-         mapping + size,
-         std::back_inserter( serviceContext),
-         local::transform::ServiceContext());
+        mapping,
+        mapping + size,
+        std::back_inserter( serviceContext),
+        local::transform::ServiceContext());
 
+
+      common::server::Context::instance().initializeServer( serviceContext);
+
+   }
+   catch( ...)
+   {
+      return casual::utility::error::handler();
+   }
+   return 0;
+}
+
+
+int casual_start_server()
+{
+   try
+   {
 
       //
       // Start the message-pump
       //
       common::dispatch::Handler handler;
 
-      handler.add< common::callee::handle::Call>( serviceContext);
+      handler.add< common::callee::handle::Call>();
 
       common::queue::blocking::Reader queueReader( common::ipc::getReceiveQueue());
 

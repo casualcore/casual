@@ -61,6 +61,11 @@ namespace casual
 
             Context( const Context&) = delete;
 
+            //!
+            //! Initialize server. Can only be done once
+            //!
+            void initializeServer( std::vector< service::Context>& services);
+
 
             //!
             //! Being called from tpreturn
@@ -109,9 +114,10 @@ namespace casual
 
                typedef message::service::callee::Call message_type;
 
-               basic_call() = delete;
+               basic_call() = default;
                basic_call( const basic_call&) = delete;
 
+               /*
                //!
                //! Advertise @p services to the broker build a dispatch-table for
                //! coming XATMI-calls
@@ -135,6 +141,7 @@ namespace casual
                   typename queue_policy::blocking_broker_writer brokerWriter;
                   brokerWriter( message);
                }
+               */
 
                //!
                //! Sends a message::server::Disconnect to the broker

@@ -14,7 +14,6 @@
 
 #include "utility/logger.h"
 
-#include <iostream>
 
 #include <unistd.h>
 
@@ -31,9 +30,9 @@ void casual_test1( TPSVCINFO *serviceContext)
    buffer = tprealloc( buffer, 3000);
 
    {
-      std::cout << "transb->name: " << serviceContext->name << std::endl;
-      std::cout << "transb->cd: " << serviceContext->cd << std::endl;
-      std::cout << "transb->data: " << serviceContext->data << std::endl;
+      casual::utility::logger::debug << "transb->name: " << serviceContext->name;
+      casual::utility::logger::debug << "transb->cd: " << serviceContext->cd;
+      casual::utility::logger::debug << "transb->data: " << serviceContext->data;
 
 
 
@@ -67,14 +66,14 @@ void casual_test3( TPSVCINFO *serviceContext)
 
 
 
-/*
+
 int tpsvrinit(int argc, char **argv)
 {
    casual::utility::logger::debug << "USER tpsvrinit called";
 
    return 0;
 }
-*/
+
 
 
 

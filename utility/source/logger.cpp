@@ -122,7 +122,7 @@ namespace casual
                         //
                         const std::string logfileName = utility::environment::getRootPath() + "/casual.log";
 
-                        m_output.open( logfileName.c_str(), std::ios::app | std::ios::out);
+                        m_output.open( logfileName, std::ios::app | std::ios::out);
 
                         if( m_output.fail())
                         {

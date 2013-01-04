@@ -13,19 +13,24 @@ LIBRARY_PATHS= ../xatmi/bin \
 
 Compile( source/template_server.cpp, obj/template_server.o)
 
-/*
+
 LinkAtmiServer(test, \
 	obj/template_server.o, \
 	casual-xatmi casual_utility, \
 	"casual_test1,casual_test2")
-*/
 
+
+/*
 Compile( source/template_server_dispatcher.c, obj/template_server_dispatcher.o)
 
 LinkExecutable(test, \
     obj/template_server_dispatcher.o \
     obj/template_server.o, \
     casual-xatmi casual_utility)	
+	
+*/
+
+
 	
 Compile( source/template_client.cpp, obj/template_client.o)
 

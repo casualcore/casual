@@ -42,6 +42,27 @@ namespace casual
 
          }
 
+         void Context::initializeServer( std::vector< service::Context>& services)
+         {
+
+            message::service::Advertise message;
+            message.serverId.queue_key = ipc::getReceiveQueue().getKey();
+
+
+            for( auto&& service : services)
+            {
+               message.services.emplace_back( service.m_name);
+               m_state.services.emplace( service.m_name, std::move( service));
+
+            }
+
+            //
+            // Let the broker know about us, and our services...
+            //
+            queue::blocking::Writer writer( ipc::getBrokerQueue());
+            writer( message);
+         }
+
 
          void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)
          {

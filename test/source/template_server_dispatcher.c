@@ -32,16 +32,37 @@ int main( int argc, char** argv)
 			{&casual_test2, "casual_test2"}
 	};
 
-	// TODO Temp
-	tpsvrinit( argc, argv);
+	/*
+   // Initialize the server
+   */
+	int result = casual_initialize_server(
+	      argc,
+         argv,
+         mapping,
+         sizeof( mapping) / sizeof( struct casual_service_name_mapping));
 
+	if( result != 0)
+	   return result;
 
-	return casual_startServer(
-			argc,
-			argv,
-			mapping,
-			sizeof( mapping) / sizeof( struct casual_service_name_mapping));
+	/*
+   // Let the user code get a chance being called via tpsvrinit
+   */
+	result = tpsvrinit( argc, argv);
 
+	if( result != 0)
+	   return result;
+
+	/*
+	// Start the server
+	*/
+	result = casual_start_server();
+
+	/*
+   // Let the user code get a chance being called via tpsvrdone
+   */
+	tpsvrdone();
+
+	return result;
 }
 
 
