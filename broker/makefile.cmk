@@ -14,6 +14,7 @@ INCLUDE_PATHS= include \
 LIBRARY_PATHS = ../common/bin \
     ../serviceframework/bin \
 	../utility/bin \
+	../xatmi/bin \
 	$(YAML_LIBRARY_PATH)
 	
 
