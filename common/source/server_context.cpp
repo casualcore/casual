@@ -21,19 +21,6 @@
 
 #include <algorithm>
 
-extern "C"
-{
-   int tpsvrinit(int argc, char **argv)
-   {
-      casual::utility::logger::debug << "internal tpsvrinit called";
-      return 0;
-   }
-
-   void tpsvrdone()
-   {
-      casual::utility::logger::debug << "internal tpsvrdone called";
-   }
-}
 
 
 namespace casual

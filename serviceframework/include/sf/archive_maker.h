@@ -43,6 +43,7 @@ namespace casual
 
 
                holder( base_value_type&& base) : m_base( std::move( base)) {}
+               holder( holder&& rhs) = default;
                ~holder() {}
 
                template< typename T>
@@ -57,11 +58,6 @@ namespace casual
                {
                   m_base->archive() >> std::forward< T>( value);
                   return *this;
-               }
-
-               holder( holder&& rhs)
-               {
-                  m_base = std::move( rhs.m_base);
                }
 
             private:

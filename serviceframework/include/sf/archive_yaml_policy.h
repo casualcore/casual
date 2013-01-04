@@ -155,11 +155,6 @@ namespace casual
                   }
                }
 
-
-
-
-
-
             private:
 
                template< typename C>
@@ -226,7 +221,6 @@ namespace casual
                {
                   m_output << YAML::BeginMap;
                   m_emitterStack.push( YAML::BeginMap);
-
                }
 
 

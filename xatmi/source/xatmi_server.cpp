@@ -44,13 +44,19 @@ namespace
 }
 
 
-extern "C"
+int casual_initialize_server( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
 {
-   int tpsvrinit(int argc, char **argv);
+   try
+   {
 
-   void tpsvrdone();
+
+   }
+   catch( ...)
+   {
+      return casual::utility::error::handler();
+   }
+   return 0;
 }
-
 
 
 int casual_startServer( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
@@ -68,7 +74,7 @@ int casual_startServer( int argc, char** argv, struct casual_service_name_mappin
 
       utility::environment::setExecutablePath( arguments.at( 0));
 
-      tpsvrinit( argc, argv);
+      //tpsvrinit( argc, argv);
 
       std::vector< common::service::Context> serviceContext;
 

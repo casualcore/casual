@@ -27,7 +27,7 @@ namespace casual
 
             template< typename... Arguments>
             basic_reader( Arguments&&... arguments)
-             : m_readerArcive( std::forward< Arguments>( arguments)...)
+             : m_readerArchive( std::forward< Arguments>( arguments)...)
                {
 
                }
@@ -35,44 +35,44 @@ namespace casual
 
             const T& policy() const
             {
-               return m_readerArcive;
+               return m_readerArchive;
             }
 
 
          private:
 
 
-            void handle_start( const char* name) { m_readerArcive.handle_start( name);}
+            void handle_start( const char* name) { m_readerArchive.handle_start( name);}
 
-            void handle_end( const char* name) { m_readerArcive.handle_end( name); }
+            void handle_end( const char* name) { m_readerArchive.handle_end( name); }
 
-            std::size_t handle_container_start( std::size_t size) { return m_readerArcive.handle_container_start( size); }
+            std::size_t handle_container_start( std::size_t size) { return m_readerArchive.handle_container_start( size); }
 
-            void handle_container_end() {m_readerArcive.handle_container_end();}
+            void handle_container_end() {m_readerArchive.handle_container_end();}
 
-            void handle_serialtype_start() { m_readerArcive.handle_serialtype_start();}
+            void handle_serialtype_start() { m_readerArchive.handle_serialtype_start();}
 
-            void handle_serialtype_end() {m_readerArcive.handle_serialtype_end();}
+            void handle_serialtype_end() {m_readerArchive.handle_serialtype_end();}
 
 
 
-            void readPOD( bool& value) { m_readerArcive.read( value);}
+            void readPOD( bool& value) { m_readerArchive.read( value);}
 
-            void readPOD( char& value) { m_readerArcive.read( value);}
+            void readPOD( char& value) { m_readerArchive.read( value);}
 
-            void readPOD( short& value) { m_readerArcive.read( value);}
+            void readPOD( short& value) { m_readerArchive.read( value);}
 
-            void readPOD( long& value) { m_readerArcive.read( value);}
+            void readPOD( long& value) { m_readerArchive.read( value);}
 
-            void readPOD( float& value) { m_readerArcive.read( value);}
+            void readPOD( float& value) { m_readerArchive.read( value);}
 
-            void readPOD ( double& value) { m_readerArcive.read( value);}
+            void readPOD ( double& value) { m_readerArchive.read( value);}
 
-            void readPOD ( std::string& value) { m_readerArcive.read( value);}
+            void readPOD ( std::string& value) { m_readerArchive.read( value);}
 
-            void readPOD( common::binary_type& value) { m_readerArcive.read( value);}
+            void readPOD( common::binary_type& value) { m_readerArchive.read( value);}
 
-            T m_readerArcive;
+            T m_readerArchive;
 
          };
 
@@ -84,49 +84,49 @@ namespace casual
 
             template< typename... Arguments>
             basic_writer( Arguments&&... arguments)
-             : m_writerArcive( std::forward< Arguments>( arguments)...)
+             : m_writerArchive( std::forward< Arguments>( arguments)...)
                {
 
                }
 
             const T& policy() const
             {
-               return m_writerArcive;
+               return m_writerArchive;
             }
 
          private:
 
-            void handle_start( const char* name) { m_writerArcive.handle_start( name); }
+            void handle_start( const char* name) { m_writerArchive.handle_start( name); }
 
-            void handle_end( const char* name) { m_writerArcive.handle_end( name); }
+            void handle_end( const char* name) { m_writerArchive.handle_end( name); }
 
-            std::size_t handle_container_start( std::size_t size) { return m_writerArcive.handle_container_start( size); }
+            std::size_t handle_container_start( std::size_t size) { return m_writerArchive.handle_container_start( size); }
 
-            void handle_container_end() { m_writerArcive.handle_container_end();}
+            void handle_container_end() { m_writerArchive.handle_container_end();}
 
-            void handle_serialtype_start() { m_writerArcive.handle_serialtype_start();}
+            void handle_serialtype_start() { m_writerArchive.handle_serialtype_start();}
 
-            void handle_serialtype_end() { m_writerArcive.handle_serialtype_end();}
+            void handle_serialtype_end() { m_writerArchive.handle_serialtype_end();}
 
 
 
-            void writePOD (const bool value) { m_writerArcive.write( value);}
+            void writePOD (const bool value) { m_writerArchive.write( value);}
 
-            void writePOD (const char value) { m_writerArcive.write( value);}
+            void writePOD (const char value) { m_writerArchive.write( value);}
 
-            void writePOD (const short value) { m_writerArcive.write( value);}
+            void writePOD (const short value) { m_writerArchive.write( value);}
 
-            void writePOD (const long value) { m_writerArcive.write( value);}
+            void writePOD (const long value) { m_writerArchive.write( value);}
 
-            void writePOD (const float value) { m_writerArcive.write( value);}
+            void writePOD (const float value) { m_writerArchive.write( value);}
 
-            void writePOD (const double value) { m_writerArcive.write( value);}
+            void writePOD (const double value) { m_writerArchive.write( value);}
 
-            void writePOD (const std::string& value) { m_writerArcive.write( value);}
+            void writePOD (const std::string& value) { m_writerArchive.write( value);}
 
-            void writePOD (const common::binary_type& value) { m_writerArcive.write( value);}
+            void writePOD (const common::binary_type& value) { m_writerArchive.write( value);}
 
-            T m_writerArcive;
+            T m_writerArchive;
 
          };
 

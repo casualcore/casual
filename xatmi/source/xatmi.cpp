@@ -124,7 +124,7 @@ int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
    {
       return casual::utility::error::handler();
    }
-   return 0; // remove warning in eclipse
+   return 0;
 }
 
 int tpunadvertise( const char* svcname)
@@ -137,12 +137,25 @@ int tpunadvertise( const char* svcname)
    {
       return casual::utility::error::handler();
    }
-   return 0; // remove warning in eclipse
+   return 0;
 }
 
 const char* tperrnostring( int error)
 {
    return casual::utility::error::tperrnoStringRepresentation( error).c_str();
+}
+
+
+int tpsvrinit(int argc, char **argv)
+{
+  casual::utility::logger::debug << "internal tpsvrinit called";
+  return 0;
+}
+
+
+void tpsvrdone()
+{
+  casual::utility::logger::debug << "internal tpsvrdone called";
 }
 
 

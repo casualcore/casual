@@ -7,21 +7,27 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 INCLUDE_PATHS= include \
     ../common/include \
     ../utility/include \
+    ../xatmi/include \
     $(YAML_INCLUDE_PATH) \
 	$(UNITTEST_INCLUDE_PATH) \
 
 LIBRARY_PATHS= ../common/bin \
     ../utility/bin \ 
+    ../xatmi/bin \
     $(YAML_LIBRARY_PATH)
 
 
 Compile( source/archive_base.cpp, obj/archive_base.o)
 Compile( source/archive_maker.cpp, obj/archive_maker.o)
+Compile( source/buffer.cpp, obj/buffer.o)
+Compile( source/server.cpp, obj/server.o)
 
 LinkLibrary( casual_sf,\
     obj/archive_base.o \
-    obj/archive_maker.o, \
-    casual_utility yaml-cpp)
+    obj/archive_maker.o \
+    obj/buffer.o \
+    obj/server.o, \
+    casual_utility yaml-cpp casual-xatmi)
 
 
 //
@@ -31,12 +37,14 @@ Compile( unittest/isolated/source/test_namevaluepair.cpp, unittest/isolated/obj/
 Compile( unittest/isolated/source/test_archive.cpp, unittest/isolated/obj/test_archive.o)
 Compile( unittest/isolated/source/test_traits.cpp, unittest/isolated/obj/test_traits.o)
 Compile( unittest/isolated/source/test_yaml_archive.cpp, unittest/isolated/obj/test_yaml_archive.o)
+Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
 
 
 LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_namevaluepair.o \
 	unittest/isolated/obj/test_archive.o \
 	unittest/isolated/obj/test_traits.o \
-	unittest/isolated/obj/test_yaml_archive.o, \
-	casual_sf)
+	unittest/isolated/obj/test_yaml_archive.o \
+	unittest/isolated/obj/test_buffer.o, \
+	casual_sf casual-xatmi)
 	

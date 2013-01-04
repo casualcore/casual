@@ -10,6 +10,7 @@
 
 #include "monitor/monitordb.h"
 #include "common/message.h"
+#include "common/types.h"
 
 #include <iostream>
 
@@ -58,9 +59,9 @@ namespace statistics
 
 				message.service = "myService";
 				message.parentService = "myParentService";
-				message.start = std::chrono::system_clock::now();
+				message.start = common::clock_type::now();
 				sleep(1);
-				message.end = std::chrono::system_clock::now();
+				message.end = common::clock_type::now();
 				db.insert(message);
 			}
 			catch (...)

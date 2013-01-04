@@ -32,6 +32,10 @@ int main( int argc, char** argv)
 			{&casual_test2, "casual_test2"}
 	};
 
+	// TODO Temp
+	tpsvrinit( argc, argv);
+
+
 	return casual_startServer(
 			argc,
 			argv,

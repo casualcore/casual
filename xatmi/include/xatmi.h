@@ -108,6 +108,12 @@ extern  long _get_tpurcode(void); // CLIENT
  */
 extern const char* tperrnostring( int error);
 
+extern int tpsvrinit(int argc, char **argv);
+
+extern void tpsvrdone();
+
+
+
 
 #ifdef __cplusplus
 }

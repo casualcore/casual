@@ -130,6 +130,10 @@ namespace casual
                         }
 
                      }
+
+
+
+
                      std::ofstream m_output;
                      int m_mask;
 
@@ -152,7 +156,7 @@ namespace casual
                : // TODO: Not implemented in gcc m_message( std::move( rhs.m_message)),
                  m_message( rhs.m_message.str()),
                  m_priority( std::move( rhs.m_priority)),
-                 m_log( std::move( m_log))
+                 m_log( std::move( rhs.m_log))
             {
                rhs.m_log = false;
             }

@@ -22,6 +22,8 @@ struct casual_service_name_mapping
 extern "C" {
 #endif
 
+//int casual_initialize_server( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size);
+
 int casual_startServer( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size);
 
 

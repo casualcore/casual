@@ -51,17 +51,31 @@ void casual_test1( TPSVCINFO *serviceContext)
 void casual_test2( TPSVCINFO *serviceContext)
 {
 
-   //sleep( 1);
+   casual::utility::logger::debug << "casual_test2 called";
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
 
 
+void casual_test3( TPSVCINFO *serviceContext)
+{
+
+   casual::utility::logger::debug << "casual_test2 called";
+
+   tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
+}
+
+
+
+/*
 int tpsvrinit(int argc, char **argv)
 {
    casual::utility::logger::debug << "USER tpsvrinit called";
+
    return 0;
 }
+*/
+
 
 
 
