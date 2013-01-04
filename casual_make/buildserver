@@ -38,15 +38,40 @@ int main( int argc, char** argv)
 {
 
     struct casual_service_name_mapping mapping[] = {
-            $mapping_content
+       $mapping_content
     };
 
-    return casual_startServer(
-            argc,
-            argv,
-            mapping,
-            sizeof( mapping) / sizeof( struct casual_service_name_mapping));
+   /*
+   // Initialize the server
+   */
+   int result = casual_initialize_server(
+      argc,
+      argv,
+      mapping,
+      sizeof( mapping) / sizeof( struct casual_service_name_mapping));
 
+   if( result != 0)
+       return result;
+
+   /*
+   // Let the user code get a chance being called via tpsvrinit
+   */
+   result = tpsvrinit( argc, argv);
+
+   if( result != 0)
+      return result;
+
+   /*
+   // Start the server
+   */
+   result = casual_start_server();
+
+   /*
+   // Let the user code get a chance being called via tpsvrdone
+   */
+   tpsvrdone();
+
+   return result;
 }
 
 #ifdef __cplusplus
