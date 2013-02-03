@@ -35,6 +35,19 @@ namespace casual
    {
       namespace server
       {
+
+         struct Arguments
+         {
+            Arguments() = default;
+            Arguments( Arguments&&) = default;
+
+            std::vector< service::Context> m_services;
+            std::function<int( int m_argc, char **m_argv)> m_server_init;
+            std::function<void()> m_server_done;
+            int m_argc;
+            char** m_argv;
+         };
+
          struct State
          {
             State() = default;
@@ -50,6 +63,8 @@ namespace casual
             message::service::Reply reply;
             message::monitor::Notify monitor;
 
+            std::function<void()> m_server_done;
+
          };
 
          class Context
@@ -60,11 +75,6 @@ namespace casual
             static Context& instance();
 
             Context( const Context&) = delete;
-
-            //!
-            //! Initialize server. Can only be done once
-            //!
-            void initializeServer( std::vector< service::Context>& services);
 
 
             //!
@@ -114,21 +124,23 @@ namespace casual
 
                typedef message::service::callee::Call message_type;
 
-               basic_call() = default;
+               basic_call() = delete;
                basic_call( const basic_call&) = delete;
 
-               /*
+
                //!
                //! Advertise @p services to the broker build a dispatch-table for
                //! coming XATMI-calls
                //!
-               basic_call( std::vector< service::Context>& services)
+               basic_call( server::Arguments& arguments)
                {
+                  m_state.m_server_done = arguments.m_server_done;
+
                   message::service::Advertise message;
                   message.serverId.queue_key = queue_policy::receiveKey();
 
 
-                  for( auto&& service : services)
+                  for( auto&& service : arguments.m_services)
                   {
                      message.services.emplace_back( service.m_name);
                      m_state.services.emplace( service.m_name, std::move( service));
@@ -140,14 +152,26 @@ namespace casual
                   //
                   typename queue_policy::blocking_broker_writer brokerWriter;
                   brokerWriter( message);
+
+                  //
+                  // Call tpsrvinit
+                  //
+                  arguments.m_server_init( arguments.m_argc, arguments.m_argv);
+
                }
-               */
+
 
                //!
                //! Sends a message::server::Disconnect to the broker
                //!
                ~basic_call() noexcept
                {
+
+                  //
+                  // Call tpsrvdone
+                  //
+                  m_state.m_server_done();
+
                   message::server::Disconnect message;
 
                   //

@@ -11,6 +11,12 @@
 #include "xatmi.h"
 #include <stddef.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 struct casual_service_name_mapping
 {
 	tpservice m_functionPointer;
@@ -18,13 +24,29 @@ struct casual_service_name_mapping
 };
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef void( *tpsvrdone_type)();
+typedef int( *tpsvrinit_type)( int argc, char **argv);
+
+
+struct casual_server_argument
+{
+   casual_service_name_mapping* m_serverStart;
+   casual_service_name_mapping* m_serverEnd;
+
+   tpsvrinit_type m_serviceInit;
+   tpsvrdone_type m_serviceDone;
+
+   int m_argc;
+   char** m_argv;
+
+
+};
+
+
 
 int casual_initialize_server( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size);
 
-int casual_start_server();
+int casual_start_server( casual_server_argument* serverArgument);
 
 
 #ifdef __cplusplus

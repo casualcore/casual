@@ -38,12 +38,35 @@ namespace
 
             }
          };
+
+         struct ServerArguments
+         {
+            common::server::Arguments operator ()( struct casual_server_argument& value) const
+            {
+               common::server::Arguments result;
+
+               std::transform(
+                     value.m_serverStart,
+                     value.m_serverEnd,
+                     std::back_inserter( result.m_services),
+                     transform::ServiceContext());
+
+               result.m_argc = value.m_argc;
+               result.m_argv = value.m_argv;
+
+               result.m_server_init = value.m_serviceInit;
+               result.m_server_done = value.m_serviceDone;
+
+               return result;
+
+            }
+         };
 	   }
 	}
 
 }
 
-
+/*
 int casual_initialize_server( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
 {
    try
@@ -77,19 +100,27 @@ int casual_initialize_server( int argc, char** argv, struct casual_service_name_
    }
    return 0;
 }
+*/
 
 
-int casual_start_server()
+int casual_start_server( casual_server_argument* serverArgument)
 {
    try
    {
+
+
+     common::server::Arguments arguments = local::transform::ServerArguments()( *serverArgument);
+
+
+      utility::environment::setExecutablePath( serverArgument->m_argv[ 0]);
+
 
       //
       // Start the message-pump
       //
       common::dispatch::Handler handler;
 
-      handler.add< common::callee::handle::Call>();
+      handler.add< common::callee::handle::Call>( arguments);
 
       common::queue::blocking::Reader queueReader( common::ipc::getReceiveQueue());
 

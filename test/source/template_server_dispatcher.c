@@ -10,13 +10,14 @@
 //!
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #include <xatmi.h>
 #include <xatmi_server.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void casual_test1( TPSVCINFO *transb);
 extern void casual_test2( TPSVCINFO *transb);
@@ -32,37 +33,21 @@ int main( int argc, char** argv)
 			{&casual_test2, "casual_test2"}
 	};
 
-	/*
-   // Initialize the server
-   */
-	int result = casual_initialize_server(
+	struct casual_server_argument serverArguments = {
+	      &mapping[ 0],
+	      &mapping[ sizeof( mapping) / sizeof( struct casual_service_name_mapping) - 1] + 1,
+	      &tpsvrinit,
+	      &tpsvrdone,
 	      argc,
-         argv,
-         mapping,
-         sizeof( mapping) / sizeof( struct casual_service_name_mapping));
+	      argv
+	};
 
-	if( result != 0)
-	   return result;
-
-	/*
-   // Let the user code get a chance being called via tpsvrinit
-   */
-	result = tpsvrinit( argc, argv);
-
-	if( result != 0)
-	   return result;
 
 	/*
 	// Start the server
 	*/
-	result = casual_start_server();
+	return casual_start_server( &serverArguments);
 
-	/*
-   // Let the user code get a chance being called via tpsvrdone
-   */
-	tpsvrdone();
-
-	return result;
 }
 
 

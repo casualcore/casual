@@ -42,6 +42,7 @@ namespace casual
 
          }
 
+         /*
          void Context::initializeServer( std::vector< service::Context>& services)
          {
 
@@ -62,6 +63,7 @@ namespace casual
             queue::blocking::Writer writer( ipc::getBrokerQueue());
             writer( message);
          }
+         */
 
 
          void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)

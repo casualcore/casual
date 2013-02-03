@@ -29,8 +29,8 @@ LinkExecutable(test, \
     obj/template_server_dispatcher.o \
     obj/template_server.o, \
     casual-xatmi casual_utility)	
-	
-*/
+*/	
+
 
 
 //

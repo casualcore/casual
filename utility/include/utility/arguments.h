@@ -68,17 +68,42 @@ namespace casual
 
             virtual bool option( const std::string& option) const = 0;
 
+            virtual void assign( const std::string& option, std::vector< std::string>&& values) = 0;
+
             virtual bool consumed() const = 0;
+
+            virtual void dispatch() const = 0;
 
          };
 
          namespace internal
          {
+            struct base_dispatch
+            {
+               virtual ~base_dispatch() = default;
+               virtual void operator () ( const std::vector< std::string>& values) const = 0;
+
+            };
+
             template< typename T>
             struct dispatch
             {
+               void operator () ( const std::vector< std::string>& values) const
+               {
+
+
+               }
 
             };
+
+            template< typename C>
+            auto find( const std::string& option, C& container) -> decltype( container.begin())
+            {
+               return std::find_if(
+                  std::begin( container),
+                  std::end( container),
+                  std::bind( &Base::option, std::placeholders::_1, option));
+            }
 
          }
 
@@ -86,28 +111,43 @@ namespace casual
          {
          public:
             Directive( const std::vector< std::string>& options, const std::string& description)
-               : m_options( options), m_description( description) {}
+               : m_options( options), m_description( description), m_assigned( false) {}
 
             bool option( const std::string& option) const
             {
                return std::find( std::begin( m_options), std::end( m_options), option) != std::end( m_options);
             }
 
+            void assign( const std::string& option, std::vector< std::string>&& values)
+            {
+               m_values = std::move( values);
+               m_assigned = true;
+            }
+
             bool consumed() const
             {
-               return false;
+               return m_assigned;
+            }
+
+            void dispatch() const
+            {
+               // TODO
             }
 
          private:
             const std::vector< std::string> m_options;
             const std::string m_description;
+            std::vector< std::string> m_values;
+            bool m_assigned;
          };
 
 
+         //template< typename C>
          class Group : public Base
          {
          public:
 
+            //typedef C correlation_type;
             typedef std::vector< std::unique_ptr< Base>> groups_type;
 
 
@@ -129,10 +169,17 @@ namespace casual
 
             bool option( const std::string& option) const
             {
-               return std::find_if(
-                     std::begin( m_groups),
-                     std::end( m_groups),
-                     std::bind( &Base::option, std::placeholders::_1, option)) != std::end( m_groups);
+               return internal::find( option, m_groups) != std::end( m_groups);
+            }
+
+            void assign( const std::string& option, std::vector< std::string>&& values)
+            {
+               auto findIter = internal::find( option, m_groups);
+
+               if( findIter != std::end( m_groups))
+               {
+                  (*findIter)->assign( option, std::move( values));
+               }
             }
 
             bool consumed() const
@@ -141,6 +188,14 @@ namespace casual
                      std::begin( m_groups),
                      std::end( m_groups),
                      std::bind( &Base::consumed, std::placeholders::_1));
+            }
+
+            void dispatch() const
+            {
+               for( auto& base : m_groups)
+               {
+                  base->dispatch();
+               }
             }
 
 
@@ -177,10 +232,7 @@ namespace casual
 
             while( current != std::end( arguments))
             {
-               auto handler = std::find_if(
-                     std::begin( m_groups),
-                     std::end( m_groups),
-                     std::bind( &Base::option, std::placeholders::_1, *current));
+               auto handler = argument::internal::find( *current, m_groups);
 
                if( handler != std::end( m_groups))
                {
@@ -188,6 +240,12 @@ namespace casual
 
                }
             }
+
+            for( auto& base : m_groups)
+            {
+               base->dispatch();
+            }
+
 
             return true;
          }
