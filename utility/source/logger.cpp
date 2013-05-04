@@ -9,9 +9,7 @@
 #include "utility/environment.h"
 #include "utility/platform.h"
 #include "utility/exception.h"
-
-#include "common/types.h"
-
+#include "utility/chronology.h"
 
 // temp
 #include <fstream>
@@ -42,7 +40,7 @@ namespace casual
                         //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
                         m_output <<
-                           common::transform::local() <<
+                           utility::chronology::local() <<
                            '|' << utility::environment::getDomainName() <<
                            '|' << utility::environment::getExecutablePath() <<
                            '|' << utility::platform::getProcessId() << "|";

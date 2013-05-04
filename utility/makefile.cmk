@@ -10,7 +10,7 @@ INCLUDE_PATHS= include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 
-LIBRARY_PATHS = ../common/bin
+//LIBRARY_PATHS = ../common/bin
 
 Compile( source/uuid.cpp, obj/uuid.o)
 Compile( source/environment.cpp, obj/environment.o)
@@ -19,6 +19,7 @@ Compile( source/signal.cpp, obj/signal.o)
 Compile( source/platform.cpp, obj/platform.o)
 Compile( source/logger.cpp, obj/logger.o)
 Compile( source/error.cpp, obj/error.o)
+Compile( source/chronology.cpp, obj/chronology.o)
 
 
 
@@ -30,8 +31,9 @@ LinkLibrary( casual_utility, \
 	obj/platform.o \
 	obj/logger.o \
 	obj/error.o \
+	obj/chronology.o \
 	, \
-	casual_common ${UUIDLIB})
+	${UUIDLIB})
 
 	
 	

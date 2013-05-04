@@ -33,12 +33,6 @@ namespace casual
          {
             return const_cast< char*>( buffer);
          }
-
-         std::string local();
-         std::string local( const time_type& time);
-         std::string universal();
-         std::string universal( const time_type& time);
-
       }
 
    }
