@@ -9,7 +9,7 @@
 
 #include <xatmi.h>
 
-#include "sf/archive_yaml_implementation.h"
+#include "sf/archive_yaml.h"
 #include "sf/buffer.h"
 #include "sf/service.h"
 #include "sf/server.h"

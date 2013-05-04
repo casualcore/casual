@@ -11,7 +11,7 @@
 
 #include "broker/configuration.h"
 
-#include "sf/archive_yaml_implementation.h"
+#include "sf/archive_yaml.h"
 
 
 namespace casual
