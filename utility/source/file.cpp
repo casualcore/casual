@@ -82,15 +82,16 @@ namespace casual
 
 			std::string basename( const std::string& path)
 			{
-			   auto basenameEnd = std::find( path.rbegin(), path.rend(), '/');
+			   auto basenameStart = std::find(path.crbegin(), path.crend(), '/');
 
-			   return std::string( basenameEnd.base(), path.end());
+			   auto basenameEnd = std::find( basenameStart.base(), path.end(), '.');
+
+			   return std::string( basenameStart.base(), basenameEnd);
 			}
 
 			std::string extension( const std::string& file)
 			{
 			   const std::string base = basename( file);
-
 
 			   auto extensionEnd = std::find( base.rbegin(), base.rend(), '.');
 
