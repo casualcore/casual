@@ -10,6 +10,17 @@
 
 
 #include "sf/archive.h"
+#include "sf/buffer.h"
+
+#include "xatmi.h"
+
+//
+// std
+//
+#include <memory>
+#include <map>
+
+
 
 namespace casual
 {
@@ -17,6 +28,18 @@ namespace casual
    {
       namespace service
       {
+         namespace reply
+         {
+            struct State
+            {
+               int value;
+               long code;
+               char* data;
+               long size;
+               long flags;
+            };
+         }
+
          class Interface
          {
          public:
@@ -26,8 +49,12 @@ namespace casual
 
             virtual ~Interface();
 
+
             bool call();
-            void finalize();
+
+            reply::State finalize();
+
+            void handleException();
 
             struct Input
             {
@@ -47,10 +74,12 @@ namespace casual
 
          private:
             virtual bool doCall() = 0;
-            virtual void doFinalize() = 0;
+            virtual reply::State doFinalize() = 0;
 
             virtual Input& doInput() = 0;
             virtual Output& doOutput() = 0;
+
+            virtual void doHandleException() = 0;
 
          };
 
@@ -58,12 +87,25 @@ namespace casual
          {
          public:
 
-            IO( Interface& interface) : m_interface( interface) {}
+            typedef std::unique_ptr< service::Interface> interface_type;
+
+            IO( interface_type interface);
+
+            ~IO();
+
+            IO( IO&&) = default;
+            IO( const IO&) = delete;
+
+            bool callImplementation();
+
+            void handleException();
+
+            reply::State finalize();
 
             template< typename T>
             IO& operator >> ( T&& value)
             {
-               serialize( std::forward< T>( value), m_interface.input());
+               serialize( std::forward< T>( value), m_interface->input());
 
                return *this;
             }
@@ -71,14 +113,9 @@ namespace casual
             template< typename T>
             IO& operator << ( T&& value)
             {
-               serialize( std::forward< T>( value), m_interface.output());
+               serialize( std::forward< T>( value), m_interface->output());
 
                return *this;
-            }
-
-            void finalize()
-            {
-               m_interface.finalize();
             }
 
          private:
@@ -97,8 +134,48 @@ namespace casual
                }
             }
 
+            interface_type m_interface;
+         };
 
-            Interface& m_interface;
+         class Factory
+         {
+         public:
+
+            typedef std::function< std::unique_ptr< Interface>( TPSVCINFO* serviceInfo)> function_type;
+
+            template< typename T>
+            struct Registrator
+            {
+
+            };
+
+
+            template< typename T>
+            struct Creator
+            {
+               std::unique_ptr< Interface> operator()( TPSVCINFO* serviceInfo) const
+               {
+                  return std::unique_ptr< Interface>( new T( serviceInfo));
+               }
+            };
+
+            static Factory& instance();
+
+            std::unique_ptr< Interface> create( TPSVCINFO* serviceInfo) const;
+
+
+            template< typename T>
+            void registrate( sf::buffer::Type&& type)
+            {
+               m_factories[ std::move( type)] = Creator< T>();
+            }
+
+
+         private:
+
+            Factory();
+
+            std::map< sf::buffer::Type, function_type> m_factories;
          };
 
       } // service

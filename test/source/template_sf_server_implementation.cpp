@@ -8,6 +8,8 @@
 
 #include "template_sf_server_implementation.h"
 
+namespace casual
+{
 
 namespace test
 {
@@ -21,7 +23,7 @@ namespace test
 
    }
 
-   bool ServerImplementation::casual_sf_test1( const std::vector< vo::Value>& values, std::vector< vo::Value>& outputValues)
+   bool ServerImplementation::casual_sf_test1( const std::vector< vo::TestVO>& values, std::vector< vo::TestVO>& outputValues)
    {
 
       return true;
@@ -30,7 +32,7 @@ namespace test
 
 }
 
-
+}
 
 
 

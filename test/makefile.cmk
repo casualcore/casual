@@ -1,15 +1,21 @@
 
 
+Include( $(CASUAL_BUILD_ENVIRONMENT))
+
+
 INCLUDE_PATHS= include \
 	../common/include \
 	../utility/include \
 	../serviceframework/include \
-	../xatmi/include
+	../xatmi/include \
+	$(YAML_INCLUDE_PATH) \
+    $(UNITTEST_INCLUDE_PATH) \
 	
 LIBRARY_PATHS= ../xatmi/bin \
 	../common/bin \
 	../utility/bin \
-	../serviceframework/bin
+	../serviceframework/bin \
+	$(YAML_LIBRARY_PATH)
 
 
 
@@ -32,6 +38,14 @@ LinkExecutable(test, \
 */	
 
 
+//
+// Compile and link VO:n
+//
+Compile( source/sf_testvo.cpp, obj/sf_testvo.o)
+
+LinkArchive( sf_test_vo, \
+    obj/sf_testvo.o)
+
 
 //
 // compile and link the sf-template-server
@@ -42,6 +56,7 @@ Compile( source/template_sf_server_implementation.cpp, obj/template_sf_server_im
 LinkAtmiServer(sf_test, \
     obj/template_sf_server.o \
     obj/template_sf_server_implementation.o, \
+    sf_test_vo \
     casual-xatmi \
     casual_utility \
     casual_sf, \
@@ -62,6 +77,18 @@ Compile( source/test_multicall.cpp, obj/test_multicall.o)
 LinkExecutable( test_multicall_client, \
 	obj/test_multicall.o, casual_common casual_utility casual-xatmi)
 	
+	
+	
+//
+// unittest
+//
+Compile( unittest/isolated/source/test_yaml_sf_generation.cpp, unittest/isolated/obj/test_yaml_sf_generation.o)
+
+
+
+LinkIsolatedUnittest( casual_test_isolated, \
+    unittest/isolated/obj/test_yaml_sf_generation.o, \
+    casual_sf casual-xatmi)
 	
 	
 	

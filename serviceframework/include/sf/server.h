@@ -22,16 +22,40 @@ namespace casual
          class Interface
          {
          public:
-            std::unique_ptr< service::Interface> service( TPSVCINFO* serviceInfo);
+            service::IO createService( TPSVCINFO* serviceInfo);
 
             virtual ~Interface();
 
+            void handleException( TPSVCINFO* serviceInfo, service::reply::State& reply);
+
          private:
 
-            virtual std::unique_ptr< service::Interface> doGetService( TPSVCINFO* serviceInfo) = 0;
+            virtual std::unique_ptr< service::Interface> doCreateService( TPSVCINFO* serviceInfo) = 0;
+
+            virtual void doHandleException( TPSVCINFO* serviceInfo, service::reply::State& reply) = 0;
          };
 
+         using type = std::unique_ptr< Interface>;
+
          std::unique_ptr< Interface> create( int argc, char **argv);
+
+         namespace implementation
+         {
+            template< typename T>
+            using type = std::unique_ptr< T>;
+
+            template< typename T>
+            type< T> make( int argc, char **argv)
+            {
+               return type< T>{ new T{ argc, argv}};
+            }
+         }
+
+         template< typename T>
+         void sink( T&& server)
+         {
+            server.reset();
+         }
 
 
       } // server
