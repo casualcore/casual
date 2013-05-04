@@ -6,10 +6,11 @@
 
 INCLUDE_PATHS= include \
 	../xatmi/include \
+	../common/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 
-//LIBRARY_PATHS = ../common/bin
+LIBRARY_PATHS = ../common/bin
 
 Compile( source/uuid.cpp, obj/uuid.o)
 Compile( source/environment.cpp, obj/environment.o)
@@ -28,8 +29,9 @@ LinkLibrary( casual_utility, \
 	obj/signal.o \
 	obj/platform.o \
 	obj/logger.o \
-	obj/error.o, \
-	${UUIDLIB})
+	obj/error.o \
+	, \
+	casual_common ${UUIDLIB})
 
 	
 	

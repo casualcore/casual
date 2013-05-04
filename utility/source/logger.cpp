@@ -10,12 +10,11 @@
 #include "utility/platform.h"
 #include "utility/exception.h"
 
+#include "common/types.h"
 
-#include <chrono>
 
 // temp
 #include <fstream>
-#include <iomanip>
 
 
 namespace casual
@@ -38,25 +37,15 @@ namespace casual
                         return singleton;
                      }
 
-                     void log( int priority, const std::string& message)
+                     void log( const int priority, const std::string& message)
                      {
                         //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
-                        auto timepoint = std::chrono::system_clock::now();
-                        auto seconds = std::chrono::system_clock::to_time_t( timepoint);
-                        auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( timepoint.time_since_epoch());
-
-                        auto tm = std::gmtime( &seconds);
-
-                        /* TODO: put_time is not implemented in g++ yet
-                        m_output << std::put_time( tm, "%H:%M:%S.") << ms.count() % 1000 << "|" << utility::environment::getDomainName()
-                          << utility::platform::getProcessId() << "|";
-                          */
-                        m_output << std::right << std::setfill( '0') << std::setw( 2) << tm->tm_hour << ":"
-                           << std::setw( 2) << tm->tm_min << ":"
-                           << std::setw( 2) << tm->tm_sec << "."
-                           << std::setw( 3) << ms.count() % 1000 << "|" << utility::environment::getDomainName() << "|" << utility::environment::getExecutablePath() << "|"
-                           << utility::platform::getProcessId() << "|";
+                        m_output <<
+                           common::transform::local() <<
+                           '|' << utility::environment::getDomainName() <<
+                           '|' << utility::environment::getExecutablePath() <<
+                           '|' << utility::platform::getProcessId() << "|";
 
 
 
