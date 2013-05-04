@@ -16,9 +16,9 @@ namespace casual
       {
 
 
-         std::unique_ptr< service::Interface> Interface::service( TPSVCINFO* serviceInfo)
+         service::IO Interface::createService( TPSVCINFO* serviceInfo)
          {
-            return doGetService( serviceInfo);
+            return service::IO{ doCreateService( serviceInfo)};
          }
 
          Interface::~Interface()
@@ -26,14 +26,24 @@ namespace casual
 
          }
 
+         void Interface::handleException( TPSVCINFO* serviceInfo, service::reply::State& reply)
+         {
+            doHandleException( serviceInfo, reply);
+         }
+
          class Implementation : public Interface
          {
 
          private:
-            std::unique_ptr< service::Interface> doGetService( TPSVCINFO* serviceInfo) override
+            std::unique_ptr< service::Interface> doCreateService( TPSVCINFO* serviceInfo) override
+            {
+               return sf::service::Factory::instance().create( serviceInfo);
+            }
+
+            void doHandleException( TPSVCINFO* serviceInfo, service::reply::State& reply) override
             {
                // TODO:
-               return std::unique_ptr< service::Interface>( new service::implementation::Base{});
+
             }
 
          };

@@ -9,29 +9,34 @@
 #define TEMPLATE_SF_SERVER_IMPLEMENTATION_H_
 
 
-#include "template_vo.h"
+#include "sf_testvo.h"
 
 #include <vector>
 
 
-
-namespace test
+namespace casual
 {
 
-   class ServerImplementation
+   namespace test
    {
-   public:
-      ServerImplementation( int argc, char** argv);
-      ~ServerImplementation();
+
+      class ServerImplementation
+      {
+      public:
+         ServerImplementation( int argc, char** argv);
+         ~ServerImplementation();
 
 
-      bool casual_sf_test1( const std::vector< vo::Value>& inputValues, std::vector< vo::Value>& outputValues);
+         bool casual_sf_test1( const std::vector< vo::TestVO>& inputValues, std::vector< vo::TestVO>& outputValues);
 
-   private:
+         void casual_sf_test2( bool someValue);
 
-   };
+      private:
+
+      };
 
 
+   }
 }
 
 

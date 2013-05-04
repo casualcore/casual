@@ -45,10 +45,44 @@ char* tprealloc(char * addr, long size)
 
 }
 
-
-
-long tptypes(char* ptr, char* type, char* subtype)
+namespace local
 {
+   namespace
+   {
+      template< typename Iter, typename Out>
+      void copy_max( Iter start, Iter end, typename std::iterator_traits< Iter>::difference_type max, Out out)
+      {
+         if( end - start > max)
+            end = start + max;
+
+         std::copy( start, end, out);
+      }
+
+   }
+
+}
+
+
+long tptypes( const char* ptr, char* type, char* subtype)
+{
+   try
+   {
+      const int type_size = { 8};
+      const int subtype_size = { 8};
+
+      memset( type, '\0', type_size);
+      memset( subtype, '\0', subtype_size);
+
+      auto& buffer = casual::common::buffer::Context::instance().get( ptr);
+
+      local::copy_max( buffer.type().begin(), buffer.type().end(), type_size, type);
+      local::copy_max( buffer.subtype().begin(), buffer.subtype().end(), subtype_size, subtype);
+   }
+   catch( ...)
+   {
+      return casual::utility::error::handler();
+   }
+
 	return 0;
 }
 

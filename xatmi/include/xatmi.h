@@ -80,7 +80,7 @@ extern int tpcall( const char * svc, char* idata, long ilen, char ** odata, long
 extern int tpacall( const char * svc, char* idata, long ilen, long flags); // COMMUNICATION
 extern int tpgetrply(int *idPtr, char ** odata, long *olen, long flags); // COMMUNICATION
 extern int tpcancel(int id); // COMMUNICATION
-extern long tptypes(char* ptr, char* type, char* subtype); // MEMORY
+extern long tptypes( const char* ptr, char* type, char* subtype); // MEMORY
 extern void tpfree(char* ptr); // MEMORY
 
 extern void tpreturn(int rval, long rcode, char* data, long len, long flags); // TJJ ADDED
