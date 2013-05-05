@@ -8,7 +8,7 @@
 #ifndef TRACE_H_
 #define TRACE_H_
 
-#include "utility/logger.h"
+#include "common/logger.h"
 
 #include <string>
 

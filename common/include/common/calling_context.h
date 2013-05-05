@@ -10,8 +10,7 @@
 
 
 #include "common/queue.h"
-
-#include "utility/platform.h"
+#include "common/platform.h"
 
 #include <set>
 #include <unordered_map>

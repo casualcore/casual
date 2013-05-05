@@ -2,11 +2,10 @@
 INCLUDE_PATHS= include \
 	../common/include \
 	../xatmi/include \
-	../utility/include \
 	$(UNITTEST_INCLUDE_PATH)
 
 
-LIBRARY_PATHS = ../common/bin ../utility/bin
+LIBRARY_PATHS = ../common/bin
 
 Compile( source/monitor.cpp, obj/monitor.o)
 Compile( source/monitor_main.cpp, obj/monitor_main.o)
@@ -18,7 +17,6 @@ LinkExecutable( casual_monitor, \
 	obj/monitor_main.o \
 	obj/monitordb.o, \
 	casual_common \
-	casual_utility \
 	sqlite3 )
 
 	
@@ -33,7 +31,6 @@ Compile( unittest/isolated/source/test_monitor.cpp, unittest/isolated/obj/test_m
 LinkIsolatedUnittest( casual_monitor_isolated, \
 	unittest/isolated/obj/test_monitor.o \
 	obj/monitordb.o, \
-	casual_utility \
 	casual_common \
 	sqlite3)	
 

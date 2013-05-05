@@ -9,8 +9,8 @@
 #include "common/queue.h"
 #include "common/message.h"
 #include "common/message_dispatch.h"
-#include "utility/logger.h"
-#include "utility/trace.h"
+#include "common/logger.h"
+#include "common/trace.h"
 
 #include <vector>
 #include <string>

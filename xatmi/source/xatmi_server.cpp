@@ -17,9 +17,9 @@
 #include "common/message_dispatch.h"
 
 
-#include "utility/error.h"
-#include "utility/logger.h"
-#include "utility/environment.h"
+#include "common/error.h"
+#include "common/logger.h"
+#include "common/environment.h"
 
 
 using namespace casual;

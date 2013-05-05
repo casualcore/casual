@@ -10,9 +10,9 @@
 
 #include "xatmi.h"
 
-#include "utility/file.h"
-#include "utility/uuid.h"
-#include "utility/platform.h"
+#include "common/file.h"
+#include "common/uuid.h"
+#include "common/platform.h"
 
 #include "common/types.h"
 

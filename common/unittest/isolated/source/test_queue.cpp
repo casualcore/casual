@@ -10,8 +10,7 @@
 #include "common/queue.h"
 #include "common/ipc.h"
 #include "common/message.h"
-
-#include "utility/exception.h"
+#include "common/exception.h"
 
 //temp
 

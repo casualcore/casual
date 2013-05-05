@@ -11,11 +11,9 @@
 #include "common/ipc.h"
 #include "common/buffer_context.h"
 #include "common/types.h"
-
-
-#include "utility/platform.h"
-#include "utility/exception.h"
-#include "utility/uuid.h"
+#include "common/platform.h"
+#include "common/exception.h"
+#include "common/uuid.h"
 
 #include <vector>
 #include <chrono>

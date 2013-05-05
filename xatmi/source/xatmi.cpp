@@ -13,8 +13,8 @@
 #include "common/types.h"
 
 
-#include "utility/string.h"
-#include "utility/error.h"
+#include "common/string.h"
+#include "common/error.h"
 
 
 //

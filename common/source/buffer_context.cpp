@@ -7,8 +7,8 @@
 
 #include "common/buffer_context.h"
 
-#include "utility/exception.h"
-#include "utility/logger.h"
+#include "common/exception.h"
+#include "common/logger.h"
 
 #include <stdexcept>
 

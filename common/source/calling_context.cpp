@@ -10,11 +10,11 @@
 #include "common/queue.h"
 
 
-#include "utility/environment.h"
-#include "utility/flag.h"
-#include "utility/error.h"
-#include "utility/exception.h"
-#include "utility/trace.h"
+#include "common/environment.h"
+#include "common/flag.h"
+#include "common/error.h"
+#include "common/exception.h"
+#include "common/trace.h"
 
 #include "xatmi.h"
 

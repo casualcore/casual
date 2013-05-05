@@ -16,8 +16,8 @@
 
 #include "broker/configuration.h"
 
-#include "utility/file.h"
-#include "utility/platform.h"
+#include "common/file.h"
+#include "common/platform.h"
 
 #include "common/ipc.h"
 #include "common/message.h"

@@ -8,7 +8,7 @@
 #ifndef MONITORDB_H_
 #define MONITORDB_H_
 
-#include "utility/database.hpp"
+#include "common/database.hpp"
 #include "common/message.h"
 
 namespace casual

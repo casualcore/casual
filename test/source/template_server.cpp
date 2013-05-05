@@ -12,7 +12,7 @@
 #include "template_server.h"
 
 
-#include "utility/logger.h"
+#include "common/logger.h"
 
 
 #include <unistd.h>

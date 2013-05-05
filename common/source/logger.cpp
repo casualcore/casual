@@ -5,11 +5,11 @@
 //!     Author: Lazan
 //!
 
-#include "utility/logger.h"
-#include "utility/environment.h"
-#include "utility/platform.h"
-#include "utility/exception.h"
-#include "utility/chronology.h"
+#include "common/logger.h"
+#include "common/environment.h"
+#include "common/platform.h"
+#include "common/exception.h"
+#include "common/chronology.h"
 
 // temp
 #include <fstream>

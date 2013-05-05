@@ -6,13 +6,11 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 
 INCLUDE_PATHS= include \
     ../common/include \
-    ../utility/include \
     ../xatmi/include \
     $(YAML_INCLUDE_PATH) \
 	$(UNITTEST_INCLUDE_PATH) \
 
 LIBRARY_PATHS= ../common/bin \
-    ../utility/bin \ 
     ../xatmi/bin \
     $(YAML_LIBRARY_PATH)
 
@@ -31,7 +29,7 @@ LinkLibrary( casual_sf,\
     obj/server.o \
     obj/service.o \
     obj/service_protocol.o, \
-    casual_utility yaml-cpp casual-xatmi)
+    casual_common yaml-cpp casual-xatmi)
 
 
 //

@@ -6,7 +6,7 @@
 //!
 
 #include "sf/buffer.h"
-#include "utility/exception.h"
+#include "common/exception.h"
 
 #include "xatmi.h"
 

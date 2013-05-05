@@ -10,8 +10,8 @@
 
 
 
-#include "utility/platform.h"
-#include "utility/error.h"
+#include "common/platform.h"
+#include "common/error.h"
 
 #include <stdexcept>
 #include <string>

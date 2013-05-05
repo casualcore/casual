@@ -8,8 +8,8 @@
 #include "broker/broker.h"
 #include "broker/broker_implementation.h"
 
-#include "utility/environment.h"
-#include "utility/logger.h"
+#include "common/environment.h"
+#include "common/logger.h"
 
 #include "common/queue.h"
 #include "common/message_dispatch.h"

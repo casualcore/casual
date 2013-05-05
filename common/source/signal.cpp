@@ -5,9 +5,9 @@
 //!     Author: Lazan
 //!
 
-#include "utility/signal.h"
-#include "utility/platform.h"
-#include "utility/exception.h"
+#include "common/signal.h"
+#include "common/platform.h"
+#include "common/exception.h"
 
 #include <signal.h>
 #include <string.h>

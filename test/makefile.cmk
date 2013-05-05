@@ -5,7 +5,6 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 
 INCLUDE_PATHS= include \
 	../common/include \
-	../utility/include \
 	../serviceframework/include \
 	../xatmi/include \
 	$(YAML_INCLUDE_PATH) \
@@ -13,7 +12,6 @@ INCLUDE_PATHS= include \
 	
 LIBRARY_PATHS= ../xatmi/bin \
 	../common/bin \
-	../utility/bin \
 	../serviceframework/bin \
 	$(YAML_LIBRARY_PATH)
 
@@ -24,7 +22,7 @@ Compile( source/template_server.cpp, obj/template_server.o)
 
 LinkAtmiServer(test, \
 	obj/template_server.o, \
-	casual-xatmi casual_utility, \
+	casual-xatmi casual_common, \
 	"casual_test1,casual_test2")
 
 
@@ -34,7 +32,7 @@ Compile( source/template_server_dispatcher.c, obj/template_server_dispatcher.o)
 LinkExecutable(test, \
     obj/template_server_dispatcher.o \
     obj/template_server.o, \
-    casual-xatmi casual_utility)	
+    casual-xatmi casual_common)	
 */	
 
 
@@ -58,7 +56,7 @@ LinkAtmiServer(sf_test, \
     obj/template_sf_server_implementation.o, \
     sf_test_vo \
     casual-xatmi \
-    casual_utility \
+    casual_common \
     casual_sf, \
     "casual_sf_test1,casual_sf_test2")
 
@@ -67,7 +65,7 @@ LinkAtmiServer(sf_test, \
 Compile( source/template_client.cpp, obj/template_client.o)
 
 LinkExecutable( test_client, \
-	obj/template_client.o, casual_common casual_utility casual-xatmi)
+	obj/template_client.o, casual_common casual-xatmi)
 	
 
 
@@ -75,7 +73,7 @@ LinkExecutable( test_client, \
 Compile( source/test_multicall.cpp, obj/test_multicall.o)
 
 LinkExecutable( test_multicall_client, \
-	obj/test_multicall.o, casual_common casual_utility casual-xatmi)
+	obj/test_multicall.o, casual_common casual-xatmi)
 	
 	
 	

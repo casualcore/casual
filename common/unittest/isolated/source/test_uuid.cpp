@@ -10,7 +10,7 @@
 
 #include <gtest/gtest.h>
 
-#include "utility/uuid.h"
+#include "common/uuid.h"
 
 #include <iostream>
 

@@ -7,11 +7,11 @@
 
 #include "common/ipc.h"
 
-#include "utility/environment.h"
-#include "utility/error.h"
-#include "utility/exception.h"
-#include "utility/signal.h"
-#include "utility/uuid.h"
+#include "common/environment.h"
+#include "common/error.h"
+#include "common/exception.h"
+#include "common/signal.h"
+#include "common/uuid.h"
 
 
 

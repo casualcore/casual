@@ -11,7 +11,7 @@
 // TODO: temporary to test factory
 #include "sf/service_protocol.h"
 
-#include "utility/trace.h"
+#include "common/trace.h"
 
 
 //
@@ -116,7 +116,6 @@ namespace casual
 
             if( found == m_factories.end())
             {
-               // TODO: some sf-exception
                throw sf::exception::Validation( "no suitable protocol was found for type: " + type.name + " subtype: " + type.subname);
             }
 

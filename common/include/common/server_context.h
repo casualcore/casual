@@ -16,9 +16,8 @@
 #include "common/types.h"
 
 #include "common/calling_context.h"
-
-#include "utility/platform.h"
-#include "utility/logger.h"
+#include "common/platform.h"
+#include "common/logger.h"
 
 
 #include "xatmi.h"

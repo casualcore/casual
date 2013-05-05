@@ -2,12 +2,10 @@
 
 INCLUDE_PATHS= include \
 	../common/include \
-	../utility/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 LIBRARY_PATHS = bin \
     ../common/bin \
-	../utility/bin \
 
 
 Compile( source/xatmi.cpp, obj/xatmi.o)
@@ -17,7 +15,7 @@ Compile( source/xatmi_server.cpp, obj/xatmi_server.o)
 LinkLibrary( casual-xatmi, \
 	obj/xatmi.o \
 	obj/xatmi_server.o, \
-	casual_common casual_utility)
+	casual_common)
 
 	
 //

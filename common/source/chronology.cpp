@@ -5,7 +5,7 @@
  *      Author: kristian
  */
 
-#include "utility/chronology.h"
+#include "common/chronology.h"
 
 #include <ctime>
 

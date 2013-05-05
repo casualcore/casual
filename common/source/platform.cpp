@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "utility/platform.h"
+#include "common/platform.h"
 
 
 #include <unistd.h>

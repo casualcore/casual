@@ -10,7 +10,7 @@
 
 #include <uuid/uuid.h>
 
-#include "utility/platform.h"
+#include "common/platform.h"
 
 #include <string>
 

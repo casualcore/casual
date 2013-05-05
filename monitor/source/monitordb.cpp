@@ -5,12 +5,12 @@
  *      Author: hbergk
  */
 #include "monitor/monitordb.h"
-#include "utility/trace.h"
+#include "common/trace.h"
 #include <vector>
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <utility/environment.h>
+#include "common/environment.h"
 
 //
 // TODO: Use casual exception
