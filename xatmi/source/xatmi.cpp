@@ -80,7 +80,7 @@ long tptypes( const char* ptr, char* type, char* subtype)
    }
    catch( ...)
    {
-      return casual::utility::error::handler();
+      return casual::common::error::handler();
    }
 
 	return 0;
@@ -101,7 +101,7 @@ void tpreturn(int rval, long rcode, char* data, long len, long flags)
    }
    catch( ...)
    {
-      casual::utility::error::handler();
+      casual::common::error::handler();
    }
 }
 
@@ -117,7 +117,7 @@ int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen,
    }
    catch( ...)
    {
-      return casual::utility::error::handler();
+      return casual::common::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -130,7 +130,7 @@ int tpacall( const char * svc, char* idata, long ilen, long flags)
    }
 	catch( ...)
    {
-      return casual::utility::error::handler();
+      return casual::common::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -143,7 +143,7 @@ int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
    }
    catch( ...)
    {
-      return casual::utility::error::handler();
+      return casual::common::error::handler();
    }
    return 0; // remove warning in eclipse
 }
@@ -156,7 +156,7 @@ int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
    }
    catch( ...)
    {
-      return casual::utility::error::handler();
+      return casual::common::error::handler();
    }
    return 0;
 }
@@ -169,27 +169,27 @@ int tpunadvertise( const char* svcname)
    }
    catch( ...)
    {
-      return casual::utility::error::handler();
+      return casual::common::error::handler();
    }
    return 0;
 }
 
 const char* tperrnostring( int error)
 {
-   return casual::utility::error::tperrnoStringRepresentation( error).c_str();
+   return casual::common::error::tperrnoStringRepresentation( error).c_str();
 }
 
 
 int tpsvrinit(int argc, char **argv)
 {
-  casual::utility::logger::debug << "internal tpsvrinit called";
+  casual::common::logger::debug << "internal tpsvrinit called";
   return 0;
 }
 
 
 void tpsvrdone()
 {
-  casual::utility::logger::debug << "internal tpsvrdone called";
+  casual::common::logger::debug << "internal tpsvrdone called";
 }
 
 

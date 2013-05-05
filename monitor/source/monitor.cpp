@@ -81,7 +81,7 @@ namespace monitor
 		void Notify::dispatch( const message_type& message)
 		{
 			static const std::string cMethodname("Notify::dispatch");
-			utility::Trace trace(cMethodname);
+			common::Trace trace(cMethodname);
 
 			message >> monitorDB;
 		}
@@ -112,7 +112,7 @@ namespace monitor
 			m_monitordb( local::Context::instance().monitorDB())
 	{
 		static const std::string cMethodname("Monitor::Monitor");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		//
 		// TODO: Use a correct argumentlist handler
@@ -133,7 +133,7 @@ namespace monitor
 	Monitor::~Monitor()
 	{
 		static const std::string cMethodname("Monitor::~Monitor");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 		//
 		// Tell broker that monitor is down...
 		//
@@ -149,7 +149,7 @@ namespace monitor
 	void Monitor::start()
 	{
 		static const std::string cMethodname("Monitor::start");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		common::dispatch::Handler handler;
 
@@ -167,7 +167,7 @@ namespace monitor
 
 			if( ! handler.dispatch( marshal))
 			{
-			   utility::logger::error << "message_type: " << " not recognized - action: discard";
+			   common::logger::error << "message_type: " << " not recognized - action: discard";
 			}
 
 			nonBlockingRead( 1000);

@@ -99,7 +99,7 @@ namespace casual
             if( m_buffer.get() == nullptr)
             {
                m_size = 0;
-               throw utility::exception::NotReallySureWhatToNameThisException();
+               throw common::exception::NotReallySureWhatToNameThisException();
 
             }
 

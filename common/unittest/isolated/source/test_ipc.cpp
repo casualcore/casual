@@ -71,7 +71,7 @@ namespace casual
 
             message::Transport response;
 
-            utility::signal::alarm::Scoped timeout( 1);
+            common::signal::alarm::Scoped timeout( 1);
 
             //
             // We don't expect to get any messages, and for the timeout to kick in
@@ -79,7 +79,7 @@ namespace casual
             //
             EXPECT_THROW({
                receive( response);
-            }, utility::exception::signal::Timeout);
+            }, common::exception::signal::Timeout);
 
          }
 

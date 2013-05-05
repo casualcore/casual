@@ -15,7 +15,7 @@
 
 namespace casual
 {
-	namespace utility
+	namespace common
 	{
 		namespace platform
 		{

@@ -14,7 +14,7 @@
 
 namespace casual
 {
-   namespace utility
+   namespace common
    {
       class Trace
       {

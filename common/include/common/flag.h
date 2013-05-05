@@ -10,7 +10,7 @@
 
 namespace casual
 {
-	namespace utility
+	namespace common
 	{
 
 		template< std::size_t flags, typename T>

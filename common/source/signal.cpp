@@ -54,12 +54,12 @@ namespace local
 				//
 				// Register all the signals
 				//
-				signal( casual::utility::platform::cSignal_Alarm, casual_common_signal_handler);
+				signal( casual::common::platform::cSignal_Alarm, casual_common_signal_handler);
 
-				signal( casual::utility::platform::cSignal_Terminate, casual_common_signal_handler);
-				signal( casual::utility::platform::cSignal_Kill, casual_common_signal_handler);
-				signal( casual::utility::platform::cSignal_Quit, casual_common_signal_handler);
-				signal( casual::utility::platform::cSignal_Interupt, casual_common_signal_handler);
+				signal( casual::common::platform::cSignal_Terminate, casual_common_signal_handler);
+				signal( casual::common::platform::cSignal_Kill, casual_common_signal_handler);
+				signal( casual::common::platform::cSignal_Quit, casual_common_signal_handler);
+				signal( casual::common::platform::cSignal_Interupt, casual_common_signal_handler);
 
 			}
 			std::stack< int> m_signals;
@@ -84,7 +84,7 @@ void casual_common_signal_handler( int signal)
 namespace casual
 {
 
-	namespace utility
+	namespace common
 	{
 		namespace signal
 		{
@@ -126,7 +126,7 @@ namespace casual
 				}
 			}
 
-			void alarm::set( utility::platform::seconds_type timeout)
+			void alarm::set( common::platform::seconds_type timeout)
 			{
 			   ::alarm( timeout);
 			}

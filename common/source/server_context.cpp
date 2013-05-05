@@ -97,7 +97,7 @@ namespace casual
                //
                if( findIter->second.m_function != function)
                {
-                  throw utility::exception::xatmi::service::AllreadyAdvertised( "service name: " + name);
+                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + name);
                }
 
             }
@@ -121,7 +121,7 @@ namespace casual
          {
             if( m_state.services.erase( name) != 1)
             {
-               throw utility::exception::xatmi::service::NoEntry( "service name: " + name);
+               throw common::exception::xatmi::service::NoEntry( "service name: " + name);
             }
 
             message::service::Unadvertise message;

@@ -18,7 +18,7 @@
 
 namespace casual
 {
-	namespace utility
+	namespace common
 	{
 		namespace environment
 		{
@@ -77,7 +77,7 @@ namespace casual
 
 			std::string getDefaultConfigurationFile()
 			{
-			   return utility::file::find( getRootPath(), std::regex( "casual_config.(yaml|xml)" ));
+			   return common::file::find( getRootPath(), std::regex( "casual_config.(yaml|xml)" ));
 			}
 
 			namespace local

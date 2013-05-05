@@ -17,7 +17,7 @@
 
 namespace casual
 {
-   namespace utility
+   namespace common
    {
       namespace logger
       {
@@ -40,10 +40,10 @@ namespace casual
                         //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
                         m_output <<
-                           utility::chronology::local() <<
-                           '|' << utility::environment::getDomainName() <<
-                           '|' << utility::environment::getExecutablePath() <<
-                           '|' << utility::platform::getProcessId() << "|";
+                           common::chronology::local() <<
+                           '|' << common::environment::getDomainName() <<
+                           '|' << common::environment::getExecutablePath() <<
+                           '|' << common::platform::getProcessId() << "|";
 
 
 
@@ -51,22 +51,22 @@ namespace casual
                         // TODO: Temp while we roll our own...
                         switch( priority)
                         {
-                           case utility::platform::cLOG_debug:
+                           case common::platform::cLOG_debug:
                            {
                               m_output << "debug - ";
                               break;
                            }
-                           case utility::platform::cLOG_info:
+                           case common::platform::cLOG_info:
                            {
                               m_output << "information - ";
                               break;
                            }
-                           case utility::platform::cLOG_warning:
+                           case common::platform::cLOG_warning:
                            {
                               m_output << "warning - ";
                               break;
                            }
-                           case utility::platform::cLOG_error:
+                           case common::platform::cLOG_error:
                            {
                               m_output << "error - ";
                               break;
@@ -90,24 +90,24 @@ namespace casual
                      Context()
                            : m_mask( 0)
                      {
-                        if( utility::environment::variable::exists( "CASUAL_LOG"))
+                        if( common::environment::variable::exists( "CASUAL_LOG"))
                         {
-                           const std::string log = utility::environment::variable::get( "CASUAL_LOG");
+                           const std::string log = common::environment::variable::get( "CASUAL_LOG");
 
                            if( log.find( "debug") != std::string::npos)
-                              m_mask |= utility::platform::cLOG_debug;
+                              m_mask |= common::platform::cLOG_debug;
                            if( log.find( "information") != std::string::npos)
-                              m_mask |= utility::platform::cLOG_info;
+                              m_mask |= common::platform::cLOG_info;
                            if( log.find( "warning") != std::string::npos)
-                              m_mask |= utility::platform::cLOG_warning;
+                              m_mask |= common::platform::cLOG_warning;
                         }
 
-                        m_mask |= utility::platform::cLOG_error;
+                        m_mask |= common::platform::cLOG_error;
 
                         //
                         // Open log
                         //
-                        const std::string logfileName = utility::environment::getRootPath() + "/casual.log";
+                        const std::string logfileName = common::environment::getRootPath() + "/casual.log";
 
                         m_output.open( logfileName, std::ios::app | std::ios::out);
 
@@ -163,15 +163,15 @@ namespace casual
 
          } // internal
 
-         internal::basic_logger< utility::platform::cLOG_debug> debug;
+         internal::basic_logger< common::platform::cLOG_debug> debug;
 
-         internal::basic_logger< utility::platform::cLOG_debug> trace;
+         internal::basic_logger< common::platform::cLOG_debug> trace;
 
-         internal::basic_logger< utility::platform::cLOG_info> information;
+         internal::basic_logger< common::platform::cLOG_info> information;
 
-         internal::basic_logger< utility::platform::cLOG_warning> warning;
+         internal::basic_logger< common::platform::cLOG_warning> warning;
 
-         internal::basic_logger< utility::platform::cLOG_error> error;
+         internal::basic_logger< common::platform::cLOG_error> error;
 
       } // logger
    } // utility

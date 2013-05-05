@@ -45,13 +45,13 @@ namespace casual
    //! Overload for Uuid
    //!
    template< typename M>
-   void marshal_value( M& marshler, utility::Uuid& value)
+   void marshal_value( M& marshler, common::Uuid& value)
    {
       marshler << value.get();
    }
 
    template< typename M>
-   void unmarshal_value( M& unmarshler, utility::Uuid& value)
+   void unmarshal_value( M& unmarshler, common::Uuid& value)
    {
       unmarshler >> value.get();
    }

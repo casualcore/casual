@@ -8,10 +8,13 @@
 
 #include "common/uuid.h"
 
+#include <cassert>
+
+
 namespace casual
 {
 
-	namespace utility
+	namespace common
 	{
 
 	   const Uuid& Uuid::empty()
@@ -37,11 +40,24 @@ namespace casual
 			uuid_copy( m_uuid, uuid);
 		}
 
-		std::string Uuid::getString() const
+		std::string Uuid::string() const
 		{
-			char buffer[ 37];
+		   uuid_string_t buffer;
 			uuid_unparse_lower( m_uuid, buffer);
 			return buffer;
+		}
+
+		void Uuid::string( const std::string& value)
+		{
+		   uuid_string_t buffer;
+		   buffer[ sizeof( uuid_string_t) - 1] = '\0';
+
+		   auto end = value.size() < sizeof( uuid_string_t) - 1? value.end() : value.begin() + sizeof( uuid_string_t) - 1;
+
+		   std::copy( value.begin(), end, std::begin( buffer));
+
+		   assert( uuid_parse( buffer, m_uuid) == 0);
+
 		}
 
 		const Uuid::uuid_type& Uuid::get() const
@@ -72,12 +88,12 @@ namespace casual
 	}
 }
 
-bool operator == ( const casual::utility::Uuid& lhs, const casual::utility::Uuid::uuid_type& rhs)
+bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs)
 {
 	return uuid_compare( lhs.get(), rhs) == 0;
 }
 
-bool operator == ( const casual::utility::Uuid::uuid_type& lhs, const casual::utility::Uuid& rhs)
+bool operator == ( const casual::common::Uuid::uuid_type& lhs, const casual::common::Uuid& rhs)
 {
 	return uuid_compare( lhs, rhs.get()) == 0;
 }

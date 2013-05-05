@@ -122,7 +122,7 @@ namespace casual
 
                struct Correlation
                {
-                  Correlation( const utility::Uuid& uuid) : m_uuid( uuid) {}
+                  Correlation( const common::Uuid& uuid) : m_uuid( uuid) {}
 
                   bool operator () ( const ipc::message::Transport& message)
                   {
@@ -130,7 +130,7 @@ namespace casual
                   }
 
                private:
-                  utility::Uuid m_uuid;
+                  common::Uuid m_uuid;
                };
 
                struct MessageTypeInCache
@@ -235,7 +235,7 @@ namespace casual
                bool write( marshal::output::Binary& archive, message_type_type type, ipc::send::Queue& queue, const long flags)
                {
 
-                  utility::Uuid correlation;
+                  common::Uuid correlation;
                   ipc::message::Transport transport;
 
                   transport.m_payload.m_type = type;
@@ -386,7 +386,7 @@ namespace casual
                      //
                      // Somehow the cache contains inconsistent data...
                      //
-                     throw utility::exception::xatmi::SystemError( "inconsistent state in 'queue cache'");
+                     throw common::exception::xatmi::SystemError( "inconsistent state in 'queue cache'");
                   }
 
                   return true;

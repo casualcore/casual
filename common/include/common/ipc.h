@@ -30,10 +30,10 @@ namespace casual
          {
             struct Transport
             {
-               typedef utility::platform::queue_id_type queue_id_type;
-               typedef utility::platform::queue_key_type queue_key_type;
-               typedef utility::platform::message_type_type message_type_type;
-               typedef utility::Uuid::uuid_type correalation_type;
+               typedef common::platform::queue_id_type queue_id_type;
+               typedef common::platform::queue_key_type queue_key_type;
+               typedef common::platform::message_type_type message_type_type;
+               typedef common::Uuid::uuid_type correalation_type;
 
 
                struct Header
@@ -46,8 +46,8 @@ namespace casual
 
                enum
                {
-                  message_max_size = utility::platform::message_size,
-                  payload_max_size = utility::platform::message_size - sizeof( Header)
+                  message_max_size = common::platform::message_size,
+                  payload_max_size = common::platform::message_size - sizeof( Header)
                };
 
                static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
@@ -96,8 +96,8 @@ namespace casual
             class base_queue
             {
             public:
-               typedef utility::platform::queue_id_type queue_id_type;
-               typedef utility::platform::queue_key_type queue_key_type;
+               typedef common::platform::queue_id_type queue_id_type;
+               typedef common::platform::queue_key_type queue_key_type;
 
                base_queue() = default;
 
@@ -128,7 +128,7 @@ namespace casual
 
                enum
                {
-                  cNoBlocking = utility::platform::cIPC_NO_WAIT
+                  cNoBlocking = common::platform::cIPC_NO_WAIT
                };
 
                Queue( queue_key_type key);
@@ -165,7 +165,7 @@ namespace casual
 
                enum
                {
-                  cNoBlocking = utility::platform::cIPC_NO_WAIT
+                  cNoBlocking = common::platform::cIPC_NO_WAIT
                };
 
                Queue();
@@ -193,7 +193,7 @@ namespace casual
 
                bool receive( message::Transport& message, const long flags) const;
 
-               utility::file::ScopedPath m_scopedPath;
+               common::file::ScopedPath m_scopedPath;
             };
          }
 

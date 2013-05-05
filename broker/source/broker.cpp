@@ -48,7 +48,7 @@ namespace casual
 							//
 							// Remove file
 							//
-							utility::file::remove( path);
+							common::file::remove( path);
 						}
 					}
 					std::ofstream brokerQueueFile( path);
@@ -59,19 +59,19 @@ namespace casual
 
 
 		Broker::Broker( const std::vector< std::string>& arguments)
-			: m_brokerQueueFile( utility::environment::getBrokerQueueFileName())
+			: m_brokerQueueFile( common::environment::getBrokerQueueFileName())
 		{
 
 		   //
 		   // Try to find configuration file
 		   // TODO: you should be able to pass the configurationfile as an argument.
 		   //
-		   const std::string configFile = utility::environment::getDefaultConfigurationFile();
+		   const std::string configFile = common::environment::getDefaultConfigurationFile();
 
 		   if( ! configFile.empty())
 		   {
 
-		      utility::logger::information << "broker: using configuration file: " << configFile;
+		      common::logger::information << "broker: using configuration file: " << configFile;
 
 		      //
 		      // Create the reader and deserialize configuration
@@ -86,10 +86,10 @@ namespace casual
 		   }
 		   else
 		   {
-		      utility::logger::information << "broker: no configuration file was found - using default";
+		      common::logger::information << "broker: no configuration file was found - using default";
 		   }
 
-		   utility::logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
+		   common::logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
 
 
 
@@ -130,7 +130,7 @@ namespace casual
 
             if( ! handler.dispatch( marshal))
             {
-               utility::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+               common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
             }
 
          }

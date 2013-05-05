@@ -17,7 +17,7 @@
 namespace casual
 {
 
-	namespace utility
+	namespace common
 	{
 
 		TEST( casual_utility_uuid, two_uuid__expect_unique)
@@ -55,14 +55,14 @@ namespace casual
 		{
 			Uuid oneUuid = Uuid::make();
 
-			EXPECT_TRUE( oneUuid.getString().size() == 36);
+			EXPECT_TRUE( oneUuid.string().size() == 36);
 		}
 
 		TEST( casual_utility_uuid, default_constructed_getString__expect_00000000_0000_0000_0000_000000000000)
       {
          Uuid oneUuid;
 
-         EXPECT_TRUE( oneUuid.getString() == "00000000-0000-0000-0000-000000000000") << oneUuid.getString();
+         EXPECT_TRUE( oneUuid.string() == "00000000-0000-0000-0000-000000000000") << oneUuid.string();
       }
 
 	}

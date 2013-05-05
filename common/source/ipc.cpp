@@ -55,7 +55,7 @@ namespace casual
 
                if( m_id  == -1)
                {
-                  throw utility::exception::QueueFailed( utility::error::stringFromErrno());
+                  throw common::exception::QueueFailed( common::error::stringFromErrno());
                }
             }
 
@@ -70,7 +70,7 @@ namespace casual
                   {
                      case EINTR:
                      {
-                        utility::signal::handle();
+                        common::signal::handle();
                         return false;
                      }
                      case EAGAIN:
@@ -79,7 +79,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw utility::exception::QueueSend( utility::error::stringFromErrno());
+                        throw common::exception::QueueSend( common::error::stringFromErrno());
                      }
                   }
                }
@@ -95,7 +95,7 @@ namespace casual
          {
 
             Queue::Queue()
-               : m_scopedPath( utility::environment::getTemporaryPath() + "/ipc_queue_" + utility::Uuid::make().getString())
+               : m_scopedPath( common::environment::getTemporaryPath() + "/ipc_queue_" + common::Uuid::make().string())
             {
                //
                // Create queue
@@ -109,7 +109,7 @@ namespace casual
 
                if( m_id  == -1)
                {
-                  throw utility::exception::QueueFailed( utility::error::stringFromErrno());
+                  throw common::exception::QueueFailed( common::error::stringFromErrno());
                }
 
             }
@@ -138,7 +138,7 @@ namespace casual
                   {
                      case EINTR:
                      {
-                        utility::signal::handle();
+                        common::signal::handle();
                         return false;
                      }
                      case ENOMSG:
@@ -147,7 +147,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw utility::exception::QueueReceive( utility::error::stringFromErrno());
+                        throw common::exception::QueueReceive( common::error::stringFromErrno());
                      }
                   }
                }
@@ -164,13 +164,13 @@ namespace casual
             {
                send::Queue initializeBrokerQueue()
                {
-                  static const std::string brokerFile = utility::environment::getBrokerQueueFileName();
+                  static const std::string brokerFile = common::environment::getBrokerQueueFileName();
 
                   std::ifstream file( brokerFile.c_str());
 
                   if( file.fail())
                   {
-                     throw utility::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
+                     throw common::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
                   }
 
                   send::Queue::queue_key_type key;

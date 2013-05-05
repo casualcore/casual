@@ -80,7 +80,7 @@ namespace casual
 		   configuration::Settings configuration;
 
 		   // TODO: Temp
-		   utility::platform::queue_key_type monitorQueue = 0;
+		   common::platform::queue_key_type monitorQueue = 0;
 
 		};
 
@@ -94,7 +94,7 @@ namespace casual
 			void start();
 
 		private:
-			utility::file::ScopedPath m_brokerQueueFile;
+			common::file::ScopedPath m_brokerQueueFile;
 			common::ipc::receive::Queue& m_receiveQueue = common::ipc::getReceiveQueue();
 
 			State m_state;

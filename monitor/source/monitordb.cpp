@@ -30,7 +30,7 @@ namespace monitor
 		{
 			std::string getDatabase()
 			{
-				return utility::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
+				return common::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
 			}
 		}
 	}
@@ -38,13 +38,13 @@ namespace monitor
 	MonitorDB::MonitorDB() : MonitorDB( local::getDatabase())
 	{
 		static const std::string cMethodname("MonitorDB::MonitorDB()");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 	}
 
 	MonitorDB::MonitorDB( const std::string& database) : m_database( database)
 	{
 		static const std::string cMethodname("MonitorDB::MonitorDB(...)");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		createTable();
 	}
@@ -52,20 +52,20 @@ namespace monitor
 	MonitorDB::~MonitorDB( )
 	{
 		static const std::string cMethodname("MonitorDB::~MonitorDB");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 	}
 
 	void MonitorDB::begin() const
 	{
 		static const std::string cMethodname("MonitorDB::begin()");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 		m_database.begin();
 	}
 
 	void MonitorDB::commit() const
 	{
 		static const std::string cMethodname("MonitorDB::commit()");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 		m_database.commit();
 	}
 
@@ -73,7 +73,7 @@ namespace monitor
 	void MonitorDB::createTable()
 	{
 		static const std::string cMethodname("MonitorDB::createTable");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
 		stream << "CREATE TABLE IF NOT EXISTS calls ( "
@@ -95,14 +95,14 @@ namespace monitor
 	void MonitorDB::insert( const common::message::monitor::Notify& message)
 	{
 		static const std::string cMethodname("MonitorDB::insert");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
 		stream << "INSERT INTO calls VALUES (?,?,?,?,?,?);";
 		if ( !m_database.sql( stream.str(),
 				message.service,
 				message.parentService,
-				message.callId.getString(),
+				message.callId.string(),
 				message.transactionId,
 				std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
 				std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count()))

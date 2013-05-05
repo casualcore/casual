@@ -205,7 +205,7 @@ namespace casual
 		   {
 		      struct DummyQueue
 		      {
-		         typedef utility::platform::queue_key_type key_type;
+		         typedef common::platform::queue_key_type key_type;
 
 		         DummyQueue( key_type key)
 		         {

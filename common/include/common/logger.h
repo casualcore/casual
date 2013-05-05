@@ -19,7 +19,7 @@
 
 namespace casual
 {
-   namespace utility
+   namespace common
    {
       namespace logger
       {
@@ -86,15 +86,15 @@ namespace casual
 
          } // internal
 
-         extern internal::basic_logger< utility::platform::cLOG_debug> debug;
+         extern internal::basic_logger< common::platform::cLOG_debug> debug;
 
-         extern internal::basic_logger< utility::platform::cLOG_debug> trace;
+         extern internal::basic_logger< common::platform::cLOG_debug> trace;
 
-         extern internal::basic_logger< utility::platform::cLOG_info> information;
+         extern internal::basic_logger< common::platform::cLOG_info> information;
 
-         extern internal::basic_logger< utility::platform::cLOG_warning> warning;
+         extern internal::basic_logger< common::platform::cLOG_warning> warning;
 
-         extern internal::basic_logger< utility::platform::cLOG_error> error;
+         extern internal::basic_logger< common::platform::cLOG_error> error;
 
       } // logger
 

@@ -61,7 +61,7 @@ namespace casual
 
             Holder makeFromFile( const std::string& filename)
             {
-               auto extension = utility::file::extension( filename);
+               auto extension = common::file::extension( filename);
 
                if( extension == "yaml")
                {

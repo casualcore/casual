@@ -41,7 +41,7 @@ Compile( unittest/isolated/source/test_traits.cpp, unittest/isolated/obj/test_tr
 Compile( unittest/isolated/source/test_yaml_archive.cpp, unittest/isolated/obj/test_yaml_archive.o)
 Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
 Compile( unittest/isolated/source/test_service.cpp, unittest/isolated/obj/test_service.o)
-
+Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
 
 LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_namevaluepair.o \
@@ -49,6 +49,7 @@ LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_traits.o \
 	unittest/isolated/obj/test_yaml_archive.o \
 	unittest/isolated/obj/test_buffer.o \
-	unittest/isolated/obj/test_service.o, \
-	casual_sf casual-xatmi)
+	unittest/isolated/obj/test_service.o \
+	unittest/isolated/obj/test_uuid.o, \
+	casual_sf casual-xatmi casual_common)
 	
