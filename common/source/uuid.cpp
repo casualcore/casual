@@ -42,14 +42,14 @@ namespace casual
 
 		std::string Uuid::string() const
 		{
-		   uuid_string_t buffer;
+		   platform::uuid_string_type buffer;
 			uuid_unparse_lower( m_uuid, buffer);
 			return buffer;
 		}
 
 		void Uuid::string( const std::string& value)
 		{
-		   uuid_string_t buffer;
+		   platform::uuid_string_type buffer;
 		   buffer[ sizeof( uuid_string_t) - 1] = '\0';
 
 		   auto end = value.size() < sizeof( uuid_string_t) - 1? value.end() : value.begin() + sizeof( uuid_string_t) - 1;
