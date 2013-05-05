@@ -22,13 +22,15 @@ Compile( source/archive_maker.cpp, obj/archive_maker.o)
 Compile( source/buffer.cpp, obj/buffer.o)
 Compile( source/server.cpp, obj/server.o)
 Compile( source/service.cpp, obj/service.o)
+Compile( source/service_protocol.cpp, obj/service_protocol.o)
 
 LinkLibrary( casual_sf,\
     obj/archive.o \
     obj/archive_maker.o \
     obj/buffer.o \
     obj/server.o \
-    obj/service.o, \
+    obj/service.o \
+    obj/service_protocol.o, \
     casual_utility yaml-cpp casual-xatmi)
 
 
