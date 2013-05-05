@@ -9,7 +9,7 @@
 #include "sf/exception.h"
 
 // TODO: temporary to test factory
-#include "sf/service_implementation.h"
+#include "sf/service_protocol.h"
 
 #include "utility/trace.h"
 
@@ -128,7 +128,7 @@ namespace casual
          {
             utility::Trace trace( "sf::service::Factory::Factory");
 
-            registrate< service::implementation::Yaml>( buffer::Type( "X_OCTET", "YAML"));
+            registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
          }
 
 
