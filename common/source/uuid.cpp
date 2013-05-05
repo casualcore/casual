@@ -50,9 +50,9 @@ namespace casual
 		void Uuid::string( const std::string& value)
 		{
 		   platform::uuid_string_type buffer;
-		   buffer[ sizeof( uuid_string_t) - 1] = '\0';
+		   buffer[ sizeof( platform::uuid_string_type) - 1] = '\0';
 
-		   auto end = value.size() < sizeof( uuid_string_t) - 1? value.end() : value.begin() + sizeof( uuid_string_t) - 1;
+		   auto end = value.size() < sizeof( platform::uuid_string_type) - 1? value.end() : value.begin() + sizeof( platform::uuid_string_type) - 1;
 
 		   std::copy( value.begin(), end, std::begin( buffer));
 
