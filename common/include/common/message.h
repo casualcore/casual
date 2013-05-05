@@ -27,6 +27,22 @@ namespace casual
 
       namespace message
       {
+         enum
+         {
+            cServerDisconnect,
+            cServiceAdvertise,
+            cServiceUnadvertise,
+            cServiceNameLookupRequest,
+            cServiceNameLookupReply,
+            cServiceCall,
+            cServiceReply,
+            cServiceAcknowledge,
+            cMonitorAdvertise,
+            cMonitorUnadvertise,
+            cMonitorNotify,
+         };
+
+
          struct Service
          {
             typedef int Seconds;
@@ -81,7 +97,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 3
+                  message_type = cServerDisconnect
                };
 
                Id serverId;
@@ -101,7 +117,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 4
+                  message_type = cServiceAdvertise
                };
 
                std::string serverPath;
@@ -121,7 +137,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 5
+                  message_type = cServiceUnadvertise
                };
 
                server::Id serverId;
@@ -146,7 +162,7 @@ namespace casual
                   {
                      enum
                      {
-                        message_type = 10
+                        message_type = cServiceNameLookupRequest
                      };
 
                      std::string requested;
@@ -168,7 +184,7 @@ namespace casual
 
                      enum
                      {
-                        message_type = 11
+                        message_type = cServiceNameLookupReply
                      };
 
                      Service service;
@@ -189,7 +205,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 20
+                  message_type = cServiceCall
                };
 
                base_call() = default;
@@ -279,7 +295,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 21
+                  message_type = cServiceReply
                };
 
                Reply() = default;
@@ -314,7 +330,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 22
+                  message_type = cServiceAcknowledge
                };
 
                std::string service;
@@ -338,7 +354,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 30
+                  message_type = cMonitorAdvertise
                };
 
                server::Id serverId;
@@ -359,7 +375,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 31
+                  message_type = cMonitorUnadvertise
                };
 
                server::Id serverId;
@@ -378,7 +394,7 @@ namespace casual
             {
                enum
                {
-                  message_type = 32
+                  message_type = cMonitorNotify
                };
 
                std::string parentService;
