@@ -10,15 +10,50 @@
 
 #include "xatmi.h"
 
+//
+// std
+//
+#include <array>
+
 namespace casual
 {
    namespace sf
    {
       namespace buffer
       {
-         Base::Base( char* buffer, std::size_t size) : m_buffer( buffer), m_size( size)
+         Type type( const char* buffer)
          {
 
+
+            std::array< char, 8 + 1> type;
+            std::array< char, 16 + 1> subtype;
+
+            type.back() = '\0';
+            subtype.back() = '\0';
+
+            tptypes( buffer, type.data(), subtype.data());
+
+            Type result;
+
+            result.name = type.data();
+            result.subname = subtype.data();
+
+            return result;
+         }
+
+         Raw::Raw( char* p_buffer, std::size_t p_size) : buffer( p_buffer), size( p_size)
+         {
+
+         }
+
+         Base::Base( Raw buffer) : m_buffer( buffer.buffer), m_size( buffer.size)
+         {
+
+         }
+
+         Base::Base( Type&& type, std::size_t size)
+            : Base{ Raw{ tpalloc( type.name.c_str(), type.subname.c_str(), size), size}}
+         {
          }
 
          Base::~Base()
@@ -26,14 +61,28 @@ namespace casual
 
          }
 
-         char* Base::raw()
+         Raw Base::raw()
          {
-            return m_buffer.get();
+            return Raw( m_buffer.get(), m_size);
          }
 
          std::size_t Base::size() const
          {
             return m_size;
+         }
+
+         Raw Base::release()
+         {
+            Raw result( m_buffer.release(), m_size);
+
+            m_size = 0;
+
+            return result;
+         }
+
+         Type Base::type() const
+         {
+            return buffer::type( m_buffer.get());
          }
 
          void Base::expand( std::size_t expansion)
@@ -65,7 +114,7 @@ namespace casual
          namespace source
          {
 
-            Binary::Binary( Base&& base) : Base( std::move( base))
+            Binary::Binary( Base&& base) : Base( std::move( base)), m_offset{ 0}
             {
 
             }
@@ -75,7 +124,7 @@ namespace casual
 
          namespace target
          {
-            Binary::Binary() : Base( tpalloc( "X_OCTET", "binary", 1024), 1024), m_offset{ 0}
+            Binary::Binary() : Base( Type{ "X_OCTET", "binary"}, 1024), m_offset{ 0}
             {
 
             }
@@ -83,8 +132,39 @@ namespace casual
 
          }
 
-      }
-   }
-}
+         X_Octet::X_Octet( const std::string& subtype) : X_Octet( subtype, 1024)
+         {
+         }
+
+         X_Octet::X_Octet( const std::string& subtype, std::size_t size) : Base( Type{ "X_OCTET", subtype}, size)
+         {
+            if( size)
+            {
+               m_buffer.get()[ 0] = '\0';
+            }
+
+         }
+
+         X_Octet::X_Octet( Raw buffer) : Base( buffer)
+         {
+         }
+
+         std::string X_Octet::str() const
+         {
+            return m_buffer.get();
+         }
+
+         void X_Octet::str( const std::string& new_string)
+         {
+            if( new_string.size() > size())
+            {
+               expand( new_string.size() - size() + 1);
+            }
+            memcpy( m_buffer.get(), new_string.c_str(), new_string.size());
+         }
+
+      } // buffer
+   } // sf
+} // casual
 
 

@@ -6,7 +6,7 @@
 //!
 
 #include "sf/archive_maker.h"
-#include "sf/archive_yaml_implementation.h"
+#include "sf/archive_yaml.h"
 
 #include "utility/file.h"
 

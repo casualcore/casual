@@ -69,6 +69,16 @@ namespace casual
                return raw();
             }
 
+            const std::string& type()
+            {
+               return m_type;
+            }
+
+            const std::string& subtype()
+            {
+               return m_subtype;
+            }
+
             template< typename A>
             void marshal( A& archive)
             {

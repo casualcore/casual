@@ -33,19 +33,19 @@ namespace casual
             {
             public:
 
-               Proxy( int priority);
+               Proxy( const int priority);
                Proxy( const Proxy&) = delete;
                Proxy& operator = ( const Proxy&) = delete;
 
                //
                // We can't rely on RVO, so we have to release logging-responsibility for
-               // rhs.
+               // rhs
                //
                Proxy( Proxy&& rhs);
 
                //
                // Will be called when the full expression has "run", and this rvalue
-               // will be destructed.
+               // will be destructed
                //
                ~Proxy();
 
@@ -62,8 +62,8 @@ namespace casual
                // dependencies to iostream
                //
                std::ostringstream m_message;
-               int m_priority;
-               mutable bool m_log;
+               const int m_priority;
+               bool m_log;
             };
 
             template< int priority>

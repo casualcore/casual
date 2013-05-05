@@ -19,11 +19,15 @@ namespace casual
       namespace buffer
       {
 
-         TEST( casual_sf_buffer, deleter)
+         TEST( casual_sf_buffer, X_OCTET_type_subtype)
          {
-            target::Binary binary;
+            X_Octet buffer( "YAML");
 
 
+            Type type = buffer.type();
+
+            EXPECT_TRUE( type.name == "X_OCTET");
+            EXPECT_TRUE( type.subname == "YAML");
 
          }
 

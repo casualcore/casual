@@ -21,6 +21,7 @@
 // std
 //
 #include <memory>
+#include <type_traits>
 
 
 
@@ -28,7 +29,7 @@
 // Implementation
 //
 #include "template_sf_server_implementation.h"
-#include "template_vo.h"
+#include "sf_testvo.h"
 
 
 extern "C"
@@ -45,8 +46,9 @@ namespace local
 {
    namespace
    {
-      std::unique_ptr< casual::sf::server::Interface> server;
-      std::unique_ptr< test::ServerImplementation> implementation;
+
+      casual::sf::server::type server;
+      casual::sf::server::implementation::type< casual::test::ServerImplementation> implementation;
    }
 }
 
@@ -58,7 +60,7 @@ int tpsvrinit(int argc, char **argv)
    {
       local::server = casual::sf::server::create( argc, argv);
 
-      local::implementation.reset( new test::ServerImplementation( argc, argv));
+      local::implementation = casual::sf::server::implementation::make< casual::test::ServerImplementation>( argc, argv);
    }
    catch( ...)
    {
@@ -73,40 +75,26 @@ void tpsvrdone()
    //
    // delete the implementation an server implementation
    //
-   local::implementation.reset();
-   local::server.reset();
+   casual::sf::server::sink( local::implementation);
+   casual::sf::server::sink( local::server);
 }
 
 
-struct ReplyState
-{
-   int value;
-   long code;
-   char* data;
-   long size;
-   long flags;
-};
-
 void casual_sf_test1( TPSVCINFO *serviceInfo)
 {
-   ReplyState reply;
+   casual::sf::service::reply::State reply;
 
    try
    {
-      auto service = local::server->service( serviceInfo);
-
-      //
-      // Use the helper for IO
-      //
-      casual::sf::service::IO io( *service);
+      auto service_io = local::server->createService( serviceInfo);
 
       //
       // Initialize the input parameters to the service implementation
       //
 
-      std::vector< test::vo::Value> inputValues;
+      std::vector< casual::test::vo::TestVO> inputValues;
 
-      io >> CASUAL_MAKE_NVP( inputValues);
+      service_io >> CASUAL_MAKE_NVP( inputValues);
 
 
       //
@@ -115,14 +103,14 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
 
       bool serviceReturn;
 
-      std::vector< test::vo::Value> outputValues;
+      std::vector< casual::test::vo::TestVO> outputValues;
 
 
       //
       // Call the implementation
       //
 
-      if( service->call())
+      if( service_io.callImplementation())
       {
          try
          {
@@ -130,20 +118,21 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
          }
          catch( ...)
          {
-            // TODO;
+            service_io.handleException();
          }
       }
 
       //
       // Serialize output
       //
-      io << CASUAL_MAKE_NVP( serviceReturn);
-      io << CASUAL_MAKE_NVP( outputValues);
+      service_io << CASUAL_MAKE_NVP( serviceReturn);
+      service_io << CASUAL_MAKE_NVP( outputValues);
 
+      reply = service_io.finalize();
    }
    catch( ...)
    {
-      // TODO:
+      local::server->handleException( serviceInfo, reply);
    }
 
    tpreturn(

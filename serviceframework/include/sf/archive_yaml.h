@@ -186,7 +186,7 @@ namespace casual
 
                   YAML::Node m_document;
                   std::deque< const YAML::Node*> m_nodeStack;
-                  const char* m_currentRole;
+                  const char* m_currentRole = nullptr;
 
                   policy_type m_policy;
                };

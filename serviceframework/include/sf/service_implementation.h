@@ -10,6 +10,9 @@
 
 #include "sf/service.h"
 
+
+#include "sf/archive_yaml.h"
+
 namespace casual
 {
    namespace sf
@@ -21,13 +24,22 @@ namespace casual
             class Base : public Interface
             {
 
+            public:
+               Base( TPSVCINFO* serviceInfo) : m_info( serviceInfo) {}
+
             private:
 
                bool doCall() override
                {
                   return true;
                }
-               void doFinalize() override
+
+               reply::State doFinalize() override
+               {
+                  return m_state;
+               }
+
+               void doHandleException() override
                {
 
                }
@@ -45,6 +57,24 @@ namespace casual
 
             protected:
 
+               /*
+               template< typename IO>
+               void finalize( IO& io)
+               {
+                  for( auto archive : io.readers)
+                  {
+                     archive->finalize();
+                  }
+                  for( auto archive : io.writers)
+                  {
+                     archive->finalize();
+                  }
+               }
+               */
+
+               TPSVCINFO* m_info;
+               reply::State m_state;
+
                Interface::Input m_input;
                Interface::Output m_output;
             };
@@ -55,6 +85,49 @@ namespace casual
 
 
             private:
+
+            };
+
+            class Yaml : public Base
+            {
+            public:
+
+               Yaml( TPSVCINFO* serviceInfo) : Base( serviceInfo),
+                  m_inputstream( serviceInfo->data), m_reader( m_inputstream), m_writer( m_outputstream)
+               {
+                  //
+                  // We don't need the request-buffer no more
+                  //
+                  tpfree( serviceInfo->data);
+                  serviceInfo->len = 0;
+
+
+                  m_input.readers.push_back( &m_reader);
+
+                  m_output.writers.push_back( &m_writer);
+
+               }
+
+               reply::State doFinalize() override
+               {
+                  buffer::X_Octet buffer{ "YAML", m_outputstream.size() };
+
+                  buffer.str( m_outputstream.c_str());
+
+                  buffer::Raw raw = buffer.release();
+                  m_state.data = raw.buffer;
+                  m_state.size = raw.size;
+
+                  return m_state;
+               }
+
+            private:
+
+               std::istringstream m_inputstream;
+               archive::yaml::reader::Strict m_reader;
+               YAML::Emitter m_outputstream;
+               archive::yaml::writer::Strict m_writer;
+
 
             };
 

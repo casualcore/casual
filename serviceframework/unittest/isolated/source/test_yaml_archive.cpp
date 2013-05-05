@@ -10,7 +10,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "sf/archive_yaml_implementation.h"
+#include "sf/archive_yaml.h"
 #include "sf/exception.h"
 
 #include "common/types.h"

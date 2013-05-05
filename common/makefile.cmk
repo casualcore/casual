@@ -19,14 +19,14 @@ Compile( source/ipc.cpp, obj/ipc.o)
 Compile( source/queue.cpp, obj/queue.o)
 
 
-
 LinkLibrary( casual_common, \
 	obj/server_context.o \
 	obj/service_context.o \
 	obj/calling_context.o \
 	obj/buffer_context.o \
 	obj/ipc.o \ 
-	obj/queue.o,\ 
+	obj/queue.o \
+	,\ 
 	casual_utility)
 
 	

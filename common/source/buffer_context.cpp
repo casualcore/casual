@@ -58,7 +58,7 @@ namespace casual
 
             m_memoryPool.emplace_back( type, subtype, size);
 
-            utility::logger::debug << "allocates type: " << type << " subtype: " << subtype << "adress: " << static_cast< const void*>( m_memoryPool.back().raw()) << " size: " << size;
+            utility::logger::debug << "allocates type: " << type << " subtype: " << subtype << " adress: " << static_cast< const void*>( m_memoryPool.back().raw()) << " size: " << size;
 
             return m_memoryPool.back().raw();
          }
