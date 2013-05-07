@@ -10,8 +10,7 @@
 #include "common/queue.h"
 #include "common/ipc.h"
 #include "common/message.h"
-
-#include "utility/exception.h"
+#include "common/exception.h"
 
 //temp
 
@@ -69,13 +68,13 @@ namespace casual
             ipc::receive::Queue receive;
             blocking::Reader reader( receive);
 
-            utility::signal::alarm::Scoped timeout( 1);
+            common::signal::alarm::Scoped timeout( 1);
 
             message::service::Advertise message;
 
             EXPECT_THROW({
                reader( message);
-            }, utility::exception::signal::Timeout);
+            }, common::exception::signal::Timeout);
 
 
          }

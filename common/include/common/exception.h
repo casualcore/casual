@@ -10,8 +10,8 @@
 
 
 
-#include "utility/platform.h"
-#include "utility/error.h"
+#include "common/platform.h"
+#include "common/error.h"
 
 #include <stdexcept>
 #include <string>
@@ -20,7 +20,7 @@
 
 namespace casual
 {
-   namespace utility
+   namespace common
    {
       namespace exception
       {
@@ -64,27 +64,27 @@ namespace casual
                Base( const std::string& description)
                   : std::runtime_error( description) {}
 
-               virtual utility::platform::signal_type getSignal() const = 0;
+               virtual common::platform::signal_type getSignal() const = 0;
             };
 
-            template< utility::platform::signal_type signal>
+            template< common::platform::signal_type signal>
             struct basic_signal : public Base
             {
                basic_signal( const std::string& description)
                   : Base( description) {}
 
                basic_signal()
-                  : Base( utility::platform::getSignalDescription( signal)) {}
+                  : Base( common::platform::getSignalDescription( signal)) {}
 
-               utility::platform::signal_type getSignal() const
+               common::platform::signal_type getSignal() const
                {
                   return signal;
                }
             };
 
-            typedef basic_signal< utility::platform::cSignal_Alarm> Timeout;
+            typedef basic_signal< common::platform::cSignal_Alarm> Timeout;
 
-            typedef basic_signal< utility::platform::cSignal_Alarm> Terminate;
+            typedef basic_signal< common::platform::cSignal_Alarm> Terminate;
 
 
          }
@@ -109,9 +109,9 @@ namespace casual
                      : Base( description) {}
                };
 
-               typedef Severity< utility::platform::cLOG_critical> Critical;
-               typedef Severity< utility::platform::cLOG_info> Information;
-               typedef Severity< utility::platform::cLOG_debug> User;
+               typedef Severity< common::platform::cLOG_critical> Critical;
+               typedef Severity< common::platform::cLOG_info> Information;
+               typedef Severity< common::platform::cLOG_debug> User;
 
             }
 

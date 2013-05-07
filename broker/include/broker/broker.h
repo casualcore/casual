@@ -16,8 +16,8 @@
 
 #include "broker/configuration.h"
 
-#include "utility/file.h"
-#include "utility/platform.h"
+#include "common/file.h"
+#include "common/platform.h"
 
 #include "common/ipc.h"
 #include "common/message.h"
@@ -80,7 +80,7 @@ namespace casual
 		   configuration::Settings configuration;
 
 		   // TODO: Temp
-		   utility::platform::queue_key_type monitorQueue = 0;
+		   common::platform::queue_key_type monitorQueue = 0;
 
 		};
 
@@ -94,7 +94,7 @@ namespace casual
 			void start();
 
 		private:
-			utility::file::ScopedPath m_brokerQueueFile;
+			common::file::ScopedPath m_brokerQueueFile;
 			common::ipc::receive::Queue& m_receiveQueue = common::ipc::getReceiveQueue();
 
 			State m_state;

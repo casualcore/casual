@@ -9,7 +9,7 @@
 #include "broker/broker.h"
 
 
-#include "utility/error.h"
+#include "common/error.h"
 
 
 #include <iostream>
@@ -39,7 +39,7 @@ int main( int argc, char** argv)
 	}
 	catch( ...)
 	{
-		return casual::utility::error::handler();
+		return casual::common::error::handler();
 
 	}
 	return 0;

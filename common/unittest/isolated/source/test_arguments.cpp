@@ -7,13 +7,13 @@
 
 #include <gtest/gtest.h>
 
-#include "utility/arguments.h"
+#include "common/arguments.h"
 
 
 namespace casual
 {
 
-   namespace utility
+   namespace common
    {
 
 

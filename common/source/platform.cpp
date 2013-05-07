@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "utility/platform.h"
+#include "common/platform.h"
 
 
 #include <unistd.h>
@@ -15,7 +15,7 @@
 
 namespace casual
 {
-	namespace utility
+	namespace common
 	{
 		namespace platform
 		{

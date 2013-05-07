@@ -8,7 +8,7 @@
 #ifndef MESSAGE_DISPATCH_H_
 #define MESSAGE_DISPATCH_H_
 
-#include "marshal.h"
+#include "common/marshal.h"
 
 
 #include <map>

@@ -10,7 +10,7 @@
 
 #include <uuid/uuid.h>
 
-#include "utility/platform.h"
+#include "common/platform.h"
 
 #include <string>
 
@@ -18,7 +18,7 @@ namespace casual
 {
 
 
-	namespace utility
+	namespace common
 	{
 
 		struct Uuid
@@ -26,12 +26,17 @@ namespace casual
 			typedef platform::uuid_type uuid_type;
 
 			Uuid();
+			Uuid( Uuid&&) = default;
+			Uuid( const Uuid&) = default;
 
 			Uuid& operator = ( const Uuid&) = default;
 
 			Uuid( uuid_type& uuid);
 
-			std::string getString() const;
+			std::string string() const;
+			void string( const std::string& value);
+
+
 			const uuid_type& get() const;
 			uuid_type& get();
 			void set( uuid_type& uuid);
@@ -53,9 +58,9 @@ namespace casual
 	}
 }
 
-bool operator == ( const casual::utility::Uuid& lhs, const casual::utility::Uuid::uuid_type& rhs);
+bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs);
 
-bool operator == ( const casual::utility::Uuid::uuid_type& rhs, const casual::utility::Uuid& lhs);
+bool operator == ( const casual::common::Uuid::uuid_type& rhs, const casual::common::Uuid& lhs);
 
 
 

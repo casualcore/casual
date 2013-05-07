@@ -8,13 +8,13 @@
 #ifndef TRACE_H_
 #define TRACE_H_
 
-#include "utility/logger.h"
+#include "common/logger.h"
 
 #include <string>
 
 namespace casual
 {
-   namespace utility
+   namespace common
    {
       class Trace
       {

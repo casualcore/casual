@@ -11,13 +11,13 @@
 
 #include <cstddef>
 
-#include "utility/platform.h"
+#include "common/platform.h"
 
 
 namespace casual
 {
 
-	namespace utility
+	namespace common
 	{
 		namespace signal
 		{
@@ -45,7 +45,7 @@ namespace casual
 
 				};
 
-				void set( utility::platform::seconds_type timeout);
+				void set( common::platform::seconds_type timeout);
 			}
 		}
 	}

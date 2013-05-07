@@ -1,6 +1,5 @@
 
 
-Build( utility/makefile.cmk)
 Build( common/makefile.cmk)
 Build( xatmi/makefile.cmk)
 

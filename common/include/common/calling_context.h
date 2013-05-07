@@ -10,8 +10,7 @@
 
 
 #include "common/queue.h"
-
-#include "utility/platform.h"
+#include "common/platform.h"
 
 #include <set>
 #include <unordered_map>
@@ -35,7 +34,7 @@ namespace casual
             struct Pending
             {
                Pending() : callDescriptor( 0), called( 0), timeout( 0) {}
-               typedef utility::platform::seconds_type seconds_type;
+               typedef common::platform::seconds_type seconds_type;
 
                int callDescriptor;
                seconds_type called;
@@ -54,7 +53,7 @@ namespace casual
             pending_calls_type pendingCalls;
             reply_cache_type replyCache;
 
-            utility::Uuid callId = utility::Uuid::make();
+            common::Uuid callId = common::Uuid::make();
 
             int currentCallingDescriptor;
 
@@ -75,7 +74,7 @@ namespace casual
 
             void clean();
 
-            void setCallId( const utility::Uuid& uuid);
+            void setCallId( const common::Uuid& uuid);
 
             void setCurrentService( const std::string& service);
 

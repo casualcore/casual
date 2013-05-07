@@ -12,7 +12,7 @@
 #include "template_server.h"
 
 
-#include "utility/logger.h"
+#include "common/logger.h"
 
 
 #include <unistd.h>
@@ -30,9 +30,9 @@ void casual_test1( TPSVCINFO *serviceContext)
    buffer = tprealloc( buffer, 3000);
 
    {
-      casual::utility::logger::debug << "transb->name: " << serviceContext->name;
-      casual::utility::logger::debug << "transb->cd: " << serviceContext->cd;
-      casual::utility::logger::debug << "transb->data: " << serviceContext->data;
+      casual::common::logger::debug << "transb->name: " << serviceContext->name;
+      casual::common::logger::debug << "transb->cd: " << serviceContext->cd;
+      casual::common::logger::debug << "transb->data: " << serviceContext->data;
 
 
 
@@ -50,7 +50,7 @@ void casual_test1( TPSVCINFO *serviceContext)
 void casual_test2( TPSVCINFO *serviceContext)
 {
 
-   casual::utility::logger::debug << "casual_test2 called";
+   casual::common::logger::debug << "casual_test2 called";
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
@@ -59,7 +59,7 @@ void casual_test2( TPSVCINFO *serviceContext)
 void casual_test3( TPSVCINFO *serviceContext)
 {
 
-   casual::utility::logger::debug << "casual_test2 called";
+   casual::common::logger::debug << "casual_test2 called";
 
    tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
@@ -69,7 +69,7 @@ void casual_test3( TPSVCINFO *serviceContext)
 
 int tpsvrinit(int argc, char **argv)
 {
-   casual::utility::logger::debug << "USER tpsvrinit called";
+   casual::common::logger::debug << "USER tpsvrinit called";
 
    return 0;
 }

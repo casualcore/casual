@@ -5,7 +5,7 @@
  *      Author: kristian
  */
 
-#include "utility/chronology.h"
+#include "common/chronology.h"
 
 #include <ctime>
 
@@ -16,7 +16,7 @@
 namespace casual
 {
 
-namespace utility
+namespace common
 {
 
 namespace chronology

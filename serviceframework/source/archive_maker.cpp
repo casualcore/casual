@@ -8,7 +8,7 @@
 #include "sf/archive_maker.h"
 #include "sf/archive_yaml.h"
 
-#include "utility/file.h"
+#include "common/file.h"
 
 namespace casual
 {
@@ -61,7 +61,7 @@ namespace casual
 
             Holder makeFromFile( const std::string& filename)
             {
-               auto extension = utility::file::extension( filename);
+               auto extension = common::file::extension( filename);
 
                if( extension == "yaml")
                {

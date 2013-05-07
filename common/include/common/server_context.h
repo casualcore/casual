@@ -16,9 +16,8 @@
 #include "common/types.h"
 
 #include "common/calling_context.h"
-
-#include "utility/platform.h"
-#include "utility/logger.h"
+#include "common/platform.h"
+#include "common/logger.h"
 
 
 #include "xatmi.h"
@@ -58,7 +57,7 @@ namespace casual
             typedef std::unordered_map< std::string, service::Context> service_mapping_type;
 
             service_mapping_type services;
-            utility::platform::long_jump_buffer_type long_jump_buffer;
+            common::platform::long_jump_buffer_type long_jump_buffer;
 
             message::service::Reply reply;
             message::monitor::Notify monitor;
@@ -230,7 +229,7 @@ namespace casual
 
                      if( findIter == state.services.end())
                      {
-                        throw utility::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
+                        throw common::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
                      }
 
 
@@ -248,7 +247,7 @@ namespace casual
                      //
                      // User service returned, not by tpreturn. The standard does not mention this situation, what to do?
                      //
-                     throw utility::exception::xatmi::service::Error( "Service: " + message.service.name + " did not call tpreturn");
+                     throw common::exception::xatmi::service::Error( "Service: " + message.service.name + " did not call tpreturn");
 
                   }
                   else
@@ -293,7 +292,7 @@ namespace casual
 
                         if( ! writer( state.monitor))
                         {
-                           utility::logger::warning << "could not write to monitor queue";
+                           common::logger::warning << "could not write to monitor queue";
                         }
 
                      }

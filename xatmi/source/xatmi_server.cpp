@@ -17,9 +17,9 @@
 #include "common/message_dispatch.h"
 
 
-#include "utility/error.h"
-#include "utility/logger.h"
-#include "utility/environment.h"
+#include "common/error.h"
+#include "common/logger.h"
+#include "common/environment.h"
 
 
 using namespace casual;
@@ -112,7 +112,7 @@ int casual_start_server( casual_server_argument* serverArgument)
      common::server::Arguments arguments = local::transform::ServerArguments()( *serverArgument);
 
 
-      utility::environment::setExecutablePath( serverArgument->m_argv[ 0]);
+      common::environment::setExecutablePath( serverArgument->m_argv[ 0]);
 
 
       //
@@ -131,14 +131,14 @@ int casual_start_server( casual_server_argument* serverArgument)
 
          if( ! handler.dispatch( marshal))
          {
-            utility::logger::error << "message: " << marshal.type() << " not recognized - action: discard";
+            common::logger::error << "message: " << marshal.type() << " not recognized - action: discard";
          }
       }
 	}
 	catch( ...)
 	{
 	   tpsvrdone();
-	   return casual::utility::error::handler();
+	   return casual::common::error::handler();
 	}
 	return 0;
 }

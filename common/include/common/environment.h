@@ -11,11 +11,11 @@
 #include <string>
 #include <sstream>
 
-#include "utility/platform.h"
+#include "common/platform.h"
 
 namespace casual
 {
-	namespace utility
+	namespace common
 	{
 		namespace environment
 		{

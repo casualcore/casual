@@ -11,11 +11,9 @@
 #include "common/ipc.h"
 #include "common/buffer_context.h"
 #include "common/types.h"
-
-
-#include "utility/platform.h"
-#include "utility/exception.h"
-#include "utility/uuid.h"
+#include "common/platform.h"
+#include "common/exception.h"
+#include "common/uuid.h"
 
 #include <vector>
 #include <chrono>
@@ -55,7 +53,7 @@ namespace casual
 
             std::string name;
             Seconds timeout = 0;
-            utility::platform::queue_key_type monitor_queue = 0;
+            common::platform::queue_key_type monitor_queue = 0;
 
             template< typename A>
             void marshal( A& archive)
@@ -74,11 +72,11 @@ namespace casual
             //!
             struct Id
             {
-               typedef utility::platform::pid_type pid_type;
+               typedef common::platform::pid_type pid_type;
                typedef ipc::message::Transport::queue_key_type queue_key_type;
 
                Id()
-                     : pid( utility::platform::getProcessId())
+                     : pid( common::platform::getProcessId())
                {
                }
 
@@ -219,7 +217,7 @@ namespace casual
                int callDescriptor = 0;
                Service service;
                server::Id reply;
-               utility::Uuid callId;
+               common::Uuid callId;
                std::string callee;
 
                template< typename A>
@@ -400,7 +398,7 @@ namespace casual
                std::string parentService;
                std::string service;
 
-               utility::Uuid callId;
+               common::Uuid callId;
 
                std::string transactionId;
 

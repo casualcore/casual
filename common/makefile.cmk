@@ -1,13 +1,17 @@
 
+#ifdef __APPLE__
+    UUIDLIB=c
+#else
+    UUIDLIB=uuid
+#endif
+
 
 INCLUDE_PATHS= include \
-	../utility/include \
 	../xatmi/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 
-LIBRARY_PATHS= ../xatmi/bin \
-	../utility/bin \
+LIBRARY_PATHS= 
 
 
 
@@ -18,6 +22,16 @@ Compile( source/buffer_context.cpp, obj/buffer_context.o)
 Compile( source/ipc.cpp, obj/ipc.o)
 Compile( source/queue.cpp, obj/queue.o)
 
+Compile( source/uuid.cpp, obj/uuid.o)
+Compile( source/environment.cpp, obj/environment.o)
+Compile( source/file.cpp, obj/file.o)
+Compile( source/signal.cpp, obj/signal.o)
+Compile( source/platform.cpp, obj/platform.o)
+Compile( source/logger.cpp, obj/logger.o)
+Compile( source/error.cpp, obj/error.o)
+Compile( source/chronology.cpp, obj/chronology.o)
+
+
 
 LinkLibrary( casual_common, \
 	obj/server_context.o \
@@ -26,8 +40,16 @@ LinkLibrary( casual_common, \
 	obj/buffer_context.o \
 	obj/ipc.o \ 
 	obj/queue.o \
-	,\ 
-	casual_utility)
+	obj/uuid.o \
+    obj/environment.o \
+    obj/file.o \
+    obj/signal.o \
+    obj/platform.o \
+    obj/logger.o \
+    obj/error.o \
+    obj/chronology.o \
+    ,\ 
+	${UUIDLIB})
 
 	
 	
@@ -42,6 +64,10 @@ Compile( unittest/isolated/source/test_marshal.cpp, unittest/isolated/obj/test_m
 Compile( unittest/isolated/source/test_queue.cpp, unittest/isolated/obj/test_queue.o)
 Compile( unittest/isolated/source/test_message_dispatch.cpp, unittest/isolated/obj/test_message_dispatch.o)
 
+Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
+Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test_arguments.o)
+Compile( unittest/isolated/source/test_file.cpp, unittest/isolated/obj/test_file.o)
+
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
@@ -49,6 +75,10 @@ LinkIsolatedUnittest( casual_common_isolated, \
 	unittest/isolated/obj/test_ipc.o \
 	unittest/isolated/obj/test_marshal.o \
 	unittest/isolated/obj/test_queue.o \
-	unittest/isolated/obj/test_message_dispatch.o, \
-	casual_utility casual_common )	
+	unittest/isolated/obj/test_message_dispatch.o \
+	unittest/isolated/obj/test_uuid.o \
+    unittest/isolated/obj/test_file.o \
+    unittest/isolated/obj/test_arguments.o \
+    , \
+	casual_common )	
 

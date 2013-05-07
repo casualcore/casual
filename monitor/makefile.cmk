@@ -23,7 +23,6 @@ LinkExecutable( casual_monitor, \
 	obj/monitor_main.o \
 	obj/monitordb.o, \
 	casual_common \
-	casual_utility \
 	sqlite3 )
 
 LinkAtmiServer(casual_monitor_request_server, \
@@ -49,7 +48,6 @@ Compile( unittest/isolated/source/test_monitor.cpp, unittest/isolated/obj/test_m
 LinkIsolatedUnittest( casual_monitor_isolated, \
 	unittest/isolated/obj/test_monitor.o \
 	obj/monitordb.o, \
-	casual_utility \
 	casual_common \
 	sqlite3)	
 

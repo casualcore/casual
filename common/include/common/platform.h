@@ -45,7 +45,7 @@
 
 namespace casual
 {
-	namespace utility
+	namespace common
 	{
 		namespace platform
 		{
@@ -71,6 +71,7 @@ namespace casual
 			// uuid
 			//
 			typedef uuid_t uuid_type;
+			typedef char uuid_string_type[ 37];
 
 			typedef pid_t pid_type;
 

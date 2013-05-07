@@ -11,7 +11,7 @@
 // TODO: temporary to test factory
 #include "sf/service_protocol.h"
 
-#include "utility/trace.h"
+#include "common/trace.h"
 
 
 //
@@ -107,7 +107,7 @@ namespace casual
 
          std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
          {
-            utility::Trace trace( "sf::service::Factory::create");
+            common::Trace trace( "sf::service::Factory::create");
 
             sf::buffer::Type type = sf::buffer::type( serviceInfo->data);
 
@@ -116,7 +116,6 @@ namespace casual
 
             if( found == m_factories.end())
             {
-               // TODO: some sf-exception
                throw sf::exception::Validation( "no suitable protocol was found for type: " + type.name + " subtype: " + type.subname);
             }
 
@@ -126,7 +125,7 @@ namespace casual
 
          Factory::Factory()
          {
-            utility::Trace trace( "sf::service::Factory::Factory");
+            common::Trace trace( "sf::service::Factory::Factory");
 
             registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
          }

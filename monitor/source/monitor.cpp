@@ -9,9 +9,14 @@
 #include "common/queue.h"
 #include "common/message.h"
 #include "common/message_dispatch.h"
+<<<<<<< HEAD
 #include "utility/logger.h"
 #include "utility/trace.h"
 #include "common/types.h"
+=======
+#include "common/logger.h"
+#include "common/trace.h"
+>>>>>>> 25fc2696fce5edac06b382739b31dc36c52157d9
 
 #include <vector>
 #include <string>
@@ -87,7 +92,7 @@ namespace monitor
 		void Notify::dispatch( const message_type& message)
 		{
 			static const std::string cMethodname("Notify::dispatch");
-			utility::Trace trace(cMethodname);
+			common::Trace trace(cMethodname);
 
 			message >> monitorDB;
 		}
@@ -118,7 +123,7 @@ namespace monitor
 			m_monitordb( local::Context::instance().monitorDB())
 	{
 		static const std::string cMethodname("Monitor::Monitor");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		//
 		// TODO: Use a correct argumentlist handler
@@ -139,8 +144,12 @@ namespace monitor
 	Monitor::~Monitor()
 	{
 		static const std::string cMethodname("Monitor::~Monitor");
+<<<<<<< HEAD
 		utility::Trace trace(cMethodname);
 
+=======
+		common::Trace trace(cMethodname);
+>>>>>>> 25fc2696fce5edac06b382739b31dc36c52157d9
 		//
 		// Tell broker that monitor is down...
 		//
@@ -165,7 +174,7 @@ namespace monitor
 	void Monitor::start()
 	{
 		static const std::string cMethodname("Monitor::start");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		common::dispatch::Handler handler;
 
@@ -183,7 +192,7 @@ namespace monitor
 
 			if( ! handler.dispatch( marshal))
 			{
-			   utility::logger::error << "message_type: " << " not recognized - action: discard";
+			   common::logger::error << "message_type: " << " not recognized - action: discard";
 			}
 
 			nonBlockingRead( 1000);

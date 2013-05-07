@@ -10,11 +10,11 @@
 #include "common/queue.h"
 
 
-#include "utility/environment.h"
-#include "utility/flag.h"
-#include "utility/error.h"
-#include "utility/exception.h"
-#include "utility/trace.h"
+#include "common/environment.h"
+#include "common/flag.h"
+#include "common/error.h"
+#include "common/exception.h"
+#include "common/trace.h"
 
 #include "xatmi.h"
 
@@ -58,14 +58,14 @@ namespace casual
             class Timeout
             {
             public:
-               typedef utility::platform::seconds_type seconds_type;
+               typedef common::platform::seconds_type seconds_type;
 
                Timeout( int a_callDescriptor, seconds_type a_timeout, seconds_type a_registred)
                   : callDescriptor( a_callDescriptor), timeout( a_timeout), registred( a_registred) {}
 
 
 
-               utility::platform::seconds_type endTime() const
+               common::platform::seconds_type endTime() const
                {
                   return registred + timeout;
                }
@@ -115,9 +115,9 @@ namespace casual
                         // The pending we inserted is the one that will timeout first, we have
                         // to (re)set the alarm
                         //
-                        const utility::platform::seconds_type timeout = pending.endTime() - utility::environment::getTime();
+                        const common::platform::seconds_type timeout = pending.endTime() - common::environment::getTime();
 
-                        utility::signal::alarm::set( timeout > 0 ? timeout : 1);
+                        common::signal::alarm::set( timeout > 0 ? timeout : 1);
                      }
 
                   }
@@ -129,7 +129,7 @@ namespace casual
                {
                   assert( !m_pending.empty());
 
-                  const utility::platform::seconds_type time = utility::environment::getTime();
+                  const common::platform::seconds_type time = common::environment::getTime();
 
                   //
                   // Find all (at least one) pending that has a timeout.
@@ -162,7 +162,7 @@ namespace casual
                      //
                      // register a new alarm
                      //
-                     utility::signal::alarm::set( m_pending.begin()->endTime() - time);
+                     common::signal::alarm::set( m_pending.begin()->endTime() - time);
 
                   }
                   else
@@ -170,7 +170,7 @@ namespace casual
                      //
                      // No more pending, reset the alarm
                      //
-                     utility::signal::alarm::set( 0);
+                     common::signal::alarm::set( 0);
                   }
                }
 
@@ -181,7 +181,7 @@ namespace casual
                   if( findIter != m_timeouts.end())
                   {
                      m_timeouts.erase( findIter);
-                     throw utility::exception::xatmi::Timeout();
+                     throw common::exception::xatmi::Timeout();
                   }
                }
 
@@ -189,14 +189,14 @@ namespace casual
 
                struct Passed
                {
-                  Passed( utility::platform::seconds_type time) : m_time( time) {}
+                  Passed( common::platform::seconds_type time) : m_time( time) {}
 
                   bool operator () ( const Timeout& value)
                   {
                      return m_time > value.endTime();
                   }
                private:
-                  const utility::platform::seconds_type m_time;
+                  const common::platform::seconds_type m_time;
                };
 
 
@@ -212,7 +212,7 @@ namespace casual
                {
                   return queue( value);
                }
-               catch( const utility::exception::signal::Timeout&)
+               catch( const common::exception::signal::Timeout&)
                {
                   PendingTimeout::instance().timeout();
                   return timeoutWrapper( queue, value);
@@ -226,7 +226,7 @@ namespace casual
                {
                   return queue( value);
                }
-               catch( const utility::exception::signal::Timeout&)
+               catch( const common::exception::signal::Timeout&)
                {
                   PendingTimeout::instance().timeout();
                   PendingTimeout::instance().check( callDescriptor);
@@ -244,11 +244,11 @@ namespace casual
             return singleton;
          }
 
-         void Context::setCallId( const utility::Uuid& uuid)
+         void Context::setCallId( const common::Uuid& uuid)
          {
-            if( uuid == utility::Uuid::empty())
+            if( uuid == common::Uuid::empty())
             {
-               m_state.callId = utility::Uuid::make();
+               m_state.callId = common::Uuid::make();
             }
             else
             {
@@ -271,7 +271,7 @@ namespace casual
                // which is a extreme high number. But, we have to handle it...
                //
                // TODO: We don't try to handle it until we can unit test it.
-               throw utility::exception::xatmi::LimitReached( "No free call descriptors");
+               throw common::exception::xatmi::LimitReached( "No free call descriptors");
 
                /*
                // TODO: this is not standard-conformant...
@@ -295,7 +295,7 @@ namespace casual
 
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
-            utility::Trace trace( "calling::Context::asyncCall");
+            common::Trace trace( "calling::Context::asyncCall");
 
 
 
@@ -305,7 +305,7 @@ namespace casual
 
             const int callDescriptor = allocateCallingDescriptor();
 
-            const utility::platform::seconds_type time = utility::environment::getTime();
+            const common::platform::seconds_type time = common::environment::getTime();
 
 
             //
@@ -315,7 +315,7 @@ namespace casual
 
             if( lookup.server.empty())
             {
-               throw utility::exception::xatmi::service::NoEntry( service);
+               throw common::exception::xatmi::service::NoEntry( service);
             }
 
             //
@@ -355,12 +355,12 @@ namespace casual
 
          int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
          {
-            utility::Trace trace( "calling::Context::getReply");
+            common::Trace trace( "calling::Context::getReply");
 
             //
             // TODO: validate input...
 
-            if( utility::flag< TPGETANY>( flags))
+            if( common::flag< TPGETANY>( flags))
             {
                *idPtr = 0;
             }
@@ -368,7 +368,7 @@ namespace casual
             {
                if( m_state.pendingCalls.find( *idPtr) == m_state.pendingCalls.end())
                {
-                  throw utility::exception::xatmi::service::InvalidDescriptor();
+                  throw common::exception::xatmi::service::InvalidDescriptor();
                }
             }
 
@@ -391,7 +391,7 @@ namespace casual
 
             if( replyIter == m_state.replyCache.end())
             {
-               if( !utility::flag< TPNOBLOCK>( flags))
+               if( !common::flag< TPNOBLOCK>( flags))
                {
                   //
                   // We block
@@ -400,7 +400,7 @@ namespace casual
                }
                else
                {
-                  throw utility::exception::xatmi::NoMessage();
+                  throw common::exception::xatmi::NoMessage();
                }
             }
 
@@ -423,7 +423,7 @@ namespace casual
 
 
             // TOOD: Temp
-            utility::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
+            common::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
 
             //
             // Add the buffer to the pool

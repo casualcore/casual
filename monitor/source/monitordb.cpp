@@ -5,12 +5,12 @@
  *      Author: hbergk
  */
 #include "monitor/monitordb.h"
-#include "utility/trace.h"
+#include "common/trace.h"
 #include <vector>
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <utility/environment.h>
+#include "common/environment.h"
 
 //
 // TODO: Use casual exception
@@ -30,7 +30,7 @@ namespace monitor
 		{
 			std::string getDatabase()
 			{
-				return utility::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
+				return common::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
 			}
 
 			std::string getValue( database::Row& row, const std::string& attribute)
@@ -49,13 +49,13 @@ namespace monitor
 	MonitorDB::MonitorDB() : MonitorDB( local::getDatabase())
 	{
 		static const std::string cMethodname("MonitorDB::MonitorDB()");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 	}
 
 	MonitorDB::MonitorDB( const std::string& database) : m_database( database)
 	{
 		static const std::string cMethodname("MonitorDB::MonitorDB(...)");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		createTable();
 	}
@@ -63,14 +63,14 @@ namespace monitor
 	MonitorDB::~MonitorDB( )
 	{
 		static const std::string cMethodname("MonitorDB::~MonitorDB");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 	}
 
 	Transaction::Transaction( MonitorDB& monitordb) : m_monitordb( monitordb)
 	{
-		static const std::string cMethodname("Transaction::Transaction()");
-		utility::Trace trace(cMethodname);
-		m_monitordb.getDatabase().begin();
+		static const std::string cMethodname("MonitorDB::begin()");
+		common::Trace trace(cMethodname);
+		m_database.begin();
 	}
 
 	Transaction::~Transaction()
@@ -91,7 +91,7 @@ namespace monitor
 	void MonitorDB::createTable()
 	{
 		static const std::string cMethodname("MonitorDB::createTable");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
 		stream << "CREATE TABLE IF NOT EXISTS calls ( "
@@ -113,14 +113,14 @@ namespace monitor
 	void MonitorDB::insert( const common::message::monitor::Notify& message)
 	{
 		static const std::string cMethodname("MonitorDB::insert");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
 		stream << "INSERT INTO calls VALUES (?,?,?,?,?,?);";
 		if ( !m_database.sql( stream.str(),
 				message.service,
 				message.parentService,
-				message.callId.getString(),
+				message.callId.string(),
 				message.transactionId,
 				std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
 				std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count()))

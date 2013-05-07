@@ -11,8 +11,7 @@
 #include "common/ipc.h"
 #include "common/message.h"
 #include "common/marshal.h"
-
-#include "utility/signal.h"
+#include "common/signal.h"
 
 
 #include <list>
