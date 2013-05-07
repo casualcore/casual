@@ -8,8 +8,9 @@
 #ifndef MONITORDB_H_
 #define MONITORDB_H_
 
-#include "utility/database.hpp"
+#include "database/database.hpp"
 #include "common/message.h"
+#include "monitor/monitor_vo.h"
 
 namespace casual
 {
@@ -20,16 +21,17 @@ namespace casual
 			class MonitorDB
 			{
 			public:
+
 				MonitorDB();
 
 				MonitorDB( const std::string& database);
 
 				~MonitorDB();
 
-				void begin() const;
-				void commit() const;
-
 				void insert( const common::message::monitor::Notify& message);
+				std::vector< vo::MonitorVO> select( );
+
+				database& getDatabase();
 			private:
 				//
 				// Creates table if necessary
@@ -38,6 +40,15 @@ namespace casual
 
 				database m_database;
 			};
+
+			struct Transaction
+			{
+				Transaction( MonitorDB& db);
+				~Transaction();
+
+				MonitorDB& m_monitordb;
+			};
+
 		}
 
 	}

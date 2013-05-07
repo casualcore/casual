@@ -32,6 +32,17 @@ namespace monitor
 			{
 				return utility::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
 			}
+
+			std::string getValue( database::Row& row, const std::string& attribute)
+			{
+				std::string value;
+				if ( !row[attribute].empty())
+				{
+					value = row[attribute].front();
+				}
+				utility::logger::debug << "getValue(" << attribute << "): " << value;
+				return value;
+			}
 		}
 	}
 
@@ -55,18 +66,25 @@ namespace monitor
 		utility::Trace trace(cMethodname);
 	}
 
-	void MonitorDB::begin() const
+	Transaction::Transaction( MonitorDB& monitordb) : m_monitordb( monitordb)
 	{
-		static const std::string cMethodname("MonitorDB::begin()");
+		static const std::string cMethodname("Transaction::Transaction()");
 		utility::Trace trace(cMethodname);
-		m_database.begin();
+		m_monitordb.getDatabase().begin();
 	}
 
-	void MonitorDB::commit() const
+	Transaction::~Transaction()
 	{
-		static const std::string cMethodname("MonitorDB::commit()");
+		static const std::string cMethodname("Transaction::~Transaction()");
 		utility::Trace trace(cMethodname);
-		m_database.commit();
+		if ( ! std::uncaught_exception())
+		{
+			m_monitordb.getDatabase().commit();
+		}
+		else
+		{
+			m_monitordb.getDatabase().rollback();
+		}
 	}
 
 
@@ -110,6 +128,40 @@ namespace monitor
 			throw std::runtime_error( m_database.error());
 		}
 
+	}
+
+	std::vector< vo::MonitorVO> MonitorDB::select( )
+	{
+		static const std::string cMethodname("MonitorDB::select");
+		utility::Trace trace(cMethodname);
+
+		std::ostringstream stream;
+		stream << "SELECT service, parentservice, callid, transactionid, start, end FROM calls;";
+		std::vector< database::Row> rows;
+		if ( !m_database.sql( stream.str(), rows))
+		{
+			throw std::runtime_error( m_database.error());
+		}
+
+ 		std::vector< vo::MonitorVO> result;
+     	for(auto row = rows.begin(); row != rows.end(); row++)
+     	{
+     		vo::MonitorVO vo;
+     		vo.setService( local::getValue( *row, "service"));
+     		vo.setParentService( local::getValue( *row, "parentservice"));
+     		vo.setCallId( local::getValue( *row, "callid"));
+     		//vo.setTransactionId( local::getValue( *row, "transactionid"));
+     		vo.setStart( local::getValue( *row,"start"));
+     		vo.setEnd( local::getValue( *row,"end"));
+			result.push_back( vo);
+		}
+
+		return result;
+	}
+
+	database& MonitorDB::getDatabase()
+	{
+		return m_database;
 	}
 }
 }

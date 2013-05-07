@@ -1,16 +1,21 @@
 
 INCLUDE_PATHS= include \
 	../common/include \
+	../serviceframework/include \
 	../xatmi/include \
 	../utility/include \
+	../thirdparty/database/include \
 	$(UNITTEST_INCLUDE_PATH)
 
 
-LIBRARY_PATHS = ../common/bin ../utility/bin
+LIBRARY_PATHS = ../common/bin ../utility/bin ../xatmi/bin ../serviceframework/bin
 
 Compile( source/monitor.cpp, obj/monitor.o)
 Compile( source/monitor_main.cpp, obj/monitor_main.o)
 Compile( source/monitordb.cpp, obj/monitordb.o)
+Compile( source/monitor_sf_server.cpp, obj/monitor_sf_server.o)
+Compile( source/monitor_sf_server_implementation.cpp, obj/monitor_sf_server_implementation.o)
+Compile( source/monitor_vo.cpp, obj/monitor_vo.o)
 
 
 LinkExecutable( casual_monitor, \
@@ -20,6 +25,17 @@ LinkExecutable( casual_monitor, \
 	casual_common \
 	casual_utility \
 	sqlite3 )
+
+LinkAtmiServer(casual_monitor_request_server, \
+    obj/monitor_vo.o \
+    obj/monitor_sf_server.o \
+    obj/monitordb.o \
+    obj/monitor_sf_server_implementation.o, \
+    casual-xatmi \
+    casual_utility \
+    casual_sf \
+    sqlite3, \
+    "getMonitorStatistics")
 
 	
 	
