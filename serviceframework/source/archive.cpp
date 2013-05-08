@@ -91,6 +91,11 @@ namespace casual
             readPOD( value);
          }
 
+         void Reader::read( long long& value)
+         {
+            readPOD( value);
+         }
+
          void Reader::read (unsigned long& value)
          {
             long temp;
@@ -153,6 +158,11 @@ namespace casual
          //void write (const unsigned int& value);
 
          void Writer::write( const long value)
+         {
+            writePOD( value);
+         }
+
+         void Writer::write( const long long value)
          {
             writePOD( value);
          }

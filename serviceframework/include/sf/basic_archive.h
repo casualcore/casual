@@ -66,6 +66,8 @@ namespace casual
 
             void readPOD( long& value) { m_readerImplementation.read( value);}
 
+            void readPOD( long long& value) { m_readerImplementation.read( value);}
+
             void readPOD( float& value) { m_readerImplementation.read( value);}
 
             void readPOD ( double& value) { m_readerImplementation.read( value);}
@@ -121,6 +123,8 @@ namespace casual
             void writePOD (const short value) { m_writerImplementation.write( value);}
 
             void writePOD (const long value) { m_writerImplementation.write( value);}
+
+            void writePOD( const long long value) { m_writerImplementation.write( value);}
 
             void writePOD (const float value) { m_writerImplementation.write( value);}
 

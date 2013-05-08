@@ -235,22 +235,6 @@ namespace casual
                   readPod( value);
                }
 
-               /*
-               void read( long& value)
-               {
-                  readPod( value);
-               }
-
-               void read( std::size_t& value)
-               {
-                  readPod( value);
-               }
-
-               void read( int& value)
-               {
-                  readPod( value);
-               }
-               */
 
                template< typename T>
                void read( std::vector< T>& value)

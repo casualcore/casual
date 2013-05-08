@@ -16,26 +16,24 @@ namespace casual
 {
    namespace sf
    {
-      typedef common::Uuid Uuid;
+      using common::Uuid;
 
-      template< typename R>
-      archive::Reader& operator >> ( archive::Reader& archive, const NameValuePair< Uuid, R>&& nvp)
+      namespace archive
       {
-         std::string uuid;
-         archive >> sf::makeNameValuePair( nvp.getName(), uuid);
+         inline void serialize( archive::Reader& archive, const char* name, Uuid& value)
+         {
+            std::string uuid;
+            archive >> sf::makeNameValuePair( name, uuid);
 
-         nvp.getValue().string( uuid);
+            value.string( uuid);
+         }
 
-         return archive;
+         inline void serialize( archive::Writer& archive, const char* name, const Uuid& value)
+         {
+            archive << sf::makeNameValuePair( name, value.string());
+         }
       }
 
-      template< typename R>
-      archive::Writer& operator << ( archive::Writer& archive, const NameValuePair< Uuid, R>&& nvp)
-      {
-         archive << sf::makeNameValuePair( nvp.getName(), nvp.getConstValue().string());
-
-         return archive;
-      }
    } // sf
 } // casual
 

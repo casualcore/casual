@@ -23,6 +23,7 @@ namespace casual
       struct Serializible
       {
          long someLong;
+         long long someLongLong;
          std::string someString;
 
          template< typename A>
@@ -30,6 +31,7 @@ namespace casual
          {
             archive & CASUAL_MAKE_NVP( someLong);
             archive & CASUAL_MAKE_NVP( someString);
+            archive & CASUAL_MAKE_NVP( someLongLong);
 
          }
 
@@ -39,6 +41,7 @@ namespace casual
 value:
    someLong: 234
    someString: bla bla bla bla
+   someLongLong: 1234567890123456789
 )";
          }
       };
@@ -89,6 +92,7 @@ value:
 
       EXPECT_TRUE( value.someLong == 234) << "value.someLong: " << value.someLong;
       EXPECT_TRUE( value.someString == "bla bla bla bla") << "value.someLong: " << value.someString;
+      EXPECT_TRUE( value.someLongLong == 1234567890123456789) << "value.someLongLong: " << value.someLongLong;
 
    }
 
@@ -142,7 +146,7 @@ value:
       sf::archive::yaml::writer::Strict writer( output);
 
       {
-         std::vector< local::Serializible> values = { { 123, "one two three"}, { 456, "four five six"}};
+         std::vector< local::Serializible> values = { { 123, 2342342, "one two three" }, { 456, 234234, "four five six"}};
          writer << CASUAL_MAKE_NVP( values);
       }
 
@@ -187,9 +191,9 @@ value:
       {
          std::map< long, local::Composite> values;
          values[ 10].someString = "kalle";
-         values[ 10].someValues = { { 1, "one"}, { 2, "two"}};
+         values[ 10].someValues = { { 1, 11111, "one"}, { 2, 22222, "two"}};
          values[ 2342].someString = "Charlie";
-         values[ 2342].someValues = { { 3, "three"}, { 4, "four"}};
+         values[ 2342].someValues = { { 3, 33333, "three"}, { 4, 444444, "four"}};
 
          writer << CASUAL_MAKE_NVP( values);
       }

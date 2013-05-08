@@ -87,6 +87,8 @@ namespace casual
 
             virtual void readPOD( long& value) = 0;
 
+            virtual void readPOD( long long& value) = 0;
+
             virtual void readPOD( float& value) = 0;
 
             virtual void readPOD( double& value) = 0;
@@ -115,6 +117,8 @@ namespace casual
             void read( long& value);
 
             void read( unsigned long& value);
+
+            void read( long long& value);
 
             void read( float& value);
 
@@ -249,6 +253,8 @@ namespace casual
 
             virtual void writePOD( const long value) = 0;
 
+            virtual void writePOD( const long long value) = 0;
+
             virtual void writePOD( const float value) = 0;
 
             virtual void writePOD( const double value) = 0;
@@ -276,7 +282,9 @@ namespace casual
 
             void write( const long value);
 
-            void write (const unsigned long value);
+            void write( const unsigned long value);
+
+            void write( const long long value);
 
             void write( const float value);
 
@@ -365,9 +373,8 @@ namespace casual
             return archive;
          }
 
-      }
-   }
-
-}
+      } // archive
+   } // sf
+} // casual
 
 #endif /* CASUAL_ARCHIVEWRITER_H_ */
