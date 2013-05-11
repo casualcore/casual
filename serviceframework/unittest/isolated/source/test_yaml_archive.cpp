@@ -6,9 +6,9 @@
 //!
 
 #include <gtest/gtest.h>
-
-
 #include <yaml-cpp/yaml.h>
+
+#include "../include/test_vo.h"
 
 #include "sf/archive_yaml.h"
 #include "sf/exception.h"
@@ -18,6 +18,7 @@
 
 namespace casual
 {
+   /*
    namespace local
    {
       struct Serializible
@@ -62,49 +63,53 @@ value:
 
 
    }
+   */
 
 
    TEST( casual_sf_yaml_archive, relaxed_read_serializible)
    {
-      std::istringstream stream( local::Serializible::yaml());
+      std::istringstream stream( test::SimpleVO::yaml());
 
       sf::archive::yaml::reader::Relaxed reader( stream);
 
-      local::Serializible value;
+      test::SimpleVO value;
 
       reader >> CASUAL_MAKE_NVP( value);
 
-      EXPECT_TRUE( value.someLong == 234) << "value.someLong: " << value.someLong;
-      EXPECT_TRUE( value.someString == "bla bla bla bla") << "value.someLong: " << value.someString;
+      EXPECT_TRUE( value.m_long == 234) << "value.m_long: " << value.m_long;
+      EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.m_long: " << value.m_long;
 
    }
 
 
    TEST( casual_sf_yaml_archive, strict_read_serializible__gives_ok)
    {
-      std::istringstream stream( local::Serializible::yaml());
+      std::istringstream stream( test::SimpleVO::yaml());
 
       sf::archive::yaml::reader::Strict reader( stream);
 
-      local::Serializible value;
+      test::SimpleVO value;
 
       reader >> CASUAL_MAKE_NVP( value);
 
-      EXPECT_TRUE( value.someLong == 234) << "value.someLong: " << value.someLong;
-      EXPECT_TRUE( value.someString == "bla bla bla bla") << "value.someLong: " << value.someString;
-      EXPECT_TRUE( value.someLongLong == 1234567890123456789) << "value.someLongLong: " << value.someLongLong;
+      EXPECT_TRUE( value.m_long == 234) << "value.someLong: " << value.m_long;
+      EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.someLong: " << value.m_string;
+      EXPECT_TRUE( value.m_longlong == 1234567890123456789) << "value.someLongLong: " << value.m_longlong;
 
    }
 
    TEST( casual_sf_yaml_archive, strict_read_not_in_document__gives_throws)
    {
-      std::istringstream stream( local::Serializible::yaml());
+      std::istringstream stream( test::SimpleVO::yaml());
 
       sf::archive::yaml::reader::Strict reader( stream);
 
-      local::Serializible wrongRoleName;
+      test::SimpleVO wrongRoleName;
 
-      EXPECT_THROW( { reader >> CASUAL_MAKE_NVP( wrongRoleName);}, sf::exception::Validation);
+      EXPECT_THROW(
+      {
+         reader >> CASUAL_MAKE_NVP( wrongRoleName);
+      }, sf::exception::Validation);
 
    }
 
@@ -146,41 +151,25 @@ value:
       sf::archive::yaml::writer::Strict writer( output);
 
       {
-         std::vector< local::Serializible> values = { { 123, 2342342, "one two three" }, { 456, 234234, "four five six"}};
+         std::vector< test::SimpleVO> values = { { 2342342, "one two three", 123 }, { 234234, "four five six", 456}};
          writer << CASUAL_MAKE_NVP( values);
       }
 
       std::istringstream stream( output.c_str());
       sf::archive::yaml::reader::Relaxed reader( stream);
 
-      std::vector< local::Serializible> values;
+      std::vector< test::SimpleVO> values;
       reader >> CASUAL_MAKE_NVP( values);
 
       ASSERT_TRUE( values.size() == 2);
-      EXPECT_TRUE( values.at( 0).someLong == 123);
-      EXPECT_TRUE( values.at( 0).someString == "one two three");
-      EXPECT_TRUE( values.at( 1).someLong == 456);
-      EXPECT_TRUE( values.at( 1).someString == "four five six");
+      EXPECT_TRUE( values.at( 0).m_short == 123);
+      EXPECT_TRUE( values.at( 0).m_string == "one two three");
+      EXPECT_TRUE( values.at( 1).m_short == 456);
+      EXPECT_TRUE( values.at( 1).m_string == "four five six");
 
    }
 
-   namespace local
-   {
-      struct Composite
-      {
-         std::string someString;
-         std::vector< Serializible> someValues;
 
-         template< typename A>
-         void serialize( A& archive)
-         {
-            archive & CASUAL_MAKE_NVP( someString);
-            archive & CASUAL_MAKE_NVP( someValues);
-
-         }
-      };
-
-   }
 
    TEST( casual_sf_yaml_archive, write_read_map_complex)
    {
@@ -189,11 +178,11 @@ value:
       sf::archive::yaml::writer::Strict writer( output);
 
       {
-         std::map< long, local::Composite> values;
-         values[ 10].someString = "kalle";
-         values[ 10].someValues = { { 1, 11111, "one"}, { 2, 22222, "two"}};
-         values[ 2342].someString = "Charlie";
-         values[ 2342].someValues = { { 3, 33333, "three"}, { 4, 444444, "four"}};
+         std::map< long, test::Composite> values;
+         values[ 10].m_string = "kalle";
+         values[ 10].m_values = { { 11111, "one", 1}, { 22222, "two", 2}};
+         values[ 2342].m_string = "Charlie";
+         values[ 2342].m_values = { { 33333, "three", 3}, { 444444, "four", 4}};
 
          writer << CASUAL_MAKE_NVP( values);
       }
@@ -202,22 +191,22 @@ value:
       std::istringstream stream( output.c_str());
       sf::archive::yaml::reader::Relaxed reader( stream);
 
-      std::map< long, local::Composite> values;
+      std::map< long, test::Composite> values;
       reader >> CASUAL_MAKE_NVP( values);
 
 
       ASSERT_TRUE( values.size() == 2) << output.c_str();
-      EXPECT_TRUE( values.at( 10).someString == "kalle");
-      EXPECT_TRUE( values.at( 10).someValues.at( 0).someLong == 1);
-      EXPECT_TRUE( values.at( 10).someValues.at( 0).someString == "one");
-      EXPECT_TRUE( values.at( 10).someValues.at( 1).someLong == 2);
-      EXPECT_TRUE( values.at( 10).someValues.at( 1).someString == "two");
+      EXPECT_TRUE( values.at( 10).m_string == "kalle");
+      EXPECT_TRUE( values.at( 10).m_values.at( 0).m_short == 1);
+      EXPECT_TRUE( values.at( 10).m_values.at( 0).m_string == "one");
+      EXPECT_TRUE( values.at( 10).m_values.at( 1).m_short == 2);
+      EXPECT_TRUE( values.at( 10).m_values.at( 1).m_string == "two");
 
-      EXPECT_TRUE( values.at( 2342).someString == "Charlie");
-      EXPECT_TRUE( values.at( 2342).someValues.at( 0).someLong == 3);
-      EXPECT_TRUE( values.at( 2342).someValues.at( 0).someString == "three");
-      EXPECT_TRUE( values.at( 2342).someValues.at( 1).someLong == 4);
-      EXPECT_TRUE( values.at( 2342).someValues.at( 1).someString == "four");
+      EXPECT_TRUE( values.at( 2342).m_string == "Charlie");
+      EXPECT_TRUE( values.at( 2342).m_values.at( 0).m_short == 3);
+      EXPECT_TRUE( values.at( 2342).m_values.at( 0).m_string == "three");
+      EXPECT_TRUE( values.at( 2342).m_values.at( 1).m_short == 4);
+      EXPECT_TRUE( values.at( 2342).m_values.at( 1).m_string == "four");
 
    }
 
@@ -227,11 +216,11 @@ value:
       sf::archive::yaml::writer::Strict writer( output);
 
       {
-         local::Binary value;
+         test::Binary value;
 
-         value.someLong = 23;
-         value.someString = "Charlie";
-         value.binary = { 1, 2, 56, 57, 58 };
+         value.m_long = 23;
+         value.m_string = "Charlie";
+         value.m_binary = { 1, 2, 56, 57, 58 };
 
          writer << CASUAL_MAKE_NVP( value);
       }
@@ -239,17 +228,17 @@ value:
       std::istringstream stream( output.c_str());
       sf::archive::yaml::reader::Relaxed reader( stream);
 
-      local::Binary value;
+      test::Binary value;
       reader >> CASUAL_MAKE_NVP( value);
 
 
 
-      ASSERT_TRUE( value.binary.size() == 5) << "size: " << value.binary.size() << output.c_str();
-      EXPECT_TRUE( value.binary.at( 0) == 1);
-      EXPECT_TRUE( value.binary.at( 1) == 2);
-      EXPECT_TRUE( value.binary.at( 2) == 56) << "values.at( 2): " << value.binary.at( 2);
-      EXPECT_TRUE( value.binary.at( 3) == 57);
-      EXPECT_TRUE( value.binary.at( 4) == 58);
+      ASSERT_TRUE( value.m_binary.size() == 5) << "size: " << value.m_binary.size() << output.c_str();
+      EXPECT_TRUE( value.m_binary.at( 0) == 1);
+      EXPECT_TRUE( value.m_binary.at( 1) == 2);
+      EXPECT_TRUE( value.m_binary.at( 2) == 56) << "values.at( 2): " << value.m_binary.at( 2);
+      EXPECT_TRUE( value.m_binary.at( 3) == 57);
+      EXPECT_TRUE( value.m_binary.at( 4) == 58);
    }
 
 }

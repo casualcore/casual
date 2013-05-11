@@ -16,7 +16,8 @@ namespace casual
 {
    namespace sf
    {
-      using common::Uuid;
+      typedef common::Uuid Uuid;
+
 
       namespace archive
       {
@@ -33,6 +34,24 @@ namespace casual
             archive << sf::makeNameValuePair( name, value.string());
          }
       }
+
+      typedef common::time_type time_type;
+
+      namespace archive
+      {
+         inline void serialize( archive::Reader& archive, const char* name, time_type& value)
+         {
+            time_type::rep representation;
+            archive >> sf::makeNameValuePair( name, representation);
+            value = common::time_type( common::time_type::duration( representation));
+         }
+
+         inline void serialize( archive::Writer& archive, const char* name, const time_type& value)
+         {
+            archive << sf::makeNameValuePair( name, value.time_since_epoch().count());
+         }
+      }
+
 
    } // sf
 } // casual
