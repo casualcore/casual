@@ -19,7 +19,7 @@ namespace casual
 
 
 
-      TEST( casual_utility_arguments, blabla)
+      TEST( casual_common_arguments, blabla)
       {
          /*
 

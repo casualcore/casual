@@ -9,8 +9,8 @@
 
 #include <cstdio>
 
-//TODO: temp
-#include <iostream>
+#include <fstream>
+
 
 #include <dirent.h>
 
@@ -113,6 +113,12 @@ namespace casual
             }
 
             return std::string( extensionEnd.base(), filename.cend());
+         }
+
+         bool exists( const std::string& path)
+         {
+            std::ifstream file( path);
+            return file.is_open();
          }
 
       }
