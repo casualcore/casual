@@ -34,22 +34,6 @@ namespace casual
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
-            /*
-            Buffer( Buffer&& rhs)
-               : m_type{ std::move( rhs.m_type)},
-                 m_subtype{ std::move( rhs.m_subtype)},
-                 m_memory{ std::move( rhs.m_memory)}
-            {
-            }
-
-            Buffer& operator = ( Buffer&& rhs)
-            {
-               m_type = std::move( rhs.m_type);
-               m_subtype = std::move( rhs.m_subtype);
-               m_memory = std::move( rhs.m_memory);
-               return *this;
-            }
-            */
 
             inline raw_buffer_type raw() const
             {

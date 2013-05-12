@@ -294,14 +294,8 @@ namespace casual
                         {
                            common::logger::warning << "could not write to monitor queue";
                         }
-
                      }
-
-
-
-
                   }
-
                }
             private:
 
