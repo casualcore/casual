@@ -113,7 +113,7 @@ namespace casual
                template< typename T>
                void writePod( T&& value)
                {
-                  Binary::buffer_type::size_type size = m_buffer.size();
+                  const auto size = m_buffer.size();
 
                   m_buffer.resize( size + sizeof( T));
 
@@ -134,7 +134,7 @@ namespace casual
                void write( std::string& value)
                {
                   writePod( value.size());
-                  const Binary::buffer_type::size_type size = m_buffer.size();
+                  const auto size = m_buffer.size();
 
                   m_buffer.resize( size + value.size());
 
@@ -145,7 +145,7 @@ namespace casual
                {
                   writePod( value.size());
 
-                  m_buffer.insert( m_buffer.end(), value.begin(), value.end());
+                  m_buffer.insert( std::end( m_buffer), std::begin( value), std::end( value));
                }
 
                buffer_type m_buffer;
@@ -188,17 +188,15 @@ namespace casual
                void add( transport_type& message)
                {
                   m_messageType = message.m_payload.m_type;
-                  const std::size_t size = message.paylodSize();
-                  const std::size_t bufferSize = m_buffer.size();
+                  auto size = message.paylodSize();
+                  auto bufferSize = m_buffer.size();
 
                   m_buffer.resize( m_buffer.size() + size);
 
                   std::copy(
-                     message.m_payload.m_payload.begin(),
-                     message.m_payload.m_payload.begin() + size,
-                     m_buffer.begin() + bufferSize);
-
-                  //memcpy( &m_buffer[ m_buffer.size()], message.m_payload.m_payload, size);
+                     std::begin( message.m_payload.m_payload),
+                     std::begin( message.m_payload.m_payload) + size,
+                     std::begin( m_buffer) + bufferSize);
                }
 
 
@@ -235,22 +233,6 @@ namespace casual
                   readPod( value);
                }
 
-               /*
-               void read( long& value)
-               {
-                  readPod( value);
-               }
-
-               void read( std::size_t& value)
-               {
-                  readPod( value);
-               }
-
-               void read( int& value)
-               {
-                  readPod( value);
-               }
-               */
 
                template< typename T>
                void read( std::vector< T>& value)
@@ -274,9 +256,9 @@ namespace casual
                   value.resize( size);
 
                   std::copy(
-                     m_buffer.begin() + m_offset,
-                     m_buffer.begin() + m_offset + size,
-                     value.begin());
+                     std::begin( m_buffer) + m_offset,
+                     std::begin( m_buffer) + m_offset + size,
+                     std::begin( value));
 
                   m_offset += size;
                }
@@ -287,8 +269,8 @@ namespace casual
                   *this >> size;
 
                   value.assign(
-                     m_buffer.begin() + m_offset,
-                     m_buffer.begin() + m_offset + size);
+                     std::begin( m_buffer) + m_offset,
+                     std::begin( m_buffer) + m_offset + size);
 
                   m_offset += size;
                }
@@ -301,14 +283,6 @@ namespace casual
                   memcpy( &value, &m_buffer[ m_offset], sizeof( T));
                   m_offset += sizeof( T);
                }
-
-               /*
-               void read( utility::Uuid& value)
-               {
-                  read( value.get());
-               }
-               */
-
 
                buffer_type m_buffer;
                offest_type m_offset = 0;

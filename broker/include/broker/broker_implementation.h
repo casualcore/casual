@@ -82,9 +82,9 @@ namespace casual
 		      bool operator () ( const State::service_mapping_type::value_type & service) const
             {
                return std::find_if(
-                     service.second.servers.begin(),
-                     service.second.servers.end(),
-                     find::Server( m_pid)) != service.second.servers.end();
+                     std::begin( service.second.servers),
+                     std::end( service.second.servers),
+                     find::Server( m_pid)) != std::end( service.second.servers);
             }
 
 		   private:
@@ -109,7 +109,7 @@ namespace casual
 
 		      bool operator () ( const message::service::name::lookup::Request& request)
 		      {
-		         return std::binary_search( m_services.begin(), m_services.end(), request.requested);
+		         return std::binary_search( std::begin( m_services), std::end( m_services), request.requested);
 		      }
 
 		      std::vector< std::string> m_services;
@@ -129,7 +129,7 @@ namespace casual
          {
 		      std::vector< std::string> result;
 
-		      State::service_mapping_type::iterator current = state.services.begin();
+		      auto current = state.services.begin();
 
 		      while( ( current = std::find_if(
 		            current,
@@ -140,7 +140,7 @@ namespace casual
 		         ++current;
 		      }
 
-		      std::sort( result.begin(), result.end());
+		      std::sort( std::begin( result), std::end( result));
 
 		      return result;
          }
@@ -164,7 +164,7 @@ namespace casual
                   // we use the current one...
                   //
 
-                  State::service_mapping_type::iterator findIter = m_serviceMapping.insert(
+                  auto findIter = m_serviceMapping.insert(
                         std::make_pair( service.name, broker::Service( service.name))).first;
 
                   //
@@ -192,11 +192,11 @@ namespace casual
                   typedef std::vector< broker::Server*> servers_type;
 
                   auto serversEnd = std::remove_if(
-                        findIter->second.servers.begin(),
-                        findIter->second.servers.end(),
+                        std::begin( findIter->second.servers),
+                        std::end( findIter->second.servers),
                         find::Server( pid));
 
-                  findIter->second.servers.erase( serversEnd, findIter->second.servers.end());
+                  findIter->second.servers.erase( serversEnd, std::end( findIter->second.servers));
 
                   //
                   // If servers is empty we remove the service all together.
@@ -236,39 +236,45 @@ namespace casual
 		      State& m_state;
 		   };
 
-		   //!
-           //! MonitorConnect
-           //!
-		   struct MonitorConnect : public Base
-		   {
-		      typedef message::monitor::Advertise message_type;
+         //!
+         //! MonitorConnect
+         //!
+         struct MonitorAdvertise: public Base
+         {
+            typedef message::monitor::Advertise message_type;
 
-		      MonitorConnect( State& state) : Base( state) {}
-
-		      void dispatch( message_type& message)
+            MonitorAdvertise( State& state)
+                  : Base( state)
             {
-		         //TODO: Temp
+            }
+
+            void dispatch( message_type& message)
+            {
+               //TODO: Temp
                m_state.monitorQueue = message.serverId.queue_key;
             }
-		   };
+         };
 
-		   //!
-           //! MonitorUnadvertise
-           //!
-		   struct MonitorUnadvertise : public Base
-		   {
-		      typedef message::monitor::Unadvertise message_type;
+         //!
+         //! MonitorUnadvertise
+         //!
+         struct MonitorUnadvertise: public Base
+         {
+            typedef message::monitor::Unadvertise message_type;
 
-		      MonitorUnadvertise( State& state) : Base( state) {}
+            MonitorUnadvertise( State& state)
+                  : Base( state)
+            {
+            }
 
-		      void dispatch( message_type& message)
-		      {
-		    	  //
-		    	  // TODO:
-		    	  //
-		      }
+            void dispatch( message_type& message)
+            {
+               //
+               // TODO:
+               //
+            }
 
-		   };
+         };
 
 
 		   //!
@@ -293,8 +299,8 @@ namespace casual
                // Add all the services, with this corresponding server
                //
                std::for_each(
-                  message.services.begin(),
-                  message.services.end(),
+                  std::begin( message.services),
+                  std::end( message.services),
                   state::internal::Service( &serverIterator->second, m_state.services));
 
 		      }
@@ -313,8 +319,8 @@ namespace casual
             void dispatch( message_type& message)
             {
                state::internal::removeServices(
-                  message.services.begin(),
-                  message.services.end(),
+                  std::begin( message.services),
+                  std::end( message.services),
                   message.serverId.pid,
                   m_state);
 
@@ -336,12 +342,12 @@ namespace casual
                // Find all corresponding services this server have advertise
                //
 
-               auto start = m_state.services.begin();
+               auto start = std::begin( m_state.services);
 
                while( ( start = std::find_if(
                      start,
-                     m_state.services.end(),
-                     find::Server( message.serverId.pid))) != m_state.services.end())
+                     std::end( m_state.services),
+                     find::Server( message.serverId.pid))) != std::end( m_state.services))
                {
                   //
                   // remove the service
@@ -374,17 +380,17 @@ namespace casual
             {
                auto serviceFound = m_state.services.find( message.requested);
 
-               if( serviceFound != m_state.services.end() && ! m_state.servers.empty())
+               if( serviceFound != std::end( m_state.services) && ! m_state.servers.empty())
                {
                   //
                   // Try to find an idle server.
                   //
                   auto idleServer = std::find_if(
-                        serviceFound->second.servers.begin(),
-                        serviceFound->second.servers.end(),
+                        std::begin( serviceFound->second.servers),
+                        std::end( serviceFound->second.servers),
                         find::server::Idle());
 
-                  if( idleServer != serviceFound->second.servers.end())
+                  if( idleServer != std::end( serviceFound->second.servers))
                   {
                      //
                      // flag it as not idle.
@@ -452,7 +458,7 @@ namespace casual
                //
                auto findIter = m_state.servers.find( message.server.pid);
 
-               if( findIter != m_state.servers.end())
+               if( findIter != std::end( m_state.servers))
                {
                   findIter->second.idle = true;
 
@@ -463,11 +469,11 @@ namespace casual
                      // waiting for a service that this, now idle, server has advertised.
                      //
                      auto pendingIter = std::find_if(
-                           m_state.pending.begin(),
-                           m_state.pending.end(),
+                           std::begin( m_state.pending),
+                           std::end( m_state.pending),
                            find::Pending( extract::services( message.server.pid, m_state)));
 
-                     if( pendingIter != m_state.pending.end())
+                     if( pendingIter != std::end( m_state.pending))
                      {
                         //
                         // We now know that there are one idle server that has advertised the

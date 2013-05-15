@@ -16,6 +16,10 @@ namespace casual
    {
       namespace error
       {
+         enum Errno
+         {
+            cNoChildProcesses = 10
+         };
 
          int handler();
 

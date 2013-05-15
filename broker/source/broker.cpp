@@ -116,8 +116,8 @@ namespace casual
          handler.add< handle::Unadvertise>( m_state);
          handler.add< handle::ServiceLookup>( m_state);
          handler.add< handle::ACK>( m_state);
-         handler.add< handle::MonitorConnect>( m_state);
-		 handler.add< handle::MonitorUnadvertise>( m_state);
+         handler.add< handle::MonitorAdvertise>( m_state);
+         handler.add< handle::MonitorUnadvertise>( m_state);
 
          queue::blocking::Reader queueReader( m_receiveQueue);
 

@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "sf/uuid.h"
+#include "sf/types.h"
 #include "sf/archive_yaml.h"
 
 

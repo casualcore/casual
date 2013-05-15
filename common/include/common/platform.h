@@ -126,8 +126,6 @@ namespace casual
 
 			std::string getSignalDescription( signal_type);
 
-
-
 		} // platform
 	} // utility
 } // casual

@@ -32,6 +32,12 @@ namespace casual
 
          struct MemoryNotFound : public std::exception {};
 
+         struct FileNotExist : public std::runtime_error
+         {
+            FileNotExist( const std::string& file)
+               : std::runtime_error( "file does not exists: " + file) {}
+         };
+
 
          struct EnvironmentVariableNotFound : public std::runtime_error
          {

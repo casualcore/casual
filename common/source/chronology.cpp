@@ -28,11 +28,13 @@ namespace chronology
       template<typename F>
       std::string format( const common::time_type& time, F function)
       {
-         const auto seconds = std::chrono::system_clock::to_time_t( time);
+         //
+         // to_time_t does not exist as a static member in common::clock_type
+         //
+         const std::time_t seconds = std::chrono::duration_cast< std::chrono::seconds>( time.time_since_epoch()).count();
          const auto tm = function( &seconds);
-         //const auto ms = std::chrono::duration_cast< std::chrono::microseconds>( time.time_since_epoch());
-         const auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( time.time_since_epoch());
 
+         const auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( time.time_since_epoch());
 
          std::ostringstream result;
          result << std::setfill( '0') <<
@@ -42,7 +44,6 @@ namespace chronology
             std::setw( 2) << tm->tm_hour << ':' <<
             std::setw( 2) << tm->tm_min << ':' <<
             std::setw( 2) << tm->tm_sec << '.' <<
-            //std::setw( 6) << ms.count() % 1000000;
             std::setw( 3) << ms.count() % 1000;
          return result.str();
       }
@@ -52,7 +53,7 @@ namespace chronology
 
    std::string local()
    {
-      return local( std::chrono::system_clock::now());
+      return local( common::clock_type::now());
    }
 
    std::string local( const common::time_type& time)
@@ -62,7 +63,7 @@ namespace chronology
 
    std::string universal()
    {
-      return local( std::chrono::system_clock::now());
+      return local( common::clock_type::now());
    }
 
    std::string universal( const common::time_type& time)
