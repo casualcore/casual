@@ -41,10 +41,10 @@ namespace casual
             return std::ctime( &tt);
          }
          inline common::time_type time(long long value)
-	 {
-	    common::time_type::rep representation = value;
-	    return common::time_type( time_type::duration( representation));
-	 }
+         {
+        	common::time_type::rep representation = value;
+        	return common::time_type( time_type::duration( representation));
+         }
       }
    }
 

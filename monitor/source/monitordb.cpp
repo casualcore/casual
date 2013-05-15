@@ -10,6 +10,7 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include <cstdlib>
 #include "common/environment.h"
 
 //
@@ -40,7 +41,7 @@ namespace monitor
 				{
 					value = row[attribute].front();
 				}
-				utility::logger::debug << "getValue(" << attribute << "): " << value;
+				common::logger::debug << "getValue(" << attribute << "): " << value;
 				return value;
 			}
 		}
@@ -70,13 +71,13 @@ namespace monitor
 	{
 		static const std::string cMethodname("MonitorDB::begin()");
 		common::Trace trace(cMethodname);
-		m_database.begin();
+		m_monitordb.getDatabase().begin();
 	}
 
 	Transaction::~Transaction()
 	{
 		static const std::string cMethodname("Transaction::~Transaction()");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 		if ( ! std::uncaught_exception())
 		{
 			m_monitordb.getDatabase().commit();
@@ -133,7 +134,7 @@ namespace monitor
 	std::vector< vo::MonitorVO> MonitorDB::select( )
 	{
 		static const std::string cMethodname("MonitorDB::select");
-		utility::Trace trace(cMethodname);
+		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
 		stream << "SELECT service, parentservice, callid, transactionid, start, end FROM calls;";
@@ -149,10 +150,12 @@ namespace monitor
      		vo::MonitorVO vo;
      		vo.setService( local::getValue( *row, "service"));
      		vo.setParentService( local::getValue( *row, "parentservice"));
-     		vo.setCallId( local::getValue( *row, "callid"));
+     		sf::Uuid callId;
+     		callId.string( local::getValue( *row, "callid"));
+     		vo.setCallId( callId);
      		//vo.setTransactionId( local::getValue( *row, "transactionid"));
-     		vo.setStart( local::getValue( *row,"start"));
-     		vo.setEnd( local::getValue( *row,"end"));
+     		vo.setStart( common::transform::time( strtoll(local::getValue( *row,"start").c_str(), 0, 10)));
+     		vo.setEnd( common::transform::time( strtoll(local::getValue( *row,"end").c_str(), 0, 10)));
 			result.push_back( vo);
 		}
 

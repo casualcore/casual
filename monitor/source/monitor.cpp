@@ -9,15 +9,9 @@
 #include "common/queue.h"
 #include "common/message.h"
 #include "common/message_dispatch.h"
-<<<<<<< HEAD
-#include "utility/logger.h"
-#include "utility/trace.h"
 #include "common/types.h"
-=======
 #include "common/logger.h"
 #include "common/trace.h"
->>>>>>> 25fc2696fce5edac06b382739b31dc36c52157d9
-
 #include <vector>
 #include <string>
 #include <chrono>
@@ -36,7 +30,7 @@ namespace
 	{
 		os << "parentService: " << message.parentService << ", ";
 		os << "service: " << message.service << ", ";
-		os << "callId: " << message.callId.getString() << ", ";
+		os << "callId: " << message.callId.string() << ", ";
 		os << "start: " << transform::time( message.start) << ", ";
 		// os << "end: " << transform::time( message.end) << ", ";
 		os << "difference: " << time_type::duration( message.end - message.start).count() << " usec";
@@ -144,12 +138,7 @@ namespace monitor
 	Monitor::~Monitor()
 	{
 		static const std::string cMethodname("Monitor::~Monitor");
-<<<<<<< HEAD
-		utility::Trace trace(cMethodname);
-
-=======
 		common::Trace trace(cMethodname);
->>>>>>> 25fc2696fce5edac06b382739b31dc36c52157d9
 		//
 		// Tell broker that monitor is down...
 		//
@@ -163,12 +152,12 @@ namespace monitor
 		//
 		// Test of select
 		//
-		utility::logger::debug << "Statistic logging";
-		auto rowset = m_monitordb.select();
-		for (auto row = rowset.begin(); row != rowset.end(); ++row )
-		{
-			utility::logger::debug << *row;
-		}
+		common::logger::debug << "Statistic logging";
+//		auto rowset = m_monitordb.select();
+//		for (auto row = rowset.begin(); row != rowset.end(); ++row )
+//		{
+//			common::logger::debug << *row;
+//		}
 	}
 
 	void Monitor::start()

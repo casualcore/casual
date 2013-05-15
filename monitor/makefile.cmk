@@ -18,20 +18,27 @@ Compile( source/monitor_sf_server_implementation.cpp, obj/monitor_sf_server_impl
 Compile( source/monitor_vo.cpp, obj/monitor_vo.o)
 
 
+LinkLibrary( casual_monitor_vo, \
+    obj/monitor_vo.o, \
+    casual_common \
+    casual_sf)
+
 LinkExecutable( casual_monitor, \
 	obj/monitor.o \
 	obj/monitor_main.o \
 	obj/monitordb.o, \
+	casual_monitor_vo \
 	casual_common \
 	sqlite3 )
 
 LinkAtmiServer(casual_monitor_request_server, \
-    obj/monitor_vo.o \
     obj/monitor_sf_server.o \
     obj/monitordb.o \
     obj/monitor_sf_server_implementation.o, \
+    casual_monitor_vo \
     casual-xatmi \
     casual_utility \
+    casual_common \
     casual_sf \
     sqlite3, \
     "getMonitorStatistics")
@@ -48,6 +55,7 @@ Compile( unittest/isolated/source/test_monitor.cpp, unittest/isolated/obj/test_m
 LinkIsolatedUnittest( casual_monitor_isolated, \
 	unittest/isolated/obj/test_monitor.o \
 	obj/monitordb.o, \
+	casual_monitor_vo \
 	casual_common \
 	sqlite3)	
 
