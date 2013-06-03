@@ -69,9 +69,9 @@ namespace casual
             private:
 
                std::istringstream m_inputstream;
-               archive::yaml::reader::Strict m_reader;
+               archive::yaml::Reader m_reader;
                YAML::Emitter m_outputstream;
-               archive::yaml::writer::Strict m_writer;
+               archive::yaml::Writer m_writer;
             };
 
 

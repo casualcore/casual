@@ -65,7 +65,7 @@ namespace casual
 
                if( extension == "yaml")
                {
-                  typedef basic_holder< yaml::reader::Relaxed, yaml::reader::Buffer > YamlRelaxedHolder;
+                  typedef basic_holder< yaml::relaxed::Reader, yaml::reader::Buffer > YamlRelaxedHolder;
 
 
                   return Holder( Holder::base_value_type( new YamlRelaxedHolder( filename)));

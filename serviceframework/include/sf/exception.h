@@ -39,6 +39,12 @@ namespace casual
 
          };
 
+         struct NotReallySureWhatToCallThisExcepion : public Base
+         {
+            NotReallySureWhatToCallThisExcepion() : Base( "NotRealllySureWhatToCallThisExcepion") {}
+
+         };
+
       }
 
    }

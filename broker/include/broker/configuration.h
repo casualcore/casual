@@ -10,9 +10,12 @@
 
 #include "sf/namevaluepair.h"
 
+//
+// std
+//
 #include <limits>
-
 #include <list>
+#include <string>
 
 namespace casual
 {

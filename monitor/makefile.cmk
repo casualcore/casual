@@ -3,12 +3,11 @@ INCLUDE_PATHS= include \
 	../common/include \
 	../serviceframework/include \
 	../xatmi/include \
-	../utility/include \
 	../thirdparty/database/include \
 	$(UNITTEST_INCLUDE_PATH)
 
 
-LIBRARY_PATHS = ../common/bin ../utility/bin ../xatmi/bin ../serviceframework/bin
+LIBRARY_PATHS = ../common/bin ../xatmi/bin ../serviceframework/bin
 
 Compile( source/monitor.cpp, obj/monitor.o)
 Compile( source/monitor_main.cpp, obj/monitor_main.o)
@@ -37,7 +36,6 @@ LinkAtmiServer(casual_monitor_request_server, \
     obj/monitor_sf_server_implementation.o, \
     casual_monitor_vo \
     casual-xatmi \
-    casual_utility \
     casual_common \
     casual_sf \
     sqlite3, \

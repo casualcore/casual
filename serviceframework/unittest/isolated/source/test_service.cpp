@@ -33,7 +33,7 @@ namespace casual
             TPSVCINFO serviceInfo;
 
             YAML::Emitter emitter;
-            sf::archive::yaml::writer::Strict writer( emitter);
+            sf::archive::yaml::Writer writer( emitter);
 
             writer << CASUAL_MAKE_NVP( value);
 
