@@ -224,7 +224,7 @@ TEST( casual_yaml_sf_generation, desrialize_server)
 {
    std::istringstream yaml( getDeclaration());
 
-   sf::archive::yaml::reader::Relaxed relaxed( yaml);
+   sf::archive::yaml::Reader relaxed( yaml);
 
    Declaration declaration;
 
@@ -245,7 +245,7 @@ TEST( casual_yaml_sf_generation, desrialize_proxy)
 {
    std::istringstream yaml( getDeclaration());
 
-   sf::archive::yaml::reader::Relaxed relaxed( yaml);
+   sf::archive::yaml::Reader relaxed( yaml);
 
    Proxy proxy;
 
