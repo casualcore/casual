@@ -82,11 +82,25 @@ LinkExecutable( test_multicall_client, \
 //
 Compile( unittest/isolated/source/test_yaml_sf_generation.cpp, unittest/isolated/obj/test_yaml_sf_generation.o)
 
-
-
 LinkIsolatedUnittest( casual_test_isolated, \
     unittest/isolated/obj/test_yaml_sf_generation.o, \
     casual_sf casual-xatmi)
 	
+	
+//
+// Compile and link detoct-generated vo and server
+//
+Compile( source/sf_testserverserver.cpp, obj/sf_testserverserver.o)
+Compile( source/sf_testserverimplementation.cpp, obj/sf_testserverimplementation.o)
+
+LinkAtmiServer(sf_detoct_test_server, \
+    obj/sf_testserverserver.o \
+    obj/sf_testserverimplementation.o, \
+    sf_test_vo \
+    casual_sf \
+    casual-xatmi, \
+    "casual_sf_test1,casual_sf_test2")
+
+
 	
 	

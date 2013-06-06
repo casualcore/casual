@@ -6,12 +6,15 @@
  */
 #include "monitor/monitordb.h"
 #include "common/trace.h"
+#include "common/environment.h"
+
+
 #include <vector>
 #include <sstream>
 #include <iostream>
 #include <string>
 #include <cstdlib>
-#include "common/environment.h"
+
 
 //
 // TODO: Use casual exception
@@ -148,7 +151,7 @@ namespace monitor
      	for(auto row = rows.begin(); row != rows.end(); row++)
      	{
      		vo::MonitorVO vo;
-     		vo.setService( local::getValue( *row, "service"));
+     		vo.setSrv( local::getValue( *row, "service"));
      		vo.setParentService( local::getValue( *row, "parentservice"));
      		sf::Uuid callId;
      		callId.string( local::getValue( *row, "callid"));

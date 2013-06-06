@@ -1,5 +1,5 @@
-#ifndef CASUALMONITORVOVO_H
-#define CASUALMONITORVOVO_H
+#ifndef CASUALSTATISTICSMONITORVOMONITORVO_H
+#define CASUALSTATISTICSMONITORVOMONITORVO_H
 
 
 
@@ -10,7 +10,7 @@
 // std
 //
 #include <memory>
-
+    
 //
 // Forwards
 //
@@ -26,10 +26,12 @@ namespace casual
     }
 }
     
-//## includes protected section begin [200.20]
+//## includes protected section begin [200.10]
+
 #include <sf/types.h>
 #include <string>
-//## includes protected section end   [200.20]
+
+//## includes protected section end   [200.10]
 
 //## additional declarations protected section begin [200.20]
 //## additional declarations protected section end   [200.20]
@@ -65,20 +67,29 @@ public:
    //
    // Getters and setters
    //
-
    
    
-	 std::string getParentService() const;
-	 std::string getService() const;
-	 sf::Uuid getCallId() const;
-	 sf::time_type getStart() const;
-	 sf::time_type getEnd() const;
+   std::string getParentService() const;
+   void setParentService( std::string value);
 
-	 void setParentService( const std::string& value);
-	 void setService( const std::string& value);
-	 void setCallId( const sf::Uuid& value);
-	 void setStart( const sf::time_type& value);
-	 void setEnd( const sf::time_type& value);
+
+   std::string getSrv() const;
+   void setSrv( std::string value);
+
+
+   sf::Uuid getCallId() const;
+   void setCallId( sf::Uuid value);
+
+
+   sf::time_type getStart() const;
+   void setStart( sf::time_type value);
+
+
+   sf::time_type getEnd() const;
+   void setEnd( sf::time_type value);
+
+
+
   
    void serialize( casual::sf::archive::Reader& archive);
   
@@ -97,9 +108,10 @@ private:
 };
 
 
-}
-}
-}
-}
+} // vo
+} // monitor
+} // statistics
+} // casual
+
 
 #endif 

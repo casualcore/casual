@@ -1,10 +1,9 @@
-//!
-//! template_sf_server.cpp
-//!
-//! Created on: Jan 4, 2013
-//!     Author: Lazan
-//!
+//## includes protected section begin [.10]
 
+
+#include "monitor/statisticimplementation.h"
+
+//## includes protected section end   [.10]
 
 //
 // xatmi
@@ -17,37 +16,30 @@
 #include "sf/server.h"
 #include "sf/service.h"
 
-//
-// std
-//
-#include <memory>
-#include <type_traits>
 
-
-
-//
-// Implementation
-//
-#include "monitor/monitor_sf_server_implementation.h"
-#include "monitor/monitor_vo.h"
+//## declarations protected section begin [.20]
+//## declarations protected section end   [.20]
 
 
 extern "C"
 {
    int tpsvrinit(int argc, char **argv);
    void tpsvrdone();
-
+   
+   
    void getMonitorStatistics( TPSVCINFO *transb);
-
+   
+   
 }
 
 namespace local
 {
    namespace
    {
+      typedef casual::statistics::monitor::StatisticImplementation implementation_type;
 
       casual::sf::server::type server;
-      casual::sf::server::implementation::type< casual::statistics::monitor::ServerImplementation> implementation;
+      casual::sf::server::implementation::type< implementation_type> implementation;
    }
 }
 
@@ -59,7 +51,7 @@ int tpsvrinit(int argc, char **argv)
    {
       local::server = casual::sf::server::create( argc, argv);
 
-      local::implementation = casual::sf::server::implementation::make< casual::statistics::monitor::ServerImplementation>( argc, argv);
+      local::implementation = casual::sf::server::implementation::make< local::implementation_type>( argc, argv);
    }
    catch( ...)
    {
@@ -78,6 +70,11 @@ void tpsvrdone()
    casual::sf::server::sink( local::server);
 }
 
+//
+// Services provided
+//
+
+
 
 void getMonitorStatistics( TPSVCINFO *serviceInfo)
 {
@@ -85,43 +82,50 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
 
    try
    {
+   
+     
       auto service_io = local::server->createService( serviceInfo);
 
       //
-      // Initialize the input parameters to the service implementation
+      // Instantiate and serialize input parameters
       //
+            
+      
+
+      //## input protected section begin [2000.110]
+      using namespace casual::statistics::monitor;
+      //## input protected section end   [2000.110]
 
 
       //
       // Instantiate the output parameters
       //
+            
+      std::vector< vo::MonitorVO> outputValues;
 
-      bool serviceReturn;
-
-      std::vector< casual::statistics::monitor::vo::MonitorVO> outputValues;
+      //## output protected section begin [2000.120]
+      //## output protected section end   [2000.120]
 
 
       //
       // Call the implementation
       //
-
-      if( service_io.callImplementation())
-      {
-         try
-         {
-            serviceReturn = local::implementation->getMonitorStatistics( outputValues);
-         }
-         catch( ...)
-         {
-            service_io.handleException();
-         }
-      }
-
+      
+      bool serviceReturn = service_io.call( 
+         *local::implementation, 
+         &local::implementation_type::getMonitorStatistics, 
+         outputValues);
+      
+      
       //
       // Serialize output
       //
+            
       service_io << CASUAL_MAKE_NVP( serviceReturn);
       service_io << CASUAL_MAKE_NVP( outputValues);
+
+      //## output protected section begin [2000.200]
+      //## output protected section end   [2000.200]
 
       reply = service_io.finalize();
    }
@@ -137,5 +141,5 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       reply.size,
       reply.flags);
 }
-
-
+	
+	

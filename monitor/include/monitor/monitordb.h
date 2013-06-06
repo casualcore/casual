@@ -10,7 +10,7 @@
 
 #include "database/database.hpp"
 #include "common/message.h"
-#include "monitor/monitor_vo.h"
+#include "monitor/monitorvo.h"
 
 namespace casual
 {

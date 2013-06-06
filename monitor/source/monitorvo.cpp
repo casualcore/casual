@@ -6,7 +6,7 @@
 
 //## includes protected section begin [200.20]
 
-#include "monitor/monitor_vo.h"
+#include "monitor/monitorvo.h"
 
 //## includes protected section end   [200.20]
 
@@ -38,7 +38,7 @@ struct MonitorVO::Implementation
       //## additional serialization protected section begin [200.impl.serial.10]
       //## additional serialization protected section end   [200.impl.serial.10]
       archive & CASUAL_MAKE_NVP( parentService);
-      archive & CASUAL_MAKE_NVP( service);
+      archive & CASUAL_MAKE_NVP( srv);
       archive & CASUAL_MAKE_NVP( callId);
       archive & CASUAL_MAKE_NVP( start);
       archive & CASUAL_MAKE_NVP( end);
@@ -48,11 +48,11 @@ struct MonitorVO::Implementation
 
    //## additional attributes protected section begin [200.impl.attr.10]
    //## additional attributes protected section end   [200.impl.attr.10]
-	 std::string parentService;
-	 std::string service;
-	 sf::Uuid callId;
-	 sf::time_type start;
-	 sf::time_type end;
+   std::string parentService;
+   std::string srv;
+   sf::Uuid callId;
+   sf::time_type start;
+   sf::time_type end;
    //## additional attributes protected section begin [200.impl.attr.20]
    //## additional attributes protected section end   [200.impl.attr.20]
 
@@ -87,14 +87,13 @@ MonitorVO& MonitorVO::operator = ( const MonitorVO& rhs)
     return *this;
 }
 
-
 std::string MonitorVO::getParentService() const
 {
    return pimpl->parentService;
 }
-std::string MonitorVO::getService() const
+std::string MonitorVO::getSrv() const
 {
-   return pimpl->service;
+   return pimpl->srv;
 }
 sf::Uuid MonitorVO::getCallId() const
 {
@@ -109,26 +108,32 @@ sf::time_type MonitorVO::getEnd() const
    return pimpl->end;
 }
 
-void MonitorVO::setParentService( const std::string& value)
+
+void MonitorVO::setParentService( std::string value)
 {
    pimpl->parentService = value;
 }
-void MonitorVO::setService( const std::string& value)
+void MonitorVO::setSrv( std::string value)
 {
-   pimpl->service = value;
+   pimpl->srv = value;
 }
-void MonitorVO::setCallId( const sf::Uuid& value)
+void MonitorVO::setCallId( sf::Uuid value)
 {
    pimpl->callId = value;
 }
-void MonitorVO::setStart( const sf::time_type& value)
+void MonitorVO::setStart( sf::time_type value)
 {
    pimpl->start = value;
 }
-void MonitorVO::setEnd( const sf::time_type& value)
+void MonitorVO::setEnd( sf::time_type value)
 {
    pimpl->end = value;
 }
+
+
+
+
+
 
 void MonitorVO::serialize( casual::sf::archive::Reader& archive)
 {
@@ -143,7 +148,9 @@ void MonitorVO::serialize( casual::sf::archive::Writer& archive) const
 
 
 
-}
-}
-}
-}
+} // vo
+} // monitor
+} // statistics
+} // casual
+
+	

@@ -48,7 +48,10 @@ namespace local
    {
 
       casual::sf::server::type server;
-      casual::sf::server::implementation::type< casual::test::ServerImplementation> implementation;
+
+      typedef casual::test::ServerImplementation implementation_type;
+
+      casual::sf::server::implementation::type< implementation_type> implementation;
    }
 }
 
@@ -101,26 +104,13 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
       // Instantiate the output parameters
       //
 
-      bool serviceReturn;
-
       std::vector< casual::test::vo::TestVO> outputValues;
 
 
       //
       // Call the implementation
       //
-
-      if( service_io.callImplementation())
-      {
-         try
-         {
-            serviceReturn = local::implementation->casual_sf_test1( inputValues, outputValues);
-         }
-         catch( ...)
-         {
-            service_io.handleException();
-         }
-      }
+      bool serviceReturn = service_io.call( *local::implementation, &local::implementation_type::casual_sf_test1, inputValues, outputValues);
 
       //
       // Serialize output
