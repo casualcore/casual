@@ -85,6 +85,16 @@ namespace casual
             return buffer::type( m_buffer.get());
          }
 
+         void Base::reset( Raw buffer)
+         {
+            doReset( buffer);
+         }
+
+         void Base::doReset( Raw buffer)
+         {
+            m_buffer.reset( buffer.buffer);
+         }
+
          void Base::expand( std::size_t expansion)
          {
             //
@@ -111,26 +121,21 @@ namespace casual
             tpfree( xatmiBuffer);
          }
 
-         namespace source
+
+
+         Binary::Binary( Binary&&) = default;
+         Binary& Binary::operator = ( Binary&&) = default;
+
+
+         Binary::Binary() : Base( Type{ "X_OCTET", "binary"}, 1024)
          {
-
-            Binary::Binary( Base&& base) : Base( std::move( base)), m_offset{ 0}
-            {
-
-            }
 
          }
 
-
-         namespace target
-         {
-            Binary::Binary() : Base( Type{ "X_OCTET", "binary"}, 1024), m_offset{ 0}
-            {
-
-            }
+         Binary::Binary( Base&& base) : Base( std::move( base)) {}
 
 
-         }
+
 
          X_Octet::X_Octet( const std::string& subtype) : X_Octet( subtype, 1024)
          {

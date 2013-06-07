@@ -1,0 +1,50 @@
+
+
+general:
+    description_language: C++
+    namespace: casual::statistics::monitor
+    prefix: ""
+
+declaration:
+
+  - value_object:
+      name: MonitorVO
+      language: C++
+      namespace: vo
+      id: 200
+          
+      output_headers: include/monitor/
+      output_source:  source/
+
+      attributes:
+        - parentService: std::string
+        - srv: std::string
+        - callId: sf::Uuid
+        - start: sf::time_type
+        - end: sf::time_type
+
+  - server:
+      name: Statistic
+      language: C++
+    
+      output_headers: include/monitor/
+      output_source:  source/  
+    
+      services:
+        - &getMonitorStatistics
+          name: getMonitorStatistics
+          id: 2000
+          documentation: |
+            Does some stuff 
+    
+            @return true if some condition is met
+            @param values holds some values
+    
+          return: bool      
+          
+          arguments:
+              - outputValues: (out) std::vector< vo::MonitorVO>&
+  
+          
+          
+ 

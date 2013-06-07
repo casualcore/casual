@@ -77,6 +77,11 @@ namespace casual
          //!
          std::string extension( const std::string& file);
 
+         //!
+         //! @return true if the file exists, otherwise false
+         //!
+         bool exists( const std::string& path);
+
       }
 
    }

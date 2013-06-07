@@ -33,6 +33,11 @@ int main( int argc, char** argv)
 			{&casual_test2, "casual_test2"}
 	};
 
+//#ifdef __cplusplus
+	static_assert( sizeof( "casual_test1") <= XATMI_SERVICE_NAME_LENGTH, "service name to long");
+
+//#endif
+
 	struct casual_server_argument serverArguments = {
 	      &mapping[ 0],
 	      &mapping[ sizeof( mapping) / sizeof( struct casual_service_name_mapping) - 1] + 1,

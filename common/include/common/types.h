@@ -9,6 +9,7 @@
 #define TYPES_H_
 
 #include <vector>
+#include <string>
 
 #include <chrono>
 
@@ -33,8 +34,18 @@ namespace casual
          {
             return const_cast< char*>( buffer);
          }
+         inline std::string time( const common::time_type& timepoint)
+         {
+            std::time_t tt;
+            tt = clock_type::to_time_t ( timepoint);
+            return std::ctime( &tt);
+         }
+         inline common::time_type time(long long value)
+         {
+        	common::time_type::rep representation = value;
+        	return common::time_type( time_type::duration( representation));
+         }
       }
-
    }
 
    //!

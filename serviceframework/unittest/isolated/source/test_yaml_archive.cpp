@@ -70,7 +70,7 @@ value:
    {
       std::istringstream stream( test::SimpleVO::yaml());
 
-      sf::archive::yaml::reader::Relaxed reader( stream);
+      sf::archive::yaml::relaxed::Reader reader( stream);
 
       test::SimpleVO value;
 
@@ -86,7 +86,7 @@ value:
    {
       std::istringstream stream( test::SimpleVO::yaml());
 
-      sf::archive::yaml::reader::Strict reader( stream);
+      sf::archive::yaml::Reader reader( stream);
 
       test::SimpleVO value;
 
@@ -102,7 +102,7 @@ value:
    {
       std::istringstream stream( test::SimpleVO::yaml());
 
-      sf::archive::yaml::reader::Strict reader( stream);
+      sf::archive::yaml::Reader reader( stream);
 
       test::SimpleVO wrongRoleName;
 
@@ -118,7 +118,7 @@ value:
    {
       YAML::Emitter output;
 
-      sf::archive::yaml::writer::Strict writer( output);
+      sf::archive::yaml::Writer writer( output);
 
       {
          std::vector< long> values = { 1, 2, 34, 45, 34, 34, 23};
@@ -126,7 +126,7 @@ value:
       }
 
       std::istringstream stream( output.c_str());
-      sf::archive::yaml::reader::Relaxed reader( stream);
+      sf::archive::yaml::relaxed::Reader reader( stream);
 
 
       std::vector< long> values;
@@ -148,7 +148,7 @@ value:
    {
       YAML::Emitter output;
 
-      sf::archive::yaml::writer::Strict writer( output);
+      sf::archive::yaml::Writer writer( output);
 
       {
          std::vector< test::SimpleVO> values = { { 2342342, "one two three", 123 }, { 234234, "four five six", 456}};
@@ -156,7 +156,7 @@ value:
       }
 
       std::istringstream stream( output.c_str());
-      sf::archive::yaml::reader::Relaxed reader( stream);
+      sf::archive::yaml::relaxed::Reader reader( stream);
 
       std::vector< test::SimpleVO> values;
       reader >> CASUAL_MAKE_NVP( values);
@@ -175,7 +175,7 @@ value:
    {
       YAML::Emitter output;
 
-      sf::archive::yaml::writer::Strict writer( output);
+      sf::archive::yaml::Writer writer( output);
 
       {
          std::map< long, test::Composite> values;
@@ -189,7 +189,7 @@ value:
 
 
       std::istringstream stream( output.c_str());
-      sf::archive::yaml::reader::Relaxed reader( stream);
+      sf::archive::yaml::relaxed::Reader reader( stream);
 
       std::map< long, test::Composite> values;
       reader >> CASUAL_MAKE_NVP( values);
@@ -213,7 +213,7 @@ value:
    TEST( casual_sf_yaml_archive, write_read_binary)
    {
       YAML::Emitter output;
-      sf::archive::yaml::writer::Strict writer( output);
+      sf::archive::yaml::Writer writer( output);
 
       {
          test::Binary value;
@@ -226,7 +226,7 @@ value:
       }
 
       std::istringstream stream( output.c_str());
-      sf::archive::yaml::reader::Relaxed reader( stream);
+      sf::archive::yaml::relaxed::Reader reader( stream);
 
       test::Binary value;
       reader >> CASUAL_MAKE_NVP( value);

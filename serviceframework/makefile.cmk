@@ -22,6 +22,7 @@ Compile( source/server.cpp, obj/server.o)
 Compile( source/service.cpp, obj/service.o)
 Compile( source/service_protocol.cpp, obj/service_protocol.o)
 Compile( source/archive_logger.cpp, obj/archive_logger.o)
+Compile( source/xatmi_call.cpp, obj/xatmi_call.o)
 
 LinkLibrary( casual_sf,\
     obj/archive.o \
@@ -31,6 +32,7 @@ LinkLibrary( casual_sf,\
     obj/service.o \
     obj/service_protocol.o \
     obj/archive_logger.o \
+    obj/xatmi_call.o \
     ,\
     casual_common yaml-cpp casual-xatmi)
 
@@ -45,7 +47,7 @@ Compile( unittest/isolated/source/test_yaml_archive.cpp, unittest/isolated/obj/t
 Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
 Compile( unittest/isolated/source/test_service.cpp, unittest/isolated/obj/test_service.o)
 Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
-Compile( unittest/isolated/source/test_logger_archive.cpp, unittest/isolated/obj/test_logger_archive.o)
+Compile( unittest/isolated/source/test_xatmi_call.cpp, unittest/isolated/obj/test_xatmi_call.o)
 
 LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_namevaluepair.o \
@@ -55,7 +57,7 @@ LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_buffer.o \
 	unittest/isolated/obj/test_service.o \
 	unittest/isolated/obj/test_uuid.o \
-	unittest/isolated/obj/test_logger_archive.o \
+	unittest/isolated/obj/test_xatmi_call.o \
 	, \
 	casual_sf casual-xatmi casual_common)
 	

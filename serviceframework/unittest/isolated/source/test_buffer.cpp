@@ -31,6 +31,14 @@ namespace casual
 
          }
 
+         TEST( casual_sf_buffer, test)
+         {
+            //test_buffer buffer;
+
+            //EXPECT_TRUE( type.subname == "YAML");
+
+         }
+
       }
    }
 }

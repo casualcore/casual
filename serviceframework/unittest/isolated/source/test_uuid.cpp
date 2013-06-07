@@ -18,14 +18,14 @@ namespace casual
    TEST( casual_sf_uuid, serialize)
    {
       YAML::Emitter emitter;
-      sf::archive::yaml::writer::Strict writer( emitter);
+      sf::archive::yaml::Writer writer( emitter);
 
       sf::Uuid uuid( sf::Uuid::make());
 
       writer << CASUAL_MAKE_NVP( uuid);
 
       std::istringstream stream( emitter.c_str());
-      sf::archive::yaml::reader::Strict reader( stream);
+      sf::archive::yaml::Reader reader( stream);
 
       sf::Uuid out;
       reader >> sf::makeNameValuePair( "uuid", out);

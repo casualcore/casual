@@ -66,7 +66,7 @@ namespace casual
                template< typename T>
                inline void value( const char* role, T& value) const
                {
-                  value = T();
+                  //value = T();
                }
 
                inline void serialtype( const char* role) const

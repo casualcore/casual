@@ -9,11 +9,12 @@
 #include "common/queue.h"
 #include "common/message.h"
 #include "common/message_dispatch.h"
+#include "common/types.h"
 #include "common/logger.h"
 #include "common/trace.h"
-
 #include <vector>
 #include <string>
+#include <chrono>
 
 //temp
 #include <iostream>
@@ -27,8 +28,12 @@ namespace
 	//
 	std::ostream& operator<<( std::ostream& os, const message::monitor::Notify& message)
 	{
-		os << "parentService: " << message.parentService << std::endl;
-		os << "service: " << message.service << std::endl;
+		os << "parentService: " << message.parentService << ", ";
+		os << "service: " << message.service << ", ";
+		os << "callId: " << message.callId.string() << ", ";
+		os << "start: " << transform::time( message.start) << ", ";
+		// os << "end: " << transform::time( message.end) << ", ";
+		os << "difference: " << time_type::duration( message.end - message.start).count() << " usec";
 		//
 		// TODO: etc...
 		//
@@ -144,6 +149,15 @@ namespace monitor
 		queue::blocking::Writer writer( ipc::getBrokerQueue());
 		writer(message);
 
+		//
+		// Test of select
+		//
+		common::logger::debug << "Statistic logging";
+//		auto rowset = m_monitordb.select();
+//		for (auto row = rowset.begin(); row != rowset.end(); ++row )
+//		{
+//			common::logger::debug << *row;
+//		}
 	}
 
 	void Monitor::start()
@@ -163,7 +177,7 @@ namespace monitor
 		{
 			auto marshal = queueReader.next();
 
-			m_monitordb.begin();
+			monitor::Transaction transaction( m_monitordb);
 
 			if( ! handler.dispatch( marshal))
 			{
@@ -171,8 +185,6 @@ namespace monitor
 			}
 
 			nonBlockingRead( 1000);
-
-			m_monitordb.commit();
 		}
 	}
 

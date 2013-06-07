@@ -18,11 +18,13 @@ LIBRARY_PATHS = ../common/bin \
 
 Compile( source/broker.cpp, obj/broker.o)
 Compile( source/broker_main.cpp, obj/broker_main.o)
+Compile( source/action.cpp, obj/action.o)
 
 
 LinkExecutable( casual_broker, \
 	obj/broker.o \
-	obj/broker_main.o, \
+	obj/broker_main.o \
+	obj/action.o, \
 	casual_common casual_sf)
 	
 	

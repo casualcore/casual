@@ -30,6 +30,7 @@ Compile( source/platform.cpp, obj/platform.o)
 Compile( source/logger.cpp, obj/logger.o)
 Compile( source/error.cpp, obj/error.o)
 Compile( source/chronology.cpp, obj/chronology.o)
+Compile( source/process.cpp, obj/process.o)
 
 
 
@@ -48,11 +49,16 @@ LinkLibrary( casual_common, \
     obj/logger.o \
     obj/error.o \
     obj/chronology.o \
+    obj/process.o \
     ,\ 
 	${UUIDLIB})
 
-	
-	
+
+Compile( unittest/isolated/source/simple_process.cpp, unittest/isolated/obj/simple_process.o)
+
+LinkExecutable( simple_process,\
+    unittest/isolated/obj/simple_process.o, \
+    )
 	
 	
 //
@@ -67,7 +73,7 @@ Compile( unittest/isolated/source/test_message_dispatch.cpp, unittest/isolated/o
 Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
 Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test_arguments.o)
 Compile( unittest/isolated/source/test_file.cpp, unittest/isolated/obj/test_file.o)
-
+Compile( unittest/isolated/source/test_process.cpp, unittest/isolated/obj/test_process.o)
 
 
 LinkIsolatedUnittest( casual_common_isolated, \
@@ -79,6 +85,7 @@ LinkIsolatedUnittest( casual_common_isolated, \
 	unittest/isolated/obj/test_uuid.o \
     unittest/isolated/obj/test_file.o \
     unittest/isolated/obj/test_arguments.o \
+    unittest/isolated/obj/test_process.o \
     , \
 	casual_common )	
 

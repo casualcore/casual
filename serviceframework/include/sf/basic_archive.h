@@ -34,6 +34,7 @@ namespace casual
 
                }
 
+            basic_reader( basic_reader&&) = default;
 
             const implementation_type& implemenation() const
             {
@@ -94,6 +95,8 @@ namespace casual
                {
 
                }
+
+            basic_writer( basic_writer&&) = default;
 
             const implementation_type& implementation() const
             {

@@ -54,7 +54,7 @@ namespace casual
                   {
                      YAML::Parser parser( input);
 
-                     if( !parser.GetNextDocument( m_document))
+                     if( ! parser.GetNextDocument( m_document))
                      {
                         m_policy.initalization();
                      }
@@ -216,6 +216,9 @@ namespace casual
                {
 
                public:
+
+                  typedef YAML::Emitter buffer_type;
+
                   Implementation( YAML::Emitter& output) : m_output( output)
                   {
                      m_output << YAML::BeginMap;
@@ -298,37 +301,23 @@ namespace casual
                      m_output << binary;
                   }
 
-
-
-
                   YAML::Emitter& m_output;
                   std::string m_currentRole;
                   std::stack< YAML::EMITTER_MANIP> m_emitterStack;
-
-
                };
 
             } // writer
 
 
-            namespace reader
+            typedef basic_reader< reader::Implementation< policy::reader::Strict> > Reader;
+
+            namespace relaxed
             {
-
-               typedef basic_reader< reader::Implementation< policy::reader::Relaxed> > Relaxed;
-               typedef basic_reader< reader::Implementation< policy::reader::Strict> > Strict;
-
-               /*
-               namespace holder
-               {
-                  typedef sf::archive::Holder< YamlRelaxed, policy::reader::Buffer<> > YamlRelaxed;
-               }
-               */
+               typedef basic_reader< reader::Implementation< policy::reader::Relaxed> > Reader;
             }
 
-            namespace writer
-            {
-               typedef basic_writer< writer::Implementation> Strict;
-            }
+
+            typedef basic_writer< writer::Implementation> Writer;
 
          } // yaml
       } // archive

@@ -8,9 +8,16 @@
 #ifndef BUFFER_H_
 #define BUFFER_H_
 
-#include <memory>
+#include "sf/exception.h"
+#include "common/types.h"
 
+//
+// std
+//
+#include <memory>
 #include <string>
+
+#include <cstring>
 
 namespace casual
 {
@@ -50,7 +57,7 @@ namespace casual
             Raw( char* p_buffer, std::size_t p_size);
 
             char* buffer;
-            std::size_t size;
+            long size;
          };
 
          class Base
@@ -63,7 +70,7 @@ namespace casual
 
             virtual ~Base();
 
-            Base( const Base&) = delete;
+            //Base( const Base&) = delete;
 
             //!
             //! @return the 'raw buffer'
@@ -78,21 +85,25 @@ namespace casual
             //!
             Raw release();
 
+            void reset( Raw buffer);
+
             Type type() const;
 
          private:
 
             struct xatmi_deleter
             {
-               xatmi_deleter() = default;
-               xatmi_deleter( xatmi_deleter&&) = default;
-
                void operator () ( char* xatmiBuffer) const;
             };
+
+            virtual void doReset( Raw buffer);
+
          protected:
 
             Base( Raw buffer);
             Base( Type&& type, std::size_t size);
+
+
 
             void expand( std::size_t expansion);
 
@@ -101,66 +112,87 @@ namespace casual
          };
 
 
-         namespace source
+
+         class Binary : public Base
          {
+         public:
+            Binary();
+            Binary( Base&&);
+            Binary( Binary&&);
+            Binary& operator = ( Binary&&);
 
-            //!
-            //! todo should be google-proto-buffer, or something similar later on.
-            //!
-            class Binary : public Base
+            Binary( const Binary&) = delete;
+
+            template< typename T>
+            void write( T&& value)
             {
-            public:
-               //Binary();
-               Binary( Base&&);
+               write( std::forward< T>( value), sizeof( T));
+            }
 
-               Binary( Binary&&) = default;
-               Binary& operator = ( Binary&&) = default;
+            void write( const std::string& value)
+            {
+               write( value.size());
+               write( value.data(), value.size());
+            }
 
-               template< typename T>
-               void read( T& value)
+            template< typename T>
+            void read( T& value)
+            {
+               Raw raw = Base::raw();
+               if( m_read_offset + static_cast< long>( sizeof( T)) > raw.size)
                {
-                  Raw raw = Base::raw();
-                  if( m_offset + sizeof( T) > raw.size)
-                  {
-                     //TODO: throw
-                  }
-                  memcpy( &value, raw.buffer + m_offset, sizeof( T));
-                  m_offset += sizeof( T);
+                  throw exception::NotReallySureWhatToCallThisExcepion();
+               }
+               memcpy( &value, raw.buffer + m_read_offset, sizeof( T));
+               m_read_offset += sizeof( T);
+            }
+
+            void read( std::string& value)
+            {
+               read_assign( value);
+            }
+
+            void read( common::binary_type& value)
+            {
+               read_assign( value);
+            }
+
+         private:
+
+            template< typename T>
+            void write( T&& value, std::size_t lenght)
+            {
+               if( m_write_offset + lenght > size())
+               {
+                  expand( lenght);
                }
 
-            private:
-               std::size_t m_offset = 0;
+               Raw raw = Base::raw();
 
-            };
-         }
+               memcpy( raw.buffer + m_write_offset, &value, lenght);
+               m_write_offset += lenght;
+            }
 
-         namespace target
-         {
-            class Binary : public Base
+            template< typename T>
+            void read_assign( T& value)
             {
-            public:
-               Binary();
+               decltype( value.size()) size;
+               read( size);
 
-               Binary( Binary&&) = default;
-               Binary& operator = ( Binary&&) = default;
-
-               template< typename T>
-               void write( T&& value)
+               Raw raw = Base::raw();
+               if( m_read_offset + static_cast< long>( size) > raw.size)
                {
-                  if( m_offset + sizeof( T) > size())
-                  {
-                     expand( sizeof( T));
-                  }
-
-                  Raw raw = Base::raw();
-
-                  memcpy( raw.buffer + m_offset, &value, sizeof( T));
-                  m_offset += sizeof( T);
+                  throw exception::NotReallySureWhatToCallThisExcepion();
                }
-            private:
-               std::size_t m_offset;
-            };
-         }
+               value.assign( raw.buffer, raw.buffer + size);
+               m_read_offset += size;
+            }
+
+
+            long m_write_offset = 0;
+            long m_read_offset = 0;
+         };
+
 
 
          class X_Octet : public Base
@@ -175,6 +207,28 @@ namespace casual
             void str( const std::string& new_string);
 
          };
+
+         /*
+         template< typename T>
+         class allocator;
+
+         template<>
+         class allocator< char>
+         {
+         public:
+            typedef char value_type;
+            typedef char* pointer;
+            typedef const char* const_pointer;
+            typedef char& reference;
+            typedef const char& const_reference;
+            typedef std::size_t size_type;
+            typedef std::ptrdiff_t difference_type;
+
+         };
+         */
+
+         //typedef std::vector< char, buffer::allocator< char>> test_buffer;
+
 
 
       } // buffer

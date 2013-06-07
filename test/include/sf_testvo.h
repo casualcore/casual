@@ -26,8 +26,8 @@ namespace casual
     }
 }
     
-//## includes protected section begin [200.20]
-//## includes protected section end   [200.20]
+//## includes protected section begin [200.10]
+//## includes protected section end   [200.10]
 
 //## additional declarations protected section begin [200.20]
 //## additional declarations protected section end   [200.20]
@@ -63,12 +63,12 @@ public:
    //
    
    
-long getSomeLong() const;
-	void setSomeLong( long value);
+   long getSomeLong() const;
+   void setSomeLong( long value);
 
 
-std::string getSomeString() const;
-	void setSomeString( std::string value);
+   std::string getSomeString() const;
+   void setSomeString( std::string value);
 
 
 
@@ -93,5 +93,6 @@ private:
 } // vo
 } // test
 } // casual
+
 
 #endif 

@@ -6,11 +6,15 @@
  */
 #include "monitor/monitordb.h"
 #include "common/trace.h"
+#include "common/environment.h"
+
+
 #include <vector>
 #include <sstream>
 #include <iostream>
 #include <string>
-#include "common/environment.h"
+#include <cstdlib>
+
 
 //
 // TODO: Use casual exception
@@ -31,6 +35,17 @@ namespace monitor
 			std::string getDatabase()
 			{
 				return common::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
+			}
+
+			std::string getValue( database::Row& row, const std::string& attribute)
+			{
+				std::string value;
+				if ( !row[attribute].empty())
+				{
+					value = row[attribute].front();
+				}
+				common::logger::debug << "getValue(" << attribute << "): " << value;
+				return value;
 			}
 		}
 	}
@@ -55,18 +70,25 @@ namespace monitor
 		common::Trace trace(cMethodname);
 	}
 
-	void MonitorDB::begin() const
+	Transaction::Transaction( MonitorDB& monitordb) : m_monitordb( monitordb)
 	{
 		static const std::string cMethodname("MonitorDB::begin()");
 		common::Trace trace(cMethodname);
-		m_database.begin();
+		m_monitordb.getDatabase().begin();
 	}
 
-	void MonitorDB::commit() const
+	Transaction::~Transaction()
 	{
-		static const std::string cMethodname("MonitorDB::commit()");
+		static const std::string cMethodname("Transaction::~Transaction()");
 		common::Trace trace(cMethodname);
-		m_database.commit();
+		if ( ! std::uncaught_exception())
+		{
+			m_monitordb.getDatabase().commit();
+		}
+		else
+		{
+			m_monitordb.getDatabase().rollback();
+		}
 	}
 
 
@@ -110,6 +132,42 @@ namespace monitor
 			throw std::runtime_error( m_database.error());
 		}
 
+	}
+
+	std::vector< vo::MonitorVO> MonitorDB::select( )
+	{
+		static const std::string cMethodname("MonitorDB::select");
+		common::Trace trace(cMethodname);
+
+		std::ostringstream stream;
+		stream << "SELECT service, parentservice, callid, transactionid, start, end FROM calls;";
+		std::vector< database::Row> rows;
+		if ( !m_database.sql( stream.str(), rows))
+		{
+			throw std::runtime_error( m_database.error());
+		}
+
+ 		std::vector< vo::MonitorVO> result;
+     	for(auto row = rows.begin(); row != rows.end(); row++)
+     	{
+     		vo::MonitorVO vo;
+     		vo.setSrv( local::getValue( *row, "service"));
+     		vo.setParentService( local::getValue( *row, "parentservice"));
+     		sf::Uuid callId;
+     		callId.string( local::getValue( *row, "callid"));
+     		vo.setCallId( callId);
+     		//vo.setTransactionId( local::getValue( *row, "transactionid"));
+     		vo.setStart( common::transform::time( strtoll(local::getValue( *row,"start").c_str(), 0, 10)));
+     		vo.setEnd( common::transform::time( strtoll(local::getValue( *row,"end").c_str(), 0, 10)));
+			result.push_back( vo);
+		}
+
+		return result;
+	}
+
+	database& MonitorDB::getDatabase()
+	{
+		return m_database;
 	}
 }
 }

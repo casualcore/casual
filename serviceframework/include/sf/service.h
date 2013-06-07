@@ -96,9 +96,6 @@ namespace casual
             IO( IO&&) = default;
             IO( const IO&) = delete;
 
-            bool callImplementation();
-
-            void handleException();
 
             reply::State finalize();
 
@@ -118,7 +115,35 @@ namespace casual
                return *this;
             }
 
+            template< typename I, typename M, typename... Args>
+            auto call( I& implementation, M memberfunction, Args&&... args) -> decltype( std::mem_fn( memberfunction)( implementation, std::forward< Args>( args)...))
+            {
+               if( callImplementation())
+               {
+                  auto function = std::mem_fn( memberfunction);
+
+                  try
+                  {
+                     return function( implementation, std::forward< Args>( args)...);
+                  }
+                  catch( ...)
+                  {
+                     handleException();
+                  }
+               }
+
+               //
+               // Vi return the default value for the return type
+               //
+               return decltype( std::mem_fn( memberfunction)( implementation, std::forward< Args>( args)...))();
+            }
+
          private:
+
+            bool callImplementation();
+
+            void handleException();
+
 
             template< typename T, typename A>
             void serialize( T&& value, A& io)

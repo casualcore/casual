@@ -7,6 +7,7 @@
 
 #include "broker/broker.h"
 #include "broker/broker_implementation.h"
+#include "broker/action.h"
 
 #include "common/environment.h"
 #include "common/logger.h"
@@ -20,7 +21,7 @@
 #include <algorithm>
 
 //temp
-#include <iostream>
+//#include <iostream>
 
 
 
@@ -92,14 +93,19 @@ namespace casual
 		   common::logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
 
 
-
-
 		   //
 			// Make the key public for others...
 			//
 			local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
 
 
+			//
+			// Start the servers...
+			//
+			std::for_each(
+			      std::begin( m_state.configuration.servers),
+			      std::end( m_state.configuration.servers),
+			      action::server::Start());
 		}
 
 		Broker::~Broker()
@@ -116,8 +122,8 @@ namespace casual
          handler.add< handle::Unadvertise>( m_state);
          handler.add< handle::ServiceLookup>( m_state);
          handler.add< handle::ACK>( m_state);
-         handler.add< handle::MonitorConnect>( m_state);
-		 handler.add< handle::MonitorUnadvertise>( m_state);
+         handler.add< handle::MonitorAdvertise>( m_state);
+         handler.add< handle::MonitorUnadvertise>( m_state);
 
          queue::blocking::Reader queueReader( m_receiveQueue);
 

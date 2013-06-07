@@ -62,24 +62,23 @@ namespace casual
          {
          public:
 
-            typedef std::map< int, std::unique_ptr< base_handler> > handlers_type;
+            typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
 
             template< typename H, typename... Arguments>
             void add( Arguments&& ...arguments)
             {
-               //basic_handler< H>
-
-               handlers_type::mapped_type handler( new basic_handler< H>{ std::forward< Arguments>( arguments)...});
+               // TODO: change to std::make_unique
+               handlers_type::mapped_type handler(
+                     new basic_handler< H>{ std::forward< Arguments>( arguments)...});
 
                m_handlers[ H::message_type::message_type] = std::move( handler);
-               //m_handlers[ decltype( handler.createMessage())::message_type] = std::move( handler);
             }
 
             bool dispatch( marshal::input::Binary& binary)
             {
                auto findIter = m_handlers.find( binary.type());
 
-               if( findIter != m_handlers.end())
+               if( findIter != std::end( m_handlers))
                {
                   findIter->second->marshal( binary);
                   return true;
