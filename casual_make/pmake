@@ -210,5 +210,16 @@ if __name__ == '__main__':
     while process.poll() is None:
         print reformat( process.stdout.readline()),
     
+    #
+    # Manually "flush" stdout...
+    # 
+    line = process.stdout.readline()
+    
+    while( line):
+        print line,
+        line = process.stdout.readline()
+    
+    #print reformat( process.stdout.readline())
+    
     sys.exit( process.returncode)
     
