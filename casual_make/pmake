@@ -187,10 +187,9 @@ if __name__ == '__main__':
 
     JOB_COUNT=CPU_COUNT * 1.5
 
-#
-# Vi kor aven max load till 1.5x antal CPU:er. Har ingen aning om detta
-# ar en bra siffra...
-#
+    #
+    # We let max-jobs be the same... Have no idea if this is a good number.
+    #
     MAX_LOAD=JOB_COUNT
 
 
