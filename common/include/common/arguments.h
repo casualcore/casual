@@ -105,7 +105,17 @@ namespace casual
                   std::bind( &Base::option, std::placeholders::_1, option));
             }
 
-         }
+            template< typename Iter>
+            Iter find( Iter start, Iter end, Base* base)
+            {
+               return std::find_if(
+                  start,
+                  end,
+                  std::bind( &Base::option, base, std::placeholders::_1));
+            }
+
+
+         } // internal
 
          class Directive : public Base
          {
@@ -113,23 +123,26 @@ namespace casual
             Directive( const std::vector< std::string>& options, const std::string& description)
                : m_options( options), m_description( description), m_assigned( false) {}
 
-            bool option( const std::string& option) const
+
+
+            bool option( const std::string& option) const override
             {
+               std::cout << "option: " << option << " description: " << m_description << std::endl;
                return std::find( std::begin( m_options), std::end( m_options), option) != std::end( m_options);
             }
 
-            void assign( const std::string& option, std::vector< std::string>&& values)
+            void assign( const std::string& option, std::vector< std::string>&& values) override
             {
                m_values = std::move( values);
                m_assigned = true;
             }
 
-            bool consumed() const
+            bool consumed() const override
             {
                return m_assigned;
             }
 
-            void dispatch() const
+            void dispatch() const override
             {
                // TODO
             }
@@ -148,31 +161,34 @@ namespace casual
          public:
 
             //typedef C correlation_type;
-            typedef std::vector< std::unique_ptr< Base>> groups_type;
+            typedef std::vector< std::shared_ptr< Base>> groups_type;
 
 
             Group() = default;
+            Group( Group&&) = default;
+            Group( const Group&) = default;
 
+            /*
             template< typename... Args>
             Group( Args&&... args)
             {
                add( std::forward< Args>( args)...);
             }
+            */
 
             template< typename T, typename... Args>
             void add( T&& directive, Args&&... args)
             {
-               groups_type::value_type value{ new typename std::decay< T>::type{ std::forward< T>( directive)}};
-               m_groups.emplace_back( std::move( value));
-               add( args...);
+               m_groups.emplace_back( std::make_shared< typename std::decay< T>::type>( std::forward< T>( directive)));
+               add( std::forward< Args>(args)...);
             }
 
-            bool option( const std::string& option) const
+            bool option( const std::string& option) const override
             {
                return internal::find( option, m_groups) != std::end( m_groups);
             }
 
-            void assign( const std::string& option, std::vector< std::string>&& values)
+            void assign( const std::string& option, std::vector< std::string>&& values) override
             {
                auto findIter = internal::find( option, m_groups);
 
@@ -182,7 +198,7 @@ namespace casual
                }
             }
 
-            bool consumed() const
+            bool consumed() const override
             {
                return std::all_of(
                      std::begin( m_groups),
@@ -190,7 +206,7 @@ namespace casual
                      std::bind( &Base::consumed, std::placeholders::_1));
             }
 
-            void dispatch() const
+            void dispatch() const override
             {
                for( auto& base : m_groups)
                {
@@ -203,7 +219,7 @@ namespace casual
 
             void add() {}
 
-            std::vector< std::unique_ptr< Base>> m_groups;
+            groups_type m_groups;
          };
 
       } // argument
@@ -228,24 +244,48 @@ namespace casual
 
          bool parse( const std::vector< std::string>& arguments)
          {
-            auto current = std::begin( arguments);
+            //
+            // Find first argument that has a handler
+            //
+            auto current = argument::internal::find(
+                  std::begin( arguments),
+                  std::end( arguments),
+                  this);
+
+            auto start = current;
 
             while( current != std::end( arguments))
             {
+
+               std::cout << "current " << *current << std::endl;
+
+               //
+               // Try to find a handler for this argument
+               //
                auto handler = argument::internal::find( *current, m_groups);
 
                if( handler != std::end( m_groups))
                {
+                  //
+                  // Find the end of values assosiated with this option
+                  //
+                  auto currentEnd = argument::internal::find(
+                     current + 1,
+                     std::end( arguments),
+                     this);
 
+                  (*handler)->assign( *current, { current + 1, currentEnd});
 
+                  current = currentEnd;
+               }
+               else
+               {
+                  // temp
+                  ++current;
                }
             }
 
-            for( auto& base : m_groups)
-            {
-               base->dispatch();
-            }
-
+            dispatch();
 
             return true;
          }

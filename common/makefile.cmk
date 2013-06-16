@@ -74,7 +74,7 @@ Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid
 Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test_arguments.o)
 Compile( unittest/isolated/source/test_file.cpp, unittest/isolated/obj/test_file.o)
 Compile( unittest/isolated/source/test_process.cpp, unittest/isolated/obj/test_process.o)
-
+Compile( unittest/isolated/source/test_string.cpp, unittest/isolated/obj/test_string.o)
 
 LinkIsolatedUnittest( casual_common_isolated, \
 	unittest/isolated/obj/test_buffer.o \
@@ -86,6 +86,7 @@ LinkIsolatedUnittest( casual_common_isolated, \
     unittest/isolated/obj/test_file.o \
     unittest/isolated/obj/test_arguments.o \
     unittest/isolated/obj/test_process.o \
+    unittest/isolated/obj/test_string.o \
     , \
 	casual_common )	
 

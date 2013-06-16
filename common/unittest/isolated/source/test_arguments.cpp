@@ -21,7 +21,7 @@ namespace casual
 
       TEST( casual_common_arguments, blabla)
       {
-         /*
+
 
          argument::cardinality::One one;
 
@@ -48,12 +48,16 @@ namespace casual
 
 
          Arguments arguments;
+         arguments.add(
+               argument::Directive{ { "-f", "--foo"}, "foo"},
+               argument::Directive{ { "-b", "--bar"}, "bar"},
+               group);
 
-         const char* argv[] = { "arg1", "arg2", "arg3", "arg4" };
+         //const char* argv[] = { "-p", "-c", "arg3", "arg4" };
 
-         arguments.parse( sizeof( argv), argv);
-         */
+         //std::vector< std>
 
+         arguments.parse( { "-f", "arg-p", "-b", "arg-b", "-p", "arg-p" });
 
       }
 

@@ -1,0 +1,31 @@
+
+
+general:
+    description_language: C++
+    namespace: casual::broker
+    prefix: ""
+
+declaration:
+
+  - server:
+      name: AdminServer
+      language: C++
+    
+      output_headers: include/broker/
+      output_source:  source/  
+    
+      services:
+        - &broker_startServers
+          name: _broker_startServers
+          id: 2000
+          documentation: |
+            start a server
+    
+          return: void      
+          
+          arguments:
+              - bajs: (in) const std::vector< std::string>&
+  
+          
+          
+ 
