@@ -68,10 +68,10 @@ broker:
 
          reader >> CASUAL_MAKE_NVP( broker);
 
-         EXPECT_TRUE( broker.casual_default.server.instances == 2);
-         EXPECT_TRUE( broker.casual_default.server.limits.min == 2);
-         EXPECT_TRUE( broker.casual_default.server.limits.max == 4);
-         EXPECT_TRUE( broker.casual_default.service.timeout == 90);
+         EXPECT_TRUE( broker.casual_default.server.instances == "2");
+         EXPECT_TRUE( broker.casual_default.server.limits.min == "2");
+         EXPECT_TRUE( broker.casual_default.server.limits.max == "4");
+         EXPECT_TRUE( broker.casual_default.service.timeout == "90");
 
       }
 
@@ -88,13 +88,13 @@ broker:
 
          ASSERT_TRUE( broker.servers.size() == 2);
          EXPECT_TRUE( broker.servers.front().path == "/a/b/c");
-         EXPECT_TRUE( broker.servers.front().instances == 30);
-         EXPECT_TRUE( broker.servers.front().limits.max == 40);
+         EXPECT_TRUE( broker.servers.front().instances == "30");
+         EXPECT_TRUE( broker.servers.front().limits.max == "40");
 
          EXPECT_TRUE( broker.servers.back().path == "/a/b/x");
-         EXPECT_TRUE( broker.servers.back().instances == 10);
-         EXPECT_TRUE( broker.servers.back().limits.min == 1);
-         EXPECT_TRUE( broker.servers.back().limits.max == 2);
+         EXPECT_TRUE( broker.servers.back().instances == "10");
+         EXPECT_TRUE( broker.servers.back().limits.min == "1");
+         EXPECT_TRUE( broker.servers.back().limits.max == "2");
 
       }
 

@@ -20,12 +20,17 @@ Compile( source/broker.cpp, obj/broker.o)
 Compile( source/broker_main.cpp, obj/broker_main.o)
 Compile( source/action.cpp, obj/action.o)
 
+Compile( source/adminserverimplementation.cpp, obj/adminserverimplementation.o)
+Compile( source/adminserver.cpp, obj/adminserver.o)
+
 
 LinkExecutable( casual_broker, \
 	obj/broker.o \
 	obj/broker_main.o \
-	obj/action.o, \
-	casual_common casual_sf)
+	obj/action.o \
+	obj/adminserverimplementation.o \
+	obj/adminserver.o, \
+	casual_common casual_sf casual-xatmi)
 	
 	
 //

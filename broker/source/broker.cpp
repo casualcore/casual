@@ -14,16 +14,27 @@
 
 #include "common/queue.h"
 #include "common/message_dispatch.h"
+#include "common/server_context.h"
 
 #include "sf/archive_maker.h"
 
+
+#include <xatmi.h>
+
 #include <fstream>
 #include <algorithm>
+
+
 
 //temp
 //#include <iostream>
 
 
+
+extern "C"
+{
+   extern void _broker_startServers( TPSVCINFO *transb);
+}
 
 
 namespace casual
@@ -63,6 +74,15 @@ namespace casual
 			: m_brokerQueueFile( common::environment::getBrokerQueueFileName())
 		{
 
+		   common::environment::setExecutablePath( arguments.at( 0));
+
+		   //
+         // Make the key public for others...
+         //
+         local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
+
+         configuration::Settings configuration;
+
 		   //
 		   // Try to find configuration file
 		   // TODO: you should be able to pass the configurationfile as an argument.
@@ -78,33 +98,31 @@ namespace casual
 		      // Create the reader and deserialize configuration
 		      //
 		      auto reader = sf::archive::reader::makeFromFile( configFile);
-		      reader >> sf::makeNameValuePair( "broker", m_state.configuration);
+
+		      reader >> sf::makeNameValuePair( "broker", configuration);
 
 		      //
 		      // Make sure we've got valid configuration
 		      //
-		      configuration::validate( m_state.configuration);
+		      configuration::validate( configuration);
 		   }
 		   else
 		   {
 		      common::logger::information << "broker: no configuration file was found - using default";
 		   }
 
-		   common::logger::debug << " m_state.configuration.servers.size(): " << m_state.configuration.servers.size();
+		   common::logger::debug << " m_state.configuration.servers.size(): " << configuration.servers.size();
 
 
-		   //
-			// Make the key public for others...
-			//
-			local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
+
 
 
 			//
 			// Start the servers...
 			//
 			std::for_each(
-			      std::begin( m_state.configuration.servers),
-			      std::end( m_state.configuration.servers),
+			      std::begin( configuration.servers),
+			      std::end( configuration.servers),
 			      action::server::Start());
 		}
 
@@ -125,20 +143,33 @@ namespace casual
          handler.add< handle::MonitorAdvertise>( m_state);
          handler.add< handle::MonitorUnadvertise>( m_state);
 
+         //
+         // Prepare the xatmi-services
+         //
+         {
+            common::server::Arguments arguments;
+
+            arguments.m_services.emplace_back( "_broker_startServers", &_broker_startServers);
+
+            arguments.m_argc = 1;
+            const char* executable = common::environment::getExecutablePath().c_str();
+            arguments.m_argv = &const_cast< char*&>( executable);
+
+            handler.add< common::callee::handle::Call>( arguments);
+         }
+
          queue::blocking::Reader queueReader( m_receiveQueue);
 
          bool working = true;
 
          while( working)
          {
-
             auto marshal = queueReader.next();
 
             if( ! handler.dispatch( marshal))
             {
                common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
             }
-
          }
 		}
 

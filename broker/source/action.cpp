@@ -8,6 +8,7 @@
 #include "broker/action.h"
 
 #include "common/process.h"
+#include "common/string.h"
 
 namespace casual
 {
@@ -20,7 +21,10 @@ namespace casual
 
             void start( const configuration::Server& server)
             {
-               common::process::spawn( server.path, {});
+               for( auto count = std::stol( server.instances); count > 0; --count)
+               {
+                  common::process::spawn( server.path, common::string::split( server.arguments));
+               }
             }
 
          } // server

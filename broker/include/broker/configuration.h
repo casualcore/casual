@@ -16,6 +16,7 @@
 #include <limits>
 #include <list>
 #include <string>
+#include <vector>
 
 namespace casual
 {
@@ -24,16 +25,12 @@ namespace casual
 
       namespace configuration
       {
-         enum
-         {
-            cUnset = -1
-         };
 
          struct Limit
          {
 
-            int min = cUnset;
-            int max = cUnset;
+            std::string min;
+            std::string max;
 
             template< typename A>
             void serialize( A& archive)
@@ -46,7 +43,7 @@ namespace casual
          struct Server
          {
             std::string path;
-            int instances = cUnset;
+            std::string instances;
             Limit limits;
             std::string arguments;
 
@@ -66,7 +63,7 @@ namespace casual
          struct Service
          {
             std::string name;
-            int timeout = cUnset;
+            std::string timeout;
 
             template< typename A>
             void serialize( A& archive)
@@ -76,16 +73,26 @@ namespace casual
             }
          };
 
+         struct Group
+         {
+            std::string name;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( name);
+            }
+         };
+
 
          struct Default
          {
             Default()
             {
-               server.instances = 1;
-               server.limits.min = 0;
-               server.limits.max = 10;
-
-               service.timeout = 90;
+               server.limits.max = std::to_string( std::numeric_limits< std::size_t>::max());
+               server.limits.min = std::to_string( 0);
+               server.instances = std::to_string( 1);
+               service.timeout = std::to_string( 3600);
             }
 
             Server server;
@@ -102,6 +109,7 @@ namespace casual
          struct Settings
          {
             Default casual_default;
+            std::vector< Group> groups;
             std::list< Server> servers;
             std::list< Service> services;
 
@@ -109,29 +117,33 @@ namespace casual
             void serialize( A& archive)
             {
                archive & sf::makeNameValuePair( "default", casual_default);
+               archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( services);
             }
-
-
          };
 
          namespace complement
          {
+            inline void assign_if_empty( std::string& value, const std::string& def)
+            {
+               if( value.empty()) value = def;
+            }
+
             struct Default
             {
                Default( const configuration::Default& casual_default) : m_casual_default( casual_default) {}
 
                void operator () ( configuration::Server& server) const
                {
-                  if( server.instances == cUnset) server.instances = m_casual_default.server.instances;
-                  if( server.limits.min == cUnset) server.limits.min = m_casual_default.server.limits.min;
-                  if( server.limits.max == cUnset) server.limits.max = m_casual_default.server.limits.max;
+                  assign_if_empty( server.instances, m_casual_default.server.instances);
+                  assign_if_empty( server.limits.min, m_casual_default.server.limits.min);
+                  assign_if_empty( server.limits.max, m_casual_default.server.limits.max);
                }
 
                void operator () ( configuration::Service& service) const
                {
-                  if( service.timeout == cUnset) service.timeout = m_casual_default.service.timeout;
+                  assign_if_empty( service.timeout,  m_casual_default.service.timeout);
                }
 
             private:

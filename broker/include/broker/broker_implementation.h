@@ -164,8 +164,8 @@ namespace casual
                   // we use the current one...
                   //
 
-                  auto findIter = m_serviceMapping.insert(
-                        std::make_pair( service.name, broker::Service( service.name))).first;
+                  auto findIter = m_serviceMapping.emplace(
+                        service.name, broker::Service{ service.name}).first;
 
                   //
                   // Add the pointer to the server
@@ -269,9 +269,7 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               //
-               // TODO:
-               //
+
             }
 
          };
@@ -292,8 +290,8 @@ namespace casual
                // If the server is not registered before, it will be added now... Otherwise
                // we use the current one...
                //
-               auto serverIterator = m_state.servers.insert(
-                     std::make_pair( message.serverId.pid, transform::Server()( message))).first;
+               auto serverIterator = m_state.servers.emplace(
+                     message.serverId.pid, transform::Server()( message)).first;
 
                //
                // Add all the services, with this corresponding server

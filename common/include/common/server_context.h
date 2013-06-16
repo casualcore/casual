@@ -41,8 +41,8 @@ namespace casual
             Arguments( Arguments&&) = default;
 
             std::vector< service::Context> m_services;
-            std::function<int( int, char**)> m_server_init;
-            std::function<void()> m_server_done;
+            std::function<int( int, char**)> m_server_init = &tpsvrinit;
+            std::function<void()> m_server_done = &tpsvrdone;
             int m_argc;
             char** m_argv;
          };
