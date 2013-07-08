@@ -9,6 +9,7 @@
 
 #include "common/arguments.h"
 
+#include <functional>
 
 namespace casual
 {
@@ -16,7 +17,33 @@ namespace casual
    namespace common
    {
 
+      namespace local
+      {
+         struct conf
+         {
 
+            long someLong = 0;
+
+            void flag() {}
+         };
+
+
+         long globalLong = 0;
+      }
+
+      TEST( casual_common_arguments, test_bind)
+      {
+
+         argument::internal::dispatch< argument::cardinality::Zero, decltype( std::mem_fn( &local::conf::flag))>
+         someDispatch( std::mem_fn( &local::conf::flag));
+
+         someDispatch( { "kdfjs", "sldkfjs"});
+
+         auto memberAttribute = std::bind( &local::conf::someLong, std::placeholders::_1);
+         auto globalLong = std::bind( &local::conf::someLong, std::placeholders::_1);
+
+
+      }
 
 
       TEST( casual_common_arguments, blabla)

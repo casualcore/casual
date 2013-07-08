@@ -85,14 +85,21 @@ namespace casual
 
             };
 
-            template< typename T>
-            struct dispatch
+            template< typename C, typename F>
+            struct dispatch;
+
+            template< typename F>
+            struct dispatch< cardinality::Zero, F> : public base_dispatch
             {
+               dispatch( F caller) : m_caller( caller) {}
+
                void operator () ( const std::vector< std::string>& values) const
                {
-
-
+                  m_caller();
                }
+
+            private:
+               F m_caller;
 
             };
 
@@ -121,7 +128,7 @@ namespace casual
          {
          public:
             Directive( const std::vector< std::string>& options, const std::string& description)
-               : m_options( options), m_description( description), m_assigned( false) {}
+               : m_options( options), m_description( description) {}
 
 
 
@@ -151,7 +158,7 @@ namespace casual
             const std::vector< std::string> m_options;
             const std::string m_description;
             std::vector< std::string> m_values;
-            bool m_assigned;
+            bool m_assigned = false;
          };
 
 
