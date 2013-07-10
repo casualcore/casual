@@ -7,6 +7,7 @@
 
 #include "sf/service_protocol.h"
 
+
 namespace casual
 {
    namespace sf
@@ -17,7 +18,11 @@ namespace casual
          {
 
 
-            Base::Base( TPSVCINFO* serviceInfo) : m_info( serviceInfo) {}
+            Base::Base( TPSVCINFO* serviceInfo)
+               : m_info( serviceInfo)
+            {
+               m_state.value = TPSUCCESS;
+            }
 
             bool Base::doCall()
             {
@@ -44,6 +49,24 @@ namespace casual
                return m_output;
             }
 
+
+            Binary::Binary( TPSVCINFO* serviceInfo) : Base( serviceInfo),
+                  m_readerBuffer( buffer::raw( serviceInfo)), m_reader( m_readerBuffer), m_writer( m_writerBuffer)
+            {
+
+               m_input.readers.push_back( &m_reader);
+               m_output.writers.push_back( &m_writer);
+
+            }
+
+            reply::State Binary::doFinalize()
+            {
+               auto raw = m_writerBuffer.release();
+               m_state.data = raw.buffer;
+               m_state.size = raw.size;
+
+               return m_state;
+            }
 
 
             Yaml::Yaml( TPSVCINFO* serviceInfo) : Base( serviceInfo),

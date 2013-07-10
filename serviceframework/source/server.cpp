@@ -8,6 +8,8 @@
 #include "sf/server.h"
 
 
+#include "common/logger.h"
+
 namespace casual
 {
    namespace sf
@@ -42,7 +44,29 @@ namespace casual
 
             void doHandleException( TPSVCINFO* serviceInfo, service::reply::State& reply) override
             {
-               // TODO:
+               // TODO: try to propagate the exception in the ballast, later on...
+
+               try
+               {
+                  throw;
+               }
+               catch( const std::exception& exception)
+               {
+                  common::logger::error << exception.what();
+               }
+               catch( ...)
+               {
+                  common::logger::error << "Unknown exception catched...";
+               }
+
+               reply.code = TPFAIL;
+
+               //auto type = buffer::type( serviceInfo->data);
+
+
+               //reply.data = tpalloc( )
+
+               reply.data = serviceInfo->data;
 
             }
 

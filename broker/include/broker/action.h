@@ -30,6 +30,24 @@ namespace casual
          }
 
 
+         namespace server
+         {
+            struct Instances
+            {
+               std::string pathRegexp;
+               std::size_t instances;
+
+               template< typename A>
+               void serialize( A& archive)
+               {
+                  archive & CASUAL_MAKE_NVP( pathRegexp);
+                  archive & CASUAL_MAKE_NVP( instances);
+               }
+
+            };
+         }
+
+
 
       } // action
    } // broker

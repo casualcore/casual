@@ -27,7 +27,7 @@ namespace casual
       {
          enum
          {
-            cServerDisconnect,
+            cServerDisconnect  = 10, // message type can't be 0!
             cServiceAdvertise,
             cServiceUnadvertise,
             cServiceNameLookupRequest,

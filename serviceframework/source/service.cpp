@@ -128,6 +128,7 @@ namespace casual
             common::Trace trace( "sf::service::Factory::Factory");
 
             registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
+            registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));
          }
 
 

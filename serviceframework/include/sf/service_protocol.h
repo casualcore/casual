@@ -12,6 +12,7 @@
 
 
 #include "sf/archive_yaml.h"
+#include "sf/archive_binary.h"
 
 namespace casual
 {
@@ -52,9 +53,19 @@ namespace casual
 
             class Binary : public Base
             {
+            public:
+               Binary( TPSVCINFO* serviceInfo);
 
+               reply::State doFinalize() override;
 
             private:
+
+               buffer::Binary m_readerBuffer;
+               archive::binary::Reader m_reader;
+
+               buffer::Binary m_writerBuffer;
+               archive::binary::Writer m_writer;
+
 
             };
 

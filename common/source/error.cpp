@@ -116,9 +116,9 @@ namespace casual
          const std::string& tperrnoStringRepresentation( int error)
          {
             static const std::string noEntryFound = "No string representation was found";
-            static const std::map< int, std::string> mapping = local::initializeTperrnoMapping();
+            static const auto mapping = local::initializeTperrnoMapping();
 
-            std::map< int, std::string>::const_iterator findIter = mapping.find( error);
+            auto findIter = mapping.find( error);
 
             if( findIter != mapping.end())
             {

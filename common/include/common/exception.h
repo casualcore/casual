@@ -26,7 +26,7 @@ namespace casual
       {
 
          //
-         // Serves as a placeholder for later correct exception, which hopefully a good name...
+         // Serves as a placeholder for later correct exception, with hopefully a good name...
          //
          struct NotReallySureWhatToNameThisException : public std::exception {};
 

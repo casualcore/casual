@@ -7,6 +7,11 @@
 #include <vector>
 #include <string>
 
+
+#include "broker/servervo.h"
+#include "broker/servicevo.h"
+
+
 //## includes protected section end   [.10]
 
 namespace casual
@@ -43,9 +48,14 @@ public:
     
    
    //!
-   //! start a server
+   //! @return a list of all servers
    //!
-   void _broker_startServers( const std::vector< std::string>& bajs);
+   std::vector< admin::ServerVO> _broker_listServers( );
+
+   //!
+   //! @return a list of all services
+   //!
+   std::vector< admin::ServiceVO> _broker_listServices( );
 
    //## declarations protected section begin [.300]
    //## declarations protected section end   [.300]

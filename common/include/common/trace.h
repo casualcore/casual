@@ -27,7 +27,14 @@ namespace casual
 
          ~Trace()
          {
-            logger::trace << m_information << " - out";
+            if( std::uncaught_exception())
+            {
+               logger::trace << m_information << " - out*";
+            }
+            else
+            {
+               logger::trace << m_information << " - out";
+            }
          }
 
          Trace( const Trace&) = delete;

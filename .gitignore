@@ -14,3 +14,4 @@ bin/
 
 /casual.env
 /casual_build_environment
+/debug.log

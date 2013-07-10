@@ -67,6 +67,8 @@ namespace casual
 
          void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)
          {
+            logger::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags;
+
             //
             // Prepare buffer.
             // We have to keep state, since there seems not to be any way to send information

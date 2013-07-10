@@ -270,7 +270,7 @@ namespace casual
 
                      transport.paylodSize( length);
 
-                     if( !queue( transport, flags))
+                     if( ! queue( transport, flags))
                      {
                         //
                         // We faild to send part of message (non blocking). No need to try send the rest of

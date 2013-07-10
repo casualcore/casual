@@ -14,6 +14,7 @@
 #include "common/queue.h"
 #include "common/transform.h"
 #include "common/types.h"
+#include "common/environment.h"
 
 #include "common/calling_context.h"
 #include "common/platform.h"
@@ -137,6 +138,7 @@ namespace casual
 
                   message::service::Advertise message;
                   message.serverId.queue_key = queue_policy::receiveKey();
+                  message.serverPath = common::environment::getExecutablePath();
 
 
                   for( auto&& service : arguments.m_services)
@@ -166,19 +168,25 @@ namespace casual
                ~basic_call() noexcept
                {
 
-                  //
-                  // Call tpsrvdone
-                  //
-                  m_state.m_server_done();
+                  try
+                  {
+                     //
+                     // Call tpsrvdone
+                     //
+                     m_state.m_server_done();
 
-                  message::server::Disconnect message;
+                     message::server::Disconnect message;
 
-                  //
-                  // we can't block here...
-                  // TODO: exception safety
-                  //
-                  typename queue_policy::non_blocking_broker_writer brokerWriter;
-                  brokerWriter( message);
+                     //
+                     // we can't block here...
+                     //
+                     typename queue_policy::non_blocking_broker_writer brokerWriter;
+                     brokerWriter( message);
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
+                  }
 
                }
 

@@ -11,6 +11,7 @@
 
 #include "sf/namevaluepair.h"
 #include "sf/basic_archive.h"
+#include "sf/archive_binary.h"
 
 
 #include <string>
@@ -22,6 +23,7 @@
 namespace casual
 {
 
+   /*
    struct TestPolicyBase
    {
       TestPolicyBase() {}
@@ -166,26 +168,49 @@ namespace casual
       }
    };
 
+*/
 
 
 
-   TEST( casual_sf_ArchiveWriter_serialize, pod)
+   TEST( casual_sf_binary_writer, serialize_pod)
    {
 
-      sf::archive::basic_writer< TestWriterPolicy> writer;
+      sf::buffer::Binary buffer;
+      sf::archive::binary::Writer writer( buffer);
 
       writer << CASUAL_MAKE_NVP( 10);
    }
 
-
-   TEST( casual_sf_archive_serialize, pod)
+   TEST( casual_sf_binary_writer, serialize_string)
    {
 
-      sf::archive::basic_writer< TestWriterPolicy> writer;
+      sf::buffer::Binary buffer;
+      sf::archive::binary::Writer writer( buffer);
+
+      writer << CASUAL_MAKE_NVP( std::string{ "test"});
+
+      sf::archive::binary::Reader reader( buffer);
+
+      std::string result;
+
+      reader >> CASUAL_MAKE_NVP( result);
+
+      EXPECT_TRUE( result == "test") << "result: " << result;
+
+
+
+   }
+
+
+   TEST( casual_sf_binary_reader_writer, serialize_pod)
+   {
+
+      sf::buffer::Binary buffer;
+      sf::archive::binary::Writer writer( buffer);
 
       writer << CASUAL_MAKE_NVP( 34L);
 
-      sf::archive::basic_reader< TestReaderPolicy> reader( writer.implementation());
+      sf::archive::binary::Reader reader( buffer);
 
       long result;
 
@@ -197,10 +222,12 @@ namespace casual
 
 
 
-   TEST( casual_sf_ArchiveWriter_serialize, vector_long)
+   TEST( casual_sf_binary_reader_writer, serialize_vector_long)
    {
 
-      sf::archive::basic_writer< TestWriterPolicy> writer;
+      sf::buffer::Binary buffer;
+      sf::archive::binary::Writer writer( buffer);
+
 
       std::vector< long> someInts = { 1, 2, 3, 4 };
 
@@ -208,7 +235,7 @@ namespace casual
 
       std::vector< long> result;
 
-      sf::archive::basic_reader< TestReaderPolicy> reader( writer.implementation());
+      sf::archive::binary::Reader reader( buffer);
 
       reader >> CASUAL_MAKE_NVP( result);
 
@@ -221,10 +248,11 @@ namespace casual
    }
 
 
-   TEST( casual_sf_ArchiveWriter_serialize, map_long_string)
+   TEST( casual_sf_binary_reader_writer, map_long_string)
    {
 
-      sf::archive::basic_writer< TestWriterPolicy> writer;
+      sf::buffer::Binary buffer;
+      sf::archive::binary::Writer writer( buffer);
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
 
@@ -233,12 +261,12 @@ namespace casual
 
       std::map< long, std::string> result;
 
-      sf::archive::basic_reader< TestReaderPolicy> reader( writer.implementation());
+      sf::archive::binary::Reader reader( buffer);
 
       reader >> CASUAL_MAKE_NVP( result);
 
       ASSERT_TRUE( result.size() == 4) << "result.size(): " << result.size();
-      EXPECT_TRUE( result.at( 1) == "test 1");
+      EXPECT_TRUE( result.at( 1) == "test 1") << "result.at( 1): " << result.at( 1);
       EXPECT_TRUE( result.at( 2) == "test 2");
       EXPECT_TRUE( result.at( 3) == "test 3");
       EXPECT_TRUE( result.at( 4) == "test 4");
@@ -256,21 +284,36 @@ namespace casual
       template< typename A>
       void serialize( A& archive)
       {
-         archive << CASUAL_MAKE_NVP( someString);
-         archive << CASUAL_MAKE_NVP( someLong);
+         archive & CASUAL_MAKE_NVP( someString);
+         archive & CASUAL_MAKE_NVP( someLong);
       }
    };
 
-   TEST( casual_sf_ArchiveWriter_serialize, serializible)
+   TEST( casual_sf_binary_reader_writer, serializible)
    {
 
-      sf::archive::basic_writer< TestWriterPolicy> writer;
+      sf::buffer::Binary buffer;
 
-      Serializible value;
-      value.someLong = 23;
-      value.someString = "kdjlfskjf";
+      {
+         sf::archive::binary::Writer writer( buffer);
 
-      writer << CASUAL_MAKE_NVP( value);
+         Serializible value;
+         value.someLong = 23;
+         value.someString = "kdjlfskjf";
+
+         writer << CASUAL_MAKE_NVP( value);
+      }
+
+      {
+         sf::archive::binary::Reader reader( buffer);
+
+         Serializible value;
+         reader >> CASUAL_MAKE_NVP( value);
+
+         EXPECT_TRUE( value.someLong == 23);
+         EXPECT_TRUE( value.someString == "kdjlfskjf");
+      }
+
    }
 
 

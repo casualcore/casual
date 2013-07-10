@@ -35,12 +35,10 @@ namespace casual
 
 		   typedef common::message::server::Id::pid_type pid_type;
 
-			Server() : pid( 0), queue_key( 0), idle( true) {}
-
-			pid_type pid;
+			pid_type pid = 0;
 			std::string path;
-			common::message::server::Id::queue_key_type queue_key;
-			bool idle;
+			common::message::server::Id::queue_key_type queue_key = 0;
+			bool idle = true;
 
 
 			bool operator < ( const Server& rhs) const
@@ -88,12 +86,25 @@ namespace casual
 		{
 		public:
 
-			Broker( const std::vector< std::string>& arguments);
+		   static Broker& instance();
 			~Broker();
 
-			void start();
+			void start( const std::vector< std::string>& arguments);
+
+
+			//void addServers( const std::vector< action::server::>)
+
+			//void bootServers( const std::vector< action::server::Instances>& servers);
+
+			const State& state() const
+			{
+			   return m_state;
+			}
+
 
 		private:
+			Broker();
+
 			common::file::ScopedPath m_brokerQueueFile;
 			common::ipc::receive::Queue& m_receiveQueue = common::ipc::getReceiveQueue();
 

@@ -93,6 +93,7 @@ namespace casual
          void Base::doReset( Raw buffer)
          {
             m_buffer.reset( buffer.buffer);
+            m_size = buffer.size;
          }
 
          void Base::expand( std::size_t expansion)
@@ -132,7 +133,7 @@ namespace casual
 
          }
 
-         Binary::Binary( Base&& base) : Base( std::move( base)) {}
+         //Binary::Binary( Base&& base) : Base( std::move( base)) {}
 
 
 

@@ -69,10 +69,20 @@ namespace casual
          //!
          //! Wait for a specific process to terminate.
          //!
-         //! @attention this i mostly for unittest, and it't unlikely we have any use for this
+         //! @attention this i mostly for unittest, and it's unlikely we have any use for this
          //!    blocking semantics in real code..
          //!
          platform::pid_type wait( platform::pid_type pid);
+
+         //!
+         //! Tries to terminate pids
+         //!
+         void terminate( const std::vector< platform::pid_type>& pids);
+
+         //!
+         //! Tries to terminate pid
+         //!
+         void terminate( platform::pid_type pid);
 
 
       } // process

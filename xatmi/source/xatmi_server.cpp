@@ -137,7 +137,6 @@ int casual_start_server( casual_server_argument* serverArgument)
 	}
 	catch( ...)
 	{
-	   tpsvrdone();
 	   return casual::common::error::handler();
 	}
 	return 0;
