@@ -75,6 +75,22 @@ namespace casual
 
       }
 
+      // TODO: Test
+      void listServicesJSON()
+      {
+         sf::buffer::X_Octet input( "JSON");
+         input.str( "{}");
+         sf::buffer::X_Octet output( "JSON");
+
+         sf::xatmi::service::call( "_broker_listServers", input, output, 0);
+
+         auto raw = output.raw();
+         const std::string json( raw.buffer, raw.buffer + raw.size);
+
+         std::cout << "json:\n" << json << std::endl;
+
+
+      }
 
 
    }
@@ -109,6 +125,10 @@ int main( int argc, char** argv)
       else if( option == "--list-services")
       {
          casual::broker::listServices();
+      }
+      else if( option == "--list-services-json")
+      {
+         casual::broker::listServicesJSON();
       }
       else
       {

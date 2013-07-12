@@ -8,11 +8,13 @@ INCLUDE_PATHS= include \
     ../common/include \
     ../xatmi/include \
     $(YAML_INCLUDE_PATH) \
+    $(JSON_INCLUDE_PATH) \
 	$(UNITTEST_INCLUDE_PATH) \
 
 LIBRARY_PATHS= ../common/bin \
     ../xatmi/bin \
-    $(YAML_LIBRARY_PATH)
+    $(YAML_LIBRARY_PATH) \
+    $(JSON_LIBRARY_PATH)
 
 
 Compile( source/archive.cpp, obj/archive.o)
@@ -34,7 +36,7 @@ LinkLibrary( casual_sf,\
     obj/archive_logger.o \
     obj/xatmi_call.o \
     ,\
-    casual_common yaml-cpp casual-xatmi)
+    casual_common casual-xatmi yaml-cpp json-c)
 
 
 //
@@ -44,20 +46,24 @@ Compile( unittest/isolated/source/test_namevaluepair.cpp, unittest/isolated/obj/
 Compile( unittest/isolated/source/test_archive.cpp, unittest/isolated/obj/test_archive.o)
 Compile( unittest/isolated/source/test_traits.cpp, unittest/isolated/obj/test_traits.o)
 Compile( unittest/isolated/source/test_yaml_archive.cpp, unittest/isolated/obj/test_yaml_archive.o)
+Compile( unittest/isolated/source/test_json_archive.cpp, unittest/isolated/obj/test_json_archive.o)
 Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
 Compile( unittest/isolated/source/test_service.cpp, unittest/isolated/obj/test_service.o)
 Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
 Compile( unittest/isolated/source/test_xatmi_call.cpp, unittest/isolated/obj/test_xatmi_call.o)
+
 
 LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_namevaluepair.o \
 	unittest/isolated/obj/test_archive.o \
 	unittest/isolated/obj/test_traits.o \
 	unittest/isolated/obj/test_yaml_archive.o \
+	unittest/isolated/obj/test_json_archive.o \
 	unittest/isolated/obj/test_buffer.o \
 	unittest/isolated/obj/test_service.o \
 	unittest/isolated/obj/test_uuid.o \
 	unittest/isolated/obj/test_xatmi_call.o \
 	, \
-	casual_sf casual-xatmi casual_common)
+	casual_sf casual-xatmi casual_common json-c)
+
 	

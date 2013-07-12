@@ -17,7 +17,28 @@ namespace casual
    namespace broker
    {
 
+
       TEST( casual_broker_transformation, server_to_serverVO)
+      {
+         broker::Server server;
+         server.path = "a/b/c";
+         server.pid = 10;
+         server.queue_key = 666;
+
+         //auto transformer = transform::Chain::link( transform::Server());
+         admin::transform::Server transformer;
+
+         admin::ServerVO result = transformer( server);
+
+
+         EXPECT_TRUE( result.getPid() == 10) << "result.getPid(): " << result.getPid();
+         EXPECT_TRUE( result.getPath() == "a/b/c");
+         EXPECT_TRUE( result.getQueue() == 666);
+         EXPECT_TRUE( result.getIdle() == true);
+
+      }
+
+      TEST( casual_broker_transformation, set_server_to_serverVO)
       {
          broker::Server server;
          server.path = "a/b/c";
@@ -32,17 +53,15 @@ namespace casual
                std::begin( serverMapping),
                std::end( serverMapping),
                std::back_inserter( result),
-                  transform::Chain::link(
-                     transform::Server(),
+                  admin::transform::Chain::link(
+                     admin::transform::Server(),
                      generic::extract::Second()));
 
          ASSERT_TRUE( result.size() == 1);
-         EXPECT_TRUE( result.at( 0).getPid() == 10);
+         EXPECT_TRUE( result.at( 0).getPid() == 10) << "result.at( 0).getPid(): " << result.at( 0).getPid();
          EXPECT_TRUE( result.at( 0).getPath() == "a/b/c");
          EXPECT_TRUE( result.at( 0).getQueue() == 666);
          EXPECT_TRUE( result.at( 0).getIdle() == true);
-
-
 
       }
 

@@ -60,6 +60,21 @@ value:
 )";
          }
 
+         static const char* json()
+         {
+            return R"({
+   "value":
+   {
+      "m_long": 234,
+      "m_string": "bla bla bla bla",
+      "m_short": 23,
+      "m_longlong": 1234567890123456789,
+      "m_time": 1234567890
+   }
+}
+)";
+         }
+
 
 
 

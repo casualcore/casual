@@ -60,7 +60,7 @@ namespace casual
             public:
                inline void initalization()
                {
-                  // no op
+                  throw exception::Validation( "could not initialize archive'");
                }
 
                template< typename T>

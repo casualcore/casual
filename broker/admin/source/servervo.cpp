@@ -23,6 +23,7 @@ struct ServerVO::Implementation
 {
     Implementation()
    //## initialization list protected section begin [300.40]
+         : pid( 0), queue( 0), idle( false)
    //## initialization list protected section end   [300.40]
    {
       //## ctor protected section begin [300.impl.ctor.10]

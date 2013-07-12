@@ -53,8 +53,8 @@ std::vector< admin::ServerVO> AdminServerImplementation::_broker_listServers( )
       std::begin( broker.state().servers),
       std::end( broker.state().servers),
       std::back_inserter( result),
-         transform::Chain::link(
-            transform::Server(),
+         admin::transform::Chain::link(
+            admin::transform::Server(),
             generic::extract::Second()));
 
    return result;
@@ -75,8 +75,8 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
       std::begin( state.services),
       std::end( state.services),
       std::back_inserter( result),
-         transform::Chain::link(
-            transform::Service(),
+         admin::transform::Chain::link(
+            admin::transform::Service(),
             generic::extract::Second()));
 
    return result;
