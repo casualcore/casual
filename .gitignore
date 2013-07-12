@@ -1,3 +1,7 @@
+#
+# eclipse project
+#
+.settings/org.eclipse.cdt.codan.core.prefs
 
 #
 # Build directories
