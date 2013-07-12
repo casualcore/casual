@@ -1,4 +1,7 @@
 
+
+Include( $(CASUAL_BUILD_ENVIRONMENT))
+
 INCLUDE_PATHS= include \
 	../common/include \
 	../serviceframework/include \
@@ -7,7 +10,11 @@ INCLUDE_PATHS= include \
 	$(UNITTEST_INCLUDE_PATH)
 
 
-LIBRARY_PATHS = ../common/bin ../xatmi/bin ../serviceframework/bin
+LIBRARY_PATHS = bin \
+    ../common/bin \
+    ../xatmi/bin \
+    ../serviceframework/bin \
+    $(JSON_LIBRARY_PATH)
 
 
 
