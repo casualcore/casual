@@ -55,7 +55,7 @@ namespace casual
                std::back_inserter( result),
                   admin::transform::Chain::link(
                      admin::transform::Server(),
-                     generic::extract::Second()));
+                     sf::functional::extract::Second()));
 
          ASSERT_TRUE( result.size() == 1);
          EXPECT_TRUE( result.at( 0).getPid() == 10) << "result.at( 0).getPid(): " << result.at( 0).getPid();

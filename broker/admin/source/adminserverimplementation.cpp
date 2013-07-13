@@ -55,7 +55,7 @@ std::vector< admin::ServerVO> AdminServerImplementation::_broker_listServers( )
       std::back_inserter( result),
          admin::transform::Chain::link(
             admin::transform::Server(),
-            generic::extract::Second()));
+            sf::functional::extract::Second()));
 
    return result;
 
@@ -77,7 +77,7 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
       std::back_inserter( result),
          admin::transform::Chain::link(
             admin::transform::Service(),
-            generic::extract::Second()));
+            sf::functional::extract::Second()));
 
    return result;
 
