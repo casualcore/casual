@@ -95,6 +95,13 @@ namespace casual
 
             private:
 
+               //
+               // Be friend with free marshal function so we can use more
+               // bare-bone stuff when we do non-intrusive marshal for third-party types
+               //
+               template< typename M, typename T>
+               friend void marshal_value( M& marshler, T& value);
+
                template< typename T>
                typename std::enable_if< ! std::is_pod< T>::value>::type
                write( T& value)

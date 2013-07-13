@@ -10,6 +10,9 @@
 #include "common/marshal.h"
 #include "common/message.h"
 
+
+#include "common/types.h"
+
 namespace casual
 {
    namespace common
@@ -153,7 +156,69 @@ namespace casual
 
          }
 
+         TEST( casual_common, marshal_null_XID)
+         {
 
+            XID xid_source;
+
+            xid_source.formatID = common::cNull_XID;
+
+            output::Binary output;
+
+            output << xid_source;
+
+            input::Binary input( std::move( output));
+
+            XID xid_target;
+
+            input >> xid_target;
+
+            EXPECT_TRUE( xid_target.formatID == cNull_XID);
+         }
+
+         TEST( casual_common, marshal_XID)
+         {
+
+            XID xid_source;
+
+            auto uuid_source = Uuid::make();
+            long uuid_size = sizeof( decltype( uuid_source.get()));
+
+            xid_source.formatID = 1;
+            xid_source.gtrid_length = uuid_size;
+            xid_source.bqual_length = uuid_size;
+
+            std::copy( std::begin(uuid_source.get()), std::end( uuid_source.get()), xid_source.data);
+            std::copy( std::begin(uuid_source.get()), std::end( uuid_source.get()), xid_source.data + uuid_size);
+
+            output::Binary output;
+
+            output << xid_source;
+
+            input::Binary input( std::move( output));
+
+            XID xid_target;
+
+            input >> xid_target;
+
+            ASSERT_TRUE( xid_target.gtrid_length == uuid_size);
+            ASSERT_TRUE( xid_target.bqual_length == uuid_size);
+
+
+            auto gtrid_start = std::begin( xid_target.data);
+            auto gtrid_end = std::begin( xid_target.data) + xid_target.gtrid_length;
+            auto bqual_start = gtrid_end;
+            auto bqual_end = bqual_start + xid_target.bqual_length;
+
+            Uuid gtrid;
+            std::copy( gtrid_start, gtrid_end, std::begin( gtrid.get()));
+
+            Uuid bqual;
+            std::copy( bqual_start, bqual_end, std::begin( bqual.get()));
+
+            EXPECT_TRUE( gtrid == uuid_source);
+            EXPECT_TRUE( bqual == uuid_source);
+         }
 
       }
 

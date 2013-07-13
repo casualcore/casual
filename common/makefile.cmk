@@ -8,6 +8,7 @@
 
 INCLUDE_PATHS= include \
 	../xatmi/include \
+	../transaction/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 
