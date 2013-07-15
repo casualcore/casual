@@ -1,5 +1,5 @@
 ngx_addon_name=ngx_http_casual_module
-CASUAL_XATMI_ROOT=/Users/myname/git/casual/xatmi
+CASUAL_XATMI_ROOT=/Users/Lazan/git/casual/xatmi
 HTTP_MODULES="$HTTP_MODULES ngx_http_casual_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_casual_module.c"
 CORE_INCS="$CORE_INCS $CASUAL_XATMI_ROOT/include"

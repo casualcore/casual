@@ -25,7 +25,7 @@ namespace casual
 
       namespace message
       {
-         enum
+         enum Type
          {
             cServerDisconnect  = 10, // message type can't be 0!
             cServiceAdvertise,
@@ -35,9 +35,12 @@ namespace casual
             cServiceCall,
             cServiceReply,
             cServiceAcknowledge,
-            cMonitorAdvertise,
+            cMonitorAdvertise = 20,
             cMonitorUnadvertise,
             cMonitorNotify,
+            cTransactionMonitorAdvertise = 30,
+            cTransactionMonitorUnadvertise,
+
          };
 
 
@@ -343,47 +346,56 @@ namespace casual
             };
          }
 
+
+
+         template< message::Type type>
+         struct basic_advertise
+         {
+            enum
+            {
+               message_type = type
+            };
+
+            server::Id serverId;
+            std::string name;
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & serverId;
+               archive & name;
+            }
+         };
+
+         template< message::Type type>
+         struct basic_unadvertise
+         {
+            enum
+            {
+               message_type = type
+            };
+
+            server::Id serverId;
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & serverId;
+            }
+         };
+
+
          namespace monitor
          {
             //!
             //! Used to advertise the monitorserver
             //!
-            struct Advertise
-            {
-               enum
-               {
-                  message_type = cMonitorAdvertise
-               };
-
-               server::Id serverId;
-               std::string name;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & serverId;
-                  archive & name;
-               }
-            };
+            typedef basic_advertise< cMonitorAdvertise> Advertise;
 
             //!
             //! Used to unadvertise the monitorserver
             //!
-            struct Unadvertise
-            {
-               enum
-               {
-                  message_type = cMonitorUnadvertise
-               };
-
-               server::Id serverId;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & serverId;
-               }
-            };
+            typedef basic_unadvertise< cMonitorUnadvertise> Unadvertise;
 
             //!
             //! Notify monitorserver with statistics
@@ -416,7 +428,23 @@ namespace casual
                   archive & end;
                }
             };
+         } // monitor
+
+         namespace transaction
+         {
+            //!
+            //! Used to advertise the transaction monitor
+            //!
+            typedef basic_advertise< cTransactionMonitorAdvertise> Advertise;
+
+            //!
+            //! Used to unadvertise the transaction monitor
+            //!
+            typedef basic_unadvertise< cTransactionMonitorUnadvertise> Unadvertise;
+
+
          }
+
          //!
          //! Deduce witch type of message it is.
          //!

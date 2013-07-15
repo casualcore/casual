@@ -20,6 +20,7 @@ Compile( source/server_context.cpp, obj/server_context.o)
 Compile( source/service_context.cpp, obj/service_context.o)
 Compile( source/calling_context.cpp, obj/calling_context.o)
 Compile( source/buffer_context.cpp, obj/buffer_context.o)
+Compile( source/transaction_context.cpp, obj/transaction_context.o)
 Compile( source/ipc.cpp, obj/ipc.o)
 Compile( source/queue.cpp, obj/queue.o)
 
@@ -40,6 +41,7 @@ LinkLibrary( casual_common, \
 	obj/service_context.o \
 	obj/calling_context.o \
 	obj/buffer_context.o \
+	obj/transaction_context.o \
 	obj/ipc.o \ 
 	obj/queue.o \
 	obj/uuid.o \

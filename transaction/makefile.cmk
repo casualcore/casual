@@ -1,0 +1,32 @@
+
+
+
+INCLUDE_PATHS = include \
+    ../common/include \
+
+
+
+LIBRARY_PATHS = bin \
+    ../common/bin \
+    
+
+
+
+//
+// Compile and link the transaction monitor
+//
+Compile( source/monitor.cpp, obj/monitor.o)
+Compile( source/monitor_main.cpp, obj/monitor_main.o)
+
+
+
+LinkExecutable( casual-transaction-monitor,\
+    obj/monitor.o \
+    obj/monitor_main.o \
+    ,\
+    casual_common)
+
+
+
+
+
