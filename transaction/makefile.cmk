@@ -24,7 +24,7 @@ LinkExecutable( casual-transaction-monitor,\
     obj/monitor.o \
     obj/monitor_main.o \
     ,\
-    casual_common)
+    casual-common)
 
 
 
