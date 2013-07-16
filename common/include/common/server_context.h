@@ -17,6 +17,7 @@
 #include "common/environment.h"
 
 #include "common/calling_context.h"
+#include "common/transaction_context.h"
 #include "common/platform.h"
 #include "common/logger.h"
 
@@ -120,7 +121,7 @@ namespace casual
             template< typename P>
             struct basic_call
             {
-               typedef P queue_policy;
+               typedef P policy_type;
 
                typedef message::service::callee::Call message_type;
 
@@ -129,30 +130,28 @@ namespace casual
 
 
                //!
-               //! Advertise @p services to the broker build a dispatch-table for
+               //! Connect @p server to the broker, broker will build a dispatch-table for
                //! coming XATMI-calls
                //!
-               basic_call( server::Arguments& arguments)
+               template< typename... Args>
+               basic_call( server::Arguments& arguments, Args&&... arg) : m_policy( std::forward< Args>( arg)...)
                {
                   m_state.m_server_done = arguments.m_server_done;
 
-                  message::service::Advertise message;
-                  message.serverId.queue_key = queue_policy::receiveKey();
-                  message.serverPath = common::environment::getExecutablePath();
+                  message::server::Connect message;
 
 
                   for( auto&& service : arguments.m_services)
                   {
                      message.services.emplace_back( service.m_name);
                      m_state.services.emplace( service.m_name, std::move( service));
-
                   }
 
                   //
-                  // Let the broker know about us, and our services...
+                  // Connect to casual
                   //
-                  typename queue_policy::blocking_broker_writer brokerWriter;
-                  brokerWriter( message);
+                  m_policy.connect( message);
+
 
                   //
                   // Call tpsrvinit
@@ -175,13 +174,7 @@ namespace casual
                      //
                      m_state.m_server_done();
 
-                     message::server::Disconnect message;
-
-                     //
-                     // we can't block here...
-                     //
-                     typename queue_policy::non_blocking_broker_writer brokerWriter;
-                     brokerWriter( message);
+                     m_policy.disconnect();
                   }
                   catch( ...)
                   {
@@ -267,18 +260,13 @@ namespace casual
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     typename queue_policy::blocking_send_writer replyWriter( message.reply.queue_key);
+                     typename policy_type::reply_writer replyWriter( message.reply.queue_key);
                      replyWriter( state.reply);
 
                      //
                      // Send ACK to broker
                      //
-                     message::service::ACK ack;
-                     ack.server.queue_key = queue_policy::receiveKey();
-                     ack.service = message.service.name;
-
-                     typename queue_policy::blocking_broker_writer brokerWriter;
-                     brokerWriter( ack);
+                     m_policy.ack( message);
 
                      //
                      // Do some cleanup...
@@ -306,7 +294,7 @@ namespace casual
                   }
                }
             private:
-
+               policy_type m_policy;
                server::State& m_state = server::Context::instance().getState();
 
             };
@@ -327,11 +315,59 @@ namespace casual
                      broker_writer() : W( ipc::getBrokerQueue()) {}
                   };
 
+                  typedef queue::basic_queue< ipc::send::Queue, queue::blocking::Writer> reply_writer;
+
+               private:
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
-                  typedef queue::basic_queue< ipc::send::Queue, queue::blocking::Writer> blocking_send_writer;
 
-                  static ipc::receive::Queue::queue_key_type receiveKey() { return ipc::getReceiveQueue().getKey(); }
+               public:
+                  void connect( message::server::Connect& message)
+                  {
+                     //
+                     // Let the broker know about us, and our services...
+                     //
+
+                     message.serverId.queue_key = ipc::getReceiveQueue().getKey();
+                     message.path = common::environment::getExecutablePath();
+
+                     blocking_broker_writer brokerWriter;
+                     brokerWriter( message);
+
+
+                     //
+                     // Wait for configuration reply
+                     //
+                     queue::blocking::Reader reader( ipc::getReceiveQueue());
+                     message::server::Configuration configuration;
+                     reader( configuration);
+
+                     transaction::Context::instance().state().transactionManagerQueue = configuration.transactionManagerQueue;
+                     logger::debug << "transactionManagerQueue: " << configuration.transactionManagerQueue;
+                  }
+
+                  void disconnect()
+                  {
+                     message::server::Disconnect message;
+
+                     //
+                     // we can't block here...
+                     //
+                     non_blocking_broker_writer brokerWriter;
+                     brokerWriter( message);
+                  }
+
+
+                  void ack( const message::service::callee::Call& message)
+                  {
+                     message::service::ACK ack;
+                     ack.server.queue_key = ipc::getReceiveQueue().getKey();
+                     ack.service = message.service.name;
+
+                     blocking_broker_writer brokerWriter;
+                     brokerWriter( ack);
+                  }
+
 
                };
             } // basic

@@ -15,49 +15,65 @@ namespace casual
 
       namespace transaction
       {
-         int begin()
+         Context& Context::instance()
+         {
+            static Context singleton;
+            return singleton;
+         }
+
+         Context::Context()
+         {
+
+         }
+
+         int Context::begin()
          {
             return TX_OK;
          }
 
-         int close()
+         int Context::close()
          {
             return TX_OK;
          }
 
-         int commit()
+         int Context::commit()
          {
             return TX_OK;
          }
 
-         int rollback()
+         int Context::rollback()
          {
             return TX_OK;
          }
 
-         int open()
+         int Context::open()
          {
             return TX_OK;
          }
 
-         int setCommitReturn( COMMIT_RETURN value)
+         int Context::setCommitReturn( COMMIT_RETURN value)
          {
             return TX_OK;
          }
 
-         int setTransactionControl(TRANSACTION_CONTROL control)
+         int Context::setTransactionControl(TRANSACTION_CONTROL control)
          {
             return TX_OK;
          }
 
-         int setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
+         int Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
          {
             return TX_OK;
          }
 
-         int info( TXINFO& info)
+         int Context::info( TXINFO& info)
          {
             return TX_OK;
+         }
+
+         State& Context::state()
+         {
+            return m_state;
          }
       } // transaction
    } // common

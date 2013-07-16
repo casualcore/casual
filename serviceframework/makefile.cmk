@@ -26,6 +26,8 @@ Compile( source/service_protocol.cpp, obj/service_protocol.o)
 Compile( source/archive_logger.cpp, obj/archive_logger.o)
 Compile( source/xatmi_call.cpp, obj/xatmi_call.o)
 
+Compile( source/trace.cpp, obj/trace.o)
+
 LinkLibrary( casual-sf,\
     obj/archive.o \
     obj/archive_maker.o \
@@ -35,6 +37,7 @@ LinkLibrary( casual-sf,\
     obj/service_protocol.o \
     obj/archive_logger.o \
     obj/xatmi_call.o \
+    obj/trace.o \
     ,\
     casual-common casual-xatmi yaml-cpp json-c)
 

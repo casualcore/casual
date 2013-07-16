@@ -10,12 +10,19 @@
 
 #include <tx.h>
 
+#include "common/ipc.h"
+
 namespace casual
 {
    namespace common
    {
       namespace transaction
       {
+         struct State
+         {
+            ipc::send::Queue::queue_key_type transactionManagerQueue = 0;
+         };
+
          class Context
          {
          public:
@@ -32,9 +39,14 @@ namespace casual
             int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
             int info( TXINFO& info);
 
+
+            State& state();
+
          private:
 
             Context();
+
+            State m_state;
 
          };
 

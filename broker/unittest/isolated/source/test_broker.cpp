@@ -95,21 +95,22 @@ namespace casual
          EXPECT_TRUE( state.services[ "service4"].servers.front()->pid == 10);
       }
 
-		TEST( casual_broker, advertise_new_services_new_server)
+
+		TEST( casual_broker, connect_new_server_new_services)
       {
          State state = local::initializeState();
 
          //
-         // Add two new services to NEW server 30
+         // Connect new server, with two services
          //
-         message::service::Advertise message;
+         message::server::Connect message;
          message.serverId.pid = 30;
          message.services.resize( 2);
          message.services.at( 0).name = "service3";
          message.services.at( 1).name = "service4";
 
 
-         handle::Advertise handler( state);
+         handle::Connect handler( state);
          handler.dispatch( message);
 
          EXPECT_TRUE( state.servers.size() == 3);
@@ -124,21 +125,21 @@ namespace casual
       }
 
 
-		TEST( casual_broker, advertise_current_services_new_server)
+		TEST( casual_broker, connect_new_server_current_services)
       {
          State state = local::initializeState();
 
          //
          // Add two new services to NEW server 30
          //
-         message::service::Advertise message;
+         message::server::Connect message;
          message.serverId.pid = 30;
          message.services.resize( 2);
          message.services.at( 0).name = "service1";
          message.services.at( 1).name = "service2";
 
 
-         handle::Advertise handler( state);
+         handle::Connect handler( state);
          handler.dispatch( message);
 
 
@@ -364,6 +365,64 @@ namespace casual
 
       }
 
+
+		TEST( casual_broker, monitor_connect)
+      {
+		   State state = local::initializeState();
+		   state.monitorQueue = 0;
+
+		   //
+         // Connect
+         //
+         message::monitor::Connect message;
+         message.serverId.pid = 50;
+         message.serverId.queue_key = 50;
+
+         handle::MonitorConnect handler( state);
+         handler.dispatch( message);
+
+
+         EXPECT_TRUE( state.monitorQueue == 50);
+      }
+
+		TEST( casual_broker, monitor_disconnect)
+      {
+         State state = local::initializeState();
+         state.monitorQueue = 0;
+
+         //
+         // Add two new services to NEW server 30
+         //
+         message::monitor::Disconnect message;
+         message.serverId.pid = 50;
+         message.serverId.queue_key = 50;
+
+         handle::MonitorDisconnect handler( state);
+         handler.dispatch( message);
+
+
+         EXPECT_TRUE( state.monitorQueue == 0);
+      }
+
+
+		TEST( casual_broker, transaction_manager_connect)
+      {
+         State state = local::initializeState();
+         state.transactionManagerQueue = 0;
+
+         //
+         // Connect
+         //
+         message::transaction::Connect message;
+         message.serverId.pid = 50;
+         message.serverId.queue_key = 50;
+
+         handle::TransactionManagerConnect handler( state);
+         handler.dispatch( message);
+
+
+         EXPECT_TRUE( state.transactionManagerQueue == 50);
+      }
 
 	}
 }

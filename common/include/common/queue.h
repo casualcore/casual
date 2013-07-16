@@ -203,6 +203,7 @@ namespace casual
          } // non_blocking
 
 
+         //
          template< typename I, typename Q>
          struct basic_queue
          {
@@ -216,22 +217,21 @@ namespace casual
 
 
             /*
-             * TODO: Why does not this work?
+             * TODO: Why does not this work? */
             template< typename T>
-            auto operator () ( T& value) -> decltype( m_queue( value))
+            auto operator () ( T& value) -> decltype( std::declval<Q>()( value))
             {
                return m_queue( value);
             }
-            */
 
 
+            /*
             template< typename T>
             void operator () ( T&& value)
             {
                return m_queue( std::forward< T>( value));
             }
-
-
+            */
 
          private:
             ipc_queue_type m_ipcQueue;

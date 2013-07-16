@@ -12,6 +12,9 @@
 #include "common/types.h"
 #include "common/logger.h"
 #include "common/trace.h"
+#include "common/environment.h"
+
+
 #include <vector>
 #include <string>
 #include <chrono>
@@ -116,20 +119,25 @@ namespace monitor
 			m_receiveQueue( local::Context::instance().receiveQueue()),
 			m_monitordb( local::Context::instance().monitorDB())
 	{
+	   //
+      // TODO: Use a correct argumentlist handler
+      //
+      const std::string name = !arguments.empty() ? arguments.front() : std::string("");
+
+	   common::environment::setExecutablePath( name);
+
 		static const std::string cMethodname("Monitor::Monitor");
 		common::Trace trace(cMethodname);
 
-		//
-		// TODO: Use a correct argumentlist handler
-		//
-		const std::string name = !arguments.empty() ? arguments.front() : std::string("");
+
 		//
 		// Make the key public for others...
 		//
-		message::monitor::Advertise message;
+		message::monitor::Connect message;
 
-		message.name = name;
+		message.path = name;
 		message.serverId.queue_key = m_receiveQueue.getKey();
+		message.serverId.pid = common::platform::getProcessId();
 
 		queue::blocking::Writer writer( ipc::getBrokerQueue());
 		writer(message);
@@ -142,7 +150,7 @@ namespace monitor
 		//
 		// Tell broker that monitor is down...
 		//
-		message::monitor::Unadvertise message;
+		message::monitor::Disconnect message;
 
 		message.serverId.queue_key = m_receiveQueue.getKey();
 

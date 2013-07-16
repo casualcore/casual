@@ -14,7 +14,6 @@
 
 #include "common/queue.h"
 #include "common/message_dispatch.h"
-#include "common/server_context.h"
 #include "common/process.h"
 
 #include "sf/archive_maker.h"
@@ -49,6 +48,11 @@ namespace casual
 		{
 			namespace
 			{
+
+
+
+
+
 				template< typename Q>
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
@@ -158,11 +162,25 @@ namespace casual
 
             //
             // Start the servers...
+            // TODO: Need to do more config
             //
             std::for_each(
                   std::begin( configuration.servers),
                   std::end( configuration.servers),
                   action::server::Start());
+
+
+            //
+            // We have to wait for TM
+            //
+            queue::blocking::Reader queueReader( m_receiveQueue);
+
+            handle::TransactionManagerConnect::message_type message;
+            queueReader( message);
+
+            handle::TransactionManagerConnect tmConnect( m_state);
+            tmConnect.dispatch( message);
+
          }
 
 
@@ -173,13 +191,15 @@ namespace casual
 
          common::dispatch::Handler handler;
 
-         handler.add< handle::Advertise>( m_state);
+         handler.add< handle::Connect>( m_state);
          handler.add< handle::Disconnect>( m_state);
+         handler.add< handle::Advertise>( m_state);
          handler.add< handle::Unadvertise>( m_state);
          handler.add< handle::ServiceLookup>( m_state);
          handler.add< handle::ACK>( m_state);
-         handler.add< handle::MonitorAdvertise>( m_state);
-         handler.add< handle::MonitorUnadvertise>( m_state);
+         handler.add< handle::MonitorConnect>( m_state);
+         handler.add< handle::MonitorDisconnect>( m_state);
+         handler.add< handle::TransactionManagerConnect>( m_state);
 
          //
          // Prepare the xatmi-services
@@ -195,7 +215,7 @@ namespace casual
             const char* executable = common::environment::getExecutablePath().c_str();
             arguments.m_argv = &const_cast< char*&>( executable);
 
-            handler.add< common::callee::handle::Call>( arguments);
+            handler.add< handle::Call>( arguments, m_state);
          }
 
          queue::blocking::Reader queueReader( m_receiveQueue);

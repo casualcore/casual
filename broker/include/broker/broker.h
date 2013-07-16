@@ -80,6 +80,8 @@ namespace casual
 		   // TODO: Temp
 		   common::platform::queue_key_type monitorQueue = 0;
 
+		   common::platform::queue_key_type transactionManagerQueue = 0;
+
 		};
 
 		class Broker
