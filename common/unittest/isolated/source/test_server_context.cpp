@@ -180,15 +180,29 @@ namespace casual
                return message;
             }
 
-            void initializeBrokerQueueFile()
+            struct ScopedBrokerQueue
             {
-               if( ! common::file::exists( common::environment::getBrokerQueueFileName()))
+               ScopedBrokerQueue()
                {
-                  std::ofstream out( common::environment::getBrokerQueueFileName());
-                  out << 777;
-               }
-            }
+                  if( common::file::exists( common::environment::getBrokerQueueFileName()))
+                  {
+                     throw exception::QueueFailed( "Broker queue file exists - Can't run tests within an existing casual domain");
+                  }
 
+                  path.reset( new file::ScopedPath( common::environment::getBrokerQueueFileName()));
+
+                  std::ofstream out( common::environment::getBrokerQueueFileName());
+                  out << brokerQueue.getKey();
+
+               }
+
+               ScopedBrokerQueue( ScopedBrokerQueue&&) = default;
+
+            private:
+
+               std::unique_ptr< file::ScopedPath> path;
+               ipc::receive::Queue brokerQueue;
+            };
 
          } // <unnamed>
       } // local
@@ -239,7 +253,7 @@ namespace casual
       TEST( casual_common_service_context, call_service__gives_reply)
       {
          local::Policy::reset();
-         local::initializeBrokerQueueFile();
+         local::ScopedBrokerQueue scopedQueue;
 
          auto arguments = local::arguments();
          local::Call callHandler( arguments);
@@ -255,7 +269,7 @@ namespace casual
       TEST( casual_common_service_context, call_service__gives_broker_ack)
       {
          local::Policy::reset();
-         local::initializeBrokerQueueFile();
+         local::ScopedBrokerQueue scopedQueue;
 
          auto arguments = local::arguments();
          local::Call callHandler( arguments);
@@ -273,7 +287,7 @@ namespace casual
       TEST( casual_common_service_context, call_non_existing_service__throws)
       {
          local::Policy::reset();
-         local::initializeBrokerQueueFile();
+         local::ScopedBrokerQueue scopedQueue;
 
          auto arguments = local::arguments();
          local::Call callHandler( arguments);
@@ -291,7 +305,7 @@ namespace casual
       TEST( casual_common_service_context, call_service__gives_monitor_notify)
       {
          local::Policy::reset();
-         local::initializeBrokerQueueFile();
+         local::ScopedBrokerQueue scopedQueue;
 
          auto arguments = local::arguments();
          local::Call callHandler( arguments);
