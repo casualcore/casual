@@ -24,7 +24,7 @@ namespace casual
    {
       typedef std::vector< char> binary_type;
 
-      typedef const char* raw_buffer_type;
+      typedef char* raw_buffer_type;
 
       typedef std::chrono::steady_clock clock_type;
 

@@ -35,7 +35,7 @@ namespace casual
             Buffer& operator = ( const Buffer&) = delete;
 
 
-            inline raw_buffer_type raw() const
+            inline raw_buffer_type raw()
             {
                return m_memory.data();
             }

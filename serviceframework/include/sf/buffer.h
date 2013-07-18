@@ -56,16 +56,16 @@ namespace casual
 
          };
 
-         Type type( const char* buffer);
+         Type type( common::raw_buffer_type buffer);
 
          //!
          //! Holds the buffer and its size together. Has no resource responsibility
          //!
          struct Raw
          {
-            Raw( char* p_buffer, std::size_t p_size);
+            Raw( common::raw_buffer_type p_buffer, std::size_t p_size);
 
-            char* buffer;
+            common::raw_buffer_type buffer;
             long size;
          };
 
@@ -107,7 +107,7 @@ namespace casual
 
             struct xatmi_deleter
             {
-               void operator () ( char* xatmiBuffer) const;
+               void operator () ( common::raw_buffer_type xatmiBuffer) const;
             };
 
             virtual void doReset( Raw buffer);

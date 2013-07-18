@@ -56,19 +56,11 @@ namespace casual
 				template< typename Q>
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
+					if( common::file::exists( path))
 					{
-						//
-						// Check if file already exists
-						//
-						std::ifstream exists( path);
-						if( exists.good())
-						{
-							//
-							// Remove file
-							//
-							common::file::remove( path);
-						}
+					   common::file::remove( path);
 					}
+
 					std::ofstream brokerQueueFile( path);
 					brokerQueueFile << queue.getKey();
 				}

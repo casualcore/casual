@@ -72,6 +72,7 @@ Compile( unittest/isolated/source/test_ipc.cpp, unittest/isolated/obj/test_ipc.o
 Compile( unittest/isolated/source/test_marshal.cpp, unittest/isolated/obj/test_marshal.o)
 Compile( unittest/isolated/source/test_queue.cpp, unittest/isolated/obj/test_queue.o)
 Compile( unittest/isolated/source/test_message_dispatch.cpp, unittest/isolated/obj/test_message_dispatch.o)
+Compile( unittest/isolated/source/test_server_context.cpp, unittest/isolated/obj/test_server_context.o);
 
 Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
 Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test_arguments.o)
@@ -85,6 +86,7 @@ LinkIsolatedUnittest( casual-common-isolated, \
 	unittest/isolated/obj/test_marshal.o \
 	unittest/isolated/obj/test_queue.o \
 	unittest/isolated/obj/test_message_dispatch.o \
+	unittest/isolated/obj/test_server_context.o \
 	unittest/isolated/obj/test_uuid.o \
     unittest/isolated/obj/test_file.o \
     unittest/isolated/obj/test_arguments.o \

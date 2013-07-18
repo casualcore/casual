@@ -33,7 +33,7 @@ namespace casual
             {
             public:
 
-               typedef void result_type;
+               typedef ipc::send::Queue ipc_type;
 
                Writer( ipc::send::Queue& queue);
 
@@ -59,7 +59,7 @@ namespace casual
 
                void send( marshal::output::Binary& archive, message_type_type type);
 
-               ipc::send::Queue& m_queue;
+               ipc_type& m_queue;
             };
 
 
@@ -70,7 +70,7 @@ namespace casual
             {
             public:
 
-               typedef void result_type;
+               typedef ipc::receive::Queue ipc_type;
 
                Reader( ipc::receive::Queue& queue);
 
@@ -104,7 +104,7 @@ namespace casual
 
                void correlate( marshal::input::Binary& archive, message_type_type type);
 
-               ipc::receive::Queue& m_queue;
+               ipc_type& m_queue;
 
             };
          } // blocking
@@ -118,7 +118,7 @@ namespace casual
             {
             public:
 
-               typedef bool result_type;
+               typedef ipc::send::Queue ipc_type;
 
                Writer( ipc::send::Queue& queue);
 
@@ -147,7 +147,7 @@ namespace casual
 
                bool send( marshal::output::Binary& archive, message_type_type type);
 
-               ipc::send::Queue& m_queue;
+               ipc_type& m_queue;
             };
 
 
@@ -158,7 +158,7 @@ namespace casual
             {
             public:
 
-               typedef bool result_type;
+               typedef ipc::receive::Queue ipc_type;
 
                Reader( ipc::receive::Queue& queue);
 
@@ -196,45 +196,44 @@ namespace casual
 
                bool correlate( marshal::input::Binary& archive, message_type_type type);
 
-               ipc::receive::Queue& m_queue;
+               ipc_type& m_queue;
 
             };
 
          } // non_blocking
 
 
-         //
-         template< typename I, typename Q>
-         struct basic_queue
+         //!
+         //! Wrapper that exposes the queue interface and holds the ipc resource
+         //!
+         template< typename Q, typename I = typename Q::ipc_type>
+         struct ipc_wrapper
          {
-            typedef I ipc_queue_type;
             typedef Q queue_type;
+            typedef I ipc_type;
 
             template< typename... Args>
-            basic_queue( Args&& ...args) : m_ipcQueue( std::forward< Args>( args)...), m_queue( m_ipcQueue) {}
+            ipc_wrapper( Args&& ...args) : m_ipcQueue( std::forward< Args>( args)...), m_queue( m_ipcQueue) {}
 
-            basic_queue( basic_queue&&) = default;
+            ipc_wrapper( ipc_wrapper&&) = default;
 
 
-            /*
-             * TODO: Why does not this work? */
+            //!
+            //! Reads or writes to/from the queue, depending on the type of queue_type
+            //!
             template< typename T>
             auto operator () ( T& value) -> decltype( std::declval<Q>()( value))
             {
                return m_queue( value);
             }
 
-
-            /*
-            template< typename T>
-            void operator () ( T&& value)
+            const ipc_type& ipc() const
             {
-               return m_queue( std::forward< T>( value));
+               return m_ipcQueue;
             }
-            */
 
          private:
-            ipc_queue_type m_ipcQueue;
+            ipc_type m_ipcQueue;
             queue_type m_queue;
          };
 

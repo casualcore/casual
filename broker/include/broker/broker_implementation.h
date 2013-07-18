@@ -419,7 +419,7 @@ namespace casual
             }
          };
 
-         typedef basic_connect< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> Connect;
+         typedef basic_connect< queue::ipc_wrapper< queue::blocking::Writer>> Connect;
 
 
 		   //!
@@ -514,7 +514,7 @@ namespace casual
             }
          };
 
-         typedef basic_servicelookup< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ServiceLookup;
+         typedef basic_servicelookup< queue::ipc_wrapper< queue::blocking::Writer>> ServiceLookup;
 
 
          //!
@@ -581,7 +581,7 @@ namespace casual
          };
 
 
-         typedef basic_ack< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ACK;
+         typedef basic_ack< queue::ipc_wrapper< queue::blocking::Writer>> ACK;
 
 
          //!
@@ -592,12 +592,13 @@ namespace casual
          struct Policy
          {
 
-            typedef queue::basic_queue< ipc::send::Queue, queue::blocking::Writer> reply_writer;
+            typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
+            typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
 
             Policy( broker::State& state) : m_state( state) {}
 
 
-            void connect( message::server::Connect& message)
+            message::server::Configuration connect( message::server::Connect& message)
             {
 
                message.serverId.queue_key = ipc::getReceiveQueue().getKey();
@@ -613,6 +614,10 @@ namespace casual
                //
                Advertise advertise( m_state);
                advertise.dispatch( message);
+
+               message::server::Configuration configuration;
+               configuration.transactionManagerQueue = m_state.transactionManagerQueue;
+               return configuration;
             }
 
             void disconnect()
