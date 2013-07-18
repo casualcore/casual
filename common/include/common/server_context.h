@@ -17,8 +17,10 @@
 #include "common/environment.h"
 
 #include "common/calling_context.h"
+#include "common/transaction_context.h"
 #include "common/platform.h"
 #include "common/logger.h"
+#include "common/trace.h"
 
 
 #include "xatmi.h"
@@ -117,10 +119,26 @@ namespace casual
             //!
             //! Handles XATMI-calls
             //!
+            //! Sematics:
+            //! - construction
+            //! -- send connect to broker - connect server - advertise all services
+            //! - dispatch
+            //! -- set longjump
+            //! -- call user XATMI-service
+            //! -- when user calls tpreturn we longjump back
+            //! -- send reply to caller
+            //! -- send ack to broker
+            //! -- send time-stuff to monitor (if active)
+            //! -- TODO: transaction stuff
+            //! - destruction
+            //! -- send disconnect to broker - disconnect server - unadvertise services
+            //!
+            //! @note it's a template only to be able to unittest it
+            //!
             template< typename P>
             struct basic_call
             {
-               typedef P queue_policy;
+               typedef P policy_type;
 
                typedef message::service::callee::Call message_type;
 
@@ -129,30 +147,32 @@ namespace casual
 
 
                //!
-               //! Advertise @p services to the broker build a dispatch-table for
+               //! Connect @p server to the broker, broker will build a dispatch-table for
                //! coming XATMI-calls
                //!
-               basic_call( server::Arguments& arguments)
+               template< typename... Args>
+               basic_call( server::Arguments& arguments, Args&&... arg) : m_policy( std::forward< Args>( arg)...)
                {
                   m_state.m_server_done = arguments.m_server_done;
 
-                  message::service::Advertise message;
-                  message.serverId.queue_key = queue_policy::receiveKey();
-                  message.serverPath = common::environment::getExecutablePath();
+                  message::server::Connect message;
 
 
                   for( auto&& service : arguments.m_services)
                   {
                      message.services.emplace_back( service.m_name);
                      m_state.services.emplace( service.m_name, std::move( service));
-
                   }
 
                   //
-                  // Let the broker know about us, and our services...
+                  // Connect to casual
                   //
-                  typename queue_policy::blocking_broker_writer brokerWriter;
-                  brokerWriter( message);
+                  auto configuration = m_policy.connect( message);
+
+                  transaction::Context::instance().state().transactionManagerQueue
+                        = configuration.transactionManagerQueue;
+                  logger::debug << "transactionManagerQueue: " << configuration.transactionManagerQueue;
+
 
                   //
                   // Call tpsrvinit
@@ -175,13 +195,7 @@ namespace casual
                      //
                      m_state.m_server_done();
 
-                     message::server::Disconnect message;
-
-                     //
-                     // we can't block here...
-                     //
-                     typename queue_policy::non_blocking_broker_writer brokerWriter;
-                     brokerWriter( message);
+                     m_policy.disconnect();
                   }
                   catch( ...)
                   {
@@ -198,15 +212,14 @@ namespace casual
                //!
                void dispatch( message_type& message)
                {
-
-                  server::State& state = server::Context::instance().getState();
+                  common::Trace trace{ "basic_call::dispatch"};
 
                   //
                   // Set starttime. TODO: Should we try to get the startime earlier? Hence, at ipc-queue level?
                   //
                   if( message.service.monitor_queue != 0)
                   {
-                     state.monitor.start = common::clock_type::now();
+                     m_state.monitor.start = common::clock_type::now();
                   }
 
 
@@ -219,10 +232,14 @@ namespace casual
                   //
                   // Prepare for tpreturn.
                   //
-                  int jumpState = setjmp( state.long_jump_buffer);
+                  // ATTENTION: no types with destructor should be instantiated between
+                  // setjmp and the else clause for 'if( jumpState == 0)'
+                  //
+                  int jumpState = setjmp( m_state.long_jump_buffer);
 
                   if( jumpState == 0)
                   {
+
                      //
                      // No longjmp has been called, this is the first time in this "service call"
                      // Let's call the user service...
@@ -231,11 +248,11 @@ namespace casual
                      //
                      // set the call-correlation
                      //
-                     state.reply.callDescriptor = message.callDescriptor;
+                     m_state.reply.callDescriptor = message.callDescriptor;
 
-                     auto findIter = state.services.find( message.service.name);
+                     auto findIter = m_state.services.find( message.service.name);
 
-                     if( findIter == state.services.end())
+                     if( findIter == m_state.services.end())
                      {
                         throw common::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
                      }
@@ -261,24 +278,18 @@ namespace casual
                   else
                   {
 
-
                      //
                      // User has called tpreturn.
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     typename queue_policy::blocking_send_writer replyWriter( message.reply.queue_key);
-                     replyWriter( state.reply);
+                     typename policy_type::reply_writer replyWriter( message.reply.queue_key);
+                     replyWriter( m_state.reply);
 
                      //
                      // Send ACK to broker
                      //
-                     message::service::ACK ack;
-                     ack.server.queue_key = queue_policy::receiveKey();
-                     ack.service = message.service.name;
-
-                     typename queue_policy::blocking_broker_writer brokerWriter;
-                     brokerWriter( ack);
+                     m_policy.ack( message);
 
                      //
                      // Do some cleanup...
@@ -290,15 +301,15 @@ namespace casual
                      //
                      if( message.service.monitor_queue != 0)
                      {
-                        state.monitor.end = common::clock_type::now();
-                        state.monitor.callId = message.callId;
-                        state.monitor.service = message.service.name;
-                        state.monitor.parentService = message.callee;
+                        m_state.monitor.end = common::clock_type::now();
+                        m_state.monitor.callId = message.callId;
+                        m_state.monitor.service = message.service.name;
+                        m_state.monitor.parentService = message.callee;
 
-                        ipc::send::Queue queue( message.service.monitor_queue);
-                        queue::non_blocking::Writer writer( queue);
+                        typename policy_type::monitor_writer monitorWriter( message.service.monitor_queue);
 
-                        if( ! writer( state.monitor))
+
+                        if( ! monitorWriter( m_state.monitor))
                         {
                            common::logger::warning << "could not write to monitor queue";
                         }
@@ -306,7 +317,7 @@ namespace casual
                   }
                }
             private:
-
+               policy_type m_policy;
                server::State& m_state = server::Context::instance().getState();
 
             };
@@ -327,11 +338,59 @@ namespace casual
                      broker_writer() : W( ipc::getBrokerQueue()) {}
                   };
 
+                  typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
+                  typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
+
+               private:
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
-                  typedef queue::basic_queue< ipc::send::Queue, queue::blocking::Writer> blocking_send_writer;
 
-                  static ipc::receive::Queue::queue_key_type receiveKey() { return ipc::getReceiveQueue().getKey(); }
+               public:
+                  message::server::Configuration connect( message::server::Connect& message)
+                  {
+                     //
+                     // Let the broker know about us, and our services...
+                     //
+
+                     message.serverId.queue_key = ipc::getReceiveQueue().getKey();
+                     message.path = common::environment::getExecutablePath();
+
+                     blocking_broker_writer brokerWriter;
+                     brokerWriter( message);
+
+
+                     //
+                     // Wait for configuration reply
+                     //
+                     queue::blocking::Reader reader( ipc::getReceiveQueue());
+                     message::server::Configuration configuration;
+                     reader( configuration);
+
+                     return configuration;
+                  }
+
+                  void disconnect()
+                  {
+                     message::server::Disconnect message;
+
+                     //
+                     // we can't block here...
+                     //
+                     non_blocking_broker_writer brokerWriter;
+                     brokerWriter( message);
+                  }
+
+
+                  void ack( const message::service::callee::Call& message)
+                  {
+                     message::service::ACK ack;
+                     ack.server.queue_key = ipc::getReceiveQueue().getKey();
+                     ack.service = message.service.name;
+
+                     blocking_broker_writer brokerWriter;
+                     brokerWriter( ack);
+                  }
+
 
                };
             } // basic

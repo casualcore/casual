@@ -8,6 +8,7 @@
 
 INCLUDE_PATHS= include \
 	../xatmi/include \
+	../transaction/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 
@@ -19,6 +20,7 @@ Compile( source/server_context.cpp, obj/server_context.o)
 Compile( source/service_context.cpp, obj/service_context.o)
 Compile( source/calling_context.cpp, obj/calling_context.o)
 Compile( source/buffer_context.cpp, obj/buffer_context.o)
+Compile( source/transaction_context.cpp, obj/transaction_context.o)
 Compile( source/ipc.cpp, obj/ipc.o)
 Compile( source/queue.cpp, obj/queue.o)
 
@@ -34,11 +36,12 @@ Compile( source/process.cpp, obj/process.o)
 
 
 
-LinkLibrary( casual_common, \
+LinkLibrary( casual-common, \
 	obj/server_context.o \
 	obj/service_context.o \
 	obj/calling_context.o \
 	obj/buffer_context.o \
+	obj/transaction_context.o \
 	obj/ipc.o \ 
 	obj/queue.o \
 	obj/uuid.o \
@@ -69,6 +72,7 @@ Compile( unittest/isolated/source/test_ipc.cpp, unittest/isolated/obj/test_ipc.o
 Compile( unittest/isolated/source/test_marshal.cpp, unittest/isolated/obj/test_marshal.o)
 Compile( unittest/isolated/source/test_queue.cpp, unittest/isolated/obj/test_queue.o)
 Compile( unittest/isolated/source/test_message_dispatch.cpp, unittest/isolated/obj/test_message_dispatch.o)
+Compile( unittest/isolated/source/test_server_context.cpp, unittest/isolated/obj/test_server_context.o);
 
 Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
 Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test_arguments.o)
@@ -76,17 +80,18 @@ Compile( unittest/isolated/source/test_file.cpp, unittest/isolated/obj/test_file
 Compile( unittest/isolated/source/test_process.cpp, unittest/isolated/obj/test_process.o)
 Compile( unittest/isolated/source/test_string.cpp, unittest/isolated/obj/test_string.o)
 
-LinkIsolatedUnittest( casual_common_isolated, \
+LinkIsolatedUnittest( casual-common-isolated, \
 	unittest/isolated/obj/test_buffer.o \
 	unittest/isolated/obj/test_ipc.o \
 	unittest/isolated/obj/test_marshal.o \
 	unittest/isolated/obj/test_queue.o \
 	unittest/isolated/obj/test_message_dispatch.o \
+	unittest/isolated/obj/test_server_context.o \
 	unittest/isolated/obj/test_uuid.o \
     unittest/isolated/obj/test_file.o \
     unittest/isolated/obj/test_arguments.o \
     unittest/isolated/obj/test_process.o \
     unittest/isolated/obj/test_string.o \
     , \
-	casual_common )	
+	casual-common )	
 

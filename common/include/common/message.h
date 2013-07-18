@@ -25,9 +25,12 @@ namespace casual
 
       namespace message
       {
-         enum
+         enum Type
          {
-            cServerDisconnect  = 10, // message type can't be 0!
+
+            cServerConnect  = 10, // message type can't be 0!
+            cServerConfiguration,
+            cServerDisconnect,
             cServiceAdvertise,
             cServiceUnadvertise,
             cServiceNameLookupRequest,
@@ -35,10 +38,14 @@ namespace casual
             cServiceCall,
             cServiceReply,
             cServiceAcknowledge,
-            cMonitorAdvertise,
-            cMonitorUnadvertise,
+            cMonitorConnect = 20,
+            cMonitorDisconnect,
             cMonitorNotify,
+            cTransactionManagerConnect = 30,
+            //cTransactionMonitorUnadvertise,
+
          };
+
 
 
          struct Service
@@ -91,14 +98,34 @@ namespace casual
                }
             };
 
-            struct Disconnect
+            template< message::Type type>
+            struct basic_connect
             {
                enum
                {
-                  message_type = cServerDisconnect
+                  message_type = type
                };
 
-               Id serverId;
+               server::Id serverId;
+               std::string path;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & serverId;
+                  archive & path;
+               }
+            };
+
+            template< message::Type type>
+            struct basic_disconnect
+            {
+               enum
+               {
+                  message_type = type
+               };
+
+               server::Id serverId;
 
                template< typename A>
                void marshal( A& archive)
@@ -106,7 +133,48 @@ namespace casual
                   archive & serverId;
                }
             };
-         }
+
+            struct Connect : public basic_connect< cServerConnect>
+            {
+               typedef basic_connect< cServerConnect> base_type;
+
+               std::vector< Service> services;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  base_type::marshal( archive);
+                  archive & services;
+               }
+
+            };
+
+            //!
+            //! Sent from the broker with "start-up-information" for a server
+            //!
+            struct Configuration
+            {
+               enum
+               {
+                  message_type = cServerConfiguration
+               };
+
+               typedef ipc::message::Transport::queue_key_type queue_key_type;
+
+               queue_key_type transactionManagerQueue = 0;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & transactionManagerQueue;
+               }
+            };
+
+            typedef basic_disconnect< cServerDisconnect> Disconnect;
+
+         } // server
+
+
 
          namespace service
          {
@@ -196,8 +264,8 @@ namespace casual
                         archive & server;
                      }
                   };
-               }
-            }
+               } // lookup
+            } // name
 
             struct base_call
             {
@@ -311,7 +379,6 @@ namespace casual
                template< typename A>
                void marshal( A& archive)
                {
-
                   archive & callDescriptor;
                   archive & returnValue;
                   archive & userReturnCode;
@@ -341,49 +408,20 @@ namespace casual
                   archive & server;
                }
             };
-         }
+         } // service
+
 
          namespace monitor
          {
             //!
             //! Used to advertise the monitorserver
             //!
-            struct Advertise
-            {
-               enum
-               {
-                  message_type = cMonitorAdvertise
-               };
-
-               server::Id serverId;
-               std::string name;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & serverId;
-                  archive & name;
-               }
-            };
+            typedef server::basic_connect< cMonitorConnect> Connect;
 
             //!
             //! Used to unadvertise the monitorserver
             //!
-            struct Unadvertise
-            {
-               enum
-               {
-                  message_type = cMonitorUnadvertise
-               };
-
-               server::Id serverId;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & serverId;
-               }
-            };
+            typedef server::basic_disconnect< cMonitorDisconnect> Disconnect;
 
             //!
             //! Notify monitorserver with statistics
@@ -416,7 +454,23 @@ namespace casual
                   archive & end;
                }
             };
+         } // monitor
+
+         namespace transaction
+         {
+            //!
+            //! Used to advertise the transaction monitor
+            //!
+            typedef server::basic_connect< cTransactionManagerConnect> Connect;
+
+            //!
+            //! Used to unadvertise the transaction monitor
+            //!
+            //typedef basic_disconnect< cTransactionMonitorUnadvertise> Unadvertise;
+
+
          }
+
          //!
          //! Deduce witch type of message it is.
          //!

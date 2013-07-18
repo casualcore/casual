@@ -12,6 +12,9 @@
 
 #include "common/message.h"
 #include "common/queue.h"
+#include "common/logger.h"
+#include "common/environment.h"
+#include "common/server_context.h"
 
 //
 // std
@@ -41,11 +44,11 @@ namespace casual
 			struct Server
 			{
 
-				casual::broker::Server operator () ( const message::service::Advertise& message) const
+				casual::broker::Server operator () ( const message::server::Connect& message) const
 				{
 					casual::broker::Server result;
 
-					result.path = message.serverPath;
+					result.path = message.path;
 					result.pid = message.serverId.pid;
 					result.queue_key = message.serverId.queue_key;
 
@@ -237,13 +240,13 @@ namespace casual
 		   };
 
          //!
-         //! MonitorConnect
+         //! Monitor Connect
          //!
-         struct MonitorAdvertise: public Base
+         struct MonitorConnect: public Base
          {
-            typedef message::monitor::Advertise message_type;
+            typedef message::monitor::Connect message_type;
 
-            MonitorAdvertise( State& state)
+            MonitorConnect( State& state)
                   : Base( state)
             {
             }
@@ -256,85 +259,90 @@ namespace casual
          };
 
          //!
-         //! MonitorUnadvertise
+         //! Monitor Disconnect
          //!
-         struct MonitorUnadvertise: public Base
+         struct MonitorDisconnect: public Base
          {
-            typedef message::monitor::Unadvertise message_type;
+            typedef message::monitor::Disconnect message_type;
 
-            MonitorUnadvertise( State& state)
+            MonitorDisconnect( State& state)
                   : Base( state)
             {
             }
 
             void dispatch( message_type& message)
             {
-
+               m_state.monitorQueue = 0;
             }
 
          };
 
-
-		   //!
-         //! Advertise 0..N services for a server.
          //!
-		   struct Advertise : public Base
-		   {
-		      typedef message::service::Advertise message_type;
-
-		      Advertise( State& state) : Base( state) {}
-
-		      void dispatch( message_type& message)
-		      {
-		         //
-               // If the server is not registered before, it will be added now... Otherwise
-               // we use the current one...
-               //
-               auto serverIterator = m_state.servers.emplace(
-                     message.serverId.pid, transform::Server()( message)).first;
-
-               //
-               // Add all the services, with this corresponding server
-               //
-               std::for_each(
-                  std::begin( message.services),
-                  std::end( message.services),
-                  state::internal::Service( &serverIterator->second, m_state.services));
-
-		      }
-
-		   };
-
-		   //!
-         //! Unadvertise 0..N services for a server.
+         //! Transaction Manager Connect
          //!
-		   struct Unadvertise : public Base
+         struct TransactionManagerConnect: public Base
          {
-            typedef message::service::Unadvertise message_type;
+            typedef message::transaction::Connect message_type;
 
-            Unadvertise( State& state) : Base( state) {}
+            TransactionManagerConnect( State& state)
+                  : Base( state)
+            {
+            }
 
             void dispatch( message_type& message)
             {
-               state::internal::removeServices(
-                  std::begin( message.services),
-                  std::end( message.services),
-                  message.serverId.pid,
-                  m_state);
-
+               m_state.transactionManagerQueue = message.serverId.queue_key;
             }
          };
 
-		   //!
-		   //! A server is disconnected
-		   //!
-		   struct Disconnect : public Base
+         //!
+         //! Advertise 0..N services for a server.
+         //!
+         struct Advertise : public Base
+         {
+            typedef message::service::Advertise message_type;
+
+            Advertise( State& state) : Base( state) {}
+
+            template< typename M>
+            void dispatch( M& message)
+            {
+               //
+               // Find the server
+               //
+               auto find = m_state.servers.find( message.serverId.pid);
+
+               if( find != std::end( m_state.servers))
+               {
+                  //
+                  // Add all the services, with this corresponding server
+                  //
+                  std::for_each(
+                     std::begin( message.services),
+                     std::end( message.services),
+                     state::internal::Service( &find->second, m_state.services));
+
+               }
+               else
+               {
+
+                  logger::error << "server (pid: " << message.serverId.pid << ") has not connected before advertising services";
+
+               }
+            }
+         };
+
+         //!
+         //! A server is disconnected
+         //!
+         struct Disconnect : public Base
          {
             typedef message::server::Disconnect message_type;
 
             Disconnect( State& state) : Base( state) {}
 
-            void dispatch( message_type& message)
+            template< typename M>
+            void dispatch( M& message)
             {
                //
                // Find all corresponding services this server have advertise
@@ -359,6 +367,82 @@ namespace casual
                m_state.servers.erase( message.serverId.pid);
             }
          };
+
+         template< typename Q>
+         struct basic_connect : public Base
+         {
+            typedef message::server::Connect message_type;
+            typedef Q queue_writer_type;
+
+            basic_connect( State& state) : Base( state) {}
+
+            void dispatch( message_type& message)
+            {
+
+               auto find =  m_state.servers.find( message.serverId.pid);
+
+               if( find != std::end( m_state.servers))
+               {
+                  //
+                  // We got the server... Why?
+                  // - log
+                  // - remove
+                  //
+                  logger::error << "server (pid: " << message.serverId.pid << ") is already connected";
+
+                  Disconnect disconnect( m_state);
+                  disconnect.dispatch( message);
+               }
+
+               //
+               // We add the server
+               //
+               m_state.servers.emplace(
+                     message.serverId.pid, transform::Server()( message));
+
+               //
+               // Server is started for the first time.
+               // Send some configuration
+               //
+               message::server::Configuration configuation;
+               configuation.transactionManagerQueue = m_state.transactionManagerQueue;
+
+               queue_writer_type writer( message.serverId.queue_key);
+               writer( configuation);
+
+
+               //
+               // Advertiese the servies
+               //
+               Advertise advertise( m_state);
+               advertise.dispatch( message);
+            }
+         };
+
+         typedef basic_connect< queue::ipc_wrapper< queue::blocking::Writer>> Connect;
+
+
+		   //!
+         //! Unadvertise 0..N services for a server.
+         //!
+		   struct Unadvertise : public Base
+         {
+            typedef message::service::Unadvertise message_type;
+
+            Unadvertise( State& state) : Base( state) {}
+
+            void dispatch( message_type& message)
+            {
+               state::internal::removeServices(
+                  std::begin( message.services),
+                  std::end( message.services),
+                  message.serverId.pid,
+                  m_state);
+
+            }
+         };
+
+
 
 
 
@@ -430,7 +514,7 @@ namespace casual
             }
          };
 
-         typedef basic_servicelookup< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ServiceLookup;
+         typedef basic_servicelookup< queue::ipc_wrapper< queue::blocking::Writer>> ServiceLookup;
 
 
          //!
@@ -497,14 +581,75 @@ namespace casual
          };
 
 
-         typedef basic_ack< queue::basic_queue< ipc::send::Queue, queue::blocking::Writer>> ACK;
+         typedef basic_ack< queue::ipc_wrapper< queue::blocking::Writer>> ACK;
 
 
+         //!
+         //! Broker needs to have it's own policy for callee::handle::basic_call, since
+         //! we can't communicate with blocking to the same queue (with read, who is
+         //! going to write? with write, what if the queue is full?)
+         //!
+         struct Policy
+         {
+
+            typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
+            typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
+
+            Policy( broker::State& state) : m_state( state) {}
 
 
+            message::server::Configuration connect( message::server::Connect& message)
+            {
 
-		}
+               message.serverId.queue_key = ipc::getReceiveQueue().getKey();
+               message.path = common::environment::getExecutablePath();
 
+               //
+               // We add the server
+               //
+               m_state.servers.emplace(
+                     message.serverId.pid, transform::Server()( message));
+               //
+               // Advertiese the servies
+               //
+               Advertise advertise( m_state);
+               advertise.dispatch( message);
+
+               message::server::Configuration configuration;
+               configuration.transactionManagerQueue = m_state.transactionManagerQueue;
+               return configuration;
+            }
+
+            void disconnect()
+            {
+               message::server::Disconnect message;
+
+               Disconnect disconnect( m_state);
+               disconnect.dispatch( message);
+            }
+
+
+            void ack( const message::service::callee::Call& message)
+            {
+               message::service::ACK ack;
+               ack.server.queue_key = ipc::getReceiveQueue().getKey();
+               ack.service = message.service.name;
+
+               ACK sendACK( m_state);
+               sendACK.dispatch( ack);
+            }
+
+
+         private:
+
+            broker::State& m_state;
+
+         };
+
+         typedef common::callee::handle::basic_call< broker::handle::Policy> Call;
+
+
+		} // handle
 
 	} // broker
 } // casual

@@ -8,7 +8,6 @@
 #ifndef CASUAL_IPC_H_
 #define CASUAL_IPC_H_
 
-#include "xatmi.h"
 
 #include "common/file.h"
 #include "common/uuid.h"
@@ -16,6 +15,10 @@
 
 #include "common/types.h"
 
+
+//
+// std
+//
 #include <string>
 #include <array>
 
@@ -202,9 +205,9 @@ namespace casual
 
          receive::Queue& getReceiveQueue();
 
-      }
-   }
-}
+      } // ipc
+   } // common
+} // casual
 
 
 

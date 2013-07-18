@@ -206,7 +206,7 @@ namespace casual
 
 
             template< typename Q, typename T>
-            typename Q::result_type timeoutWrapper( Q& queue, T& value)
+            auto timeoutWrapper( Q& queue, T& value) -> decltype( queue( value))
             {
                try
                {
@@ -220,7 +220,7 @@ namespace casual
             }
 
             template< typename Q, typename T>
-            typename Q::result_type timeoutWrapper( Q& queue, T& value, int callDescriptor)
+            auto timeoutWrapper( Q& queue, T& value, int callDescriptor) -> decltype( queue( value))
             {
                try
                {

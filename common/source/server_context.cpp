@@ -38,7 +38,7 @@ namespace casual
 
          Context::Context()
          {
-
+            Trace trace{ "server::Context::Context"};
          }
 
          /*
@@ -84,6 +84,7 @@ namespace casual
 
          void Context::advertiseService( const std::string& name, tpservice function)
          {
+            Trace trace{ "server::Context::advertiseService"};
 
             //
             // validate

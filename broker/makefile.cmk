@@ -29,7 +29,7 @@ LinkLibrary( casual-broker-admin-vo, \
     admin/obj/servicevo.o \
     admin/obj/servervo.o \
     ,\
-    casual_sf ) 
+    casual-sf ) 
 
 	
 
@@ -41,13 +41,13 @@ Compile( admin/source/adminserverimplementation.cpp, obj/adminserverimplementati
 Compile( admin/source/adminserver.cpp, obj/adminserver.o)
 
 
-LinkExecutable( casual_broker, \
+LinkExecutable( casual-broker, \
 	obj/broker.o \
 	obj/broker_main.o \
 	obj/action.o \
 	obj/adminserverimplementation.o \
 	obj/adminserver.o, \
-	casual_common casual_sf casual-xatmi casual-broker-admin-vo)
+	casual-common casual-sf casual-xatmi casual-broker-admin-vo)
 	
 	
 //
@@ -57,7 +57,7 @@ Compile( admin/source/broker_admin.cpp, obj/broker_admin.o)
 
 LinkExecutable( casual-broker-admin, \
     obj/broker_admin.o, \
-    casual_common casual_sf casual-xatmi casual-broker-admin-vo)
+    casual-common casual-sf casual-xatmi casual-broker-admin-vo)
 	
 	
 //
@@ -68,11 +68,11 @@ Compile( unittest/isolated/source/test_broker_confguration.cpp, unittest/isolate
 Compile( unittest/isolated/source/test_broker_transformation.cpp, unittest/isolated/obj/test_broker_transformation.o)
 
 
-LinkIsolatedUnittest( casual_broker_isolated, \
+LinkIsolatedUnittest( casual-broker-isolated, \
 	unittest/isolated/obj/test_broker.o \
 	unittest/isolated/obj/test_broker_confguration.o \
 	unittest/isolated/obj/test_broker_transformation.o, \
-	casual_common casual_sf casual-broker-admin-vo)
+	casual-common casual-sf casual-broker-admin-vo)
 	
 	
 

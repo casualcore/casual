@@ -8,6 +8,7 @@
 #include "sf/buffer.h"
 #include "common/exception.h"
 
+
 #include "xatmi.h"
 
 //
@@ -21,7 +22,7 @@ namespace casual
    {
       namespace buffer
       {
-         Type type( const char* buffer)
+         Type type( common::raw_buffer_type buffer)
          {
 
 
@@ -41,7 +42,7 @@ namespace casual
             return result;
          }
 
-         Raw::Raw( char* p_buffer, std::size_t p_size) : buffer( p_buffer), size( p_size)
+         Raw::Raw( common::raw_buffer_type p_buffer, std::size_t p_size) : buffer( p_buffer), size( p_size)
          {
 
          }
@@ -117,7 +118,7 @@ namespace casual
          }
 
 
-         void Base::xatmi_deleter::operator ()( char* xatmiBuffer) const
+         void Base::xatmi_deleter::operator ()( common::raw_buffer_type xatmiBuffer) const
          {
             tpfree( xatmiBuffer);
          }

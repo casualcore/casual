@@ -26,7 +26,9 @@ Compile( source/service_protocol.cpp, obj/service_protocol.o)
 Compile( source/archive_logger.cpp, obj/archive_logger.o)
 Compile( source/xatmi_call.cpp, obj/xatmi_call.o)
 
-LinkLibrary( casual_sf,\
+Compile( source/trace.cpp, obj/trace.o)
+
+LinkLibrary( casual-sf,\
     obj/archive.o \
     obj/archive_maker.o \
     obj/buffer.o \
@@ -35,8 +37,9 @@ LinkLibrary( casual_sf,\
     obj/service_protocol.o \
     obj/archive_logger.o \
     obj/xatmi_call.o \
+    obj/trace.o \
     ,\
-    casual_common casual-xatmi yaml-cpp json-c)
+    casual-common casual-xatmi yaml-cpp json-c)
 
 
 //
@@ -53,7 +56,7 @@ Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid
 Compile( unittest/isolated/source/test_xatmi_call.cpp, unittest/isolated/obj/test_xatmi_call.o)
 
 
-LinkIsolatedUnittest( casual_sf_isolated, \
+LinkIsolatedUnittest( casual-sf-isolated, \
 	unittest/isolated/obj/test_namevaluepair.o \
 	unittest/isolated/obj/test_archive.o \
 	unittest/isolated/obj/test_traits.o \
@@ -64,6 +67,6 @@ LinkIsolatedUnittest( casual_sf_isolated, \
 	unittest/isolated/obj/test_uuid.o \
 	unittest/isolated/obj/test_xatmi_call.o \
 	, \
-	casual_sf casual-xatmi casual_common json-c)
+	casual-sf casual-xatmi casual-common json-c)
 
 	

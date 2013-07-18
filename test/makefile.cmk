@@ -23,7 +23,7 @@ Compile( source/template_server.cpp, obj/template_server.o)
 
 LinkAtmiServer(test, \
 	obj/template_server.o, \
-	casual-xatmi casual_common, \
+	casual-xatmi casual-common, \
 	"casual_test1,casual_test2")
 
 
@@ -33,7 +33,7 @@ Compile( source/template_server_dispatcher.c, obj/template_server_dispatcher.o)
 LinkExecutable(test, \
     obj/template_server_dispatcher.o \
     obj/template_server.o, \
-    casual-xatmi casual_common)	
+    casual-xatmi casual-common)	
 */	
 
 
@@ -42,7 +42,7 @@ LinkExecutable(test, \
 //
 Compile( source/sf_testvo.cpp, obj/sf_testvo.o)
 
-LinkArchive( sf_test_vo, \
+LinkArchive( sf-test-vo, \
     obj/sf_testvo.o)
 
 
@@ -55,10 +55,10 @@ Compile( source/template_sf_server_implementation.cpp, obj/template_sf_server_im
 LinkAtmiServer(sf_test, \
     obj/template_sf_server.o \
     obj/template_sf_server_implementation.o, \
-    sf_test_vo \
+    sf-test-vo \
     casual-xatmi \
-    casual_common \
-    casual_sf, \
+    casual-common \
+    casual-sf, \
     "casual_sf_test1,casual_sf_test2")
 
 
@@ -66,7 +66,7 @@ LinkAtmiServer(sf_test, \
 Compile( source/template_client.cpp, obj/template_client.o)
 
 LinkExecutable( test_client, \
-	obj/template_client.o, casual_common casual-xatmi)
+	obj/template_client.o, casual-common casual-xatmi)
 	
 
 
@@ -74,7 +74,7 @@ LinkExecutable( test_client, \
 Compile( source/test_multicall.cpp, obj/test_multicall.o)
 
 LinkExecutable( test_multicall_client, \
-	obj/test_multicall.o, casual_common casual-xatmi)
+	obj/test_multicall.o, casual-common casual-xatmi)
 	
 	
 	
@@ -83,9 +83,9 @@ LinkExecutable( test_multicall_client, \
 //
 Compile( unittest/isolated/source/test_yaml_sf_generation.cpp, unittest/isolated/obj/test_yaml_sf_generation.o)
 
-LinkIsolatedUnittest( casual_test_isolated, \
+LinkIsolatedUnittest( casual-test-isolated, \
     unittest/isolated/obj/test_yaml_sf_generation.o, \
-    casual_sf casual-xatmi)
+    casual-sf casual-xatmi)
 	
 	
 //
@@ -94,11 +94,11 @@ LinkIsolatedUnittest( casual_test_isolated, \
 Compile( source/sf_testserverserver.cpp, obj/sf_testserverserver.o)
 Compile( source/sf_testserverimplementation.cpp, obj/sf_testserverimplementation.o)
 
-LinkAtmiServer(sf_detoct_test_server, \
+LinkAtmiServer(sf-detoct-test-server, \
     obj/sf_testserverserver.o \
     obj/sf_testserverimplementation.o, \
-    sf_test_vo \
-    casual_sf \
+    sf-test-vo \
+    casual-sf \
     casual-xatmi, \
     "casual_sf_test1,casual_sf_test2")
 

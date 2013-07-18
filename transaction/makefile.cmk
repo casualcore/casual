@@ -1,0 +1,35 @@
+
+
+
+INCLUDE_PATHS = include \
+    ../common/include \
+    ../xatmi/include \
+    ../thirdparty/database/include \
+    $(UNITTEST_INCLUDE_PATH) \
+
+
+
+LIBRARY_PATHS = bin \
+    ../common/bin \
+    
+
+
+
+//
+// Compile and link the transaction manager
+//
+Compile( source/manager.cpp, obj/manager.o)
+Compile( source/manager_main.cpp, obj/manager_main.o)
+
+
+
+LinkExecutable( casual-transaction-manager,\
+    obj/manager.o \
+    obj/manager_main.o \
+    ,\
+    casual-common sqlite3)
+
+
+
+
+

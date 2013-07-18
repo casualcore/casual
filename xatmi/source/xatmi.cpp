@@ -63,7 +63,7 @@ namespace local
 }
 
 
-long tptypes( const char* ptr, char* type, char* subtype)
+long tptypes( char* ptr, char* type, char* subtype)
 {
    try
    {
