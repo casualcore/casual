@@ -37,7 +37,7 @@ namespace casual
 
          struct Pending
          {
-            typedef common::ipc::message::Transport::queue_key_type queue_key_type;
+            typedef common::platform::queue_key_type queue_key_type;
 
             queue_key_type target;
             common::message::transaction::Reply reply;

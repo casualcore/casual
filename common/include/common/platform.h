@@ -65,7 +65,9 @@ namespace casual
 			typedef long message_type_type;
 
 
-			const std::size_t message_size = 2048;
+			// TODO: bigger!
+			// const std::size_t message_size = 2048;
+			 const std::size_t message_size = 1024;
 
 			//
 			// uuid

@@ -73,6 +73,13 @@ namespace casual
                Binary( const Binary&) = delete;
                Binary& operator = ( const Binary&) = delete;
 
+
+               buffer_type release()
+               {
+                  return std::move( m_buffer);
+               }
+
+
                const buffer_type& get() const
                {
                   return m_buffer;
@@ -92,6 +99,7 @@ namespace casual
                   write( value);
                   return *this;
                }
+
 
             private:
 
@@ -172,6 +180,12 @@ namespace casual
 
 
                Binary() = default;
+
+               Binary( ipc::message::Complete&& message)
+                  : m_buffer( std::move( message.payload)), m_messageType( message.type)
+               {
+               }
+
                Binary( Binary&&) = default;
                Binary( const Binary&) = delete;
                Binary& operator = ( const Binary&) = delete;

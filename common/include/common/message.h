@@ -85,7 +85,7 @@ namespace casual
             struct Id
             {
                typedef common::platform::pid_type pid_type;
-               typedef ipc::message::Transport::queue_key_type queue_key_type;
+               typedef platform::queue_key_type queue_key_type;
 
                Id()
                      : pid( common::platform::getProcessId())
@@ -164,7 +164,7 @@ namespace casual
                   message_type = cServerConfiguration
                };
 
-               typedef ipc::message::Transport::queue_key_type queue_key_type;
+               typedef platform::queue_key_type queue_key_type;
 
                queue_key_type transactionManagerQueue = 0;
 

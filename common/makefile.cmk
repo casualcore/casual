@@ -9,6 +9,7 @@
 INCLUDE_PATHS= include \
 	../xatmi/include \
 	../transaction/include \
+	../serviceframework/include \
 	$(UNITTEST_INCLUDE_PATH) \
 
 

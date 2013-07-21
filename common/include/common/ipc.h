@@ -33,16 +33,13 @@ namespace casual
          {
             struct Transport
             {
-               typedef common::platform::queue_id_type queue_id_type;
-               typedef common::platform::queue_key_type queue_key_type;
-               typedef common::platform::message_type_type message_type_type;
-               typedef common::Uuid::uuid_type correalation_type;
+               typedef platform::message_type_type message_type_type;
+               typedef Uuid::uuid_type correalation_type;
 
 
                struct Header
                {
                   correalation_type m_correlation;
-                  std::size_t m_pid;
                   long m_count;
 
                };
@@ -91,7 +88,38 @@ namespace casual
 
                std::size_t m_size;
             };
-         }
+
+
+            struct Complete
+            {
+               typedef platform::message_type_type message_type_type;
+               typedef common::binary_type payload_type;
+
+               Complete() = default;
+
+               Complete( Transport& transport);
+
+               Complete( message_type_type messageType, common::binary_type&& buffer)
+                  : type( messageType), correlation( Uuid::make()), payload( std::move( buffer)), complete( true)
+               {}
+
+               Complete( Complete&&) = default;
+               Complete& operator = ( Complete&&) = default;
+
+               void add( Transport& transport);
+
+               message_type_type type;
+               Uuid correlation;
+               payload_type payload;
+               bool complete = false;
+
+            };
+
+
+         } // message
+
+
+
 
 
          namespace internal
@@ -99,8 +127,8 @@ namespace casual
             class base_queue
             {
             public:
-               typedef common::platform::queue_id_type queue_id_type;
-               typedef common::platform::queue_key_type queue_key_type;
+               typedef platform::queue_id_type queue_id_type;
+               typedef platform::queue_key_type queue_key_type;
 
                base_queue() = default;
 
@@ -111,6 +139,9 @@ namespace casual
                   rhs.m_key = 0;
                   rhs.m_id = 0;
                }
+
+
+               base_queue( const base_queue&) = delete;
 
                queue_key_type getKey() const;
 
@@ -143,12 +174,22 @@ namespace casual
                Queue& operator = ( const Queue&) = delete;
 
 
-               bool operator () ( message::Transport& message) const
+               //!
+               //! Tries to send the logical message
+               //!
+               //! @return true if sent, false otherwise
+               //!
+               bool operator () ( message::Complete& message) const
                {
                   return send( message, 0);
                }
 
-               bool operator () ( message::Transport& message, const long flags) const
+               //!
+               //! Tries to send the logical message
+               //!
+               //! @return true if sent, false otherwise
+               //!
+               bool operator () ( message::Complete& message, const long flags) const
                {
                   return send( message, flags);
                }
@@ -156,6 +197,7 @@ namespace casual
             private:
 
                bool send( message::Transport& message, const long flags) const;
+               bool send( message::Complete& message, const long flags) const;
             };
 
          }
@@ -180,23 +222,34 @@ namespace casual
                Queue& operator = ( const Queue&) = delete;
 
 
-               bool operator () ( message::Transport& message) const
-               {
-                  return receive( message, 0);
-               }
+               //!
+               //! Tries to find the first logic complete message
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               std::vector< message::Complete> operator () ( const long flags);
 
-               bool operator () ( message::Transport& message, const long flags) const
-               {
-                  // TODO: constraint on flags?
-                  return receive( message, flags);
-               }
+               //!
+               //! Tries to find the first logic complete message with a specific type
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               std::vector< message::Complete> operator () ( message::Complete::message_type_type type, const long flags);
 
             private:
 
+               typedef std::deque< message::Complete> cache_type;
 
-               bool receive( message::Transport& message, const long flags) const;
+               template< typename P>
+               cache_type::iterator find( P predicate, const long flags);
+
+               bool receive( message::Transport& message, const long flags);
+
+               cache_type::iterator cache( message::Transport& message);
 
                common::file::ScopedPath m_scopedPath;
+
+               cache_type m_cache;
             };
          }
 
@@ -208,8 +261,6 @@ namespace casual
       } // ipc
    } // common
 } // casual
-
-
 
 
 #endif /* CASUAL_IPC_H_ */

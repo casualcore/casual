@@ -28,7 +28,7 @@ namespace casual
                   Type( Type&&) = default;
 
                   template< typename T>
-                  auto operator () ( T&& value) const -> decltype( T1()( T2()( std::forward< T>( value))))
+                  auto operator () ( T&& value) const -> decltype( std::declval< T1>()( std::declval< T2>()( std::forward< T>( value))))
                   {
                      return left( right( std::forward< T>( value)));
                   }
@@ -43,6 +43,36 @@ namespace casual
                   return Type< T1, T2>( std::forward< T1>( t1), std::forward< T2>( t2));
                }
             };
+
+            struct And
+            {
+               template< typename T1, typename T2>
+               struct Type
+               {
+                  //Type( T1&& t1, T2&& t2) : left( std::forward< T1>( t1)), right( std::forward< T2>( t2)) {}
+                  Type( T1 t1, T2 t2) : left( t1), right( t2) {}
+
+                  Type( Type&&) = default;
+                  Type( const Type&) = default;
+
+                  template< typename T>
+                  auto operator () ( T&& value) const -> decltype( std::declval< T1>()( std::forward< T>( value)))
+                  {
+                     return left( std::forward< T>( value)) && right( std::forward< T>( value));
+                  }
+               private:
+                  T1 left;
+                  T2 right;
+               };
+
+               template< typename T1, typename T2>
+               static Type< T1, T2> make( T1&& t1, T2&& t2)
+               {
+                  return Type< T1, T2>( std::forward< T1>( t1), std::forward< T2>( t2));
+               }
+
+            };
+
          } // link
 
          template< typename Link>
