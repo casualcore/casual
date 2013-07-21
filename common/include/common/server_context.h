@@ -352,7 +352,7 @@ namespace casual
                      // Let the broker know about us, and our services...
                      //
 
-                     message.serverId.queue_key = ipc::getReceiveQueue().getKey();
+                     message.server.queue_key = ipc::getReceiveQueue().getKey();
                      message.path = common::environment::getExecutablePath();
 
                      blocking_broker_writer brokerWriter;

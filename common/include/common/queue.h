@@ -162,6 +162,13 @@ namespace casual
 
                Reader( ipc::receive::Queue& queue);
 
+               //!
+               //! Tries to get the next binary-message from queue.
+               //!
+               //! @return 0..1 binary-marshal that can be used to deserialize an actual message.
+               //!
+               std::vector< marshal::input::Binary> next();
+
 
                //!
                //! Tries to read a specific message from the queue.

@@ -39,6 +39,11 @@ namespace casual
                      {
                         //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
+                        if( ! m_output.good())
+                        {
+                           open();
+                        }
+
                         m_output <<
                            common::chronology::local() <<
                            '|' << common::environment::getDomainName() <<
@@ -104,10 +109,17 @@ namespace casual
 
                         m_mask |= common::platform::cLOG_error;
 
-                        //
-                        // Open log
-                        //
-                        const std::string logfileName = common::environment::getRootPath() + "/casual.log";
+
+                        open();
+
+                     }
+
+                     //
+                     // Open log
+                     //
+                     void open()
+                     {
+                        static const std::string logfileName = common::environment::getRootPath() + "/casual.log";
 
                         m_output.open( logfileName, std::ios::app | std::ios::out);
 
@@ -117,9 +129,6 @@ namespace casual
                         }
 
                      }
-
-
-
 
                      std::ofstream m_output;
                      int m_mask;

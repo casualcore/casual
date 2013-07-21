@@ -31,17 +31,22 @@ namespace casual
             cServerConnect  = 10, // message type can't be 0!
             cServerConfiguration,
             cServerDisconnect,
-            cServiceAdvertise,
+            cServiceAdvertise = 20,
             cServiceUnadvertise,
             cServiceNameLookupRequest,
             cServiceNameLookupReply,
             cServiceCall,
             cServiceReply,
             cServiceAcknowledge,
-            cMonitorConnect = 20,
+            cMonitorConnect = 30,
             cMonitorDisconnect,
             cMonitorNotify,
-            cTransactionManagerConnect = 30,
+            cTransactionManagerConnect = 40,
+            cTransactionBegin,
+            cTransactionCommit,
+            cTransactionRollback,
+            cTransactionReply
+
             //cTransactionMonitorUnadvertise,
 
          };
@@ -106,13 +111,13 @@ namespace casual
                   message_type = type
                };
 
-               server::Id serverId;
+               server::Id server;
                std::string path;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                   archive & path;
                }
             };
@@ -125,12 +130,12 @@ namespace casual
                   message_type = type
                };
 
-               server::Id serverId;
+               server::Id server;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                }
             };
 
@@ -187,14 +192,14 @@ namespace casual
                };
 
                std::string serverPath;
-               server::Id serverId;
+               server::Id server;
                std::vector< Service> services;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & serverPath;
-                  archive & serverId;
+                  archive & server;
                   archive & services;
                }
             };
@@ -206,13 +211,13 @@ namespace casual
                   message_type = cServiceUnadvertise
                };
 
-               server::Id serverId;
+               server::Id server;
                std::vector< Service> services;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                   archive & services;
                }
             };
@@ -459,7 +464,7 @@ namespace casual
          namespace transaction
          {
             //!
-            //! Used to advertise the transaction monitor
+            //! Used to connect the transaction monitor to broker
             //!
             typedef server::basic_connect< cTransactionManagerConnect> Connect;
 
@@ -467,6 +472,62 @@ namespace casual
             //! Used to unadvertise the transaction monitor
             //!
             //typedef basic_disconnect< cTransactionMonitorUnadvertise> Unadvertise;
+
+            template< message::Type type>
+            struct basic_transaction
+            {
+               enum
+               {
+                  message_type = type
+               };
+
+               server::Id server;
+               XID xid;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & server;
+                  archive & xid;
+               }
+            };
+
+            typedef basic_transaction< cTransactionBegin> Begin;
+            typedef basic_transaction< cTransactionCommit> Commit;
+            typedef basic_transaction< cTransactionRollback> Rollback;
+
+            struct Reply
+            {
+               enum
+               {
+                  message_type = cTransactionReply
+               };
+
+               int state;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & state;
+               }
+
+            };
+
+
+            /*
+             * extern int tx_begin(void);
+   extern int tx_close(void);
+   extern int tx_commit(void);
+   extern int tx_open(void);
+   extern int tx_rollback(void);
+
+      cTransactionBegin,
+            cTransactionCommit,
+            cTransactionRollback,
+             */
+
+
+
 
 
          }

@@ -45,7 +45,7 @@ namespace casual
 
       TEST( casual_common_message_dispatch, add)
       {
-         dispatch::Handler handler;
+         message::dispatch::Handler handler;
 
          EXPECT_TRUE( handler.size() == 0);
 
@@ -65,7 +65,7 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch)
             {
-               dispatch::Handler handler;
+               message::dispatch::Handler handler;
 
                handler.add< local::TestHandler>();
 
@@ -82,7 +82,7 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
             {
-               dispatch::Handler handler;
+               message::dispatch::Handler handler;
 
                handler.add< local::TestHandler>();
 

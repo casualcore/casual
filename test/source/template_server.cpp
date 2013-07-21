@@ -9,10 +9,9 @@
 //! That is, to go "from the outside -> in" instead of the opposite
 //!
 
-#include "template_server.h"
-
 
 #include "common/logger.h"
+#include "common/process.h"
 
 
 #include <unistd.h>
@@ -21,6 +20,10 @@
 
 
 #include "xatmi.h"
+
+extern "C"
+{
+
 
 void casual_test1( TPSVCINFO *serviceContext)
 {
@@ -50,7 +53,9 @@ void casual_test1( TPSVCINFO *serviceContext)
 void casual_test2( TPSVCINFO *serviceContext)
 {
 
-   casual::common::logger::debug << "casual_test2 called";
+   casual::common::logger::debug << "casual_test2 called - sleep for a while...";
+
+   casual::common::process::sleep(  std::chrono::milliseconds( 5));
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
@@ -59,7 +64,7 @@ void casual_test2( TPSVCINFO *serviceContext)
 void casual_test3( TPSVCINFO *serviceContext)
 {
 
-   casual::common::logger::debug << "casual_test2 called";
+   casual::common::logger::debug << "casual_test3 called";
 
    tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }
@@ -74,7 +79,7 @@ int tpsvrinit(int argc, char **argv)
    return 0;
 }
 
-
+}
 
 
 

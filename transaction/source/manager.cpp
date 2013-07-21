@@ -11,7 +11,7 @@
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/environment.h"
-
+#include "common/message_dispatch.h"
 
 using namespace casual::common;
 
@@ -20,8 +20,38 @@ namespace casual
    namespace transaction
    {
 
-      namespace local
+      namespace handle
       {
+
+         struct Begin
+         {
+            typedef message::transaction::Begin message_type;
+
+            void dispatch( message_type& message)
+            {
+
+            }
+         };
+
+         struct Commit
+         {
+            typedef message::transaction::Commit message_type;
+
+            void dispatch( message_type& message)
+            {
+
+            }
+         };
+
+         struct Rollback
+         {
+            typedef message::transaction::Rollback message_type;
+
+            void dispatch( message_type& message)
+            {
+
+            }
+         };
 
 
       }
@@ -45,8 +75,8 @@ namespace casual
          message::transaction::Connect message;
 
          message.path = name;
-         message.serverId.queue_key = m_receiveQueue.getKey();
-         message.serverId.pid = platform::getProcessId();
+         message.server.queue_key = m_receiveQueue.getKey();
+         message.server.pid = platform::getProcessId();
 
          queue::blocking::Writer writer( ipc::getBrokerQueue());
          writer(message);
@@ -55,6 +85,30 @@ namespace casual
       void Manager::start()
       {
          common::Trace trace( "transaction::Manager::start");
+
+         //
+         // prepare message dispatch handlers...
+         //
+
+         message::dispatch::Handler handler;
+
+         handler.add< handle::Begin>();
+         handler.add< handle::Commit>();
+         handler.add< handle::Rollback>();
+
+
+         queue::blocking::Reader queueReader( m_receiveQueue);
+
+         while( true)
+         {
+            auto marshal = queueReader.next();
+
+            if( ! handler.dispatch( marshal))
+            {
+               common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+            }
+
+         }
 
       }
 

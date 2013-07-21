@@ -105,13 +105,20 @@ namespace casual
 
                }
 
+               struct CompleteMessage
+               {
+                  bool operator () ( const ipc::message::Transport& message) const
+                  {
+                     return message.m_payload.m_header.m_count == 0;
+                  }
+               };
 
 
                struct MessageType
                {
                   MessageType( message_type_type type) : m_type( type) {}
 
-                  bool operator () ( const ipc::message::Transport& message)
+                  bool operator () ( const ipc::message::Transport& message) const
                   {
                      return message.m_payload.m_type == m_type;
                   }
@@ -124,7 +131,7 @@ namespace casual
                {
                   Correlation( const common::Uuid& uuid) : m_uuid( uuid) {}
 
-                  bool operator () ( const ipc::message::Transport& message)
+                  bool operator () ( const ipc::message::Transport& message) const
                   {
                      return message.m_payload.m_header.m_correlation == m_uuid;
                   }
@@ -137,9 +144,9 @@ namespace casual
                {
                   MessageTypeInCache( message_type_type type) : m_type( type) {}
 
-                  bool operator () ( const ipc::message::Transport& message)
+                  bool operator () ( const ipc::message::Transport& message) const
                   {
-                     return m_type( message) && message.m_payload.m_header.m_count == 0;
+                     return m_type( message) && CompleteMessage{}( message);
                   }
 
                private:
@@ -194,7 +201,7 @@ namespace casual
                      //
                      current = fetchIfEmpty( queue, current);
 
-                     while( !correlation( *current))
+                     while( ! correlation( *current))
                      {
                         current = fetchIfEmpty( queue, ++current);
                      }
@@ -337,6 +344,7 @@ namespace casual
 
             bool Reader::consume()
             {
+
                ipc::message::Transport transport;
 
                bool fetched = false;
@@ -348,6 +356,14 @@ namespace casual
                }
                return fetched;
 
+            }
+
+            std::vector< marshal::input::Binary> Reader::next()
+            {
+               std::vector< marshal::input::Binary> result;
+
+
+               return result;
             }
 
             bool Reader::correlate( marshal::input::Binary& archive, message_type_type type)

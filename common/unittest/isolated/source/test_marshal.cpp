@@ -94,7 +94,7 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.serverId.queue_key = 666;
+            serverConnect.server.queue_key = 666;
             serverConnect.serverPath = "/bla/bla/bla/sever";
 
             message::Service service;
@@ -120,7 +120,7 @@ namespace casual
 
             input >> result;
 
-            EXPECT_TRUE( result.serverId.queue_key == 666) << result.serverId.queue_key;
+            EXPECT_TRUE( result.server.queue_key == 666) << result.server.queue_key;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 3) << result.services.size();
 
@@ -132,7 +132,7 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.serverId.queue_key = 666;
+            serverConnect.server.queue_key = 666;
             serverConnect.serverPath = "/bla/bla/bla/sever";
 
 
@@ -150,7 +150,7 @@ namespace casual
 
             input >> result;
 
-            EXPECT_TRUE( result.serverId.queue_key == 666) << result.serverId.queue_key;
+            EXPECT_TRUE( result.server.queue_key == 666) << result.server.queue_key;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
 

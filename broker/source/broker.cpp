@@ -181,7 +181,7 @@ namespace casual
          //
 
 
-         common::dispatch::Handler handler;
+         message::dispatch::Handler handler;
 
          handler.add< handle::Connect>( m_state);
          handler.add< handle::Disconnect>( m_state);
@@ -210,19 +210,8 @@ namespace casual
             handler.add< handle::Call>( arguments, m_state);
          }
 
-         queue::blocking::Reader queueReader( m_receiveQueue);
+         message::dispatch::pump( handler);
 
-         bool working = true;
-
-         while( working)
-         {
-            auto marshal = queueReader.next();
-
-            if( ! handler.dispatch( marshal))
-            {
-               common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
-            }
-         }
 		}
 
 	} // broker

@@ -49,8 +49,8 @@ namespace casual
 					casual::broker::Server result;
 
 					result.path = message.path;
-					result.pid = message.serverId.pid;
-					result.queue_key = message.serverId.queue_key;
+					result.pid = message.server.pid;
+					result.queue_key = message.server.queue_key;
 
 					return result;
 				}
@@ -254,7 +254,7 @@ namespace casual
             void dispatch( message_type& message)
             {
                //TODO: Temp
-               m_state.monitorQueue = message.serverId.queue_key;
+               m_state.monitorQueue = message.server.queue_key;
             }
          };
 
@@ -291,7 +291,7 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               m_state.transactionManagerQueue = message.serverId.queue_key;
+               m_state.transactionManagerQueue = message.server.queue_key;
             }
          };
 
@@ -310,7 +310,7 @@ namespace casual
                //
                // Find the server
                //
-               auto find = m_state.servers.find( message.serverId.pid);
+               auto find = m_state.servers.find( message.server.pid);
 
                if( find != std::end( m_state.servers))
                {
@@ -326,7 +326,7 @@ namespace casual
                else
                {
 
-                  logger::error << "server (pid: " << message.serverId.pid << ") has not connected before advertising services";
+                  logger::error << "server (pid: " << message.server.pid << ") has not connected before advertising services";
 
                }
             }
@@ -353,18 +353,18 @@ namespace casual
                while( ( start = std::find_if(
                      start,
                      std::end( m_state.services),
-                     find::Server( message.serverId.pid))) != std::end( m_state.services))
+                     find::Server( message.server.pid))) != std::end( m_state.services))
                {
                   //
                   // remove the service
                   //
-                  state::internal::removeService( start->first, message.serverId.pid, m_state);
+                  state::internal::removeService( start->first, message.server.pid, m_state);
                }
 
                //
                // Remove the server
                //
-               m_state.servers.erase( message.serverId.pid);
+               m_state.servers.erase( message.server.pid);
             }
          };
 
@@ -379,7 +379,7 @@ namespace casual
             void dispatch( message_type& message)
             {
 
-               auto find =  m_state.servers.find( message.serverId.pid);
+               auto find =  m_state.servers.find( message.server.pid);
 
                if( find != std::end( m_state.servers))
                {
@@ -388,7 +388,7 @@ namespace casual
                   // - log
                   // - remove
                   //
-                  logger::error << "server (pid: " << message.serverId.pid << ") is already connected";
+                  logger::error << "server (pid: " << message.server.pid << ") is already connected";
 
                   Disconnect disconnect( m_state);
                   disconnect.dispatch( message);
@@ -398,7 +398,7 @@ namespace casual
                // We add the server
                //
                m_state.servers.emplace(
-                     message.serverId.pid, transform::Server()( message));
+                     message.server.pid, transform::Server()( message));
 
                //
                // Server is started for the first time.
@@ -407,7 +407,7 @@ namespace casual
                message::server::Configuration configuation;
                configuation.transactionManagerQueue = m_state.transactionManagerQueue;
 
-               queue_writer_type writer( message.serverId.queue_key);
+               queue_writer_type writer( message.server.queue_key);
                writer( configuation);
 
 
@@ -436,7 +436,7 @@ namespace casual
                state::internal::removeServices(
                   std::begin( message.services),
                   std::end( message.services),
-                  message.serverId.pid,
+                  message.server.pid,
                   m_state);
 
             }
@@ -601,14 +601,14 @@ namespace casual
             message::server::Configuration connect( message::server::Connect& message)
             {
 
-               message.serverId.queue_key = ipc::getReceiveQueue().getKey();
+               message.server.queue_key = ipc::getReceiveQueue().getKey();
                message.path = common::environment::getExecutablePath();
 
                //
                // We add the server
                //
                m_state.servers.emplace(
-                     message.serverId.pid, transform::Server()( message));
+                     message.server.pid, transform::Server()( message));
                //
                // Advertiese the servies
                //

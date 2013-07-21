@@ -100,7 +100,7 @@ namespace casual
                //
                // Create queue
                //
-               std::ofstream ipcQueueFile( m_scopedPath.path().c_str());
+               std::ofstream ipcQueueFile( m_scopedPath.path());
 
                m_key = ftok( m_scopedPath.path().c_str(), 'X');
                m_id = msgget( m_key, 0660 | IPC_CREAT);

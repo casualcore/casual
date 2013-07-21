@@ -24,7 +24,7 @@ Compile( source/template_server.cpp, obj/template_server.o)
 LinkAtmiServer(test, \
 	obj/template_server.o, \
 	casual-xatmi casual-common, \
-	"casual_test1,casual_test2")
+	"casual_test1,casual_test2,casual_test3")
 
 
 /*

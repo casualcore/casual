@@ -66,41 +66,6 @@ namespace
 
 }
 
-/*
-int casual_initialize_server( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size)
-{
-   try
-   {
-
-      std::vector< std::string> arguments;
-
-      std::copy(
-         argv,
-         argv + argc,
-         std::back_inserter( arguments));
-
-
-      utility::environment::setExecutablePath( arguments.at( 0));
-
-      std::vector< common::service::Context> serviceContext;
-
-      std::transform(
-        mapping,
-        mapping + size,
-        std::back_inserter( serviceContext),
-        local::transform::ServiceContext());
-
-
-      common::server::Context::instance().initializeServer( serviceContext);
-
-   }
-   catch( ...)
-   {
-      return casual::utility::error::handler();
-   }
-   return 0;
-}
-*/
 
 
 int casual_start_server( casual_server_argument* serverArgument)
@@ -118,22 +83,11 @@ int casual_start_server( casual_server_argument* serverArgument)
       //
       // Start the message-pump
       //
-      common::dispatch::Handler handler;
+      common::message::dispatch::Handler handler;
 
       handler.add< common::callee::handle::Call>( arguments);
 
-      common::queue::blocking::Reader queueReader( common::ipc::getReceiveQueue());
-
-      while( true)
-      {
-
-         auto marshal = queueReader.next();
-
-         if( ! handler.dispatch( marshal))
-         {
-            common::logger::error << "message: " << marshal.type() << " not recognized - action: discard";
-         }
-      }
+      common::message::dispatch::pump( handler);
 	}
 	catch( ...)
 	{

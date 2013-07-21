@@ -92,7 +92,7 @@ namespace casual
                   // Let the broker know about us, and our services...
                   //
 
-                  message.serverId.queue_key = 500;
+                  message.server.queue_key = 500;
                   message.path = "test/path";
 
                   connect_writer brokerWriter;
@@ -218,7 +218,7 @@ namespace casual
          local::Call callHandler( arguments);
 
          ASSERT_TRUE( local::Policy::connect_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::connect_queue::replies.front().serverId.queue_key == 500);
+         EXPECT_TRUE( local::Policy::connect_queue::replies.front().server.queue_key == 500);
 
 
       }
@@ -246,7 +246,7 @@ namespace casual
          }
 
          ASSERT_TRUE( local::Policy::disconnect_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::disconnect_queue::replies.front().serverId.pid == common::platform::getProcessId());
+         EXPECT_TRUE( local::Policy::disconnect_queue::replies.front().server.pid == common::platform::getProcessId());
 
       }
 

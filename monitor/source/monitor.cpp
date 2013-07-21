@@ -136,8 +136,8 @@ namespace monitor
 		message::monitor::Connect message;
 
 		message.path = name;
-		message.serverId.queue_key = m_receiveQueue.getKey();
-		message.serverId.pid = common::platform::getProcessId();
+		message.server.queue_key = m_receiveQueue.getKey();
+		message.server.pid = common::platform::getProcessId();
 
 		queue::blocking::Writer writer( ipc::getBrokerQueue());
 		writer(message);
@@ -152,7 +152,7 @@ namespace monitor
 		//
 		message::monitor::Disconnect message;
 
-		message.serverId.queue_key = m_receiveQueue.getKey();
+		message.server.queue_key = m_receiveQueue.getKey();
 
 		queue::blocking::Writer writer( ipc::getBrokerQueue());
 		writer(message);
@@ -171,9 +171,9 @@ namespace monitor
 	void Monitor::start()
 	{
 		static const std::string cMethodname("Monitor::start");
-		common::Trace trace(cMethodname);
+		Trace trace(cMethodname);
 
-		common::dispatch::Handler handler;
+		message::dispatch::Handler handler;
 
 		handler.add< handle::Notify>( m_monitordb);
 

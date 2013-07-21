@@ -56,7 +56,7 @@ namespace casual
 		   State state = local::initializeState();
 
 		   message::server::Disconnect message;
-		   message.serverId.pid = 20;
+		   message.server.pid = 20;
 
 		   handle::Disconnect handler( state);
 		   handler.dispatch( message);
@@ -78,7 +78,7 @@ namespace casual
          // Add two new services to server "10"
          //
          message::service::Advertise message;
-         message.serverId.pid = 10;
+         message.server.pid = 10;
          message.services.resize( 2);
          message.services.at( 0).name = "service3";
          message.services.at( 1).name = "service4";
@@ -111,7 +111,7 @@ namespace casual
          // Connect new server, with two services
          //
          message::server::Connect message;
-         message.serverId.pid = 30;
+         message.server.pid = 30;
          message.services.resize( 2);
          message.services.at( 0).name = "service3";
          message.services.at( 1).name = "service4";
@@ -149,7 +149,7 @@ namespace casual
          // Add two new services to NEW server 30
          //
          message::server::Connect message;
-         message.serverId.pid = 30;
+         message.server.pid = 30;
          message.services.resize( 2);
          message.services.at( 0).name = "service1";
          message.services.at( 1).name = "service2";
@@ -184,7 +184,7 @@ namespace casual
          // Add two new services to NEW server 30
          //
          message::service::Unadvertise message;
-         message.serverId.pid = 20;
+         message.server.pid = 20;
          message.services.resize( 2);
          message.services.at( 0).name = "service1";
          message.services.at( 1).name = "service2";
@@ -359,8 +359,8 @@ namespace casual
          // Connect
          //
          message::monitor::Connect message;
-         message.serverId.pid = 50;
-         message.serverId.queue_key = 50;
+         message.server.pid = 50;
+         message.server.queue_key = 50;
 
          handle::MonitorConnect handler( state);
          handler.dispatch( message);
@@ -378,8 +378,8 @@ namespace casual
          // Add two new services to NEW server 30
          //
          message::monitor::Disconnect message;
-         message.serverId.pid = 50;
-         message.serverId.queue_key = 50;
+         message.server.pid = 50;
+         message.server.queue_key = 50;
 
          handle::MonitorDisconnect handler( state);
          handler.dispatch( message);
@@ -398,8 +398,8 @@ namespace casual
          // Connect
          //
          message::transaction::Connect message;
-         message.serverId.pid = 50;
-         message.serverId.queue_key = 50;
+         message.server.pid = 50;
+         message.server.queue_key = 50;
 
          handle::TransactionManagerConnect handler( state);
          handler.dispatch( message);

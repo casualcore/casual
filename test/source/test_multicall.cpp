@@ -68,7 +68,7 @@ int main( int argc, char** argv)
       long size = 0;
       if( tpgetrply( &cd, &buffer, &size, 0) != -1)
       {
-         std::cout << std::endl << "cd: "<< cd << ": " << buffer << std::endl;
+         //std::cout << std::endl << "cd: "<< cd << ": " << buffer << std::endl;
       }
       else
       {
