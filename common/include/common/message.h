@@ -492,7 +492,20 @@ namespace casual
                }
             };
 
-            typedef basic_transaction< cTransactionBegin> Begin;
+            struct Begin : public basic_transaction< cTransactionBegin>
+            {
+               typedef basic_transaction< cTransactionBegin> base_type;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  base_type::marshal( archive);
+                  archive & start;
+               }
+
+               common::time_type start;
+            };
+
             typedef basic_transaction< cTransactionCommit> Commit;
             typedef basic_transaction< cTransactionRollback> Rollback;
 
@@ -512,25 +525,7 @@ namespace casual
                }
 
             };
-
-
-            /*
-             * extern int tx_begin(void);
-   extern int tx_close(void);
-   extern int tx_commit(void);
-   extern int tx_open(void);
-   extern int tx_rollback(void);
-
-      cTransactionBegin,
-            cTransactionCommit,
-            cTransactionRollback,
-             */
-
-
-
-
-
-         }
+         } // transaction
 
          //!
          //! Deduce witch type of message it is.

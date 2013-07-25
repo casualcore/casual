@@ -28,7 +28,14 @@ namespace casual
          //
          // Serves as a placeholder for later correct exception, with hopefully a good name...
          //
-         struct NotReallySureWhatToNameThisException : public std::exception {};
+         struct NotReallySureWhatToNameThisException : public std::runtime_error
+         {
+            NotReallySureWhatToNameThisException( )
+               : std::runtime_error( "NotReallySureWhatToNameThisException") {}
+
+            NotReallySureWhatToNameThisException( const std::string& information)
+               : std::runtime_error( information) {}
+         };
 
          struct MemoryNotFound : public std::exception {};
 

@@ -75,7 +75,7 @@ namespace casual
 		   service_mapping_type services;
 		   pending_requests_type pending;
 
-		   //configuration::Settings configuration;
+		   std::vector< common::platform::pid_type> processes;
 
 		   // TODO: Temp
 		   common::platform::queue_key_type monitorQueue = 0;

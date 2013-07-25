@@ -49,6 +49,24 @@ namespace casual
 	{
 		namespace platform
 		{
+
+		   //
+		   // Some sizes
+		   //
+
+
+		   //!
+		   //! Max number of transaction state updates that will be done
+		   //! before persistence store of the updates...
+		   //!
+		   const std::size_t transaction_batch = 100;
+
+		   //!
+         //! Max number of statistics updates that will be done
+         //! before persistence store of the updates...
+         //!
+		   const std::size_t statistics_batch = 1000;
+
 			//
 			// Some os-specific if-defs?
 			//

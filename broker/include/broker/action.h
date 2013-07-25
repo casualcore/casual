@@ -9,6 +9,8 @@
 #define ACTION_H_
 
 #include "broker/configuration.h"
+#include "broker/broker.h"
+#include "common/platform.h"
 
 namespace casual
 {
@@ -18,14 +20,21 @@ namespace casual
       {
          namespace server
          {
-            void start( const configuration::Server& server);
+            std::vector< common::platform::pid_type> start( const configuration::Server& server);
 
             struct Start
             {
+               Start( State& state) : m_state( state) {}
+
                void operator() ( const configuration::Server& server)
                {
-                  start( server);
+                  for( auto pid : start( server))
+                  {
+                     m_state.processes.push_back( pid);
+                  }
                }
+            private:
+               State m_state;
             };
          }
 

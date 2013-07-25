@@ -45,7 +45,7 @@ namespace casual
 
                if( message.empty())
                {
-                  throw exception::NotReallySureWhatToNameThisException();
+                  throw exception::NotReallySureWhatToNameThisException( "blocking receive returned: queue: " + std::to_string( m_queue.getKey()));
                }
 
                return marshal::input::Binary( std::move( message.front()));
@@ -57,7 +57,7 @@ namespace casual
 
                if( message.empty())
                {
-                  throw exception::NotReallySureWhatToNameThisException();
+                  throw exception::NotReallySureWhatToNameThisException( "blocking receive returned: queue: " + std::to_string( m_queue.getKey()));
                }
 
                return marshal::input::Binary( std::move( message.front()));

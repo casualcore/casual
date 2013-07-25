@@ -118,7 +118,7 @@ namespace casual
          bool exists( const std::string& path)
          {
             std::ifstream file( path);
-            return file.is_open();
+            return file.good();
          }
 
       }

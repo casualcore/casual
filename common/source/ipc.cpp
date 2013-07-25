@@ -162,7 +162,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueSend( common::error::stringFromErrno());
+                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::stringFromErrno());
                      }
                   }
                }
@@ -340,7 +340,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueReceive( common::error::stringFromErrno());
+                        throw common::exception::QueueReceive( "id: " + std::to_string( m_id) + " - " + common::error::stringFromErrno());
                      }
                   }
                }

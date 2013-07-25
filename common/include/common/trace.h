@@ -43,6 +43,31 @@ namespace casual
       private:
          const std::string m_information;
       };
+
+      namespace trace
+      {
+         struct Exit
+         {
+         public:
+            template< typename T>
+            Exit( T&& information) : m_information( std::forward< T>( information)) {}
+
+            ~Exit()
+           {
+              if( std::uncaught_exception())
+              {
+                 logger::trace << m_information << " - failed";
+              }
+              else
+              {
+                 logger::trace << m_information << " - ok";
+              }
+           }
+
+         private:
+            const std::string m_information;
+         };
+      }
    }
 
 

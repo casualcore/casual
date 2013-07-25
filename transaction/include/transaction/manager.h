@@ -24,6 +24,27 @@ namespace casual
 {
    namespace transaction
    {
+
+      namespace pending
+      {
+         struct Reply
+         {
+            typedef common::platform::queue_key_type queue_key_type;
+
+            queue_key_type target;
+            common::message::transaction::Reply reply;
+         };
+      } // pending
+
+
+      struct State
+      {
+         State( const std::string& db);
+
+         std::vector< pending::Reply> pendingReplies;
+         database db;
+      };
+
       class Manager
       {
       public:
@@ -35,19 +56,12 @@ namespace casual
 
       private:
 
-         struct Pending
-         {
-            typedef common::platform::queue_key_type queue_key_type;
 
-            queue_key_type target;
-            common::message::transaction::Reply reply;
 
-         };
+         void handlePending();
 
          common::ipc::receive::Queue& m_receiveQueue;
-         database m_database;
-
-         std::vector< Pending> m_pendingReplies;
+         State m_state;
 
          static std::string databaseFileName();
 

@@ -48,11 +48,6 @@ namespace casual
 		{
 			namespace
 			{
-
-
-
-
-
 				template< typename Q>
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
@@ -85,12 +80,14 @@ namespace casual
 
 		   try
 		   {
+		      common::trace::Exit temp( "terminate child processes");
+
 		      //
 		      // We need to terminate all children
 		      //
-		      for( auto& server : m_state.servers)
+		      for( auto pid : m_state.processes)
 		      {
-		         process::terminate( server.second.pid);
+		         process::terminate( pid);
 		      }
 
 		      for( auto pid : process::terminated())
@@ -107,6 +104,7 @@ namespace casual
 
       void Broker::start( const std::vector< std::string>& arguments)
       {
+         common::trace::Exit temp( "broker start");
 
          //
          // Initialize configuration and such
@@ -151,27 +149,38 @@ namespace casual
 
             common::logger::debug << " m_state.configuration.servers.size(): " << configuration.servers.size();
 
+            {
+               common::trace::Exit trace( "start processes");
 
-            //
-            // Start the servers...
-            // TODO: Need to do more config
-            //
-            std::for_each(
-                  std::begin( configuration.servers),
-                  std::end( configuration.servers),
-                  action::server::Start());
+               //
+               // Start the servers...
+               // TODO: Need to do more config
+               //
+               std::for_each(
+                     std::begin( configuration.servers),
+                     std::end( configuration.servers),
+                     action::server::Start( m_state));
+
+               auto terminated = process::terminated();
+               common::logger::debug << "#terminated; " << terminated.size();
+
+            }
 
 
-            //
-            // We have to wait for TM
-            //
-            queue::blocking::Reader queueReader( m_receiveQueue);
+            {
+               common::trace::Exit trace( "transaction monitor connect");
 
-            handle::TransactionManagerConnect::message_type message;
-            queueReader( message);
+               //
+               // We have to wait for TM
+               //
+               queue::blocking::Reader queueReader( m_receiveQueue);
 
-            handle::TransactionManagerConnect tmConnect( m_state);
-            tmConnect.dispatch( message);
+               handle::TransactionManagerConnect::message_type message;
+               queueReader( message);
+
+               handle::TransactionManagerConnect tmConnect( m_state);
+               tmConnect.dispatch( message);
+            }
 
          }
 

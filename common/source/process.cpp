@@ -10,6 +10,7 @@
 #include "common/error.h"
 #include "common/file.h"
 #include "common/logger.h"
+#include "common/trace.h"
 #include "common/signal.h"
 
 
@@ -92,6 +93,7 @@ namespace casual
                   //
                   // We have started the process, hopefully...
                   //
+                  logger::information << path << " spawned - #arguments: " << arguments.size();
                   break;
                }
             }

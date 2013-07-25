@@ -147,15 +147,23 @@ namespace monitor
 	{
 		static const std::string cMethodname("Monitor::~Monitor");
 		common::Trace trace(cMethodname);
-		//
-		// Tell broker that monitor is down...
-		//
-		message::monitor::Disconnect message;
 
-		message.server.queue_key = m_receiveQueue.getKey();
+		try
+		{
+         //
+         // Tell broker that monitor is down...
+         //
+         message::monitor::Disconnect message;
 
-		queue::blocking::Writer writer( ipc::getBrokerQueue());
-		writer(message);
+         message.server.queue_key = m_receiveQueue.getKey();
+
+         queue::blocking::Writer writer( ipc::getBrokerQueue());
+         writer(message);
+		}
+		catch( ...)
+		{
+		   common::error::handler();
+		}
 
 		//
 		// Test of select
@@ -192,7 +200,7 @@ namespace monitor
 			   common::logger::error << "message_type: " << " not recognized - action: discard";
 			}
 
-			nonBlockingRead( 1000);
+			nonBlockingRead( common::platform::statistics_batch);
 		}
 	}
 
