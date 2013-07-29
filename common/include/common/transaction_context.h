@@ -29,11 +29,13 @@ namespace casual
 
             static Context& instance();
 
-            int begin();
+            int open();
             int close();
+
+            int begin();
             int commit();
             int rollback();
-            int open();
+
             int setCommitReturn( COMMIT_RETURN value);
             int setTransactionControl(TRANSACTION_CONTROL control);
             int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);

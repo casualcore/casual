@@ -38,7 +38,7 @@ namespace casual
 
          Context::Context()
          {
-            Trace trace{ "server::Context::Context"};
+            trace::Exit log{ "server::Context instansiated"};
          }
 
          /*
@@ -84,7 +84,7 @@ namespace casual
 
          void Context::advertiseService( const std::string& name, tpservice function)
          {
-            Trace trace{ "server::Context::advertiseService"};
+            trace::Exit log{ "server::Context advertise service " + name};
 
             //
             // validate
@@ -122,6 +122,8 @@ namespace casual
 
          void Context::unadvertiseService( const std::string& name)
          {
+            trace::Exit log{ "server::Context unadvertise service" + name};
+
             if( m_state.services.erase( name) != 1)
             {
                throw common::exception::xatmi::service::NoEntry( "service name: " + name);

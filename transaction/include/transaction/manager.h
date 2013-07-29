@@ -12,7 +12,7 @@
 #include "common/ipc.h"
 #include "common/message.h"
 
-#include "database/database.hpp"
+#include "sql/database.h"
 
 
 //
@@ -42,7 +42,7 @@ namespace casual
          State( const std::string& db);
 
          std::vector< pending::Reply> pendingReplies;
-         database db;
+         sql::database::Connection db;
       };
 
       class Manager

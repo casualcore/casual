@@ -53,14 +53,8 @@ namespace casual
                pending::Reply reply;
                reply.target = message.server.queue_key;
 
-               if( m_state.db.sql( sql, std::get< 0>( xid), std::get< 1>( xid), message.server.pid, state, started))
-               {
-                  reply.reply.state = state;
-               }
-               else
-               {
+               m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.server.pid, state, started);
 
-               }
                m_state.pendingReplies.push_back( std::move( reply));
 
             }
@@ -98,20 +92,15 @@ namespace casual
       {
          namespace
          {
-            void createTables( database& db)
+            void createTables( sql::database::Connection& db)
             {
-
-               if( ! db.sql( R"( CREATE TABLE IF NOT EXISTS trans (
-   gtrid         BLOB,
-   bqual         BLOB,
-   pid           NUMBER,
-   state         NUMBER,
-   started       NUMBER,
-   PRIMARY KEY (gtrid, bqual)); )" ))
-               {
-                  throw exception::NotReallySureWhatToNameThisException( "could not create table: " + db.error());
-               }
-
+               db.execute( R"( CREATE TABLE IF NOT EXISTS trans (
+                     gtrid         BLOB,
+                     bqual         BLOB,
+                     pid           NUMBER,
+                     state         NUMBER,
+                     started       NUMBER,
+                     PRIMARY KEY (gtrid, bqual)); )");
             }
 
 
@@ -120,12 +109,12 @@ namespace casual
                ScopedTransaction( State& state) : Base( state)
                {
                   // TODO: error checking?
-                  m_state.db.begin();
+                  //m_state.db.begin();
                }
 
                ~ScopedTransaction()
                {
-                  m_state.db.commit();
+                  //m_state.db.commit();
                }
             };
 
@@ -133,7 +122,9 @@ namespace casual
       } // local
 
 
-      State::State( const std::string& db) : db( db) {}
+      State::State( const std::string& database) : db( database) {}
+
+
 
       Manager::Manager(const std::vector<std::string>& arguments) :
           m_receiveQueue( ipc::getReceiveQueue()),
