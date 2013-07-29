@@ -12,6 +12,7 @@
 #include "common/buffer_context.h"
 #include "common/types.h"
 #include "common/platform.h"
+#include "common/process.h"
 #include "common/exception.h"
 #include "common/uuid.h"
 
@@ -85,20 +86,15 @@ namespace casual
             struct Id
             {
                typedef common::platform::pid_type pid_type;
-               typedef platform::queue_key_type queue_key_type;
+               typedef platform::queue_id_type queue_id_type;
 
-               Id()
-                     : pid( common::platform::getProcessId())
-               {
-               }
-
-               queue_key_type queue_key;
-               pid_type pid;
+               queue_id_type queue_id = 0;
+               pid_type pid = common::process::id();
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & queue_key;
+                  archive & queue_id;
                   archive & pid;
                }
             };

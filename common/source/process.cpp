@@ -31,6 +31,14 @@ namespace casual
       namespace process
       {
 
+
+
+         platform::pid_type id()
+         {
+            static const platform::pid_type pid = getpid();
+            return pid;
+         }
+
          void sleep( std::chrono::microseconds time)
          {
             usleep( time.count());

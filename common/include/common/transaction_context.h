@@ -20,7 +20,7 @@ namespace casual
       {
          struct State
          {
-            ipc::send::Queue::queue_key_type transactionManagerQueue = 0;
+            ipc::send::Queue::id_type transactionManagerQueue = 0;
          };
 
          class Context

@@ -37,7 +37,7 @@ namespace casual
 
 			pid_type pid = 0;
 			std::string path;
-			common::message::server::Id::queue_key_type queue_key = 0;
+			common::message::server::Id::queue_id_type queue_key = 0;
 			bool idle = true;
 
 

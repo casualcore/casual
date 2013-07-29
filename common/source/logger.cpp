@@ -8,6 +8,7 @@
 #include "common/logger.h"
 #include "common/environment.h"
 #include "common/platform.h"
+#include "common/process.h"
 #include "common/exception.h"
 #include "common/chronology.h"
 
@@ -48,7 +49,7 @@ namespace casual
                            common::chronology::local() <<
                            '|' << common::environment::getDomainName() <<
                            '|' << common::environment::getExecutablePath() <<
-                           '|' << common::platform::getProcessId() << "|";
+                           '|' << common::process::id() << "|";
 
 
 

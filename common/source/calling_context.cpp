@@ -332,13 +332,13 @@ namespace casual
 
             message::service::caller::Call messageCall( buffer::Context::instance().get( idata));
             messageCall.callDescriptor = callDescriptor;
-            messageCall.reply.queue_key = m_receiveQueue.getKey();
+            messageCall.reply.queue_id = m_receiveQueue.id();
             messageCall.service = lookup.service;
             messageCall.callId = m_state.callId;
             messageCall.callee = m_state.currentService;
 
 
-            ipc::send::Queue callQueue( lookup.server.front().queue_key);
+            ipc::send::Queue callQueue( lookup.server.front().queue_id);
             queue::blocking::Writer callWriter( callQueue);
 
             local::timeoutWrapper( callWriter, messageCall, callDescriptor);
@@ -518,7 +518,7 @@ namespace casual
             //
             message::service::name::lookup::Request serviceLookup;
             serviceLookup.requested = service;
-            serviceLookup.server.queue_key = m_receiveQueue.getKey();
+            serviceLookup.server.queue_id = m_receiveQueue.id();
 
             queue::blocking::Writer broker( m_brokerQueue);
             local::timeoutWrapper( broker, serviceLookup);

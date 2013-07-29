@@ -51,7 +51,7 @@ namespace casual
                const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?); )"};
 
                pending::Reply reply;
-               reply.target = message.server.queue_key;
+               reply.target = message.server.queue_id;
 
                m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.server.pid, state, started);
 
@@ -151,8 +151,7 @@ namespace casual
             message::transaction::Connect message;
 
             message.path = name;
-            message.server.queue_key = m_receiveQueue.getKey();
-            message.server.pid = platform::getProcessId();
+            message.server.queue_id = m_receiveQueue.id();
 
             queue::blocking::Writer writer( ipc::getBrokerQueue());
             writer(message);

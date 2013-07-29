@@ -127,27 +127,24 @@ namespace casual
             class base_queue
             {
             public:
-               typedef platform::queue_id_type queue_id_type;
-               typedef platform::queue_key_type queue_key_type;
+               typedef platform::queue_id_type id_type;
 
                base_queue() = default;
+               base_queue( id_type id) : m_id( id) {}
 
                base_queue( base_queue&& rhs)
                {
-                  m_key = rhs.m_key;
                   m_id = rhs.m_id;
-                  rhs.m_key = 0;
                   rhs.m_id = 0;
                }
 
 
                base_queue( const base_queue&) = delete;
 
-               queue_key_type getKey() const;
+               id_type id() const;
 
             protected:
-               queue_key_type m_key = 0;
-               queue_id_type m_id = 0;
+               id_type m_id = 0;
             };
 
          }
@@ -165,7 +162,7 @@ namespace casual
                   cNoBlocking = common::platform::cIPC_NO_WAIT
                };
 
-               Queue( queue_key_type key);
+               Queue( id_type id);
 
                Queue( Queue&&) = default;
 

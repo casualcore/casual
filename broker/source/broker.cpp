@@ -57,7 +57,7 @@ namespace casual
 					}
 
 					std::ofstream brokerQueueFile( path);
-					brokerQueueFile << queue.getKey();
+					brokerQueueFile << queue.id();
 				}
 			}
 		}

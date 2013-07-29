@@ -283,7 +283,7 @@ namespace casual
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     typename policy_type::reply_writer replyWriter( message.reply.queue_key);
+                     typename policy_type::reply_writer replyWriter( message.reply.queue_id);
                      replyWriter( m_state.reply);
 
                      //
@@ -352,7 +352,7 @@ namespace casual
                      // Let the broker know about us, and our services...
                      //
 
-                     message.server.queue_key = ipc::getReceiveQueue().getKey();
+                     message.server.queue_id = ipc::getReceiveQueue().id();
                      message.path = common::environment::getExecutablePath();
 
                      blocking_broker_writer brokerWriter;
@@ -384,7 +384,7 @@ namespace casual
                   void ack( const message::service::callee::Call& message)
                   {
                      message::service::ACK ack;
-                     ack.server.queue_key = ipc::getReceiveQueue().getKey();
+                     ack.server.queue_id = ipc::getReceiveQueue().id();
                      ack.service = message.service.name;
 
                      blocking_broker_writer brokerWriter;

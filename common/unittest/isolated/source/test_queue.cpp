@@ -28,13 +28,13 @@ namespace casual
          {
             ipc::receive::Queue receive;
 
-            ipc::send::Queue send( receive.getKey());
+            ipc::send::Queue send( receive.id());
 
             {
                blocking::Writer writer( send);
                message::service::Advertise message;
 
-               message.server.queue_key = 666;
+               message.server.queue_id = 666;
                message.serverPath = "banan";
 
                message::Service service;
@@ -54,7 +54,7 @@ namespace casual
                message::service::Advertise message;
                marshal >> message;
 
-               EXPECT_TRUE( message.server.queue_key == 666);
+               EXPECT_TRUE( message.server.queue_id == 666);
                EXPECT_TRUE( message.serverPath == "banan");
 
                ASSERT_TRUE( message.services.size() == 1);
@@ -95,7 +95,7 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            ipc::send::Queue send( receive.getKey());
+            ipc::send::Queue send( receive.id());
             blocking::Writer writer( send);
 
             message::service::Advertise sendMessage;
@@ -113,7 +113,7 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            ipc::send::Queue send( receive.getKey());
+            ipc::send::Queue send( receive.id());
             blocking::Writer writer( send);
 
             message::service::Advertise sendMessage;

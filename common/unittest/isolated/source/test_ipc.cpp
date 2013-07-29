@@ -38,7 +38,7 @@ namespace casual
 
             receive::Queue receive;
 
-            send::Queue send( receive.getKey());
+            send::Queue send( receive.id());
 
 
             message::Complete transport{ 2, { 'A', 'B', 'C' } };
@@ -74,7 +74,7 @@ namespace casual
 
             receive::Queue receive;
 
-            send::Queue send( receive.getKey());
+            send::Queue send( receive.id());
 
             message::Complete transport;
             transport.payload.assign( message::Transport::payload_max_size, 'A');
@@ -95,7 +95,7 @@ namespace casual
 
             receive::Queue receive;
 
-            send::Queue send( receive.getKey());
+            send::Queue send( receive.id());
 
             message::Complete transport;
             transport.payload.assign( message::Transport::payload_max_size * 1.5, 'A');

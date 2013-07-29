@@ -92,7 +92,7 @@ namespace casual
                   // Let the broker know about us, and our services...
                   //
 
-                  message.server.queue_key = 500;
+                  message.server.queue_id = 500;
                   message.path = "test/path";
 
                   connect_writer brokerWriter;
@@ -124,7 +124,7 @@ namespace casual
                void ack( const message::service::callee::Call& message)
                {
                   message::service::ACK ack;
-                  ack.server.queue_key = 500;
+                  ack.server.queue_id = 500;
                   ack.service = message.service.name;
 
                   ack_writer brokerWriter;
@@ -192,7 +192,7 @@ namespace casual
                   path.reset( new file::ScopedPath( common::environment::getBrokerQueueFileName()));
 
                   std::ofstream out( common::environment::getBrokerQueueFileName());
-                  out << brokerQueue.getKey();
+                  out << brokerQueue.id();
 
                }
 
@@ -218,7 +218,7 @@ namespace casual
          local::Call callHandler( arguments);
 
          ASSERT_TRUE( local::Policy::connect_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::connect_queue::replies.front().server.queue_key == 500);
+         EXPECT_TRUE( local::Policy::connect_queue::replies.front().server.queue_id == 500);
 
 
       }
@@ -246,7 +246,7 @@ namespace casual
          }
 
          ASSERT_TRUE( local::Policy::disconnect_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::disconnect_queue::replies.front().server.pid == common::platform::getProcessId());
+         EXPECT_TRUE( local::Policy::disconnect_queue::replies.front().server.pid == process::id());
 
       }
 
@@ -280,7 +280,7 @@ namespace casual
 
          ASSERT_TRUE( local::Policy::ack_queue::replies.size() == 1);
          EXPECT_TRUE( local::Policy::ack_queue::replies.front().service == "test_service");
-         EXPECT_TRUE( local::Policy::ack_queue::replies.front().server.queue_key == 500);
+         EXPECT_TRUE( local::Policy::ack_queue::replies.front().server.queue_id == 500);
 
       }
 

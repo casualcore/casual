@@ -136,8 +136,7 @@ namespace monitor
 		message::monitor::Connect message;
 
 		message.path = name;
-		message.server.queue_key = m_receiveQueue.getKey();
-		message.server.pid = common::platform::getProcessId();
+		message.server.queue_id = m_receiveQueue.id();
 
 		queue::blocking::Writer writer( ipc::getBrokerQueue());
 		writer(message);
@@ -155,7 +154,7 @@ namespace monitor
          //
          message::monitor::Disconnect message;
 
-         message.server.queue_key = m_receiveQueue.getKey();
+         message.server.queue_id = m_receiveQueue.id();
 
          queue::blocking::Writer writer( ipc::getBrokerQueue());
          writer(message);

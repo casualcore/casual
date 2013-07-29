@@ -112,10 +112,6 @@ namespace casual
 			};
 
 
-			pid_type getProcessId();
-
-
-
 			enum logger_priority
 			{
 				//! system is unusable

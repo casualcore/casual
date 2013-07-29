@@ -8,6 +8,7 @@
 #include "common/ipc.h"
 
 #include "common/environment.h"
+#include "common/process.h"
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/signal.h"
@@ -42,9 +43,9 @@ namespace casual
          namespace internal
          {
 
-            base_queue::queue_key_type base_queue::getKey() const
+            base_queue::id_type base_queue::id() const
             {
-               return m_key;
+               return m_id;
             }
 
 
@@ -75,15 +76,9 @@ namespace casual
 
          namespace send
          {
-            Queue::Queue(queue_key_type key)
+            Queue::Queue( id_type id) : internal::base_queue( id)
             {
-               m_key = key;
-               m_id = msgget( m_key, 0220);
 
-               if( m_id  == -1)
-               {
-                  throw common::exception::QueueFailed( common::error::stringFromErrno());
-               }
             }
 
             bool Queue::send( message::Complete& message, const long flags) const
@@ -176,17 +171,18 @@ namespace casual
          {
 
             Queue::Queue()
-               : m_scopedPath( common::environment::getTemporaryPath() + "/ipc_queue_" + common::Uuid::make().string())
+               : internal::base_queue( msgget( IPC_PRIVATE, 0660)),
+                 m_scopedPath( common::environment::getTemporaryPath() + "/ipc_queue_" + common::Uuid::make().string())
             {
                //
-               // Create queue
+               // Write queue information
                //
                std::ofstream ipcQueueFile( m_scopedPath.path());
 
-               m_key = ftok( m_scopedPath.path().c_str(), 'X');
-               m_id = msgget( m_key, 0660 | IPC_CREAT);
+               ipcQueueFile << "id: " << m_id << std::endl
+                     << "pid: " << process::id() <<  std::endl
+                     << "path: " << environment::getExecutablePath() << std::endl;
 
-               ipcQueueFile << "key: " << m_key << "\nid:  " << m_id << std::endl;
 
                if( m_id  == -1)
                {
@@ -200,7 +196,7 @@ namespace casual
             {
                if( ! m_cache.empty())
                {
-                  logger::error << "queue: " << m_key << " has unconsumed messages in cache";
+                  logger::error << "queue: " << m_id << " has unconsumed messages in cache";
                }
 
                //
@@ -210,7 +206,7 @@ namespace casual
                {
                   if( msgctl( m_id, IPC_RMID, 0) == -1)
                   {
-                     logger::error << "removing queue: " << m_key << " - " << common::error::stringFromErrno();
+                     logger::error << "removing queue: " << m_id << " - " << common::error::stringFromErrno();
                   }
                }
             }
@@ -383,10 +379,10 @@ namespace casual
                      throw common::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
                   }
 
-                  send::Queue::queue_key_type key;
-                  file >> key;
+                  send::Queue::id_type id;
+                  file >> id;
 
-                  return send::Queue( key);
+                  return send::Queue( id);
 
                }
             }

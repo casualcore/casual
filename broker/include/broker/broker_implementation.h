@@ -50,7 +50,7 @@ namespace casual
 
 					result.path = message.path;
 					result.pid = message.server.pid;
-					result.queue_key = message.server.queue_key;
+					result.queue_key = message.server.queue_id;
 
 					return result;
 				}
@@ -61,7 +61,7 @@ namespace casual
 					casual::message::server::Id result;
 
 					result.pid = value.pid;
-					result.queue_key = value.queue_key;
+					result.queue_id = value.queue_key;
 
 					return result;
 				}
@@ -254,7 +254,7 @@ namespace casual
             void dispatch( message_type& message)
             {
                //TODO: Temp
-               m_state.monitorQueue = message.server.queue_key;
+               m_state.monitorQueue = message.server.queue_id;
             }
          };
 
@@ -291,7 +291,7 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               m_state.transactionManagerQueue = message.server.queue_key;
+               m_state.transactionManagerQueue = message.server.queue_id;
             }
          };
 
@@ -407,7 +407,7 @@ namespace casual
                message::server::Configuration configuation;
                configuation.transactionManagerQueue = m_state.transactionManagerQueue;
 
-               queue_writer_type writer( message.server.queue_key);
+               queue_writer_type writer( message.server.queue_id);
                writer( configuation);
 
 
@@ -485,7 +485,7 @@ namespace casual
                      reply.server.push_back( transform::Server()( **idleServer));
 
 
-                     queue_writer_type writer( message.server.queue_key);
+                     queue_writer_type writer( message.server.queue_id);
 
                      writer( reply);
                   }
@@ -506,7 +506,7 @@ namespace casual
                   message::service::name::lookup::Reply reply;
                   reply.service.name = message.requested;
 
-                  queue_writer_type writer( message.server.queue_key);
+                  queue_writer_type writer( message.server.queue_id);
                   writer( reply);
 
                }
@@ -601,7 +601,7 @@ namespace casual
             message::server::Configuration connect( message::server::Connect& message)
             {
 
-               message.server.queue_key = ipc::getReceiveQueue().getKey();
+               message.server.queue_id = ipc::getReceiveQueue().id();
                message.path = common::environment::getExecutablePath();
 
                //
@@ -632,7 +632,7 @@ namespace casual
             void ack( const message::service::callee::Call& message)
             {
                message::service::ACK ack;
-               ack.server.queue_key = ipc::getReceiveQueue().getKey();
+               ack.server.queue_id = ipc::getReceiveQueue().id();
                ack.service = message.service.name;
 
                ACK sendACK( m_state);

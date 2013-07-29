@@ -46,7 +46,7 @@ namespace casual
 
                   common::queue::ipc_wrapper< common::queue::blocking::Reader> reader;
 
-                  common::queue::ipc_wrapper< common::queue::blocking::Writer> writer( reader.ipc().getKey());
+                  common::queue::ipc_wrapper< common::queue::blocking::Writer> writer( reader.ipc().id());
                   writer( value);
 
                   T result;

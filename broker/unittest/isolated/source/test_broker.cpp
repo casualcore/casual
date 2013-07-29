@@ -232,7 +232,7 @@ namespace casual
          message::service::name::lookup::Request message;
          message.requested = "service1";
          message.server.pid = 30;
-         message.server.queue_key = 30;
+         message.server.queue_id = 30;
 
          handle::basic_servicelookup<  mockup_writer> handler( state);
          handler.dispatch( message);
@@ -248,7 +248,7 @@ namespace casual
          EXPECT_TRUE( mockup_writer::replies.front().service.name == "service1");
          ASSERT_TRUE( mockup_writer::replies.front().server.size() == 1);
          EXPECT_TRUE( mockup_writer::replies.front().server.at( 0).pid == 10);
-         EXPECT_TRUE( mockup_writer::replies.front().server.at( 0).queue_key == 10);
+         EXPECT_TRUE( mockup_writer::replies.front().server.at( 0).queue_id == 10);
       }
 
 		TEST( casual_broker, service_request_pending)
@@ -264,7 +264,7 @@ namespace casual
          message::service::name::lookup::Request message;
          message.requested = "service1";
          message.server.pid = 30;
-         message.server.queue_key = 30;
+         message.server.queue_id = 30;
 
          handle::basic_servicelookup< mockup_writer> handler( state);
          handler.dispatch( message);
@@ -277,7 +277,7 @@ namespace casual
          ASSERT_TRUE( state.pending.size() == 1);
          EXPECT_TRUE( state.pending.at( 0).requested == "service1");
          EXPECT_TRUE( state.pending.at( 0).server.pid == 30);
-         EXPECT_TRUE( state.pending.at( 0).server.queue_key == 30);
+         EXPECT_TRUE( state.pending.at( 0).server.queue_id == 30);
 
       }
 
@@ -293,7 +293,7 @@ namespace casual
          message::service::ACK message;
          message.service = "service1";
          message.server.pid = 10;
-         message.server.queue_key = 10;
+         message.server.queue_id = 10;
 
          handle::basic_ack< mockup_writer> handler( state);
          handler.dispatch( message);
@@ -320,7 +320,7 @@ namespace casual
          message::service::name::lookup::Request request;
          request.requested = "service1";
          request.server.pid = 30;
-         request.server.queue_key = 30;
+         request.server.queue_id = 30;
 
          state.pending.push_back( request);
 
@@ -328,7 +328,7 @@ namespace casual
          message::service::ACK message;
          message.service = "service1";
          message.server.pid = 10;
-         message.server.queue_key = 10;
+         message.server.queue_id = 10;
 
          // we should get the pending response
          handle::basic_ack< mockup_writer> handler( state);
@@ -344,7 +344,7 @@ namespace casual
          EXPECT_TRUE( mockup_writer::replies.front().service.name == "service1");
          ASSERT_TRUE( mockup_writer::replies.front().server.size() == 1);
          EXPECT_TRUE( mockup_writer::replies.front().server.front().pid == 10);
-         EXPECT_TRUE( mockup_writer::replies.front().server.front().queue_key == 10);
+         EXPECT_TRUE( mockup_writer::replies.front().server.front().queue_id == 10);
 
 
       }
@@ -360,7 +360,7 @@ namespace casual
          //
          message::monitor::Connect message;
          message.server.pid = 50;
-         message.server.queue_key = 50;
+         message.server.queue_id = 50;
 
          handle::MonitorConnect handler( state);
          handler.dispatch( message);
@@ -379,7 +379,7 @@ namespace casual
          //
          message::monitor::Disconnect message;
          message.server.pid = 50;
-         message.server.queue_key = 50;
+         message.server.queue_id = 50;
 
          handle::MonitorDisconnect handler( state);
          handler.dispatch( message);
@@ -399,7 +399,7 @@ namespace casual
          //
          message::transaction::Connect message;
          message.server.pid = 50;
-         message.server.queue_key = 50;
+         message.server.queue_id = 50;
 
          handle::TransactionManagerConnect handler( state);
          handler.dispatch( message);

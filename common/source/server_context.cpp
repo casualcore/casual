@@ -108,7 +108,7 @@ namespace casual
             {
                message::service::Advertise message;
 
-               message.server.queue_key = ipc::getReceiveQueue().getKey();
+               message.server.queue_id = ipc::getReceiveQueue().id();
                // TODO: message.serverPath =
                message.services.emplace_back( name);
 
@@ -130,7 +130,7 @@ namespace casual
             }
 
             message::service::Unadvertise message;
-            message.server.queue_key = ipc::getReceiveQueue().getKey();
+            message.server.queue_id = ipc::getReceiveQueue().id();
             message.services.push_back( message::Service( name));
 
             queue::blocking::Writer writer( ipc::getBrokerQueue());
