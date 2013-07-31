@@ -15,7 +15,13 @@ import sys
 #
 # Template for create extern declaration of services
 #
-extern_declaration = Template('extern void $service( TPSVCINFO *transb);')
+extern_declaration = Template('extern void $service( TPSVCINFO *serviceInfo);')
+
+#
+# Template to create extern xa-switch-struct declarations
+#
+extern_xa_switch_declaration = Template( 'extern struct xa_switch_t $xa_switch_name')
+
 #
 # Template for function/service-mapping
 #
@@ -26,6 +32,7 @@ mapping = Template('{&$service, "$service"}')
 content = Template(
 """
 #include <xatmi.h>
+#include <xa.h>
 #include <xatmi_server.h>
 
 #ifdef __cplusplus
@@ -35,16 +42,22 @@ extern "C" {
 
 $extern_declaration_content
 
+$extern_xa_switch_declaration_content
+
 int main( int argc, char** argv)
 {
 
    struct casual_service_name_mapping mapping[] = {
       $mapping_content
+      ,{ 0, ""}
+   };
+   
+   struct xa_switch_t* xa_switch_pointer[] = {
+        0
    };
 
    struct casual_server_argument serverArguments = {
-      &mapping[ 0],
-      &mapping[ sizeof( mapping) / sizeof( struct casual_service_name_mapping) - 1] + 1,
+      mapping,
       &tpsvrinit,
       &tpsvrdone,
       argc,
@@ -83,12 +96,13 @@ class BuildServer(object):
         parser = OptionParser(usage)
         
         parser.set_defaults(firstfiles=[])
+        parser.set_defaults(resources=[])
         parser.set_defaults(verbose=False)
         parser.add_option("-s", "--services", dest="services")
         parser.add_option("-o", "--output", dest="output") 
         parser.add_option("-f", "--firstfiles", action="append", dest="firstfiles") 
         parser.add_option("-l", "--lastfiles", dest="lastfiles") 
-        parser.add_option("-r", "--resource", dest="resource")
+        parser.add_option("-r", "--resource", action="append", dest="resources")
         parser.add_option("-v", "--verbose", action="store_true", dest="verbose")
    
         (self.options, self.args) = parser.parse_args()
@@ -102,6 +116,7 @@ class BuildServer(object):
         """Produce content to the named c file"""     
         mapping_content=""
         extern_declaration_content=""
+        extern_xa_switch_declaration_content=""
         #
         # Loop thru all services
         #
@@ -115,7 +130,7 @@ class BuildServer(object):
         #
         # replace variables in template and write file
         #
-        self.file.write(content.substitute( extern_declaration_content=extern_declaration_content, mapping_content=mapping_content))
+        self.file.write(content.substitute( extern_declaration_content=extern_declaration_content, mapping_content=mapping_content, extern_xa_switch_declaration_content=extern_xa_switch_declaration_content))
         self.file.close()
         
     def runCommand(self,command):
