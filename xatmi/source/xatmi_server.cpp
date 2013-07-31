@@ -24,20 +24,13 @@
 
 using namespace casual;
 
-namespace
+
+namespace local
 {
-	namespace local
-	{
+   namespace
+   {
 	   namespace transform
 	   {
-         struct ServiceContext
-         {
-            common::service::Context operator () ( const casual_service_name_mapping& mapping) const
-            {
-               return common::service::Context( mapping.m_name, mapping.m_functionPointer);
-
-            }
-         };
 
          struct ServerArguments
          {
@@ -45,26 +38,35 @@ namespace
             {
                common::server::Arguments result;
 
-               std::transform(
-                     value.m_serverStart,
-                     value.m_serverEnd,
-                     std::back_inserter( result.m_services),
-                     transform::ServiceContext());
+               auto service = value.services;
 
-               result.m_argc = value.m_argc;
-               result.m_argv = value.m_argv;
+               while( service->functionPointer != nullptr)
+               {
+                  result.m_services.emplace_back( service->name, service->functionPointer);
+                  ++service;
+               }
 
-               result.m_server_init = value.m_serviceInit;
-               result.m_server_done = value.m_serviceDone;
+               auto xaSwitch = value.xaSwitches;
+
+               while( xaSwitch->xaSwitch != nullptr)
+               {
+                  result.resources.emplace_back( xaSwitch->key, xaSwitch->xaSwitch);
+                  ++xaSwitch;
+               }
+
+               result.m_argc = value.argc;
+               result.m_argv = value.argv;
+
+               result.m_server_init = value.serviceInit;
+               result.m_server_done = value.serviceDone;
 
                return result;
 
             }
          };
-	   }
-	}
-
-}
+	   } // transform
+	} // <unnamed>
+} // local
 
 
 
@@ -74,11 +76,9 @@ int casual_start_server( casual_server_argument* serverArgument)
    {
 
 
-     common::server::Arguments arguments = local::transform::ServerArguments()( *serverArgument);
+      auto arguments = local::transform::ServerArguments()( *serverArgument);
 
-
-      common::environment::setExecutablePath( serverArgument->m_argv[ 0]);
-
+      common::environment::setExecutablePath( serverArgument->argv[ 0]);
 
       //
       // Start the message-pump

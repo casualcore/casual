@@ -23,7 +23,8 @@
 #include "common/trace.h"
 
 
-#include "xatmi.h"
+#include <xatmi.h>
+#include <xa.h>
 
 //
 // std
@@ -38,6 +39,15 @@ namespace casual
       namespace server
       {
 
+         struct Resource
+         {
+            Resource( const char* p_key, xa_switch_t* xa) : key( p_key), xaSwitch( xa), id( 0) {}
+
+            const std::string key;
+            xa_switch_t* xaSwitch;
+            int id;
+         };
+
          struct Arguments
          {
             Arguments() = default;
@@ -48,6 +58,7 @@ namespace casual
             std::function<void()> m_server_done = &tpsvrdone;
             int m_argc;
             char** m_argv;
+            std::vector< Resource> resources;
          };
 
          struct State
@@ -171,7 +182,6 @@ namespace casual
 
                   transaction::Context::instance().state().transactionManagerQueue
                         = configuration.transactionManagerQueue;
-                  logger::debug << "transactionManagerQueue: " << configuration.transactionManagerQueue;
 
 
                   //

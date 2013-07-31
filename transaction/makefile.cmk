@@ -11,6 +11,7 @@ INCLUDE_PATHS = include \
 
 LIBRARY_PATHS = bin \
     ../common/bin \
+    $(IBM_DB_LIB)
     
 
 
@@ -30,6 +31,12 @@ LinkExecutable( casual-transaction-manager,\
     casual-common sqlite3)
 
 
+Compile( source/server.cpp, obj/server.o)
+
+LinkExecutable( casual-transaction-server,\
+    obj/server.o \
+    , \
+    db2)
 
 
 

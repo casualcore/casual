@@ -82,7 +82,7 @@ namespace casual
                   // prep the configuration reply - only message we will read
                   message::server::Configuration message;
                   message.transactionManagerQueue = 666;
-                  mockup::queue::ReadMessage< message::server::Configuration>::replies.push_back( message);
+                  mockup::queue::ReadMessage< message::server::Configuration>::replies.push_back( std::move( message));
                }
 
 

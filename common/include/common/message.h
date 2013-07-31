@@ -150,6 +150,27 @@ namespace casual
 
             };
 
+            namespace resource
+            {
+               struct Manager
+               {
+                  Manager() = default;
+                  Manager( Manager&&) = default;
+                  Manager& operator = ( Manager&&) = default;
+
+                  std::string key;
+                  std::string openinfo;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & key;
+                     archive & openinfo;
+                  }
+               };
+
+            }
+
             //!
             //! Sent from the broker with "start-up-information" for a server
             //!
@@ -160,14 +181,20 @@ namespace casual
                   message_type = cServerConfiguration
                };
 
+               Configuration() = default;
+               Configuration( Configuration&&) = default;
+               Configuration& operator = ( Configuration&&) = default;
+
                typedef platform::queue_key_type queue_key_type;
 
                queue_key_type transactionManagerQueue = 0;
+               std::vector< resource::Manager> resourceManagers;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & transactionManagerQueue;
+                  archive & resourceManagers;
                }
             };
 

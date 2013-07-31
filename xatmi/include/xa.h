@@ -50,8 +50,8 @@ struct xa_switch_t {
    long flags; /* resource manager specific options */
    long version; /* must be 0 */
 
-   int (*xa_open_entry)(char *, int, long); /* xa_open function pointer */
-   int (*xa_close_entry)(char *, int, long);/* xa_close function pointer */
+   int (*xa_open_entry)( const char *, int, long); /* xa_open function pointer */
+   int (*xa_close_entry)( const char *, int, long);/* xa_close function pointer */
    int (*xa_start_entry)(XID *, int, long); /* xa_start function pointer */
    int (*xa_end_entry)(XID *, int, long); /* xa_end function pointer */
    int (*xa_rollback_entry)(XID *, int, long); /* xa_rollback function pointer */
