@@ -18,7 +18,6 @@ LIBRARY_PATHS=
 
 
 Compile( source/server_context.cpp, obj/server_context.o)
-Compile( source/service_context.cpp, obj/service_context.o)
 Compile( source/calling_context.cpp, obj/calling_context.o)
 Compile( source/buffer_context.cpp, obj/buffer_context.o)
 Compile( source/transaction_context.cpp, obj/transaction_context.o)
@@ -39,7 +38,6 @@ Compile( source/process.cpp, obj/process.o)
 
 LinkLibrary( casual-common, \
 	obj/server_context.o \
-	obj/service_context.o \
 	obj/calling_context.o \
 	obj/buffer_context.o \
 	obj/transaction_context.o \
@@ -56,6 +54,15 @@ LinkLibrary( casual-common, \
     obj/process.o \
     ,\ 
 	${UUIDLIB})
+
+
+//
+// Mockup stuff, only for unittest
+//
+Compile( source/mockup.cpp, obj/mockup.o)
+
+LinkArchive( casual-mockup,\
+    obj/mockup.o)
 
 
 Compile( unittest/isolated/source/simple_process.cpp, unittest/isolated/obj/simple_process.o)

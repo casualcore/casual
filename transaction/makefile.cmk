@@ -11,7 +11,7 @@ INCLUDE_PATHS = include \
 
 LIBRARY_PATHS = bin \
     ../common/bin \
-    $(IBM_DB_LIB)
+//    $(IBM_DB_LIB)
     
 
 
@@ -36,7 +36,7 @@ Compile( source/server.cpp, obj/server.o)
 LinkExecutable( casual-transaction-server,\
     obj/server.o \
     , \
-    db2)
+    casual-mockup casual-common)
 
 
 

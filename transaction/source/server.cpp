@@ -5,6 +5,8 @@
 //!     Author: Lazan
 //!
 
+#include "common/transaction_context.h"
+
 #include <xa.h>
 
 #include <iostream>
@@ -12,56 +14,23 @@
 #include <map>
 #include <string>
 
-namespace casual
-{
-   namespace transaction
-   {
 
-
-
-   }
-}
 
 extern "C"
 {
-   extern struct xa_switch_t db2xa_switch_static_std;
+   //extern struct xa_switch_t db2xa_switch_static_std;
    //extern struct xa_switch_t db2xa_switch_std;
+   extern struct xa_switch_t casual_mockup_xa_switch_static;
 }
 
-xa_switch_t* tmswitch = &db2xa_switch_static_std;
+xa_switch_t* tmswitch = &casual_mockup_xa_switch_static;
 
 
-
-
-const char* status( int status)
+const char* status( int code)
 {
-   static const std::map< int, const char*> mapping{
-      { XA_RBCOMMFAIL, "XA_RBCOMMFAIL"},
-      { XA_RBDEADLOCK, "XA_RBDEADLOCK"},
-      { XA_RBINTEGRITY, "XA_RBINTEGRITY"},
-      { XA_RBOTHER, "XA_RBOTHER"},
-      { XA_RBPROTO, "XA_RBPROTO"},
-      { XA_RBTIMEOUT, "XA_RBTIMEOUT"},
-      { XA_RBTRANSIENT, "XA_RBTRANSIENT"},
-      { XA_NOMIGRATE, "XA_NOMIGRATE"},
-      { XA_HEURHAZ, "XA_HEURHAZ"},
-      { XA_HEURCOM, "XA_HEURCOM"},
-      { XA_HEURRB, "XA_HEURRB"},
-      { XA_HEURMIX, "XA_HEURMIX"},
-      { XA_RETRY, "XA_RETRY"},
-      { XA_RDONLY, "XA_RDONLY"},
-      { XA_OK, "XA_OK"},
-      { XAER_ASYNC, "XAER_ASYNC"},
-      { XAER_RMERR, "XAER_RMERR"},
-      { XAER_NOTA, "XAER_NOTA"},
-      { XAER_INVAL, "XAER_INVAL"},
-      { XAER_PROTO, "XAER_PROTO"},
-      { XAER_RMFAIL, "XAER_RMFAIL"},
-      { XAER_DUPID, "XAER_DUPID"},
-      { XAER_OUTSIDE, "XAER_OUTSIDE"}
-   };
-   return mapping.at( status);
+   return casual::common::transaction::xaError( code);
 }
+
 
 int open( int rmid)
 {

@@ -12,55 +12,35 @@
 #include "broker/configuration.h"
 
 #include "sf/archive_yaml.h"
+#include "sf/archive_logger.h"
+
+#include <fstream>
 
 
 namespace casual
 {
-   namespace local
-   {
-      namespace yaml
-      {
-
-         std::string getDefault()
-         {
-            return R"(
-broker:
-   default:
-
-      server:
-         instances: 2
-         limits:
-            min: 2
-            max: 4 
-
-      service:
-         timeout: 90
-
-   servers:
-      - path: /a/b/c
-        instances: 30
-        limits:
-           max: 40
-
-      - path: /a/b/x
-        instances: 10
-        limits:
-           min: 1
-           max: 2
-
-)";
-
-         }
-
-      }
-
-   }
-
    namespace broker
    {
+
+      /* does not work with g++, no move constructor it seems...
+      std::ifstream configurationStream()
+      {
+         return std::move( std::ifstream( "template_config.yaml"));
+      }
+      */
+
+      std::istream& configurationStream()
+      {
+         static std::ifstream stream( "template_config.yaml");
+         stream.clear();
+         stream.seekg( 0, stream.beg);
+         return stream;
+      }
+
       TEST( casual_broker_configuration_yaml, read_defaul)
       {
-         std::istringstream stream( local::yaml::getDefault());
+         //std::istringstream stream( local::yaml::getDefault());
+         auto& stream = configurationStream();
 
          sf::archive::yaml::relaxed::Reader reader( stream);
 
@@ -68,9 +48,12 @@ broker:
 
          reader >> CASUAL_MAKE_NVP( broker);
 
+         sf::archive::logger::Writer debug;
+
+         debug << CASUAL_MAKE_NVP( broker);
+
+         ASSERT_TRUE( broker.servers.size() == 3) << "size: " << broker.servers.size();
          EXPECT_TRUE( broker.casual_default.server.instances == "2");
-         EXPECT_TRUE( broker.casual_default.server.limits.min == "2");
-         EXPECT_TRUE( broker.casual_default.server.limits.max == "4");
          EXPECT_TRUE( broker.casual_default.service.timeout == "90");
 
       }
@@ -78,7 +61,8 @@ broker:
 
       TEST( casual_broker_configuration_yaml, read_servers)
       {
-         std::istringstream stream( local::yaml::getDefault());
+         //std::istringstream stream( local::yaml::getDefault());
+         auto& stream = configurationStream();
 
          sf::archive::yaml::relaxed::Reader reader( stream);
 
@@ -86,15 +70,11 @@ broker:
 
          reader >> CASUAL_MAKE_NVP( broker);
 
-         ASSERT_TRUE( broker.servers.size() == 2);
-         EXPECT_TRUE( broker.servers.front().path == "/a/b/c");
-         EXPECT_TRUE( broker.servers.front().instances == "30");
-         EXPECT_TRUE( broker.servers.front().limits.max == "40");
+         ASSERT_TRUE( broker.servers.size() == 3) << "size: " << broker.servers.size();
+         EXPECT_TRUE( broker.servers.at( 0).instances == "1");
 
-         EXPECT_TRUE( broker.servers.back().path == "/a/b/x");
-         EXPECT_TRUE( broker.servers.back().instances == "10");
-         EXPECT_TRUE( broker.servers.back().limits.min == "1");
-         EXPECT_TRUE( broker.servers.back().limits.max == "2");
+         EXPECT_TRUE( broker.servers.at( 2).instances == "10");
+         EXPECT_TRUE( broker.servers.at( 2).membership.size() == 2);
 
       }
 

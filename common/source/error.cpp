@@ -16,10 +16,7 @@
 
 
 
-#include "xatmi.h"
-
-
-extern int tperrno;
+#include <xatmi.h>
 
 //
 // std
@@ -35,42 +32,6 @@ namespace casual
 
       namespace error
       {
-         namespace local
-         {
-            namespace
-            {
-               std::map< int, std::string> initializeTperrnoMapping()
-               {
-                  std::map< int, std::string> result;
-
-                  //
-                  // TODO: Make this locale-dependent?
-                  //
-                  result[ TPEBADDESC] = "TPEBADDESC - Not a valid call-descriptor";
-                  result[ TPEBLOCK] = "TPEBLOCK - Blocking condition and TPNOBLOCK was not provided";
-                  result[ TPEINVAL] = "TPEINVAL - Invalid arguments provided";
-                  result[ TPELIMIT] = "TPELIMIT - Some limit has been reach, this should not be possible in casual...";
-                  result[ TPENOENT] = "TPENOENT - Service is not available";
-                  result[ TPEOS] = "TPEOS - OS error - Critical error has been detected at the OS level";
-                  result[ TPEPROTO] = "TPEPROTO - Protocol error - Inconsistency in casual's internal protocol has been detected";
-                  result[ TPESVCERR] = "TPESVCERR - ";
-                  result[ TPESVCFAIL] = "TPESVCFAIL - ";
-                  result[ TPESYSTEM] = "TPESYSTEM - ";
-                  result[ TPETIME] = "TPETIME - Timeout - A time limit has been reach";
-                  result[ TPETRAN] = "TPETRAN - ";
-                  result[ TPGOTSIG] = "TPGOTSIG - ";
-                  result[ TPEITYPE] = "TPEITYPE - ";
-                  result[ TPEOTYPE] = "TPEOTYPE - ";
-                  result[ TPEEVENT] = "TPEEVENT - ";
-                  result[ TPEMATCH] = "TPEMATCH - ";
-
-
-
-                  return result;
-               }
-            }
-
-         }
 
          int handler()
          {
@@ -78,29 +39,30 @@ namespace casual
             {
                throw;
             }
-            catch( const exception::xatmi::severity::Critical& exception)
+            catch( const exception::xatmi::severity::Error& exception)
             {
-               // TODO: tperrno = exception.code();
                logger::error << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
+               return exception.code();
             }
             catch( const exception::xatmi::severity::Information& exception)
             {
-               // TODO: tperrno = exception.code();
                logger::information << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
+               return exception.code();
             }
-            catch( const exception::xatmi::Base& exception)
+            catch( const exception::xatmi::severity::User& exception)
             {
-               // TODO: tperrno = exception.code();
                logger::debug << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
+               return exception.code();
             }
             catch( const std::exception& exception)
             {
-               // TODO: tperrno = TPESYSTEM;
                logger::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what();
+               return TPESYSTEM;
             }
             catch( ...)
             {
-               logger::error << "unknown exception caught";
+               logger::error << tperrnoStringRepresentation( TPESYSTEM) << " uexpected exception";
+               return TPESYSTEM;
             }
 
 
@@ -115,8 +77,26 @@ namespace casual
 
          const std::string& tperrnoStringRepresentation( int error)
          {
-            static const std::string noEntryFound = "No string representation was found";
-            static const auto mapping = local::initializeTperrnoMapping();
+            static const std::map< int, std::string> mapping{
+               { TPEBADDESC, "TPEBADDESC"},
+               { TPEBLOCK, "TPEBLOCK"},
+               { TPEINVAL, "TPEINVAL"},
+               { TPELIMIT, "TPELIMIT"},
+               { TPENOENT, "TPENOENT"},
+               { TPEOS, "TPEOS"},
+               { TPEPROTO, "TPEPROTO"},
+               { TPESVCERR, "TPESVCERR"},
+               { TPESVCFAIL, "TPESVCFAIL"},
+               { TPESYSTEM, "TPESYSTEM"},
+               { TPETIME, "TPETIME"},
+               { TPETRAN, "TPETRAN"},
+               { TPGOTSIG, "TPGOTSIG"},
+               { TPEITYPE, "TPEITYPE"},
+               { TPEOTYPE, "TPEOTYPE"},
+               { TPEEVENT, "TPEEVENT"},
+               { TPEMATCH, "TPEMATCH"},
+            };
+
 
             auto findIter = mapping.find( error);
 
@@ -126,6 +106,7 @@ namespace casual
             }
             else
             {
+               static const std::string noEntryFound = "No string representation was found";
                return noEntryFound;
             }
          }

@@ -1,0 +1,56 @@
+
+broker:
+
+  default:
+    path: /Users/Lazan/git/casual
+  
+    server:
+      instances: 2
+       
+    service:
+      timeout: 90
+      transaction: auto
+      
+    group:
+      resource:
+        instances: 3
+        key: db2
+
+  groups: 
+    - name: group1        
+      note: DB connection to test
+      resource:
+        key: db2
+        instances: 3
+        openinfo: "db=test,uid=db2,pwd=db2"
+        
+    - name: group2
+      note: DB connection to test2
+      resource:
+        key: db2
+        instances: 3
+        openinfo: "db=test2,uid=db2,pwd=db2"
+
+  servers: 
+    - path: /Users/Lazan/git/casual/transaction/bin/casual-transaction-manager
+      instances: 1
+      
+    - path: /Users/Lazan/git/casual/monitor/bin/casual_monitor
+      instances: 1
+      note: The monitor
+    
+    - path: /Users/Lazan/git/casual/test/bin/test
+      instances: 10
+      membership:
+        - group1 
+        - group2
+      note: Some testserver...
+
+  
+  
+  services:
+    - name: casual_test2
+      authorized:
+        - casual_test2        
+
+   

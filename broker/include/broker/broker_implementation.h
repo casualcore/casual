@@ -192,8 +192,6 @@ namespace casual
                   // We found the service. Now we remove the corresponding server
                   //
 
-                  typedef std::vector< broker::Server*> servers_type;
-
                   auto serversEnd = std::remove_if(
                         std::begin( findIter->second.servers),
                         std::end( findIter->second.servers),

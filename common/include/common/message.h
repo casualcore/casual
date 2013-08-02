@@ -53,6 +53,26 @@ namespace casual
          };
 
 
+         struct Transaction
+         {
+            typedef common::platform::pid_type pid_type;
+
+            Transaction() : creator( 0)
+            {
+               xid.formatID = common::cNull_XID;
+            }
+
+            XID xid;
+            pid_type creator;
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & xid;
+               archive & creator;
+            }
+         };
+
 
          struct Service
          {
@@ -76,6 +96,8 @@ namespace casual
                archive & monitor_queue;
             }
          };
+
+
 
          namespace server
          {
@@ -154,18 +176,22 @@ namespace casual
             {
                struct Manager
                {
+                  /*
                   Manager() = default;
                   Manager( Manager&&) = default;
                   Manager& operator = ( Manager&&) = default;
+                  */
 
                   std::string key;
                   std::string openinfo;
+                  std::string closeinfo;
 
                   template< typename A>
                   void marshal( A& archive)
                   {
                      archive & key;
                      archive & openinfo;
+                     archive & closeinfo;
                   }
                };
 
@@ -185,9 +211,9 @@ namespace casual
                Configuration( Configuration&&) = default;
                Configuration& operator = ( Configuration&&) = default;
 
-               typedef platform::queue_key_type queue_key_type;
+               typedef platform::queue_id_type queue_id_type;
 
-               queue_key_type transactionManagerQueue = 0;
+               queue_id_type transactionManagerQueue = 0;
                std::vector< resource::Manager> resourceManagers;
 
                template< typename A>
@@ -315,6 +341,7 @@ namespace casual
                server::Id reply;
                common::Uuid callId;
                std::string callee;
+               Transaction transaction;
 
                template< typename A>
                void marshal( A& archive)
@@ -324,6 +351,7 @@ namespace casual
                   archive & reply;
                   archive & callId;
                   archive & callee;
+                  archive & transaction;
                }
             };
 
@@ -331,7 +359,7 @@ namespace casual
             {
 
                //!
-               //! Represents a service call. via tp(a)call
+               //! Represents a service call. via tp(a)call, from the callee's perspective
                //!
                struct Call: public base_call
                {
@@ -356,6 +384,9 @@ namespace casual
 
             namespace caller
             {
+               //!
+               //! Represents a service call. via tp(a)call, from the callers perspective
+               //!
                struct Call: public base_call
                {
 

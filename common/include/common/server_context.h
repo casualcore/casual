@@ -8,7 +8,7 @@
 #ifndef CASUAL_SERVER_CONTEXT_H_
 #define CASUAL_SERVER_CONTEXT_H_
 
-#include "common/service_context.h"
+
 #include "common/message.h"
 #include "common/ipc.h"
 #include "common/queue.h"
@@ -39,26 +39,39 @@ namespace casual
       namespace server
       {
 
-         struct Resource
+         struct Service
          {
-            Resource( const char* p_key, xa_switch_t* xa) : key( p_key), xaSwitch( xa), id( 0) {}
+            Service( const std::string& name, tpservice function)
+            : name( name), function( function) {}
 
-            const std::string key;
-            xa_switch_t* xaSwitch;
-            int id;
+            Service( Service&&) = default;
+
+
+            void call( TPSVCINFO* serviceInformation)
+            {
+               (*function)( serviceInformation);
+            }
+
+            std::string name;
+            tpservice function;
+            bool startTransaction = false;
+            bool active = true;
+
+
          };
+
 
          struct Arguments
          {
             Arguments() = default;
             Arguments( Arguments&&) = default;
 
-            std::vector< service::Context> m_services;
+            std::vector< Service> m_services;
             std::function<int( int, char**)> m_server_init = &tpsvrinit;
             std::function<void()> m_server_done = &tpsvrdone;
             int m_argc;
             char** m_argv;
-            std::vector< Resource> resources;
+            std::vector< transaction::Resource> resources;
          };
 
          struct State
@@ -68,7 +81,7 @@ namespace casual
             State( const State&) = delete;
             State& operator = (const State&) = delete;
 
-            typedef std::unordered_map< std::string, service::Context> service_mapping_type;
+            typedef std::unordered_map< std::string, Service> service_mapping_type;
 
             service_mapping_type services;
             common::platform::long_jump_buffer_type long_jump_buffer;
@@ -171,23 +184,30 @@ namespace casual
 
                   for( auto&& service : arguments.m_services)
                   {
-                     message.services.emplace_back( service.m_name);
-                     m_state.services.emplace( service.m_name, std::move( service));
+                     message.services.emplace_back( service.name);
+                     m_state.services.emplace( service.name, std::move( service));
                   }
+
+                  std::swap( arguments.resources, transaction::Context::instance().state().resources);
 
                   //
                   // Connect to casual
                   //
                   auto configuration = m_policy.connect( message);
 
-                  transaction::Context::instance().state().transactionManagerQueue
-                        = configuration.transactionManagerQueue;
+                  //
+                  // Apply the configuration
+                  //
+                  transaction::Context::instance().apply( configuration);
 
 
                   //
                   // Call tpsrvinit
                   //
-                  arguments.m_server_init( arguments.m_argc, arguments.m_argv);
+                  if( ! arguments.m_server_init( arguments.m_argc, arguments.m_argv))
+                  {
+                     exception::NotReallySureWhatToNameThisException( "service init failed");
+                  }
 
                }
 
@@ -204,6 +224,11 @@ namespace casual
                      // Call tpsrvdone
                      //
                      m_state.m_server_done();
+
+                     //
+                     // If there are open resources, close'em
+                     //
+                     transaction::Context::instance().close();
 
                      m_policy.disconnect();
                   }
@@ -332,7 +357,7 @@ namespace casual
 
             };
 
-            namespace basic
+            namespace policy
             {
 
 
@@ -340,7 +365,7 @@ namespace casual
                //! Default policy for basic_call. Only broker and unittest have to define another
                //! policy
                //!
-               struct queue_policy
+               struct Default
                {
                   template< typename W>
                   struct broker_writer : public W
@@ -351,65 +376,28 @@ namespace casual
                   typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
                   typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
 
+
+                  message::server::Configuration connect( message::server::Connect& message);
+
+                  void disconnect();
+
+                  void ack( const message::service::callee::Call& message);
+
                private:
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
 
-               public:
-                  message::server::Configuration connect( message::server::Connect& message)
-                  {
-                     //
-                     // Let the broker know about us, and our services...
-                     //
-
-                     message.server.queue_id = ipc::getReceiveQueue().id();
-                     message.path = common::environment::getExecutablePath();
-
-                     blocking_broker_writer brokerWriter;
-                     brokerWriter( message);
-
-
-                     //
-                     // Wait for configuration reply
-                     //
-                     queue::blocking::Reader reader( ipc::getReceiveQueue());
-                     message::server::Configuration configuration;
-                     reader( configuration);
-
-                     return configuration;
-                  }
-
-                  void disconnect()
-                  {
-                     message::server::Disconnect message;
-
-                     //
-                     // we can't block here...
-                     //
-                     non_blocking_broker_writer brokerWriter;
-                     brokerWriter( message);
-                  }
-
-
-                  void ack( const message::service::callee::Call& message)
-                  {
-                     message::service::ACK ack;
-                     ack.server.queue_id = ipc::getReceiveQueue().id();
-                     ack.service = message.service.name;
-
-                     blocking_broker_writer brokerWriter;
-                     brokerWriter( ack);
-                  }
-
-
                };
-            } // basic
+
+
+
+            } // policy
 
             //!
             //! Handle service calls from other proceses and does a dispatch to
             //! the register XATMI functions.
             //!
-            typedef basic_call< basic::queue_policy> Call;
+            typedef basic_call< policy::Default> Call;
 
          } // handle
       } // callee

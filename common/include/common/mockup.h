@@ -116,10 +116,26 @@ namespace casual
             std::deque< M> ReadMessage< M>::replies = std::deque< message_type>{};
 
          } // queue
+
+         namespace xa_switch
+         {
+            struct State
+            {
+
+
+            };
+
+         }
+
+
       } // mockup
    } // common
 } // casual
 
+extern "C"
+{
+   extern struct xa_switch_t casual_mockup_xa_switch_static;
+}
 
 
 #endif /* MOCKUP_H_ */

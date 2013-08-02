@@ -26,61 +26,77 @@ namespace casual
       namespace configuration
       {
 
-         struct Limit
-         {
 
-            std::string min;
-            std::string max;
-
-            template< typename A>
-            void serialize( A& archive)
-            {
-               archive & CASUAL_MAKE_NVP( min);
-               archive & CASUAL_MAKE_NVP( max);
-            }
-         };
 
          struct Server
          {
             std::string path;
             std::string instances;
-            Limit limits;
             std::string arguments;
+            std::vector< std::string> membership;
 
             template< typename A>
             void serialize( A& archive)
             {
                archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( instances);
-               archive & CASUAL_MAKE_NVP( limits);
                archive & CASUAL_MAKE_NVP( arguments);
+               archive & CASUAL_MAKE_NVP( membership);
             }
 
          };
-
 
 
          struct Service
          {
             std::string name;
             std::string timeout;
+            std::string note;
+            std::string transaction;
 
             template< typename A>
             void serialize( A& archive)
             {
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( timeout);
+               archive & CASUAL_MAKE_NVP( note);
+               archive & CASUAL_MAKE_NVP( transaction);
             }
+         };
+
+         struct Resource
+         {
+            std::string key;
+            std::string instances;
+
+            std::string openinfo;
+            std::string closeinfo;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( key);
+               archive & CASUAL_MAKE_NVP( instances);
+               archive & CASUAL_MAKE_NVP( openinfo);
+               archive & CASUAL_MAKE_NVP( closeinfo);
+            }
+
          };
 
          struct Group
          {
             std::string name;
+            std::string note;
+
+            Resource resource;
+
 
             template< typename A>
             void serialize( A& archive)
             {
                archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( note);
+               archive & CASUAL_MAKE_NVP( resource);
             }
          };
 
@@ -89,20 +105,22 @@ namespace casual
          {
             Default()
             {
-               server.limits.max = std::to_string( std::numeric_limits< std::size_t>::max());
-               server.limits.min = std::to_string( 0);
                server.instances = std::to_string( 1);
                service.timeout = std::to_string( 3600);
             }
 
+            std::string path;
             Server server;
             Service service;
+            Group group;
 
             template< typename A>
             void serialize( A& archive)
             {
+               archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( server);
                archive & CASUAL_MAKE_NVP( service);
+               archive & CASUAL_MAKE_NVP( group);
             }
          };
 
@@ -110,16 +128,19 @@ namespace casual
          {
             Default casual_default;
             std::vector< Group> groups;
-            std::list< Server> servers;
-            std::list< Service> services;
+            std::vector< Server> servers;
+            std::vector< Service> services;
 
             template< typename A>
             void serialize( A& archive)
             {
+
+
                archive & sf::makeNameValuePair( "default", casual_default);
                archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( services);
+
             }
          };
 
@@ -137,8 +158,6 @@ namespace casual
                void operator () ( configuration::Server& server) const
                {
                   assign_if_empty( server.instances, m_casual_default.server.instances);
-                  assign_if_empty( server.limits.min, m_casual_default.server.limits.min);
-                  assign_if_empty( server.limits.max, m_casual_default.server.limits.max);
                }
 
                void operator () ( configuration::Service& service) const

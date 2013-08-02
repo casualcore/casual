@@ -35,10 +35,9 @@ int main( int argc, char** argv)
 			{ 0, 0} /* null ending */
 	};
 
-//#ifdef __cplusplus
+#ifdef __cplusplus
 	static_assert( sizeof( "casual_test1") <= XATMI_SERVICE_NAME_LENGTH, "service name to long");
-
-//#endif
+#endif
 
 
 	struct casual_xa_switch_mapping xa_mapping[] = {

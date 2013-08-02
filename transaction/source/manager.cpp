@@ -191,7 +191,7 @@ namespace casual
                }
 
                //
-               // Consume until the queue is empty or we've reach statistics_batch
+               // Consume until the queue is empty or we've reach transaction_batch
                //
                {
                   auto count = common::platform::transaction_batch;

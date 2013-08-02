@@ -12,7 +12,6 @@
 #include <algorithm>
 
 
-#include "common/service_context.h"
 #include "common/server_context.h"
 #include "common/message_dispatch.h"
 
@@ -76,17 +75,19 @@ int casual_start_server( casual_server_argument* serverArgument)
    {
 
 
-      auto arguments = local::transform::ServerArguments()( *serverArgument);
+      common::message::dispatch::Handler handler;
 
-      common::environment::setExecutablePath( serverArgument->argv[ 0]);
+      {
+         auto arguments = local::transform::ServerArguments()( *serverArgument);
+
+         common::environment::setExecutablePath( serverArgument->argv[ 0]);
+
+         handler.add< common::callee::handle::Call>( arguments);
+      }
 
       //
       // Start the message-pump
       //
-      common::message::dispatch::Handler handler;
-
-      handler.add< common::callee::handle::Call>( arguments);
-
       common::message::dispatch::pump( handler);
 	}
 	catch( ...)

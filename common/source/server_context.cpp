@@ -90,7 +90,15 @@ namespace casual
             // validate
             //
 
-            auto findIter = m_state.services.find( name);
+            std::string localName = name;
+
+            if( localName.size() >= XATMI_SERVICE_NAME_LENGTH)
+            {
+               localName.resize( XATMI_SERVICE_NAME_LENGTH - 1);
+               logger::warning << "service name '" << name << "' truncated to '" << localName << "'";
+            }
+
+            auto findIter = m_state.services.find( localName);
 
             if( findIter != std::end( m_state.services))
             {
@@ -98,9 +106,9 @@ namespace casual
                // service name is already advertised
                // No error if it's the same function
                //
-               if( findIter->second.m_function != function)
+               if( findIter->second.function != function)
                {
-                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + name);
+                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + localName);
                }
 
             }
@@ -110,13 +118,13 @@ namespace casual
 
                message.server.queue_id = ipc::getReceiveQueue().id();
                // TODO: message.serverPath =
-               message.services.emplace_back( name);
+               message.services.emplace_back( localName);
 
                // TODO: make it consistence safe...
                queue::blocking::Writer writer( ipc::getBrokerQueue());
                writer( message);
 
-               m_state.services.emplace( name, service::Context( name, function));
+               m_state.services.emplace( localName, Service( localName, function));
             }
          }
 
@@ -150,7 +158,55 @@ namespace casual
          }
 
 
+
       } // server
+
+      namespace callee
+      {
+         namespace handle
+         {
+            namespace policy
+            {
+               message::server::Configuration Default::connect( message::server::Connect& message)
+               {
+                  //
+                  // Let the broker know about us, and our services...
+                  //
+                  message.server.queue_id = ipc::getReceiveQueue().id();
+                  message.path = common::environment::getExecutablePath();
+                  blocking_broker_writer brokerWriter;
+                  brokerWriter( message);
+                  //
+                  // Wait for configuration reply
+                  //
+                  queue::blocking::Reader reader( ipc::getReceiveQueue());
+                  message::server::Configuration configuration;
+                  reader( configuration);
+                  return configuration;
+               }
+
+               void Default::ack( const message::service::callee::Call& message)
+               {
+                  message::service::ACK ack;
+                  ack.server.queue_id = ipc::getReceiveQueue().id();
+                  ack.service = message.service.name;
+                  blocking_broker_writer brokerWriter;
+                  brokerWriter( ack);
+               }
+
+               void Default::disconnect()
+               {
+                  message::server::Disconnect message;
+                  //
+                  // we can't block here...
+                  //
+                  non_blocking_broker_writer brokerWriter;
+                  brokerWriter( message);
+               }
+
+            } // policy
+         } // handle
+      } // callee
    } // common
 } // casual
 

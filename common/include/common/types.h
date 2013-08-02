@@ -26,7 +26,10 @@ namespace casual
 
       typedef char* raw_buffer_type;
 
-      typedef std::chrono::steady_clock clock_type;
+      // TODO: change to: typedef std::chrono::steady_clock clock_type;
+      // When clang has to_time_t for steady_clock
+      typedef std::chrono::system_clock clock_type;
+
 
       typedef clock_type::time_point time_type;
 

@@ -125,34 +125,21 @@ struct xa_switch_t {
 #define XA_RBCOMMFAIL   XA_RBBASE+1 /* The rollback was caused by a
                   communication failure */
 #define  XA_RBDEADLOCK  XA_RBBASE+2 /* A deadlock was detected */
-#define XA_RBINTEGRITY  XA_RBBASE+3 /* A condition that violates the
-                  integrity of the resources was
-                  detected */
-#define XA_RBOTHER   XA_RBBASE+4 /* The resource manager rolled back the
-                  transaction for a reason not on this
-                  list */
-#define XA_RBPROTO   XA_RBBASE+5 /* A protocal error occurred in the
-                  resource manager */
+#define XA_RBINTEGRITY  XA_RBBASE+3 /* A condition that violates the integrity of the resources was detected */
+#define XA_RBOTHER   XA_RBBASE+4 /* The resource manager rolled back the transaction for a reason not on this list */
+#define XA_RBPROTO   XA_RBBASE+5 /* A protocal error occurred in the resource manager */
 #define  XA_RBTIMEOUT   XA_RBBASE+6 /* A transaction branch took too long*/
 #define XA_RBTRANSIENT  XA_RBBASE+7 /* May retry the transaction branch */
 #define XA_RBEND  XA_RBTRANSIENT /* The inclusive upper bound of the
                   rollback codes */
 
-#define XA_NOMIGRATE 9     /* resumption must occur where
-                  suspension occurred */
-#define XA_HEURHAZ   8     /* the transaction branch may have been
-                  heuristically completed */
-#define XA_HEURCOM   7     /* the transaction branch has been
-                  heuristically comitted */
-#define XA_HEURRB 6     /* the transaction branch has been
-                  heuristically rolled back */
-#define XA_HEURMIX   5     /* the transaction branch has been
-                  heuristically committed and rolled
-                  back */
-#define XA_RETRY  4     /* routine returned with no effect
-                  and may be re-issued */
-#define XA_RDONLY 3     /* the transaction was read-only
-                  and has been committed */
+#define XA_NOMIGRATE 9     /* resumption must occur where suspension occurred */
+#define XA_HEURHAZ   8     /* the transaction branch may have been heuristically completed */
+#define XA_HEURCOM   7     /* the transaction branch has been heuristically comitted */
+#define XA_HEURRB 6     /* the transaction branch has been heuristically rolled back */
+#define XA_HEURMIX   5     /* the transaction branch has been heuristically committed and rolled back */
+#define XA_RETRY  4     /* routine returned with no effect and may be re-issued */
+#define XA_RDONLY 3     /* the transaction was read-only and has been committed */
 #define XA_OK     0     /* normal execution */
 #define XAER_ASYNC   -2    /* asynchronous operation already
                   outstanding */
