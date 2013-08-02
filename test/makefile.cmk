@@ -34,7 +34,7 @@ Compile( source/template_server_dispatcher.c, obj/template_server_dispatcher.o)
 LinkExecutable(test, \
     obj/template_server_dispatcher.o \
     obj/template_server.o, \
-    casual-xatmi casual-common db2)	
+    casual-xatmi casual-common casual-mockup)	
     	
 
 

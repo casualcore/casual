@@ -15,6 +15,8 @@
 #include <xatmi.h>
 #include <xatmi_server.h>
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,7 +25,7 @@ extern void casual_test1( TPSVCINFO *transb);
 extern void casual_test2( TPSVCINFO *transb);
 
 
-extern struct xa_switch_t db2xa_switch_static_std;
+extern struct xa_switch_t casual_mockup_xa_switch_static;
 
 
 int main( int argc, char** argv)
@@ -41,7 +43,7 @@ int main( int argc, char** argv)
 
 
 	struct casual_xa_switch_mapping xa_mapping[] = {
-	        { "db2", &db2xa_switch_static_std},
+	        { "db2", &casual_mockup_xa_switch_static},
 	        { 0, 0} /* null ending */
 	   };
 
