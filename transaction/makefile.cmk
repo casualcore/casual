@@ -14,6 +14,7 @@ LIBRARY_PATHS = bin \
     ../common/bin \
     ../configuration/bin \
     ../serviceframework/bin \
+    ../xatmi/bin \
 //    $(IBM_DB_LIB)
     
 
