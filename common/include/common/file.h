@@ -82,10 +82,16 @@ namespace casual
          //!
          bool exists( const std::string& path);
 
+      } // file
+
+      namespace directory
+      {
+
+         bool create( const std::string& path);
+
       }
 
-   }
-
-}
+   } // common
+} // casual
 
 #endif /* CASUAL_UTILITY_FILE_H_ */

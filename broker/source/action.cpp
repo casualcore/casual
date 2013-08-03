@@ -19,7 +19,7 @@ namespace casual
          namespace server
          {
 
-            std::vector< common::platform::pid_type> start( const configuration::Server& server)
+            std::vector< common::platform::pid_type> start( const config::domain::Server& server)
             {
                std::vector< common::platform::pid_type> result;
 

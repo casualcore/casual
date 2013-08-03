@@ -6,14 +6,16 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 INCLUDE_PATHS= include \
     admin/include \
 	../common/include \
+	../configuration/include \
 	../xatmi/include \
 	../serviceframework/include \
 	$(UNITTEST_INCLUDE_PATH) \
 	$(YAML_INCLUDE_PATH) \
 
 LIBRARY_PATHS = ../common/bin \
-    ../serviceframework/bin \
+   ../serviceframework/bin \
 	../xatmi/bin \
+	../configuration/bin \
 	$(YAML_LIBRARY_PATH) \
 	$(JSON_LIBRARY_PATH)
 
@@ -46,8 +48,13 @@ LinkExecutable( casual-broker, \
 	obj/broker_main.o \
 	obj/action.o \
 	obj/adminserverimplementation.o \
-	obj/adminserver.o, \
-	casual-common casual-sf casual-xatmi casual-broker-admin-vo)
+	obj/adminserver.o \
+	, \
+	casual-common \
+	casual-sf \
+   casual-xatmi \
+   casual-configuration \
+   casual-broker-admin-vo)
 	
 	
 //
@@ -72,7 +79,7 @@ LinkIsolatedUnittest( casual-broker-isolated, \
 	unittest/isolated/obj/test_broker.o \
 	unittest/isolated/obj/test_broker_confguration.o \
 	unittest/isolated/obj/test_broker_transformation.o, \
-	casual-common casual-sf casual-broker-admin-vo)
+	casual-common casual-sf casual-broker-admin-vo casual-configuration)
 	
 	
 

@@ -173,7 +173,7 @@ namespace casual
                   // Let the broker know about us, and our services...
                   //
                   message.server.queue_id = ipc::getReceiveQueue().id();
-                  message.path = common::environment::getExecutablePath();
+                  message.path = common::environment::file::executable();
                   blocking_broker_writer brokerWriter;
                   brokerWriter( message);
                   //

@@ -184,14 +184,14 @@ namespace casual
             {
                ScopedBrokerQueue()
                {
-                  if( common::file::exists( common::environment::getBrokerQueueFileName()))
+                  if( common::file::exists( common::environment::file::brokerQueue()))
                   {
                      throw exception::QueueFailed( "Broker queue file exists - Can't run tests within an existing casual domain");
                   }
 
-                  path.reset( new file::ScopedPath( common::environment::getBrokerQueueFileName()));
+                  path.reset( new file::ScopedPath( common::environment::file::brokerQueue()));
 
-                  std::ofstream out( common::environment::getBrokerQueueFileName());
+                  std::ofstream out( common::environment::file::brokerQueue());
                   out << brokerQueue.id();
 
                }

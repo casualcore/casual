@@ -8,6 +8,8 @@
 #include "sf/archive_maker.h"
 #include "sf/archive_yaml.h"
 
+#include "sf/archive_json.h"
+
 #include "common/file.h"
 
 namespace casual
@@ -67,8 +69,13 @@ namespace casual
                {
                   typedef basic_holder< yaml::relaxed::Reader, yaml::reader::Buffer > YamlRelaxedHolder;
 
-
                   return Holder( Holder::base_value_type( new YamlRelaxedHolder( filename)));
+               }
+               else if( extension == "json")
+               {
+                  typedef basic_holder< json::relaxed::Reader, json::reader::Buffer > JsonRelaxedHolder;
+
+                  return Holder( Holder::base_value_type( new JsonRelaxedHolder( filename)));
                }
 
                throw exception::Validation( "could not deduce protocol for file " + filename);

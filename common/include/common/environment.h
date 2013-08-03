@@ -36,21 +36,54 @@ namespace casual
 
 			}
 
-			const std::string& getTemporaryPath();
+			namespace directory
+			{
+			   //!
+			   //! @return default temp directory
+			   //!
+			   const std::string& temporary();
 
-			const std::string& getRootPath();
+			   //!
+			   //! @return Home of current domain
+			   //!
+			   const std::string& domain();
 
-			std::string getBrokerQueueFileName();
+			   //!
+			   //! @return Where casual is installed
+			   //!
+			   const std::string& casual();
+			}
+
+
+			namespace file
+			{
+
+			   void executable( const std::string& path);
+
+			   const std::string& executable();
+
+			   std::string brokerQueue();
+
+			   //!
+			   //! @return domain configuration file path
+			   //!
+			   //! TODO: some of these should be in casual::domain
+			   std::string configuration();
+
+			   // TODO: change name
+			   std::string installedConfiguration();
+			}
+
+
+
 
 			platform::seconds_type getTime();
 
 			std::string getDomainName();
 
-			std::string getDefaultConfigurationFile();
 
-			void setExecutablePath( const std::string& path);
 
-			const std::string& getExecutablePath();
+
 
 
 		}

@@ -87,19 +87,21 @@ Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test
 Compile( unittest/isolated/source/test_file.cpp, unittest/isolated/obj/test_file.o)
 Compile( unittest/isolated/source/test_process.cpp, unittest/isolated/obj/test_process.o)
 Compile( unittest/isolated/source/test_string.cpp, unittest/isolated/obj/test_string.o)
+Compile( unittest/isolated/source/test_error.cpp, unittest/isolated/obj/test_error.o)
 
 LinkIsolatedUnittest( casual-common-isolated, \
-	unittest/isolated/obj/test_buffer.o \
-	unittest/isolated/obj/test_ipc.o \
-	unittest/isolated/obj/test_marshal.o \
-	unittest/isolated/obj/test_queue.o \
-	unittest/isolated/obj/test_message_dispatch.o \
-	unittest/isolated/obj/test_server_context.o \
-	unittest/isolated/obj/test_uuid.o \
-    unittest/isolated/obj/test_file.o \
-    unittest/isolated/obj/test_arguments.o \
-    unittest/isolated/obj/test_process.o \
-    unittest/isolated/obj/test_string.o \
-    , \
-	casual-common )	
+   unittest/isolated/obj/test_buffer.o \
+   unittest/isolated/obj/test_ipc.o \
+   unittest/isolated/obj/test_marshal.o \
+   unittest/isolated/obj/test_queue.o \
+   unittest/isolated/obj/test_message_dispatch.o \
+   unittest/isolated/obj/test_server_context.o \
+   unittest/isolated/obj/test_uuid.o \
+   unittest/isolated/obj/test_file.o \
+   unittest/isolated/obj/test_arguments.o \
+   unittest/isolated/obj/test_process.o \
+   unittest/isolated/obj/test_string.o \
+   unittest/isolated/obj/test_error.o \
+   , \
+   casual-common )	
 

@@ -16,6 +16,9 @@
 
 
 #include <iostream>
+#include <fstream>
+#include <iterator>
+#include <string>
 
 namespace casual
 {
@@ -28,6 +31,23 @@ namespace casual
             namespace reader
             {
 
+               struct Buffer
+               {
+                  Buffer( const std::string& file)
+                  {
+                     std::ifstream in( file);
+                     m_string.assign( std::istream_iterator< char>( in), std::istream_iterator< char>());
+                  }
+
+                  const char* archiveBuffer()
+                  {
+                     return m_string.c_str();
+                  }
+
+               private:
+                  std::string m_string;
+               };
+
 
                template< typename P>
                class Implementation
@@ -36,9 +56,18 @@ namespace casual
 
                   typedef P policy_type;
 
-
-                  Implementation( const char* buffer) : m_root( json_tokener_parse( buffer))
+                  enum class State
                   {
+                     unknown,
+                     container,
+                     serializable,
+                     missing,
+                  };
+
+                  Implementation( const char* buffer)
+                  {
+                     json_tokener_error error{ json_tokener_success};
+                     m_root = json_tokener_parse_verbose( buffer, &error);
 
                      if( m_root)
                      {
@@ -46,9 +75,9 @@ namespace casual
                      }
                      else
                      {
-                        //m_policy.initalization();
+                        m_policy.initalization( json_tokener_error_desc( error));
                      }
-                     m_state.push( cRoot);
+                     m_state.push( State::unknown);
                   }
 
                   ~Implementation()
@@ -61,6 +90,7 @@ namespace casual
 
                   void handle_start( const char* name)
                   {
+                     //std::cerr << name << std::endl;
                      m_currentRole = name;
                   }
 
@@ -69,26 +99,43 @@ namespace casual
                   std::size_t handle_container_start( std::size_t size)
                   {
 
-                     json_object* next = json_object_object_get( m_stack.top(), m_currentRole);
+                     json_object* next = nullptr;
 
-                     if( json_object_is_type( next, json_type_array))
+                     switch( m_state.top())
+                     {
+                        case State::container:
+                        {
+                           next = m_stack.top();
+                           break;
+                        }
+                        case State::unknown:
+                        case State::serializable:
+                        {
+                           next = json_object_object_get( m_stack.top(), m_currentRole);
+                           break;
+                        }
+                        case State::missing:
+                        {
+                           break;
+                        }
+                     }
+
+                     if( next)
                      {
                         size = json_object_array_length( next);
 
-                        //
-                        // push all items to the stack, in reverse order
-                        //
                         for( int index = size; index > 0; --index)
                         {
                            m_stack.push( json_object_array_get_idx( next, index - 1));
                         }
+
+                        m_state.push( State::container);
                      }
                      else
                      {
                         size = m_policy.container( m_currentRole);
+                        m_state.push( State::missing);
                      }
-
-                     m_state.push( cContainer);
 
                      return size;
                   }
@@ -100,23 +147,50 @@ namespace casual
 
                   void handle_serialtype_start()
                   {
-                     if( m_state.top() != cContainer)
+
+                     switch( m_state.top())
                      {
-                        json_object* next = json_object_object_get( m_stack.top(), m_currentRole);
-
-                        m_stack.push( next);
-
-                        if( ! next)
+                        case State::container:
                         {
-                           m_policy.serialtype( m_currentRole);
+                           //
+                           // We are in a container and the nodes are already pushed
+                           //
+                           m_state.push( State::serializable);
+                           break;
+                        }
+                        case State::unknown:
+                        case State::serializable:
+                        {
+                           json_object* next = json_object_object_get( m_stack.top(), m_currentRole);
+                           if( next != nullptr)
+                           {
+                              m_stack.push( next);
+                              m_state.push( State::serializable);
+                           }
+                           else
+                           {
+                              m_policy.serialtype( m_currentRole);
+                              m_state.push( State::missing);
+                           }
+                           break;
+                        }
+                        case State::missing:
+                        {
+                           m_state.push( State::missing);
+                           break;
                         }
                      }
-                     m_state.push( cComposite);
                   }
 
                   void handle_serialtype_end()
                   {
-                     m_stack.pop();
+                     //
+                     // Always pop, if not missing
+                     //
+                     if( m_state.top() != State::missing)
+                     {
+                        m_stack.pop();
+                     }
                      m_state.pop();
                   }
 
@@ -124,24 +198,34 @@ namespace casual
                   template< typename T>
                   void read( T& value)
                   {
-                     if( json_object_is_type(  m_stack.top(), json_type_object))
-                     {
-                        //
-                        // It's composite, get value from it...
-                        //
-                        json_object* next = json_object_object_get( m_stack.top(), m_currentRole);
 
-                        readValue( next, value);
-                     }
-                     else
+                     switch( m_state.top())
                      {
-                        //
-                        // It's a value, get it...
-                        // This can only happen if there is an array with 'pods'
-                        //
-                        readValue( m_stack.top(), value);
-
-                        m_stack.pop();
+                        case State::container:
+                        {
+                           readValue( m_stack.top(), value);
+                           m_stack.pop();
+                           break;
+                        }
+                        case State::unknown:
+                        case State::serializable:
+                        {
+                           json_object* next = json_object_object_get( m_stack.top(), m_currentRole);
+                           if( next)
+                           {
+                              readValue( next, value);
+                           }
+                           else
+                           {
+                              m_policy.value( m_currentRole, value);
+                           }
+                           break;
+                        }
+                        default:
+                        {
+                           // no op
+                           break;
+                        }
                      }
                   }
 
@@ -183,14 +267,6 @@ namespace casual
                      }
 
                   }
-
-                  enum State
-                  {
-                     cRoot,
-                     cComposite,
-                     cContainer,
-                     cElement
-                  };
 
                   policy_type m_policy;
                   json_object* m_root;

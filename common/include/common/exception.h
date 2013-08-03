@@ -181,7 +181,7 @@ namespace casual
 
             typedef code::basic_exeption< TPELIMIT, severity::Information> LimitReached;
 
-            typedef code::basic_exeption< TPEINVAL, severity::Information> InvalidArguments;
+            typedef code::basic_exeption< TPEINVAL, severity::User> InvalidArguments;
 
             typedef code::basic_exeption< TPEOS, severity::Error> OperatingSystemError;
 
@@ -189,7 +189,7 @@ namespace casual
 
             namespace service
             {
-               typedef code::basic_exeption< TPEBADDESC, severity::Information> InvalidDescriptor;
+               typedef code::basic_exeption< TPEBADDESC, severity::User> InvalidDescriptor;
 
                typedef code::basic_exeption< TPESVCERR, severity::Error> Error;
 
@@ -211,9 +211,9 @@ namespace casual
             namespace buffer
             {
 
-               typedef code::basic_exeption< TPEITYPE, severity::Information> TypeNotSupported;
+               typedef code::basic_exeption< TPEITYPE, severity::User> TypeNotSupported;
 
-               typedef code::basic_exeption< TPEOTYPE, severity::Information> TypeNotExpected;
+               typedef code::basic_exeption< TPEOTYPE, severity::User> TypeNotExpected;
 
             }
 

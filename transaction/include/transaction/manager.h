@@ -12,6 +12,9 @@
 #include "common/ipc.h"
 #include "common/message.h"
 
+#include "config/xa_switch.h"
+
+
 #include "sql/database.h"
 
 
@@ -36,6 +39,26 @@ namespace casual
          };
       } // pending
 
+      namespace resource
+      {
+         struct Proxy
+         {
+            struct Instance
+            {
+               common::message::server::Id id;
+               bool idle = true;
+            };
+
+
+            std::string key;
+            std::string openinfo;
+            std::string closeinfo;
+            std::size_t instances;
+
+            std::vector< Instance> servers;
+         };
+
+      } // resource
 
       struct State
       {
@@ -43,7 +66,15 @@ namespace casual
 
          std::vector< pending::Reply> pendingReplies;
          sql::database::Connection db;
+
+         std::vector< resource::Proxy> resources;
+
+         std::map< std::string, config::xa::Switch> resourceMapping;
       };
+
+
+      void configureResurceProxies( State& state);
+
 
       class Manager
       {
@@ -57,8 +88,9 @@ namespace casual
       private:
 
 
-
          void handlePending();
+
+
 
          common::ipc::receive::Queue& m_receiveQueue;
          State m_state;

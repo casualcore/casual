@@ -600,7 +600,7 @@ namespace casual
             {
 
                message.server.queue_id = ipc::getReceiveQueue().id();
-               message.path = common::environment::getExecutablePath();
+               message.path = common::environment::file::executable();
 
                //
                // We add the server

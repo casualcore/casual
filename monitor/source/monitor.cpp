@@ -124,7 +124,7 @@ namespace monitor
       //
       const std::string name = !arguments.empty() ? arguments.front() : std::string("");
 
-	   common::environment::setExecutablePath( name);
+	   common::environment::file::executable( name);
 
 		static const std::string cMethodname("Monitor::Monitor");
 		common::Trace trace(cMethodname);

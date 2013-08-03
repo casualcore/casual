@@ -2,6 +2,7 @@
 
 
 resources:
+
     # key has to be unique between resources.
     # this is the name that shall be used to refer to a specific resource (for example with buildserver)
   - key: db2   
@@ -13,4 +14,10 @@ resources:
     # needed libraries
     libraries:
       - db2
-
+      
+   
+  - key: rm-mockup   
+    server: rm-proxy-casual-mockup
+    xa_struct_name: casual_mockup_xa_switch_static
+    libraries:
+      - casual-mockup

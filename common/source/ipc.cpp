@@ -172,7 +172,7 @@ namespace casual
 
             Queue::Queue()
                : internal::base_queue( msgget( IPC_PRIVATE, 0660)),
-                 m_scopedPath( common::environment::getTemporaryPath() + "/ipc_queue_" + common::Uuid::make().string())
+                 m_scopedPath( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
             {
                //
                // Write queue information
@@ -181,7 +181,7 @@ namespace casual
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl
-                     << "path: " << environment::getExecutablePath() << std::endl;
+                     << "path: " << environment::file::executable() << std::endl;
 
 
                if( m_id  == -1)
@@ -370,7 +370,7 @@ namespace casual
             {
                send::Queue initializeBrokerQueue()
                {
-                  static const std::string brokerFile = common::environment::getBrokerQueueFileName();
+                  static const std::string brokerFile = common::environment::file::brokerQueue();
 
                   std::ifstream file( brokerFile.c_str());
 

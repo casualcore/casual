@@ -1,5 +1,7 @@
 
-broker:
+domain:
+
+  name: domain1
 
   default:
     path: /Users/Lazan/git/casual

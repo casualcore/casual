@@ -65,7 +65,7 @@ namespace casual
 
                      if( ! parser.GetNextDocument( m_document))
                      {
-                        m_policy.initalization();
+                        m_policy.initalization( "empty yaml document");
                      }
 
                      m_nodeStack.push( &m_document);
@@ -105,6 +105,7 @@ namespace casual
 
                      if( containerNode)
                      {
+
                         size = containerNode->size();
 
                         for( std::size_t index = size; index > 0; --index)
@@ -124,7 +125,6 @@ namespace casual
 
                   inline void handle_container_end()
                   {
-                    // m_nodeStack.pop_back();
                      m_state.pop();
 
                   }

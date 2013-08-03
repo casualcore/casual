@@ -8,19 +8,21 @@
 #ifndef CASUAL_BROKER_H_
 #define CASUAL_BROKER_H_
 
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <list>
-#include <deque>
 
-#include "broker/configuration.h"
+
 
 #include "common/file.h"
 #include "common/platform.h"
 
 #include "common/ipc.h"
 #include "common/message.h"
+
+
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <list>
+#include <deque>
 
 
 namespace casual

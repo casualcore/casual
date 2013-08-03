@@ -7,11 +7,16 @@
 
 #include "transaction/manager.h"
 
+
 #include "common/message.h"
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/environment.h"
 #include "common/message_dispatch.h"
+
+#include "config/domain.h"
+
+#include "sf/archive_maker.h"
 
 
 #include <tx.h>
@@ -118,8 +123,77 @@ namespace casual
                }
             };
 
+            namespace filter
+            {
+               struct Resource
+               {
+                  bool operator () ( const config::domain::Group& value) const
+                  {
+                     return ! value.resource.key.empty();
+                  }
+               };
+            } // filter
+
+            namespace transform
+            {
+
+               struct Group
+               {
+                  transaction::resource::Proxy operator () ( const config::domain::Group& value) const
+                  {
+                     transaction::resource::Proxy result;
+
+                     result.key = value.resource.key;
+                     result.openinfo = value.resource.openinfo;
+                     result.closeinfo = value.resource.closeinfo;
+                     result.instances = std::stoul( value.resource.instances);
+
+                     return result;
+                  }
+               };
+
+            } // transform
+
+
          } // <unnamed>
       } // local
+
+
+      void configureResurceProxies( State& state)
+      {
+
+         {
+            common::trace::Exit log( "transaction manager xa-switch configuration");
+
+            auto resources = config::xa::switches::get();
+
+            for( auto& resource : resources)
+            {
+               if( ! state.resourceMapping.emplace( resource.key, std::move( resource)).second)
+               {
+                  throw exception::NotReallySureWhatToNameThisException( "multiple keys in resource config");
+               }
+            }
+         }
+
+         //
+         // configure resources
+         //
+         {
+            common::trace::Exit log( "transaction manager resource configuration");
+
+            auto domain = config::domain::get();
+
+            auto resourcesEnd = std::partition( std::begin( domain.groups), std::end( domain.groups), local::filter::Resource());
+
+            std::transform(
+               std::begin( domain.groups),
+               resourcesEnd,
+               std::back_inserter( state.resources),
+               local::transform::Group());
+         }
+
+      }
 
 
       State::State( const std::string& database) : db( database) {}
@@ -136,7 +210,8 @@ namespace casual
          // TODO: Use a correct argument handler
          //
          const std::string name = ! arguments.empty() ? arguments.front() : std::string("");
-         common::environment::setExecutablePath( name);
+         common::environment::file::executable( name);
+
 
 
 
@@ -260,7 +335,7 @@ namespace casual
 
       std::string Manager::databaseFileName()
       {
-         return common::environment::getRootPath() + "/transaction-manager.db";
+         return common::environment::directory::domain() + "/transaction-manager.db";
       }
 
    } // transaction

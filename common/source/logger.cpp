@@ -48,7 +48,7 @@ namespace casual
                         m_output <<
                            common::chronology::local() <<
                            '|' << common::environment::getDomainName() <<
-                           '|' << common::environment::getExecutablePath() <<
+                           '|' << common::environment::file::executable() <<
                            '|' << common::process::id() << "|";
 
 
@@ -120,7 +120,7 @@ namespace casual
                      //
                      void open()
                      {
-                        static const std::string logfileName = common::environment::getRootPath() + "/casual.log";
+                        static const std::string logfileName = common::environment::directory::domain() + "/casual.log";
 
                         m_output.open( logfileName, std::ios::app | std::ios::out);
 
