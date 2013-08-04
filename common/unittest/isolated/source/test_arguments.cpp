@@ -29,20 +29,32 @@ namespace casual
                called = true;
             }
 
-            void one( const std::string& value)
+            void setString( const std::string& value)
             {
-               one_value = value;
+               string_value = value;
             }
 
             void setLong( long value)
             {
-               one_long_value = value;
+               long_value = value;
+            }
+
+            void setVectorString( const std::vector< std::string>& value)
+            {
+               vector_string_value = value;
+            }
+
+            void setVectorLong( const std::vector< long>& value)
+            {
+               vector_long_value = value;
             }
 
             bool called = false;
 
-            std::string one_value;
-            long one_long_value = 0;
+            std::string string_value;
+            long long_value = 0;
+            std::vector< std::string> vector_string_value;
+            std::vector< long> vector_long_value;
          };
 
 
@@ -65,22 +77,22 @@ namespace casual
 
          using namespace std::placeholders;
 
-         auto dispatch1 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::one);
+         auto dispatch1 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::setString);
 
          dispatch1( values);
 
 
-         EXPECT_TRUE( conf.one_value == "234");
+         EXPECT_TRUE( conf.string_value == "234");
 
          auto dispatch2 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::setLong);
 
          dispatch2( values);
 
-         EXPECT_TRUE( conf.one_long_value == 234);
+         EXPECT_TRUE( conf.long_value == 234);
       }
 
 
-      TEST( casual_common_arguments, directive_zero_cardinality_member_function)
+      TEST( casual_common_arguments, directive_deduced_cardinality__member_function_void)
       {
 
          local::Conf conf;
@@ -89,7 +101,7 @@ namespace casual
          Arguments arguments;
 
          arguments.add(
-               argument::directive( argument::cardinality::Zero(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::flag)
+               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::flag)
          );
 
          EXPECT_FALSE( conf.called );
@@ -100,7 +112,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_arguments, directive_one_cardinality_member_function)
+      TEST( casual_common_arguments, directive_deduced_cardinality__member_function_string)
       {
 
          local::Conf conf;
@@ -108,13 +120,116 @@ namespace casual
          Arguments arguments;
 
          arguments.add(
-               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::one)
+               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setString)
          );
 
          arguments.parse( { "-f" ,"someValue"});
 
-         EXPECT_TRUE( conf.one_value == "someValue");
+         EXPECT_TRUE( conf.string_value == "someValue");
 
+
+      }
+
+      TEST( casual_common_arguments, directive_deduced_cardinality__member_function_long)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setLong)
+         );
+
+         arguments.parse( { "-f" ,"42"});
+
+         EXPECT_TRUE( conf.long_value == 42);
+
+      }
+
+
+      TEST( casual_common_arguments, directive_deduced_cardinality__member_function_vector_string)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorString)
+         );
+
+         arguments.parse( { "-f" ,"42", "666", "777"});
+
+         EXPECT_TRUE( conf.vector_string_value.size() == 3);
+
+      }
+
+      TEST( casual_common_arguments, directive_deduced_cardinality__member_function_vector_long)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
+         );
+
+         arguments.parse( { "-f" ,"42", "666", "777"});
+
+         EXPECT_TRUE( conf.vector_long_value.size() == 3);
+
+      }
+
+      TEST( casual_common_arguments, directive_any_cardinality__member_function_vector_long__expect_3)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
+         );
+
+         arguments.parse( { "-f" ,"42", "666", "777"});
+
+         EXPECT_TRUE( conf.vector_long_value.size() == 3);
+
+      }
+
+      TEST( casual_common_arguments, directive_any_cardinality__member_function_vector_long__expect_0)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
+         );
+
+         arguments.parse( { "-f" });
+
+         EXPECT_TRUE( conf.vector_long_value.size() == 0);
+
+      }
+
+      TEST( casual_common_arguments, directive_fixed_3_cardinality__member_function_vector_long__expect_3)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( argument::cardinality::Fixed< 3>(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
+         );
+
+         arguments.parse( { "-f" ,"42", "666", "777"});
+
+         EXPECT_TRUE( conf.vector_long_value.size() == 3);
 
       }
 

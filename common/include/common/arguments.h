@@ -164,14 +164,42 @@ namespace casual
                F m_caller;
             };
 
-            template< typename C>
-            struct maker
+            template< typename T>
+            struct deduce_helper
             {
-
+               typedef cardinality::One cardinality;
+               typedef typename std::decay< T>::type type;
             };
+
+            template< typename T>
+            struct deduce_helper< std::vector< T>>
+            {
+               typedef cardinality::OneMany cardinality;
+               typedef typename std::decay< T>::type type;
+            };
+
+            template<>
+            struct deduce_helper< void>
+            {
+               typedef cardinality::Zero cardinality;
+               typedef void type;
+            };
+
 
             using namespace std::placeholders;
 
+            template< typename C>
+            struct maker
+            {
+               template< typename O, typename T>
+               auto static make( O& object, void (O::*member)( T)) -> dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce_helper< typename std::decay< T>::type >::type>
+               {
+                  typedef dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce_helper< typename std::decay< T>::type>::type> result_type;
+                  return result_type( std::bind( member, &object, _1));
+               }
+            };
+
+            /*
             template<>
             struct maker< cardinality::One>
             {
@@ -183,6 +211,7 @@ namespace casual
                   return result_type( std::bind( member, &object, _1));
                }
             };
+            */
 
             template<>
             struct maker< cardinality::Zero>
@@ -195,6 +224,20 @@ namespace casual
                   return result_type( std::bind( member, &object));
                }
             };
+
+
+
+
+
+
+            template< typename O>
+            cardinality::Zero deduce_cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
+
+            template< typename O, typename T>
+            auto deduce_cardinality( O&, void (O::*)( T)) -> typename deduce_helper< typename std::decay< T>::type>::cardinality
+            {
+               return typename deduce_helper< typename std::decay< T>::type>::cardinality();
+            }
 
 
 
@@ -247,7 +290,7 @@ namespace casual
 
             bool option( const std::string& option) const override
             {
-               std::cout << "option: " << option << " description: " << m_description << std::endl;
+               //std::cout << "option: " << option << " description: " << m_description << std::endl;
                return std::find( std::begin( m_options), std::end( m_options), option) != std::end( m_options);
             }
 
@@ -286,7 +329,7 @@ namespace casual
          template< typename... Args>
          Directive directive( const std::vector< std::string>& options, const std::string& description, Args&&... args)
          {
-            return Directive{ cardinality::One(), options, description, std::forward< Args>( args)...};
+            return Directive{ internal::deduce_cardinality( std::forward< Args>( args)...), options, description, std::forward< Args>( args)...};
          }
 
 
@@ -392,7 +435,7 @@ namespace casual
             while( current != std::end( arguments))
             {
 
-               std::cout << "current " << *current << std::endl;
+               //std::cout << "current " << *current << std::endl;
 
                //
                // Try to find a handler for this argument
