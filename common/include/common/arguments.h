@@ -13,7 +13,10 @@
 #include <memory>
 #include <limits>
 #include <algorithm>
+#include <functional>
+
 #include <type_traits>
+
 
 namespace casual
 {
@@ -61,6 +64,14 @@ namespace casual
 
          }
 
+         enum class Cardinality
+         {
+            zero,
+            one,
+            oneMany,
+            any,
+         };
+
          class Base
          {
          public:
@@ -78,6 +89,28 @@ namespace casual
 
          namespace internal
          {
+
+            template< typename T>
+            struct from_string
+            {
+               T operator () ( const std::string& value) const
+               {
+                  std::istringstream converter( value);
+                  T result;
+                  converter >> result;
+                  return result;
+               }
+            };
+
+            template<>
+            struct from_string< std::string>
+            {
+               const std::string& operator () ( const std::string& value) const
+               {
+                  return value;
+               }
+            };
+
             struct base_dispatch
             {
                virtual ~base_dispatch() = default;
@@ -85,23 +118,93 @@ namespace casual
 
             };
 
-            template< typename C, typename F>
-            struct dispatch;
-
-            template< typename F>
-            struct dispatch< cardinality::Zero, F> : public base_dispatch
+            template< typename T, typename F>
+            void call( F& caller, const std::vector< std::string>& values, cardinality::Zero)
             {
+               caller();
+            }
+
+            template< typename T, typename F>
+            void call( F& caller, const std::vector< std::string>& values, cardinality::One)
+            {
+               caller( from_string< T>()( values.at( 0)));
+            }
+
+            template< typename T, typename F, typename C>
+            void call( F& caller, const std::vector< std::string>& values, C)
+            {
+               using namespace std::placeholders;
+
+               std::vector< T> converted;
+
+               std::transform(
+                  std::begin( values),
+                  std::end( values),
+                  std::back_inserter( converted),
+                  from_string< T>());
+
+               caller( converted);
+            }
+
+
+            template< typename C, typename F, typename T = std::string>
+            struct dispatch : public base_dispatch
+            {
+               typedef C cardinality_type;
+               typedef T argument_type;
+
                dispatch( F caller) : m_caller( caller) {}
 
                void operator () ( const std::vector< std::string>& values) const
                {
-                  m_caller();
+                  call< argument_type>( m_caller, values, cardinality_type());
                }
 
             private:
                F m_caller;
+            };
+
+            template< typename C>
+            struct maker
+            {
 
             };
+
+            using namespace std::placeholders;
+
+            template<>
+            struct maker< cardinality::One>
+            {
+
+               template< typename O, typename T>
+               auto static make( O& object, void (O::*member)( T)) -> dispatch< cardinality::One, decltype( std::bind( member, &object, _1)), typename std::decay< T>::type>
+               {
+                  typedef dispatch< cardinality::One, decltype( std::bind( member, &object, _1)), typename std::decay< T>::type> result_type;
+                  return result_type( std::bind( member, &object, _1));
+               }
+            };
+
+            template<>
+            struct maker< cardinality::Zero>
+            {
+
+               template< typename O>
+               auto static make( O& object, void (O::*member)(void)) -> dispatch< cardinality::Zero, decltype( std::bind( member, &object)), void>
+               {
+                  typedef dispatch< cardinality::Zero, decltype( std::bind( member, &object)), void> result_type;
+                  return result_type( std::bind( member, &object));
+               }
+            };
+
+
+
+            template< typename C, typename ...Args>
+            auto make( C cardinality, Args&&... args) -> decltype( maker< C>::make( std::forward< Args>( args)...))
+            {
+               return maker< C>::make( std::forward< Args>( args)...);
+            }
+
+
 
             template< typename C>
             auto find( const std::string& option, C& container) -> decltype( container.begin())
@@ -124,12 +227,22 @@ namespace casual
 
          } // internal
 
+         //template< typename C>
          class Directive : public Base
          {
          public:
-            Directive( const std::vector< std::string>& options, const std::string& description)
-               : m_options( options), m_description( description) {}
 
+            //typedef C cardinality_type;
+
+            template< typename C, typename... Args>
+            Directive( C cardinality, const std::vector< std::string>& options, const std::string& description, Args&&... args)
+               : m_options( options),
+                 m_description( description),
+                 m_dispatch( new decltype( internal::make( cardinality, std::forward< Args>( args)...))( internal::make( cardinality, std::forward< Args>( args)...)))
+                  {}
+
+
+            Directive( Directive&&) = default;
 
 
             bool option( const std::string& option) const override
@@ -151,7 +264,7 @@ namespace casual
 
             void dispatch() const override
             {
-               // TODO
+               (*m_dispatch)( m_values);
             }
 
          private:
@@ -159,7 +272,22 @@ namespace casual
             const std::string m_description;
             std::vector< std::string> m_values;
             bool m_assigned = false;
+
+            std::unique_ptr< internal::base_dispatch> m_dispatch;
+
          };
+
+         template< typename C, typename... Args>
+         Directive directive( C cardinality, const std::vector< std::string>& options, const std::string& description, Args&&... args)
+         {
+            return Directive{ cardinality, options, description, std::forward< Args>( args)...};
+         }
+
+         template< typename... Args>
+         Directive directive( const std::vector< std::string>& options, const std::string& description, Args&&... args)
+         {
+            return Directive{ cardinality::One(), options, description, std::forward< Args>( args)...};
+         }
 
 
          //template< typename C>

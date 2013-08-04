@@ -19,12 +19,30 @@ namespace casual
 
       namespace local
       {
-         struct conf
+         struct Conf
          {
 
             long someLong = 0;
 
-            void flag() {}
+            void flag()
+            {
+               called = true;
+            }
+
+            void one( const std::string& value)
+            {
+               one_value = value;
+            }
+
+            void setLong( long value)
+            {
+               one_long_value = value;
+            }
+
+            bool called = false;
+
+            std::string one_value;
+            long one_long_value = 0;
          };
 
 
@@ -33,60 +51,70 @@ namespace casual
 
       TEST( casual_common_arguments, test_bind)
       {
-
-         argument::internal::dispatch< argument::cardinality::Zero, decltype( std::mem_fn( &local::conf::flag))>
-         someDispatch( std::mem_fn( &local::conf::flag));
-
-         someDispatch( { "kdfjs", "sldkfjs"});
-
-         auto memberAttribute = std::bind( &local::conf::someLong, std::placeholders::_1);
-         auto globalLong = std::bind( &local::conf::someLong, std::placeholders::_1);
+         local::Conf conf;
 
 
+         auto dispatch0 = argument::internal::make( argument::cardinality::Zero(), conf, &local::Conf::flag);
+
+
+         std::vector< std::string> values{ "234", "two", "three"};
+
+         dispatch0( values);
+
+         EXPECT_TRUE( conf.called);
+
+         using namespace std::placeholders;
+
+         auto dispatch1 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::one);
+
+         dispatch1( values);
+
+
+         EXPECT_TRUE( conf.one_value == "234");
+
+         auto dispatch2 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::setLong);
+
+         dispatch2( values);
+
+         EXPECT_TRUE( conf.one_long_value == 234);
       }
 
 
-      TEST( casual_common_arguments, blabla)
+      TEST( casual_common_arguments, directive_zero_cardinality_member_function)
       {
 
-         /*
-
-         argument::cardinality::One one;
-
-         EXPECT_TRUE( one.min_value == 1);
-         EXPECT_TRUE( one.max_value == 1);
-
-
-         argument::cardinality::Range< 2, 4> range;
-
-         argument::cardinality::Any any;
-
-         argument::Directive directive{ { "-p", "--poo"}, "poo"};
-
-         EXPECT_TRUE( directive.option( "-p"));
-         EXPECT_FALSE( directive.option( "-a"));
-
-
-         argument::Group group;
-         group.add( directive, argument::Directive{ { "-c", "--clear"}, "clear"});
-
-         EXPECT_TRUE( group.option( "-p"));
-         EXPECT_TRUE( group.option( "--clear"));
-         EXPECT_FALSE( group.option( "-a"));
+         local::Conf conf;
 
 
          Arguments arguments;
+
          arguments.add(
-               argument::Directive{ { "-f", "--foo"}, "foo"},
-               argument::Directive{ { "-b", "--bar"}, "bar"},
-               group);
+               argument::directive( argument::cardinality::Zero(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::flag)
+         );
 
-         //const char* argv[] = { "-p", "-c", "arg3", "arg4" };
+         EXPECT_FALSE( conf.called );
 
-         //std::vector< std>
+         arguments.parse( { "-f"});
 
-         arguments.parse( { "-f", "arg-p", "-b", "arg-b", "-p", "arg-p" });
-         */
+         EXPECT_TRUE( conf.called);
+
+      }
+
+      TEST( casual_common_arguments, directive_one_cardinality_member_function)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+               argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::one)
+         );
+
+         arguments.parse( { "-f" ,"someValue"});
+
+         EXPECT_TRUE( conf.one_value == "someValue");
+
 
       }
 
