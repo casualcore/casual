@@ -33,7 +33,7 @@ namespace casual
          platform::pid_type pid = process::spawn( local::processPath(), {});
 
          EXPECT_TRUE( pid != 0);
-         EXPECT_TRUE( pid != platform::getProcessId());
+         EXPECT_TRUE( pid != process::id());
 
          // wait for it..
          EXPECT_TRUE( process::wait( pid) == pid);
@@ -45,7 +45,7 @@ namespace casual
          platform::pid_type pid = process::spawn( local::processPath(), { "-f", "foo", "-b", "bar" });
 
          EXPECT_TRUE( pid != 0);
-         EXPECT_TRUE( pid != platform::getProcessId());
+         EXPECT_TRUE( pid != process::id());
 
          // wait for it..
          EXPECT_TRUE( process::wait( pid) == pid);
@@ -56,7 +56,7 @@ namespace casual
          platform::pid_type pid = process::spawn( local::processPath(), {});
 
          EXPECT_TRUE( pid != 0);
-         EXPECT_TRUE( pid != platform::getProcessId());
+         EXPECT_TRUE( pid != process::id());
 
          std::vector< platform::pid_type> terminated;
 

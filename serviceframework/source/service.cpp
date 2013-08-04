@@ -61,24 +61,7 @@ namespace casual
 
          IO::~IO()
          {
-            if( std::uncaught_exception())
-            {
-               try
-               {
-                  m_interface->finalize();
-               }
-               catch( ...)
-               {
 
-               }
-            }
-            else
-            {
-               //
-               // We might throw...
-               //
-               m_interface->finalize();
-            }
          }
 
          bool IO::callImplementation()
@@ -128,6 +111,8 @@ namespace casual
             common::Trace trace( "sf::service::Factory::Factory");
 
             registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
+            registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));
+            registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "JSON"));
          }
 
 

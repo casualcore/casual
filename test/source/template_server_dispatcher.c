@@ -15,6 +15,8 @@
 #include <xatmi.h>
 #include <xatmi_server.h>
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,28 +25,36 @@ extern void casual_test1( TPSVCINFO *transb);
 extern void casual_test2( TPSVCINFO *transb);
 
 
+extern struct xa_switch_t casual_mockup_xa_switch_static;
 
 
 int main( int argc, char** argv)
 {
 
-	struct casual_service_name_mapping mapping[] = {
+	struct casual_service_name_mapping service_mapping[] = {
 			{&casual_test1, "casual_test1"},
-			{&casual_test2, "casual_test2"}
+			{&casual_test2, "casual_test2"},
+			{ 0, 0} /* null ending */
 	};
 
-//#ifdef __cplusplus
+#ifdef __cplusplus
 	static_assert( sizeof( "casual_test1") <= XATMI_SERVICE_NAME_LENGTH, "service name to long");
+#endif
 
-//#endif
+
+	struct casual_xa_switch_mapping xa_mapping[] = {
+	        { "db2", &casual_mockup_xa_switch_static},
+	        { 0, 0} /* null ending */
+	   };
+
 
 	struct casual_server_argument serverArguments = {
-	      &mapping[ 0],
-	      &mapping[ sizeof( mapping) / sizeof( struct casual_service_name_mapping) - 1] + 1,
+	      service_mapping,
 	      &tpsvrinit,
 	      &tpsvrdone,
 	      argc,
-	      argv
+	      argv,
+	      xa_mapping
 	};
 
 

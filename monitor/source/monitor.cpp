@@ -12,6 +12,9 @@
 #include "common/types.h"
 #include "common/logger.h"
 #include "common/trace.h"
+#include "common/environment.h"
+
+
 #include <vector>
 #include <string>
 #include <chrono>
@@ -116,20 +119,24 @@ namespace monitor
 			m_receiveQueue( local::Context::instance().receiveQueue()),
 			m_monitordb( local::Context::instance().monitorDB())
 	{
+	   //
+      // TODO: Use a correct argumentlist handler
+      //
+      const std::string name = !arguments.empty() ? arguments.front() : std::string("");
+
+	   common::environment::file::executable( name);
+
 		static const std::string cMethodname("Monitor::Monitor");
 		common::Trace trace(cMethodname);
 
-		//
-		// TODO: Use a correct argumentlist handler
-		//
-		const std::string name = !arguments.empty() ? arguments.front() : std::string("");
+
 		//
 		// Make the key public for others...
 		//
-		message::monitor::Advertise message;
+		message::monitor::Connect message;
 
-		message.name = name;
-		message.serverId.queue_key = m_receiveQueue.getKey();
+		message.path = name;
+		message.server.queue_id = m_receiveQueue.id();
 
 		queue::blocking::Writer writer( ipc::getBrokerQueue());
 		writer(message);
@@ -139,15 +146,23 @@ namespace monitor
 	{
 		static const std::string cMethodname("Monitor::~Monitor");
 		common::Trace trace(cMethodname);
-		//
-		// Tell broker that monitor is down...
-		//
-		message::monitor::Unadvertise message;
 
-		message.serverId.queue_key = m_receiveQueue.getKey();
+		try
+		{
+         //
+         // Tell broker that monitor is down...
+         //
+         message::monitor::Disconnect message;
 
-		queue::blocking::Writer writer( ipc::getBrokerQueue());
-		writer(message);
+         message.server.queue_id = m_receiveQueue.id();
+
+         queue::blocking::Writer writer( ipc::getBrokerQueue());
+         writer(message);
+		}
+		catch( ...)
+		{
+		   common::error::handler();
+		}
 
 		//
 		// Test of select
@@ -163,9 +178,9 @@ namespace monitor
 	void Monitor::start()
 	{
 		static const std::string cMethodname("Monitor::start");
-		common::Trace trace(cMethodname);
+		Trace trace(cMethodname);
 
-		common::dispatch::Handler handler;
+		message::dispatch::Handler handler;
 
 		handler.add< handle::Notify>( m_monitordb);
 
@@ -184,7 +199,7 @@ namespace monitor
 			   common::logger::error << "message_type: " << " not recognized - action: discard";
 			}
 
-			nonBlockingRead( 1000);
+			nonBlockingRead( common::platform::statistics_batch);
 		}
 	}
 

@@ -1,0 +1,131 @@
+//!
+//! context.h
+//!
+//! Created on: Jul 14, 2013
+//!     Author: Lazan
+//!
+
+#ifndef CONTEXT_H_
+#define CONTEXT_H_
+
+#include <tx.h>
+
+#include "common/ipc.h"
+#include "common/message.h"
+
+#include <stack>
+
+namespace casual
+{
+   namespace common
+   {
+      namespace transaction
+      {
+
+         const char* xaError( int code);
+
+         const char* txError( int code);
+
+         struct Resource
+         {
+            Resource( const char* key, xa_switch_t* xa) : key( key), xaSwitch( xa), id( nextResurceId()) {}
+
+            const std::string key;
+            xa_switch_t* xaSwitch;
+            const int id;
+
+            std::string openinfo;
+            std::string closeinfo;
+
+            static int nextResurceId();
+         };
+
+         struct Transaction
+         {
+
+
+            // using state_type = TRANSACTION_STATE;
+            typedef TRANSACTION_STATE state_type;
+            enum class State : state_type
+            {
+               active = TX_ACTIVE,
+               rollback = TX_ROLLBACK_ONLY,
+               timeout = TX_TIMEOUT_ROLLBACK_ONLY,
+               inactive,
+            };
+
+            typedef TRANSACTION_TIMEOUT Seconds;
+
+            XID xid;
+            Seconds timeout = 0;
+            State state = State::inactive;
+            bool suspended = false;
+         };
+
+         struct State
+         {
+            typedef TRANSACTION_CONTROL control_type;
+            enum class Control : control_type
+            {
+               unchained = TX_UNCHAINED,
+               chained = TX_CHAINED,
+            };
+
+            ipc::send::Queue::id_type transactionManagerQueue = 0;
+
+            std::vector< Resource> resources;
+
+            std::stack< Transaction> transactions;
+
+            Control control = Control::unchained;
+
+         };
+
+         class Context
+         {
+         public:
+
+            static Context& instance();
+
+            //!
+            //! Correspond to the tx API
+            //!
+            //! @{
+            int open();
+            int close();
+
+            int begin();
+            int commit();
+            int rollback();
+
+            int setCommitReturn( COMMIT_RETURN value);
+            int setTransactionControl(TRANSACTION_CONTROL control);
+            int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            int info( TXINFO& info);
+            //! @}
+
+
+            void apply( const message::server::Configuration& configuration);
+
+            //!
+            //! @return current transaction. 'null xid' if there are none...
+            //!
+            const Transaction& currentTransaction() const;
+
+            State& state();
+
+         private:
+
+            Context();
+
+            State m_state;
+
+         };
+
+      } // transaction
+   } // common
+} // casual
+
+
+
+#endif /* CONTEXT_H_ */

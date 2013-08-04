@@ -34,7 +34,7 @@ namespace monitor
 		{
 			std::string getDatabase()
 			{
-				return common::environment::variable::get("CASUAL_ROOT") + "/monitor.db";
+				return common::environment::directory::domain() + "/monitor.db";
 			}
 
 			std::string getValue( database::Row& row, const std::string& attribute)

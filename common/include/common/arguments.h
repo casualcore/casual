@@ -259,7 +259,7 @@ namespace casual
                   std::end( arguments),
                   this);
 
-            auto start = current;
+            //auto start = current;
 
             while( current != std::end( arguments))
             {

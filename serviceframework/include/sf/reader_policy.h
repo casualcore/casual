@@ -22,9 +22,9 @@ namespace casual
             {
             public:
 
-               inline void initalization()
+               inline void initalization( const std::string& information)
                {
-                  // no op
+                  throw exception::Validation( information);
                }
 
                template< typename T>
@@ -58,9 +58,9 @@ namespace casual
             class Relaxed
             {
             public:
-               inline void initalization()
+               inline void initalization( const std::string& information)
                {
-                  // no op
+                  throw exception::Validation( information);
                }
 
                template< typename T>

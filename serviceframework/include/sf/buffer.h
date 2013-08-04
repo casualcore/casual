@@ -19,6 +19,15 @@
 
 #include <cstring>
 
+
+// TODO: temp
+#include <iostream>
+
+
+#include <xatmi.h>
+
+
+
 namespace casual
 {
    namespace sf
@@ -47,18 +56,23 @@ namespace casual
 
          };
 
-         Type type( const char* buffer);
+         Type type( common::raw_buffer_type buffer);
 
          //!
          //! Holds the buffer and its size together. Has no resource responsibility
          //!
          struct Raw
          {
-            Raw( char* p_buffer, std::size_t p_size);
+            Raw( common::raw_buffer_type p_buffer, std::size_t p_size);
 
-            char* buffer;
+            common::raw_buffer_type buffer;
             long size;
          };
+
+         inline Raw raw( TPSVCINFO* serviceInfo)
+         {
+            return Raw( serviceInfo->data, serviceInfo->len);
+         }
 
          class Base
          {
@@ -93,7 +107,7 @@ namespace casual
 
             struct xatmi_deleter
             {
-               void operator () ( char* xatmiBuffer) const;
+               void operator () ( common::raw_buffer_type xatmiBuffer) const;
             };
 
             virtual void doReset( Raw buffer);
@@ -117,7 +131,9 @@ namespace casual
          {
          public:
             Binary();
-            Binary( Base&&);
+            Binary( Raw buffer) : Base( buffer) {}
+
+            //Binary( Base&&);
             Binary( Binary&&);
             Binary& operator = ( Binary&&);
 
@@ -126,7 +142,13 @@ namespace casual
             template< typename T>
             void write( T&& value)
             {
-               write( std::forward< T>( value), sizeof( T));
+               write( &value, sizeof( T));
+            }
+
+            void write( const common::binary_type& value)
+            {
+               write( value.size());
+               write( value.data(), value.size());
             }
 
             void write( const std::string& value)
@@ -160,7 +182,7 @@ namespace casual
          private:
 
             template< typename T>
-            void write( T&& value, std::size_t lenght)
+            void write( T* value, std::size_t lenght)
             {
                if( m_write_offset + lenght > size())
                {
@@ -169,7 +191,7 @@ namespace casual
 
                Raw raw = Base::raw();
 
-               memcpy( raw.buffer + m_write_offset, &value, lenght);
+               memcpy( raw.buffer + m_write_offset, value, lenght);
                m_write_offset += lenght;
             }
 
@@ -184,7 +206,7 @@ namespace casual
                {
                   throw exception::NotReallySureWhatToCallThisExcepion();
                }
-               value.assign( raw.buffer, raw.buffer + size);
+               value.assign( raw.buffer + m_read_offset, raw.buffer + m_read_offset + size);
                m_read_offset += size;
             }
 

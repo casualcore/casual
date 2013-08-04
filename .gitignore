@@ -1,3 +1,7 @@
+#
+# eclipse project
+#
+.settings/org.eclipse.cdt.codan.core.prefs
 
 #
 # Build directories
@@ -14,3 +18,5 @@ bin/
 
 /casual.env
 /casual_build_environment
+/debug.log
+/casual.log

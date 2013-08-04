@@ -8,6 +8,7 @@
 #include "common/signal.h"
 #include "common/platform.h"
 #include "common/exception.h"
+#include "common/logger.h"
 
 #include <signal.h>
 #include <string.h>
@@ -131,9 +132,19 @@ namespace casual
 			   ::alarm( timeout);
 			}
 
-		}
-	}
-}
+
+         void send( platform::pid_type pid, platform::signal_type signal)
+         {
+            if( kill( pid, signal) == -1)
+            {
+               logger::error << "failed to send signal (" << platform::getSignalDescription( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::stringFromErrno();
+            }
+         }
+
+
+		} // signal
+	} // common
+} // casual
 
 
 

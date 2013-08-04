@@ -10,6 +10,8 @@
 #include "common/error.h"
 #include "common/file.h"
 #include "common/logger.h"
+#include "common/trace.h"
+#include "common/signal.h"
 
 
 //
@@ -20,6 +22,7 @@
 
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 namespace casual
 {
@@ -27,6 +30,14 @@ namespace casual
    {
       namespace process
       {
+
+
+
+         platform::pid_type id()
+         {
+            static const platform::pid_type pid = getpid();
+            return pid;
+         }
 
          void sleep( std::chrono::microseconds time)
          {
@@ -90,6 +101,7 @@ namespace casual
                   //
                   // We have started the process, hopefully...
                   //
+                  logger::information << path << " spawned - #arguments: " << arguments.size();
                   break;
                }
             }
@@ -139,6 +151,19 @@ namespace casual
          {
             int status = 0;
             return waitpid( pid, &status, 0);
+         }
+
+         void terminate( const std::vector< platform::pid_type>& pids)
+         {
+            for( auto pid : pids)
+            {
+               terminate( pid);
+            }
+         }
+
+         void terminate( platform::pid_type pid)
+         {
+            signal::send( pid, platform::cSignal_Terminate);
          }
 
       } // process

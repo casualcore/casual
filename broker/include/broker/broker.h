@@ -8,19 +8,21 @@
 #ifndef CASUAL_BROKER_H_
 #define CASUAL_BROKER_H_
 
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <list>
-#include <deque>
 
-#include "broker/configuration.h"
+
 
 #include "common/file.h"
 #include "common/platform.h"
 
 #include "common/ipc.h"
 #include "common/message.h"
+
+
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <list>
+#include <deque>
 
 
 namespace casual
@@ -35,12 +37,10 @@ namespace casual
 
 		   typedef common::message::server::Id::pid_type pid_type;
 
-			Server() : pid( 0), queue_key( 0), idle( true) {}
-
-			pid_type pid;
+			pid_type pid = 0;
 			std::string path;
-			common::message::server::Id::queue_key_type queue_key;
-			bool idle;
+			common::message::server::Id::queue_id_type queue_key = 0;
+			bool idle = true;
 
 
 			bool operator < ( const Server& rhs) const
@@ -77,10 +77,12 @@ namespace casual
 		   service_mapping_type services;
 		   pending_requests_type pending;
 
-		   //configuration::Settings configuration;
+		   std::vector< common::platform::pid_type> processes;
 
 		   // TODO: Temp
 		   common::platform::queue_key_type monitorQueue = 0;
+
+		   common::platform::queue_key_type transactionManagerQueue = 0;
 
 		};
 
@@ -88,12 +90,25 @@ namespace casual
 		{
 		public:
 
-			Broker( const std::vector< std::string>& arguments);
+		   static Broker& instance();
 			~Broker();
 
-			void start();
+			void start( const std::vector< std::string>& arguments);
+
+
+			//void addServers( const std::vector< action::server::>)
+
+			//void bootServers( const std::vector< action::server::Instances>& servers);
+
+			const State& state() const
+			{
+			   return m_state;
+			}
+
 
 		private:
+			Broker();
+
 			common::file::ScopedPath m_brokerQueueFile;
 			common::ipc::receive::Queue& m_receiveQueue = common::ipc::getReceiveQueue();
 

@@ -158,11 +158,11 @@ namespace casual
          template< typename K, typename V>
          void serialize( Reader& archive, std::pair< K, V>& value)
          {
-            typedef typename std::remove_const< K>::type key_type;
+            //typedef typename std::remove_const< K>::type key_type;
 
             archive.handleSerialtypeStart();
 
-            archive >> makeNameValuePair( "key", const_cast< key_type&>( value.first));
+            archive >> makeNameValuePair( "key", value.first);
             archive >> makeNameValuePair( "value", value.second);
 
             archive.handleSerialtypeEnd();
@@ -185,7 +185,7 @@ namespace casual
          }
 
 
-
+         /*
          template< typename T>
          typename std::enable_if< traits::is_associative_container< T >::value, void>::type
          serialize( Reader& archive, T& container)
@@ -195,6 +195,25 @@ namespace casual
             for( std::size_t index = 0; index < size; ++index)
             {
                typename T::value_type element;
+               archive >> CASUAL_MAKE_NVP( element);
+
+               container.insert( std::move( element));
+            }
+
+            archive.handleContainerEnd();
+         }
+         */
+
+         template< typename T>
+         typename std::enable_if< traits::is_associative_map_container< T >::value, void>::type
+         serialize( Reader& archive, T& container)
+         {
+            std::size_t size = archive.handleContainerStart( 0);
+
+            for( std::size_t index = 0; index < size; ++index)
+            {
+               std::pair< typename T::key_type, typename T::mapped_type> element;
+               //typename T::value_type element;
                archive >> CASUAL_MAKE_NVP( element);
 
                container.insert( std::move( element));
@@ -338,7 +357,7 @@ namespace casual
          {
             archive.handleContainerStart( container.size());
 
-            for( auto element : container)
+            for( auto& element : container)
             {
                archive << CASUAL_MAKE_NVP( element);
             }

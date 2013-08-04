@@ -47,9 +47,20 @@ namespace casual
 
 				void set( common::platform::seconds_type timeout);
 			}
-		}
-	}
-}
+
+
+
+			//!
+			//! Sends the signal to the process
+			//!
+			void send( platform::pid_type pid, platform::signal_type signal);
+
+
+
+
+		} // signal
+	} // common
+} // casual
 
 
 

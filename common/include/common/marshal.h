@@ -73,6 +73,13 @@ namespace casual
                Binary( const Binary&) = delete;
                Binary& operator = ( const Binary&) = delete;
 
+
+               buffer_type release()
+               {
+                  return std::move( m_buffer);
+               }
+
+
                const buffer_type& get() const
                {
                   return m_buffer;
@@ -93,7 +100,15 @@ namespace casual
                   return *this;
                }
 
+
             private:
+
+               //
+               // Be friend with free marshal function so we can use more
+               // bare-bone stuff when we do non-intrusive marshal for third-party types
+               //
+               template< typename M, typename T>
+               friend void marshal_value( M& marshler, T& value);
 
                template< typename T>
                typename std::enable_if< ! std::is_pod< T>::value>::type
@@ -165,6 +180,12 @@ namespace casual
 
 
                Binary() = default;
+
+               Binary( ipc::message::Complete&& message)
+                  : m_buffer( std::move( message.payload)), m_messageType( message.type)
+               {
+               }
+
                Binary( Binary&&) = default;
                Binary( const Binary&) = delete;
                Binary& operator = ( const Binary&) = delete;

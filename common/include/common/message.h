@@ -12,6 +12,7 @@
 #include "common/buffer_context.h"
 #include "common/types.h"
 #include "common/platform.h"
+#include "common/process.h"
 #include "common/exception.h"
 #include "common/uuid.h"
 
@@ -25,19 +26,51 @@ namespace casual
 
       namespace message
       {
-         enum
+         enum Type
          {
+
+            cServerConnect  = 10, // message type can't be 0!
+            cServerConfiguration,
             cServerDisconnect,
-            cServiceAdvertise,
+            cServiceAdvertise = 20,
             cServiceUnadvertise,
             cServiceNameLookupRequest,
             cServiceNameLookupReply,
             cServiceCall,
             cServiceReply,
             cServiceAcknowledge,
-            cMonitorAdvertise,
-            cMonitorUnadvertise,
+            cMonitorConnect = 30,
+            cMonitorDisconnect,
             cMonitorNotify,
+            cTransactionManagerConnect = 40,
+            cTransactionBegin,
+            cTransactionCommit,
+            cTransactionRollback,
+            cTransactionReply
+
+            //cTransactionMonitorUnadvertise,
+
+         };
+
+
+         struct Transaction
+         {
+            typedef common::platform::pid_type pid_type;
+
+            Transaction() : creator( 0)
+            {
+               xid.formatID = common::cNull_XID;
+            }
+
+            XID xid;
+            pid_type creator;
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & xid;
+               archive & creator;
+            }
          };
 
 
@@ -64,6 +97,8 @@ namespace casual
             }
          };
 
+
+
          namespace server
          {
 
@@ -73,40 +108,127 @@ namespace casual
             struct Id
             {
                typedef common::platform::pid_type pid_type;
-               typedef ipc::message::Transport::queue_key_type queue_key_type;
+               typedef platform::queue_id_type queue_id_type;
 
-               Id()
-                     : pid( common::platform::getProcessId())
-               {
-               }
-
-               queue_key_type queue_key;
-               pid_type pid;
+               queue_id_type queue_id = 0;
+               pid_type pid = common::process::id();
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & queue_key;
+                  archive & queue_id;
                   archive & pid;
                }
             };
 
-            struct Disconnect
+            template< message::Type type>
+            struct basic_connect
             {
                enum
                {
-                  message_type = cServerDisconnect
+                  message_type = type
                };
 
-               Id serverId;
+               server::Id server;
+               std::string path;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
+                  archive & path;
                }
             };
-         }
+
+            template< message::Type type>
+            struct basic_disconnect
+            {
+               enum
+               {
+                  message_type = type
+               };
+
+               server::Id server;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & server;
+               }
+            };
+
+            struct Connect : public basic_connect< cServerConnect>
+            {
+               typedef basic_connect< cServerConnect> base_type;
+
+               std::vector< Service> services;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  base_type::marshal( archive);
+                  archive & services;
+               }
+
+            };
+
+            namespace resource
+            {
+               struct Manager
+               {
+                  /*
+                  Manager() = default;
+                  Manager( Manager&&) = default;
+                  Manager& operator = ( Manager&&) = default;
+                  */
+
+                  std::string key;
+                  std::string openinfo;
+                  std::string closeinfo;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & key;
+                     archive & openinfo;
+                     archive & closeinfo;
+                  }
+               };
+
+            }
+
+            //!
+            //! Sent from the broker with "start-up-information" for a server
+            //!
+            struct Configuration
+            {
+               enum
+               {
+                  message_type = cServerConfiguration
+               };
+
+               Configuration() = default;
+               Configuration( Configuration&&) = default;
+               Configuration& operator = ( Configuration&&) = default;
+
+               typedef platform::queue_id_type queue_id_type;
+
+               queue_id_type transactionManagerQueue = 0;
+               std::vector< resource::Manager> resourceManagers;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & transactionManagerQueue;
+                  archive & resourceManagers;
+               }
+            };
+
+            typedef basic_disconnect< cServerDisconnect> Disconnect;
+
+         } // server
+
+
 
          namespace service
          {
@@ -119,14 +241,14 @@ namespace casual
                };
 
                std::string serverPath;
-               server::Id serverId;
+               server::Id server;
                std::vector< Service> services;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & serverPath;
-                  archive & serverId;
+                  archive & server;
                   archive & services;
                }
             };
@@ -138,13 +260,13 @@ namespace casual
                   message_type = cServiceUnadvertise
                };
 
-               server::Id serverId;
+               server::Id server;
                std::vector< Service> services;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                   archive & services;
                }
             };
@@ -196,8 +318,8 @@ namespace casual
                         archive & server;
                      }
                   };
-               }
-            }
+               } // lookup
+            } // name
 
             struct base_call
             {
@@ -219,6 +341,7 @@ namespace casual
                server::Id reply;
                common::Uuid callId;
                std::string callee;
+               Transaction transaction;
 
                template< typename A>
                void marshal( A& archive)
@@ -228,6 +351,7 @@ namespace casual
                   archive & reply;
                   archive & callId;
                   archive & callee;
+                  archive & transaction;
                }
             };
 
@@ -235,7 +359,7 @@ namespace casual
             {
 
                //!
-               //! Represents a service call. via tp(a)call
+               //! Represents a service call. via tp(a)call, from the callee's perspective
                //!
                struct Call: public base_call
                {
@@ -260,6 +384,9 @@ namespace casual
 
             namespace caller
             {
+               //!
+               //! Represents a service call. via tp(a)call, from the callers perspective
+               //!
                struct Call: public base_call
                {
 
@@ -311,7 +438,6 @@ namespace casual
                template< typename A>
                void marshal( A& archive)
                {
-
                   archive & callDescriptor;
                   archive & returnValue;
                   archive & userReturnCode;
@@ -341,49 +467,20 @@ namespace casual
                   archive & server;
                }
             };
-         }
+         } // service
+
 
          namespace monitor
          {
             //!
             //! Used to advertise the monitorserver
             //!
-            struct Advertise
-            {
-               enum
-               {
-                  message_type = cMonitorAdvertise
-               };
-
-               server::Id serverId;
-               std::string name;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & serverId;
-                  archive & name;
-               }
-            };
+            typedef server::basic_connect< cMonitorConnect> Connect;
 
             //!
             //! Used to unadvertise the monitorserver
             //!
-            struct Unadvertise
-            {
-               enum
-               {
-                  message_type = cMonitorUnadvertise
-               };
-
-               server::Id serverId;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & serverId;
-               }
-            };
+            typedef server::basic_disconnect< cMonitorDisconnect> Disconnect;
 
             //!
             //! Notify monitorserver with statistics
@@ -416,7 +513,74 @@ namespace casual
                   archive & end;
                }
             };
-         }
+         } // monitor
+
+         namespace transaction
+         {
+            //!
+            //! Used to connect the transaction monitor to broker
+            //!
+            typedef server::basic_connect< cTransactionManagerConnect> Connect;
+
+            //!
+            //! Used to unadvertise the transaction monitor
+            //!
+            //typedef basic_disconnect< cTransactionMonitorUnadvertise> Unadvertise;
+
+            template< message::Type type>
+            struct basic_transaction
+            {
+               enum
+               {
+                  message_type = type
+               };
+
+               server::Id server;
+               XID xid;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & server;
+                  archive & xid;
+               }
+            };
+
+            struct Begin : public basic_transaction< cTransactionBegin>
+            {
+               typedef basic_transaction< cTransactionBegin> base_type;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  base_type::marshal( archive);
+                  archive & start;
+               }
+
+               common::time_type start;
+            };
+
+            typedef basic_transaction< cTransactionCommit> Commit;
+            typedef basic_transaction< cTransactionRollback> Rollback;
+
+            struct Reply
+            {
+               enum
+               {
+                  message_type = cTransactionReply
+               };
+
+               int state;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & state;
+               }
+
+            };
+         } // transaction
+
          //!
          //! Deduce witch type of message it is.
          //!

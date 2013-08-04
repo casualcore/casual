@@ -13,6 +13,12 @@
 
 
 #include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+
+// TODO: temp
+//#include <iostream>
 
 namespace casual
 {
@@ -92,8 +98,24 @@ namespace casual
 
          std::string basedir( const std::string& path)
          {
-            auto basedirEnd = std::find( path.crbegin(), path.crend(), '/');
-            return std::string( path.cbegin(), basedirEnd.base());
+
+            //
+            // Remove trailing '/'
+            //
+            auto end = std::find_if( path.crbegin(), path.crend(), []( const char value) { return value != '/';});
+
+
+            end = std::find( end, path.crend(), '/');
+
+            //
+            // To be conformant to dirname, we have to return at least '/'
+            //
+            if( end == path.crend())
+            {
+               return "/";
+            }
+
+            return std::string{ path.cbegin(), end.base()};
          }
 
          std::string removeExtension( const std::string& path)
@@ -109,7 +131,7 @@ namespace casual
 
             if( extensionEnd == filename.crend())
             {
-               return std::string();
+               return std::string{};
             }
 
             return std::string( extensionEnd.base(), filename.cend());
@@ -118,12 +140,34 @@ namespace casual
          bool exists( const std::string& path)
          {
             std::ifstream file( path);
-            return file.is_open();
+            return file.good();
+         }
+
+      } // file
+
+      namespace directory
+      {
+
+         bool create( const std::string& path)
+         {
+            auto parent = file::basedir( path);
+
+            if( parent.size() < path.size())
+            {
+
+               //
+               // We got a parent, make sure we create it first
+               //
+               create( parent);
+            }
+
+            //std::cerr << "create: " << path << std::endl;
+            return mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0 || errno == EEXIST;
          }
 
       }
 
-   }
+   } // common
+} // casual
 
-}
 

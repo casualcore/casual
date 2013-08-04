@@ -49,6 +49,7 @@ namespace casual
       TEST( casual_common_arguments, blabla)
       {
 
+         /*
 
          argument::cardinality::One one;
 
@@ -85,6 +86,7 @@ namespace casual
          //std::vector< std>
 
          arguments.parse( { "-f", "arg-p", "-b", "arg-b", "-p", "arg-p" });
+         */
 
       }
 

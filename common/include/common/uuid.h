@@ -39,7 +39,13 @@ namespace casual
 
 			const uuid_type& get() const;
 			uuid_type& get();
-			void set( uuid_type& uuid);
+
+			//!
+			//! Copy to native uuid
+			//!
+			//! @param uuid target to copy to.
+			//!
+			void copy( uuid_type& uuid);
 
 			bool operator < ( const Uuid& rhs) const;
 			bool operator == ( const Uuid& rhs) const;

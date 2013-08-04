@@ -12,6 +12,7 @@
 #include "xatmi.h"
 
 
+
 namespace casual
 {
    namespace sf
@@ -28,6 +29,8 @@ namespace casual
 
             void call( const std::string& service, buffer::Base& input, buffer::Base& output, long flags)
             {
+               common::Trace trace{ "service::call"};
+
                buffer::Raw in = input.raw();
                buffer::Raw out = output.release();
 

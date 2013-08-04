@@ -16,6 +16,7 @@
 #include <yaml-cpp/binary.h>
 
 #include <fstream>
+#include <stack>
 
 namespace casual
 {
@@ -48,6 +49,14 @@ namespace casual
                {
                public:
 
+                  enum class State
+                  {
+                     unknown,
+                     container,
+                     serializable,
+                     missing,
+                  };
+
                   typedef P policy_type;
 
                   Implementation( std::istream& input)
@@ -56,10 +65,11 @@ namespace casual
 
                      if( ! parser.GetNextDocument( m_document))
                      {
-                        m_policy.initalization();
+                        m_policy.initalization( "empty yaml document");
                      }
 
-                     m_nodeStack.push_back( &m_document);
+                     m_nodeStack.push( &m_document);
+                     m_state.push( State::unknown);
                   }
 
                   inline void handle_start( const char* name)
@@ -71,86 +81,132 @@ namespace casual
 
                   inline std::size_t handle_container_start( std::size_t size)
                   {
-                     const YAML::Node* containerNode = m_nodeStack.back()->FindValue( m_currentRole);
 
-                     m_nodeStack.push_back( containerNode);
+                     const YAML::Node* containerNode = nullptr;
+
+                     switch( m_state.top())
+                     {
+                        case State::container:
+                        {
+                           containerNode = m_nodeStack.top();
+                           break;
+                        }
+                        case State::unknown:
+                        case State::serializable:
+                        {
+                           containerNode = m_nodeStack.top()->FindValue( m_currentRole);
+                           break;
+                        }
+                        case State::missing:
+                        {
+                           break;
+                        }
+                     }
 
                      if( containerNode)
                      {
+
                         size = containerNode->size();
 
                         for( std::size_t index = size; index > 0; --index)
                         {
-                           m_nodeStack.push_back( &(*containerNode)[ index - 1] );
+                           m_nodeStack.push( &(*containerNode)[ index - 1] );
                         }
-
+                        m_state.push( State::container);
                      }
                      else
                      {
                         size = m_policy.container( m_currentRole);
+                        m_state.push( State::missing);
                      }
-
-
 
                      return size;
                   }
 
                   inline void handle_container_end()
                   {
-                     m_nodeStack.pop_back();
+                     m_state.pop();
 
                   }
 
                   inline void handle_serialtype_start()
                   {
-                     if( m_nodeStack.back()->Type() == YAML::NodeType::Map)
+                     switch( m_state.top())
                      {
-                        const YAML::Node* serialNode = m_nodeStack.back()->FindValue( m_currentRole);
-                        if( serialNode != nullptr)
+                        case State::container:
                         {
-                           m_nodeStack.push_back( serialNode);
+                           //
+                           // We are in a container and the nodes are already pushed
+                           //
+                           m_state.push( State::serializable);
+                           break;
                         }
-                        else
+                        case State::unknown:
+                        case State::serializable:
                         {
-                           m_policy.serialtype( m_currentRole);
+                           const YAML::Node* serialNode = m_nodeStack.top()->FindValue( m_currentRole);
+                           if( serialNode != nullptr)
+                           {
+                              m_nodeStack.push( serialNode);
+                              m_state.push( State::serializable);
+                           }
+                           else
+                           {
+                              m_policy.serialtype( m_currentRole);
+                              m_state.push( State::missing);
+                           }
+                           break;
                         }
-
+                        case State::missing:
+                        {
+                           m_state.push( State::missing);
+                           break;
+                        }
                      }
-                     else
-                     {
-                        m_nodeStack.push_back(  m_nodeStack.back());
-                     }
-
-
                   }
 
                   inline void handle_serialtype_end()
                   {
-                     m_nodeStack.pop_back();
+                     //
+                     // Always pop, if not missing
+                     //
+                     if( m_state.top() != State::missing)
+                     {
+                        m_nodeStack.pop();
+                     }
+                     m_state.pop();
                   }
 
                   template< typename T>
                   void read( T& value)
                   {
-                     typedef T value_type;
-                     if( m_nodeStack.back()->Type() == YAML::NodeType::Map)
+                     switch( m_state.top())
                      {
-                        const YAML::Node* valueNode = m_nodeStack.back()->FindValue( m_currentRole);
-
-                        if( valueNode)
+                        case State::container:
                         {
-                           readValue( *valueNode, value);
+                           readValue(*m_nodeStack.top(), value);
+                           m_nodeStack.pop();
+                           break;
                         }
-                        else
+                        case State::unknown:
+                        case State::serializable:
                         {
-                           m_policy.value( m_currentRole, value);
+                           const YAML::Node* valueNode = m_nodeStack.top()->FindValue( m_currentRole);
+                           if( valueNode)
+                           {
+                              readValue( *valueNode, value);
+                           }
+                           else
+                           {
+                              m_policy.value( m_currentRole, value);
+                           }
+                           break;
                         }
-
-                     }
-                     else
-                     {
-                        readValue(*m_nodeStack.back(), value);
-                        m_nodeStack.pop_back();
+                        default:
+                        {
+                           // no op
+                           break;
+                        }
                      }
                   }
 
@@ -184,8 +240,12 @@ namespace casual
 
                   }
 
+
+
+
                   YAML::Node m_document;
-                  std::deque< const YAML::Node*> m_nodeStack;
+                  std::stack< const YAML::Node*> m_nodeStack;
+                  std::stack< State> m_state;
                   const char* m_currentRole = nullptr;
 
                   policy_type m_policy;

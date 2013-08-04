@@ -1,0 +1,16 @@
+
+
+
+resources:
+    # key has to be unique between resources.
+    # this is the name that shall be used to refer to a specific resource (for example with buildserver)
+  - key: db2   
+    # User links this her self. Can be any name. Provide full path, unless it's in the default path
+    server: rm-proxy-casual-dummy
+    # Name of the xa switch struct 
+    xa_struct_name: db2xa_switch_static_std
+    
+    # needed libraries
+    libraries:
+      - db2
+

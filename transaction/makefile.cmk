@@ -1,0 +1,54 @@
+
+
+INCLUDE_PATHS = include \
+    ../common/include \
+    ../xatmi/include \
+    ../configuration/include \
+    ../serviceframework/include \
+    ../thirdparty/database/include \
+    $(UNITTEST_INCLUDE_PATH) \
+
+
+
+LIBRARY_PATHS = bin \
+    ../common/bin \
+    ../configuration/bin \
+    ../serviceframework/bin \
+    ../xatmi/bin \
+//    $(IBM_DB_LIB)
+    
+
+
+
+//
+// Compile and link the transaction manager
+//
+Compile( source/manager.cpp, obj/manager.o)
+
+
+LinkArchive( casual_transaction_manager,\
+   obj/manager.o \
+   )
+    
+    
+Compile( source/manager_main.cpp, obj/manager_main.o)
+
+LinkExecutable( casual-transaction-manager,\
+    obj/manager_main.o,\
+    casual_transaction_manager casual-sf casual-common casual-configuration sqlite3)
+
+
+
+
+//
+// unittest
+//
+Compile( unittest/isolated/source/test_configuration.cpp, obj/test_configuration.o)
+
+LinkIsolatedUnittest( test_transaction_configuration,\
+    obj/test_configuration.o \
+    , \
+    casual_transaction_manager casual-common casual-sf casual-configuration sqlite3)
+
+
+

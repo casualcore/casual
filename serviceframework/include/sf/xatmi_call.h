@@ -12,6 +12,8 @@
 #include "sf/archive_binary.h"
 #include "sf/buffer.h"
 
+// TODO: Temp
+#include "common/trace.h"
 
 //
 // xatmi
@@ -263,6 +265,18 @@ namespace casual
                   archive::yaml::reader::Strict m_reader;
                };
                */
+
+
+            } // policy
+
+            namespace binary
+            {
+               template< long flags = 0, typename C = internal::xatmi_call>
+               using Sync = basic_sync< policy::Binary, flags, C>;
+
+               template< long flags = 0, typename C = internal::xatmi_call>
+               using Async = basic_async< policy::Binary, flags, C>;
+
             }
 
          } // service

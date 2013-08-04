@@ -206,7 +206,7 @@ namespace casual
 
 
             template< typename Q, typename T>
-            typename Q::result_type timeoutWrapper( Q& queue, T& value)
+            auto timeoutWrapper( Q& queue, T& value) -> decltype( queue( value))
             {
                try
                {
@@ -220,7 +220,7 @@ namespace casual
             }
 
             template< typename Q, typename T>
-            typename Q::result_type timeoutWrapper( Q& queue, T& value, int callDescriptor)
+            auto timeoutWrapper( Q& queue, T& value, int callDescriptor) -> decltype( queue( value))
             {
                try
                {
@@ -296,6 +296,7 @@ namespace casual
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
             common::Trace trace( "calling::Context::asyncCall");
+            common::logger::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags;
 
 
 
@@ -331,13 +332,13 @@ namespace casual
 
             message::service::caller::Call messageCall( buffer::Context::instance().get( idata));
             messageCall.callDescriptor = callDescriptor;
-            messageCall.reply.queue_key = m_receiveQueue.getKey();
+            messageCall.reply.queue_id = m_receiveQueue.id();
             messageCall.service = lookup.service;
             messageCall.callId = m_state.callId;
             messageCall.callee = m_state.currentService;
 
 
-            ipc::send::Queue callQueue( lookup.server.front().queue_key);
+            ipc::send::Queue callQueue( lookup.server.front().queue_id);
             queue::blocking::Writer callWriter( callQueue);
 
             local::timeoutWrapper( callWriter, messageCall, callDescriptor);
@@ -356,6 +357,9 @@ namespace casual
          int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
          {
             common::Trace trace( "calling::Context::getReply");
+            common::logger::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags;
+
+
 
             //
             // TODO: validate input...
@@ -514,7 +518,7 @@ namespace casual
             //
             message::service::name::lookup::Request serviceLookup;
             serviceLookup.requested = service;
-            serviceLookup.server.queue_key = m_receiveQueue.getKey();
+            serviceLookup.server.queue_id = m_receiveQueue.id();
 
             queue::blocking::Writer broker( m_brokerQueue);
             local::timeoutWrapper( broker, serviceLookup);

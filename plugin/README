@@ -1,0 +1,31 @@
+1. Edit config with correct path on environment variable CASUAL_XATMI_ROOT
+
+2. Download current version of nginx from http://nginx.org/download/ and build it.
+
+Example:
+
+prompt$ wget http://nginx.org/download/nginx-1.5.2.tar.gz
+prompt$ tar xvf nginx-1.5.2.tar.gz
+prompt$ cd nginx-1.5.2/
+prompt$ ./configure --add-module=/Users/myname/git/casual/plugin [perhaps also with --without-http_rewrite_module]
+prompt$ make
+prompt$ sudo make install
+
+nginx are installed under /usr/local/nginx by default.
+
+3. Edit /usr/local/nginx/conf/nginx.conf
+
+At the moment the nginx worker process must execute with the same user as casual.
+
+Add statement (or change) user.
+Ex.
+user  myuser staff;
+
+Add location /casual to appropriate server entry.
+Ex.
+        location /casual {
+                casual;
+        }
+        
+        
+

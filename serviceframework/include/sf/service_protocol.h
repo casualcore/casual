@@ -12,6 +12,8 @@
 
 
 #include "sf/archive_yaml.h"
+#include "sf/archive_binary.h"
+#include "sf/archive_json.h"
 
 namespace casual
 {
@@ -52,9 +54,19 @@ namespace casual
 
             class Binary : public Base
             {
+            public:
+               Binary( TPSVCINFO* serviceInfo);
 
+               reply::State doFinalize() override;
 
             private:
+
+               buffer::Binary m_readerBuffer;
+               archive::binary::Reader m_reader;
+
+               buffer::Binary m_writerBuffer;
+               archive::binary::Writer m_writer;
+
 
             };
 
@@ -72,6 +84,21 @@ namespace casual
                archive::yaml::Reader m_reader;
                YAML::Emitter m_outputstream;
                archive::yaml::Writer m_writer;
+            };
+
+            class Json : public Base
+            {
+            public:
+
+               Json( TPSVCINFO* serviceInfo);
+
+               reply::State doFinalize() override;
+
+            private:
+
+               archive::json::Reader m_reader;
+               json_object* m_root = nullptr;
+               archive::json::Writer m_writer;
             };
 
 

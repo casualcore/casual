@@ -20,9 +20,11 @@
 //
 // Define globals
 //
-int tperrno = 0;
-long tpurcode = 0;
-
+extern "C"
+{
+   int tperrno = 0;
+   long tpurcode = 0;
+}
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
@@ -63,7 +65,7 @@ namespace local
 }
 
 
-long tptypes( const char* ptr, char* type, char* subtype)
+long tptypes( char* ptr, char* type, char* subtype)
 {
    try
    {
@@ -80,7 +82,8 @@ long tptypes( const char* ptr, char* type, char* subtype)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      tperrno = casual::common::error::handler();
+      return -1;
    }
 
 	return 0;
@@ -101,7 +104,7 @@ void tpreturn(int rval, long rcode, char* data, long len, long flags)
    }
    catch( ...)
    {
-      casual::common::error::handler();
+      tperrno = casual::common::error::handler();
    }
 }
 
@@ -117,7 +120,8 @@ int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen,
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      tperrno = casual::common::error::handler();
+      return -1;
    }
    return 0; // remove warning in eclipse
 }
@@ -130,7 +134,8 @@ int tpacall( const char * svc, char* idata, long ilen, long flags)
    }
 	catch( ...)
    {
-      return casual::common::error::handler();
+	   tperrno = casual::common::error::handler();
+	   return -1;
    }
    return 0; // remove warning in eclipse
 }
@@ -143,7 +148,8 @@ int tpgetrply(int *idPtr, char ** odata, long *olen, long flags)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      tperrno = casual::common::error::handler();
+      return -1;
    }
    return 0; // remove warning in eclipse
 }
@@ -156,7 +162,8 @@ int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *))
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      tperrno = casual::common::error::handler();
+      return -1;
    }
    return 0;
 }
@@ -169,7 +176,8 @@ int tpunadvertise( const char* svcname)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      tperrno = casual::common::error::handler();
+      return -1;
    }
    return 0;
 }

@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "common/buffer_context.h"
+#include "common/types.h"
 
 
 namespace casual
@@ -22,7 +23,7 @@ namespace casual
 
          TEST( casual_common, buffer_allocate)
          {
-            const char* buffer = Context::instance().allocate( "STRING", "", 2048);
+            auto buffer = Context::instance().allocate( "STRING", "", 2048);
 
             EXPECT_TRUE( buffer != nullptr);
 
@@ -33,11 +34,11 @@ namespace casual
 
          TEST( casual_common, buffer_reallocate)
          {
-            const char* buffer = Context::instance().allocate( "STRING", "", 2048);
+            auto buffer = Context::instance().allocate( "STRING", "", 2048);
 
             EXPECT_TRUE( buffer != nullptr);
 
-            const char* buffer2 = Context::instance().reallocate( buffer, 4096);
+            auto buffer2 = Context::instance().reallocate( buffer, 4096);
 
             EXPECT_TRUE( buffer2 != buffer);
 

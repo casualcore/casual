@@ -16,7 +16,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "xatmi.h"
+#include <xatmi.h>
+#include <tx.h>
 
 namespace casual
 {
@@ -25,50 +26,64 @@ namespace casual
       namespace exception
       {
 
+         struct Base : public std::runtime_error
+         {
+            Base( const std::string& description)
+               : std::runtime_error( description) {}
+         };
+
+
          //
-         // Serves as a placeholder for later correct exception, which hopefully a good name...
+         // Serves as a placeholder for later correct exception, with hopefully a good name...
          //
-         struct NotReallySureWhatToNameThisException : public std::exception {};
+         struct NotReallySureWhatToNameThisException : public Base
+         {
+            NotReallySureWhatToNameThisException( )
+               : Base( "NotReallySureWhatToNameThisException") {}
+
+            NotReallySureWhatToNameThisException( const std::string& information)
+               : Base( information) {}
+         };
 
          struct MemoryNotFound : public std::exception {};
 
-         struct FileNotExist : public std::runtime_error
+         struct FileNotExist : public Base
          {
             FileNotExist( const std::string& file)
-               : std::runtime_error( "file does not exists: " + file) {}
+               : Base( "file does not exists: " + file) {}
          };
 
 
-         struct EnvironmentVariableNotFound : public std::runtime_error
+         struct EnvironmentVariableNotFound : public Base
          {
             EnvironmentVariableNotFound( const std::string& description)
-               : std::runtime_error( "environment variable not found: " + description) {}
+               : Base( "environment variable not found: " + description) {}
          };
 
-         struct QueueFailed : public std::runtime_error
+         struct QueueFailed : public Base
          {
             QueueFailed( const std::string& description)
-               : std::runtime_error( description) {}
+               : Base( description) {}
          };
 
-         struct QueueSend : public std::runtime_error
+         struct QueueSend : public Base
          {
             QueueSend( const std::string& description)
-               : std::runtime_error( description) {}
+               : Base( description) {}
          };
 
-         struct QueueReceive : public std::runtime_error
+         struct QueueReceive : public Base
          {
             QueueReceive( const std::string& description)
-               : std::runtime_error( description) {}
+               : Base( description) {}
          };
 
          namespace signal
          {
-            struct Base : public std::runtime_error
+            struct Base : public exception::Base
             {
                Base( const std::string& description)
-                  : std::runtime_error( description) {}
+                  : common::exception::Base( description) {}
 
                virtual common::platform::signal_type getSignal() const = 0;
             };
@@ -92,36 +107,22 @@ namespace casual
 
             typedef basic_signal< common::platform::cSignal_Alarm> Terminate;
 
+         } // signal
 
-         }
-
-         namespace xatmi
+         namespace code
          {
-
-            struct Base : public std::runtime_error
+            struct Base : public exception::Base
             {
                Base( const std::string& description)
-                  : std::runtime_error( description) {}
+                  : common::exception::Base( description) {}
 
-               virtual int code() const throw() = 0;
+
+               virtual int code() const noexcept = 0;
+               virtual int severity() const noexcept = 0;
             };
 
-            namespace severity
-            {
-               template< int severity>
-               struct Severity : public Base
-               {
-                  Severity( const std::string& description)
-                     : Base( description) {}
-               };
 
-               typedef Severity< common::platform::cLOG_critical> Critical;
-               typedef Severity< common::platform::cLOG_info> Information;
-               typedef Severity< common::platform::cLOG_debug> User;
-
-            }
-
-            template< int xatmi_error, typename base_type>
+            template< int value, typename base_type>
             struct basic_exeption : public base_type
             {
                basic_exeption( const std::string& description)
@@ -130,49 +131,89 @@ namespace casual
                basic_exeption()
                   : base_type( "No additional information") {}
 
-               int code() const throw() { return xatmi_error;}
+               int code() const noexcept { return value;}
+            };
+         } // code
+
+         namespace severity
+         {
+            template< int value, typename base>
+            struct basic_severity : public base
+            {
+               basic_severity( const std::string& description)
+                  : base( description) {}
+
+               int severity() const noexcept { return value;}
             };
 
+            template< typename base>
+            using Error = basic_severity< common::platform::cLOG_error, base>;
+
+            template< typename base>
+            using Information = basic_severity< common::platform::cLOG_info, base>;
+
+            template< typename base>
+            using User = basic_severity< common::platform::cLOG_debug, base>;
+
+         } // severity
+
+         namespace xatmi
+         {
+            struct Base : public code::Base
+            {
+               // TODO: when we upgrade compiler...
+               // using code::Base::Base;
+
+               Base( const std::string& description)
+                  : code::Base( description) {}
+            };
+
+            namespace severity
+            {
+               using Error = exception::severity::Error< Base>;
+               using Information = exception::severity::Information< Base>;
+               using User = exception::severity::User< Base>;
+            }
 
 
 
-            typedef basic_exeption< TPEBLOCK, severity::User> NoMessage;
+            typedef code::basic_exeption< TPEBLOCK, severity::User> NoMessage;
 
-            typedef basic_exeption< TPELIMIT, severity::Information> LimitReached;
+            typedef code::basic_exeption< TPELIMIT, severity::Information> LimitReached;
 
-            typedef basic_exeption< TPEINVAL, severity::Information> InvalidArguments;
+            typedef code::basic_exeption< TPEINVAL, severity::User> InvalidArguments;
 
-            typedef basic_exeption< TPEOS, severity::Critical> OperatingSystemError;
+            typedef code::basic_exeption< TPEOS, severity::Error> OperatingSystemError;
 
-            typedef basic_exeption< TPEPROTO, severity::Critical> ProtocollError;
+            typedef code::basic_exeption< TPEPROTO, severity::Error> ProtocollError;
 
             namespace service
             {
-               typedef basic_exeption< TPEBADDESC, severity::Information> InvalidDescriptor;
+               typedef code::basic_exeption< TPEBADDESC, severity::User> InvalidDescriptor;
 
-               typedef basic_exeption< TPESVCERR, severity::Critical> Error;
+               typedef code::basic_exeption< TPESVCERR, severity::Error> Error;
 
-               typedef basic_exeption< TPESVCFAIL, severity::User> Fail;
+               typedef code::basic_exeption< TPESVCFAIL, severity::User> Fail;
 
-               typedef basic_exeption< TPENOENT, severity::User> NoEntry;
+               typedef code::basic_exeption< TPENOENT, severity::User> NoEntry;
 
-               typedef basic_exeption< TPEMATCH, severity::User> AllreadyAdvertised;
+               typedef code::basic_exeption< TPEMATCH, severity::User> AllreadyAdvertised;
             }
 
-            typedef basic_exeption< TPESYSTEM, severity::Critical> SystemError;
+            typedef code::basic_exeption< TPESYSTEM, severity::Error> SystemError;
 
-            typedef basic_exeption< TPETIME, severity::User> Timeout;
+            typedef code::basic_exeption< TPETIME, severity::User> Timeout;
 
-            typedef basic_exeption< TPETRAN, severity::User> TransactionNotSupported;
+            typedef code::basic_exeption< TPETRAN, severity::User> TransactionNotSupported;
 
-            typedef basic_exeption< TPGOTSIG, severity::Information> Signal;
+            typedef code::basic_exeption< TPGOTSIG, severity::Information> Signal;
 
             namespace buffer
             {
 
-               typedef basic_exeption< TPEITYPE, severity::Information> TypeNotSupported;
+               typedef code::basic_exeption< TPEITYPE, severity::User> TypeNotSupported;
 
-               typedef basic_exeption< TPEOTYPE, severity::Information> TypeNotExpected;
+               typedef code::basic_exeption< TPEOTYPE, severity::User> TypeNotExpected;
 
             }
 
@@ -183,8 +224,52 @@ namespace casual
               // #define TPEEVENT 22  <-- not supported right now
 
             }
-
          } // xatmi
+
+         namespace tx
+         {
+            struct Base : public code::Base
+            {
+               // TODO: when we upgrade compiler...
+               // using code::Base::Base;
+
+               Base( const std::string& description)
+                  : code::Base( description) {}
+            };
+
+            namespace severity
+            {
+               using Error = exception::severity::Error< Base>;
+               using Information = exception::severity::Information< Base>;
+               using User = exception::severity::User< Base>;
+            }
+
+            using OutsideTransaction = code::basic_exeption< TX_OUTSIDE, severity::User>;
+            using RolledBack = code::basic_exeption< TX_ROLLBACK, severity::Information>;
+            using HeuristicallyCommitted = code::basic_exeption< TX_COMMITTED, severity::Information>;
+
+            using Mixed = code::basic_exeption< TX_MIXED, severity::Information>;
+
+            using Hazard = code::basic_exeption< TX_HAZARD, severity::Error>;
+
+            using ProtocollError = code::basic_exeption< TX_PROTOCOL_ERROR, severity::User>;
+
+            using Error = code::basic_exeption< TX_ERROR, severity::Error>;
+
+            using Fail = code::basic_exeption< TX_FAIL, severity::Error>;
+
+            using InvalidArguments = code::basic_exeption< TX_EINVAL, severity::User>;
+
+            namespace no_begin
+            {
+               using RolledBack = code::basic_exeption< TX_ROLLBACK_NO_BEGIN, severity::User>;
+               using Mixed = code::basic_exeption< TX_MIXED_NO_BEGIN, severity::Information>;
+               using Haxard = code::basic_exeption< TX_HAZARD_NO_BEGIN, severity::Error>;
+               using Committed = code::basic_exeption< TX_COMMITTED_NO_BEGIN, severity::User>;
+
+            } // no_begin
+         } // tx
+
 		} // exception
 	} // utility
 } // casual

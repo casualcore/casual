@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "common/file.h"
+#include "common/environment.h"
+#include "common/uuid.h"
 
 namespace casual
 {
@@ -76,14 +78,15 @@ namespace casual
 
       TEST(casual_common_file, basedir_empty_path)
       {
-         std::string verify = common::file::basedir( "");
-         EXPECT_TRUE(verify == "") << verify;
+         auto verify = common::file::basedir( "");
+         EXPECT_TRUE(verify == "/") << verify;
       }
 
       TEST(casual_common_file, basedir_only_filename_path)
       {
          std::string verify = common::file::basedir( "file.name");
-         EXPECT_TRUE(verify == "") << verify;
+         // TODO: this should be '.'
+         EXPECT_TRUE(verify == "/") << verify;
       }
 
       TEST(casual_common_file,find_existing_file)
@@ -128,5 +131,23 @@ namespace casual
       {
          EXPECT_FALSE( common::file::exists( std::string( __FILE__) + "_not_a_file_"));
       }
-   }
-}
+
+      TEST(casual_common_directory, create_one_level__expect_true)
+      {
+         file::ScopedPath path( environment::directory::temporary() + "/" + Uuid::make().string());
+
+         EXPECT_TRUE( directory::create( path));
+      }
+
+      TEST(casual_common_directory, create_two_level__expect_true)
+      {
+         file::ScopedPath path( environment::directory::temporary() + "/" + Uuid::make().string() + "/level2/level3");
+
+         EXPECT_TRUE( directory::create( path));
+      }
+
+
+
+
+   } // common
+} // casual

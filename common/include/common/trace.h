@@ -20,22 +20,54 @@ namespace casual
       {
       public:
          template< typename T>
-         Trace( T&& information) : m_information( std::forward< T>( information))
+         Trace( T&& info) : m_information{ std::forward< T>( info)}
          {
             logger::trace << m_information << " - in";
          }
 
          ~Trace()
          {
-            logger::trace << m_information << " - out";
+            if( std::uncaught_exception())
+            {
+               logger::trace << m_information << " - out*";
+            }
+            else
+            {
+               logger::trace << m_information << " - out";
+            }
          }
 
          Trace( const Trace&) = delete;
          Trace& operator = ( const Trace&) = delete;
 
       private:
-         const std::string m_information;
+         std::string m_information;
       };
+
+      namespace trace
+      {
+         struct Exit
+         {
+         public:
+            template< typename T>
+            Exit( T&& information) : m_information{ std::forward< T>( information)} {}
+
+            ~Exit()
+           {
+              if( std::uncaught_exception())
+              {
+                 logger::trace << m_information << " - failed";
+              }
+              else
+              {
+                 logger::trace << m_information << " - ok";
+              }
+           }
+
+         private:
+            std::string m_information;
+         };
+      }
    }
 
 

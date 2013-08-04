@@ -32,11 +32,11 @@ namespace casual
          {
             struct State
             {
-               int value;
-               long code;
-               char* data;
-               long size;
-               long flags;
+               int value = 0;
+               long code = 0;
+               char* data = nullptr;
+               long size = 0;
+               long flags = 0;
             };
          }
 

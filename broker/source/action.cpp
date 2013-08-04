@@ -19,12 +19,16 @@ namespace casual
          namespace server
          {
 
-            void start( const configuration::Server& server)
+            std::vector< common::platform::pid_type> start( const config::domain::Server& server)
             {
+               std::vector< common::platform::pid_type> result;
+
                for( auto count = std::stol( server.instances); count > 0; --count)
                {
-                  common::process::spawn( server.path, common::string::split( server.arguments));
+                  auto pid = common::process::spawn( server.path, common::string::split( server.arguments));
+                  result.push_back( pid);
                }
+               return result;
             }
 
          } // server

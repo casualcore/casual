@@ -1,4 +1,7 @@
 
+
+Include( $(CASUAL_BUILD_ENVIRONMENT))
+
 INCLUDE_PATHS= include \
 	../common/include \
 	../serviceframework/include \
@@ -7,42 +10,46 @@ INCLUDE_PATHS= include \
 	$(UNITTEST_INCLUDE_PATH)
 
 
-LIBRARY_PATHS = ../common/bin ../xatmi/bin ../serviceframework/bin
+LIBRARY_PATHS = bin \
+    ../common/bin \
+    ../xatmi/bin \
+    ../serviceframework/bin \
+    $(JSON_LIBRARY_PATH)
 
 
 
 Compile( source/monitorvo.cpp, obj/monitorvo.o)
 
-LinkLibrary( casual_monitor_vo, \
+LinkLibrary( casual-monitor-vo, \
     obj/monitorvo.o, \
-    casual_common \
-    casual_sf)
+    casual-common \
+    casual-sf)
 
 
 Compile( source/monitor.cpp, obj/monitor.o)
 Compile( source/monitor_main.cpp, obj/monitor_main.o)
 Compile( source/monitordb.cpp, obj/monitordb.o)
 
-LinkExecutable( casual_monitor, \
+LinkExecutable( casual-monitor, \
 	obj/monitor.o \
 	obj/monitor_main.o \
 	obj/monitordb.o, \
-	casual_monitor_vo \
-	casual_common \
+	casual-monitor-vo \
+	casual-common \
 	sqlite3 )
 
 
 Compile( source/statisticserver.cpp, obj/statisticserver.o)
 Compile( source/statisticimplementation.cpp, obj/statisticimplementation.o)
 
-LinkAtmiServer(casual_monitor_request_server, \
+LinkAtmiServer(casual-monitor-request-server, \
     obj/statisticserver.o \
     obj/statisticimplementation.o \
     obj/monitordb.o, \
-    casual_monitor_vo \
+    casual-monitor-vo \
     casual-xatmi \
-    casual_common \
-    casual_sf \
+    casual-common \
+    casual-sf \
     sqlite3, \
     "getMonitorStatistics")
 
@@ -55,11 +62,11 @@ LinkAtmiServer(casual_monitor_request_server, \
 Compile( unittest/isolated/source/test_monitor.cpp, unittest/isolated/obj/test_monitor.o)
 
 
-LinkIsolatedUnittest( casual_monitor_isolated, \
+LinkIsolatedUnittest( casual-monitor-isolated, \
 	unittest/isolated/obj/test_monitor.o \
 	obj/monitordb.o, \
-	casual_monitor_vo \
-	casual_common \
+	casual-monitor-vo \
+	casual-common \
 	sqlite3)	
 
 	
