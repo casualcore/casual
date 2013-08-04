@@ -133,7 +133,6 @@ namespace casual
             template< typename T, typename F, typename C>
             void call( F& caller, const std::vector< std::string>& values, C)
             {
-               using namespace std::placeholders;
 
                std::vector< T> converted;
 
@@ -147,7 +146,7 @@ namespace casual
             }
 
 
-            template< typename C, typename F, typename T = std::string>
+            template< typename C, typename F, typename T>
             struct dispatch : public base_dispatch
             {
                typedef C cardinality_type;
@@ -164,26 +163,40 @@ namespace casual
                F m_caller;
             };
 
-            template< typename T>
-            struct deduce_helper
-            {
-               typedef cardinality::One cardinality;
-               typedef typename std::decay< T>::type type;
-            };
 
-            template< typename T>
-            struct deduce_helper< std::vector< T>>
+            namespace deduce
             {
-               typedef cardinality::OneMany cardinality;
-               typedef typename std::decay< T>::type type;
-            };
+               template< typename T>
+               struct helper
+               {
+                  typedef cardinality::One cardinality;
+                  typedef typename std::decay< T>::type type;
+               };
 
-            template<>
-            struct deduce_helper< void>
-            {
-               typedef cardinality::Zero cardinality;
-               typedef void type;
-            };
+               template< typename T>
+               struct helper< std::vector< T>>
+               {
+                  typedef cardinality::OneMany cardinality;
+                  typedef typename std::decay< T>::type type;
+               };
+
+               template<>
+               struct helper< void>
+               {
+                  typedef cardinality::Zero cardinality;
+                  typedef void type;
+               };
+
+
+               template< typename O>
+               cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
+
+               template< typename O, typename T>
+               auto cardinality( O&, void (O::*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               {
+                  return typename helper< typename std::decay< T>::type>::cardinality();
+               }
+            } // deduce
 
 
             using namespace std::placeholders;
@@ -192,9 +205,9 @@ namespace casual
             struct maker
             {
                template< typename O, typename T>
-               auto static make( O& object, void (O::*member)( T)) -> dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce_helper< typename std::decay< T>::type >::type>
+               auto static make( O& object, void (O::*member)( T)) -> dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce::helper< typename std::decay< T>::type >::type>
                {
-                  typedef dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce_helper< typename std::decay< T>::type>::type> result_type;
+                  typedef dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce::helper< typename std::decay< T>::type>::type> result_type;
                   return result_type( std::bind( member, &object, _1));
                }
             };
@@ -224,20 +237,6 @@ namespace casual
                   return result_type( std::bind( member, &object));
                }
             };
-
-
-
-
-
-
-            template< typename O>
-            cardinality::Zero deduce_cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
-
-            template< typename O, typename T>
-            auto deduce_cardinality( O&, void (O::*)( T)) -> typename deduce_helper< typename std::decay< T>::type>::cardinality
-            {
-               return typename deduce_helper< typename std::decay< T>::type>::cardinality();
-            }
 
 
 
@@ -329,7 +328,7 @@ namespace casual
          template< typename... Args>
          Directive directive( const std::vector< std::string>& options, const std::string& description, Args&&... args)
          {
-            return Directive{ internal::deduce_cardinality( std::forward< Args>( args)...), options, description, std::forward< Args>( args)...};
+            return Directive{ internal::deduce::cardinality( std::forward< Args>( args)...), options, description, std::forward< Args>( args)...};
          }
 
 
