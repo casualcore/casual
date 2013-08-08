@@ -8,6 +8,7 @@
 #ifndef RESOURCE_PROXY_SERVER_H_
 #define RESOURCE_PROXY_SERVER_H_
 
+#include <xatmi_server.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,8 +22,12 @@ struct casual_resource_proxy_service_argument
    int argc;
    char** argv;
 
-   casual_xa_switch_mapping* xaSwitches;
+   struct casual_xa_switch_mapping* xaSwitches;
 };
+
+int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* serverArguments);
+
+
 
 #ifdef __cplusplus
 }

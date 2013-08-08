@@ -1,12 +1,11 @@
-//!
-//! casual_ipc_messages.h
-//!
-//! Created on: Apr 25, 2012
-//!     Author: Lazan
-//!
+
+
 
 #ifndef CASUAL_MESSAGES_H_
 #define CASUAL_MESSAGES_H_
+
+
+
 
 #include "common/ipc.h"
 #include "common/buffer_context.h"
@@ -44,9 +43,13 @@ namespace casual
             cMonitorNotify,
             cTransactionManagerConnect = 40,
             cTransactionBegin,
+            cTransactionPrepare,
             cTransactionCommit,
             cTransactionRollback,
-            cTransactionReply
+            cTransactionGenericReply,
+            cTransactionPreparedReply,
+            cTransactionResurceConnectReply,
+            cTransactionResurceGenericReply
 
             //cTransactionMonitorUnadvertise,
 
@@ -86,7 +89,7 @@ namespace casual
 
             std::string name;
             Seconds timeout = 0;
-            common::platform::queue_key_type monitor_queue = 0;
+            common::platform::queue_id_type monitor_queue = 0;
 
             template< typename A>
             void marshal( A& archive)
@@ -107,8 +110,14 @@ namespace casual
             //!
             struct Id
             {
-               typedef common::platform::pid_type pid_type;
+
                typedef platform::queue_id_type queue_id_type;
+               typedef common::platform::pid_type pid_type;
+
+
+               Id() = default;
+               Id( queue_id_type id, pid_type pid) : queue_id( id), pid( pid) {}
+
 
                queue_id_type queue_id = 0;
                pid_type pid = common::process::id();
@@ -527,9 +536,61 @@ namespace casual
             //!
             //typedef basic_disconnect< cTransactionMonitorUnadvertise> Unadvertise;
 
+
+            namespace reply
+            {
+               template< message::Type type>
+               struct basic_reply
+               {
+                  typedef common::platform::pid_type pid_type;
+                  enum
+                  {
+                     message_type = type
+                  };
+
+                  server::Id id;
+                  int state = 0;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & id;
+                     archive & state;
+
+                  }
+               };
+
+               //!
+               //! Reply from the transaction monitor
+               //!
+               typedef basic_reply< cTransactionGenericReply> Generic;
+
+               //!
+               //! Reply from the transaction monitor
+               //!
+               typedef basic_reply< cTransactionPreparedReply> Prepared;
+
+
+               namespace resource
+               {
+                  //!
+                  //! Used to notify the TM that a resource proxy is up and running, or not...
+                  //!
+                  typedef basic_reply< cTransactionResurceConnectReply> Connect;
+
+                  typedef basic_reply< cTransactionResurceGenericReply> Generic;
+
+               } // resource
+
+            } // reply
+
+
+
             template< message::Type type>
             struct basic_transaction
             {
+               typedef basic_transaction< type> base_type;
+
                enum
                {
                   message_type = type
@@ -548,8 +609,6 @@ namespace casual
 
             struct Begin : public basic_transaction< cTransactionBegin>
             {
-               typedef basic_transaction< cTransactionBegin> base_type;
-
                template< typename A>
                void marshal( A& archive)
                {
@@ -560,32 +619,18 @@ namespace casual
                common::time_type start;
             };
 
+            typedef basic_transaction< cTransactionPrepare> Prepare;
             typedef basic_transaction< cTransactionCommit> Commit;
             typedef basic_transaction< cTransactionRollback> Rollback;
 
-            struct Reply
-            {
-               enum
-               {
-                  message_type = cTransactionReply
-               };
 
-               int state;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & state;
-               }
-
-            };
          } // transaction
 
          //!
          //! Deduce witch type of message it is.
          //!
          template< typename M>
-         ipc::message::Transport::message_type_type type( const M& message)
+         ipc::message::Transport::message_type_type type( const M&)
          {
             return M::message_type;
          }

@@ -33,6 +33,7 @@ namespace casual
       namespace error
       {
 
+
          int handler()
          {
             try

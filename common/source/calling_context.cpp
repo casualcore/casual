@@ -244,7 +244,7 @@ namespace casual
             return singleton;
          }
 
-         void Context::setCallId( const common::Uuid& uuid)
+         void Context::callId( const common::Uuid& uuid)
          {
             if( uuid == common::Uuid::empty())
             {
@@ -256,9 +256,21 @@ namespace casual
             }
          }
 
-         void Context::setCurrentService( const std::string& service)
+         const common::Uuid& Context::callId() const
+         {
+            return m_state.callId;
+         }
+
+
+
+         void Context::currentService( const std::string& service)
          {
             m_state.currentService = service;
+         }
+
+         const std::string& Context::currentService() const
+         {
+            return m_state.currentService;
          }
 
          int Context::allocateCallingDescriptor()
@@ -332,7 +344,7 @@ namespace casual
 
             message::service::caller::Call messageCall( buffer::Context::instance().get( idata));
             messageCall.callDescriptor = callDescriptor;
-            messageCall.reply.queue_id = m_receiveQueue.id();
+            messageCall.reply.queue_id = ipc::getReceiveQueue().id();
             messageCall.service = lookup.service;
             messageCall.callId = m_state.callId;
             messageCall.callee = m_state.currentService;
@@ -484,7 +496,7 @@ namespace casual
 
             if( fetchIter == m_state.replyCache.end())
             {
-               queue::blocking::Reader reader( m_receiveQueue);
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
 
                do
                {
@@ -516,21 +528,25 @@ namespace casual
             //
             // Get a queue corresponding to the service
             //
+            auto& receiveQueue = ipc::getReceiveQueue();
+
             message::service::name::lookup::Request serviceLookup;
             serviceLookup.requested = service;
-            serviceLookup.server.queue_id = m_receiveQueue.id();
+            serviceLookup.server.queue_id = receiveQueue.id();
 
-            queue::blocking::Writer broker( m_brokerQueue);
+            queue::blocking::Writer broker( ipc::getBrokerQueue());
             local::timeoutWrapper( broker, serviceLookup);
 
 
             message::service::name::lookup::Reply result;
-            queue::blocking::Reader reader( m_receiveQueue);
+            queue::blocking::Reader reader( receiveQueue);
             local::timeoutWrapper( reader, result);
 
             return result;
 
          }
+
+
 
          void Context::consume()
          {
@@ -542,7 +558,7 @@ namespace casual
             {
                message::service::Reply reply;
 
-               queue::non_blocking::Reader reader( m_receiveQueue);
+               queue::non_blocking::Reader reader( ipc::getReceiveQueue());
 
                if( ! local::timeoutWrapper( reader, reply))
                {

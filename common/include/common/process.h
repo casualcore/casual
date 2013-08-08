@@ -65,6 +65,17 @@ namespace casual
          platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments);
 
          //!
+         //! Spawn a new application that path describes, and wait until it exit. That is
+         //!  - spawn
+         //!  - wait
+         //!
+         //! @param path path to application to be spawned
+         //! @param arguments 0..N arguments that is passed to the application
+         //! @return exit code from the process
+         //!
+         int execute( const std::string& path, const std::vector< std::string>& arguments);
+
+         //!
          //! check if there are sub processes that has been terminated
          //!
          //! @return 0..N terminated process id's
@@ -74,10 +85,9 @@ namespace casual
          //!
          //! Wait for a specific process to terminate.
          //!
-         //! @attention this i mostly for unittest, and it's unlikely we have any use for this
-         //!    blocking semantics in real code..
+         //! @return return code from process
          //!
-         platform::pid_type wait( platform::pid_type pid);
+         int wait( platform::pid_type pid);
 
          //!
          //! Tries to terminate pids

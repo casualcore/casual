@@ -38,12 +38,16 @@
             {
                 "name":"group3",
                 "note":"Some logical group"
+                "dependecies":[
+                    "casual"
+                ]
             },
             {
                 "name":"group4",
                 "note":"Dependent on group3",
                 "dependecies":[
-                    "group3"
+                    "group3",
+                    "casual"
                 ]
             }
             

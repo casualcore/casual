@@ -58,8 +58,19 @@ namespace casual
 					   common::file::remove( path);
 					}
 
+					logger::debug << "writing broker queue file: " << path;
+
 					std::ofstream brokerQueueFile( path);
-					brokerQueueFile << queue.id();
+
+					if( brokerQueueFile)
+					{
+                  brokerQueueFile << queue.id() << std::endl;
+                  brokerQueueFile.close();
+					}
+					else
+					{
+					   throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
+					}
 				}
 			}
 		}
@@ -67,6 +78,7 @@ namespace casual
 
 		Broker::Broker()
 			: m_brokerQueueFile( common::environment::file::brokerQueue())
+		   //: m_brokerQueueFile( "/tmp/crap")
 		{
 
 		}
@@ -118,6 +130,8 @@ namespace casual
             // Make the key public for others...
             //
             local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
+            // local::exportBrokerQueueKey( m_receiveQueue, common::environment::file::brokerQueue());
+
 
             config::domain::Domain domain;
 
@@ -140,10 +154,12 @@ namespace casual
                // Start the servers...
                // TODO: Need to do more config
                //
+               /*
                std::for_each(
                      std::begin( domain.servers),
                      std::end( domain.servers),
                      action::server::Start( m_state));
+                     */
 
                auto terminated = process::terminated();
                common::logger::debug << "#terminated; " << terminated.size();

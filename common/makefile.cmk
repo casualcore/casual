@@ -69,7 +69,7 @@ Compile( unittest/isolated/source/simple_process.cpp, unittest/isolated/obj/simp
 
 LinkExecutable( simple_process,\
     unittest/isolated/obj/simple_process.o, \
-    )
+    casual-common)
 	
 	
 //

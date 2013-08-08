@@ -11,9 +11,12 @@
 #include "common/process.h"
 #include "common/exception.h"
 #include "common/chronology.h"
+#include "common/server_context.h"
 
 // temp
+#include <iostream>
 #include <fstream>
+
 
 
 namespace casual
@@ -38,48 +41,15 @@ namespace casual
 
                      void log( const int priority, const std::string& message)
                      {
-                        //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
                         if( ! m_output.good())
                         {
-                           open();
+                           open( priority, message);
+                           return;
                         }
 
-                        m_output <<
-                           common::chronology::local() <<
-                           '|' << common::environment::getDomainName() <<
-                           '|' << common::environment::file::executable() <<
-                           '|' << common::process::id() << "|";
+                        log( m_output, priority, message);
 
-
-
-
-                        // TODO: Temp while we roll our own...
-                        switch( priority)
-                        {
-                           case common::platform::cLOG_debug:
-                           {
-                              m_output << "debug - ";
-                              break;
-                           }
-                           case common::platform::cLOG_info:
-                           {
-                              m_output << "information - ";
-                              break;
-                           }
-                           case common::platform::cLOG_warning:
-                           {
-                              m_output << "warning - ";
-                              break;
-                           }
-                           case common::platform::cLOG_error:
-                           {
-                              m_output << "error - ";
-                              break;
-                           }
-                        }
-
-                        m_output << message << std::endl;
                      }
 
                      bool active( int priority) const
@@ -110,15 +80,55 @@ namespace casual
 
                         m_mask |= common::platform::cLOG_error;
 
-
                         open();
-
                      }
+
+                     void log( std::ostream& out, const int priority, const std::string& message)
+                     {
+                        //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
+
+                        out <<
+                           common::chronology::local() <<
+                           '|' << common::environment::getDomainName() <<
+                           '|' << common::calling::Context::instance().callId().string() <<
+                           '|' << common::process::id() <<
+                           '|' << common::file::basename( common::environment::file::executable()) <<
+                           '|' << common::calling::Context::instance().currentService() <<
+                           "|";
+
+                        // TODO: Temp while we roll our own...
+                        switch( priority)
+                        {
+                           case common::platform::cLOG_debug:
+                           {
+                              out << "debug - ";
+                              break;
+                           }
+                           case common::platform::cLOG_info:
+                           {
+                              out << "information - ";
+                              break;
+                           }
+                           case common::platform::cLOG_warning:
+                           {
+                              out << "warning - ";
+                              break;
+                           }
+                           case common::platform::cLOG_error:
+                           {
+                              out << "error - ";
+                              break;
+                           }
+                        }
+
+                        out << message << std::endl;
+                     }
+
 
                      //
                      // Open log
                      //
-                     void open()
+                     bool open()
                      {
                         static const std::string logfileName = common::environment::directory::domain() + "/casual.log";
 
@@ -126,9 +136,27 @@ namespace casual
 
                         if( m_output.fail())
                         {
-                           throw exception::xatmi::SystemError( "Could not open the log-file: " + logfileName);
+                           //
+                           // We don't want to throw... Or do we?
+                           //
+                           std::cerr << environment::file::executable() << " - Could not open log-file: " << logfileName << std::endl;
+                           //throw exception::xatmi::SystemError( "Could not open the log-file: " + logfileName);
+                           return false;
                         }
+                        return true;
 
+                     }
+
+                     void open( const int priority, const std::string& message)
+                     {
+                        if( open())
+                        {
+                           log( m_output, priority, message);
+                        }
+                        else
+                        {
+                           log( std::cerr,  priority, message);
+                        }
                      }
 
                      std::ofstream m_output;

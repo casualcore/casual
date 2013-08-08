@@ -44,13 +44,13 @@ namespace casual
 			struct Server
 			{
 
-				casual::broker::Server operator () ( const message::server::Connect& message) const
+				std::shared_ptr< broker::Server> operator () ( const message::server::Connect& message) const
 				{
-					casual::broker::Server result;
+					auto result = std::make_shared< broker::Server>();
 
-					result.path = message.path;
-					result.pid = message.server.pid;
-					result.queue_key = message.server.queue_id;
+					result->path = message.path;
+					result->pid = message.server.pid;
+					result->queue_id = message.server.queue_id;
 
 					return result;
 				}
@@ -61,7 +61,7 @@ namespace casual
 					casual::message::server::Id result;
 
 					result.pid = value.pid;
-					result.queue_id = value.queue_key;
+					result.queue_id = value.queue_id;
 
 					return result;
 				}
@@ -77,7 +77,7 @@ namespace casual
 		   {
 		      Server( broker::Server::pid_type pid) : m_pid( pid) {}
 
-		      bool operator () ( const broker::Server* server)
+		      bool operator () ( const std::shared_ptr< broker::Server>& server)
             {
 		         return server->pid == m_pid;
             }
@@ -98,9 +98,9 @@ namespace casual
 		   {
 		      struct Idle
 		      {
-		         bool operator () ( const broker::Server* server)
+		         bool operator () ( const std::shared_ptr< broker::Server>& server)
                {
-                  return server->idle == true;
+                  return server->state == broker::Server::State::idle;
                }
 		      };
 
@@ -157,7 +157,7 @@ namespace casual
 
 		      struct Service
             {
-               Service( broker::Server* server, State::service_mapping_type& serviceMapping)
+               Service( std::shared_ptr< broker::Server>& server, State::service_mapping_type& serviceMapping)
                   : m_server( server), m_serviceMapping( serviceMapping) {}
 
                void operator() ( const message::Service& service)
@@ -173,11 +173,11 @@ namespace casual
                   //
                   // Add the pointer to the server
                   //
-                  findIter->second.add( m_server);
+                  findIter->second.servers.push_back( m_server);
                }
 
             private:
-               broker::Server* m_server;
+               std::shared_ptr< broker::Server>& m_server;
                State::service_mapping_type& m_serviceMapping;
             };
 
@@ -318,7 +318,7 @@ namespace casual
                   std::for_each(
                      std::begin( message.services),
                      std::end( message.services),
-                     state::internal::Service( &find->second, m_state.services));
+                     state::internal::Service( find->second, m_state.services));
 
                }
                else
@@ -473,9 +473,9 @@ namespace casual
                   if( idleServer != std::end( serviceFound->second.servers))
                   {
                      //
-                     // flag it as not idle.
+                     // flag it as busy.
                      //
-                     (*idleServer)->idle = false;
+                     (*idleServer)->state = Server::State::busy;
 
                      message::service::name::lookup::Reply reply;
                      reply.service = serviceFound->second.information;
@@ -540,7 +540,7 @@ namespace casual
 
                if( findIter != std::end( m_state.servers))
                {
-                  findIter->second.idle = true;
+                  findIter->second->state = Server::State::idle;
 
                   if( ! m_state.pending.empty())
                   {

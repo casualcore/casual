@@ -171,13 +171,16 @@ namespace casual
          {
 
             Queue::Queue()
-               : internal::base_queue( msgget( IPC_PRIVATE, 0660)),
-                 m_scopedPath( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
+               : internal::base_queue( msgget( IPC_PRIVATE, IPC_CREAT | 0660)),
+                    m_scopedPath( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
             {
                //
                // Write queue information
                //
                std::ofstream ipcQueueFile( m_scopedPath.path());
+
+               //auto key = ftok( m_scopedPath.path().c_str(), 'X');
+               //m_id = msgget( key, 0660 | IPC_CREAT);
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl
@@ -206,8 +209,12 @@ namespace casual
                {
                   if( msgctl( m_id, IPC_RMID, 0) == -1)
                   {
-                     logger::error << "removing queue: " << m_id << " - " << common::error::stringFromErrno();
+                     logger::error << "failed to remove queue: " << m_id << " - " << common::error::stringFromErrno();
                   }
+               }
+               else
+               {
+                  logger::debug << "queue id: " << m_id << " removed";
                }
             }
 
@@ -336,7 +343,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueReceive( "id: " + std::to_string( m_id) + " - " + common::error::stringFromErrno());
+                        throw common::exception::QueueReceive( common::error::stringFromErrno() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
                      }
                   }
                }

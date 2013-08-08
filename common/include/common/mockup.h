@@ -23,17 +23,16 @@ namespace casual
             template< typename M>
             struct WriteMessage
             {
-               typedef common::platform::queue_key_type key_type;
+               typedef common::platform::queue_id_type id_type;
                typedef M message_type;
 
                //! so it can be used with ipc_wrapper
-               typedef key_type ipc_type;
+               typedef id_type ipc_type;
 
-               WriteMessage( key_type key)
+               WriteMessage( id_type id)
                {
                   reset();
-                  queue_key = key;
-
+                  queue_id = id;
                }
 
                template< typename T>
@@ -59,15 +58,15 @@ namespace casual
                static void reset()
                {
                   replies.clear();
-                  queue_key = 0;
+                  queue_id = 0;
                }
 
-               static key_type queue_key;
+               static id_type queue_id;
                static std::vector< message_type> replies;
             };
 
             template< typename M>
-            typename WriteMessage< M>::key_type WriteMessage< M>::queue_key = 0;
+            typename WriteMessage< M>::id_type WriteMessage< M>::queue_id = 0;
 
             template< typename M>
             std::vector< M> WriteMessage< M>::replies = std::vector< message_type>{};
@@ -78,15 +77,15 @@ namespace casual
             template< typename M>
             struct ReadMessage
             {
-               typedef common::platform::queue_key_type key_type;
+               typedef common::platform::queue_id_type id_type;
                typedef M message_type;
 
                //! so it can be used with ipc_wrapper
-               typedef key_type ipc_type;
+               typedef id_type ipc_type;
 
-               ReadMessage( key_type key)
+               ReadMessage( id_type id)
                {
-                  queue_key = key;
+                  queue_id = id;
                }
 
                template< typename T>
@@ -102,15 +101,15 @@ namespace casual
                static void reset()
                {
                   replies.clear();
-                  queue_key = 0;
+                  queue_id = 0;
                }
 
-               static key_type queue_key;
+               static id_type queue_id;
                static std::deque< message_type> replies;
             };
 
             template< typename M>
-            typename ReadMessage< M>::key_type ReadMessage< M>::queue_key = 0;
+            typename ReadMessage< M>::id_type ReadMessage< M>::queue_id = 0;
 
             template< typename M>
             std::deque< M> ReadMessage< M>::replies = std::deque< message_type>{};

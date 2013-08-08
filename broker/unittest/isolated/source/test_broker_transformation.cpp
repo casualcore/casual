@@ -20,10 +20,10 @@ namespace casual
 
       TEST( casual_broker_transformation, server_to_serverVO)
       {
-         broker::Server server;
-         server.path = "a/b/c";
-         server.pid = 10;
-         server.queue_key = 666;
+         auto server = std::make_shared< broker::Server>();
+         server->path = "a/b/c";
+         server->pid = 10;
+         server->queue_id = 666;
 
          //auto transformer = transform::Chain::link( transform::Server());
          admin::transform::Server transformer;
@@ -40,10 +40,10 @@ namespace casual
 
       TEST( casual_broker_transformation, set_server_to_serverVO)
       {
-         broker::Server server;
-         server.path = "a/b/c";
-         server.pid = 10;
-         server.queue_key = 666;
+         auto server = std::make_shared< broker::Server>();
+         server->path = "a/b/c";
+         server->pid = 10;
+         server->queue_id = 666;
 
          State::server_mapping_type serverMapping{ { 10, server}};
 

@@ -220,6 +220,7 @@ namespace casual
 
                   try
                   {
+                     logger::information << "terminated";
                      //
                      // Call tpsrvdone
                      //
@@ -261,7 +262,7 @@ namespace casual
                   //
                   // Set the call-chain-id for this "chain"
                   //
-                  calling::Context::instance().setCallId( message.callId);
+                  calling::Context::instance().callId( message.callId);
 
 
                   //
@@ -293,7 +294,7 @@ namespace casual
                      }
 
 
-                     calling::Context::instance().setCurrentService( message.service.name);
+                     calling::Context::instance().currentService( message.service.name);
 
                      TPSVCINFO serviceInformation = transform::ServiceInformation()( message);
 

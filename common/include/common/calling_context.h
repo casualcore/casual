@@ -74,11 +74,11 @@ namespace casual
 
             void clean();
 
-            void setCallId( const common::Uuid& uuid);
+            void callId( const common::Uuid& uuid);
+            const common::Uuid& callId() const;
 
-            void setCurrentService( const std::string& service);
-
-            //State& getState() { return m_state;}
+            void currentService( const std::string& service);
+            const std::string& currentService() const;
 
          private:
 
@@ -102,8 +102,8 @@ namespace casual
             void consume();
 
 
-            ipc::send::Queue& m_brokerQueue = ipc::getBrokerQueue();
-            ipc::receive::Queue& m_receiveQueue = ipc::getReceiveQueue();
+            //ipc::send::Queue& m_brokerQueue = ipc::getBrokerQueue();
+            //ipc::receive::Queue& m_receiveQueue = ipc::getReceiveQueue();
 
 
             State m_state;

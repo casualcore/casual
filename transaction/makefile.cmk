@@ -23,21 +23,28 @@ LIBRARY_PATHS = bin \
 //
 // Compile and link the transaction manager
 //
-Compile( source/manager.cpp, obj/manager.o)
-
-
-LinkArchive( casual_transaction_manager,\
-   obj/manager.o \
-   )
-    
-    
+Compile( source/manager.cpp, obj/manager.o)    
 Compile( source/manager_main.cpp, obj/manager_main.o)
 
 LinkExecutable( casual-transaction-manager,\
-    obj/manager_main.o,\
-    casual_transaction_manager casual-sf casual-common casual-configuration sqlite3)
+    obj/manager.o \
+    obj/manager_main.o \
+    ,\
+    casual-sf casual-common casual-configuration sqlite3)
 
 
+
+//
+// Compile and link resurce-proxy-server archive
+//
+Compile( source/resource_proxy_server.cpp, obj/resource_proxy_server.o)
+Compile( source/resource_proxy.cpp, obj/resource_proxy.o)
+
+LinkLibrary( casual-resource-proxy-server,\
+   obj/resource_proxy_server.o \
+   obj/resource_proxy.o \
+   ,\
+   casual-common)
 
 
 //
@@ -47,8 +54,9 @@ Compile( unittest/isolated/source/test_configuration.cpp, obj/test_configuration
 
 LinkIsolatedUnittest( test_transaction_configuration,\
     obj/test_configuration.o \
+    obj/manager.o \
     , \
-    casual_transaction_manager casual-common casual-sf casual-configuration sqlite3)
+    casual-common casual-sf casual-configuration sqlite3)
 
 
 

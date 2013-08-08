@@ -89,6 +89,19 @@ namespace casual
          dispatch2( values);
 
          EXPECT_TRUE( conf.long_value == 234);
+
+
+         argument::internal::value::Holder< long> holder( conf.long_value);
+         holder( 888);
+         EXPECT_TRUE( conf.long_value == 888);
+
+         {
+            local::Conf conf;
+            // bind to value
+            auto dispatch3 = argument::internal::make( argument::cardinality::One(), conf.long_value);
+            dispatch3( values);
+            EXPECT_TRUE( conf.long_value == 234);
+         }
       }
 
 
@@ -106,7 +119,7 @@ namespace casual
 
          EXPECT_FALSE( conf.called );
 
-         arguments.parse( { "-f"});
+         arguments.parse(  "processname", { "-f"});
 
          EXPECT_TRUE( conf.called);
 
@@ -123,7 +136,7 @@ namespace casual
                argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setString)
          );
 
-         arguments.parse( { "-f" ,"someValue"});
+         arguments.parse(  "processname", { "-f" ,"someValue"});
 
          EXPECT_TRUE( conf.string_value == "someValue");
 
@@ -141,7 +154,7 @@ namespace casual
                argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setLong)
          );
 
-         arguments.parse( { "-f" ,"42"});
+         arguments.parse(  "processname", { "-f" ,"42"});
 
          EXPECT_TRUE( conf.long_value == 42);
 
@@ -159,7 +172,7 @@ namespace casual
                argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorString)
          );
 
-         arguments.parse( { "-f" ,"42", "666", "777"});
+         arguments.parse(  "processname", { "-f" ,"42", "666", "777"});
 
          EXPECT_TRUE( conf.vector_string_value.size() == 3);
 
@@ -176,7 +189,7 @@ namespace casual
                argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
          );
 
-         arguments.parse( { "-f" ,"42", "666", "777"});
+         arguments.parse(  "processname", { "-f" ,"42", "666", "777"});
 
          EXPECT_TRUE( conf.vector_long_value.size() == 3);
 
@@ -193,7 +206,7 @@ namespace casual
                argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
          );
 
-         arguments.parse( { "-f" ,"42", "666", "777"});
+         arguments.parse(  "processname", { "-f" ,"42", "666", "777"});
 
          EXPECT_TRUE( conf.vector_long_value.size() == 3);
 
@@ -210,7 +223,7 @@ namespace casual
                argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
          );
 
-         arguments.parse( { "-f" });
+         arguments.parse(  "processname", { "-f" });
 
          EXPECT_TRUE( conf.vector_long_value.size() == 0);
 
@@ -227,8 +240,27 @@ namespace casual
                argument::directive( argument::cardinality::Fixed< 3>(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)
          );
 
-         arguments.parse( { "-f" ,"42", "666", "777"});
+         arguments.parse(  "processname", { "-f" ,"42", "666", "777"});
 
+         EXPECT_TRUE( conf.vector_long_value.size() == 3);
+
+      }
+
+      TEST( casual_common_arguments, two_directive_deduced_cardinality__member_function_vector_long_and_string)
+      {
+
+         local::Conf conf;
+
+         Arguments arguments;
+
+         arguments.add(
+            argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong),
+            argument::directive( { "-b", "--bar"}, "some bar stuff", conf, &local::Conf::setVectorString)
+         );
+
+         arguments.parse(  "processname", { "-b" ,"1", "2", "3", "-f" ,"42", "666", "777"});
+
+         EXPECT_TRUE( conf.vector_string_value.size() == 3);
          EXPECT_TRUE( conf.vector_long_value.size() == 3);
 
       }

@@ -76,10 +76,11 @@ Compile( unittest/isolated/source/test_broker_transformation.cpp, unittest/isola
 
 
 LinkIsolatedUnittest( casual-broker-isolated, \
+   obj/action.o \
 	unittest/isolated/obj/test_broker.o \
 	unittest/isolated/obj/test_broker_confguration.o \
 	unittest/isolated/obj/test_broker_transformation.o, \
-	casual-common casual-sf casual-broker-admin-vo casual-configuration)
+   casual-common casual-sf casual-broker-admin-vo casual-configuration)
 	
 	
 

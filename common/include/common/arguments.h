@@ -14,7 +14,7 @@
 #include <limits>
 #include <algorithm>
 #include <functional>
-
+#include <sstream>
 #include <type_traits>
 
 
@@ -63,14 +63,6 @@ namespace casual
             using OneMany = Min< 1>;
 
          }
-
-         enum class Cardinality
-         {
-            zero,
-            one,
-            oneMany,
-            any,
-         };
 
          class Base
          {
@@ -163,6 +155,36 @@ namespace casual
                F m_caller;
             };
 
+            namespace value
+            {
+               template< typename V>
+               struct Holder
+               {
+                  Holder( V& value) : m_value( &value) {}
+
+                  template< typename T>
+                  void operator () ( T&& value) const
+                  {
+                     (*m_value) = std::forward< T>( value);
+                  }
+
+                  V* m_value;
+               };
+
+               template<>
+               struct Holder< bool>
+               {
+                  Holder( bool& value) : m_value( &value) {}
+
+                  void operator () () const
+                  {
+                     (*m_value) = true;
+                  }
+
+                  bool* m_value;
+               };
+            } // value
+
 
             namespace deduce
             {
@@ -187,12 +209,25 @@ namespace casual
                   typedef void type;
                };
 
+               template<>
+               struct helper< bool>
+               {
+                  typedef cardinality::Zero cardinality;
+                  typedef bool type;
+               };
+
 
                template< typename O>
                cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
 
                template< typename O, typename T>
                auto cardinality( O&, void (O::*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               {
+                  return typename helper< typename std::decay< T>::type>::cardinality();
+               }
+
+               template< typename T>
+               auto cardinality( T& value ) -> typename helper< typename std::decay< T>::type>::cardinality
                {
                   return typename helper< typename std::decay< T>::type>::cardinality();
                }
@@ -210,21 +245,15 @@ namespace casual
                   typedef dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce::helper< typename std::decay< T>::type>::type> result_type;
                   return result_type( std::bind( member, &object, _1));
                }
-            };
 
-            /*
-            template<>
-            struct maker< cardinality::One>
-            {
-
-               template< typename O, typename T>
-               auto static make( O& object, void (O::*member)( T)) -> dispatch< cardinality::One, decltype( std::bind( member, &object, _1)), typename std::decay< T>::type>
+               template< typename T>
+               auto static make( T& value) -> dispatch< C, value::Holder< T>, T>
                {
-                  typedef dispatch< cardinality::One, decltype( std::bind( member, &object, _1)), typename std::decay< T>::type> result_type;
-                  return result_type( std::bind( member, &object, _1));
+                  typedef dispatch< C, value::Holder< T>, T> result_type;
+                  return result_type( value);
                }
             };
-            */
+
 
             template<>
             struct maker< cardinality::Zero>
@@ -236,6 +265,13 @@ namespace casual
                   typedef dispatch< cardinality::Zero, decltype( std::bind( member, &object)), void> result_type;
                   return result_type( std::bind( member, &object));
                }
+
+               auto static make( bool& value) -> dispatch< cardinality::Zero, value::Holder< bool>, bool>
+               {
+                  typedef dispatch< cardinality::Zero, value::Holder< bool>, bool> result_type;
+                  return result_type( value);
+               }
+
             };
 
 
@@ -269,12 +305,11 @@ namespace casual
 
          } // internal
 
-         //template< typename C>
+
          class Directive : public Base
          {
          public:
 
-            //typedef C cardinality_type;
 
             template< typename C, typename... Args>
             Directive( C cardinality, const std::vector< std::string>& options, const std::string& description, Args&&... args)
@@ -289,7 +324,6 @@ namespace casual
 
             bool option( const std::string& option) const override
             {
-               //std::cout << "option: " << option << " description: " << m_description << std::endl;
                return std::find( std::begin( m_options), std::end( m_options), option) != std::end( m_options);
             }
 
@@ -306,7 +340,10 @@ namespace casual
 
             void dispatch() const override
             {
-               (*m_dispatch)( m_values);
+               if( m_assigned)
+               {
+                  (*m_dispatch)( m_values);
+               }
             }
 
          private:
@@ -405,6 +442,10 @@ namespace casual
       {
       public:
 
+         Arguments() = default;
+         Arguments( const std::string& description) : m_description( description) {}
+
+
          template< typename... Args>
          void add( Args&&... args)
          {
@@ -412,15 +453,24 @@ namespace casual
          }
 
 
-         bool parse( int argc, const char** argv)
+         //!
+         //! @attention assumes first argument is process name.
+         //!
+         bool parse( int argc, char** argv)
          {
-            std::vector< std::string> arguments{ argv, argv + argc};
-            return parse( arguments);
-
+            if( argc > 0)
+            {
+               std::vector< std::string> arguments{ argv + 1, argv + argc};
+               return parse( argv[ 0], arguments);
+            }
+            return false;
          }
 
-         bool parse( const std::vector< std::string>& arguments)
+         bool parse( const std::string& processName, const std::vector< std::string>& arguments)
          {
+            m_processName = processName;
+
+
             //
             // Find first argument that has a handler
             //
@@ -467,8 +517,11 @@ namespace casual
             return true;
          }
 
+         const std::string& processName() { return m_processName;}
 
-
+      private:
+         std::string m_description;
+         std::string m_processName;
       };
 
 

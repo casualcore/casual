@@ -36,6 +36,16 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 3);
       }
 
+      TEST( casual_common_string, from_string_int)
+      {
+         EXPECT_TRUE( from_string< int>( "42") == 42);
+      }
+
+      TEST( casual_common_string, from_string_long)
+      {
+         EXPECT_TRUE( from_string< long>( "42") == 42);
+      }
+
    }
 }
 

@@ -36,19 +36,19 @@ namespace casual
          EXPECT_TRUE( pid != process::id());
 
          // wait for it..
-         EXPECT_TRUE( process::wait( pid) == pid);
+         EXPECT_TRUE( process::wait( pid) == 0);
       }
 
       TEST( casual_common_process, spawn_one_process_with_argument)
       {
 
-         platform::pid_type pid = process::spawn( local::processPath(), { "-f", "foo", "-b", "bar" });
+         platform::pid_type pid = process::spawn( local::processPath(), { "-r", "42" });
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
 
          // wait for it..
-         EXPECT_TRUE( process::wait( pid) == pid);
+         EXPECT_TRUE( process::wait( pid) == 42);
       }
 
       TEST( casual_common_process, spawn_one_process_check_termination)
@@ -71,9 +71,11 @@ namespace casual
 
       TEST( casual_common_process, spawn_non_existing_application__gives_exception)
       {
+         auto pid = process::spawn( local::processPath() + "_non_existing_file", {});
+
          EXPECT_THROW({
-            process::spawn( local::processPath() + "_non_existing_file", {});
-         }, exception::FileNotExist);
+            process::wait( pid);
+         }, exception::Base);
 
       }
    }

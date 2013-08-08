@@ -15,7 +15,8 @@ domain:
    
 
   groups: 
-    - name: casaul
+    # keep it 5 groups, or you have to alter a few test cases
+    - name: casual
       note: Group that all the casual stuff should be member of
       
     - name: group1        
@@ -32,13 +33,17 @@ domain:
         instances: 3
         openinfo: "db=test2,uid=db2,pwd=db2"
         
-    - name: group3
-      note: Some logical group
-      
+   
     - name: group4
       note: Dependent on group3
       dependecies:
         - group3
+        - casual
+             
+    - name: group3
+      note: Some logical group
+      dependecies:
+        - casual
       
     
   servers: 

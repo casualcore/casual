@@ -6,12 +6,23 @@
 //!
 
 
-#include <iostream>
+#include "common/arguments.h"
+#include "common/process.h"
 
+
+using namespace casual::common;
 
 int main( int argc, char** argv)
 {
-   std::cout << "process started: " << argv[ 0] << std::endl;
+   Arguments args;
 
-   return 0;
+   int returnValue = 0;
+
+   args.add( argument::directive( {"-r"}, "bla", returnValue));
+
+   args.parse( argc, argv);
+
+   process::sleep( std::chrono::milliseconds( 100));
+
+   return returnValue;
 }

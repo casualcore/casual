@@ -40,12 +40,47 @@ namespace casual
 
          };
 
+         struct ResourceConnect : public Base
+         {
+            typedef message::transaction::reply::resource::Connect message_type;
+
+            using Base::Base;
+
+            void dispatch( message_type& message)
+            {
+               auto resource = m_state.findResource( message.id.pid);
+
+               if( resource != std::end( m_state.resources))
+               {
+                  logger::debug << "transaction manager pid: " << message.id.pid << " connected";
+
+                  auto instance = std::find_if( std::begin( resource->servers), std::end( resource->servers), filter::Instance( message.id.pid));
+
+                  if( message.state == XA_OK)
+                  {
+                     instance->state = resource::Proxy::Instance::State::idle;
+                     instance->id = std::move( message.id);
+
+                  }
+                  else
+                  {
+                     instance->state = resource::Proxy::Instance::State::startupError;
+                  }
+
+               }
+               else
+               {
+                  logger::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard";
+               }
+            }
+
+         };
+
          struct Begin : public Base
          {
             typedef message::transaction::Begin message_type;
 
-            // TODO: using Base::Base;
-            Begin( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -61,7 +96,6 @@ namespace casual
                m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.server.pid, state, started);
 
                m_state.pendingReplies.push_back( std::move( reply));
-
             }
          };
 
@@ -69,8 +103,7 @@ namespace casual
          {
             typedef message::transaction::Commit message_type;
 
-            // TODO: using Base::Base;
-            Commit( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -82,8 +115,7 @@ namespace casual
          {
             typedef message::transaction::Rollback message_type;
 
-            // TODO: using Base::Base;
-            Rollback( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -155,8 +187,40 @@ namespace casual
             } // transform
 
 
+            struct StartProxie : handle::Base
+            {
+               using handle::Base::Base;
+
+               void operator () ( resource::Proxy& proxy)
+               {
+                  for( auto index = proxy.instances; index > 0; --index)
+                  {
+                     auto& info = m_state.resourceMapping.at( proxy.key);
+
+                     resource::Proxy::Instance instance;
+
+                     instance.id.pid = process::spawn(
+                           info.server,
+                           {
+                                 "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
+                                 "--rm-key", info.key,
+                                 "--rm-openinfo", proxy.openinfo,
+                                 "--rm-closeinfo", proxy.closeinfo
+                           }
+                        );
+
+                     instance.state = resource::Proxy::Instance::State::started;
+
+                     proxy.servers.emplace_back( std::move( instance));
+                  }
+               }
+            };
+
          } // <unnamed>
       } // local
+
+
+
 
 
       void configureResurceProxies( State& state)
@@ -192,12 +256,18 @@ namespace casual
                std::back_inserter( state.resources),
                local::transform::Group());
          }
+      }
+
+
+      void startResurceProxies( State& state)
+      {
+         common::trace::Exit log( "transaction manager start resource proxies");
+
 
       }
 
 
       State::State( const std::string& database) : db( database) {}
-
 
 
       Manager::Manager(const std::vector<std::string>& arguments) :
@@ -213,9 +283,60 @@ namespace casual
          common::environment::file::executable( name);
 
 
-
-
          local::createTables( m_state.db);
+
+
+         configureResurceProxies( m_state);
+
+
+      }
+
+      Manager::~Manager()
+      {
+         try
+         {
+            common::trace::Exit temp( "terminate child processes");
+
+            //
+            // We need to terminate all children
+            //
+            for( auto& resource : m_state.resources)
+            {
+               for( auto& instances : resource.servers)
+               {
+                  logger::information << "terminate: " << instances.id.pid;
+                  process::terminate( instances.id.pid);
+               }
+            }
+
+            for( auto pid : process::terminated())
+            {
+               logger::information << "shutdown: " << pid;
+            }
+
+         }
+         catch( ...)
+         {
+            common::error::handler();
+         }
+
+      }
+
+      void Manager::start()
+      {
+         common::Trace trace( "transaction::Manager::start");
+
+         //
+         // Start the rm-proxy-servers
+         //
+         {
+            common::trace::Exit trace( "transaction manager start rm-proxy-servers");
+
+            std::for_each(
+               std::begin( m_state.resources),
+               std::end( m_state.resources),
+               local::StartProxie( m_state));
+         }
 
          {
             common::trace::Exit trace( "transaction manager notify broker");
@@ -225,17 +346,13 @@ namespace casual
             //
             message::transaction::Connect message;
 
-            message.path = name;
+            message.path = common::environment::file::executable();
             message.server.queue_id = m_receiveQueue.id();
 
             queue::blocking::Writer writer( ipc::getBrokerQueue());
             writer(message);
          }
-      }
 
-      void Manager::start()
-      {
-         common::Trace trace( "transaction::Manager::start");
 
          //
          // prepare message dispatch handlers...
@@ -299,7 +416,7 @@ namespace casual
          {
             struct Send
             {
-               bool operator () ( const pending::Reply& reply) const
+               bool operator () ( pending::Reply& reply) const
                {
                   queue::ipc_wrapper< queue::non_blocking::Writer> writer( reply.target);
                   return writer( reply.reply);
@@ -332,6 +449,8 @@ namespace casual
 
          m_state.pendingReplies.clear();
       }
+
+
 
       std::string Manager::databaseFileName()
       {

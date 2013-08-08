@@ -11,6 +11,7 @@
 #include <string>
 
 #include <regex>
+#include <algorithm>
 
 namespace casual
 {
@@ -85,6 +86,21 @@ namespace casual
 			   return split( line, std::regex( regexp));
          }
          */
+
+			inline std::string join( const std::vector< std::string>& strings, const std::string& delimiter = "")
+			{
+			   std::string result;
+
+			   for( auto& string : strings)
+			   {
+			      if( ! result.empty())
+			      {
+			         result.append( delimiter);
+			      }
+			      result.append( string);
+			   }
+			   return result;
+			}
 
 
 

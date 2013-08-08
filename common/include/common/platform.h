@@ -79,7 +79,6 @@ namespace casual
 			// ipc
 			//
 			typedef int queue_id_type;
-			typedef key_t queue_key_type;
 			typedef long message_type_type;
 
 

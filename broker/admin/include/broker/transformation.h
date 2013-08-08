@@ -27,14 +27,14 @@ namespace casual
 
             struct Server
             {
-               admin::ServerVO operator () ( const broker::Server& value) const
+               admin::ServerVO operator () ( const std::shared_ptr< broker::Server>& value) const
                {
                   admin::ServerVO result;
 
-                  result.setPath( value.path);
-                  result.setPid( value.pid);
-                  result.setQueue( value.queue_key);
-                  result.setIdle( value.idle);
+                  result.setPath( value->path);
+                  result.setPid( value->pid);
+                  result.setQueue( value->queue_id);
+                  result.setIdle( value->state != broker::Server::State::busy);
 
                   return result;
                }
@@ -42,7 +42,7 @@ namespace casual
 
             struct Pid
             {
-               broker::Server::pid_type operator () ( const broker::Server* value) const
+               broker::Server::pid_type operator () ( const std::shared_ptr< broker::Server>& value) const
                {
                   return value->pid;
                }
