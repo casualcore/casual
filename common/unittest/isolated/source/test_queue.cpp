@@ -11,6 +11,7 @@
 #include "common/ipc.h"
 #include "common/message.h"
 #include "common/exception.h"
+#include "common/signal.h"
 
 //temp
 

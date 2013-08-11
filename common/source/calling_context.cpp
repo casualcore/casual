@@ -15,6 +15,7 @@
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/trace.h"
+#include "common/signal.h"
 
 #include "xatmi.h"
 

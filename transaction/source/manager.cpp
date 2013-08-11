@@ -270,25 +270,17 @@ namespace casual
       State::State( const std::string& database) : db( database) {}
 
 
-      Manager::Manager(const std::vector<std::string>& arguments) :
+      Manager::Manager( const Settings& settings) :
           m_receiveQueue( ipc::getReceiveQueue()),
-          m_state( databaseFileName())
+          m_state( settings.database)
       {
          common::trace::Exit trace( "transaction manager startup");
 
-         //
-         // TODO: Use a correct argument handler
-         //
-         const std::string name = ! arguments.empty() ? arguments.front() : std::string("");
-         common::environment::file::executable( name);
 
 
          local::createTables( m_state.db);
 
-
          configureResurceProxies( m_state);
-
-
       }
 
       Manager::~Manager()
@@ -309,9 +301,10 @@ namespace casual
                }
             }
 
-            for( auto pid : process::terminated())
+
+            for( auto death : process::lifetime::ended())
             {
-               logger::information << "shutdown: " << pid;
+               logger::information << "shutdown: " << death.string();
             }
 
          }

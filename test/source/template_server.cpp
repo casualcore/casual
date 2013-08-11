@@ -55,7 +55,7 @@ void casual_test2( TPSVCINFO *serviceContext)
 
    casual::common::logger::debug << "casual_test2 called - sleep for a while...";
 
-   casual::common::process::sleep(  std::chrono::milliseconds( 5));
+   casual::common::process::sleep(  std::chrono::milliseconds( 200));
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }

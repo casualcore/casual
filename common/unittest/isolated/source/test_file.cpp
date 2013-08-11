@@ -134,14 +134,14 @@ namespace casual
 
       TEST(casual_common_directory, create_one_level__expect_true)
       {
-         file::ScopedPath path( environment::directory::temporary() + "/" + Uuid::make().string());
+         file::ScopedPath path( environment::directory::temporary() + "/test_create_recursive_" + Uuid::make().string());
 
          EXPECT_TRUE( directory::create( path));
       }
 
       TEST(casual_common_directory, create_two_level__expect_true)
       {
-         file::ScopedPath path( environment::directory::temporary() + "/" + Uuid::make().string() + "/level2/level3");
+         file::ScopedPath path( environment::directory::temporary() + "/test_create_recursive_" + Uuid::make().string() + "/level2/level3");
 
          EXPECT_TRUE( directory::create( path));
       }

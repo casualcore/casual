@@ -99,15 +99,18 @@ namespace casual
 		      //
 		      // We need to terminate all children
 		      //
+		      /*
 		      for( auto pid : m_state.processes)
 		      {
 		         process::terminate( pid);
 		      }
 
-		      for( auto pid : process::terminated())
+
+		      for( auto& death : process::lifetime::ended())
 		      {
-		         logger::information << "shutdown: " << pid;
+		         logger::information << "shutdown: " << death.string();
 		      }
+		      */
 
 		   }
 		   catch( ...)
@@ -116,32 +119,32 @@ namespace casual
 		   }
 		}
 
-      void Broker::start( const std::vector< std::string>& arguments)
+      void Broker::start( const Settings& arguments)
       {
          common::trace::Exit temp( "broker start");
+
+         broker::QueueBlockingReader blockingReader( m_state, m_receiveQueue);
 
          //
          // Initialize configuration and such
          //
          {
-            common::environment::file::executable( arguments.at( 0));
 
             //
             // Make the key public for others...
             //
             local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
-            // local::exportBrokerQueueKey( m_receiveQueue, common::environment::file::brokerQueue());
 
 
             config::domain::Domain domain;
 
             try
             {
-               domain = config::domain::get();
+               domain = config::domain::get( arguments.configurationfile);
             }
             catch( const exception::FileNotExist& exception)
             {
-               common::logger::information << "broker: no configuration file was found - using default";
+               common::logger::information << "failed to open '" << arguments.configurationfile << "' - starting anyway...";
             }
 
 
@@ -150,36 +153,16 @@ namespace casual
             {
                common::trace::Exit trace( "start processes");
 
+
+
                //
                // Start the servers...
                // TODO: Need to do more config
                //
-               /*
-               std::for_each(
-                     std::begin( domain.servers),
-                     std::end( domain.servers),
-                     action::server::Start( m_state));
-                     */
-
-               auto terminated = process::terminated();
-               common::logger::debug << "#terminated; " << terminated.size();
-
-            }
-
-
-            {
-               common::trace::Exit trace( "transaction monitor connect");
-
-               //
-               // We have to wait for TM
-               //
-               queue::blocking::Reader queueReader( m_receiveQueue);
-
-               handle::TransactionManagerConnect::message_type message;
-               queueReader( message);
-
                handle::TransactionManagerConnect tmConnect( m_state);
-               tmConnect.dispatch( message);
+               handle::Connect instanceConnect( m_state);
+               action::boot::domain( m_state, domain, blockingReader, tmConnect, instanceConnect);
+
             }
 
          }
@@ -219,8 +202,15 @@ namespace casual
             handler.add< handle::Call>( arguments, m_state);
          }
 
-         message::dispatch::pump( handler);
+         while( true)
+         {
+            auto marshal = blockingReader.next();
 
+            if( ! handler.dispatch( marshal))
+            {
+               common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+            }
+         }
 		}
 
 	} // broker

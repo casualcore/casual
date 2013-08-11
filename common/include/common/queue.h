@@ -11,7 +11,6 @@
 #include "common/ipc.h"
 #include "common/message.h"
 #include "common/marshal.h"
-#include "common/signal.h"
 
 
 #include <list>
@@ -210,6 +209,7 @@ namespace casual
 
             template< typename... Args>
             ipc_wrapper( Args&& ...args) : m_ipcQueue( std::forward< Args>( args)...), m_queue( m_ipcQueue) {}
+
 
             ipc_wrapper( ipc_wrapper&&) = default;
 

@@ -24,6 +24,7 @@ LIBRARY_PATHS = ../common/bin \
 //
 // VO
 //
+/*
 Compile( admin/source/servicevo.cpp, admin/obj/servicevo.o)
 Compile( admin/source/servervo.cpp, admin/obj/servervo.o)
 
@@ -32,7 +33,7 @@ LinkLibrary( casual-broker-admin-vo, \
     admin/obj/servervo.o \
     ,\
     casual-sf ) 
-
+*/
 	
 
 Compile( source/broker.cpp, obj/broker.o)
@@ -54,7 +55,9 @@ LinkExecutable( casual-broker, \
 	casual-sf \
    casual-xatmi \
    casual-configuration \
-   casual-broker-admin-vo)
+   )
+   
+   //casual-broker-admin-vo )
 	
 	
 //
@@ -64,7 +67,7 @@ Compile( admin/source/broker_admin.cpp, obj/broker_admin.o)
 
 LinkExecutable( casual-broker-admin, \
     obj/broker_admin.o, \
-    casual-common casual-sf casual-xatmi casual-broker-admin-vo)
+    casual-common casual-sf casual-xatmi)
 	
 	
 //
@@ -80,7 +83,7 @@ LinkIsolatedUnittest( casual-broker-isolated, \
 	unittest/isolated/obj/test_broker.o \
 	unittest/isolated/obj/test_broker_confguration.o \
 	unittest/isolated/obj/test_broker_transformation.o, \
-   casual-common casual-sf casual-broker-admin-vo casual-configuration)
-	
+   casual-common casual-sf casual-configuration)
+
 	
 

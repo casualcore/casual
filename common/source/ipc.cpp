@@ -140,6 +140,10 @@ namespace casual
 
             bool Queue::send( message::Transport& message, const long flags) const
             {
+               //
+               // We have to check and process (throw) pending signals before we might block
+               //
+               common::signal::handle();
                auto result = msgsnd( m_id, message.raw(), message.size(), flags);
 
                if( result == -1)
@@ -161,7 +165,6 @@ namespace casual
                      }
                   }
                }
-
                return true;
             }
 
@@ -178,9 +181,6 @@ namespace casual
                // Write queue information
                //
                std::ofstream ipcQueueFile( m_scopedPath.path());
-
-               //auto key = ftok( m_scopedPath.path().c_str(), 'X');
-               //m_id = msgget( key, 0660 | IPC_CREAT);
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl
@@ -326,6 +326,10 @@ namespace casual
 
             bool Queue::receive( message::Transport& message, const long flags)
             {
+               //
+               // We have to check and process (throw) pending signals before we might block
+               //
+               common::signal::handle();
                auto result = msgrcv( m_id, message.raw(), message.size(), 0, flags);
 
                if( result == -1)

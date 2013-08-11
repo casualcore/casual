@@ -27,6 +27,10 @@ namespace casual
 {
    namespace transaction
    {
+      struct Settings
+      {
+         std::string database;
+      };
 
       namespace pending
       {
@@ -151,7 +155,7 @@ namespace casual
       public:
 
 
-         Manager( const std::vector< std::string>& arguments);
+         Manager( const Settings& settings);
 
          ~Manager();
 

@@ -16,6 +16,7 @@
 
 #include "common/ipc.h"
 #include "common/message.h"
+#include "common/environment.h"
 
 
 #include <vector>
@@ -55,14 +56,15 @@ namespace casual
 	   inline bool operator == ( const std::shared_ptr< Group>& lhs, const std::shared_ptr< Group>& rhs) { return lhs->name == rhs->name;}
 
 
-
+	   struct Service;
 
 		struct Server
 		{
 		   typedef common::message::server::Id::pid_type pid_type;
 
-		   //struct Instance
-		   //{
+		   struct Instance
+		   {
+
             enum class State
             {
                absent,
@@ -72,33 +74,36 @@ namespace casual
                shutdown
             };
 
+            void alterState( State state)
+            {
+               this->state = state;
+               last = common::clock_type::now();
+            }
+
+
             pid_type pid = 0;
             common::message::server::Id::queue_id_type queue_id = 0;
+            std::shared_ptr< Server> server;
+            std::vector< std::shared_ptr< Service>> services;
+            std::size_t invoked = 0;
+            common::time_type last;
+		   //private:
             State state = State::absent;
-
-            //std::shared_ptr< Server> server;
-
-            /*
-            bool operator < ( const Instance& rhs) const
-            {
-               return pid < rhs.pid;
-            }
-            */
-		   //};
+		   };
 
 
 		   std::string alias;
 			std::string path;
 			std::string note;
+			std::vector< std::string> arguments;
 
 			std::vector< std::shared_ptr< Group>> memberships;
 
-			//std::vector< Instance> instances;
+			std::vector< std::shared_ptr< Server::Instance>> instances;
 
+			std::vector< std::string> restrictions;
 
 		};
-
-
 
 
 		struct Service
@@ -107,15 +112,9 @@ namespace casual
 
 			Service() {}
 
-			/*
-			void add( Server* server)
-			{
-				servers.push_back( server);
-			}
-			*/
-
 			common::message::Service information;
-			std::vector< std::shared_ptr< Server>> servers;
+			std::size_t lookedup = 0;
+			std::vector< std::shared_ptr< Server::Instance>> instances;
 		};
 
 
@@ -136,23 +135,36 @@ namespace casual
 
 		struct State
 		{
-		   typedef std::unordered_map< Server::pid_type, std::shared_ptr< Server>> server_mapping_type;
-		   typedef std::unordered_map< std::string, Service> service_mapping_type;
+
+		   typedef std::unordered_map< std::string, std::shared_ptr< Server>> server_mapping_type;
+		   typedef std::unordered_map< Server::pid_type, std::shared_ptr< Server::Instance>> instance_mapping_type;
+		   typedef std::unordered_map< std::string, std::shared_ptr< Service>> service_mapping_type;
 		   typedef std::deque< common::message::service::name::lookup::Request> pending_requests_type;
 
 		   typedef std::map< std::string, std::shared_ptr< Group>> group_mapping_type;
 
 		   server_mapping_type servers;
+		   instance_mapping_type instances;
 		   service_mapping_type services;
-		   pending_requests_type pending;
 		   group_mapping_type groups;
 
-		   std::vector< common::platform::pid_type> processes;
+		   pending_requests_type pending;
+
+		   //std::vector< common::platform::pid_type> processes;
 
 		   // TODO: Temp
 		   common::platform::queue_id_type monitorQueue = 0;
 
+		   std::shared_ptr< Server> transactionManager;
+
 		   common::platform::queue_id_type transactionManagerQueue = 0;
+
+		};
+
+		struct Settings
+		{
+
+		   std::string configurationfile = common::environment::file::configuration();
 
 		};
 
@@ -163,7 +175,7 @@ namespace casual
 		   static Broker& instance();
 			~Broker();
 
-			void start( const std::vector< std::string>& arguments);
+			void start( const Settings& arguments);
 
 
 			//void addServers( const std::vector< action::server::>)

@@ -27,7 +27,7 @@ namespace casual
       {
          State state;
 
-         auto domain = config::domain::get();
+         auto domain = config::domain::get( common::file::basedir( __FILE__) + "/../../../../configuration/domain.yaml");
 
          action::addGroups( state, domain);
 
@@ -47,7 +47,7 @@ namespace casual
       {
          State state;
 
-         auto domain = config::domain::get();
+         auto domain = config::domain::get( common::file::basedir( __FILE__) + "../../../../configuration/domain.yaml");
          action::addGroups( state, domain);
 
          auto bootOrder = action::bootOrder( state);

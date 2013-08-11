@@ -19,6 +19,7 @@ namespace casual
    {
       namespace action
       {
+         /*
          namespace server
          {
 
@@ -35,6 +36,7 @@ namespace casual
             }
 
          } // server
+         */
 
 
 
@@ -45,7 +47,7 @@ namespace casual
                auto group = std::make_shared< broker::Group>();
                group->name = g.name;
                group->note = g.note;
-               if( !g.resource.key.empty())
+               if( ! g.resource.key.empty())
                {
                   Group::Resource resource;
                   resource.key = g.resource.key;
@@ -103,14 +105,11 @@ namespace casual
                groups.push_back( g.second);
             }
 
-            //
-            // Find those that has no dependency first
-            //
-            auto start = std::begin( groups);
 
             //
             // First round we try to find 'root' groups, i.e. without any dependencies...
             //
+            auto start = std::begin( groups);
             auto parents_end = std::begin( groups);
 
             while( start != std::end( groups))

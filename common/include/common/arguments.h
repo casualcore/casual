@@ -220,8 +220,16 @@ namespace casual
                template< typename O>
                cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
 
+               cardinality::Zero cardinality( void (*)(void)) { return cardinality::Zero();}
+
                template< typename O, typename T>
                auto cardinality( O&, void (O::*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               {
+                  return typename helper< typename std::decay< T>::type>::cardinality();
+               }
+
+               template< typename, typename T>
+               auto cardinality( void (*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
                {
                   return typename helper< typename std::decay< T>::type>::cardinality();
                }
@@ -246,6 +254,13 @@ namespace casual
                   return result_type( std::bind( member, &object, _1));
                }
 
+               template< typename O, typename T>
+               auto static make( void (*function)( T)) -> dispatch< C, std::function<void()>, typename deduce::helper< typename std::decay< T>::type >::type>
+               {
+                  typedef dispatch< C, std::function<void()>, typename deduce::helper< typename std::decay< T>::type >::type> result_type;
+                  return result_type( function);
+               }
+
                template< typename T>
                auto static make( T& value) -> dispatch< C, value::Holder< T>, T>
                {
@@ -264,6 +279,12 @@ namespace casual
                {
                   typedef dispatch< cardinality::Zero, decltype( std::bind( member, &object)), void> result_type;
                   return result_type( std::bind( member, &object));
+               }
+
+               auto static make( void (*function)(void)) -> dispatch< cardinality::Zero, std::function<void()>, void>
+               {
+                  typedef dispatch< cardinality::Zero, std::function<void()>, void> result_type;
+                  return result_type( function);
                }
 
                auto static make( bool& value) -> dispatch< cardinality::Zero, value::Holder< bool>, bool>

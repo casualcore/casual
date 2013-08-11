@@ -1,9 +1,11 @@
 
+Include( $(CASUAL_BUILD_ENVIRONMENT))
 
 INCLUDE_PATHS= include \
    ../common/include \
    ../xatmi/include \
    ../serviceframework/include \
+   $(JSON_INCLUDE_PATH) \
    $(UNITTEST_INCLUDE_PATH)
 
 

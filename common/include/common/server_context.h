@@ -350,6 +350,7 @@ namespace casual
                            common::logger::warning << "could not write to monitor queue";
                         }
                      }
+                     calling::Context::instance().currentService( "");
                   }
                }
             private:

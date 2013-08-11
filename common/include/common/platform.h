@@ -138,6 +138,7 @@ namespace casual
 			static const signal_type cSignal_Kill = SIGKILL;
 			static const signal_type cSignal_Quit = SIGQUIT;
 			static const signal_type cSignal_Interupt = SIGINT;
+			static const signal_type cSignal_ChildTerminated = SIGCHLD;
 
 			std::string getSignalDescription( signal_type);
 

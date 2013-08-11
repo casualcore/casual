@@ -75,12 +75,13 @@ namespace casual
          //!
          int execute( const std::string& path, const std::vector< std::string>& arguments);
 
+
          //!
-         //! check if there are sub processes that has been terminated
+         //! check if there are child processes that has been terminated
          //!
          //! @return 0..N terminated process id's
          //!
-         std::vector< platform::pid_type> terminated();
+         //std::vector< platform::pid_type> terminated();
 
          //!
          //! Wait for a specific process to terminate.
@@ -98,6 +99,51 @@ namespace casual
          //! Tries to terminate pid
          //!
          void terminate( platform::pid_type pid);
+
+
+         struct lifetime
+         {
+            struct Exit
+            {
+               enum class Why
+               {
+                  unknown,
+                  exited,
+                  stopped,
+                  signaled,
+                  core,
+               };
+
+               platform::pid_type pid = 0;
+               int status = 0;
+               Why why = Why::unknown;
+
+               std::string string() const
+               {
+                  std::string result;
+                  result = "pid: " + std::to_string( pid) + " why: ";
+                  switch( why)
+                  {
+                     case Why::unknown: result += "unknown"; break;
+                     case Why::exited: result += "exited"; break;
+                     case Why::stopped: result += "stopped"; break;
+                     case Why::signaled: result += "signaled"; break;
+                     case Why::core: result += "core"; break;
+                  }
+                  return result;
+               }
+
+            };
+
+            static std::vector< Exit> ended();
+            //static void clear();
+
+            // called by signal...
+            static void death();
+
+         private:
+            //static std::vector< Exit>& state();
+         };
 
 
       } // process

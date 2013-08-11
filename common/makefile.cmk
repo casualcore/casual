@@ -89,6 +89,8 @@ Compile( unittest/isolated/source/test_process.cpp, unittest/isolated/obj/test_p
 Compile( unittest/isolated/source/test_string.cpp, unittest/isolated/obj/test_string.o)
 Compile( unittest/isolated/source/test_error.cpp, unittest/isolated/obj/test_error.o)
 
+Compile( unittest/isolated/source/test_signal.cpp, unittest/isolated/obj/test_signal.o)
+
 LinkIsolatedUnittest( casual-common-isolated, \
    unittest/isolated/obj/test_buffer.o \
    unittest/isolated/obj/test_ipc.o \
@@ -102,6 +104,7 @@ LinkIsolatedUnittest( casual-common-isolated, \
    unittest/isolated/obj/test_process.o \
    unittest/isolated/obj/test_string.o \
    unittest/isolated/obj/test_error.o \
+   unittest/isolated/obj/test_signal.o \
    , \
    casual-common )	
 

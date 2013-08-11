@@ -2,10 +2,15 @@
 domain:
 
   name: domain1
+  
+  transactionmanager:
+      path: /Users/Lazan/git/casual/transaction/bin/casual-transaction-manager # development purpose only
+      database: "transaction-manager.db" #optional
 
   default:
     path: /Users/Lazan/git/casual
   
+    
     server:
       instances: 2
        
@@ -47,11 +52,6 @@ domain:
       
     
   servers: 
-    - path: /Users/Lazan/git/casual/transaction/bin/casual-transaction-manager
-      instances: 1
-      note: The Transaction manager
-      memberships:
-        - casual
       
     - path: /Users/Lazan/git/casual/monitor/bin/casual_monitor
       instances: 1
@@ -65,14 +65,19 @@ domain:
       instances: 1
       memberships:
         - group1 
+        
+    - alias: someServer
+      note: Some testserver...
+      path: /Users/Lazan/git/casual/test/bin/test
+      instances: 1
+      memberships:
+        - group1 
     
     - alias: test
       note: Some testserver...
       path: /Users/Lazan/git/casual/test/bin/test
       instances: 10
-      memberships:
-        - group1 
-        - group2
+      memberships: [group1, group2]
         
       # only these services will be avalible for these instances
       services:
@@ -84,13 +89,13 @@ domain:
     - alias: echo
       note: echo, echo...
       path: /bin/echo
-      arguments: poop
+      arguments: [poop]
       instances: 10
   
   services:
     - name: casual_test2
       authorized:
-        - casual_test2        
+        - casual_test1       
 
    
   

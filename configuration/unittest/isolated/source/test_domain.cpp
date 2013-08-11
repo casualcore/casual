@@ -10,6 +10,10 @@
 #include "config/domain.h"
 #include "sf/archive_logger.h"
 
+// TODO Temp
+#include "../../../../serviceframework/include/sf/archive_json.h"
+#include <json-c/json.h>
+
 namespace casual
 {
    class casual_configuration_domain : public ::testing::TestWithParam< const char*>
@@ -25,6 +29,16 @@ namespace casual
 	{
 
 	   auto domain = config::domain::get( GetParam());
+
+	   //
+	   //
+	   /*
+	   json_object* root = nullptr;
+	   sf::archive::json::Writer writer( root);
+	   writer << CASUAL_MAKE_NVP( domain);
+	   std::cerr << json_object_to_json_string( root);
+	   */
+
 
 	   EXPECT_TRUE( domain.groups.size() == 5) << "size: " << domain.groups.size();
 	}
@@ -52,6 +66,14 @@ namespace casual
 
       EXPECT_TRUE( domain.servers.at( 3).instances == "10");
       EXPECT_TRUE( domain.servers.at( 3).memberships.size() == 2);
+
+   }
+
+   TEST_P( casual_configuration_domain, read_transactionmanager)
+   {
+      auto domain = config::domain::get( GetParam());
+
+      EXPECT_TRUE( domain.transactionmanager.database == "transaction-manager.db");
 
    }
 

@@ -13,6 +13,8 @@
 #include "sf/basic_archive.h"
 #include "sf/archive_binary.h"
 
+#include "../include/test_vo.h"
+
 
 #include <string>
 
@@ -22,154 +24,6 @@
 
 namespace casual
 {
-
-   /*
-   struct TestPolicyBase
-   {
-      TestPolicyBase() {}
-
-      TestPolicyBase( const TestPolicyBase& rhs) : m_buffer( rhs.m_buffer) {}
-
-
-      void handle_start( const char* name)
-      {
-
-      }
-
-      void handle_end( const char* name)
-      {
-
-      }
-
-      void handle_container_end()
-      {
-
-      }
-
-      void handle_serialtype_start()
-      {
-
-      }
-
-      void handle_serialtype_end()
-      {
-
-      }
-
-
-      std::vector< char> m_buffer = std::vector< char>( 64);
-      std::size_t m_offset = 0;
-   };
-
-
-   struct TestReaderPolicy : public TestPolicyBase
-   {
-      template< typename T>
-      TestReaderPolicy( T&& value) : TestPolicyBase( std::forward< T>( value)) {}
-
-      template< typename T>
-      void read( T& value, std::size_t size)
-      {
-
-         char* data = reinterpret_cast< char*>( &value);
-
-         auto start = m_buffer.begin() + m_offset;
-
-         std::copy( start, start + size, data);
-
-         m_offset += size;
-      }
-
-      template< typename T>
-      void read( T& value)
-      {
-         read( value, sizeof( T));
-      }
-
-      void read( std::string& value)
-      {
-         std::size_t size;
-         read( size);
-
-         auto start = m_buffer.begin() + m_offset;
-
-         value.assign( start, start + size);
-
-         m_offset += size;
-      }
-
-      std::size_t handle_container_start( std::size_t size)
-      {
-         read( size);
-         return size;
-      }
-
-
-      void read( std::wstring& value)
-      {
-         // do nadas
-      }
-
-      void read( std::vector< char>& value)
-      {
-         // do nada
-      }
-   };
-
-
-   struct TestWriterPolicy : public TestPolicyBase
-   {
-      TestWriterPolicy() {}
-
-      template< typename T>
-      TestWriterPolicy( T&& value) : TestPolicyBase( std::forward< T>( value)) {}
-      //using TestPolicyBase::TestPolicyBase;
-
-      void write( const char* data, std::size_t size)
-      {
-
-         while( m_offset + size > m_buffer.size() )
-         {
-            m_buffer.resize( m_buffer.size() * 2);
-         }
-
-         std::copy( data, data + size, ( &m_buffer[ 0]) + m_offset);
-
-         m_offset += size;
-      }
-
-
-
-      template< typename T>
-      void write( const T& value)
-      {
-         write( reinterpret_cast< const char*>( &value), sizeof( T));
-      }
-
-      void write( const std::string& value)
-      {
-         std::size_t size = value.size();
-         write( size);
-
-         write( value.data(), size);
-
-      }
-
-      std::size_t handle_container_start( std::size_t size)
-      {
-         write( size);
-         return size;
-      }
-
-
-      void write( const std::vector< char>& value)
-      {
-         // do nada
-      }
-   };
-
-*/
-
 
 
    TEST( casual_sf_binary_writer, serialize_pod)
@@ -312,6 +166,38 @@ namespace casual
 
          EXPECT_TRUE( value.someLong == 23);
          EXPECT_TRUE( value.someString == "kdjlfskjf");
+      }
+
+   }
+
+   TEST( casual_sf_binary_reader_writer, complex_serializible)
+   {
+
+      sf::buffer::Binary buffer;
+
+      {
+         test::Composite value;
+         value.m_string = "test";
+         value.m_values = { 1, 2, 3, 4};
+
+         std::vector< test::Composite> range{ value, value, value, value};
+
+         sf::archive::binary::Writer writer( buffer);
+         writer << CASUAL_MAKE_NVP( range);
+      }
+
+      {
+         sf::archive::binary::Reader reader( buffer);
+
+         std::vector< test::Composite> range;
+         reader >> CASUAL_MAKE_NVP( range);
+
+         ASSERT_TRUE( range.size() == 4);
+         ASSERT_TRUE( range.at( 0).m_values.size() == 4);
+         EXPECT_TRUE( range.at( 0).m_values.at( 0).m_long == 1);
+         EXPECT_TRUE( range.at( 0).m_values.at( 1).m_long == 2);
+         EXPECT_TRUE( range.at( 0).m_values.at( 2).m_long == 3);
+         EXPECT_TRUE( range.at( 0).m_values.at( 3).m_long == 4);
       }
 
    }

@@ -10,13 +10,105 @@
 
 #include "broker/transformation.h"
 #include "broker/broker.h"
-#include "broker/servervo.h"
+#include "broker/brokervo.h"
+#include "../../../../serviceframework/include/sf/archive_binary.h"
+#include "../../../../serviceframework/include/sf/buffer.h"
+#include "../../../admin/include/broker/brokervo.h"
 
 namespace casual
 {
    namespace broker
    {
+      struct Nested
+      {
+         std::string pid;
+         std::string queueId;
+         std::string state;
 
+         template< typename A>
+         void serialize( A& archive)
+         {
+            archive & CASUAL_MAKE_NVP( pid);
+            archive & CASUAL_MAKE_NVP( queueId);
+            archive & CASUAL_MAKE_NVP( state);
+         }
+      };
+
+      struct Composite
+      {
+         std::string alias;
+         std::string path;
+         std::vector< Nested> instances;
+
+         template< typename A>
+         void serialize( A& archive)
+         {
+            archive & CASUAL_MAKE_NVP( alias);
+            archive & CASUAL_MAKE_NVP( path);
+            archive & CASUAL_MAKE_NVP( instances);
+         }
+      };
+
+      /*
+
+      TEST( casual_broker_transformation, server_to_serverVO)
+      {
+         sf::buffer::Binary buffer;
+
+         {
+            admin::ServerVO serverVO;
+            serverVO.alias = "test";
+            serverVO.instances = { { 1, 1, 1}, {2, 2, 2}};
+
+
+            sf::archive::binary::Writer writer( buffer);
+            writer << CASUAL_MAKE_NVP( serverVO);
+         }
+
+         {
+            sf::archive::binary::Reader reader( buffer);
+
+            admin::ServerVO serverVO;
+            reader >> CASUAL_MAKE_NVP( serverVO);
+
+            EXPECT_TRUE( serverVO.alias == "test");
+            ASSERT_TRUE( serverVO.instances.size() == 2);
+            EXPECT_TRUE( serverVO.instances.at( 0).pid == 1);
+            EXPECT_TRUE( serverVO.instances.at( 1).pid == 2);
+         }
+
+      }
+      */
+
+      TEST( casual_broker_transformation, server_to_nested)
+      {
+         sf::buffer::Binary buffer;
+
+         {
+            Composite composite;
+            composite.alias = "test";
+            composite.instances = { { "1", "1", "1"}, {"2", "2", "2"}};
+
+
+            sf::archive::binary::Writer writer( buffer);
+            writer << CASUAL_MAKE_NVP( composite);
+         }
+
+         {
+            sf::archive::binary::Reader reader( buffer);
+
+            Composite composite;
+            reader >> CASUAL_MAKE_NVP( composite);
+
+            EXPECT_TRUE( composite.alias == "test");
+            ASSERT_TRUE( composite.instances.size() == 2);
+            EXPECT_TRUE( composite.instances.at( 0).pid == "1");
+            EXPECT_TRUE( composite.instances.at( 1).pid == "2");
+         }
+
+      }
+
+      /*
 
       TEST( casual_broker_transformation, server_to_serverVO)
       {
@@ -65,6 +157,7 @@ namespace casual
 
       }
 
+*/
 
    }
 

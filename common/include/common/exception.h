@@ -62,28 +62,24 @@ namespace casual
 
          struct QueueFailed : public Base
          {
-            QueueFailed( const std::string& description)
-               : Base( description) {}
+            using Base::Base;
          };
 
          struct QueueSend : public Base
          {
-            QueueSend( const std::string& description)
-               : Base( description) {}
+            using Base::Base;
          };
 
          struct QueueReceive : public Base
          {
-            QueueReceive( const std::string& description)
-               : Base( description) {}
+            using Base::Base;
          };
 
          namespace signal
          {
             struct Base : public exception::Base
             {
-               Base( const std::string& description)
-                  : common::exception::Base( description) {}
+               using common::exception::Base::Base;
 
                virtual common::platform::signal_type getSignal() const = 0;
             };
@@ -91,6 +87,10 @@ namespace casual
             template< common::platform::signal_type signal>
             struct basic_signal : public Base
             {
+               enum
+               {
+                  value = signal
+               };
                basic_signal( const std::string& description)
                   : Base( description) {}
 
@@ -99,13 +99,19 @@ namespace casual
 
                common::platform::signal_type getSignal() const
                {
-                  return signal;
+                  return value;
                }
             };
 
             typedef basic_signal< common::platform::cSignal_Alarm> Timeout;
 
-            typedef basic_signal< common::platform::cSignal_Alarm> Terminate;
+            typedef basic_signal< common::platform::cSignal_Terminate> Terminate;
+
+
+            namespace child
+            {
+               typedef basic_signal< common::platform::cSignal_ChildTerminated> Terminate;
+            } // child
 
          } // signal
 
@@ -113,9 +119,7 @@ namespace casual
          {
             struct Base : public exception::Base
             {
-               Base( const std::string& description)
-                  : common::exception::Base( description) {}
-
+               using common::exception::Base::Base;
 
                virtual int code() const noexcept = 0;
                virtual int severity() const noexcept = 0;
@@ -140,8 +144,10 @@ namespace casual
             template< int value, typename base>
             struct basic_severity : public base
             {
-               basic_severity( const std::string& description)
-                  : base( description) {}
+               using base::base;
+
+               //basic_severity( const std::string& description)
+               //   : base( description) {}
 
                int severity() const noexcept { return value;}
             };
@@ -161,11 +167,7 @@ namespace casual
          {
             struct Base : public code::Base
             {
-               // TODO: when we upgrade compiler...
-               // using code::Base::Base;
-
-               Base( const std::string& description)
-                  : code::Base( description) {}
+               using code::Base::Base;
             };
 
             namespace severity
@@ -230,11 +232,7 @@ namespace casual
          {
             struct Base : public code::Base
             {
-               // TODO: when we upgrade compiler...
-               // using code::Base::Base;
-
-               Base( const std::string& description)
-                  : code::Base( description) {}
+               using code::Base::Base;
             };
 
             namespace severity

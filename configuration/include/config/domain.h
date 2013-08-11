@@ -10,6 +10,8 @@
 
 
 #include "sf/namevaluepair.h"
+
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -21,17 +23,37 @@ namespace casual
 
       namespace domain
       {
+
+         namespace transaction
+         {
+            struct Manager
+            {
+               std::string path;
+               std::string database = "transaction-manager.db";
+
+               template< typename A>
+               void serialize( A& archive)
+               {
+                  archive & CASUAL_MAKE_NVP( path);
+                  archive & CASUAL_MAKE_NVP( database);
+               }
+            };
+
+         } // transaction
+
          struct Executable
          {
+            std::string note;
             std::string alias;
             std::string path;
             std::string instances;
-            std::string arguments;
+            std::vector< std::string> arguments;
             std::vector< std::string> memberships;
 
             template< typename A>
             void serialize( A& archive)
             {
+               archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( alias);
                archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( instances);
@@ -43,13 +65,13 @@ namespace casual
 
          struct Server : public Executable
          {
-            std::vector< std::string> services;
+            std::vector< std::string> restriction;
 
             template< typename A>
             void serialize( A& archive)
             {
                Executable::serialize( archive);
-               archive & CASUAL_MAKE_NVP( services);
+               archive & CASUAL_MAKE_NVP( restriction);
             }
 
          };
@@ -137,7 +159,9 @@ namespace casual
          struct Domain
          {
 
+
             Default casual_default;
+            transaction::Manager transactionmanager;
             std::vector< Group> groups;
             std::vector< Server> servers;
             std::vector< Executable> executables;
@@ -147,6 +171,7 @@ namespace casual
             void serialize( A& archive)
             {
                archive & sf::makeNameValuePair( "default", casual_default);
+               archive & CASUAL_MAKE_NVP( transactionmanager);
                archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( executables);
@@ -162,6 +187,36 @@ namespace casual
          //! @return domain configuration
          //!
          Domain get();
+
+
+         namespace filter
+         {
+            struct Membership
+            {
+               Membership( const std::string& group) : m_group( group) {}
+
+               bool operator () ( const Server& value) const
+               {
+                  return std::find(
+                        std::begin( value.memberships),
+                        std::end( value.memberships),
+                        m_group) != std::end( value.memberships);
+               }
+            private:
+               std::string m_group;
+            };
+
+            struct Excluded
+            {
+               bool operator () ( const Server& value) const
+               {
+                  return value.memberships.empty();
+               }
+            };
+
+
+
+         } // filter
 
       } // domain
 

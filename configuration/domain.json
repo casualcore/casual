@@ -1,6 +1,10 @@
 {
     "domain":{
         "name":"domain1",
+        "transactionmanager":{
+            "path":"/Users/Lazan/git/casual/transaction/bin/casual-transaction-manager",
+            "database":"transaction-manager.db"
+        },
         "default":{
             "path":"/Users/Lazan/git/casual",
             "server":{
@@ -37,7 +41,7 @@
             },
             {
                 "name":"group3",
-                "note":"Some logical group"
+                "note":"Some logical group",
                 "dependecies":[
                     "casual"
                 ]
@@ -91,7 +95,7 @@
                 "services":[
                     "casual_test2"
                 ]
-            },
+            }
             
         ],
         "executables":[
@@ -99,16 +103,16 @@
                 "alias":"echo",
                 "note":"echo, echo...",
                 "path":"/bin/echo",
-                "arguments":"poop",
+                "arguments":["poop"],
                 "instances":10
-            }
+            },
             
         ],
         "services":[
             {
                 "name":"casual_test2",
                 "authorized":[
-                    "casual_test2"
+                    "casual_test1"
                 ]
                 
             }

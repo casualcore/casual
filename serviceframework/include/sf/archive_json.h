@@ -120,7 +120,7 @@ namespace casual
                         }
                      }
 
-                     if( next)
+                     if( next && json_object_is_type( next, json_type_array))
                      {
                         size = json_object_array_length( next);
 
