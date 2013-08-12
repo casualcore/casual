@@ -11,6 +11,7 @@
 #include <string>
 
 #include <regex>
+#include <algorithm>
 
 namespace casual
 {
@@ -86,12 +87,56 @@ namespace casual
          }
          */
 
+			inline std::string join( const std::vector< std::string>& strings, const std::string& delimiter = "")
+			{
+			   std::string result;
+
+			   for( auto& string : strings)
+			   {
+			      if( ! result.empty())
+			      {
+			         result.append( delimiter);
+			      }
+			      result.append( string);
+			   }
+			   return result;
+			}
+
+
+
+		} // string
+
+		namespace internal
+      {
+		   template< typename R>
+		   struct from_string;
+
+		   template<>
+		   struct from_string< std::string> { static const std::string& get( const std::string& value) { return value;} };
+
+		   template<>
+		   struct from_string< int> { static int get( const std::string& value) { return std::stoi( value);} };
+
+		   template<>
+		   struct from_string< long> { static long get( const std::string& value) { return std::stol( value);} };
+
+
+
+
+      } // internal
+
+		template< typename R>
+		R from_string( const std::string& value)
+		{
+		   return internal::from_string< typename std::decay< R>::type>::get( value);
 		}
 
 
-	}
 
-}
+
+
+	} // common
+} // casual
 
 
 

@@ -7,6 +7,19 @@ general:
 
 declaration:
 
+  - value_object:
+      name: InstanceVO
+      language: C++
+      namespace: admin
+      id: 200
+          
+      output_headers: admin/include/broker/
+      output_source:  admin/source/
+   
+      attributes:
+        - pid: long
+        - queue: long
+        - idle: bool
 
   - value_object:
       name: ServerVO
@@ -18,10 +31,10 @@ declaration:
       output_source:  admin/source/
    
       attributes:
-        - pid: long
         - path: std::string
-        - queue: long
-        - idle: bool
+        - instances: std::vector< InstanceVO>
+
+  
         
   - value_object:
       name: ServiceVO

@@ -8,7 +8,8 @@
 #ifndef XATMI_SERVER_H_
 #define XATMI_SERVER_H_
 
-#include "xatmi.h"
+#include <xa.h>
+#include <xatmi.h>
 #include <stddef.h>
 
 
@@ -19,8 +20,15 @@ extern "C" {
 
 struct casual_service_name_mapping
 {
-	tpservice m_functionPointer;
-	const char* m_name;
+	tpservice functionPointer;
+	const char* name;
+};
+
+
+struct casual_xa_switch_mapping
+{
+   const char* key;
+   struct xa_switch_t* xaSwitch;
 };
 
 
@@ -30,23 +38,22 @@ typedef int( *tpsvrinit_type)( int argc, char **argv);
 
 struct casual_server_argument
 {
-   casual_service_name_mapping* m_serverStart;
-   casual_service_name_mapping* m_serverEnd;
+   struct casual_service_name_mapping* services;
 
-   tpsvrinit_type m_serviceInit;
-   tpsvrdone_type m_serviceDone;
+   tpsvrinit_type serviceInit;
+   tpsvrdone_type serviceDone;
 
-   int m_argc;
-   char** m_argv;
+   int argc;
+   char** argv;
 
-
+   struct casual_xa_switch_mapping* xaSwitches;
 };
 
 
 
 int casual_initialize_server( int argc, char** argv, struct casual_service_name_mapping* mapping, size_t size);
 
-int casual_start_server( casual_server_argument* serverArgument);
+int casual_start_server( struct casual_server_argument* serverArgument);
 
 
 #ifdef __cplusplus

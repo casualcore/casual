@@ -8,14 +8,14 @@
 
 #include "tx.h"
 
-#include "transaction/context.h"
+#include "common/transaction_context.h"
 
 
 int tx_begin(void)
 {
    try
    {
-      return casual::transaction::Context::instance().begin();
+      return casual::common::transaction::Context::instance().begin();
    }
    catch( ...)
    {
@@ -27,7 +27,7 @@ int tx_close(void)
 {
    try
    {
-      return casual::transaction::Context::instance().close();
+      return casual::common::transaction::Context::instance().close();
    }
    catch( ...)
    {
@@ -39,7 +39,7 @@ int tx_commit(void)
 {
   try
   {
-     return casual::transaction::Context::instance().commit();
+     return casual::common::transaction::Context::instance().commit();
   }
   catch( ...)
   {
@@ -51,7 +51,7 @@ int tx_open(void)
 {
   try
   {
-     return casual::transaction::Context::instance().open();
+     return casual::common::transaction::Context::instance().open();
   }
   catch( ...)
   {
@@ -63,7 +63,7 @@ int tx_rollback(void)
 {
   try
   {
-     return casual::transaction::Context::instance().rollback();
+     return casual::common::transaction::Context::instance().rollback();
   }
   catch( ...)
   {
@@ -89,7 +89,7 @@ int tx_set_transaction_control(TRANSACTION_CONTROL control)
 {
   try
   {
-     return casual::transaction::Context::instance().setTransactionControl( control);
+     return casual::common::transaction::Context::instance().setTransactionControl( control);
   }
   catch( ...)
   {
@@ -101,7 +101,7 @@ int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
 {
   try
   {
-     return casual::transaction::Context::instance().setTransactionTimeout( timeout);
+     return casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
   }
   catch( ...)
   {
@@ -113,7 +113,7 @@ int tx_info( TXINFO* info)
 {
    try
    {
-      return casual::transaction::Context::instance().info( *info);
+      return casual::common::transaction::Context::instance().info( *info);
    }
    catch( ...)
    {

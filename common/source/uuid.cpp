@@ -70,7 +70,7 @@ namespace casual
          return m_uuid;
       }
 
-		void Uuid::set( uuid_type& uuid)
+		void Uuid::copy( uuid_type& uuid)
 		{
 			uuid_copy( uuid, m_uuid);
 		}

@@ -1,9 +1,10 @@
 
 
-
 INCLUDE_PATHS = include \
     ../common/include \
     ../xatmi/include \
+    ../configuration/include \
+    ../serviceframework/include \
     ../thirdparty/database/include \
     $(UNITTEST_INCLUDE_PATH) \
 
@@ -11,6 +12,10 @@ INCLUDE_PATHS = include \
 
 LIBRARY_PATHS = bin \
     ../common/bin \
+    ../configuration/bin \
+    ../serviceframework/bin \
+    ../xatmi/bin \
+//    $(IBM_DB_LIB)
     
 
 
@@ -18,18 +23,40 @@ LIBRARY_PATHS = bin \
 //
 // Compile and link the transaction manager
 //
-Compile( source/manager.cpp, obj/manager.o)
+Compile( source/manager.cpp, obj/manager.o)    
 Compile( source/manager_main.cpp, obj/manager_main.o)
-
-
 
 LinkExecutable( casual-transaction-manager,\
     obj/manager.o \
     obj/manager_main.o \
     ,\
-    casual-common sqlite3)
+    casual-sf casual-common casual-configuration sqlite3)
 
 
+
+//
+// Compile and link resurce-proxy-server archive
+//
+Compile( source/resource_proxy_server.cpp, obj/resource_proxy_server.o)
+Compile( source/resource_proxy.cpp, obj/resource_proxy.o)
+
+LinkLibrary( casual-resource-proxy-server,\
+   obj/resource_proxy_server.o \
+   obj/resource_proxy.o \
+   ,\
+   casual-common)
+
+
+//
+// unittest
+//
+Compile( unittest/isolated/source/test_configuration.cpp, obj/test_configuration.o)
+
+LinkIsolatedUnittest( test_transaction_configuration,\
+    obj/test_configuration.o \
+    obj/manager.o \
+    , \
+    casual-common casual-sf casual-configuration sqlite3)
 
 
 

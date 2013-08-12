@@ -11,7 +11,6 @@
 #include "common/ipc.h"
 #include "common/message.h"
 #include "common/marshal.h"
-#include "common/signal.h"
 
 
 #include <list>
@@ -92,9 +91,7 @@ namespace casual
                {
                   message_type_type type = message::type( message);
 
-                  marshal::input::Binary archive;
-
-                  correlate( archive, type);
+                  marshal::input::Binary archive = read( type);
 
                   archive >> message;
                }
@@ -102,7 +99,7 @@ namespace casual
 
             private:
 
-               void correlate( marshal::input::Binary& archive, message_type_type type);
+               marshal::input::Binary read( message_type_type type);
 
                ipc_type& m_queue;
 
@@ -120,7 +117,7 @@ namespace casual
 
                typedef ipc::send::Queue ipc_type;
 
-               Writer( ipc::send::Queue& queue);
+               Writer( ipc_type& queue);
 
                //!
                //! Sends/Writes a message to the queue. which can result in several
@@ -162,6 +159,13 @@ namespace casual
 
                Reader( ipc::receive::Queue& queue);
 
+               //!
+               //! Tries to get the next binary-message from queue.
+               //!
+               //! @return 0..1 binary-marshal that should be used to deserialize an actual message.
+               //!
+               std::vector< marshal::input::Binary> next();
+
 
                //!
                //! Tries to read a specific message from the queue.
@@ -173,28 +177,19 @@ namespace casual
                {
                   message_type_type type = message::type( message);
 
-                  marshal::input::Binary archive;
+                  auto binary = read( type);
 
-                  if( correlate( archive, type))
+                  if( ! binary.empty())
                   {
-                     archive >> message;
+                     binary.front() >> message;
                      return true;
                   }
                   return false;
                }
 
-               //!
-               //! Consumes all transport messages that is present on the ipc-queue, and
-               //! stores these to cache.
-               //!
-               //! @note non blocking
-               //!
-               bool consume();
-
-
             private:
 
-               bool correlate( marshal::input::Binary& archive, message_type_type type);
+               std::vector< marshal::input::Binary> read( message_type_type type);
 
                ipc_type& m_queue;
 
@@ -214,6 +209,7 @@ namespace casual
 
             template< typename... Args>
             ipc_wrapper( Args&& ...args) : m_ipcQueue( std::forward< Args>( args)...), m_queue( m_ipcQueue) {}
+
 
             ipc_wrapper( ipc_wrapper&&) = default;
 

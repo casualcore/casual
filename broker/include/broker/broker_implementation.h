@@ -9,6 +9,7 @@
 #define CASUAL_BROKER_TRANSFORM_H_
 
 #include "broker/broker.h"
+#include "broker/action.h"
 
 #include "common/message.h"
 #include "common/queue.h"
@@ -31,203 +32,73 @@ namespace casual
 
 	namespace broker
 	{
-		namespace transform
-		{
-		   struct Service
-		   {
-		      std::string operator() ( const message::Service& message)
-		      {
-		         return message.name;
-		      }
-		   };
 
-			struct Server
-			{
+	   template< typename Q>
+      struct broker_write_queue_wrapper : public Q
+      {
+         typedef Q base_queue;
 
-				casual::broker::Server operator () ( const message::server::Connect& message) const
-				{
-					casual::broker::Server result;
-
-					result.path = message.path;
-					result.pid = message.serverId.pid;
-					result.queue_key = message.serverId.queue_key;
-
-					return result;
-				}
+         template< typename... Args>
+         broker_write_queue_wrapper( State& state, Args&& ...args) : base_queue( std::forward< Args>( args)...), m_state( state) {}
 
 
-				message::server::Id operator () ( const casual::broker::Server& value) const
-				{
-					casual::message::server::Id result;
-
-					result.pid = value.pid;
-					result.queue_key = value.queue_key;
-
-					return result;
-				}
-
-			};
-
-
-		} // transform
-
-		namespace find
-		{
-		   struct Server
-		   {
-		      Server( broker::Server::pid_type pid) : m_pid( pid) {}
-
-		      bool operator () ( const broker::Server* server)
-            {
-		         return server->pid == m_pid;
-            }
-
-		      bool operator () ( const State::service_mapping_type::value_type & service) const
-            {
-               return std::find_if(
-                     std::begin( service.second.servers),
-                     std::end( service.second.servers),
-                     find::Server( m_pid)) != std::end( service.second.servers);
-            }
-
-		   private:
-		      broker::Server::pid_type m_pid;
-		   };
-
-		   namespace server
-		   {
-		      struct Idle
-		      {
-		         bool operator () ( const broker::Server* server)
-               {
-                  return server->idle == true;
-               }
-		      };
-
-		   } // server
-
-		   struct Pending
-		   {
-		      Pending( const std::vector< std::string>& services) : m_services( services) {}
-
-		      bool operator () ( const message::service::name::lookup::Request& request)
-		      {
-		         return std::binary_search( std::begin( m_services), std::end( m_services), request.requested);
-		      }
-
-		      std::vector< std::string> m_services;
-		   };
-
-		} // find
-
-		namespace extract
-		{
-
-		   //!
-		   //! Extract the services associated with the specific server
-		   //!
-		   //! @return a sorted range with the services.
-		   //!
-		   std::vector< std::string> services( broker::Server::pid_type pid, State& state)
+         //!
+         //! Reads or writes to/from the queue, depending on the type of queue_type
+         //!
+         template< typename T>
+         auto operator () ( T& value) -> decltype( std::declval<Q>()( value))
          {
-		      std::vector< std::string> result;
-
-		      auto current = state.services.begin();
-
-		      while( ( current = std::find_if(
-		            current,
-		            state.services.end(),
-		            find::Server( pid))) != state.services.end())
-		      {
-		         result.push_back( current->first);
-		         ++current;
-		      }
-
-		      std::sort( std::begin( result), std::end( result));
-
-		      return result;
+            try
+            {
+               return base_queue::operator () ( value);
+            }
+            catch( const exception::signal::child::Terminate& exception)
+            {
+               auto terminated = process::lifetime::ended();
+               for( auto& death : terminated)
+               {
+                  logger::warning << "process terminated: " << death.string();
+                  action::remove::instance( death.pid, m_state);
+               }
+               return operator () ( value);
+            }
          }
 
-		}
+      protected:
+         State& m_state;
+      };
 
-		namespace state
-		{
-		   namespace internal
-		   {
+	   template< typename Q>
+      struct broker_read_queue_wrapper : public broker_write_queue_wrapper< Q>
+      {
+	      using broker_write_queue_wrapper< Q>::broker_write_queue_wrapper;
 
-		      struct Service
+         auto next() -> decltype( std::declval<Q>().next())
+         {
+            try
             {
-               Service( broker::Server* server, State::service_mapping_type& serviceMapping)
-                  : m_server( server), m_serviceMapping( serviceMapping) {}
-
-               void operator() ( const message::Service& service)
-               {
-                  //
-                  // If the service is not registered before, it will be added now... Otherwise
-                  // we use the current one...
-                  //
-
-                  auto findIter = m_serviceMapping.emplace(
-                        service.name, broker::Service{ service.name}).first;
-
-                  //
-                  // Add the pointer to the server
-                  //
-                  findIter->second.add( m_server);
-               }
-
-            private:
-               broker::Server* m_server;
-               State::service_mapping_type& m_serviceMapping;
-            };
-
-
-            void removeService( const std::string& name, broker::Server::pid_type pid, State& state)
-            {
-               auto findIter = state.services.find( name);
-
-               if( findIter != state.services.end())
-               {
-                  //
-                  // We found the service. Now we remove the corresponding server
-                  //
-
-                  typedef std::vector< broker::Server*> servers_type;
-
-                  auto serversEnd = std::remove_if(
-                        std::begin( findIter->second.servers),
-                        std::end( findIter->second.servers),
-                        find::Server( pid));
-
-                  findIter->second.servers.erase( serversEnd, std::end( findIter->second.servers));
-
-                  //
-                  // If servers is empty we remove the service all together.
-                  //
-                  if( findIter->second.servers.empty())
-                  {
-                     state.services.erase( findIter);
-                  }
-               }
-
-
-
+               return broker_write_queue_wrapper< Q>::base_queue::next();
             }
-
-            template< typename Iter>
-            void removeServices( Iter start, Iter end, broker::Server::pid_type pid, State& state)
+            catch( const exception::signal::child::Terminate& exception)
             {
-               for( ; start != end; ++start)
+               auto terminated = process::lifetime::ended();
+               for( auto& death : terminated)
                {
-                  removeService( start->name, pid, state);
+                  logger::warning << "process terminated: " << death.string();
+                  action::remove::instance( death.pid, this->m_state);
                }
+               return next();
             }
+         }
 
-		   }
-
-		} // state
+      };
 
 
+
+
+
+      using QueueBlockingReader = broker_read_queue_wrapper< queue::blocking::Reader>;
+      using QueueBlockingWriter = broker_write_queue_wrapper< queue::ipc_wrapper< queue::blocking::Writer>>;
 
 		namespace handle
 		{
@@ -254,7 +125,7 @@ namespace casual
             void dispatch( message_type& message)
             {
                //TODO: Temp
-               m_state.monitorQueue = message.serverId.queue_key;
+               m_state.monitorQueue = message.server.queue_id;
             }
          };
 
@@ -291,7 +162,9 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               m_state.transactionManagerQueue = message.serverId.queue_key;
+               m_state.transactionManagerQueue = message.server.queue_id;
+
+               action::connect( m_state.transactionManager->instances.at( 0), message);
             }
          };
 
@@ -304,29 +177,28 @@ namespace casual
 
             Advertise( State& state) : Base( state) {}
 
-            template< typename M>
-            void dispatch( M& message)
+            void dispatch( message_type& message)
             {
                //
-               // Find the server
+               // Find the instance
                //
-               auto find = m_state.servers.find( message.serverId.pid);
+               auto findInstance = m_state.instances.find( message.server.pid);
 
-               if( find != std::end( m_state.servers))
+               if( findInstance != std::end( m_state.instances))
                {
+
                   //
                   // Add all the services, with this corresponding server
                   //
                   std::for_each(
                      std::begin( message.services),
                      std::end( message.services),
-                     state::internal::Service( &find->second, m_state.services));
+                     action::add::Service( m_state, findInstance->second));
 
                }
                else
                {
-
-                  logger::error << "server (pid: " << message.serverId.pid << ") has not connected before advertising services";
+                  logger::error << "server (pid: " << message.server.pid << ") has not connected before advertising services";
 
                }
             }
@@ -345,26 +217,11 @@ namespace casual
             void dispatch( M& message)
             {
                //
-               // Find all corresponding services this server have advertise
+               // Remove the instance
                //
+               action::remove::instance( message.server.pid, m_state);
 
-               auto start = std::begin( m_state.services);
-
-               while( ( start = std::find_if(
-                     start,
-                     std::end( m_state.services),
-                     find::Server( message.serverId.pid))) != std::end( m_state.services))
-               {
-                  //
-                  // remove the service
-                  //
-                  state::internal::removeService( start->first, message.serverId.pid, m_state);
-               }
-
-               //
-               // Remove the server
-               //
-               m_state.servers.erase( message.serverId.pid);
+               // TODO: We have to check if this affect pending...
             }
          };
 
@@ -378,48 +235,50 @@ namespace casual
 
             void dispatch( message_type& message)
             {
+               //
+               // If the instance was started by the broker, we expect to find it
+               //
+               auto instance =  m_state.instances.find( message.server.pid);
 
-               auto find =  m_state.servers.find( message.serverId.pid);
-
-               if( find != std::end( m_state.servers))
+               if( instance == std::end( m_state.instances))
                {
                   //
-                  // We got the server... Why?
-                  // - log
-                  // - remove
+                  // The instance was started outside the broker. This is totally in order, though
+                  // there will be no 'instances' semantics, hence limited administration possibilities.
+                  // We add it...
                   //
-                  logger::error << "server (pid: " << message.serverId.pid << ") is already connected";
 
-                  Disconnect disconnect( m_state);
-                  disconnect.dispatch( message);
+                  instance = m_state.instances.emplace(
+                        message.server.pid, action::transform::Instance()( message)).first;
+
                }
 
                //
-               // We add the server
-               //
-               m_state.servers.emplace(
-                     message.serverId.pid, transform::Server()( message));
-
-               //
-               // Server is started for the first time.
+               // Instance is started for the first time.
                // Send some configuration
                //
-               message::server::Configuration configuation;
-               configuation.transactionManagerQueue = m_state.transactionManagerQueue;
+               message::server::Configuration configuation =
+                     action::transform::configuration( instance->second, m_state);
 
-               queue_writer_type writer( message.serverId.queue_key);
+               queue_writer_type writer( m_state, message.server.queue_id);
                writer( configuation);
 
+               //
+               // Add services
+               //
+               std::for_each(
+                  std::begin( message.services),
+                  std::end( message.services),
+                  action::add::Service( m_state, instance->second));
 
                //
-               // Advertiese the servies
+               // Set the instance in 'ready' mode
                //
-               Advertise advertise( m_state);
-               advertise.dispatch( message);
+               action::connect( instance->second, message);
             }
          };
 
-         typedef basic_connect< queue::ipc_wrapper< queue::blocking::Writer>> Connect;
+         typedef basic_connect< broker::QueueBlockingWriter> Connect;
 
 
 		   //!
@@ -433,12 +292,28 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               state::internal::removeServices(
-                  std::begin( message.services),
-                  std::end( message.services),
-                  message.serverId.pid,
-                  m_state);
+               //
+               // Find the instance
+               //
+               auto findInstance = m_state.instances.find( message.server.pid);
 
+               if( findInstance != std::end( m_state.instances))
+               {
+
+                  //
+                  // Remove services, with this corresponding server
+                  //
+                  std::for_each(
+                     std::begin( message.services),
+                     std::end( message.services),
+                     action::remove::Service( m_state, findInstance->second));
+
+               }
+               else
+               {
+                  logger::error << "server (pid: " << message.server.pid << ") has not connected before unadverties services";
+
+               }
             }
          };
 
@@ -462,32 +337,35 @@ namespace casual
             {
                auto serviceFound = m_state.services.find( message.requested);
 
-               if( serviceFound != std::end( m_state.services) && ! m_state.servers.empty())
+               if( serviceFound != std::end( m_state.services) && ! serviceFound->second->instances.empty())
                {
-                  //
-                  // Try to find an idle server.
-                  //
-                  auto idleServer = std::find_if(
-                        std::begin( serviceFound->second.servers),
-                        std::end( serviceFound->second.servers),
-                        find::server::Idle());
+                  auto& instances = serviceFound->second->instances;
 
-                  if( idleServer != std::end( serviceFound->second.servers))
+                  //
+                  // Try to find an idle instance.
+                  //
+                  auto idleInstace = std::find_if(
+                        std::begin( instances),
+                        std::end( instances),
+                        action::find::idle::Instance());
+
+                  if( idleInstace != std::end( instances))
                   {
                      //
-                     // flag it as not idle.
+                     // flag it as busy.
                      //
-                     (*idleServer)->idle = false;
+                     (*idleInstace)->alterState( Server::Instance::State::busy);
 
                      message::service::name::lookup::Reply reply;
-                     reply.service = serviceFound->second.information;
+                     reply.service = serviceFound->second->information;
                      reply.service.monitor_queue = m_state.monitorQueue;
-                     reply.server.push_back( transform::Server()( **idleServer));
+                     reply.server.push_back( action::transform::Instance()( *idleInstace));
 
-
-                     queue_writer_type writer( message.server.queue_key);
-
+                     queue_writer_type writer( message.server.queue_id);
                      writer( reply);
+
+                     serviceFound->second->lookedup++;
+                     logger::debug << "serviceFound->second->lookedup: " << serviceFound->second->lookedup;
                   }
                   else
                   {
@@ -500,13 +378,15 @@ namespace casual
                else
                {
                   //
+                  // TODO: We will send the request to the gateway.
+                  //
                   // Server (queue) that hosts the requested service is not found.
                   // We propagate this by having 0 occurrence of server in the response
                   //
                   message::service::name::lookup::Reply reply;
                   reply.service.name = message.requested;
 
-                  queue_writer_type writer( message.server.queue_key);
+                  queue_writer_type writer( message.server.queue_id);
                   writer( reply);
 
                }
@@ -536,30 +416,31 @@ namespace casual
             void dispatch( message_type& message)
             {
                //
-               // find server and flag it as idle
+               // find instance and flag it as idle
                //
-               auto findIter = m_state.servers.find( message.server.pid);
+               auto instance = m_state.instances.find( message.server.pid);
 
-               if( findIter != std::end( m_state.servers))
+               if( instance != std::end( m_state.instances))
                {
-                  findIter->second.idle = true;
+                  instance->second->alterState( Server::Instance::State::idle);
+                  instance->second->invoked++;
 
                   if( ! m_state.pending.empty())
                   {
                      //
                      // There are pending requests, check if there is one that is
-                     // waiting for a service that this, now idle, server has advertised.
+                     // waiting for a service that this, now idle, instance has advertised.
                      //
                      auto pendingIter = std::find_if(
                            std::begin( m_state.pending),
                            std::end( m_state.pending),
-                           find::Pending( extract::services( message.server.pid, m_state)));
+                           action::find::Pending( instance->second));
 
                      if( pendingIter != std::end( m_state.pending))
                      {
                         //
                         // We now know that there are one idle server that has advertised the
-                        // requested service (we just marked it as idle...).
+                        // requested service (we've just marked it as idle...).
                         // We can use the normal request to get the response
                         //
                         servicelookup_type serviceLookup( m_state);
@@ -600,24 +481,31 @@ namespace casual
 
             message::server::Configuration connect( message::server::Connect& message)
             {
+               logger::debug << "broker server - message.server.queue_id.: " << message.server.queue_id;
+               logger::debug << "broker server - message.path............: " << message.path;
 
-               message.serverId.queue_key = ipc::getReceiveQueue().getKey();
-               message.path = common::environment::getExecutablePath();
+               message.server.queue_id = ipc::getReceiveQueue().id();
+               message.path = common::environment::file::executable();
 
                //
                // We add the server
                //
-               m_state.servers.emplace(
-                     message.serverId.pid, transform::Server()( message));
+               auto instance = m_state.instances.emplace(
+                     message.server.pid, action::transform::Instance()( message)).first;
                //
-               // Advertiese the servies
+               // Add services
                //
-               Advertise advertise( m_state);
-               advertise.dispatch( message);
+               std::for_each(
+                  std::begin( message.services),
+                  std::end( message.services),
+                  action::add::Service( m_state, instance->second));
 
-               message::server::Configuration configuration;
-               configuration.transactionManagerQueue = m_state.transactionManagerQueue;
-               return configuration;
+               //
+               // Set our instance in 'ready' mode
+               //
+               action::connect( instance->second, message);
+
+               return action::transform::configuration( instance->second, m_state);
             }
 
             void disconnect()
@@ -632,7 +520,7 @@ namespace casual
             void ack( const message::service::callee::Call& message)
             {
                message::service::ACK ack;
-               ack.server.queue_key = ipc::getReceiveQueue().getKey();
+               ack.server.queue_id = ipc::getReceiveQueue().id();
                ack.service = message.service.name;
 
                ACK sendACK( m_state);

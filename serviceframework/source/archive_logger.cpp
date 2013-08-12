@@ -47,6 +47,8 @@ namespace logger
    {
       m_buffer << m_name << ' ' << '(' << size << ')' << std::endl;
       ++m_indent;
+
+      return size;
    }
 
    void Implementation::handle_container_end()

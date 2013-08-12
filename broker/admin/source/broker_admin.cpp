@@ -8,10 +8,11 @@
 
 #include "sf/xatmi_call.h"
 
-#include "broker/servervo.h"
-#include "broker/servicevo.h"
+#include "broker/brokervo.h"
 
 #include "common/file.h"
+#include "common/arguments.h"
+#include "common/chronology.h"
 
 
 //
@@ -20,6 +21,9 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
+#include "broker/broker.h"
+
+
 
 namespace casual
 {
@@ -29,18 +33,43 @@ namespace casual
 
       struct Print
       {
+         void operator () ( const admin::InstanceVO& value) const
+         {
+            std::cout <<
+                  std::setw( 10) << value.pid <<
+                  std::setw( 12) << value.queueId << std::setw( 8);
+
+            switch( static_cast< Server::Instance::State>( value.state))
+            {
+               case Server::Instance::State::absent: std::cout << "absent"; break;
+               case Server::Instance::State::prospect: std::cout << "prospect"; break;
+               case Server::Instance::State::idle: std::cout << "idle"; break;
+               case Server::Instance::State::busy: std::cout << "busy"; break;
+               case Server::Instance::State::shutdown: std::cout << "shutdown"; break;
+            }
+
+
+           std::cout << std::setw( 10) << std::right << value.invoked << std::left << "  " << common::chronology::local( value.last) <<  std::endl;
+         }
+
          void operator () ( const admin::ServerVO& value) const
          {
-            std::cout <<  std::setw( 20) << std::left  << common::file::basename( value.getPath()) <<
-                  std::setw( 10) << value.getPid() <<
-                  std::setw( 12) << value.getQueue() << std::setw( 8) << ( value.getIdle() ? "idle" : "busy") << std::endl;
+            std::cout <<  std::setw( 20) << std::left << value.alias << " path: " << value.path << std::endl;
+
+            std::cout << "  |- PID       QUEUE       STATE      INVOKED  TIMESTAMP" << std::endl;
+            for( auto& instance : value.instances)
+            {
+               std::cout << "  |- ";
+               Print{}( instance);
+            }
          }
 
          void operator () ( const admin::ServiceVO& value) const
          {
-            std::cout <<  std::setw( 32) << std::left << value.getNameF() <<
-                  std::setw( 12) << value.getPids().size() <<
-                  std::setw( 12) << value.getTimeoutF() << std::endl;
+            std::cout <<  std::setw( 32) << std::left << value.name <<
+                  std::setw( 12) << std::right << value.instances.size() <<
+                  std::setw( 14) << std::right << value.lookedup <<
+                  std::setw( 10) << value.timeout << std::endl;
          }
 
       };
@@ -55,7 +84,7 @@ namespace casual
 
          reply >> CASUAL_MAKE_NVP( serviceReply);
 
-         std::cout << "NAME                PID       QUEUE       STATE" << std::endl;
+
          std::for_each( std::begin( serviceReply), std::end( serviceReply), Print() );
 
       }
@@ -70,7 +99,7 @@ namespace casual
          reply >> CASUAL_MAKE_NVP( serviceReply);
 
 
-         std::cout << "NAME                            INSTANCES   TIMEOUT" << std::endl;
+         std::cout << "NAME                               INSTANCES        CALLED   TIMEOUT" << std::endl;
          std::for_each( std::begin( serviceReply), std::end( serviceReply), Print() );
 
       }
@@ -106,43 +135,29 @@ int usage( int argc, char** argv)
 }
 
 
+
 int main( int argc, char** argv)
 {
 
-   if( argc != 2)
-   {
-      return usage( argc, argv);
-   }
+   const long binary = 0b01010000110;
 
-   const std::string option{ argv[ 1]};
+   casual::common::Arguments parser;
+   parser.add(
+         casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
+         casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
+         casual::common::argument::directive( {"-lsvr-json", "--list-servers-json"}, "list all servers", &casual::broker::listServicesJSON)
+   );
+
 
    try
    {
-      if( option == "--list-servers")
-      {
-         casual::broker::listServers();
-      }
-      else if( option == "--list-services")
-      {
-         casual::broker::listServices();
-      }
-      else if( option == "--list-services-json")
-      {
-         casual::broker::listServicesJSON();
-      }
-      else
-      {
-         return usage( argc, argv);
-      }
-
+      parser.parse( argc, argv);
 
    }
    catch( const std::exception& exception)
    {
       std::cerr << "exception: " << exception.what() << std::endl;
    }
-
-
 
 
    return 0;

@@ -19,24 +19,7 @@ namespace casual
 	{
 		namespace platform
 		{
-			namespace local
-			{
-				namespace
-				{
-					pid_type getProcessId()
-					{
-						static const pid_type pid = getpid();
-						return pid;
-					}
 
-
-				}
-			}
-
-			pid_type getProcessId()
-			{
-				return local::getProcessId();
-			}
 
 			std::string getSignalDescription( signal_type signal)
 			{

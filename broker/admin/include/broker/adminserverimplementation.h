@@ -8,8 +8,7 @@
 #include <string>
 
 
-#include "broker/servervo.h"
-#include "broker/servicevo.h"
+#include "broker/brokervo.h"
 
 
 //## includes protected section end   [.10]

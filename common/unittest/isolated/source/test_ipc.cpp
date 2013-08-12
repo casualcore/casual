@@ -38,30 +38,16 @@ namespace casual
 
             receive::Queue receive;
 
-            send::Queue send( receive.getKey());
+            send::Queue send( receive.id());
 
-            message::Transport transport;
 
-            std::string information( "ABC");
-
-            transport.m_payload.m_payload = message::Transport::payload_type{ { 'A', 'B', 'C' } };
-
-            EXPECT_TRUE( information == transport.m_payload.m_payload.data());
-
-            transport.paylodSize( information.size() + 1);
-            transport.m_payload.m_type = 2;
+            message::Complete transport{ 2, { 'A', 'B', 'C' } };
 
             send( transport);
 
-            message::Transport response;
+            auto response = receive( 0);
 
-            receive( response);
-
-            std::string receivedInformation{ response.m_payload.m_payload.data()};
-
-
-            EXPECT_TRUE( information == receivedInformation) << "information: " << information << " - receivedInformation: " << receivedInformation;
-            EXPECT_TRUE( transport.size() == response.size());
+            EXPECT_TRUE( transport.payload == response.at( 0).payload) << transport.payload.size() << " : "  << response.at( 0).payload.at( 2);
          }
 
 
@@ -78,45 +64,49 @@ namespace casual
             // after 1s
             //
             EXPECT_THROW({
-               receive( response);
+               receive( 0);
             }, common::exception::signal::Timeout);
 
          }
 
-         TEST( casual_common, ipc_queue_send_receive_max_message)
+         TEST( casual_common, ipc_queue_send_receive_one_full_message)
          {
 
             receive::Queue receive;
 
-            send::Queue send( receive.getKey());
+            send::Queue send( receive.id());
 
-            message::Transport transport;
+            message::Complete transport;
+            transport.payload.assign( message::Transport::payload_max_size, 'A');
+            transport.type = 2;
 
-            std::string information;
-            information.reserve( message::Transport::payload_max_size - 1);
-
-            for( int count = 0; count < message::Transport::payload_max_size - 1; ++count)
-            {
-               information.push_back( '0');
-            }
+            ASSERT_TRUE( send( transport, send::Queue::cNoBlocking));
 
 
-            std::copy( information.begin(), information.end(), transport.m_payload.m_payload.data());
-            transport.m_payload.m_payload[ information.size()] = '\0';
-            transport.paylodSize( information.size() + 1);
-            transport.m_payload.m_type = 2;
+            auto response = receive( 0);
 
-            send( transport);
+            EXPECT_TRUE( transport.payload == response.at( 0).payload);
+            // No more messages should be on the queue
+            EXPECT_TRUE( receive( receive::Queue::cNoBlocking).empty());
+         }
 
-            message::Transport response;
+         TEST( casual_common, ipc_queue_send_receive_big_message)
+         {
 
-            receive( response);
+            receive::Queue receive;
 
-            std::string receivedInformation{ response.m_payload.m_payload.data()};
+            send::Queue send( receive.id());
+
+            message::Complete transport;
+            transport.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
+            transport.type = 2;
+
+            ASSERT_TRUE( send( transport, send::Queue::cNoBlocking));
 
 
-            EXPECT_TRUE( information == receivedInformation);// << "information: " << information;
-            EXPECT_TRUE( transport.size() == response.size());
+            auto response = receive( 0);
+
+            EXPECT_TRUE( transport.payload == response.at( 0).payload);
          }
       }
 	}

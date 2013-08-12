@@ -6,14 +6,16 @@ Include( $(CASUAL_BUILD_ENVIRONMENT))
 INCLUDE_PATHS= include \
     admin/include \
 	../common/include \
+	../configuration/include \
 	../xatmi/include \
 	../serviceframework/include \
 	$(UNITTEST_INCLUDE_PATH) \
 	$(YAML_INCLUDE_PATH) \
 
 LIBRARY_PATHS = ../common/bin \
-    ../serviceframework/bin \
+   ../serviceframework/bin \
 	../xatmi/bin \
+	../configuration/bin \
 	$(YAML_LIBRARY_PATH) \
 	$(JSON_LIBRARY_PATH)
 
@@ -22,6 +24,7 @@ LIBRARY_PATHS = ../common/bin \
 //
 // VO
 //
+/*
 Compile( admin/source/servicevo.cpp, admin/obj/servicevo.o)
 Compile( admin/source/servervo.cpp, admin/obj/servervo.o)
 
@@ -30,7 +33,7 @@ LinkLibrary( casual-broker-admin-vo, \
     admin/obj/servervo.o \
     ,\
     casual-sf ) 
-
+*/
 	
 
 Compile( source/broker.cpp, obj/broker.o)
@@ -46,8 +49,15 @@ LinkExecutable( casual-broker, \
 	obj/broker_main.o \
 	obj/action.o \
 	obj/adminserverimplementation.o \
-	obj/adminserver.o, \
-	casual-common casual-sf casual-xatmi casual-broker-admin-vo)
+	obj/adminserver.o \
+	, \
+	casual-common \
+	casual-sf \
+   casual-xatmi \
+   casual-configuration \
+   )
+   
+   //casual-broker-admin-vo )
 	
 	
 //
@@ -57,7 +67,7 @@ Compile( admin/source/broker_admin.cpp, obj/broker_admin.o)
 
 LinkExecutable( casual-broker-admin, \
     obj/broker_admin.o, \
-    casual-common casual-sf casual-xatmi casual-broker-admin-vo)
+    casual-common casual-sf casual-xatmi)
 	
 	
 //
@@ -69,10 +79,11 @@ Compile( unittest/isolated/source/test_broker_transformation.cpp, unittest/isola
 
 
 LinkIsolatedUnittest( casual-broker-isolated, \
+   obj/action.o \
 	unittest/isolated/obj/test_broker.o \
 	unittest/isolated/obj/test_broker_confguration.o \
 	unittest/isolated/obj/test_broker_transformation.o, \
-	casual-common casual-sf casual-broker-admin-vo)
-	
+   casual-common casual-sf casual-configuration)
+
 	
 

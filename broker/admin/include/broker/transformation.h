@@ -8,8 +8,7 @@
 #ifndef TRANSFORM_H_
 #define TRANSFORM_H_
 
-#include "broker/servervo.h"
-#include "broker/servicevo.h"
+#include "broker/brokervo.h"
 #include "broker/broker.h"
 
 #include "sf/functional.h"
@@ -27,14 +26,31 @@ namespace casual
 
             struct Server
             {
-               admin::ServerVO operator () ( const broker::Server& value) const
+               admin::InstanceVO operator () ( const std::shared_ptr< broker::Server::Instance>& value) const
+               {
+                  admin::InstanceVO result;
+
+                  result.pid = value->pid;
+                  result.queueId = value->queue_id;
+                  result.state = static_cast< long>( value->state);
+                  result.invoked = value->invoked;
+                  result.last = value->last;
+
+                  return result;
+               }
+
+               admin::ServerVO operator () ( const std::shared_ptr< broker::Server>& value) const
                {
                   admin::ServerVO result;
 
-                  result.setPath( value.path);
-                  result.setPid( value.pid);
-                  result.setQueue( value.queue_key);
-                  result.setIdle( value.idle);
+                  result.alias = value->alias;
+                  result.path = value->path;
+
+                  std::transform(
+                     std::begin( value->instances),
+                     std::end( value->instances),
+                     std::back_inserter( result.instances),
+                     transform::Server{});
 
                   return result;
                }
@@ -42,7 +58,7 @@ namespace casual
 
             struct Pid
             {
-               broker::Server::pid_type operator () ( const broker::Server* value) const
+               broker::Server::pid_type operator () ( const std::shared_ptr< broker::Server::Instance>& value) const
                {
                   return value->pid;
                }
@@ -50,18 +66,19 @@ namespace casual
 
             struct Service
             {
-               admin::ServiceVO operator () ( const broker::Service& value) const
+               admin::ServiceVO operator () ( const std::shared_ptr< broker::Service>& value) const
                {
                   admin::ServiceVO result;
 
-                  result.setNameF( value.information.name);
-                  result.setTimeoutF( value.information.timeout);
+                  result.name = value->information.name;
+                  result.timeout = value->information.timeout;
+                  result.lookedup = value->lookedup;
 
-                  std::vector< long> pids;
-
-                  std::transform( std::begin( value.servers), std::end( value.servers), std::back_inserter( pids), Pid());
-
-                  result.setPids( std::move( pids));
+                  std::transform(
+                     std::begin( value->instances),
+                     std::end( value->instances),
+                     std::back_inserter( result.instances),
+                     Pid{}) ;
 
                   return result;
                }

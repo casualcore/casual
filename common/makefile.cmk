@@ -15,7 +15,6 @@ INCLUDE_PATHS=[
 LIBRARY_PATHS= []
 
 Compile( "source/server_context.cpp", "obj/server_context.o")
-Compile( "source/service_context.cpp", "obj/service_context.o")
 Compile( "source/calling_context.cpp", "obj/calling_context.o")
 Compile( "source/buffer_context.cpp", "obj/buffer_context.o")
 Compile( "source/transaction_context.cpp", "obj/transaction_context.o")
@@ -34,22 +33,29 @@ Compile( "source/process.cpp", "obj/process.o")
 
 LinkLibrary( "casual-common", 
 	["obj/server_context.o",
-	"obj/service_context.o",
 	"obj/calling_context.o",
 	"obj/buffer_context.o",
 	"obj/transaction_context.o",
 	"obj/ipc.o",
 	"obj/queue.o",
 	"obj/uuid.o",
-    "obj/environment.o",
-    "obj/file.o",
-    "obj/signal.o",
-    "obj/platform.o",
-    "obj/logger.o",
-    "obj/error.o",
-    "obj/chronology.o",
-    "obj/process.o"],
+	"obj/environment.o",
+	"obj/file.o",
+	"obj/signal.o",
+	"obj/platform.o",
+	"obj/logger.o",
+	"obj/error.o",
+	"obj/chronology.o",
+	"obj/process.o"],
 	[UUIDLIB])
+
+
+//
+// Mockup stuff, only for unittest
+//
+Compile( "source/mockup.cpp", "obj/mockup.o")
+
+LinkArchive( "casual-mockup", ["obj/mockup.o"])
 
 
 Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/simple_process.o")
@@ -74,6 +80,10 @@ Compile( "unittest/isolated/source/test_arguments.cpp", "unittest/isolated/obj/t
 Compile( "unittest/isolated/source/test_file.cpp", "unittest/isolated/obj/test_file.o")
 Compile( "unittest/isolated/source/test_process.cpp", "unittest/isolated/obj/test_process.o")
 Compile( "unittest/isolated/source/test_string.cpp", "unittest/isolated/obj/test_string.o")
+Compile( "unittest/isolated/source/test_error.cpp", "unittest/isolated/obj/test_error.o")
+
+Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
+
 
 LinkIsolatedUnittest( "casual-common-isolated", 
 	["unittest/isolated/obj/test_buffer.o",
@@ -86,11 +96,13 @@ LinkIsolatedUnittest( "casual-common-isolated",
     "unittest/isolated/obj/test_file.o",
     "unittest/isolated/obj/test_arguments.o",
     "unittest/isolated/obj/test_process.o",
-    "unittest/isolated/obj/test_string.o"],
+    "unittest/isolated/obj/test_string.o",
+    "unittest/isolated/obj/test_error.o",
+    "unittest/isolated/obj/test_signal.o"],
 	["casual-common"] )	
 
 #
 # Install
 #
 InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
-
+InstallExceutable("simple_process","$CASUAL_HOME/bin/.")

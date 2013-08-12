@@ -25,6 +25,11 @@ namespace casual
       {
 
          //!
+         //! @return process id (pid) for current process.
+         //!
+         platform::pid_type id();
+
+         //!
          //! Sleep for a while
          //!
          //! @param time numbers of microseconds to sleep
@@ -60,19 +65,30 @@ namespace casual
          platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments);
 
          //!
-         //! check if there are sub processes that has been terminated
+         //! Spawn a new application that path describes, and wait until it exit. That is
+         //!  - spawn
+         //!  - wait
+         //!
+         //! @param path path to application to be spawned
+         //! @param arguments 0..N arguments that is passed to the application
+         //! @return exit code from the process
+         //!
+         int execute( const std::string& path, const std::vector< std::string>& arguments);
+
+
+         //!
+         //! check if there are child processes that has been terminated
          //!
          //! @return 0..N terminated process id's
          //!
-         std::vector< platform::pid_type> terminated();
+         //std::vector< platform::pid_type> terminated();
 
          //!
          //! Wait for a specific process to terminate.
          //!
-         //! @attention this i mostly for unittest, and it's unlikely we have any use for this
-         //!    blocking semantics in real code..
+         //! @return return code from process
          //!
-         platform::pid_type wait( platform::pid_type pid);
+         int wait( platform::pid_type pid);
 
          //!
          //! Tries to terminate pids
@@ -83,6 +99,51 @@ namespace casual
          //! Tries to terminate pid
          //!
          void terminate( platform::pid_type pid);
+
+
+         struct lifetime
+         {
+            struct Exit
+            {
+               enum class Why
+               {
+                  unknown,
+                  exited,
+                  stopped,
+                  signaled,
+                  core,
+               };
+
+               platform::pid_type pid = 0;
+               int status = 0;
+               Why why = Why::unknown;
+
+               std::string string() const
+               {
+                  std::string result;
+                  result = "pid: " + std::to_string( pid) + " why: ";
+                  switch( why)
+                  {
+                     case Why::unknown: result += "unknown"; break;
+                     case Why::exited: result += "exited"; break;
+                     case Why::stopped: result += "stopped"; break;
+                     case Why::signaled: result += "signaled"; break;
+                     case Why::core: result += "core"; break;
+                  }
+                  return result;
+               }
+
+            };
+
+            static std::vector< Exit> ended();
+            //static void clear();
+
+            // called by signal...
+            static void death();
+
+         private:
+            //static std::vector< Exit>& state();
+         };
 
 
       } // process

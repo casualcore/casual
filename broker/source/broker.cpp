@@ -9,6 +9,8 @@
 #include "broker/broker_implementation.h"
 #include "broker/action.h"
 
+#include "config/domain.h"
+
 #include "common/environment.h"
 #include "common/logger.h"
 
@@ -48,11 +50,6 @@ namespace casual
 		{
 			namespace
 			{
-
-
-
-
-
 				template< typename Q>
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
@@ -61,15 +58,27 @@ namespace casual
 					   common::file::remove( path);
 					}
 
+					logger::debug << "writing broker queue file: " << path;
+
 					std::ofstream brokerQueueFile( path);
-					brokerQueueFile << queue.getKey();
+
+					if( brokerQueueFile)
+					{
+                  brokerQueueFile << queue.id() << std::endl;
+                  brokerQueueFile.close();
+					}
+					else
+					{
+					   throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
+					}
 				}
 			}
 		}
 
 
 		Broker::Broker()
-			: m_brokerQueueFile( common::environment::getBrokerQueueFileName())
+			: m_brokerQueueFile( common::environment::file::brokerQueue())
+		   //: m_brokerQueueFile( "/tmp/crap")
 		{
 
 		}
@@ -85,18 +94,23 @@ namespace casual
 
 		   try
 		   {
+		      common::trace::Exit temp( "terminate child processes");
+
 		      //
 		      // We need to terminate all children
 		      //
-		      for( auto& server : m_state.servers)
+		      /*
+		      for( auto pid : m_state.processes)
 		      {
-		         process::terminate( server.second.pid);
+		         process::terminate( pid);
 		      }
 
-		      for( auto pid : process::terminated())
+
+		      for( auto& death : process::lifetime::ended())
 		      {
-		         logger::information << "shutdown: " << pid;
+		         logger::information << "shutdown: " << death.string();
 		      }
+		      */
 
 		   }
 		   catch( ...)
@@ -105,73 +119,51 @@ namespace casual
 		   }
 		}
 
-      void Broker::start( const std::vector< std::string>& arguments)
+      void Broker::start( const Settings& arguments)
       {
+         common::trace::Exit temp( "broker start");
+
+         broker::QueueBlockingReader blockingReader( m_state, m_receiveQueue);
 
          //
          // Initialize configuration and such
          //
          {
-            common::environment::setExecutablePath( arguments.at( 0));
 
             //
             // Make the key public for others...
             //
             local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
 
-            configuration::Settings configuration;
 
-            //
-            // Try to find configuration file
-            // TODO: you should be able to pass the configurationfile as an argument.
-            //
-            const std::string configFile = common::environment::getDefaultConfigurationFile();
+            config::domain::Domain domain;
 
-            if( ! configFile.empty())
+            try
             {
-
-               common::logger::information << "broker: using configuration file: " << configFile;
-
-               //
-               // Create the reader and deserialize configuration
-               //
-               auto reader = sf::archive::reader::makeFromFile( configFile);
-
-               reader >> sf::makeNameValuePair( "broker", configuration);
-
-               //
-               // Make sure we've got valid configuration
-               //
-               configuration::validate( configuration);
+               domain = config::domain::get( arguments.configurationfile);
             }
-            else
+            catch( const exception::FileNotExist& exception)
             {
-               common::logger::information << "broker: no configuration file was found - using default";
+               common::logger::information << "failed to open '" << arguments.configurationfile << "' - starting anyway...";
             }
 
-            common::logger::debug << " m_state.configuration.servers.size(): " << configuration.servers.size();
+
+            common::logger::debug << " m_state.configuration.servers.size(): " << domain.servers.size();
+
+            {
+               common::trace::Exit trace( "start processes");
 
 
-            //
-            // Start the servers...
-            // TODO: Need to do more config
-            //
-            std::for_each(
-                  std::begin( configuration.servers),
-                  std::end( configuration.servers),
-                  action::server::Start());
 
+               //
+               // Start the servers...
+               // TODO: Need to do more config
+               //
+               handle::TransactionManagerConnect tmConnect( m_state);
+               handle::Connect instanceConnect( m_state);
+               action::boot::domain( m_state, domain, blockingReader, tmConnect, instanceConnect);
 
-            //
-            // We have to wait for TM
-            //
-            queue::blocking::Reader queueReader( m_receiveQueue);
-
-            handle::TransactionManagerConnect::message_type message;
-            queueReader( message);
-
-            handle::TransactionManagerConnect tmConnect( m_state);
-            tmConnect.dispatch( message);
+            }
 
          }
 
@@ -181,7 +173,7 @@ namespace casual
          //
 
 
-         common::dispatch::Handler handler;
+         message::dispatch::Handler handler;
 
          handler.add< handle::Connect>( m_state);
          handler.add< handle::Disconnect>( m_state);
@@ -204,19 +196,15 @@ namespace casual
 
 
             arguments.m_argc = 1;
-            const char* executable = common::environment::getExecutablePath().c_str();
+            const char* executable = common::environment::file::executable().c_str();
             arguments.m_argv = &const_cast< char*&>( executable);
 
             handler.add< handle::Call>( arguments, m_state);
          }
 
-         queue::blocking::Reader queueReader( m_receiveQueue);
-
-         bool working = true;
-
-         while( working)
+         while( true)
          {
-            auto marshal = queueReader.next();
+            auto marshal = blockingReader.next();
 
             if( ! handler.dispatch( marshal))
             {

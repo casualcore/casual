@@ -1,17 +1,17 @@
-//!
-//! casual_ipc_messages.h
-//!
-//! Created on: Apr 25, 2012
-//!     Author: Lazan
-//!
+
+
 
 #ifndef CASUAL_MESSAGES_H_
 #define CASUAL_MESSAGES_H_
+
+
+
 
 #include "common/ipc.h"
 #include "common/buffer_context.h"
 #include "common/types.h"
 #include "common/platform.h"
+#include "common/process.h"
 #include "common/exception.h"
 #include "common/uuid.h"
 
@@ -31,21 +31,50 @@ namespace casual
             cServerConnect  = 10, // message type can't be 0!
             cServerConfiguration,
             cServerDisconnect,
-            cServiceAdvertise,
+            cServiceAdvertise = 20,
             cServiceUnadvertise,
             cServiceNameLookupRequest,
             cServiceNameLookupReply,
             cServiceCall,
             cServiceReply,
             cServiceAcknowledge,
-            cMonitorConnect = 20,
+            cMonitorConnect = 30,
             cMonitorDisconnect,
             cMonitorNotify,
-            cTransactionManagerConnect = 30,
+            cTransactionManagerConnect = 40,
+            cTransactionBegin,
+            cTransactionPrepare,
+            cTransactionCommit,
+            cTransactionRollback,
+            cTransactionGenericReply,
+            cTransactionPreparedReply,
+            cTransactionResurceConnectReply,
+            cTransactionResurceGenericReply
+
             //cTransactionMonitorUnadvertise,
 
          };
 
+
+         struct Transaction
+         {
+            typedef common::platform::pid_type pid_type;
+
+            Transaction() : creator( 0)
+            {
+               xid.formatID = common::cNull_XID;
+            }
+
+            XID xid;
+            pid_type creator;
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & xid;
+               archive & creator;
+            }
+         };
 
 
          struct Service
@@ -60,7 +89,7 @@ namespace casual
 
             std::string name;
             Seconds timeout = 0;
-            common::platform::queue_key_type monitor_queue = 0;
+            common::platform::queue_id_type monitor_queue = 0;
 
             template< typename A>
             void marshal( A& archive)
@@ -71,6 +100,8 @@ namespace casual
             }
          };
 
+
+
          namespace server
          {
 
@@ -79,21 +110,22 @@ namespace casual
             //!
             struct Id
             {
+
+               typedef platform::queue_id_type queue_id_type;
                typedef common::platform::pid_type pid_type;
-               typedef ipc::message::Transport::queue_key_type queue_key_type;
 
-               Id()
-                     : pid( common::platform::getProcessId())
-               {
-               }
 
-               queue_key_type queue_key;
-               pid_type pid;
+               Id() = default;
+               Id( queue_id_type id, pid_type pid) : queue_id( id), pid( pid) {}
+
+
+               queue_id_type queue_id = 0;
+               pid_type pid = common::process::id();
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & queue_key;
+                  archive & queue_id;
                   archive & pid;
                }
             };
@@ -106,13 +138,13 @@ namespace casual
                   message_type = type
                };
 
-               server::Id serverId;
+               server::Id server;
                std::string path;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                   archive & path;
                }
             };
@@ -125,12 +157,12 @@ namespace casual
                   message_type = type
                };
 
-               server::Id serverId;
+               server::Id server;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                }
             };
 
@@ -149,6 +181,31 @@ namespace casual
 
             };
 
+            namespace resource
+            {
+               struct Manager
+               {
+                  /*
+                  Manager() = default;
+                  Manager( Manager&&) = default;
+                  Manager& operator = ( Manager&&) = default;
+                  */
+
+                  std::string key;
+                  std::string openinfo;
+                  std::string closeinfo;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & key;
+                     archive & openinfo;
+                     archive & closeinfo;
+                  }
+               };
+
+            }
+
             //!
             //! Sent from the broker with "start-up-information" for a server
             //!
@@ -159,14 +216,20 @@ namespace casual
                   message_type = cServerConfiguration
                };
 
-               typedef ipc::message::Transport::queue_key_type queue_key_type;
+               Configuration() = default;
+               Configuration( Configuration&&) = default;
+               Configuration& operator = ( Configuration&&) = default;
 
-               queue_key_type transactionManagerQueue = 0;
+               typedef platform::queue_id_type queue_id_type;
+
+               queue_id_type transactionManagerQueue = 0;
+               std::vector< resource::Manager> resourceManagers;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & transactionManagerQueue;
+                  archive & resourceManagers;
                }
             };
 
@@ -187,14 +250,14 @@ namespace casual
                };
 
                std::string serverPath;
-               server::Id serverId;
+               server::Id server;
                std::vector< Service> services;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & serverPath;
-                  archive & serverId;
+                  archive & server;
                   archive & services;
                }
             };
@@ -206,13 +269,13 @@ namespace casual
                   message_type = cServiceUnadvertise
                };
 
-               server::Id serverId;
+               server::Id server;
                std::vector< Service> services;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & serverId;
+                  archive & server;
                   archive & services;
                }
             };
@@ -287,6 +350,7 @@ namespace casual
                server::Id reply;
                common::Uuid callId;
                std::string callee;
+               Transaction transaction;
 
                template< typename A>
                void marshal( A& archive)
@@ -296,6 +360,7 @@ namespace casual
                   archive & reply;
                   archive & callId;
                   archive & callee;
+                  archive & transaction;
                }
             };
 
@@ -303,7 +368,7 @@ namespace casual
             {
 
                //!
-               //! Represents a service call. via tp(a)call
+               //! Represents a service call. via tp(a)call, from the callee's perspective
                //!
                struct Call: public base_call
                {
@@ -328,6 +393,9 @@ namespace casual
 
             namespace caller
             {
+               //!
+               //! Represents a service call. via tp(a)call, from the callers perspective
+               //!
                struct Call: public base_call
                {
 
@@ -459,7 +527,7 @@ namespace casual
          namespace transaction
          {
             //!
-            //! Used to advertise the transaction monitor
+            //! Used to connect the transaction monitor to broker
             //!
             typedef server::basic_connect< cTransactionManagerConnect> Connect;
 
@@ -469,13 +537,100 @@ namespace casual
             //typedef basic_disconnect< cTransactionMonitorUnadvertise> Unadvertise;
 
 
-         }
+            namespace reply
+            {
+               template< message::Type type>
+               struct basic_reply
+               {
+                  typedef common::platform::pid_type pid_type;
+                  enum
+                  {
+                     message_type = type
+                  };
+
+                  server::Id id;
+                  int state = 0;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & id;
+                     archive & state;
+
+                  }
+               };
+
+               //!
+               //! Reply from the transaction monitor
+               //!
+               typedef basic_reply< cTransactionGenericReply> Generic;
+
+               //!
+               //! Reply from the transaction monitor
+               //!
+               typedef basic_reply< cTransactionPreparedReply> Prepared;
+
+
+               namespace resource
+               {
+                  //!
+                  //! Used to notify the TM that a resource proxy is up and running, or not...
+                  //!
+                  typedef basic_reply< cTransactionResurceConnectReply> Connect;
+
+                  typedef basic_reply< cTransactionResurceGenericReply> Generic;
+
+               } // resource
+
+            } // reply
+
+
+
+            template< message::Type type>
+            struct basic_transaction
+            {
+               typedef basic_transaction< type> base_type;
+
+               enum
+               {
+                  message_type = type
+               };
+
+               server::Id server;
+               XID xid;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & server;
+                  archive & xid;
+               }
+            };
+
+            struct Begin : public basic_transaction< cTransactionBegin>
+            {
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  base_type::marshal( archive);
+                  archive & start;
+               }
+
+               common::time_type start;
+            };
+
+            typedef basic_transaction< cTransactionPrepare> Prepare;
+            typedef basic_transaction< cTransactionCommit> Commit;
+            typedef basic_transaction< cTransactionRollback> Rollback;
+
+
+         } // transaction
 
          //!
          //! Deduce witch type of message it is.
          //!
          template< typename M>
-         ipc::message::Transport::message_type_type type( const M& message)
+         ipc::message::Transport::message_type_type type( const M&)
          {
             return M::message_type;
          }

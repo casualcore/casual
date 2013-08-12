@@ -8,10 +8,10 @@
 
 
 #include "common/error.h"
+#include "common/arguments.h"
+#include "common/environment.h"
 
 #include "transaction/manager.h"
-
-
 
 
 
@@ -21,15 +21,18 @@ int main( int argc, char** argv)
 
    try
    {
-      std::vector< std::string> arguments;
+      casual::transaction::Settings settings;
+      {
+         casual::common::Arguments parser;
+         parser.add(
+               casual::common::argument::directive( { "-db", "--database"}, "path to transaction database log", settings.database)
+         );
 
-      std::copy(
-         argv,
-         argv + argc,
-         std::back_inserter( arguments));
+         parser.parse( argc, argv);
+         casual::common::environment::file::executable( parser.processName());
+      }
 
-      casual::transaction::Manager manager( arguments);
-
+      casual::transaction::Manager manager( settings);
       manager.start();
 
    }

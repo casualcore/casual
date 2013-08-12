@@ -45,22 +45,73 @@ namespace casual
 				}
 			}
 
-			const std::string& getRootPath()
-			{
-				static const std::string result = variable::get( "CASUAL_ROOT");
-				return result;
-			}
 
-			std::string getBrokerQueueFileName()
-			{
-				return getRootPath() + "/.casual_broker_queue";
-			}
 
-			const std::string& getTemporaryPath()
+
+
+			namespace directory
 			{
-				static const std::string result = "/tmp";
-				return result;
-			}
+			   const std::string& domain()
+            {
+               static const std::string result = variable::get( "CASUAL_DOMAIN_HOME");
+               return result;
+            }
+
+            const std::string& temporary()
+            {
+               static const std::string result = "/tmp";
+               return result;
+            }
+
+            const std::string& casual()
+            {
+               static const std::string result = variable::get( "CASUAL_HOME");
+               return result;
+            }
+
+         }
+
+			namespace file
+         {
+
+			   namespace local
+			   {
+               namespace
+               {
+                  std::string& executablePath()
+                  {
+                     static std::string path;
+                     return path;
+                  }
+               }
+            }
+
+            void executable( const std::string& path)
+            {
+               local::executablePath() = path;
+            }
+
+            const std::string& executable()
+            {
+               return local::executablePath();
+            }
+
+            std::string brokerQueue()
+            {
+               return directory::domain() + "/.casual_broker_queue";
+            }
+
+            std::string configuration()
+            {
+               return common::file::find( directory::domain() + "/configuration", std::regex( "domain.(yaml|xml)" ));
+            }
+
+            std::string installedConfiguration()
+            {
+               return common::file::find( directory::casual() + "/configuration", std::regex( "resources.(yaml|xml)" ));
+            }
+
+         }
 
 
 			platform::seconds_type getTime()
@@ -75,34 +126,9 @@ namespace casual
 				return "domain-1";
 			}
 
-			std::string getDefaultConfigurationFile()
-			{
-			   return common::file::find( getRootPath(), std::regex( "casual_config.(yaml|xml)" ));
-			}
-
-			namespace local
-			{
-			   namespace
-			   {
-			      std::string& executablePath()
-			      {
-			         static std::string path;
-			         return path;
-			      }
 
 
-			   }
-			}
 
-			void setExecutablePath( const std::string& path)
-			{
-			   local::executablePath() = path;
-			}
-
-			const std::string& getExecutablePath()
-			{
-			   return local::executablePath();
-			}
 
 		}
 	}

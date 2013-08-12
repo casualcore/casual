@@ -23,8 +23,6 @@ namespace casual
 		{
 
 
-
-
 			//!
 			//! Throws if there has been a signal received.
 			//!

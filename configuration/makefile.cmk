@@ -1,0 +1,43 @@
+
+Include( $(CASUAL_BUILD_ENVIRONMENT))
+
+INCLUDE_PATHS= include \
+   ../common/include \
+   ../xatmi/include \
+   ../serviceframework/include \
+   $(JSON_INCLUDE_PATH) \
+   $(UNITTEST_INCLUDE_PATH)
+
+
+LIBRARY_PATHS = bin \
+    ../common/bin \
+    ../xatmi/bin \
+    ../serviceframework/bin \
+    $(JSON_LIBRARY_PATH)
+
+
+
+Compile( source/domain.cpp, obj/domain.o)
+Compile( source/xa_switch.cpp, obj/xa_switch.o)
+
+LinkLibrary( casual-configuration, \
+    obj/domain.o \
+    obj/xa_switch.o \
+    , \
+    casual-common \
+    casual-sf)
+
+
+
+//
+// Unittest
+//
+Compile( unittest/isolated/source/test_domain.cpp, obj/test_domain.o)
+Compile( unittest/isolated/source/test_xa_switch.cpp, obj/test_xa_switch.o)
+
+LinkIsolatedUnittest( test_configuration, \
+   obj/test_domain.o \
+   obj/test_xa_switch.o \
+   ,\
+   casual-configuration casual-sf)  
+

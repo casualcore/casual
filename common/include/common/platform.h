@@ -49,6 +49,24 @@ namespace casual
 	{
 		namespace platform
 		{
+
+		   //
+		   // Some sizes
+		   //
+
+
+		   //!
+		   //! Max number of transaction state updates that will be done
+		   //! before persistence store of the updates...
+		   //!
+		   const std::size_t transaction_batch = 100;
+
+		   //!
+         //! Max number of statistics updates that will be done
+         //! before persistence store of the updates...
+         //!
+		   const std::size_t statistics_batch = 1000;
+
 			//
 			// Some os-specific if-defs?
 			//
@@ -61,11 +79,12 @@ namespace casual
 			// ipc
 			//
 			typedef int queue_id_type;
-			typedef key_t queue_key_type;
 			typedef long message_type_type;
 
 
-			const std::size_t message_size = 2048;
+			// TODO: bigger!
+			// const std::size_t message_size = 2048;
+			 const std::size_t message_size = 1024;
 
 			//
 			// uuid
@@ -90,10 +109,6 @@ namespace casual
 			{
 				cIPC_NO_WAIT = IPC_NOWAIT
 			};
-
-
-			pid_type getProcessId();
-
 
 
 			enum logger_priority
@@ -123,6 +138,7 @@ namespace casual
 			static const signal_type cSignal_Kill = SIGKILL;
 			static const signal_type cSignal_Quit = SIGQUIT;
 			static const signal_type cSignal_Interupt = SIGINT;
+			static const signal_type cSignal_ChildTerminated = SIGCHLD;
 
 			std::string getSignalDescription( signal_type);
 

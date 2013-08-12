@@ -9,94 +9,57 @@
 
 #include <gtest/gtest.h>
 
-#include "broker/configuration.h"
+#include "broker/broker.h"
+#include "broker/action.h"
 
-#include "sf/archive_yaml.h"
+
+#include "config/domain.h"
+
+#include <iosfwd>
+
 
 
 namespace casual
 {
-   namespace local
-   {
-      namespace yaml
-      {
-
-         std::string getDefault()
-         {
-            return R"(
-broker:
-   default:
-
-      server:
-         instances: 2
-         limits:
-            min: 2
-            max: 4 
-
-      service:
-         timeout: 90
-
-   servers:
-      - path: /a/b/c
-        instances: 30
-        limits:
-           max: 40
-
-      - path: /a/b/x
-        instances: 10
-        limits:
-           min: 1
-           max: 2
-
-)";
-
-         }
-
-      }
-
-   }
-
    namespace broker
    {
-      TEST( casual_broker_configuration_yaml, read_defaul)
+      TEST( casual_broker_configuration, add_groups)
       {
-         std::istringstream stream( local::yaml::getDefault());
+         State state;
 
-         sf::archive::yaml::relaxed::Reader reader( stream);
+         auto domain = config::domain::get( common::file::basedir( __FILE__) + "/../../../../configuration/domain.yaml");
 
-         configuration::Settings broker;
+         action::addGroups( state, domain);
 
-         reader >> CASUAL_MAKE_NVP( broker);
+         EXPECT_TRUE( state.groups.size() == 5);
 
-         EXPECT_TRUE( broker.casual_default.server.instances == "2");
-         EXPECT_TRUE( broker.casual_default.server.limits.min == "2");
-         EXPECT_TRUE( broker.casual_default.server.limits.max == "4");
-         EXPECT_TRUE( broker.casual_default.service.timeout == "90");
+
+         EXPECT_TRUE( state.groups.at( "group3")->dependencies.size() == 1) << "size: " << state.groups.at( "group3")->dependencies.size();
+
+         ASSERT_TRUE( state.groups.at( "group4")->dependencies.size() == 2);
+         EXPECT_TRUE( state.groups.at( "group4")->dependencies.at( 0)->name == "group3");
+         EXPECT_TRUE( state.groups.at( "group4")->dependencies.at( 1)->name == "casual");
+
 
       }
 
-
-      TEST( casual_broker_configuration_yaml, read_servers)
+      TEST( casual_broker_configuration, boot_order)
       {
-         std::istringstream stream( local::yaml::getDefault());
+         State state;
 
-         sf::archive::yaml::relaxed::Reader reader( stream);
+         auto domain = config::domain::get( common::file::basedir( __FILE__) + "../../../../configuration/domain.yaml");
+         action::addGroups( state, domain);
 
-         configuration::Settings broker;
+         auto bootOrder = action::bootOrder( state);
 
-         reader >> CASUAL_MAKE_NVP( broker);
+         ASSERT_TRUE( bootOrder.size() == 3) << "sections: " << bootOrder.size();
+         EXPECT_TRUE( bootOrder.at( 0).size() == 3);
+         EXPECT_TRUE( bootOrder.at( 1).size() == 1);
+         EXPECT_TRUE( bootOrder.at( 2).size() == 1);
 
-         ASSERT_TRUE( broker.servers.size() == 2);
-         EXPECT_TRUE( broker.servers.front().path == "/a/b/c");
-         EXPECT_TRUE( broker.servers.front().instances == "30");
-         EXPECT_TRUE( broker.servers.front().limits.max == "40");
-
-         EXPECT_TRUE( broker.servers.back().path == "/a/b/x");
-         EXPECT_TRUE( broker.servers.back().instances == "10");
-         EXPECT_TRUE( broker.servers.back().limits.min == "1");
-         EXPECT_TRUE( broker.servers.back().limits.max == "2");
 
       }
+
 
    }
 }

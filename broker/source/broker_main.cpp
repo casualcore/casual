@@ -10,25 +10,33 @@
 
 
 #include "common/error.h"
+#include "common/arguments.h"
 
 
 #include <iostream>
 
+using namespace casual;
 
 int main( int argc, char** argv)
 {
 	try
 	{
-		std::vector< std::string> arguments;
 
-		std::copy(
-			argv,
-			argv + argc,
-			std::back_inserter( arguments));
+	   broker::Settings settings;
 
-		std::cout << "starting" << std::endl;
+	   {
+	      common::Arguments parser;
 
-		casual::broker::Broker::instance().start( arguments);
+	      parser.add(
+	            common::argument::directive( {"-c", "--configuration-file"}, "domain configuration file", settings.configurationfile)
+	      );
+
+	      parser.parse( argc, argv);
+
+	      common::environment::file::executable( parser.processName());
+	   }
+
+		casual::broker::Broker::instance().start( settings);
 
 	}
 	catch( ...)
