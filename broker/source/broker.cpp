@@ -123,7 +123,7 @@ namespace casual
       {
          common::trace::Exit temp( "broker start");
 
-         broker::QueueBlockingReader blockingReader( m_state, m_receiveQueue);
+         broker::QueueBlockingReader blockingReader( m_receiveQueue, m_state);
 
          //
          // Initialize configuration and such

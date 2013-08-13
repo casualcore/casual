@@ -11,6 +11,7 @@
 #define MOCKUP_H_
 
 #include "common/queue.h"
+#include <cassert>
 
 namespace casual
 {
@@ -20,6 +21,128 @@ namespace casual
       {
          namespace queue
          {
+            typedef platform::message_type_type message_type_type;
+
+            template< typename M>
+            class mockup_base
+            {
+            public:
+
+               typedef common::platform::queue_id_type id_type;
+
+               struct ipc_type
+               {
+                  typedef common::platform::queue_id_type id_type;
+
+                  ipc_type( id_type id) : id{ id} {}
+
+                  id_type id;
+               };
+
+               typedef M message_type;
+
+               mockup_base( ipc_type queue)
+               {
+                  queue_id = queue.id;
+               }
+
+              bool send( marshal::output::Binary& archive, message_type_type type)
+              {
+                 assert( type == M::message_type);
+
+                 marshal::input::Binary input{ std::move( archive)};
+                 M value;
+                 input >> value;
+                 queue.push_back( std::move( value));
+
+                 return true;
+              }
+
+              static void reset()
+              {
+                 queue.clear();
+                 queue_id = 0;
+              }
+
+              static id_type queue_id;
+              static std::deque< message_type> queue;
+            };
+
+            template< typename M>
+            typename mockup_base< M>::id_type mockup_base< M>::queue_id = 0;
+
+            template< typename M>
+            std::deque< M> mockup_base< M>::queue = std::deque< message_type>{};
+
+
+
+
+            namespace non_blocking
+            {
+               template< typename M>
+               using base_writer = mockup_base< M>;
+
+               //
+               // Use the blocking reader as base,
+               //
+               template< typename M>
+               struct base_reader : public mockup_base< M>
+               {
+                  using mockup_base< M>::mockup_base;
+
+                  std::vector< marshal::input::Binary> next()
+                  {
+                     std::vector< marshal::input::Binary> result;
+
+                     if( ! mockup_base< M>::queue.empty())
+                     {
+                        marshal::output::Binary output;
+
+                        output << mockup_base< M>::queue.front();
+                        mockup_base< M>::queue.pop_front();
+
+                        result.emplace_back( std::move( output));
+                     }
+
+                     return result;
+                  }
+
+                  std::vector< marshal::input::Binary> read( message_type_type type)
+                  {
+                     assert( type == M::message_type);
+
+                     return next();
+                  }
+               };
+
+            } // non_blocking
+
+
+            namespace blocking
+            {
+
+               template< typename M>
+               using base_writer = mockup_base< M>;
+
+               template< typename M>
+               struct base_reader : public non_blocking::base_reader< M>
+               {
+                  typedef non_blocking::base_reader< M> base_type;
+                  using base_type::base_reader;
+
+                  marshal::input::Binary next()
+                  {
+                     return base_type::next.at( 0);
+                  }
+
+                  marshal::input::Binary read( message_type_type type)
+                  {
+                     return std::move( base_type::read( type).at( 0));
+                  }
+               };
+            }// blocking
+
+         /*
             template< typename M>
             struct WriteMessage
             {
@@ -114,6 +237,7 @@ namespace casual
             template< typename M>
             std::deque< M> ReadMessage< M>::replies = std::deque< message_type>{};
 
+             */
          } // queue
 
          namespace xa_switch

@@ -135,6 +135,11 @@ namespace casual
 
 		struct State
 		{
+		   State() = default;
+
+		   State( State&&) = default;
+		   State( const State&) = delete;
+
 
 		   typedef std::unordered_map< std::string, std::shared_ptr< Server>> server_mapping_type;
 		   typedef std::unordered_map< Server::pid_type, std::shared_ptr< Server::Instance>> instance_mapping_type;

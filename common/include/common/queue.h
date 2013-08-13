@@ -25,16 +25,56 @@ namespace casual
          typedef ipc::message::Transport transport_type;
          typedef transport_type::message_type_type message_type_type;
 
+
+         namespace policy
+         {
+            struct NoAction
+            {
+               void apply()
+               {
+                  throw;
+               }
+            };
+         } // policy
+
+
          namespace blocking
          {
-
-            class Writer
+            class base_writer
             {
             public:
-
                typedef ipc::send::Queue ipc_type;
 
-               Writer( ipc::send::Queue& queue);
+               base_writer( ipc_type& queue);
+
+            protected:
+
+              void send( marshal::output::Binary& archive, message_type_type type);
+
+              ipc_type& m_queue;
+            };
+
+
+            //!
+            //! Policy based queue writer abstraction.
+            //!
+            //! @note blocking
+            //!
+            //! @tparam P policy type that shall implement void apply() and execute throw; Hence react to exception
+            //!
+            //! @attention template parameter B is only there to enable other bases for unittest, shold not be used in other code
+            //!
+            template< typename P, typename B = base_writer>
+            class basic_writer : public B
+            {
+            public:
+               typedef P policy_type;
+               typedef B base_type;
+               typedef typename base_type::ipc_type ipc_type;
+
+               template< typename... Args>
+               basic_writer( ipc_type& queue, Args&&... args)
+                  : base_type( queue), m_policy( std::forward< Args>( args)...) {}
 
                //!
                //! Sends/Writes a message to the queue. which can result in several
@@ -51,33 +91,80 @@ namespace casual
 
                   message_type_type type = message::type( message);
 
-                  send( archive, type);
-
+                  policy_send( archive, type);
                }
+
             private:
 
-               void send( marshal::output::Binary& archive, message_type_type type);
+               void policy_send( marshal::output::Binary& archive, message_type_type type)
+               {
+                  try
+                  {
+                     base_type::send( archive, type);
+                  }
+                  catch( ...)
+                  {
+                     m_policy.apply();
+                     policy_send( archive, type);
+                  }
+               }
 
-               ipc_type& m_queue;
+               policy_type m_policy;
             };
 
+            typedef basic_writer< policy::NoAction> Writer;
 
-            //!
-            //!
-            //!
-            class Reader
+
+
+            class base_reader
             {
             public:
 
                typedef ipc::receive::Queue ipc_type;
 
-               Reader( ipc::receive::Queue& queue);
+               base_reader( ipc::receive::Queue& queue);
+
+            protected:
+
+               marshal::input::Binary next();
+
+               marshal::input::Binary read( message_type_type type);
+
+               ipc_type& m_queue;
+
+            };
+
+
+            //!
+            //! Policy based queue reader abstraction.
+            //!
+            //! @note blocking
+            //!
+            //! @tparam P policy type that shall implement void apply() and execute throw; Hence react to exception
+            //!
+            //! @attention template parameter B is only there to enable other bases for unittest, should not be used in other code
+            //!
+            template< typename P, typename B = base_reader>
+            class basic_reader : public B
+            {
+            public:
+
+               typedef P policy_type;
+               typedef B base_type;
+               typedef typename base_type::ipc_type ipc_type;
+
+               template< typename... Args>
+               basic_reader( ipc_type& queue, Args&&... args)
+                  : base_type( queue), m_policy( std::forward< Args>( args)...) {}
 
                //!
                //! Gets the next binary-message from queue.
                //! @return binary-marshal that can be used to deserialize an actual message.
                //!
-               marshal::input::Binary next();
+               marshal::input::Binary next()
+               {
+                  return policy_next();
+               }
 
                //!
                //! Tries to read a specific message from the queue.
@@ -91,7 +178,7 @@ namespace casual
                {
                   message_type_type type = message::type( message);
 
-                  marshal::input::Binary archive = read( type);
+                  marshal::input::Binary archive = policy_read( type);
 
                   archive >> message;
                }
@@ -99,25 +186,79 @@ namespace casual
 
             private:
 
-               marshal::input::Binary read( message_type_type type);
+               marshal::input::Binary policy_next()
+               {
+                  try
+                  {
+                     return base_type::next();
+                  }
+                  catch( ...)
+                  {
+                     m_policy.apply();
+                     return policy_next();
+                  }
+               }
 
-               ipc_type& m_queue;
+               marshal::input::Binary policy_read( message_type_type type)
+               {
+                  try
+                  {
+                     return base_type::read( type);
+                  }
+                  catch( ...)
+                  {
+                     m_policy.apply();
+                     return policy_read( type);
+                  }
+               }
 
+               policy_type m_policy;
             };
+
+            typedef basic_reader< policy::NoAction> Reader;
+
          } // blocking
 
          namespace non_blocking
          {
-            //!
-            //! Non blocking writer. There are only a few cases where we use this semantic
-            //!
-            class Writer
+
+            class base_writer
             {
             public:
 
                typedef ipc::send::Queue ipc_type;
 
-               Writer( ipc_type& queue);
+               base_writer( ipc_type& queue);
+
+            protected:
+
+               bool send( marshal::output::Binary& archive, message_type_type type);
+
+               ipc_type& m_queue;
+            };
+
+
+            //!
+            //! Policy based queue writer abstraction.
+            //!
+            //! @note non-blocking
+            //!
+            //! @tparam P policy type that shall implement void apply() and execute throw; Hence react to exception
+            //!
+            //! @attention template parameter B is only there to enable other bases for unittest, should not be used in other code
+            //!
+            template< typename P, typename B = base_writer>
+            class basic_writer : public B
+            {
+            public:
+
+               typedef P policy_type;
+               typedef B base_type;
+               typedef typename base_type::ipc_type ipc_type;
+
+               template< typename... Args>
+               basic_writer( ipc_type& queue, Args&&... args)
+                  : base_type( queue), m_policy( std::forward< Args>( args)...) {}
 
                //!
                //! Sends/Writes a message to the queue. which can result in several
@@ -137,34 +278,78 @@ namespace casual
 
                   message_type_type type = message::type( message);
 
-                  return send( archive, type);
+                  return policy_send( archive, type);
 
                }
             private:
 
-               bool send( marshal::output::Binary& archive, message_type_type type);
+               bool policy_send( marshal::output::Binary& archive, message_type_type type)
+               {
+                  try
+                  {
+                     return base_type::send( archive, type);
+                  }
+                  catch( ...)
+                  {
+                     m_policy.apply();
+                     return policy_send( archive, type);
+                  }
+               }
 
-               ipc_type& m_queue;
+               policy_type m_policy;
             };
 
+            typedef basic_writer< policy::NoAction> Writer;
 
-            //!
-            //! Non-blocking reader
-            //!
-            class Reader
+
+            class base_reader
             {
-            public:
+
+            protected:
 
                typedef ipc::receive::Queue ipc_type;
 
-               Reader( ipc::receive::Queue& queue);
+               base_reader( ipc::receive::Queue& queue);
+
+               std::vector< marshal::input::Binary> next();
+
+               std::vector< marshal::input::Binary> read( message_type_type type);
+
+            private:
+               ipc_type& m_queue;
+            };
+
+            //!
+            //! Policy based queue reader abstraction.
+            //!
+            //! @note non-blocking
+            //!
+            //! @tparam P policy type that shall implement void apply() and execute throw; Hence react to exception
+            //!
+            //! @attention template parameter B is only there to enable other bases for unittest, should not be used in other code
+            //!
+            template< typename P, typename B = base_reader>
+            class basic_reader : public B
+            {
+            public:
+
+               typedef P policy_type;
+               typedef B base_type;
+               typedef typename base_type::ipc_type ipc_type;
+
+               template< typename... Args>
+               basic_reader( ipc_type& queue, Args&&... args)
+                  : base_type( queue), m_policy( std::forward< Args>( args)...) {}
 
                //!
                //! Tries to get the next binary-message from queue.
                //!
                //! @return 0..1 binary-marshal that should be used to deserialize an actual message.
                //!
-               std::vector< marshal::input::Binary> next();
+               std::vector< marshal::input::Binary> next()
+               {
+                  return policy_next();
+               }
 
 
                //!
@@ -177,7 +362,7 @@ namespace casual
                {
                   message_type_type type = message::type( message);
 
-                  auto binary = read( type);
+                  auto binary = policy_read( type);
 
                   if( ! binary.empty())
                   {
@@ -189,11 +374,37 @@ namespace casual
 
             private:
 
-               std::vector< marshal::input::Binary> read( message_type_type type);
+               std::vector< marshal::input::Binary> policy_next()
+               {
+                  try
+                  {
+                     return base_type::next();
+                  }
+                  catch( ...)
+                  {
+                     m_policy.apply();
+                     return policy_next();
+                  }
+               }
 
-               ipc_type& m_queue;
+               std::vector< marshal::input::Binary> policy_read( message_type_type type)
+               {
+                  try
+                  {
+                     return base_type::read( type);
+                  }
+                  catch( ...)
+                  {
+                     m_policy.apply();
+                     return policy_read( type);
+                  }
+               }
+
+               policy_type m_policy;
 
             };
+
+            typedef basic_reader< policy::NoAction> Reader;
 
          } // non_blocking
 
@@ -206,9 +417,11 @@ namespace casual
          {
             typedef Q queue_type;
             typedef I ipc_type;
+            typedef typename ipc_type::id_type id_type;
+
 
             template< typename... Args>
-            ipc_wrapper( Args&& ...args) : m_ipcQueue( std::forward< Args>( args)...), m_queue( m_ipcQueue) {}
+            ipc_wrapper( id_type id, Args&& ...args) : m_ipcQueue{ id}, m_queue{ m_ipcQueue, std::forward< Args>( args)...} {}
 
 
             ipc_wrapper( ipc_wrapper&&) = default;

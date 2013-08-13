@@ -158,7 +158,10 @@ namespace casual
       {
          State state = local::initializeState();
 
-         typedef common::mockup::queue::WriteMessage< message::server::Configuration> mockup_writer;
+         typedef queue::blocking::basic_writer<
+                        policy::Broker,
+                        mockup::queue::blocking::base_writer< message::server::Configuration>> mockup_writer;
+
          mockup_writer::reset();
 
 
@@ -174,7 +177,7 @@ namespace casual
          message.services.at( 0).name = "service1";
          message.services.at( 1).name = "service2";
 
-         typedef handle::basic_connect< broker_write_queue_wrapper< queue::ipc_wrapper< mockup_writer>>> connect_handler_type;
+         typedef handle::basic_connect< queue::ipc_wrapper< mockup_writer>> connect_handler_type;
          connect_handler_type handler( state);
          handler.dispatch( message);
 
@@ -182,12 +185,12 @@ namespace casual
          EXPECT_TRUE( state.instances.at( 20)->pid == 20);
 
          // Check that the "configuration" has been "sent"
-         ASSERT_TRUE( mockup_writer::replies.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().transactionManagerQueue == 100);
-         ASSERT_TRUE( mockup_writer::replies.front().resourceManagers.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().resourceManagers.at( 0).key == "db");
-         EXPECT_TRUE( mockup_writer::replies.front().resourceManagers.at( 0).openinfo == "openinfo string");
-         EXPECT_TRUE( mockup_writer::replies.front().resourceManagers.at( 0).closeinfo == "closeinfo string");
+         ASSERT_TRUE( mockup_writer::queue.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().transactionManagerQueue == 100);
+         ASSERT_TRUE( mockup_writer::queue.front().resourceManagers.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().resourceManagers.at( 0).key == "db");
+         EXPECT_TRUE( mockup_writer::queue.front().resourceManagers.at( 0).openinfo == "openinfo string");
+         EXPECT_TRUE( mockup_writer::queue.front().resourceManagers.at( 0).closeinfo == "closeinfo string");
       }
 
 
@@ -195,7 +198,10 @@ namespace casual
       {
          State state = local::initializeState();
 
-         typedef common::mockup::queue::WriteMessage< message::server::Configuration> mockup_writer;
+         typedef queue::blocking::basic_writer<
+               policy::Broker,
+               mockup::queue::blocking::base_writer< message::server::Configuration>> mockup_writer;
+
          mockup_writer::reset();
 
 
@@ -211,7 +217,7 @@ namespace casual
          message.services.at( 0).name = "service3";
          message.services.at( 1).name = "service4";
 
-         typedef handle::basic_connect< broker_write_queue_wrapper< queue::ipc_wrapper< mockup_writer>>> connect_handler_type;
+         typedef handle::basic_connect< queue::ipc_wrapper< mockup_writer>> connect_handler_type;
          connect_handler_type handler( state);
          handler.dispatch( message);
 
@@ -226,8 +232,8 @@ namespace casual
          EXPECT_TRUE( state.services.at( "service4")->instances.front()->pid == 30);
 
          // Check that the "configuration" has been "sent"
-         ASSERT_TRUE( mockup_writer::replies.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().transactionManagerQueue == 100);
+         ASSERT_TRUE( mockup_writer::queue.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().transactionManagerQueue == 100);
       }
 
 
@@ -235,7 +241,9 @@ namespace casual
       {
          State state = local::initializeState();
 
-         typedef common::mockup::queue::WriteMessage< message::server::Configuration> mockup_writer;
+         typedef queue::blocking::basic_writer<
+                        policy::Broker,
+                        mockup::queue::blocking::base_writer< message::server::Configuration>> mockup_writer;
          mockup_writer::reset();
 
          state.transactionManagerQueue = 100;
@@ -250,7 +258,7 @@ namespace casual
          message.services.at( 1).name = "service2";
 
 
-         typedef handle::basic_connect< broker_write_queue_wrapper< queue::ipc_wrapper< mockup_writer>>> connect_handler_type;
+         typedef handle::basic_connect< queue::ipc_wrapper< mockup_writer>> connect_handler_type;
          connect_handler_type handler( state);
          handler.dispatch( message);
 
@@ -266,8 +274,8 @@ namespace casual
          EXPECT_TRUE( state.services.at( "service2")->instances.at( 2)->pid == 30);
 
          // Check that the "configuration" has been "sent"
-         ASSERT_TRUE( mockup_writer::replies.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().transactionManagerQueue == 100);
+         ASSERT_TRUE( mockup_writer::queue.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().transactionManagerQueue == 100);
       }
 
 
@@ -322,7 +330,11 @@ namespace casual
 		TEST( casual_broker, service_request)
       {
          State state = local::initializeState();
-         typedef common::mockup::queue::WriteMessage< message::service::name::lookup::Reply> mockup_writer;
+
+         typedef queue::blocking::basic_writer<
+               policy::Broker,
+               mockup::queue::blocking::base_writer< message::service::name::lookup::Reply>> mockup_writer;
+
          mockup_writer::reset();
 
 
@@ -331,7 +343,7 @@ namespace casual
          message.server.pid = 30;
          message.server.queue_id = 30;
 
-         handle::basic_servicelookup<  mockup_writer> handler( state);
+         handle::basic_servicelookup< queue::ipc_wrapper< mockup_writer>> handler( state);
          handler.dispatch( message);
 
 
@@ -341,17 +353,22 @@ namespace casual
          // other instance should still be idle
          EXPECT_TRUE( state.instances.at( 20)->state == Server::Instance::State::idle);
 
-         ASSERT_TRUE( mockup_writer::replies.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().service.name == "service1");
-         ASSERT_TRUE( mockup_writer::replies.front().server.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().server.at( 0).pid == 10);
-         EXPECT_TRUE( mockup_writer::replies.front().server.at( 0).queue_id == 10);
+         ASSERT_TRUE( mockup_writer::queue.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().service.name == "service1");
+         ASSERT_TRUE( mockup_writer::queue.front().server.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().server.at( 0).pid == 10);
+         EXPECT_TRUE( mockup_writer::queue.front().server.at( 0).queue_id == 10);
       }
 
 		TEST( casual_broker, service_request_pending)
       {
          State state = local::initializeState();
-         typedef common::mockup::queue::WriteMessage< message::service::name::lookup::Reply> mockup_writer;
+
+         typedef queue::blocking::basic_writer<
+                        policy::Broker,
+                        mockup::queue::blocking::base_writer< message::service::name::lookup::Reply>> mockup_writer;
+
+
          mockup_writer::reset();
 
          // make servers busy
@@ -363,12 +380,12 @@ namespace casual
          message.server.pid = 30;
          message.server.queue_id = 30;
 
-         handle::basic_servicelookup< mockup_writer> handler( state);
+         handle::basic_servicelookup< queue::ipc_wrapper< mockup_writer>> handler( state);
          handler.dispatch( message);
 
 
          // no reply should have been sent
-         EXPECT_TRUE( mockup_writer::replies.empty());
+         EXPECT_TRUE( mockup_writer::queue.empty());
 
          // we should have a pending request
          ASSERT_TRUE( state.pending.size() == 1);
@@ -381,7 +398,11 @@ namespace casual
 		TEST( casual_broker, service_done)
       {
          State state = local::initializeState();
-         typedef common::mockup::queue::WriteMessage< message::service::name::lookup::Reply> mockup_writer;
+
+         typedef queue::blocking::basic_writer<
+               policy::Broker,
+               mockup::queue::blocking::base_writer< message::service::name::lookup::Reply>> mockup_writer;
+
          mockup_writer::reset();
 
          // make server busy
@@ -392,13 +413,13 @@ namespace casual
          message.server.pid = 10;
          message.server.queue_id = 10;
 
-         handle::basic_ack< mockup_writer> handler( state);
+         handle::basic_ack< queue::ipc_wrapper< mockup_writer>> handler( state);
          handler.dispatch( message);
 
 
 
          // no reply should have been sent
-         EXPECT_TRUE( mockup_writer::replies.empty());
+         EXPECT_TRUE( mockup_writer::queue.empty());
          // server should be idle
          EXPECT_TRUE( state.instances.at( 10)->state == Server::Instance::State::idle);
       }
@@ -406,7 +427,11 @@ namespace casual
 		TEST( casual_broker, service_done_pending_requests)
       {
          State state = local::initializeState();
-         typedef common::mockup::queue::WriteMessage< message::service::name::lookup::Reply> mockup_writer;
+
+         typedef queue::blocking::basic_writer<
+               policy::Broker,
+               mockup::queue::blocking::base_writer< message::service::name::lookup::Reply>> mockup_writer;
+
          mockup_writer::reset();
 
          // make servers busy
@@ -428,20 +453,20 @@ namespace casual
          message.server.queue_id = 10;
 
          // we should get the pending response
-         handle::basic_ack< mockup_writer> handler( state);
+         handle::basic_ack< queue::ipc_wrapper< mockup_writer>> handler( state);
          handler.dispatch( message);
 
          // The server should still be busy
          EXPECT_TRUE( state.instances.at( 10)->state == Server::Instance::State::busy);
 
-         ASSERT_TRUE( mockup_writer::replies.size() == 1);
+         ASSERT_TRUE( mockup_writer::queue.size() == 1);
          // pending queue response is sent to
          EXPECT_TRUE( mockup_writer::queue_id == 30);
          // response sent to queue "30"
-         EXPECT_TRUE( mockup_writer::replies.front().service.name == "service1");
-         ASSERT_TRUE( mockup_writer::replies.front().server.size() == 1);
-         EXPECT_TRUE( mockup_writer::replies.front().server.front().pid == 10);
-         EXPECT_TRUE( mockup_writer::replies.front().server.front().queue_id == 10);
+         EXPECT_TRUE( mockup_writer::queue.front().service.name == "service1");
+         ASSERT_TRUE( mockup_writer::queue.front().server.size() == 1);
+         EXPECT_TRUE( mockup_writer::queue.front().server.front().pid == 10);
+         EXPECT_TRUE( mockup_writer::queue.front().server.front().queue_id == 10);
 
 
       }

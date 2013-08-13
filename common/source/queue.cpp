@@ -25,9 +25,9 @@ namespace casual
          namespace blocking
          {
 
-            Writer::Writer( ipc::send::Queue& queue) : m_queue( queue) {}
+            base_writer::base_writer( ipc::send::Queue& queue) : m_queue( queue) {}
 
-            void Writer::send( marshal::output::Binary& archive, message_type_type type)
+            void base_writer::send( marshal::output::Binary& archive, message_type_type type)
             {
                ipc::message::Complete message( type, archive.release());
 
@@ -36,9 +36,9 @@ namespace casual
 
 
 
-            Reader::Reader( ipc::receive::Queue& queue) : m_queue( queue) {}
+            base_reader::base_reader( ipc::receive::Queue& queue) : m_queue( queue) {}
 
-            marshal::input::Binary Reader::next()
+            marshal::input::Binary base_reader::next()
             {
 
                auto message = m_queue( 0);
@@ -51,7 +51,7 @@ namespace casual
                return marshal::input::Binary( std::move( message.front()));
             }
 
-            marshal::input::Binary Reader::read( message_type_type type)
+            marshal::input::Binary base_reader::read( message_type_type type)
             {
                auto message = m_queue( type, 0);
 
@@ -68,11 +68,11 @@ namespace casual
 
          namespace non_blocking
          {
-            Writer::Writer( ipc::send::Queue& queue) : m_queue( queue) {}
+            base_writer::base_writer( ipc::send::Queue& queue) : m_queue( queue) {}
 
 
 
-            bool Writer::send( marshal::output::Binary& archive, message_type_type type)
+            bool base_writer::send( marshal::output::Binary& archive, message_type_type type)
             {
                ipc::message::Complete message( type, archive.release());
 
@@ -80,10 +80,10 @@ namespace casual
             }
 
 
-            Reader::Reader( ipc::receive::Queue& queue) : m_queue( queue) {}
+            base_reader::base_reader( ipc::receive::Queue& queue) : m_queue( queue) {}
 
 
-            std::vector< marshal::input::Binary> Reader::next()
+            std::vector< marshal::input::Binary> base_reader::next()
             {
                std::vector< marshal::input::Binary> result;
 
@@ -97,7 +97,7 @@ namespace casual
                return result;
             }
 
-            std::vector< marshal::input::Binary> Reader::read( message_type_type type)
+            std::vector< marshal::input::Binary> base_reader::read( message_type_type type)
             {
                std::vector< marshal::input::Binary> result;
 

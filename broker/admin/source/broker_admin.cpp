@@ -139,8 +139,6 @@ int usage( int argc, char** argv)
 int main( int argc, char** argv)
 {
 
-   const long binary = 0b01010000110;
-
    casual::common::Arguments parser;
    parser.add(
          casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),

@@ -162,6 +162,12 @@ namespace casual
                   return configuration;
                }
 
+               void Default::reply( platform::queue_id_type id, message::service::Reply& message)
+               {
+                  reply_writer writer{ id };
+                  writer( message);
+               }
+
                void Default::ack( const message::service::callee::Call& message)
                {
                   message::service::ACK ack;
@@ -171,6 +177,7 @@ namespace casual
                   brokerWriter( ack);
                }
 
+
                void Default::disconnect()
                {
                   message::server::Disconnect message;
@@ -179,6 +186,12 @@ namespace casual
                   //
                   non_blocking_broker_writer brokerWriter;
                   brokerWriter( message);
+               }
+
+               void Default::statistics( platform::queue_id_type id, message::monitor::Notify& message)
+               {
+                  monitor_writer writer{ id};
+                  writer( message);
                }
 
             } // policy

@@ -33,72 +33,55 @@ namespace casual
 	namespace broker
 	{
 
-	   template< typename Q>
-      struct broker_write_queue_wrapper : public Q
+	   namespace policy
       {
-         typedef Q base_queue;
-
-         template< typename... Args>
-         broker_write_queue_wrapper( State& state, Args&& ...args) : base_queue( std::forward< Args>( args)...), m_state( state) {}
-
-
-         //!
-         //! Reads or writes to/from the queue, depending on the type of queue_type
-         //!
-         template< typename T>
-         auto operator () ( T& value) -> decltype( std::declval<Q>()( value))
+         struct Broker
          {
-            try
+            Broker( State& state) : m_state( state) {}
+
+
+            void apply()
             {
-               return base_queue::operator () ( value);
-            }
-            catch( const exception::signal::child::Terminate& exception)
-            {
-               auto terminated = process::lifetime::ended();
-               for( auto& death : terminated)
+               try
                {
-                  logger::warning << "process terminated: " << death.string();
-                  action::remove::instance( death.pid, m_state);
+                  throw;
                }
-               return operator () ( value);
-            }
-         }
-
-      protected:
-         State& m_state;
-      };
-
-	   template< typename Q>
-      struct broker_read_queue_wrapper : public broker_write_queue_wrapper< Q>
-      {
-	      using broker_write_queue_wrapper< Q>::broker_write_queue_wrapper;
-
-         auto next() -> decltype( std::declval<Q>().next())
-         {
-            try
-            {
-               return broker_write_queue_wrapper< Q>::base_queue::next();
-            }
-            catch( const exception::signal::child::Terminate& exception)
-            {
-               auto terminated = process::lifetime::ended();
-               for( auto& death : terminated)
+               catch( const exception::signal::child::Terminate& exception)
                {
-                  logger::warning << "process terminated: " << death.string();
-                  action::remove::instance( death.pid, this->m_state);
+                  auto terminated = process::lifetime::ended();
+                  for( auto& death : terminated)
+                  {
+                     switch( death.why)
+                     {
+                        case process::lifetime::Exit::Why::core:
+                           logger::error << "process crashed: TODO: maybe restart? " << death.string();
+                           break;
+                        default:
+                           logger::information << "proccess died: " << death.string();
+                           break;
+                     }
+
+                     action::remove::instance( death.pid, m_state);
+                  }
                }
-               return next();
             }
-         }
 
-      };
+         private:
+            State& m_state;
+         };
+      } // policy
 
 
 
+	   // TOOD: eclipse does not like using...
+	   using QueueBlockingReader = queue::blocking::basic_reader< policy::Broker>;
+	   //typedef queue::blocking::basic_reader< policy::Broker> QueueBlockingReader;
 
+	   // TOOD: eclipse does not like using...
+	   using QueueBlockingWriter = queue::ipc_wrapper< queue::blocking::basic_writer< policy::Broker>>;
+	   using QueueNonBlockingWriter = queue::ipc_wrapper< queue::non_blocking::basic_writer< policy::Broker>>;
+	   //typedef queue::ipc_wrapper< queue::blocking::basic_writer< policy::Broker>> QueueBlockingWriter;
 
-      using QueueBlockingReader = broker_read_queue_wrapper< queue::blocking::Reader>;
-      using QueueBlockingWriter = broker_write_queue_wrapper< queue::ipc_wrapper< queue::blocking::Writer>>;
 
 		namespace handle
 		{
@@ -260,7 +243,7 @@ namespace casual
                message::server::Configuration configuation =
                      action::transform::configuration( instance->second, m_state);
 
-               queue_writer_type writer( m_state, message.server.queue_id);
+               queue_writer_type writer( message.server.queue_id, m_state);
                writer( configuation);
 
                //
@@ -361,7 +344,7 @@ namespace casual
                      reply.service.monitor_queue = m_state.monitorQueue;
                      reply.server.push_back( action::transform::Instance()( *idleInstace));
 
-                     queue_writer_type writer( message.server.queue_id);
+                     queue_writer_type writer( message.server.queue_id, m_state);
                      writer( reply);
 
                      serviceFound->second->lookedup++;
@@ -386,7 +369,7 @@ namespace casual
                   message::service::name::lookup::Reply reply;
                   reply.service.name = message.requested;
 
-                  queue_writer_type writer( message.server.queue_id);
+                  queue_writer_type writer( message.server.queue_id, m_state);
                   writer( reply);
 
                }
@@ -394,7 +377,7 @@ namespace casual
             }
          };
 
-         typedef basic_servicelookup< queue::ipc_wrapper< queue::blocking::Writer>> ServiceLookup;
+         typedef basic_servicelookup< QueueBlockingWriter> ServiceLookup;
 
 
          //!
@@ -462,7 +445,7 @@ namespace casual
          };
 
 
-         typedef basic_ack< queue::ipc_wrapper< queue::blocking::Writer>> ACK;
+         typedef basic_ack< QueueBlockingWriter> ACK;
 
 
          //!
@@ -473,8 +456,8 @@ namespace casual
          struct Policy
          {
 
-            typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
-            typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
+            typedef QueueBlockingWriter reply_writer;
+            typedef QueueNonBlockingWriter monitor_writer;
 
             Policy( broker::State& state) : m_state( state) {}
 
@@ -516,6 +499,11 @@ namespace casual
                disconnect.dispatch( message);
             }
 
+            void reply( platform::queue_id_type id, message::service::Reply& message)
+            {
+               reply_writer writer( id, m_state);
+               writer( message);
+            }
 
             void ack( const message::service::callee::Call& message)
             {
@@ -525,6 +513,13 @@ namespace casual
 
                ACK sendACK( m_state);
                sendACK.dispatch( ack);
+            }
+
+            void statistics( platform::queue_id_type id, message::monitor::Notify& message)
+            {
+               //
+               // We don't collect statistics for the broker
+               //
             }
 
 

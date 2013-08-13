@@ -69,7 +69,8 @@ LinkExecutable( casual-broker-admin, \
     obj/broker_admin.o, \
     casual-common casual-sf casual-xatmi)
 	
-	
+
+
 //
 // unittest
 //
@@ -85,5 +86,5 @@ LinkIsolatedUnittest( casual-broker-isolated, \
 	unittest/isolated/obj/test_broker_transformation.o, \
    casual-common casual-sf casual-configuration)
 
-	
+
 
