@@ -20,9 +20,9 @@ namespace casual
       transaction::State state( "unittest_transaction.db");
 
 
-      transaction::configureResurceProxies( state);
+      //transaction::configureResurceProxies( state);
 
-      EXPECT_TRUE( state.resourceMapping.size() == 2);
+      EXPECT_TRUE( state.xaConfig.size() == 2);
    }
 
 } // casual
