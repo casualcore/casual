@@ -8,7 +8,6 @@ Created on 28 apr 2012
 # Imports
 #
 import os
-import sys
 
 class Configuration(object):
     '''
@@ -26,8 +25,7 @@ class Configuration(object):
         '''
         Constructor
         '''
-        #configfile = open(os.path.dirname(os.path.abspath(sys.argv[0])) + "/implementation/config_" + self.platform() , "r")
-        configfile = open("/Users/hbergk/git/tools/casual_make/casual/make/config_" + self.platform() , "r")
+        configfile = open(os.getenv("CASUAL_TOOLS_HOME") + "/casual_make/casual/make/config_" + self.platform() , "r")
         self.content = configfile.read()
         configfile.close()
     
