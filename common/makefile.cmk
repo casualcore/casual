@@ -9,10 +9,14 @@ INCLUDE_PATHS=[
     'include',
 	'../xatmi/include',
 	'../transaction/include',
+	'../serviceframework/include',
 	'$(UNITTEST_INCLUDE_PATH)'
 	]
 
 LIBRARY_PATHS= []
+
+SetIncludePaths( INCLUDE_PATHS)
+SetLibraryPaths( LIBRARY_PATHS)
 
 Compile( "source/server_context.cpp", "obj/server_context.o")
 Compile( "source/calling_context.cpp", "obj/calling_context.o")
@@ -50,9 +54,9 @@ LinkLibrary( "casual-common",
 	[UUIDLIB])
 
 
-//
-// Mockup stuff, only for unittest
-//
+#
+# Mockup stuff, only for unittest
+#
 Compile( "source/mockup.cpp", "obj/mockup.o")
 
 LinkArchive( "casual-mockup", ["obj/mockup.o"])
@@ -62,7 +66,7 @@ Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/s
 
 LinkExecutable( "simple_process",
     ["unittest/isolated/obj/simple_process.o"], 
-    []
+    ["casual-common"]
     )	
 	
 #
@@ -105,4 +109,4 @@ LinkIsolatedUnittest( "casual-common-isolated",
 # Install
 #
 InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
-InstallExceutable("simple_process","$CASUAL_HOME/bin/.")
+InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
