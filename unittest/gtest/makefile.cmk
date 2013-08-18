@@ -1,8 +1,12 @@
-INCLUDE_PATHS = include current
+from casual.make.functiondefinitions import *
 
-Compile(current/src/gtest-all.cc,obj/gtest-all.o)
-Compile(current/src/gtest_main.cc,obj/gtest_main.o)
+INCLUDE_PATHS = ['include', 'current']
 
-LinkArchive(gtest, \
-	obj/gtest-all.o \
-	obj/gtest_main.o)
+SetIncludePaths( INCLUDE_PATHS)
+
+Compile('current/src/gtest-all.cc','obj/gtest-all.o')
+Compile('current/src/gtest_main.cc','obj/gtest_main.o')
+
+LinkArchive('gtest',
+	['obj/gtest-all.o',
+	'obj/gtest_main.o'])
