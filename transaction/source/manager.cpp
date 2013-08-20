@@ -131,7 +131,7 @@ namespace casual
 
          local::createTables( m_state.db);
 
-         state::configurate( m_state);
+         state::configure( m_state);
       }
 
       Manager::~Manager()

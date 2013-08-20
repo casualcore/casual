@@ -137,7 +137,7 @@ namespace casual
 
          };
 
-         void configurate( State& state);
+         void configure( State& state);
 
          namespace remove
          {

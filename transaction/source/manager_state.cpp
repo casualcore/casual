@@ -60,7 +60,7 @@ namespace casual
             }
          } // local
 
-         void configurate( State& state)
+         void configure( State& state)
          {
             {
                trace::Exit log( "transaction manager xa-switch configuration");

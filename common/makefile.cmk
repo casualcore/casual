@@ -1,110 +1,112 @@
+from casual.make.functiondefinitions import *
 
-#ifdef __APPLE__
-    UUIDLIB=c
-#else
-    UUIDLIB=uuid
-#endif
+if sys.platform.startswith('darwin'):
+    UUIDLIB="c"
+else:
+    UUIDLIB="uuid"
 
+INCLUDE_PATHS=[ 
+    'include',
+	'../xatmi/include',
+	'../transaction/include',
+	'../serviceframework/include',
+	'$(UNITTEST_INCLUDE_PATH)'
+	]
 
-INCLUDE_PATHS= include \
-	../xatmi/include \
-	../transaction/include \
-	../serviceframework/include \
-	$(UNITTEST_INCLUDE_PATH) \
+LIBRARY_PATHS= []
 
+SetIncludePaths( INCLUDE_PATHS)
+SetLibraryPaths( LIBRARY_PATHS)
 
-LIBRARY_PATHS= 
+Compile( "source/server_context.cpp", "obj/server_context.o")
+Compile( "source/calling_context.cpp", "obj/calling_context.o")
+Compile( "source/buffer_context.cpp", "obj/buffer_context.o")
+Compile( "source/transaction_context.cpp", "obj/transaction_context.o")
+Compile( "source/ipc.cpp", "obj/ipc.o")
+Compile( "source/queue.cpp", "obj/queue.o")
 
+Compile( "source/uuid.cpp", "obj/uuid.o")
+Compile( "source/environment.cpp", "obj/environment.o")
+Compile( "source/file.cpp", "obj/file.o")
+Compile( "source/signal.cpp", "obj/signal.o")
+Compile( "source/platform.cpp", "obj/platform.o")
+Compile( "source/logger.cpp", "obj/logger.o")
+Compile( "source/error.cpp", "obj/error.o")
+Compile( "source/chronology.cpp", "obj/chronology.o")
+Compile( "source/process.cpp", "obj/process.o")
 
-
-Compile( source/server_context.cpp, obj/server_context.o)
-Compile( source/calling_context.cpp, obj/calling_context.o)
-Compile( source/buffer_context.cpp, obj/buffer_context.o)
-Compile( source/transaction_context.cpp, obj/transaction_context.o)
-Compile( source/ipc.cpp, obj/ipc.o)
-Compile( source/queue.cpp, obj/queue.o)
-
-Compile( source/uuid.cpp, obj/uuid.o)
-Compile( source/environment.cpp, obj/environment.o)
-Compile( source/file.cpp, obj/file.o)
-Compile( source/signal.cpp, obj/signal.o)
-Compile( source/platform.cpp, obj/platform.o)
-Compile( source/logger.cpp, obj/logger.o)
-Compile( source/error.cpp, obj/error.o)
-Compile( source/chronology.cpp, obj/chronology.o)
-Compile( source/process.cpp, obj/process.o)
-
-
-
-LinkLibrary( casual-common, \
-	obj/server_context.o \
-	obj/calling_context.o \
-	obj/buffer_context.o \
-	obj/transaction_context.o \
-	obj/ipc.o \ 
-	obj/queue.o \
-	obj/uuid.o \
-    obj/environment.o \
-    obj/file.o \
-    obj/signal.o \
-    obj/platform.o \
-    obj/logger.o \
-    obj/error.o \
-    obj/chronology.o \
-    obj/process.o \
-    ,\ 
-	${UUIDLIB})
+LinkLibrary( "casual-common", 
+	["obj/server_context.o",
+	"obj/calling_context.o",
+	"obj/buffer_context.o",
+	"obj/transaction_context.o",
+	"obj/ipc.o",
+	"obj/queue.o",
+	"obj/uuid.o",
+	"obj/environment.o",
+	"obj/file.o",
+	"obj/signal.o",
+	"obj/platform.o",
+	"obj/logger.o",
+	"obj/error.o",
+	"obj/chronology.o",
+	"obj/process.o"],
+	[UUIDLIB])
 
 
-//
-// Mockup stuff, only for unittest
-//
-Compile( source/mockup.cpp, obj/mockup.o)
+#
+# Mockup stuff, only for unittest
+#
+Compile( "source/mockup.cpp", "obj/mockup.o")
 
-LinkArchive( casual-mockup,\
-    obj/mockup.o)
+LinkArchive( "casual-mockup", ["obj/mockup.o"])
 
 
-Compile( unittest/isolated/source/simple_process.cpp, unittest/isolated/obj/simple_process.o)
+Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/simple_process.o")
 
-LinkExecutable( simple_process,\
-    unittest/isolated/obj/simple_process.o, \
-    casual-common)
+LinkExecutable( "simple_process",
+    ["unittest/isolated/obj/simple_process.o"], 
+    ["casual-common"]
+    )	
 	
-	
-//
-// unittest
-//
-Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
-Compile( unittest/isolated/source/test_ipc.cpp, unittest/isolated/obj/test_ipc.o)
-Compile( unittest/isolated/source/test_marshal.cpp, unittest/isolated/obj/test_marshal.o)
-Compile( unittest/isolated/source/test_queue.cpp, unittest/isolated/obj/test_queue.o)
-Compile( unittest/isolated/source/test_message_dispatch.cpp, unittest/isolated/obj/test_message_dispatch.o)
-Compile( unittest/isolated/source/test_server_context.cpp, unittest/isolated/obj/test_server_context.o);
+#
+# unittest
+#
+Compile( "unittest/isolated/source/test_buffer.cpp", "unittest/isolated/obj/test_buffer.o")
+Compile( "unittest/isolated/source/test_ipc.cpp", "unittest/isolated/obj/test_ipc.o")
+Compile( "unittest/isolated/source/test_marshal.cpp", "unittest/isolated/obj/test_marshal.o")
+Compile( "unittest/isolated/source/test_queue.cpp", "unittest/isolated/obj/test_queue.o")
+Compile( "unittest/isolated/source/test_message_dispatch.cpp", "unittest/isolated/obj/test_message_dispatch.o")
+Compile( "unittest/isolated/source/test_server_context.cpp", "unittest/isolated/obj/test_server_context.o")
 
-Compile( unittest/isolated/source/test_uuid.cpp, unittest/isolated/obj/test_uuid.o)
-Compile( unittest/isolated/source/test_arguments.cpp, unittest/isolated/obj/test_arguments.o)
-Compile( unittest/isolated/source/test_file.cpp, unittest/isolated/obj/test_file.o)
-Compile( unittest/isolated/source/test_process.cpp, unittest/isolated/obj/test_process.o)
-Compile( unittest/isolated/source/test_string.cpp, unittest/isolated/obj/test_string.o)
-Compile( unittest/isolated/source/test_error.cpp, unittest/isolated/obj/test_error.o)
+Compile( "unittest/isolated/source/test_uuid.cpp", "unittest/isolated/obj/test_uuid.o")
+Compile( "unittest/isolated/source/test_arguments.cpp", "unittest/isolated/obj/test_arguments.o")
+Compile( "unittest/isolated/source/test_file.cpp", "unittest/isolated/obj/test_file.o")
+Compile( "unittest/isolated/source/test_process.cpp", "unittest/isolated/obj/test_process.o")
+Compile( "unittest/isolated/source/test_string.cpp", "unittest/isolated/obj/test_string.o")
+Compile( "unittest/isolated/source/test_error.cpp", "unittest/isolated/obj/test_error.o")
 
-Compile( unittest/isolated/source/test_signal.cpp, unittest/isolated/obj/test_signal.o)
+Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
 
-LinkIsolatedUnittest( casual-common-isolated, \
-   unittest/isolated/obj/test_buffer.o \
-   unittest/isolated/obj/test_ipc.o \
-   unittest/isolated/obj/test_marshal.o \
-   unittest/isolated/obj/test_queue.o \
-   unittest/isolated/obj/test_message_dispatch.o \
-   unittest/isolated/obj/test_server_context.o \
-   unittest/isolated/obj/test_uuid.o \
-   unittest/isolated/obj/test_file.o \
-   unittest/isolated/obj/test_arguments.o \
-   unittest/isolated/obj/test_process.o \
-   unittest/isolated/obj/test_string.o \
-   unittest/isolated/obj/test_error.o \
-   unittest/isolated/obj/test_signal.o \
-   , \
-   casual-common )	
 
+LinkIsolatedUnittest( "casual-common-isolated", 
+	["unittest/isolated/obj/test_buffer.o",
+	"unittest/isolated/obj/test_ipc.o",
+	"unittest/isolated/obj/test_marshal.o",
+	"unittest/isolated/obj/test_queue.o",
+	"unittest/isolated/obj/test_message_dispatch.o",
+	"unittest/isolated/obj/test_server_context.o",
+	"unittest/isolated/obj/test_uuid.o",
+    "unittest/isolated/obj/test_file.o",
+    "unittest/isolated/obj/test_arguments.o",
+    "unittest/isolated/obj/test_process.o",
+    "unittest/isolated/obj/test_string.o",
+    "unittest/isolated/obj/test_error.o",
+    "unittest/isolated/obj/test_signal.o"],
+	["casual-common"] )	
+
+#
+# Install
+#
+InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
+InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
