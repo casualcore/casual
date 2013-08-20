@@ -15,7 +15,7 @@ SENASTUPPDATERAD="20120715"
 import sys
 import os
 import multiprocessing
-from casual_make import Casual_Make
+from casual.make.make import Casual_Make
 import subprocess
 import re
 
@@ -115,6 +115,7 @@ def reformat( line):
     make2 = re.search(r'(^make\[.*\]:)(.*)', line)
     rm = re.search(r'^rm -f (.*)', line)
     buildserver = re.search(r'^([\S\s]+) [\S\s]+buildserver[\S\s]+-o (\S+) .*', line)
+    rsync = re.search(r'^[\S\s]*rsync --checksum[\s]+(\S+) (.*)', line)
     if compiling:
         return bcolors.GREEN + 'Compile (' + compiling.group(1) + '): ' + bcolors.ENDC + compiling.group(3) + '\n'
     elif archive:
@@ -129,6 +130,8 @@ def reformat( line):
         return bcolors.HEADER + 'rm -f' + bcolors.ENDC + rm.group(1) + '\n'
     elif buildserver:
         return bcolors.BLUE + 'Buildserver (' + buildserver.group(1) + '): ' + bcolors.ENDC + buildserver.group(2) + '\n'
+    elif rsync:
+        return bcolors.BLUE + 'Copying: ' + rsync.group(1) +  ' --> ' + rsync.group(2) + '\n'        
     else:
         return bcolors.FAIL + line + bcolors.ENDC
 
@@ -164,14 +167,14 @@ if __name__ == '__main__':
             sys.exit( 1)
 
         print "info: executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
-	
+    
         try:
-	        Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
-	        
+            Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
+
         except:
-	        sys.stderr.write("error: Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
-	        raise
-	        sys.exit(1)
+            sys.stderr.write("error: Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
+            raise
+            sys.exit(1)
 
 #
 # Find number of CPU:s to set jobs and load

@@ -13,6 +13,7 @@
 UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
 UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
 ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
+#DEPENDENT_UNITTEST_LIB =$(UNITTEST_LIBRARY_PATH)/gtest_main.a $(UNITTEST_LIBRARY_PATH)/libunittestcommon.a $(UNITTEST_LIBRARY_PATH)/libdependentunittest.a
 
 ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=yes
 
@@ -40,8 +41,8 @@ THIS_MAKEFILE = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 
 
 
-COMPILER = g++
-CROSSCOMPILER = clang++
+COMPILER = CC
+CROSSCOMPILER = g++
 
 #
 # Vi är beroende av att vi använder bash
@@ -51,33 +52,25 @@ SHELL = bash
 #
 # Vi särskiljer mellan lib och exe enbart för purify och co.
 #
-LIBRARY_LINKER = g++
-ARCHIVE_LINKER = ar rcs
+LIBRARY_LINKER = CC
 
 ifndef EXECUTABLE_LINKER
-EXECUTABLE_LINKER = g++
+EXECUTABLE_LINKER = CC
 endif
 
 #
 # Nu stter vi ihop de faktiska kompilator/lnk-direktiven
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -c -fPIC -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++11
-   LINK_DIRECTIVES_LIB =  -g -dynamiclib -fPIC 
-   LINK_DIRECTIVES_EXE =  -g -fPIC 
-   LINK_DIRECTIVES_ARCHIVE =  -g -fPIC
-   
-   ifdef ANALYZE
-      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage -std=c++11
-      LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) -fprofile-arcs
-      LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) -lgcov -fprofile-arcs
-   endif
-   
+   COMPILE_DIRECTIVES = -mt -g -c -KPIC -DRFV_DLL -DRFV_DEBUG 
+   LINK_DIRECTIVES_LIB = -mt -g -G -KPIC -z now
+   LINK_DIRECTIVES_EXE = -mt -g -KPIC -z now
+   LINK_DIRECTIVES_ARCHIVE = -mt -g -KPIC -z now -xar
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -std=c++11
-   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC 
-   LINK_DIRECTIVES_EXE =  -O3 -fPIC 
-   LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC 
+   COMPILE_DIRECTIVES = -mt -c -O3 -KPIC -DRFV_DLL
+   LINK_DIRECTIVES_LIB = -mt -G -O3 -KPIC -z now
+   LINK_DIRECTIVES_EXE = -mt -O3 -KPIC -z now
+   LINK_DIRECTIVES_ARCHIVE = -mt -O3 -KPIC -z now -xar
 endif
 
 #
@@ -87,10 +80,10 @@ COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -Wall --analyze -pedantic -fcolor-diagnostics -DNOWHAT -std=c++11 -stdlib=libc++ -U__STRICT_ANSI__ -DGTEST_USE_OWN_TR1_TUPLE=1
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -Wno-long-long -DNOWHAT -DRFV_DLL -DRFV_DEBUG
 
-BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
-BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
+BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(TUXDIR)/bin/buildserver -v
+BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(TUXDIR)/bin/buildclient -v
 
 #
 # Purify
@@ -99,31 +92,21 @@ PURIFYOPTIONS = -always-use-cache-dir=yes -lazy-load=no
 PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUXLIB_DIR)
 QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
-#
-# VALGRIND
-#
-ifdef VALGRIND
-VALGRIND_CONFIG=valgrind --xml=yes --xml-file=valgrind.xml
-else
-VALGRIND_CONFIG=
-endif
+
 
 #
-# ARCHIVER-options
+# Användarens definerade paths läggs först för ha företräde
+# före default.
+# DB2 måste inkluderas före Tuxedo.
 #
-ARCHIVEROPTIONS = -r
-
-#
-#
-#
-INCLUDE_PATHS := $(INCLUDE_PATHS) 
-LIBRARY_PATHS := $(LIBRARY_PATHS)
+INCLUDE_PATHS := $(EXTRA_INCLUDE_PATHS) $(DB2INCLUDE_DIR) $(TUXINCLUDE_DIR) $(RFVFML)
+LIBRARY_PATHS := $(EXTRA_LIB_PATHS) /usr/lib /usr/local/lib $(DB2LIB_DIR) $(TUXLIB_DIR)
 
 #
 # Default include/library-paths
 #
-DEFAULT_INCLUDE_PATHS := ./inc 
-DEFAULT_LIBRARY_PATHS := ./bin 
+DEFAULT_INCLUDE_PATHS := ./inc $(EXPORT_INF)/inc $(EXPORT_KUI)/inc $(EXPORT_KND)/inc $(EXPORT_RGL)/inc
+DEFAULT_LIBRARY_PATHS := ./bin $(EXPORT_INF)/lib $(EXPORT_KUI)/lib $(EXPORT_KND)/lib $(EXPORT_RGL)/lib $(XERCES_LIBRARY_PATHS)
  
 
 
@@ -139,7 +122,7 @@ DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 # För att generera "header-dependencies"
 # Ser till så vi inte får med beroende till db2 och Tuxedo.
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
+HEADER_DEPENDENCY_COMMAND = -/usr/sfw/bin/g++ -MP -MM -DRFV_DLL -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
 
 
 
@@ -161,7 +144,7 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -
 .PHONY export_libraries:
 .PHONY export_files:
 .PHONY export_end:
-
+.PHONY install:
 
 
 

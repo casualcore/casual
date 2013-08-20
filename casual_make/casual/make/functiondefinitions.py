@@ -9,9 +9,10 @@ Contains the basic syntax to produce makefile
 #
 # Imports
 #
-from internal import *
+from casual.make.internal import *
 
-
+export=dict()
+include=list()
 
 #
 # 
@@ -316,7 +317,8 @@ def LinkArchive(name,objectfiles):
 ######################################################################
     """
 
-
+    objectfiles = ' '.join(objectfiles)
+    
     print "#"
     print "#    Lankar "+ name
     
@@ -331,9 +333,6 @@ def LinkArchive(name,objectfiles):
     print
     print "deploy: " + internal_target_deploy_name( name)
     print 
-    print "specification: "
-    print "\techo 'Hans'"
-    print
     print internal_target_name(name) + ": " + filename
     print
     print "objects_" + name + " = " + internal_object_name_list( objectfiles)
@@ -421,6 +420,9 @@ def Build(casualMakefile):
     internal_make_target_component("compile", casualMakefile)
     print
     internal_make_target_component("print_include_paths", casualMakefile)
+    print
+    internal_make_target_component("install", casualMakefile)
+    print
    
     #
     # Fixar till sa det blir lite snyggare targets
@@ -585,27 +587,40 @@ def DatabasePrepare(database,username,password,filename,bindname):
     print "$(internal_target_deploy_name $bindname):"
     print "    -@$def_Deploy $(internal_bind_name $bindname) bnd"    
 
+def InstallLibrary(source, destination):
+    
+    local_target_name=internal_unique_target_name(source)
+    
+    internal_install( local_target_name, internal_shared_library_name_path(source), destination)
 
-######################################################################
-## 
-## Prepare(filename,bindname)
-##
-## Producerar bind-filen med den kompilerade sql-koden och 
-## den genererade kallkodsfilen utifran sqc-filen. 
-## Kallkodsfilen kommer att ha samma namn och path som sqc-filen, men med 
-## filandelsen .cpp.
-##
-## filename     sqc-filnamnet, inklusive path och filandelse.
-##                Ex. src/perpersoninfosfhanteraredb.sqc
-##
-## packagename Paketnamnet som den kompilearde sql-koden ligger inom.
-##                        bind-filen kommer att ha samma namn, men med filandelsen
-##                        bnd. Ex. perpersoninfo, vilket resulterar i bind-filen
-##                obj/perpersoninfo.bnd.
-##
-######################################################################
-## TODO Implementera
+def InstallExecutable(source, destination):
+    
+    local_target_name=internal_unique_target_name(source)
+    
+    internal_install( local_target_name, internal_executable_name_path(source), destination)
 
+def Install(source, destination):
+    
+    local_target_name=internal_unique_target_name(source)
+    
+    internal_install( local_target_name, source, destination)
 
-
+def Include( filename):
+    global include
+           
+    include.append( filename)
+    
+def Set( name, value):
+    
+    global export
+    
+    export[name] = value
+        
+def SetIncludePaths( value ):
+    
+    Set("INCLUDE_PATHS", value)
+    
+def SetLibraryPaths( value ):
+    
+    Set("LIBRARY_PATHS", value)
         

@@ -23,6 +23,8 @@ def_ArchiveSuffix=".a"
 
 def_RM="rm -f ";
 def_CD="cd";
+
+def_RSYNC = "rsync --checksum "
 def_MKDIR_RECURSIVE="mkdir -p";
 def_CHMOD="chmod"
 
@@ -273,8 +275,8 @@ def internal_archive_target_name(name):
 #
 def internal_unique_target_name(name):
 
-    
-    tempname= internal_convert_path_to_target_name( name) + "_" + targetSequence
+    global targetSequence
+    tempname= internal_convert_path_to_target_name( name) + "_" + str(targetSequence)
     targetSequence = targetSequence + 1
     return tempname
 
@@ -340,7 +342,10 @@ def internal_prepare_old_objectlist(objects):
 # Intern hjalpfuntktion for att lanka atmi...
 #
 def internal_BASE_LinkATMI(atmibuild, name, predirectives, objectfiles, libs, buildserverdirective):
-
+    
+    objectfiles = ' '.join(objectfiles)
+    libs = ' '.join(libs)
+    
     print "#"
     print "#    Lankar $name"
     
@@ -375,7 +380,7 @@ def internal_BASE_LinkATMI(atmibuild, name, predirectives, objectfiles, libs, bu
     print "compile: $(objects_" + atmi_target_name + ")"
     print 
     print internal_executable_name_path(name) + ": $(objects_" + atmi_target_name + ") " + DEPENDENT_TARGETS
-    print "\t" + atmibuild + " -o " + internal_executable_name_path( name) + " " + predirectives + " -f \"$(objects_" + atmi_target_name + ")\" -f \"$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + atmi_target_name + ")  $(DEFAULT_LIBS)\"" + buildserverdirective + " -f \"$(LINK_DIRECTIVES_EXE)\""
+    print "\t" + atmibuild + " -o " + internal_executable_name_path( name) + " " + predirectives + " -f \"$(objects_" + atmi_target_name + ")\" -f \"$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + atmi_target_name + ")  $(DEFAULT_LIBS)\"" + buildserverdirective + " -f \"$(LINK_DIRECTIVES_EXE)\" -f \"$(INCLUDE_PATHS)\""
     print
     print "$(internal_target_deploy_name $atmi_target_name):"
     print "\t-@$def_Deploy $(internal_executable_name $name) exe"
@@ -436,6 +441,9 @@ def internal_library_dependencies( libs):
 #
 def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
 
+    objectfiles = ' '.join(objectfiles)
+    libs = ' '.join(libs)
+
     print "#"
     print "#    Lankar $name"
     
@@ -471,6 +479,22 @@ def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
     internal_register_file_for_clean( filename)
     internal_register_path_for_create( local_destination_path)
 
+def internal_install(target, source, destination):
+    
+    #
+    # Add an extra $ in case of referenced environment variable.
+    #
+    if destination.startswith('$'):
+        destination = '$' + destination
+        
+    print "install: " + target
+    print
+    print target + ": " + source
+    
+    print "\t@" + def_MKDIR_RECURSIVE + " " + os.path.dirname(destination)
+    
+    print "\t" + def_RSYNC + " " + source + " " + destination
+    print
 
 def internal_make_target_component(target,casualMakefile):
 

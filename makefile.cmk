@@ -1,1 +1,3 @@
-Build(unittest/gtest/makefile.cmk)
+from casual.make.functiondefinitions import *
+
+Build('unittest/gtest/makefile.cmk')

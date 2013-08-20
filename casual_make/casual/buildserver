@@ -152,28 +152,20 @@ class BuildServer(object):
             sys.exit( process.returncode)
         
     def compileAndlink(self):
-        objectfilename = os.path.splitext(self.file.name)[0] + ".o"
         if not os.getenv("CASUAL_HOME"):
             sys.stderr.write("CASUAL_HOME: Empty\n")
             exit (-2)
             
         #
-        # Compile templatefile
-        #
-        command = os.getenv("CC") + " -o " + objectfilename + " " + self.file.name + " -I" + os.getenv("CASUAL_HOME") + "/xatmi/include -c"    
-        self.runCommand(command)        
-        
-        #
         # Link executable server
         #
-        command = os.getenv("CC") + " -o " + self.options.output + " " + objectfilename + " " + " ".join( self.options.firstfiles)
+        command = os.getenv("CC") + " -o " + self.options.output + " " + self.file.name + " " + " ".join( self.options.firstfiles)
         self.runCommand(command)
 
         #
         # Cleanup
         #
         os.unlink(self.file.name)
-        os.unlink(objectfilename)
     
 if __name__ == '__main__':
     build=BuildServer()

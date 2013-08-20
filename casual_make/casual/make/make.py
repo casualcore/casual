@@ -12,7 +12,7 @@ Created on 28 apr 2012
 import sys
 import os.path
 
-from implementation.engine import Engine
+from casual.make.engine import Engine
 
 class Casual_Make( object):
     """Responsible for handling of producing makefiles from casual_make-files"""

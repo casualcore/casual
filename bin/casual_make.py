@@ -1,1 +1,1 @@
-../casual_make/casual_make.py
+../casual_make/casual/make/make.py
