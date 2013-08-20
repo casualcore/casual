@@ -48,21 +48,21 @@ namespace casual
             }
 
 
-            /*
-            struct ScopedTransaction : public handle::Base
+
+            struct ScopedWrite : public state::Base
             {
-               ScopedTransaction( State& state) : Base( state)
+               ScopedWrite( State& state) : Base( state)
                {
                   // TODO: error checking?
-                  //m_state.db.begin();
+                  m_state.db.begin();
                }
 
-               ~ScopedTransaction()
+               ~ScopedWrite()
                {
-                  //m_state.db.commit();
+                  m_state.db.commit();
                }
             };
-            */
+
 
 
          } // <unnamed>
@@ -215,7 +215,7 @@ namespace casual
          while( true)
          {
             {
-               //local::ScopedTransaction batchCommit( m_state);
+               local::ScopedWrite batchWrite( m_state);
 
                //
                // Blocking
@@ -245,15 +245,18 @@ namespace casual
 
                      if( m_state.pendingReplies.size() >=  common::platform::transaction_batch)
                      {
-                        std::for_each(
-                           std::begin( m_state.pendingReplies),
-                           std::end( m_state.pendingReplies),
-                           action::Send< QueueBlockingWriter>{ m_state});
-
-                        m_state.pendingReplies.clear();
+                        break;
                      }
                   }
                }
+
+               std::for_each(
+                  std::begin( m_state.pendingReplies),
+                  std::end( m_state.pendingReplies),
+                  action::Send< QueueBlockingWriter>{ m_state});
+
+               m_state.pendingReplies.clear();
+
             }
          }
       }

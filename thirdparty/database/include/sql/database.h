@@ -202,6 +202,10 @@ namespace sql
             Query{ m_handle, statement, std::forward< Params>( params)...}.execute();
          }
 
+         void begin() const { sqlite3_exec( m_handle, "BEGIN", 0, 0, 0); }
+         void rollback() const { sqlite3_exec( m_handle, "ROLLBACK", 0, 0, 0); }
+         void commit() const { sqlite3_exec( m_handle, "COMMIT", 0, 0, 0); }
+
       private:
 
          sqlite3* m_handle = nullptr;

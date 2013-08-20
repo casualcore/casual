@@ -18,18 +18,15 @@ namespace casual
       {
 
          template< typename Q>
-         struct Send
+         struct Send : state::Base
          {
-            Send( State& state) : m_state( state) {}
+            using state::Base::Base;
 
             auto operator () ( state::pending::Reply& reply) -> decltype( std::declval< Q>()( reply.reply))
             {
                Q queue( reply.target, m_state);
                return queue( reply.reply);
             }
-         private:
-
-            State& m_state;
          };
 
 

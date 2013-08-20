@@ -96,7 +96,7 @@ namespace casual
                {
                   return instance.id.pid == pid;
                }
-
+            private:
                common::platform::pid_type pid;
             };
          } // filter
