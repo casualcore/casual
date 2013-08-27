@@ -77,7 +77,7 @@ namespace casual
 
          struct ResourceConnect : public state::Base
          {
-            typedef common::message::transaction::reply::resource::Connect message_type;
+            typedef common::message::transaction::resource::connect::Reply message_type;
 
             using Base::Base;
 
@@ -112,7 +112,7 @@ namespace casual
 
          struct Begin : public state::Base
          {
-            typedef common::message::transaction::Begin message_type;
+            typedef common::message::transaction::begin::Request message_type;
 
             using Base::Base;
 
@@ -125,9 +125,9 @@ namespace casual
                const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?); )"};
 
                state::pending::Reply reply;
-               reply.target = message.server.queue_id;
+               reply.target = message.id.queue_id;
 
-               m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.server.pid, state, started);
+               m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.id.pid, state, started);
 
                m_state.pendingReplies.push_back( std::move( reply));
             }

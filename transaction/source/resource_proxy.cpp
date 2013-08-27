@@ -67,7 +67,7 @@ namespace casual
                void operator() ()
                {
 
-                  message::transaction::reply::resource::Connect reply;
+                  message::transaction::resource::connect::Reply reply;
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
 
@@ -86,13 +86,13 @@ namespace casual
 
             struct Prepare : public Base
             {
-               typedef message::transaction::Prepare message_type;
+               typedef message::transaction::resource::prepare::Request message_type;
 
                using Base::Base;
 
                void dispatch( message_type& message)
                {
-                  message::transaction::reply::resource::Generic reply;
+                  message::transaction::resource::prepare::Reply reply;
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
@@ -106,13 +106,13 @@ namespace casual
 
             struct Commit : public Base
             {
-               typedef message::transaction::Commit message_type;
+               typedef message::transaction::resource::commit::Request message_type;
 
                using Base::Base;
 
                void dispatch( message_type& message)
                {
-                  message::transaction::reply::resource::Generic reply;
+                  message::transaction::resource::commit::Reply reply;
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
@@ -127,13 +127,13 @@ namespace casual
 
             struct Rollback : public Base
             {
-               typedef message::transaction::Rollback message_type;
+               typedef message::transaction::resource::rollback::Request message_type;
 
                using Base::Base;
 
                void dispatch( message_type& message)
                {
-                  message::transaction::reply::resource::Generic reply;
+                  message::transaction::resource::rollback::Reply reply;
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();

@@ -22,6 +22,9 @@ namespace casual
       namespace transaction
       {
 
+         void unique_xid( XID& xid);
+
+
          const char* xaError( int code);
 
          const char* txError( int code);
@@ -54,10 +57,11 @@ namespace casual
                inactive,
             };
 
-            typedef TRANSACTION_TIMEOUT Seconds;
+            //typedef TRANSACTION_TIMEOUT Seconds;
+            //Seconds timeout = 0;
 
             XID xid;
-            Seconds timeout = 0;
+            common::platform::pid_type owner = 0;
             State state = State::inactive;
             bool suspended = false;
          };
@@ -106,6 +110,18 @@ namespace casual
 
 
             void apply( const message::server::Configuration& configuration);
+
+            //!
+            //! Associate ongoing transaction, or start a new one if XID is null
+            //!
+            void associateOrStart( const message::Transaction& transaction);
+
+
+            //!
+            //! commits or rollback transaction created from this server
+            //!
+            void finalize( const message::service::Reply& message);
+
 
             //!
             //! @return current transaction. 'null xid' if there are none...

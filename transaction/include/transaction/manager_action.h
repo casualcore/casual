@@ -17,6 +17,7 @@ namespace casual
       namespace action
       {
 
+         /*
          template< typename Q>
          struct Send : state::Base
          {
@@ -28,8 +29,13 @@ namespace casual
                return queue( reply.reply);
             }
          };
+         */
 
 
+         struct base_action
+         {
+
+         };
 
 
       } // action

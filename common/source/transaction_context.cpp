@@ -7,6 +7,7 @@
 
 #include "common/transaction_context.h"
 #include "common/logger.h"
+#include "common/queue.h"
 
 #include <map>
 #include <algorithm>
@@ -50,6 +51,9 @@ namespace casual
 
             return mapping.at( code);
          }
+
+
+
          const char* txError( int code)
          {
             static const std::map< int, const char*> mapping{
@@ -74,6 +78,17 @@ namespace casual
             return mapping.at( code);
          }
 
+         void unique_xid( XID& xid)
+         {
+            auto gtrid = Uuid::make();
+            auto bqual = Uuid::make();
+
+            std::copy( std::begin( gtrid.get()), std::end( gtrid.get()), std::begin( xid.data));
+            xid.gtrid_length = std::distance(std::begin( gtrid.get()), std::end( gtrid.get()));
+
+            std::copy( std::begin( bqual.get()), std::end( bqual.get()), std::begin( xid.data) + xid.gtrid_length);
+            xid.bqual_length = xid.gtrid_length;
+         }
 
          int Resource::nextResurceId()
          {
@@ -142,6 +157,45 @@ namespace casual
             }
          }
 
+         void Context::associateOrStart( const message::Transaction& transaction)
+         {
+            Transaction trans;
+            trans.state = Transaction::State::active;
+
+            queue::ipc_wrapper< queue::blocking::Writer> writeTM( m_state.transactionManagerQueue);
+
+            if( is_null( transaction.xid))
+            {
+
+            }
+            else
+            {
+               trans.owner = transaction.creator;
+               trans.xid = transaction.xid;
+            }
+
+            //
+            // TODO: dynamic registration
+            if( ! m_state.resources.empty())
+            {
+               message::transaction::resource::Involved message;
+               message.xid = trans.xid;
+
+               for( auto& resource : m_state.resources)
+               {
+                  message.resources.push_back( resource.id);
+               }
+
+               writeTM( message);
+            }
+
+            m_state.transactions.push( std::move( trans));
+         }
+
+         void Context::finalize( const message::service::Reply& message)
+         {
+         }
+
          Context::Context()
          {
 
@@ -149,7 +203,38 @@ namespace casual
 
          int Context::begin()
          {
-            return TX_OK;
+            if( ! m_state.transactions.empty())
+            {
+               if( m_state.transactions.top().state != Transaction::State::inactive)
+               {
+                  return TX_PROTOCOL_ERROR;
+               }
+            }
+
+            queue::ipc_wrapper< queue::blocking::Writer> writeTM( m_state.transactionManagerQueue);
+
+            message::transaction::begin::Request request;
+            request.id.queue_id = ipc::getReceiveQueue().id();
+            unique_xid( request.xid);
+
+            writeTM( request);
+
+            queue::blocking::Reader reader( ipc::getReceiveQueue());
+            message::transaction::begin::Reply reply;
+            reader( reply);
+
+            if( reply.state == XA_OK)
+            {
+               Transaction trans;
+               trans.state = Transaction::State::active;
+               trans.owner = process::id();
+               trans.xid = reply.xid;
+
+               m_state.transactions.push( std::move( trans));
+            }
+
+            // TODO: throw instead...
+            return reply.state;
          }
 
          int Context::open()

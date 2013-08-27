@@ -41,18 +41,33 @@ namespace casual
             cMonitorConnect = 30,
             cMonitorDisconnect,
             cMonitorNotify,
-            cTransactionManagerConnect = 40,
-            cTransactionBegin,
-            cTransactionPrepare,
+            cTransactionManagerConnect = 100,
+            cTransactionBeginRequest,
+            cTransactionBeginReply,
             cTransactionCommit,
             cTransactionRollback,
             cTransactionGenericReply,
-            cTransactionPreparedReply,
+            //cTransactionPrepareReply,
             cTransactionResurceConnectReply,
-            cTransactionResurceGenericReply
+            //cTransactionResurceGenericReply,
+            cTransactionResourcePrepareRequest,
+            cTransactionResourcePrepareReply,
+            cTransactionResourceCommitRequest,
+            cTransactionResourceCommitReply,
+            cTransactionResourceRollbackRequest,
+            cTransactionResourceRollbackReply,
+            cTransactionResourceInvolved,
 
-            //cTransactionMonitorUnadvertise,
+         };
 
+
+         template< message::Type type>
+         struct basic_messsage
+         {
+            enum
+            {
+               message_type = type
+            };
          };
 
 
@@ -90,6 +105,7 @@ namespace casual
             std::string name;
             Seconds timeout = 0;
             common::platform::queue_id_type monitor_queue = 0;
+            bool auto_transaction = false;
 
             template< typename A>
             void marshal( A& archive)
@@ -97,6 +113,7 @@ namespace casual
                archive & name;
                archive & timeout;
                archive & monitor_queue;
+               archive & auto_transaction;
             }
          };
 
@@ -131,13 +148,8 @@ namespace casual
             };
 
             template< message::Type type>
-            struct basic_connect
+            struct basic_connect : basic_messsage< type>
             {
-               enum
-               {
-                  message_type = type
-               };
-
                server::Id server;
                std::string path;
 
@@ -150,13 +162,8 @@ namespace casual
             };
 
             template< message::Type type>
-            struct basic_disconnect
+            struct basic_disconnect : basic_messsage< type>
             {
-               enum
-               {
-                  message_type = type
-               };
-
                server::Id server;
 
                template< typename A>
@@ -191,6 +198,7 @@ namespace casual
                   Manager& operator = ( Manager&&) = default;
                   */
 
+                  std::size_t id = 0;
                   std::string key;
                   std::string openinfo;
                   std::string closeinfo;
@@ -198,6 +206,7 @@ namespace casual
                   template< typename A>
                   void marshal( A& archive)
                   {
+                     archive & id;
                      archive & key;
                      archive & openinfo;
                      archive & closeinfo;
@@ -209,12 +218,8 @@ namespace casual
             //!
             //! Sent from the broker with "start-up-information" for a server
             //!
-            struct Configuration
+            struct Configuration : basic_messsage< cServerConfiguration>
             {
-               enum
-               {
-                  message_type = cServerConfiguration
-               };
 
                Configuration() = default;
                Configuration( Configuration&&) = default;
@@ -242,12 +247,8 @@ namespace casual
          namespace service
          {
 
-            struct Advertise
+            struct Advertise : basic_messsage< cServiceAdvertise>
             {
-               enum
-               {
-                  message_type = cServiceAdvertise
-               };
 
                std::string serverPath;
                server::Id server;
@@ -262,13 +263,8 @@ namespace casual
                }
             };
 
-            struct Unadvertise
+            struct Unadvertise : basic_messsage< cServiceUnadvertise>
             {
-               enum
-               {
-                  message_type = cServiceUnadvertise
-               };
-
                server::Id server;
                std::vector< Service> services;
 
@@ -287,12 +283,8 @@ namespace casual
                   //!
                   //! Represent "service-name-lookup" request.
                   //!
-                  struct Request
+                  struct Request : basic_messsage< cServiceNameLookupRequest>
                   {
-                     enum
-                     {
-                        message_type = cServiceNameLookupRequest
-                     };
 
                      std::string requested;
                      server::Id server;
@@ -308,13 +300,8 @@ namespace casual
                   //!
                   //! Represent "service-name-lookup" response.
                   //!
-                  struct Reply
+                  struct Reply : basic_messsage< cServiceNameLookupReply>
                   {
-
-                     enum
-                     {
-                        message_type = cServiceNameLookupReply
-                     };
 
                      Service service;
 
@@ -330,12 +317,8 @@ namespace casual
                } // lookup
             } // name
 
-            struct base_call
+            struct base_call : basic_messsage< cServiceCall>
             {
-               enum
-               {
-                  message_type = cServiceCall
-               };
 
                base_call() = default;
 
@@ -425,12 +408,8 @@ namespace casual
             //!
             //! Represent service reply.
             //!
-            struct Reply
+            struct Reply :  basic_messsage< cServiceReply>
             {
-               enum
-               {
-                  message_type = cServiceReply
-               };
 
                Reply() = default;
                Reply( Reply&&) = default;
@@ -459,12 +438,8 @@ namespace casual
             //! Represent the reply to the broker when a server is done handling
             //! a service-call and is ready for new calls
             //!
-            struct ACK
+            struct ACK : basic_messsage< cServiceAcknowledge>
             {
-               enum
-               {
-                  message_type = cServiceAcknowledge
-               };
 
                std::string service;
                server::Id server;
@@ -494,12 +469,8 @@ namespace casual
             //!
             //! Notify monitorserver with statistics
             //!
-            struct Notify
+            struct Notify : basic_messsage< cMonitorNotify>
             {
-               enum
-               {
-                  message_type = cMonitorNotify
-               };
 
                std::string parentService;
                std::string service;
@@ -527,101 +498,127 @@ namespace casual
          namespace transaction
          {
             //!
-            //! Used to connect the transaction monitor to broker
+            //! Used to connect the transaction manager to broker
             //!
             typedef server::basic_connect< cTransactionManagerConnect> Connect;
 
-            //!
-            //! Used to unadvertise the transaction monitor
-            //!
-            //typedef basic_disconnect< cTransactionMonitorUnadvertise> Unadvertise;
-
-
-            namespace reply
-            {
-               template< message::Type type>
-               struct basic_reply
-               {
-                  typedef common::platform::pid_type pid_type;
-                  enum
-                  {
-                     message_type = type
-                  };
-
-                  server::Id id;
-                  int state = 0;
-
-                  template< typename A>
-                  void marshal( A& archive)
-                  {
-                     archive & id;
-                     archive & state;
-
-                  }
-               };
-
-               //!
-               //! Reply from the transaction monitor
-               //!
-               typedef basic_reply< cTransactionGenericReply> Generic;
-
-               //!
-               //! Reply from the transaction monitor
-               //!
-               typedef basic_reply< cTransactionPreparedReply> Prepared;
-
-
-               namespace resource
-               {
-                  //!
-                  //! Used to notify the TM that a resource proxy is up and running, or not...
-                  //!
-                  typedef basic_reply< cTransactionResurceConnectReply> Connect;
-
-                  typedef basic_reply< cTransactionResurceGenericReply> Generic;
-
-               } // resource
-
-            } // reply
-
-
 
             template< message::Type type>
-            struct basic_transaction
+            struct basic_transaction : basic_messsage< type>
             {
                typedef basic_transaction< type> base_type;
 
-               enum
-               {
-                  message_type = type
-               };
-
-               server::Id server;
                XID xid;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & server;
                   archive & xid;
                }
             };
 
-            struct Begin : public basic_transaction< cTransactionBegin>
+
+
+
+            template< message::Type type>
+            struct basic_request : basic_transaction< type>
             {
+               typedef basic_transaction< type> base_type;
+
+               server::Id id;
+
                template< typename A>
                void marshal( A& archive)
                {
                   base_type::marshal( archive);
-                  archive & start;
+                  archive & id;
                }
-
-               common::time_type start;
             };
 
-            typedef basic_transaction< cTransactionPrepare> Prepare;
-            typedef basic_transaction< cTransactionCommit> Commit;
-            typedef basic_transaction< cTransactionRollback> Rollback;
+            template< message::Type type>
+            struct basic_reply : basic_request< type>
+            {
+               typedef basic_request< type> base_type;
+
+               int state = 0;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  base_type::marshal( archive);
+                  archive & state;
+               }
+            };
+
+            namespace begin
+            {
+               struct Request : public basic_request< cTransactionBeginRequest>
+               {
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     base_type::marshal( archive);
+                     archive & start;
+                  }
+
+                  common::time_type start;
+               };
+
+               typedef basic_reply< cTransactionBeginReply> Reply;
+
+            } // begin
+
+
+
+            typedef basic_request< cTransactionCommit> Commit;
+            typedef basic_request< cTransactionRollback> Rollback;
+
+
+
+            namespace resource
+            {
+               struct Involved : basic_transaction< cTransactionResourceInvolved>
+               {
+                  std::vector< std::size_t> resources;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     base_type::marshal( archive);
+                     archive & resources;
+                  }
+               };
+
+               namespace connect
+               {
+                  //!
+                  //! Used to notify the TM that a resource proxy is up and running, or not...
+                  //!
+                  typedef basic_reply< cTransactionResurceConnectReply> Reply;
+               } // connect
+
+               namespace prepare
+               {
+                  typedef basic_request< cTransactionResourcePrepareRequest> Request;
+                  typedef basic_reply< cTransactionResourcePrepareReply> Reply;
+
+               } // prepare
+
+               namespace commit
+               {
+                  typedef basic_request< cTransactionResourceCommitRequest> Request;
+                  typedef basic_reply< cTransactionResourceCommitReply> Reply;
+
+               } // commit
+
+               namespace rollback
+               {
+                  typedef basic_request< cTransactionResourceRollbackRequest> Request;
+                  typedef basic_reply< cTransactionResourceRollbackReply> Reply;
+
+               } // rollback
+
+            } // resource
 
 
          } // transaction

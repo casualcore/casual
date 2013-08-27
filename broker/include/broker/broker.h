@@ -38,9 +38,23 @@ namespace casual
       {
 	      struct Resource
 	      {
+	         Resource() = default;
+	         Resource( Resource&&) = default;
+
+	         Resource( const std::string& key, const std::string& openinfo, const std::string& closeinfo)
+	         : key( key), openinfo( openinfo), closeinfo( closeinfo) {}
+
+	         std::size_t id = nextId();
 	         std::string key;
             std::string openinfo;
             std::string closeinfo;
+
+            static std::size_t nextId()
+            {
+               static std::size_t id = 0;
+               return ++id;
+            }
+
 	      };
 
 

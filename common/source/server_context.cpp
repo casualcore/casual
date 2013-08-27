@@ -194,6 +194,19 @@ namespace casual
                   writer( message);
                }
 
+               void Default::transaction( const message::service::callee::Call& message)
+               {
+                  if( ! casual::is_null( message.transaction.xid) || message.service.auto_transaction)
+                  {
+                     transaction::Context::instance().associateOrStart( message.transaction);
+                  }
+
+               }
+
+               void Default::transaction( const message::service::Reply& message)
+               {
+               }
+
             } // policy
          } // handle
       } // callee

@@ -258,11 +258,17 @@ namespace casual
                      m_state.monitor.start = common::clock_type::now();
                   }
 
-
                   //
                   // Set the call-chain-id for this "chain"
                   //
                   calling::Context::instance().callId( message.callId);
+
+                  //
+                  // Do transaction stuff...
+                  // - begin transaction if service has "auto-transaction"
+                  // - notify TM about potentially resources involved.
+                  //
+                  m_policy.transaction( message);
 
 
                   //
@@ -313,6 +319,12 @@ namespace casual
                   }
                   else
                   {
+
+                     //
+                     // Do transaction stuff...
+                     // - commit/rollback transaction if service has "auto-transaction"
+                     //
+                     m_policy.transaction( m_state.reply);
 
                      //
                      // User has called tpreturn.
@@ -378,6 +390,9 @@ namespace casual
                   void ack( const message::service::callee::Call& message);
 
                   void statistics( platform::queue_id_type id, message::monitor::Notify& message);
+
+                  void transaction( const message::service::callee::Call& message);
+                  void transaction( const message::service::Reply& message);
 
                private:
                   typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;

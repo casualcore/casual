@@ -40,7 +40,7 @@ namespace casual
 
 	         auto group1 = std::make_shared< broker::Group>();
 	         group1->name ="group1";
-	         group1->resource.push_back( {"db", "openinfo string", "closeinfo string"});
+	         group1->resource.emplace_back( "db", "openinfo string", "closeinfo string");
 
 	         auto server1 = std::make_shared< broker::Server>();
 	         server1->memberships.push_back( group1);

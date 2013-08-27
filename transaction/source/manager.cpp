@@ -250,10 +250,12 @@ namespace casual
                   }
                }
 
+               /*
                std::for_each(
                   std::begin( m_state.pendingReplies),
                   std::end( m_state.pendingReplies),
                   action::Send< QueueBlockingWriter>{ m_state});
+                  */
 
                m_state.pendingReplies.clear();
 

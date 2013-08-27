@@ -28,12 +28,20 @@ namespace casual
 
          namespace pending
          {
+            template< typename Q>
+            struct base_reply
+            {
+               virtual ~base_reply() {}
+               virtual bool send( Q& queue) const = 0;
+            };
+
+
             struct Reply
             {
                typedef common::platform::queue_id_type queue_id_type;
 
                queue_id_type target;
-               common::message::transaction::reply::Generic reply;
+               //common::message::transaction::reply::Generic reply;
             };
          } // pending
 
@@ -58,6 +66,7 @@ namespace casual
 
                };
 
+               std::size_t id = next_id();
 
                std::string key;
                std::string openinfo;
@@ -65,22 +74,17 @@ namespace casual
                std::size_t concurency;
 
                std::vector< std::shared_ptr< Instance>> instances;
+
+               static std::size_t next_id()
+               {
+                  static std::size_t id = 0;
+                  return id++;
+               }
+
             };
 
          } // resource
 
-         namespace action
-         {
-            namespace when
-            {
-               struct Persistent
-               {
-
-               };
-
-            } // when
-
-         } // action
 
 
          namespace filter
@@ -101,6 +105,35 @@ namespace casual
             };
          } // filter
 
+         namespace pending
+         {
+            struct base_pending
+            {
+               XID xid;
+               std::vector< std::size_t> involved;
+
+
+            };
+
+            struct Prepare : base_pending
+            {
+
+
+
+            };
+
+            struct Commit : base_pending
+            {
+
+            };
+
+            struct Rollback : base_pending
+            {
+
+            };
+
+         } // pending
+
 
       } // state
 
@@ -115,12 +148,13 @@ namespace casual
          std::vector< std::shared_ptr< state::resource::Proxy>> resources;
          std::map< common::platform::pid_type, std::shared_ptr< state::resource::Proxy::Instance>> instances;
 
-
-
          //!
          //! Replies that will be sent after an atomic write
          //!
          std::vector< state::pending::Reply> pendingReplies;
+
+
+
 
 
       };

@@ -515,6 +515,16 @@ namespace casual
                sendACK.dispatch( ack);
             }
 
+            void transaction( const message::service::callee::Call& message)
+            {
+
+            }
+
+            void transaction( const message::service::Reply& message)
+            {
+
+            }
+
             void statistics( platform::queue_id_type id, message::monitor::Notify& message)
             {
                //

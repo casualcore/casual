@@ -135,7 +135,36 @@ namespace casual
    }
    //! @}
 
+
+   inline bool is_null( const XID& xid)
+   {
+      return xid.formatID == common::cNull_XID;
+   }
+
+} // casual
+
+inline bool operator < ( const XID& lhs, const XID& rhs)
+{
+   return std::lexicographical_compare(
+         std::begin( lhs.data), std::begin( lhs.data) + lhs.gtrid_length + lhs.bqual_length,
+         std::begin( rhs.data), std::begin( rhs.data) + rhs.gtrid_length + rhs.bqual_length);
 }
+
+inline bool operator == ( const XID& lhs, const XID& rhs)
+{
+   // TODO: will work in C++14
+   /*
+   return std::equal(
+         std::begin( lhs.data), std::begin( lhs.data) + lhs.gtrid_length + lhs.bqual_length,
+         std::begin( rhs.data), std::begin( rhs.data) + rhs.gtrid_length + rhs.bqual_length);
+   */
+   return lhs.gtrid_length + lhs.bqual_length == rhs.gtrid_length + rhs.bqual_length &&
+         std::equal(
+           std::begin( lhs.data), std::begin( lhs.data) + lhs.gtrid_length + lhs.bqual_length,
+           std::begin( rhs.data));
+}
+
+
 
 
 
