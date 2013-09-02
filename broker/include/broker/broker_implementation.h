@@ -51,10 +51,13 @@ namespace casual
                   auto terminated = process::lifetime::ended();
                   for( auto& death : terminated)
                   {
+
+
                      switch( death.why)
                      {
                         case process::lifetime::Exit::Why::core:
-                           logger::error << "process crashed: TODO: maybe restart? " << death.string();
+                           logger::error << "process crashed " << death.string();
+
                            break;
                         default:
                            logger::information << "proccess died: " << death.string();
@@ -67,6 +70,20 @@ namespace casual
             }
 
          private:
+
+            void clean( platform::pid_type pid)
+            {
+               auto findIter = m_state.instances.find( pid);
+
+               if( findIter != std::end( m_state.instances))
+               {
+                  trace::Exit remove{ "remove ipc"};
+                  ipc::remove( findIter->second->queue_id);
+
+               }
+
+            }
+
             State& m_state;
          };
       } // policy

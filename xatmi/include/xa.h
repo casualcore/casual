@@ -39,6 +39,13 @@ struct xid_t {
 typedef struct xid_t XID;
 
 /*
+ * Declarations of routines by which RMs calls TMs
+ */
+extern int ax_reg( int, XID*, long);
+extern int ax_unreg( int, long);
+
+
+/*
  * XA Switch Data Structure
  */
 

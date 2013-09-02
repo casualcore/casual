@@ -164,6 +164,15 @@ inline bool operator == ( const XID& lhs, const XID& rhs)
            std::begin( rhs.data));
 }
 
+inline bool operator == ( const XID& xid, std::nullptr_t)
+{
+   return xid.formatID == casual::common::cNull_XID;
+}
+
+inline bool operator == ( std::nullptr_t, const XID& xid)
+{
+   return xid.formatID == casual::common::cNull_XID;
+}
 
 
 

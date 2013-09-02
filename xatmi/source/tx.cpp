@@ -15,60 +15,65 @@ int tx_begin(void)
 {
    try
    {
-      return casual::common::transaction::Context::instance().begin();
+      casual::common::transaction::Context::instance().begin();
    }
    catch( ...)
    {
       return casual::common::error::handler();
    }
+   return TX_OK;
 }
 
 int tx_close(void)
 {
    try
    {
-      return casual::common::transaction::Context::instance().close();
+      casual::common::transaction::Context::instance().close();
    }
    catch( ...)
    {
       return casual::common::error::handler();
    }
+   return TX_OK;
 }
 
 int tx_commit(void)
 {
   try
   {
-     return casual::common::transaction::Context::instance().commit();
+     casual::common::transaction::Context::instance().commit();
   }
   catch( ...)
   {
      return casual::common::error::handler();
   }
+  return TX_OK;
 }
 
 int tx_open(void)
 {
   try
   {
-     return casual::common::transaction::Context::instance().open();
+     casual::common::transaction::Context::instance().open();
   }
   catch( ...)
   {
      return casual::common::error::handler();
   }
+  return TX_OK;
 }
 
 int tx_rollback(void)
 {
   try
   {
-     return casual::common::transaction::Context::instance().rollback();
+     casual::common::transaction::Context::instance().rollback();
   }
   catch( ...)
   {
      return casual::common::error::handler();
   }
+  return TX_OK;
 }
 
 int tx_set_commit_return(COMMIT_RETURN value)
@@ -89,36 +94,39 @@ int tx_set_transaction_control(TRANSACTION_CONTROL control)
 {
   try
   {
-     return casual::common::transaction::Context::instance().setTransactionControl( control);
+     casual::common::transaction::Context::instance().setTransactionControl( control);
   }
   catch( ...)
   {
      return casual::common::error::handler();
   }
+  return TX_OK;
 }
 
 int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
 {
   try
   {
-     return casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
+     casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
   }
   catch( ...)
   {
      return casual::common::error::handler();
   }
+  return TX_OK;
 }
 
 int tx_info( TXINFO* info)
 {
    try
    {
-      return casual::common::transaction::Context::instance().info( *info);
+      casual::common::transaction::Context::instance().info( *info);
    }
    catch( ...)
    {
       return casual::common::error::handler();
    }
+   return TX_OK;
 }
 
 

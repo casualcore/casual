@@ -72,13 +72,14 @@ LinkExecutable( "casual-broker-admin",
     ["casual-common", "casual-sf", "casual-xatmi"])
 	
 
-	
+
 #
 # unittest
 #
 Compile( "unittest/isolated/source/test_broker.cpp", "unittest/isolated/obj/test_broker.o")
 Compile( "unittest/isolated/source/test_broker_confguration.cpp", "unittest/isolated/obj/test_broker_confguration.o")
 Compile( "unittest/isolated/source/test_broker_transformation.cpp", "unittest/isolated/obj/test_broker_transformation.o")
+
 
 
 LinkIsolatedUnittest( "casual-broker-isolated",
@@ -88,8 +89,10 @@ LinkIsolatedUnittest( "casual-broker-isolated",
 	"unittest/isolated/obj/test_broker_transformation.o"],
     ["casual-common", "casual-sf", "casual-configuration"])
 
+	
 #
 # Install
 #
 InstallExecutable("casual-broker","$CASUAL_HOME/bin/.")
 InstallExecutable("casual-broker-admin","$CASUAL_HOME/bin/.")
+

@@ -117,6 +117,8 @@ namespace casual
 
 			std::vector< std::string> restrictions;
 
+			bool restart = false;
+
 		};
 
 

@@ -95,17 +95,17 @@ namespace casual
             //! Correspond to the tx API
             //!
             //! @{
-            int open();
-            int close();
+            void open();
+            void close();
 
             int begin();
             int commit();
             int rollback();
 
-            int setCommitReturn( COMMIT_RETURN value);
-            int setTransactionControl(TRANSACTION_CONTROL control);
-            int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
-            int info( TXINFO& info);
+            void setCommitReturn( COMMIT_RETURN value);
+            void setTransactionControl(TRANSACTION_CONTROL control);
+            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            void info( TXINFO& info);
             //! @}
 
 

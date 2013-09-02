@@ -202,19 +202,17 @@ namespace casual
                   logger::error << "queue: " << m_id << " has unconsumed messages in cache";
                }
 
-               //
-               // Destroy queue
-               //
-               if( m_id != 0)
+               try
                {
-                  if( msgctl( m_id, IPC_RMID, 0) == -1)
-                  {
-                     logger::error << "failed to remove queue: " << m_id << " - " << common::error::stringFromErrno();
-                  }
-               }
-               else
-               {
+                  //
+                  // Destroy queue
+                  //
+                  ipc::remove( m_id);
                   logger::debug << "queue id: " << m_id << " removed";
+               }
+               catch( ...)
+               {
+                  error::handler();
                }
             }
 
@@ -410,6 +408,14 @@ namespace casual
          {
             static receive::Queue singleton;
             return singleton;
+         }
+
+         void remove( platform::queue_id_type id)
+         {
+            if( msgctl( id, IPC_RMID, nullptr) != 0)
+            {
+               throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
+            }
          }
 
       } // ipc
