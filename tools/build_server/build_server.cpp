@@ -329,11 +329,11 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      //common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
-      std::string path( "server_" + common::Uuid::make().string() + ".c");
+      common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
+      //std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {
-         trace::Exit log( "generate file:  " + path, settings.verbose);
+         trace::Exit log( "generate file:  " + path.path(), settings.verbose);
 
          std::ofstream file( path);
          generate( file, settings);
