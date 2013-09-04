@@ -99,18 +99,20 @@ namespace casual
 		      //
 		      // We need to terminate all children
 		      //
+
 		      /*
-		      for( auto pid : m_state.processes)
+		      for( auto& instance : m_state.instances)
 		      {
-		         process::terminate( pid);
+		         process::terminate( instance.first);
 		      }
+		      */
 
 
 		      for( auto& death : process::lifetime::ended())
 		      {
 		         logger::information << "shutdown: " << death.string();
 		      }
-		      */
+
 
 		   }
 		   catch( ...)

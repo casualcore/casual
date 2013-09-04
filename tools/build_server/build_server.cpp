@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <algorithm>
 
 
 
@@ -80,6 +81,7 @@ struct Settings
 
    void setCompileLinkDirective( const std::vector< std::string>& value)
    {
+      std::clog << "setCompileLinkDirective" << std::endl;
       append( compileLinkDirective, split( value));
    }
 
@@ -102,7 +104,7 @@ private:
 
    void append( std::vector< std::string>& target, const std::vector< std::string>& source)
    {
-         target.insert( std::end( target), std::begin( source), std::end( source));
+      std::copy( std::begin( source), std::end( source), std::back_inserter( target));
    }
 
    std::vector< std::string> split( const std::vector< std::string>& source, typename std::string::value_type delimiter = ' ')
@@ -327,10 +329,11 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
+      //common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
+      std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {
-         trace::Exit log( "generate file:  " + path.path(), settings.verbose);
+         trace::Exit log( "generate file:  " + path, settings.verbose);
 
          std::ofstream file( path);
          generate( file, settings);

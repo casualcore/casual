@@ -108,6 +108,15 @@ namespace casual
             void info( TXINFO& info);
             //! @}
 
+            //!
+            //! Correspond to the ax API
+            //!
+            //! @{
+            int resourceRegistration( int rmid, XID* xid, long flags);
+            int resourceUnregistration( int rmid, long flags);
+            //! @}
+
+
 
             void apply( const message::server::Configuration& configuration);
 

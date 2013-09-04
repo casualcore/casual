@@ -48,23 +48,20 @@ namespace casual
             auto found = std::begin( line);
             auto current = std::begin( line);
 
-            do
+            while( current != std::end( line))
             {
-               found = std::find( current,  std::end( line), delimiter);
-
-               result.emplace_back( current, found);
-
                if( adjacent)
                {
-                  current = std::find_if( found, std::end( line), [=]( value_type value) { return value != delimiter;});
+                  current = std::find_if( current, std::end( line), [=]( value_type value) { return value != delimiter;});
                }
-               else
+               found = std::find( current,  std::end( line), delimiter);
+
+               if( found != current)
                {
-                  current = found + 1;
+                  result.emplace_back( current, found);
                }
-
-            }while( found != std::end( line));
-
+               current = found;
+            }
             return result;
          }
 

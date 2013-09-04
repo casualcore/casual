@@ -228,6 +228,10 @@ namespace casual
             }
          } // xatmi
 
+         /*
+          * No point using exception for XA - TX stuff, to much return values that needs to be
+          * mapped to conform to the standard...
+          *
          namespace tx
          {
             struct Base : public code::Base
@@ -267,6 +271,7 @@ namespace casual
 
             } // no_begin
          } // tx
+         */
 
 		} // exception
 	} // utility

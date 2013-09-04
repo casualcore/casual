@@ -36,6 +36,13 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 3);
       }
 
+      TEST( casual_common_string, split_bla___bla_bla__traling_ws_gives_3_occurencies)
+      {
+         auto splittet = string::split( "  bla    bla bla  ");
+
+         EXPECT_TRUE( splittet.size() == 3);
+      }
+
       TEST( casual_common_string, from_string_int)
       {
          EXPECT_TRUE( from_string< int>( "42") == 42);

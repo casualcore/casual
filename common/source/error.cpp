@@ -56,6 +56,7 @@ namespace casual
                logger::debug << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
                return exception.code();
             }
+            /*
             catch( const exception::tx::severity::Error& exception)
             {
                logger::error << transaction::txError( exception.code()) << " - " << exception.what();
@@ -71,6 +72,7 @@ namespace casual
                logger::debug << transaction::txError( exception.code()) << " - " << exception.what();
                return exception.code();
             }
+            */
             catch( const std::exception& exception)
             {
                logger::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what();

@@ -232,6 +232,18 @@ namespace casual
          {
          }
 
+         int Context::resourceRegistration( int rmid, XID* xid, long flags)
+         {
+            // TODO: implement
+            return TM_OK;
+         }
+
+         int Context::resourceUnregistration( int rmid, long flags)
+         {
+            // TODO: implement
+            return TM_OK;
+         }
+
          Context::Context()
          {
 
@@ -245,7 +257,7 @@ namespace casual
             {
                if( m_state.transactions.top().state != Transaction::State::inactive)
                {
-                  throw exception::tx::ProtocollError( "active transaction - can't start new one...");
+                  return TX_PROTOCOL_ERROR;
                }
             }
 
@@ -279,7 +291,7 @@ namespace casual
             // TODO: TX_FAIL
             if( std::all_of( std::begin( result), std::end( result), []( int value) { return value != XA_OK;}))
             {
-               throw exception::tx::Error( "failed to open resources");
+               //throw exception::tx::Error( "failed to open resources");
             }
          }
 

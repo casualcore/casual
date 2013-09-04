@@ -5,12 +5,15 @@ Build( "xatmi/makefile.cmk")
 
 Build( "serviceframework/makefile.cmk")
 
+
 Build( "configuration/makefile.cmk")
 
-Build( "test/makefile.cmk")
+Build( "tools/makefile.cmk")
 
 Build( "broker/makefile.cmk")
 Build( "monitor/makefile.cmk")
 
 Build( "transaction/makefile.cmk")
 
+
+Build( "test/makefile.cmk")
