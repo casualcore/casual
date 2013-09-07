@@ -81,7 +81,7 @@ struct Settings
 
    void setCompileLinkDirective( const std::vector< std::string>& value)
    {
-      std::clog << "setCompileLinkDirective" << std::endl;
+      // std::clog << "setCompileLinkDirective" << std::endl;
       append( compileLinkDirective, split( value));
    }
 
@@ -299,7 +299,7 @@ int main( int argc, char **argv)
       Settings settings;
 
       {
-         trace::Exit log( "parse arguments", true);
+         trace::Exit log( "parse arguments", false);
 
          using namespace casual::common;
 
