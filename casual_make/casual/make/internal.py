@@ -325,7 +325,7 @@ def internal_set_LD_LIBRARY_PATH():
         print "space :=  "
         print "space +=  "
         print "formattet_library_path = $(subst -L,,$(subst $(space),:,$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS)))"
-        print "LD_LIBRARY_PATH=$(formattet_library_path):$(PLATFORMLIB_DIR)"
+        print "LOCAL_LD_LIBRARY_PATH=$(formattet_library_path):$(PLATFORMLIB_DIR)"
         print 
         #
         # Se till sa vi inte skriver ut detta igen
