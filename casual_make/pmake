@@ -114,7 +114,7 @@ def reformat( line):
     make1 = re.search(r'^[\S\s]+ -f (.*make.*) .*', line)
     make2 = re.search(r'(^make\[.*\]:)(.*)', line)
     rm = re.search(r'^rm -f (.*)', line)
-    buildserver = re.search(r'^([\S\s]+) [\S\s]+buildserver[\S\s]+-o (\S+) .*', line)
+    buildserver = re.search(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*', line)
     rsync = re.search(r'^[\S\s]*rsync --checksum[\s]+(\S+) (.*)', line)
     if compiling:
         return bcolors.GREEN + 'Compile (' + compiling.group(1) + '): ' + bcolors.ENDC + compiling.group(3) + '\n'

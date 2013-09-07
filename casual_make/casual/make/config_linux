@@ -88,7 +88,7 @@ LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
 CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT -std=c++11
 
-BUILDSERVER = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildserver
+BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
 
 #
