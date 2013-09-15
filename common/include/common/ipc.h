@@ -258,6 +258,13 @@ namespace casual
 
          receive::Queue& getReceiveQueue();
 
+
+         //!
+         //! Removes an ipc-queue resource
+         //!
+         void remove( platform::queue_id_type id);
+
+
       } // ipc
    } // common
 } // casual

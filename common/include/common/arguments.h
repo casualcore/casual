@@ -350,13 +350,14 @@ namespace casual
 
             void assign( const std::string& option, std::vector< std::string>&& values) override
             {
-               m_values = std::move( values);
+               std::move( std::begin( values), std::end( values), std::back_inserter( m_values));
+               //m_values = std::move( values);
                m_assigned = true;
             }
 
             bool consumed() const override
             {
-               return m_assigned;
+               return false; //m_assigned;
             }
 
             void dispatch() const override

@@ -101,6 +101,7 @@ namespace casual
                      for( auto& resource: group->resource)
                      {
                         common::message::server::resource::Manager manager;
+                        manager.id = resource.id;
                         manager.key = resource.key;
                         manager.openinfo = resource.openinfo;
                         manager.closeinfo = resource.closeinfo;

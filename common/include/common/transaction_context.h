@@ -22,6 +22,9 @@ namespace casual
       namespace transaction
       {
 
+         void unique_xid( XID& xid);
+
+
          const char* xaError( int code);
 
          const char* txError( int code);
@@ -54,10 +57,11 @@ namespace casual
                inactive,
             };
 
-            typedef TRANSACTION_TIMEOUT Seconds;
+            //typedef TRANSACTION_TIMEOUT Seconds;
+            //Seconds timeout = 0;
 
             XID xid;
-            Seconds timeout = 0;
+            common::platform::pid_type owner = 0;
             State state = State::inactive;
             bool suspended = false;
          };
@@ -91,21 +95,42 @@ namespace casual
             //! Correspond to the tx API
             //!
             //! @{
-            int open();
-            int close();
+            void open();
+            void close();
 
             int begin();
             int commit();
             int rollback();
 
-            int setCommitReturn( COMMIT_RETURN value);
-            int setTransactionControl(TRANSACTION_CONTROL control);
-            int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
-            int info( TXINFO& info);
+            void setCommitReturn( COMMIT_RETURN value);
+            void setTransactionControl(TRANSACTION_CONTROL control);
+            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            void info( TXINFO& info);
+            //! @}
+
+            //!
+            //! Correspond to the ax API
+            //!
+            //! @{
+            int resourceRegistration( int rmid, XID* xid, long flags);
+            int resourceUnregistration( int rmid, long flags);
             //! @}
 
 
+
             void apply( const message::server::Configuration& configuration);
+
+            //!
+            //! Associate ongoing transaction, or start a new one if XID is null
+            //!
+            void associateOrStart( const message::Transaction& transaction);
+
+
+            //!
+            //! commits or rollback transaction created from this server
+            //!
+            void finalize( const message::service::Reply& message);
+
 
             //!
             //! @return current transaction. 'null xid' if there are none...

@@ -1,35 +1,41 @@
+from casual.make.functiondefinitions import *
+
+INCLUDE_PATHS = [ "include",
+	"../common/include", 
+	"$(UNITTEST_INCLUDE_PATH)"]
+
+LIBRARY_PATHS = ["bin",
+    "../common/bin"]
+
+SetIncludePaths( INCLUDE_PATHS)
+SetLibraryPaths( LIBRARY_PATHS)
+
+Compile( "source/xatmi.cpp", "obj/xatmi.o")
+Compile( "source/xatmi_server.cpp", "obj/xatmi_server.o")
+
+Compile( "source/xa.cpp", "obj/xa.o")
+Compile( "source/tx.cpp", "obj/tx.o")
 
 
-INCLUDE_PATHS= include \
-	../common/include \
-	$(UNITTEST_INCLUDE_PATH) \
-
-LIBRARY_PATHS = bin \
-    ../common/bin \
-
-
-Compile( source/xatmi.cpp, obj/xatmi.o)
-Compile( source/xatmi_server.cpp, obj/xatmi_server.o)
-
-Compile( source/xa.cpp, obj/xa.o)
-Compile( source/tx.cpp, obj/tx.o)
-
-
-LinkLibrary( casual-xatmi, \
-	obj/xatmi.o \
-	obj/xatmi_server.o \
-	obj/xa.o \
-	obj/tx.o \
-	, \
-	casual-common)
+LinkLibrary( "casual-xatmi",
+	["obj/xatmi.o",
+	"obj/xatmi_server.o",
+	"obj/xa.o",
+	"obj/tx.o"],
+	["casual-common"])
 
 	
-//
-// unittest
-//
-Compile( unittest/isolated/source/test_buffer.cpp, unittest/isolated/obj/test_buffer.o)
+#
+# unittest
+#
+Compile( "unittest/isolated/source/test_buffer.cpp", "unittest/isolated/obj/test_buffer.o")
 
 
-LinkIsolatedUnittest( casual-xatmi-isolated, \
-    unittest/isolated/obj/test_buffer.o, \
-    casual-xatmi )
+LinkIsolatedUnittest( "casual-xatmi-isolated",
+    ["unittest/isolated/obj/test_buffer.o"],
+    ["casual-xatmi"])
+#
+# Install
+#    
+InstallLibrary("casual-xatmi", "$CASUAL_HOME/lib/.")
+    

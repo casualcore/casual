@@ -1,16 +1,19 @@
+from casual.make.functiondefinitions import *
+
+Build( "common/makefile.cmk")
+Build( "xatmi/makefile.cmk")
+
+Build( "serviceframework/makefile.cmk")
 
 
-Build( common/makefile.cmk)
-Build( xatmi/makefile.cmk)
+Build( "configuration/makefile.cmk")
 
-Build( serviceframework/makefile.cmk)
+Build( "tools/makefile.cmk")
 
-Build( configuration/makefile.cmk)
+Build( "broker/makefile.cmk")
+Build( "monitor/makefile.cmk")
 
-Build( test/makefile.cmk)
+Build( "transaction/makefile.cmk")
 
-Build( broker/makefile.cmk)
-Build( monitor/makefile.cmk)
 
-Build( transaction/makefile.cmk)
-
+Build( "test/makefile.cmk")

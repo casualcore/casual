@@ -7,6 +7,7 @@
 
 #include "common/transaction_context.h"
 #include "common/logger.h"
+#include "common/queue.h"
 
 #include <map>
 #include <algorithm>
@@ -50,6 +51,9 @@ namespace casual
 
             return mapping.at( code);
          }
+
+
+
          const char* txError( int code)
          {
             static const std::map< int, const char*> mapping{
@@ -74,6 +78,26 @@ namespace casual
             return mapping.at( code);
          }
 
+
+
+
+         void handleXAresponse( std::vector< int>& result)
+         {
+
+         }
+
+
+         void unique_xid( XID& xid)
+         {
+            auto gtrid = Uuid::make();
+            auto bqual = Uuid::make();
+
+            std::copy( std::begin( gtrid.get()), std::end( gtrid.get()), std::begin( xid.data));
+            xid.gtrid_length = std::distance(std::begin( gtrid.get()), std::end( gtrid.get()));
+
+            std::copy( std::begin( bqual.get()), std::end( bqual.get()), std::begin( xid.data) + xid.gtrid_length);
+            xid.bqual_length = xid.gtrid_length;
+         }
 
          int Resource::nextResurceId()
          {
@@ -142,17 +166,116 @@ namespace casual
             }
          }
 
+         namespace local
+         {
+            template< typename QW, typename QR>
+            int startTransaction( QW& writer, QR& reader, Transaction& trans)
+            {
+               message::transaction::begin::Request request;
+               request.id.queue_id = ipc::getReceiveQueue().id();
+               unique_xid( request.xid);
+               writer( request);
+
+               message::transaction::begin::Reply reply;
+               reader( reply);
+
+               if( reply.state == XA_OK)
+               {
+                  trans.state = Transaction::State::active;
+                  trans.owner = process::id();
+                  trans.xid = reply.xid;
+               }
+
+               return reply.state;
+            }
+         } // local
+
+         void Context::associateOrStart( const message::Transaction& transaction)
+         {
+            Transaction trans;
+
+
+            queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
+
+            if( is_null( transaction.xid))
+            {
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+               auto code = local::startTransaction( writer, reader, trans);
+            }
+            else
+            {
+               trans.owner = transaction.creator;
+               trans.xid = transaction.xid;
+               trans.state = Transaction::State::active;
+            }
+
+            //
+            // TODO: dynamic registration
+            if( ! m_state.resources.empty())
+            {
+               message::transaction::resource::Involved message;
+               message.xid = trans.xid;
+
+               for( auto& resource : m_state.resources)
+               {
+                  message.resources.push_back( resource.id);
+               }
+
+               writer( message);
+            }
+
+            m_state.transactions.push( std::move( trans));
+         }
+
+         void Context::finalize( const message::service::Reply& message)
+         {
+         }
+
+         int Context::resourceRegistration( int rmid, XID* xid, long flags)
+         {
+            // TODO: implement
+            return TM_OK;
+         }
+
+         int Context::resourceUnregistration( int rmid, long flags)
+         {
+            // TODO: implement
+            return TM_OK;
+         }
+
          Context::Context()
          {
 
          }
 
+
+
          int Context::begin()
          {
-            return TX_OK;
+            if( ! m_state.transactions.empty())
+            {
+               if( m_state.transactions.top().state != Transaction::State::inactive)
+               {
+                  return TX_PROTOCOL_ERROR;
+               }
+            }
+
+            queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
+            queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+            Transaction trans;
+
+            auto code = local::startTransaction( writer, reader, trans);
+            if( code  == XA_OK)
+            {
+               m_state.transactions.push( std::move( trans));
+            }
+
+            return code;
          }
 
-         int Context::open()
+         void Context::open()
          {
             std::vector< int> result;
 
@@ -166,27 +289,34 @@ namespace casual
                }
             }
             // TODO: TX_FAIL
-            return std::all_of( std::begin( result), std::end( result), []( int value) { return value != XA_OK;}) ? TX_ERROR : TX_OK;
+            if( std::all_of( std::begin( result), std::end( result), []( int value) { return value != XA_OK;}))
+            {
+               //throw exception::tx::Error( "failed to open resources");
+            }
          }
 
-         int Context::close()
+         void Context::close()
          {
-            int result = TX_OK;
+            std::vector< int> result;
 
             for( auto& xa : m_state.resources)
             {
-               int status = xa.xaSwitch->xa_close_entry( xa.closeinfo.c_str(), xa.id, TMNOFLAGS);
+               result.push_back( xa.xaSwitch->xa_close_entry( xa.closeinfo.c_str(), xa.id, TMNOFLAGS));
 
                // TODO:
                // TX_PROTOCOL_ERROR
                // TX_FAIL
-               if( status != XA_OK)
+               if( result.back() != XA_OK)
                {
-                  logger::error << xaError( status) << " failed to close resource - key: " << xa.key << " id: " << xa.id << " close info: " << xa.closeinfo;
-                  result = TX_ERROR;
+                  logger::error << xaError( result.back()) << " failed to close resource - key: " << xa.key << " id: " << xa.id << " close info: " << xa.closeinfo;
                }
             }
-            return result;
+            /*
+            if( result != TX_OK)
+            {
+               throw exception::tx::Error( "failed to close resources");
+            }
+            */
          }
 
          int Context::commit()
@@ -196,29 +326,30 @@ namespace casual
 
          int Context::rollback()
          {
+
             return TX_OK;
          }
 
 
 
-         int Context::setCommitReturn( COMMIT_RETURN value)
+         void Context::setCommitReturn( COMMIT_RETURN value)
          {
-            return TX_OK;
+
          }
 
-         int Context::setTransactionControl(TRANSACTION_CONTROL control)
+         void Context::setTransactionControl(TRANSACTION_CONTROL control)
          {
-            return TX_OK;
+
          }
 
-         int Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
+         void Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
          {
-            return TX_OK;
+
          }
 
-         int Context::info( TXINFO& info)
+         void Context::info( TXINFO& info)
          {
-            return TX_OK;
+            //return TX_OK;
          }
 
          State& Context::state()

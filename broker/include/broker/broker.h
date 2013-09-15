@@ -38,9 +38,23 @@ namespace casual
       {
 	      struct Resource
 	      {
+	         Resource() = default;
+	         Resource( Resource&&) = default;
+
+	         Resource( const std::string& key, const std::string& openinfo, const std::string& closeinfo)
+	         : key( key), openinfo( openinfo), closeinfo( closeinfo) {}
+
+	         std::size_t id = nextId();
 	         std::string key;
             std::string openinfo;
             std::string closeinfo;
+
+            static std::size_t nextId()
+            {
+               static std::size_t id = 0;
+               return ++id;
+            }
+
 	      };
 
 
@@ -103,6 +117,8 @@ namespace casual
 
 			std::vector< std::string> restrictions;
 
+			bool restart = false;
+
 		};
 
 
@@ -135,6 +151,11 @@ namespace casual
 
 		struct State
 		{
+		   State() = default;
+
+		   State( State&&) = default;
+		   State( const State&) = delete;
+
 
 		   typedef std::unordered_map< std::string, std::shared_ptr< Server>> server_mapping_type;
 		   typedef std::unordered_map< Server::pid_type, std::shared_ptr< Server::Instance>> instance_mapping_type;

@@ -47,34 +47,42 @@ namespace casual
          {
             struct Policy
             {
-               typedef mockup::queue::WriteMessage< message::service::Reply> reply_queue;
-               typedef mockup::queue::WriteMessage< message::server::Connect> connect_queue;
-               typedef mockup::queue::WriteMessage< message::service::ACK> ack_queue;
-               typedef mockup::queue::WriteMessage< message::monitor::Notify> monitor_queue;
-               typedef mockup::queue::WriteMessage< message::server::Disconnect> disconnect_queue;
-               typedef mockup::queue::ReadMessage< message::server::Configuration> configuration_queue;
+               template< typename base_type>
+               using reader_q = queue::ipc_wrapper< queue::blocking::basic_reader< queue::policy::NoAction, base_type>>;
+
+               template< typename base_type>
+               using writer_q = queue::ipc_wrapper< queue::blocking::basic_writer< queue::policy::NoAction, base_type>>;
 
 
-               typedef queue::ipc_wrapper< reply_queue> reply_writer;
-               typedef queue::ipc_wrapper< monitor_queue> monitor_writer;
+
+
+               typedef mockup::queue::blocking::base_writer< message::service::Reply> reply_queue;
+               typedef mockup::queue::blocking::base_writer< message::server::Connect> connect_queue;
+               typedef mockup::queue::blocking::base_writer< message::service::ACK> ack_queue;
+               typedef mockup::queue::blocking::base_writer< message::monitor::Notify> monitor_queue;
+               typedef mockup::queue::blocking::base_writer< message::server::Disconnect> disconnect_queue;
+               typedef mockup::queue::blocking::base_reader< message::server::Configuration> configuration_queue;
+
+
+               typedef writer_q< reply_queue> reply_writer;
+               typedef writer_q< monitor_queue> monitor_writer;
 
             private:
 
-               typedef queue::ipc_wrapper< connect_queue> connect_writer;
-               typedef queue::ipc_wrapper< ack_queue> ack_writer;
-               typedef queue::ipc_wrapper< disconnect_queue> non_blocking_broker_writer;
-               typedef queue::ipc_wrapper< configuration_queue> configuration_reader;
+               typedef writer_q< connect_queue> connect_writer;
+               typedef writer_q< ack_queue> ack_writer;
+               typedef writer_q< disconnect_queue> non_blocking_broker_writer;
+               typedef reader_q< configuration_queue> configuration_reader;
 
             public:
 
                static void reset()
                {
-                  mockup::queue::WriteMessage< message::service::Reply>::reset();
-                  mockup::queue::WriteMessage< message::server::Connect>::reset();
-                  mockup::queue::WriteMessage< message::service::ACK>::reset();
-                  mockup::queue::WriteMessage< message::server::Disconnect>::reset();
-
-                  mockup::queue::ReadMessage< message::server::Configuration>::reset();
+                  reply_queue::reset();
+                  connect_queue::reset();
+                  ack_queue::reset();
+                  disconnect_queue::reset();
+                  configuration_queue::reset();
 
                   // reset global TM queue
                   transaction::Context::instance().state().transactionManagerQueue = 0;
@@ -82,7 +90,7 @@ namespace casual
                   // prep the configuration reply - only message we will read
                   message::server::Configuration message;
                   message.transactionManagerQueue = 666;
-                  mockup::queue::ReadMessage< message::server::Configuration>::replies.push_back( std::move( message));
+                  configuration_queue::queue.push_back( std::move( message));
                }
 
 
@@ -95,7 +103,7 @@ namespace casual
                   message.server.queue_id = 500;
                   message.path = "test/path";
 
-                  connect_writer brokerWriter;
+                  connect_writer brokerWriter{ 10};
                   brokerWriter( message);
 
 
@@ -116,9 +124,16 @@ namespace casual
                   //
                   // we can't block here...
                   //
-                  non_blocking_broker_writer brokerWriter;
+                  non_blocking_broker_writer brokerWriter{ 10};
                   brokerWriter( message);
                }
+
+               void reply( platform::queue_id_type id, message::service::Reply& message)
+               {
+                  reply_writer writer{ 10};
+                  writer( message);
+               }
+
 
 
                void ack( const message::service::callee::Call& message)
@@ -127,8 +142,24 @@ namespace casual
                   ack.server.queue_id = 500;
                   ack.service = message.service.name;
 
-                  ack_writer brokerWriter;
+                  ack_writer brokerWriter{ 10};
                   brokerWriter( ack);
+               }
+
+               void transaction( const message::service::callee::Call& message)
+               {
+
+               }
+
+               void transaction( const message::service::Reply& message)
+               {
+
+               }
+
+               void statistics( platform::queue_id_type id, message::monitor::Notify& message)
+               {
+                  monitor_writer writer{ id};
+                  writer( message);
                }
             };
 
@@ -217,8 +248,8 @@ namespace casual
 
          local::Call callHandler( arguments);
 
-         ASSERT_TRUE( local::Policy::connect_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::connect_queue::replies.front().server.queue_id == 500);
+         ASSERT_TRUE( local::Policy::connect_queue::queue.size() == 1);
+         EXPECT_TRUE( local::Policy::connect_queue::queue.front().server.queue_id == 500);
 
 
       }
@@ -245,8 +276,8 @@ namespace casual
             local::Call callHandler( arguments);
          }
 
-         ASSERT_TRUE( local::Policy::disconnect_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::disconnect_queue::replies.front().server.pid == process::id());
+         ASSERT_TRUE( local::Policy::disconnect_queue::queue.size() == 1);
+         EXPECT_TRUE( local::Policy::disconnect_queue::queue.front().server.pid == process::id());
 
       }
 
@@ -262,8 +293,8 @@ namespace casual
          callHandler.dispatch( message);
 
 
-         ASSERT_TRUE( local::Policy::reply_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::reply_queue::replies.front().buffer.raw() == local::replyMessage());
+         ASSERT_TRUE( local::Policy::reply_queue::queue.size() == 1);
+         EXPECT_TRUE( local::Policy::reply_queue::queue.front().buffer.raw() == local::replyMessage());
       }
 
       TEST( casual_common_service_context, call_service__gives_broker_ack)
@@ -278,9 +309,9 @@ namespace casual
          callHandler.dispatch( message);
 
 
-         ASSERT_TRUE( local::Policy::ack_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::ack_queue::replies.front().service == "test_service");
-         EXPECT_TRUE( local::Policy::ack_queue::replies.front().server.queue_id == 500);
+         ASSERT_TRUE( local::Policy::ack_queue::queue.size() == 1);
+         EXPECT_TRUE( local::Policy::ack_queue::queue.front().service == "test_service");
+         EXPECT_TRUE( local::Policy::ack_queue::queue.front().server.queue_id == 500);
 
       }
 
@@ -315,8 +346,8 @@ namespace casual
          callHandler.dispatch( message);
 
 
-         ASSERT_TRUE( local::Policy::monitor_queue::replies.size() == 1);
-         EXPECT_TRUE( local::Policy::monitor_queue::replies.front().service == "test_service");
+         ASSERT_TRUE( local::Policy::monitor_queue::queue.size() == 1);
+         EXPECT_TRUE( local::Policy::monitor_queue::queue.front().service == "test_service");
       }
 
    } // common

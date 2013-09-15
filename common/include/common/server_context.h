@@ -258,11 +258,17 @@ namespace casual
                      m_state.monitor.start = common::clock_type::now();
                   }
 
-
                   //
                   // Set the call-chain-id for this "chain"
                   //
                   calling::Context::instance().callId( message.callId);
+
+                  //
+                  // Do transaction stuff...
+                  // - begin transaction if service has "auto-transaction"
+                  // - notify TM about potentially resources involved.
+                  //
+                  m_policy.transaction( message);
 
 
                   //
@@ -315,12 +321,17 @@ namespace casual
                   {
 
                      //
+                     // Do transaction stuff...
+                     // - commit/rollback transaction if service has "auto-transaction"
+                     //
+                     m_policy.transaction( m_state.reply);
+
+                     //
                      // User has called tpreturn.
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     typename policy_type::reply_writer replyWriter( message.reply.queue_id);
-                     replyWriter( m_state.reply);
+                     m_policy.reply( message.reply.queue_id, m_state.reply);
 
                      //
                      // Send ACK to broker
@@ -342,13 +353,7 @@ namespace casual
                         m_state.monitor.service = message.service.name;
                         m_state.monitor.parentService = message.callee;
 
-                        typename policy_type::monitor_writer monitorWriter( message.service.monitor_queue);
-
-
-                        if( ! monitorWriter( m_state.monitor))
-                        {
-                           common::logger::warning << "could not write to monitor queue";
-                        }
+                        m_policy.statistics( message.service.monitor_queue, m_state.monitor);
                      }
                      calling::Context::instance().currentService( "");
                   }
@@ -375,17 +380,23 @@ namespace casual
                      broker_writer() : W( ipc::getBrokerQueue()) {}
                   };
 
-                  typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
-                  typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
-
 
                   message::server::Configuration connect( message::server::Connect& message);
 
                   void disconnect();
 
+                  void reply( platform::queue_id_type id, message::service::Reply& message);
+
                   void ack( const message::service::callee::Call& message);
 
+                  void statistics( platform::queue_id_type id, message::monitor::Notify& message);
+
+                  void transaction( const message::service::callee::Call& message);
+                  void transaction( const message::service::Reply& message);
+
                private:
+                  typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
+                  typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
 

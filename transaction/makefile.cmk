@@ -1,62 +1,62 @@
-
-
-INCLUDE_PATHS = include \
-    ../common/include \
-    ../xatmi/include \
-    ../configuration/include \
-    ../serviceframework/include \
-    ../thirdparty/database/include \
-    $(UNITTEST_INCLUDE_PATH) \
-
-
-
-LIBRARY_PATHS = bin \
-    ../common/bin \
-    ../configuration/bin \
-    ../serviceframework/bin \
-    ../xatmi/bin \
-//    $(IBM_DB_LIB)
+from casual.make.functiondefinitions import *
     
+SetIncludePaths( ["include",
+    "../common/include",
+    "../xatmi/include",
+    "../configuration/include",
+    "../serviceframework/include",
+    "../thirdparty/database/include",
+    "$(UNITTEST_INCLUDE_PATH)"])
+
+SetLibraryPaths( ["bin",
+    "../common/bin",
+    "../configuration/bin",
+    "../serviceframework/bin",
+    "../xatmi/bin"])
+
+#    $(IBM_DB_LIB)
+
+#
+# Compile and link the transaction manager
+#
+Compile( "source/manager.cpp", "obj/manager.o")
+Compile( "source/manager_state.cpp", "obj/manager_state.o")   
+
+LinkArchive( "manager-archive",
+     ["obj/manager.o",
+    "obj/manager_state.o"])
+ 
+Compile( "source/manager_main.cpp", "obj/manager_main.o")
+
+LinkExecutable( "casual-transaction-manager",
+    ["obj/manager_main.o"],
+    [ "manager-archive", "casual-sf", "casual-common", "casual-configuration", "sqlite3"])
 
 
 
-//
-// Compile and link the transaction manager
-//
-Compile( source/manager.cpp, obj/manager.o)    
-Compile( source/manager_main.cpp, obj/manager_main.o)
+#
+# Compile and link resurce-proxy-server archive
+#
+Compile( "source/resource_proxy_server.cpp", "obj/resource_proxy_server.o")
+Compile( "source/resource_proxy.cpp", "obj/resource_proxy.o")
 
-LinkExecutable( casual-transaction-manager,\
-    obj/manager.o \
-    obj/manager_main.o \
-    ,\
-    casual-sf casual-common casual-configuration sqlite3)
-
+LinkLibrary( "casual-resource-proxy-server",
+   ["obj/resource_proxy_server.o",
+   "obj/resource_proxy.o"],
+   ["casual-common"])
 
 
-//
-// Compile and link resurce-proxy-server archive
-//
-Compile( source/resource_proxy_server.cpp, obj/resource_proxy_server.o)
-Compile( source/resource_proxy.cpp, obj/resource_proxy.o)
+#
+# unittest
+#
+Compile( "unittest/isolated/source/test_configuration.cpp", "obj/test_configuration.o")
 
-LinkLibrary( casual-resource-proxy-server,\
-   obj/resource_proxy_server.o \
-   obj/resource_proxy.o \
-   ,\
-   casual-common)
+LinkIsolatedUnittest( "test_transaction_configuration",
+    ["obj/test_configuration.o"],
+    [ "manager-archive", "casual-common", "casual-sf", "casual-configuration", "sqlite3"])
 
 
-//
-// unittest
-//
-Compile( unittest/isolated/source/test_configuration.cpp, obj/test_configuration.o)
-
-LinkIsolatedUnittest( test_transaction_configuration,\
-    obj/test_configuration.o \
-    obj/manager.o \
-    , \
-    casual-common casual-sf casual-configuration sqlite3)
-
+InstallLibrary("casual-resource-proxy-server","$CASUAL_HOME/lib/.")
+InstallExecutable("casual-transaction-manager","$CASUAL_HOME/bin/.")
 
 

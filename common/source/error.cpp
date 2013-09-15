@@ -9,6 +9,7 @@
 #include "common/error.h"
 #include "common/logger.h"
 #include "common/exception.h"
+#include "common/transaction_context.h"
 
 
 #include <string.h>
@@ -55,6 +56,23 @@ namespace casual
                logger::debug << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
                return exception.code();
             }
+            /*
+            catch( const exception::tx::severity::Error& exception)
+            {
+               logger::error << transaction::txError( exception.code()) << " - " << exception.what();
+               return exception.code();
+            }
+            catch( const exception::tx::severity::Information& exception)
+            {
+               logger::information << transaction::txError( exception.code()) << " - " << exception.what();
+               return exception.code();
+            }
+            catch( const exception::tx::severity::User& exception)
+            {
+               logger::debug << transaction::txError( exception.code()) << " - " << exception.what();
+               return exception.code();
+            }
+            */
             catch( const std::exception& exception)
             {
                logger::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what();

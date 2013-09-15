@@ -99,18 +99,20 @@ namespace casual
 		      //
 		      // We need to terminate all children
 		      //
+
 		      /*
-		      for( auto pid : m_state.processes)
+		      for( auto& instance : m_state.instances)
 		      {
-		         process::terminate( pid);
+		         process::terminate( instance.first);
 		      }
+		      */
 
 
 		      for( auto& death : process::lifetime::ended())
 		      {
 		         logger::information << "shutdown: " << death.string();
 		      }
-		      */
+
 
 		   }
 		   catch( ...)
@@ -123,7 +125,7 @@ namespace casual
       {
          common::trace::Exit temp( "broker start");
 
-         broker::QueueBlockingReader blockingReader( m_state, m_receiveQueue);
+         broker::QueueBlockingReader blockingReader( m_receiveQueue, m_state);
 
          //
          // Initialize configuration and such

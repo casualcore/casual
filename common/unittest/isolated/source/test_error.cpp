@@ -93,6 +93,7 @@ namespace casual
 
    };
 
+   /*
    typedef ::testing::Types<
          holder< common::exception::tx::OutsideTransaction, TX_OUTSIDE, Severity::user>,
          holder< common::exception::tx::RolledBack, TX_ROLLBACK, Severity::information>,
@@ -130,5 +131,6 @@ namespace casual
       EXPECT_TRUE( exception.severity() == TestFixture::getSeverity());
 
    }
+   */
 
 } // casual

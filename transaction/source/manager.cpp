@@ -6,6 +6,8 @@
 //!
 
 #include "transaction/manager.h"
+#include "transaction/manager_handle.h"
+#include "transaction/manager_action.h"
 
 
 #include "common/message.h"
@@ -28,102 +30,7 @@ namespace casual
    namespace transaction
    {
 
-      namespace handle
-      {
 
-         struct Base
-         {
-            Base( State& state) : m_state( state) {}
-
-         protected:
-            State& m_state;
-
-         };
-
-         struct ResourceConnect : public Base
-         {
-            typedef message::transaction::reply::resource::Connect message_type;
-
-            using Base::Base;
-
-            void dispatch( message_type& message)
-            {
-               auto resource = m_state.findResource( message.id.pid);
-
-               if( resource != std::end( m_state.resources))
-               {
-                  logger::debug << "transaction manager pid: " << message.id.pid << " connected";
-
-                  auto instance = std::find_if( std::begin( resource->servers), std::end( resource->servers), filter::Instance( message.id.pid));
-
-                  if( message.state == XA_OK)
-                  {
-                     instance->state = resource::Proxy::Instance::State::idle;
-                     instance->id = std::move( message.id);
-
-                  }
-                  else
-                  {
-                     instance->state = resource::Proxy::Instance::State::startupError;
-                  }
-
-               }
-               else
-               {
-                  logger::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard";
-               }
-            }
-
-         };
-
-         struct Begin : public Base
-         {
-            typedef message::transaction::Begin message_type;
-
-            using Base::Base;
-
-            void dispatch( message_type& message)
-            {
-               long state = 0;
-               auto started = std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count();
-               auto xid = common::transform::xid( message.xid);
-
-               const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?); )"};
-
-               pending::Reply reply;
-               reply.target = message.server.queue_id;
-
-               m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.server.pid, state, started);
-
-               m_state.pendingReplies.push_back( std::move( reply));
-            }
-         };
-
-         struct Commit : public Base
-         {
-            typedef message::transaction::Commit message_type;
-
-            using Base::Base;
-
-            void dispatch( message_type& message)
-            {
-
-            }
-         };
-
-         struct Rollback : public Base
-         {
-            typedef message::transaction::Rollback message_type;
-
-            using Base::Base;
-
-            void dispatch( message_type& message)
-            {
-
-            }
-         };
-
-      } // handle
 
       namespace local
       {
@@ -141,122 +48,66 @@ namespace casual
             }
 
 
-            struct ScopedTransaction : public handle::Base
+
+            struct ScopedWrite : public state::Base
             {
-               ScopedTransaction( State& state) : Base( state)
+               ScopedWrite( State& state) : Base( state)
                {
                   // TODO: error checking?
-                  //m_state.db.begin();
+                  m_state.db.begin();
                }
 
-               ~ScopedTransaction()
+               ~ScopedWrite()
                {
-                  //m_state.db.commit();
-               }
-            };
-
-            namespace filter
-            {
-               struct Resource
-               {
-                  bool operator () ( const config::domain::Group& value) const
-                  {
-                     return ! value.resource.key.empty();
-                  }
-               };
-            } // filter
-
-            namespace transform
-            {
-
-               struct Group
-               {
-                  transaction::resource::Proxy operator () ( const config::domain::Group& value) const
-                  {
-                     transaction::resource::Proxy result;
-
-                     result.key = value.resource.key;
-                     result.openinfo = value.resource.openinfo;
-                     result.closeinfo = value.resource.closeinfo;
-                     result.instances = std::stoul( value.resource.instances);
-
-                     return result;
-                  }
-               };
-
-            } // transform
-
-
-            struct StartProxie : handle::Base
-            {
-               using handle::Base::Base;
-
-               void operator () ( resource::Proxy& proxy)
-               {
-                  for( auto index = proxy.instances; index > 0; --index)
-                  {
-                     auto& info = m_state.resourceMapping.at( proxy.key);
-
-                     resource::Proxy::Instance instance;
-
-                     instance.id.pid = process::spawn(
-                           info.server,
-                           {
-                                 "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
-                                 "--rm-key", info.key,
-                                 "--rm-openinfo", proxy.openinfo,
-                                 "--rm-closeinfo", proxy.closeinfo
-                           }
-                        );
-
-                     instance.state = resource::Proxy::Instance::State::started;
-
-                     proxy.servers.emplace_back( std::move( instance));
-                  }
+                  m_state.db.commit();
                }
             };
+
+
 
          } // <unnamed>
       } // local
 
 
-
-
-
-      void configureResurceProxies( State& state)
+      namespace action
       {
-
+         namespace boot
          {
-            common::trace::Exit log( "transaction manager xa-switch configuration");
-
-            auto resources = config::xa::switches::get();
-
-            for( auto& resource : resources)
+            struct Proxie : state::Base
             {
-               if( ! state.resourceMapping.emplace( resource.key, std::move( resource)).second)
+               using state::Base::Base;
+
+               void operator () ( const std::shared_ptr< state::resource::Proxy>& proxy)
                {
-                  throw exception::NotReallySureWhatToNameThisException( "multiple keys in resource config");
+                  for( auto index = proxy->concurency; index > 0; --index)
+                  {
+                     auto& info = m_state.xaConfig.at( proxy->key);
+
+                     auto instance = std::make_shared< state::resource::Proxy::Instance>();
+
+                     instance->id.pid = process::spawn(
+                           info.server,
+                           {
+                                 "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
+                                 "--rm-key", info.key,
+                                 "--rm-openinfo", proxy->openinfo,
+                                 "--rm-closeinfo", proxy->closeinfo
+                           }
+                        );
+
+                     m_state.instances.emplace( instance->id.pid, instance);
+                     instance->proxy = proxy;
+
+                     instance->state = state::resource::Proxy::Instance::State::started;
+
+                     proxy->instances.emplace_back( std::move( instance));
+                  }
                }
-            }
-         }
+            };
+         } // boot
+      } // action
 
-         //
-         // configure resources
-         //
-         {
-            common::trace::Exit log( "transaction manager resource configuration");
 
-            auto domain = config::domain::get();
-
-            auto resourcesEnd = std::partition( std::begin( domain.groups), std::end( domain.groups), local::filter::Resource());
-
-            std::transform(
-               std::begin( domain.groups),
-               resourcesEnd,
-               std::back_inserter( state.resources),
-               local::transform::Group());
-         }
-      }
 
 
       void startResurceProxies( State& state)
@@ -280,7 +131,7 @@ namespace casual
 
          local::createTables( m_state.db);
 
-         configureResurceProxies( m_state);
+         state::configure( m_state);
       }
 
       Manager::~Manager()
@@ -292,6 +143,7 @@ namespace casual
             //
             // We need to terminate all children
             //
+            /*
             for( auto& resource : m_state.resources)
             {
                for( auto& instances : resource.servers)
@@ -300,7 +152,7 @@ namespace casual
                   process::terminate( instances.id.pid);
                }
             }
-
+             */
 
             for( auto death : process::lifetime::ended())
             {
@@ -328,7 +180,7 @@ namespace casual
             std::for_each(
                std::begin( m_state.resources),
                std::end( m_state.resources),
-               local::StartProxie( m_state));
+               action::boot::Proxie( m_state));
          }
 
          {
@@ -358,12 +210,12 @@ namespace casual
          handler.add< handle::Rollback>( m_state);
 
 
-         queue::blocking::Reader queueReader( m_receiveQueue);
+         QueueBlockingReader queueReader( m_receiveQueue, m_state);
 
          while( true)
          {
             {
-               local::ScopedTransaction batchCommit( m_state);
+               local::ScopedWrite batchWrite( m_state);
 
                //
                // Blocking
@@ -376,79 +228,41 @@ namespace casual
                }
 
                //
-               // Consume until the queue is empty or we've reach transaction_batch
+               // Consume until the queue is empty or we've pending replies equal to transaction_batch
                //
                {
-                  auto count = common::platform::transaction_batch;
 
-                  queue::non_blocking::Reader nonBlocking( m_receiveQueue);
+                  QueueNonBlockingReader nonBlocking( m_receiveQueue, m_state);
+
 
                   for( auto marshler = nonBlocking.next(); ! marshler.empty(); marshler = nonBlocking.next())
                   {
+
                      if( ! handler.dispatch( marshler.front()))
                      {
                         common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
                      }
 
-                     if( --count == 0)
+                     if( m_state.pendingReplies.size() >=  common::platform::transaction_batch)
+                     {
                         break;
+                     }
                   }
                }
+
+               /*
+               std::for_each(
+                  std::begin( m_state.pendingReplies),
+                  std::end( m_state.pendingReplies),
+                  action::Send< QueueBlockingWriter>{ m_state});
+                  */
+
+               m_state.pendingReplies.clear();
+
             }
-
-            //
-            // Handle the pending replies
-            //
-            handlePending();
          }
       }
 
-      namespace local
-      {
-         namespace
-         {
-            struct Send
-            {
-               bool operator () ( pending::Reply& reply) const
-               {
-                  queue::ipc_wrapper< queue::non_blocking::Writer> writer( reply.target);
-                  return writer( reply.reply);
-               }
-
-            };
-
-            struct ReportError
-            {
-               void operator () ( const pending::Reply& reply) const
-               {
-                  logger::error << "failed to send transaction reply to queue: " << reply.target << " state" << reply.reply.state;
-               }
-            };
-
-         }
-      }
-
-      void Manager::handlePending()
-      {
-         //
-         // Try to send replies to callers
-         //
-         auto end = std::partition( std::begin( m_state.pendingReplies), std::end(  m_state.pendingReplies), local::Send());
-
-         //
-         // TODO: what should we do in case of failed replies?
-         //
-         std::for_each( std::begin(  m_state.pendingReplies), end, local::ReportError());
-
-         m_state.pendingReplies.clear();
-      }
-
-
-
-      std::string Manager::databaseFileName()
-      {
-         return common::environment::directory::domain() + "/transaction-manager.db";
-      }
 
    } // transaction
 } // casual

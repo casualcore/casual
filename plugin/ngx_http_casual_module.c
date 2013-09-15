@@ -128,7 +128,7 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
    long buffersize = 0;
    char* error = NULL;
    //char* buffer = tpalloc( "STRING", "", 1024);
-   char* buffer = tpalloc("X_OCTET", "YAML", 1024);
+   char* buffer = tpalloc("X_OCTET", "JSON", 1024);
    if (!buffer)
    {
       error = handleError(r);
@@ -161,6 +161,7 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
 
       if (rc == NGX_ERROR || rc > NGX_OK || r->header_only)
       {
+         tpfree(buffer);
          return rc;
       }
    }
@@ -170,6 +171,7 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
    {
       ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
             "Failed to allocate response buffer.");
+      tpfree(buffer);
       return NGX_HTTP_INTERNAL_SERVER_ERROR;
    }
 
@@ -179,8 +181,10 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
    u_char *text = ngx_palloc(r->pool, r->headers_out.content_length_n);
    if (text == NULL )
    {
+
       ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-            "Failed to allocate memory for circle image.");
+            "Failed to allocate memory for text.");
+      tpfree(buffer);
       return NGX_HTTP_INTERNAL_SERVER_ERROR;
    }
 
@@ -198,6 +202,8 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
 
    b->memory = 1;
    b->last_buf = 1;
+
+   tpfree(buffer);
 
    rc = ngx_http_send_header(r);
 
