@@ -95,12 +95,13 @@ namespace casual
             }
 
 
-            pid_type pid = 0;
             common::message::server::Id::queue_id_type queue_id = 0;
-            std::shared_ptr< Server> server;
-            std::vector< std::shared_ptr< Service>> services;
+            pid_type pid = 0;
             std::size_t invoked = 0;
             common::time_type last;
+            std::shared_ptr< Server> server;
+            std::vector< std::shared_ptr< Service>> services;
+
 		   //private:
             State state = State::absent;
 		   };
@@ -117,6 +118,7 @@ namespace casual
 
 			std::vector< std::string> restrictions;
 
+			std::size_t configuredInstances = 0;
 			bool restart = false;
 
 		};
@@ -140,7 +142,7 @@ namespace casual
 
          std::string alias;
          std::string path;
-         std::string arguments;
+         std::vector< std::string> arguments;
          std::string note;
 
          std::vector< pid_type> instances;

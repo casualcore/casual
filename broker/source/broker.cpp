@@ -159,7 +159,6 @@ namespace casual
 
                //
                // Start the servers...
-               // TODO: Need to do more config
                //
                handle::TransactionManagerConnect tmConnect( m_state);
                handle::Connect instanceConnect( m_state);

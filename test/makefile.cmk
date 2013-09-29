@@ -23,19 +23,19 @@ SetLibraryPaths( LIBRARY_PATHS)
 Compile( "source/template_server.cpp", "obj/template_server.o")
 
 
-#LinkAtmiServer(test,,
-#	obj/template_server.o,,
-#	casual-xatmi casual-common,,
-#	"casual_test1,casual_test2,casual_test3")
+LinkAtmiServerResource( "test",
+	[ "obj/template_server.o"],
+	[ "casual-xatmi", "casual-common"],
+	"casual_test1,casual_test2,casual_test3", "rm-mockup")
 
 
 
-Compile( "source/template_server_dispatcher.c", "obj/template_server_dispatcher.o")
+#Compile( "source/template_server_dispatcher.c", "obj/template_server_dispatcher.o")
 
-LinkExecutable("test",
-    ["obj/template_server_dispatcher.o",
-    "obj/template_server.o"],
-    ["casual-xatmi", "casual-common", "casual-mockup"])	
+#LinkExecutable("test",
+#    ["obj/template_server_dispatcher.o",
+#    "obj/template_server.o"],
+#    ["casual-xatmi", "casual-common", "casual-mockup"])	
     	
 
 

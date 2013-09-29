@@ -41,13 +41,13 @@ domain:
    
     - name: group4
       note: Dependent on group3
-      dependecies:
+      dependencies:
         - group3
         - casual
              
     - name: group3
       note: Some logical group
-      dependecies:
+      dependencies:
         - casual
       
     
