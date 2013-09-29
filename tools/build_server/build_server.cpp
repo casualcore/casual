@@ -81,7 +81,7 @@ struct Settings
 
    void setCompileLinkDirective( const std::vector< std::string>& value)
    {
-      std::clog << "setCompileLinkDirective" << std::endl;
+      // std::clog << "setCompileLinkDirective" << std::endl;
       append( compileLinkDirective, split( value));
    }
 
@@ -299,7 +299,7 @@ int main( int argc, char **argv)
       Settings settings;
 
       {
-         trace::Exit log( "parse arguments", true);
+         trace::Exit log( "parse arguments", false);
 
          using namespace casual::common;
 
@@ -329,11 +329,11 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      //common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
-      std::string path( "server_" + common::Uuid::make().string() + ".c");
+      common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
+      //std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {
-         trace::Exit log( "generate file:  " + path, settings.verbose);
+         trace::Exit log( "generate file:  " + path.path(), settings.verbose);
 
          std::ofstream file( path);
          generate( file, settings);
