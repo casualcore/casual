@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.4/angular.min.js"></script>
+    	<!-- Custom styles for this template -->
+    	<link href="grid.ccs" rel="stylesheet">
+        <link href="navbar-fixed-top.ccs" rel="stylesheet">
+	<script src="admin.js"></script>
+	</head>
+ 	<body ng-app="myCasualAdminApp" >
+   <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">casual</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="admin.html">servers</a></li>
+            <li class="active"><a href="services.html">services</a></li>
+            <li><a href="#contact">contact</a></li>
+<!--            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"> <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="#">Action</a></li>
+                <li><a href="#">Another action</a></li>
+                <li><a href="#">Something else here</a></li>
+                <li class="divider"></li>
+                <li class="dropdown-header">Nav header</li>
+                <li><a href="#">Separated link</a></li>
+                <li><a href="#">One more separated link</a></li>
+              </ul>
+            </li> -->
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="active"><a href="//casual.laz.se/redmine">project page</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+    </div>
+      </div>
+<div class="custom-container">
+     <div class="container">
+      			<form ng-submit="submit()" ng-controller="CasualAdminCtrl">
+			<div class="row">
+                        <div class="col-md-5" >
+                                        <br>
+                                        <br>
+                                        <br>
+                                        <br>
+                                        <table class="table table-striped">
+                                        <th>NAME</th>
+                                        <th>SERVER</th>
+                                        <th>LOOKEDUP</th>
+                                        <tr ng-repeat="service in services "/>
+                                                <td>{{service.name}}</td>
+                                                <td>{{getServer(service.instances[0])}}</td>
+                                                <td>{{service.lookedup}}</td>
+                                        </tr>
+                                </table>
+      			</div>
+			</div>
+                        <input type="submit" id="submit" value="Refresh" />
+			</div>
+
+      			</form>
+		</div>
+		</div>
+    		</div>
+	</body>
+</html>

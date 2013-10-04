@@ -122,8 +122,8 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
    //
    // Read configuration
    //
-   ngx_http_casual_loc_conf_t *cglcf;
-   cglcf = ngx_http_get_module_loc_conf(r, ngx_http_casual_module);
+   //ngx_http_casual_loc_conf_t *cglcf;
+   //cglcf = ngx_http_get_module_loc_conf(r, ngx_http_casual_module);
 
    r->headers_out.status = NGX_HTTP_OK;
 
