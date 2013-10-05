@@ -9,13 +9,13 @@ function CasualAdminCtrl($scope, $http, $log) {
 	$scope.services = [];
 	$scope.instances = [];
 
-	doGetCasualServerInfo();
-	doGetCasualServiceInfo();
+	$scope.submit()
 	
 	$scope.submit = function() {
 		console.log("submit");
 		doGetCasualServerInfo();
 		doGetCasualServiceInfo();
+		$timeout( $scope.submit, 2000, false )
 	}
 	
 	$scope.showInstance = function( instances)
