@@ -10,10 +10,14 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	$scope.instances = [];
 	
 	$scope.submit = function() {
-		console.log("submit");
+		$log.info("submit");
 		doGetCasualServerInfo();
 		doGetCasualServiceInfo();
 		$timeout( $scope.submit, 2000, false )
+	}
+	
+	$scope.commit = function() {
+		$log.info("commit");
 	}
 	
 	$scope.showInstance = function( instances)
@@ -51,7 +55,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	function getCasualServerInfoCallback(reply) {
 		
 		$scope.servers = reply.serviceReturn;
-		console.log($scope.servers);
+		$log.debug($scope.servers);
 		
 		for (var i = 0; i < $scope.servers.length; i++) {
   			var element = $scope.servers[i];
@@ -61,7 +65,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
   				$scope.serverMap[element.instances[j].pid] = servername;
   			}	
  		}
- 		console.log( $scope.serverMap)
+		$log.debug( $scope.serverMap)
 	}
 
 	function doGetCasualServiceInfo() {
@@ -75,7 +79,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	function getCasualServiceInfoCallback(reply) {
 		
 		$scope.services = reply.serviceReturn;
-		console.log($scope.services);
+		$log.debug($scope.services);
 	}
 
 
@@ -86,6 +90,9 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	}
 
 
+	//
+	// start cycle
+	//
 	$scope.submit();
 
 }

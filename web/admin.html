@@ -23,9 +23,10 @@
                     <ul class="nav navbar-nav">
                         <li ng-class="state1"><a id="link-1" href ng-click="showServices = false; state1 = 'active'; state2='default'">servers</a></li>
                         <li ng-class="state2"><a id="link-2" href ng-click="showServices = true; state1 = 'default'; state2='active'">services</a></li>
+                        <li ><a href="//casual.laz.se/redmine">project page</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li class="active"><a href="//casual.laz.se/redmine">project page</a></li>
+                        <li ><a id="link-3" href ng-click="commit()">commit</a></li>
                     </ul>
                 </div>
             </div>
@@ -88,7 +89,6 @@
                              </table>
                         </div>
                     </div>
-                   <input type="submit" id="submit" value="Refresh" />
                 </form>
             </div>
         </div>
