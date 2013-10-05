@@ -8,8 +8,6 @@ function CasualAdminCtrl($scope, $http, $log) {
 	$scope.servers = [];
 	$scope.services = [];
 	$scope.instances = [];
-
-	$scope.submit()
 	
 	$scope.submit = function() {
 		console.log("submit");
@@ -31,16 +29,16 @@ function CasualAdminCtrl($scope, $http, $log) {
 			return "admin"
 	}
 
-        $scope.getState = function( state)
-        {
+    $scope.getState = function( state)
+    {
 		//
 		// TODO: Create map
 		//
-                if (state == 2)
+        if (state == 2)
 			return "IDLE"
-                else
-                        return "unknown"
-        }
+        else
+            return "unknown"
+    }
 		
 	function doGetCasualServerInfo() {
 		$http.defaults.headers.common.Accept = 'application/json';
@@ -87,5 +85,7 @@ function CasualAdminCtrl($scope, $http, $log) {
 		$log.error(reply);
 	}
 
-	
+
+	$scope.submit();
+
 }
