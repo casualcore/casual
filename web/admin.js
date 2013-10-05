@@ -1,6 +1,6 @@
 var app = angular.module('myCasualAdminApp', []);
 
-function CasualAdminCtrl($scope, $http, $log) {
+function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	
 	$http.defaults.cache = false;
 	
