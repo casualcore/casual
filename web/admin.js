@@ -13,7 +13,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 		$log.info("submit");
 		doGetCasualServerInfo();
 		doGetCasualServiceInfo();
-		$timeout( $scope.submit, 2000, false )
+		$timeout( $scope.submit, 5000, false )
 	}
 	
 	$scope.commit = function() {
@@ -55,7 +55,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	function getCasualServerInfoCallback(reply) {
 		
 		$scope.servers = reply.serviceReturn;
-		$log.debug($scope.servers);
+		$log.log($scope.servers);
 		
 		for (var i = 0; i < $scope.servers.length; i++) {
   			var element = $scope.servers[i];
@@ -65,7 +65,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
   				$scope.serverMap[element.instances[j].pid] = servername;
   			}	
  		}
-		$log.debug( $scope.serverMap)
+		$log.log( $scope.serverMap)
 	}
 
 	function doGetCasualServiceInfo() {
@@ -79,7 +79,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	function getCasualServiceInfoCallback(reply) {
 		
 		$scope.services = reply.serviceReturn;
-		$log.debug($scope.services);
+		$log.log($scope.services);
 	}
 
 

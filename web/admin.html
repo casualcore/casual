@@ -17,16 +17,15 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="#">casual</a>
+                    <a class="navbar-brand" href="http://casual.laz.se/redmine" target="_blank">casual</a>
                 </div>
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
                         <li ng-class="state1"><a id="link-1" href ng-click="showServices = false; state1 = 'active'; state2='default'">servers</a></li>
                         <li ng-class="state2"><a id="link-2" href ng-click="showServices = true; state1 = 'default'; state2='active'">services</a></li>
-                        <li ><a href="//casual.laz.se/redmine">project page</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li ><a id="link-3" href ng-click="commit()">commit</a></li>
+                        <li><a class="btn btn-success" href ng-click="commit()">commit</a></li>
                     </ul>
                 </div>
             </div>
