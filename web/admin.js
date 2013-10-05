@@ -1,6 +1,6 @@
 var app = angular.module('myCasualAdminApp', []);
 
-function CasualAdminCtrl($scope, $http) {
+function CasualAdminCtrl($scope, $http, $log) {
 	
 	$http.defaults.cache = false;
 	
@@ -84,7 +84,7 @@ function CasualAdminCtrl($scope, $http) {
 
 	function errorCallback(reply) {
 		
-		console.log(reply);
+		$log.error(reply);
 	}
 
 	
