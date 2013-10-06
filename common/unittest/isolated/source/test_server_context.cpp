@@ -43,46 +43,52 @@ namespace casual
    {
       namespace local
       {
+
+
          namespace
          {
             struct Policy
             {
+               /*
                template< typename base_type>
                using reader_q = queue::ipc_wrapper< queue::blocking::basic_reader< queue::policy::NoAction, base_type>>;
 
                template< typename base_type>
                using writer_q = queue::ipc_wrapper< queue::blocking::basic_writer< queue::policy::NoAction, base_type>>;
+             */
+
+               typedef mockup::queue::blocking::Writer writer_queue;
+               typedef mockup::queue::non_blocking::Reader reader_queue;
 
 
 
+               //typedef writer_q< reply_queue> reply_writer;
+               //typedef writer_q< monitor_queue> monitor_writer;
 
-               typedef mockup::queue::blocking::base_writer< message::service::Reply> reply_queue;
-               typedef mockup::queue::blocking::base_writer< message::server::Connect> connect_queue;
-               typedef mockup::queue::blocking::base_writer< message::service::ACK> ack_queue;
-               typedef mockup::queue::blocking::base_writer< message::monitor::Notify> monitor_queue;
-               typedef mockup::queue::blocking::base_writer< message::server::Disconnect> disconnect_queue;
-               typedef mockup::queue::blocking::base_reader< message::server::Configuration> configuration_queue;
+               struct id
+               {
+                  static common::platform::queue_id_type instance() { return 10;}
+                  static common::platform::queue_id_type broker() { return 1;}
+                  static common::platform::queue_id_type monitor() { return 500;}
+               };
 
 
-               typedef writer_q< reply_queue> reply_writer;
-               typedef writer_q< monitor_queue> monitor_writer;
 
             private:
 
+               /*
                typedef writer_q< connect_queue> connect_writer;
                typedef writer_q< ack_queue> ack_writer;
                typedef writer_q< disconnect_queue> non_blocking_broker_writer;
                typedef reader_q< configuration_queue> configuration_reader;
+               */
+
 
             public:
 
                static void reset()
                {
-                  reply_queue::reset();
-                  connect_queue::reset();
-                  ack_queue::reset();
-                  disconnect_queue::reset();
-                  configuration_queue::reset();
+                  mockup::queue::clearAllQueues();
 
                   // reset global TM queue
                   transaction::Context::instance().state().transactionManagerQueue = 0;
@@ -90,7 +96,9 @@ namespace casual
                   // prep the configuration reply - only message we will read
                   message::server::Configuration message;
                   message.transactionManagerQueue = 666;
-                  configuration_queue::queue.push_back( std::move( message));
+
+                  writer_queue instanceQ( id::instance());
+                  instanceQ( message);
                }
 
 
@@ -100,17 +108,17 @@ namespace casual
                   // Let the broker know about us, and our services...
                   //
 
-                  message.server.queue_id = 500;
+                  message.server.queue_id = id::instance();
                   message.path = "test/path";
 
-                  connect_writer brokerWriter{ 10};
+                  writer_queue brokerWriter{ id::broker()};
                   brokerWriter( message);
 
 
                   //
                   // Wait for configuration reply
                   //
-                  configuration_reader reader( 500);
+                  reader_queue reader{ id::instance()};
                   message::server::Configuration configuration;
                   reader( configuration);
 
@@ -124,13 +132,13 @@ namespace casual
                   //
                   // we can't block here...
                   //
-                  non_blocking_broker_writer brokerWriter{ 10};
+                  writer_queue brokerWriter{ id::broker()};
                   brokerWriter( message);
                }
 
                void reply( platform::queue_id_type id, message::service::Reply& message)
                {
-                  reply_writer writer{ 10};
+                  writer_queue writer{ id};
                   writer( message);
                }
 
@@ -139,10 +147,10 @@ namespace casual
                void ack( const message::service::callee::Call& message)
                {
                   message::service::ACK ack;
-                  ack.server.queue_id = 500;
+                  ack.server.queue_id = id::instance();
                   ack.service = message.service.name;
 
-                  ack_writer brokerWriter{ 10};
+                  writer_queue brokerWriter{ id::broker()};
                   brokerWriter( ack);
                }
 
@@ -158,7 +166,7 @@ namespace casual
 
                void statistics( platform::queue_id_type id, message::monitor::Notify& message)
                {
-                  monitor_writer writer{ id};
+                  writer_queue writer{ id};
                   writer( message);
                }
             };
@@ -207,10 +215,12 @@ namespace casual
                message.buffer = { "STRING", "", 1024};
                message.callDescriptor = 10;
                message.service.name = "test_service";
+               message.reply.queue_id = Policy::id::instance();
 
                return message;
             }
 
+            /*
             struct ScopedBrokerQueue
             {
                ScopedBrokerQueue()
@@ -234,6 +244,7 @@ namespace casual
                std::unique_ptr< file::ScopedPath> path;
                ipc::receive::Queue brokerQueue;
             };
+            */
 
          } // <unnamed>
       } // local
@@ -248,10 +259,11 @@ namespace casual
 
          local::Call callHandler( arguments);
 
-         ASSERT_TRUE( local::Policy::connect_queue::queue.size() == 1);
-         EXPECT_TRUE( local::Policy::connect_queue::queue.front().server.queue_id == 500);
+         local::Policy::reader_queue broker{ local::Policy::id::broker()};
+         message::server::Connect message;
 
-
+         ASSERT_TRUE( broker( message));
+         EXPECT_TRUE( message.server.queue_id == local::Policy::id::instance());
       }
 
 
@@ -276,49 +288,62 @@ namespace casual
             local::Call callHandler( arguments);
          }
 
-         ASSERT_TRUE( local::Policy::disconnect_queue::queue.size() == 1);
-         EXPECT_TRUE( local::Policy::disconnect_queue::queue.front().server.pid == process::id());
+         local::Policy::reader_queue broker{ local::Policy::id::broker()};
+         message::server::Disconnect message;
+
+         ASSERT_TRUE( broker( message));
+         EXPECT_TRUE( message.server.pid == process::id());
 
       }
 
       TEST( casual_common_service_context, call_service__gives_reply)
       {
          local::Policy::reset();
-         local::ScopedBrokerQueue scopedQueue;
+         //local::ScopedBrokerQueue scopedQueue;
 
-         auto arguments = local::arguments();
-         local::Call callHandler( arguments);
+         {
+            auto arguments = local::arguments();
+            local::Call callHandler( arguments);
 
-         auto message = local::callMessage();
-         callHandler.dispatch( message);
+            auto message = local::callMessage();
+            callHandler.dispatch( message);
+         }
 
 
-         ASSERT_TRUE( local::Policy::reply_queue::queue.size() == 1);
-         EXPECT_TRUE( local::Policy::reply_queue::queue.front().buffer.raw() == local::replyMessage());
+         local::Policy::reader_queue reader{ local::Policy::id::instance()};
+         message::service::Reply message;
+
+         ASSERT_TRUE( reader( message));
+         EXPECT_TRUE( message.buffer.raw() == local::replyMessage());
       }
 
       TEST( casual_common_service_context, call_service__gives_broker_ack)
       {
          local::Policy::reset();
-         local::ScopedBrokerQueue scopedQueue;
+         //local::ScopedBrokerQueue scopedQueue;
 
-         auto arguments = local::arguments();
-         local::Call callHandler( arguments);
+         {
+            auto arguments = local::arguments();
+            local::Call callHandler( arguments);
 
-         auto message = local::callMessage();
-         callHandler.dispatch( message);
+            auto message = local::callMessage();
+            callHandler.dispatch( message);
+         }
+
+         local::Policy::reader_queue broker{ local::Policy::id::broker()};
+         message::service::ACK message;
 
 
-         ASSERT_TRUE( local::Policy::ack_queue::queue.size() == 1);
-         EXPECT_TRUE( local::Policy::ack_queue::queue.front().service == "test_service");
-         EXPECT_TRUE( local::Policy::ack_queue::queue.front().server.queue_id == 500);
+         ASSERT_TRUE( broker( message));
+         EXPECT_TRUE( message.service == "test_service");
+         EXPECT_TRUE( message.server.queue_id == local::Policy::id::instance());
 
       }
 
       TEST( casual_common_service_context, call_non_existing_service__throws)
       {
          local::Policy::reset();
-         local::ScopedBrokerQueue scopedQueue;
+         //local::ScopedBrokerQueue scopedQueue;
 
          auto arguments = local::arguments();
          local::Call callHandler( arguments);
@@ -336,18 +361,22 @@ namespace casual
       TEST( casual_common_service_context, call_service__gives_monitor_notify)
       {
          local::Policy::reset();
-         local::ScopedBrokerQueue scopedQueue;
+         //local::ScopedBrokerQueue scopedQueue;
 
-         auto arguments = local::arguments();
-         local::Call callHandler( arguments);
+         {
+            auto arguments = local::arguments();
+            local::Call callHandler( arguments);
 
-         auto message = local::callMessage();
-         message.service.monitor_queue = 888;
-         callHandler.dispatch( message);
+            auto message = local::callMessage();
+            message.service.monitor_queue = local::Policy::id::monitor();
+            callHandler.dispatch( message);
+         }
 
+         local::Policy::reader_queue monitor{ local::Policy::id::monitor()};
+         message::monitor::Notify message;
 
-         ASSERT_TRUE( local::Policy::monitor_queue::queue.size() == 1);
-         EXPECT_TRUE( local::Policy::monitor_queue::queue.front().service == "test_service");
+         ASSERT_TRUE( monitor( message));
+         EXPECT_TRUE( message.service == "test_service");
       }
 
    } // common
