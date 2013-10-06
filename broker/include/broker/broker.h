@@ -41,10 +41,11 @@ namespace casual
 	         Resource() = default;
 	         Resource( Resource&&) = default;
 
-	         Resource( const std::string& key, const std::string& openinfo, const std::string& closeinfo)
-	         : key( key), openinfo( openinfo), closeinfo( closeinfo) {}
+	         Resource( std::size_t instances, const std::string& key, const std::string& openinfo, const std::string& closeinfo)
+	         : instances{ instances}, key{ key}, openinfo{ openinfo}, closeinfo{ closeinfo} {}
 
 	         std::size_t id = nextId();
+	         std::size_t instances;
 	         std::string key;
             std::string openinfo;
             std::string closeinfo;
@@ -200,10 +201,6 @@ namespace casual
 
 			void start( const Settings& arguments);
 
-
-			//void addServers( const std::vector< action::server::>)
-
-			//void bootServers( const std::vector< action::server::Instances>& servers);
 
 			const State& state() const
 			{

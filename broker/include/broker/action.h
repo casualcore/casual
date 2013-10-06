@@ -105,6 +105,41 @@ namespace casual
 
                   return result;
                }
+
+               struct Resource
+               {
+
+                  inline common::message::resource::Manager operator () ( const broker::Group::Resource& resource) const
+                  {
+                     common::message::resource::Manager result;
+
+                     result.instances = resource.instances;
+                     result.id = resource.id;
+                     result.key = resource.key;
+                     result.openinfo = resource.openinfo;
+                     result.closeinfo = resource.closeinfo;
+
+                     return result;
+
+                  }
+               };
+
+               inline common::message::transaction::Configuration configuration( const State::group_mapping_type& groups)
+               {
+                  common::message::transaction::Configuration result;
+
+                  for( auto& group : groups)
+                  {
+                     std::transform(
+                        std::begin( group.second->resource),
+                        std::end( group.second->resource),
+                        std::back_inserter( result.resources),
+                        Resource{});
+                  }
+
+                  return result;
+               }
+
             } // transaction
 
             inline common::message::server::Configuration configuration( const std::shared_ptr< broker::Server::Instance>& instance, State& state)
@@ -117,17 +152,11 @@ namespace casual
                {
                   for( auto& group : instance->server->memberships)
                   {
-                     // 0..1 resource
-                     for( auto& resource: group->resource)
-                     {
-                        common::message::server::resource::Manager manager;
-                        manager.id = resource.id;
-                        manager.key = resource.key;
-                        manager.openinfo = resource.openinfo;
-                        manager.closeinfo = resource.closeinfo;
-
-                        result.resourceManagers.push_back( manager);
-                     }
+                     std::transform(
+                        std::begin( group->resource),
+                        std::end( group->resource),
+                        std::back_inserter( result.resourceManagers),
+                        transaction::Resource());
                   }
                }
                return result;
@@ -587,6 +616,9 @@ namespace casual
                   queueReader( message);
 
                   tmConnectHhandler.dispatch( message);
+
+
+
 
                }
                catch( const common::exception::signal::Timeout& exception)

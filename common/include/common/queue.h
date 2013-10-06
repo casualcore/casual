@@ -81,7 +81,7 @@ namespace casual
                //! actual ipc-messages.
                //!
                template< typename M>
-               void operator () ( M& message)
+               void operator () ( M&& message)
                {
                   //
                   // Serialize the message
@@ -174,7 +174,7 @@ namespace casual
                //! @attention Will block until the specific message-type can be read from the queue
                //!
                template< typename M>
-               void operator () ( M& message)
+               void operator () ( M&& message)
                {
                   message_type_type type = message::type( message);
 
@@ -268,7 +268,7 @@ namespace casual
                //! @return true if the whole message is sent. false otherwise
                //!
                template< typename M>
-               bool operator () ( M& message)
+               bool operator () ( M&& message)
                {
                   //
                   // Serialize the message
@@ -358,7 +358,7 @@ namespace casual
                //! @return true if the specific message-type is read. false otherwise.
                //!
                template< typename M>
-               bool operator() ( M& message)
+               bool operator() ( M&& message)
                {
                   message_type_type type = message::type( message);
 

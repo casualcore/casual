@@ -164,6 +164,7 @@ namespace casual
                      if( ! group.resource.key.empty())
                      {
                        Group::Resource resource;
+                       resource.instances = std::stoul( group.resource.instances);
                        resource.key = group.resource.key;
                        resource.openinfo = group.resource.openinfo;
                        resource.closeinfo = group.resource.closeinfo;

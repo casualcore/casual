@@ -110,12 +110,14 @@ namespace casual
 
 
 
+      /*
       void startResurceProxies( State& state)
       {
          common::trace::Exit log( "transaction manager start resource proxies");
 
 
       }
+      */
 
 
       State::State( const std::string& database) : db( database) {}
@@ -194,8 +196,8 @@ namespace casual
             message.path = common::environment::file::executable();
             message.server.queue_id = m_receiveQueue.id();
 
-            queue::blocking::Writer writer( ipc::getBrokerQueue());
-            writer(message);
+            queue::blocking::Writer write( ipc::getBrokerQueue());
+            write( message);
          }
 
 

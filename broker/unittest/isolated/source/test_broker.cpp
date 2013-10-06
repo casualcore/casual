@@ -40,7 +40,7 @@ namespace casual
 
 	         auto group1 = std::make_shared< broker::Group>();
 	         group1->name ="group1";
-	         group1->resource.emplace_back( "db", "openinfo string", "closeinfo string");
+	         group1->resource.emplace_back( 3, "db", "openinfo string", "closeinfo string");
 
 	         auto server1 = std::make_shared< broker::Server>();
 	         server1->memberships.push_back( group1);
@@ -510,7 +510,7 @@ namespace casual
          EXPECT_TRUE( state.monitorQueue == 0);
       }
 
-
+/*
 		TEST( casual_broker, transaction_manager_connect)
       {
          State state = local::initializeState();
@@ -523,12 +523,16 @@ namespace casual
          message.server.pid = 50;
          message.server.queue_id = 50;
 
-         handle::TransactionManagerConnect handler( state);
+         typedef common::mockup::queue::blocking::base_writer< message::transaction::Configuration> tm_queue_type;
+
+         handle::transaction::basic_manager_connect< tm_queue_type> handler( state);
          handler.dispatch( message);
 
 
          EXPECT_TRUE( state.transactionManagerQueue == 50);
+         EXPECT_TRUE( tm_queue_type::queue.size() == 1);
       }
+      */
 
 	}
 }

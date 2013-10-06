@@ -104,9 +104,9 @@ namespace casual
 		{
 		   struct Base
 		   {
-		   protected:
 		      Base( State& state) : m_state( state) {}
 
+		   protected:
 		      State& m_state;
 		   };
 
@@ -117,10 +117,7 @@ namespace casual
          {
             typedef message::monitor::Connect message_type;
 
-            MonitorConnect( State& state)
-                  : Base( state)
-            {
-            }
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -136,10 +133,7 @@ namespace casual
          {
             typedef message::monitor::Disconnect message_type;
 
-            MonitorDisconnect( State& state)
-                  : Base( state)
-            {
-            }
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -148,25 +142,41 @@ namespace casual
 
          };
 
-         //!
-         //! Transaction Manager Connect
-         //!
-         struct TransactionManagerConnect: public Base
+         namespace transaction
          {
-            typedef message::transaction::Connect message_type;
 
-            TransactionManagerConnect( State& state)
-                  : Base( state)
+
+            //!
+            //! Transaction Manager Connect
+            //!
+            template< typename TQ>
+            struct basic_manager_connect : public Base
             {
-            }
+               using queue_type = TQ;
+               using message_type = message::transaction::Connect;
 
-            void dispatch( message_type& message)
-            {
-               m_state.transactionManagerQueue = message.server.queue_id;
+               using Base::Base;
 
-               action::connect( m_state.transactionManager->instances.at( 0), message);
-            }
-         };
+               void dispatch( message_type& message)
+               {
+                  m_state.transactionManagerQueue = message.server.queue_id;
+
+                  action::connect( m_state.transactionManager->instances.at( 0), message);
+
+                  //
+                  // Send configuration to TM
+                  //
+                  auto configuration = action::transform::transaction::configuration( m_state.groups);
+
+                  queue_type tmQueue{ message.server.queue_id, m_state};
+
+                  tmQueue( configuration);
+               }
+            };
+
+            typedef basic_manager_connect< QueueBlockingWriter> ManagerConnect;
+
+         } // transaction
 
          //!
          //! Advertise 0..N services for a server.
@@ -175,7 +185,7 @@ namespace casual
          {
             typedef message::service::Advertise message_type;
 
-            Advertise( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -211,7 +221,7 @@ namespace casual
          {
             typedef message::server::Disconnect message_type;
 
-            Disconnect( State& state) : Base( state) {}
+            using Base::Base;
 
             template< typename M>
             void dispatch( M& message)
@@ -231,7 +241,7 @@ namespace casual
             typedef message::server::Connect message_type;
             typedef Q queue_writer_type;
 
-            basic_connect( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -288,7 +298,7 @@ namespace casual
          {
             typedef message::service::Unadvertise message_type;
 
-            Unadvertise( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -331,7 +341,7 @@ namespace casual
 
             typedef Q queue_writer_type;
 
-            basic_servicelookup( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
@@ -411,7 +421,7 @@ namespace casual
 
             typedef message::service::ACK message_type;
 
-            basic_ack( State& state) : Base( state) {}
+            using Base::Base;
 
             void dispatch( message_type& message)
             {
