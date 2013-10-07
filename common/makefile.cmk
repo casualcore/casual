@@ -23,7 +23,7 @@ Compile( "source/calling_context.cpp", "obj/calling_context.o")
 Compile( "source/buffer_context.cpp", "obj/buffer_context.o")
 Compile( "source/transaction_context.cpp", "obj/transaction_context.o")
 Compile( "source/ipc.cpp", "obj/ipc.o")
-#Compile( "source/queue.cpp", "obj/queue.o")
+Compile( "source/queue.cpp", "obj/queue.o")
 
 Compile( "source/uuid.cpp", "obj/uuid.o")
 Compile( "source/environment.cpp", "obj/environment.o")
@@ -41,7 +41,7 @@ LinkLibrary( "casual-common",
 	"obj/buffer_context.o",
 	"obj/transaction_context.o",
 	"obj/ipc.o",
-#	"obj/queue.o",
+	"obj/queue.o",
 	"obj/uuid.o",
 	"obj/environment.o",
 	"obj/file.o",
