@@ -41,6 +41,14 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 			//
 			// do some updating
 			//
+			for (var i = 0; i < $scope.servers.length; i++) {
+	  			var element = $scope.servers[i];
+	  			var servername = element.alias;
+	  			if (element.instances.length != element.instances.newlength)
+	  			{
+	  				$log.info("updating: servername=" + servername + ", instances=" + element.instances.newlength);
+	  			}
+	 		}
 			
 			//
 			// start timeout again
@@ -92,7 +100,8 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
   			for (var j = 0; j < element.instances.length; j++)
   			{
   				$scope.serverMap[element.instances[j].pid] = servername;
-  			}	
+  			}
+  			element.instances.newlength = element.instances.length
  		}
 		$log.log( $scope.serverMap)
 	}
