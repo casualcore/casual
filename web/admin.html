@@ -26,7 +26,7 @@
                         <li ng-class="state2"><a id="link-2" href ng-click="showServices = true; state1 = 'default'; state2='active'">services</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li ><input class="form-control" type="text" ng-model="alias" placeholder="filter"/></li>
+                        <li ><input class="form-control" type="text" ng-model="searchText" placeholder="filter"/></li>
                         <li >&nbsp;&nbsp;&nbsp; </li>
                         <li ng-class="buttonclass"><a href="" ng-click="commit()">{{buttonlabel}}</a></li>
                     </ul>
@@ -45,10 +45,10 @@
                                <th>NAME</th>
                                <th>PATH</th>
                                <th>INSTANCES</th>
-                               <tr ng-repeat="server in servers | filter:alias"/>
+                               <tr ng-repeat="server in servers | filter:searchText"/>
                                   <td><a href ng-click='showInstance( server.instances)'>{{server.alias}}</a></td>
                                   <td>{{server.path}}</td>
-                                  <td ng-show="editing"><input type="number" name="input" ng-model="server.instances.length"/></td>
+                                  <td ng-show="editing"><input type="number" name="input" ng-model="server.instances.newlength"/></td>
                                   <td ng-show="!editing">{{server.instances.length}}</td>
                                </tr>
                             </table>
@@ -64,7 +64,7 @@
                                <th>PID</th>
                                <th>STATE</th>
                                <th>INVOKED</th>
-                               <tr ng-repeat="instance in instances"/>
+                               <tr ng-repeat="instance in instances | filter:searchText"/>
                                   <td>{{getServer(instance.pid)}}</td>
                                   <td>{{instance.pid}}</td>
                                   <td>{{getState(instance.state)}}</td>
@@ -83,7 +83,7 @@
                                  <th>NAME</th>
                                  <th>SERVER</th>
                                  <th>LOOKEDUP</th>
-                                 <tr ng-repeat="service in services "/>
+                                 <tr ng-repeat="service in services | filter:searchText"/>
                                      <td>{{service.name}}</td>
                                      <td>{{getServer(service.instances[0])}}</td>
                                      <td>{{service.lookedup}}</td>
