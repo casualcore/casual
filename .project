@@ -86,4 +86,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>org.python.pydev.pythonNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>json</name>
+			<type>2</type>
+			<location>/Users/hbergk/tools/json-c</location>
+		</link>
+	</linkedResources>
 </projectDescription>

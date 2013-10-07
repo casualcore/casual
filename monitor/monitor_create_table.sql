@@ -4,6 +4,6 @@ CREATE TABLE calls
 	parentservice	TEXT,
 	callchainid		BLOB,
 	transactionid	BLOB,
-	starttime		TEXT,
-	endtime			TEXT
+	start			NUMBER,
+	end				NUMBER
 );
