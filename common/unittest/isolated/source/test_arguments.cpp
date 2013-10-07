@@ -265,6 +265,34 @@ namespace casual
 
       }
 
+
+      namespace local
+      {
+         std::vector< std::string> global1;
+
+         void freeFunctionOneToMany( const std::vector< std::string>& value)
+         {
+            global1 = value;
+         }
+
+      } // local
+
+      TEST( casual_common_arguments, function_vector_string)
+      {
+         Arguments arguments;
+
+         arguments.add(
+            argument::directive( { "-f", "--foo"}, "some foo stuff", &local::freeFunctionOneToMany)
+         );
+
+         arguments.parse(  "processname", { "-f" ,"1", "2", "3"});
+
+         EXPECT_TRUE( local::global1.size() == 3);
+
+
+
+      }
+
    }
 }
 

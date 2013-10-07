@@ -206,7 +206,7 @@ namespace casual
 
 			//void addServers( const std::vector< action::server::>)
 
-			std::vector< admin::ServerVO> serverInstances( const std::vector< admin::update::InstancesVO>& instances);
+			void serverInstances( const std::vector< admin::update::InstancesVO>& instances);
 
 			const State& state() const
 			{

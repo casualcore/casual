@@ -17,7 +17,7 @@ resources:
       
    
   - key: rm-mockup   
-    server: /Users/Lazan/git/casual/tools/rm-proxy-casual-mockup
+    server: rm-proxy-casual-mockup
     xa_struct_name: casual_mockup_xa_switch_static
     libraries:
       - casual-mockup

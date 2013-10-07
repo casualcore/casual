@@ -34,14 +34,18 @@ namespace casual
 
             const std::string& path() const;
 
+            void release() { released = true; };
+
          private:
+
             const std::string m_path;
+            bool released = false;
          };
 
          class ScopedPath: public RemoveGuard
          {
          public:
-            ScopedPath( const std::string& path);
+            using RemoveGuard::RemoveGuard;
 
             operator const std::string&();
          };

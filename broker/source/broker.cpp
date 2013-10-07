@@ -219,12 +219,24 @@ namespace casual
          }
 		}
 
-      std::vector<admin::ServerVO> Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)
+      void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)
       {
-         std::vector<admin::ServerVO> result;
+         common::Trace trace( "Broker::serverInstances");
 
+         auto updateInstances = [&]( const admin::update::InstancesVO& value)
+               {
+                  auto findIter = m_state.servers.find( value.alias);
+                  if( findIter != std::end( m_state.servers))
+                  {
+                     action::update::Instances{ m_state}( findIter->second, value.instances);
+                  }
+               };
 
-         return result;
+         std::for_each(
+            std::begin( instances),
+            std::end( instances),
+            updateInstances);
+
       }
 
 	} // broker

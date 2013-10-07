@@ -202,7 +202,7 @@ namespace casual
             {
                queue::blocking::Reader reader( ipc::getReceiveQueue());
 
-               auto code = local::startTransaction( writer, reader, trans);
+               //auto code = local::startTransaction( writer, reader, trans);
             }
             else
             {

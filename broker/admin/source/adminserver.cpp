@@ -218,6 +218,10 @@ void _broker_updateInstances( TPSVCINFO *serviceInfo)
       // Instantiate and serialize input parameters
       //
 
+      std::vector<admin::update::InstancesVO> instances;
+
+      service_io >> CASUAL_MAKE_NVP( instances);
+
 
 
       //## input protected section begin [2010.110]
@@ -237,16 +241,15 @@ void _broker_updateInstances( TPSVCINFO *serviceInfo)
       // Call the implementation
       //
 
-      std::vector< admin::ServiceVO> serviceReturn = service_io.call(
+      service_io.call(
          *local::implementation,
-         &local::implementation_type::_broker_listServices);
+         &local::implementation_type::_broker_updateInstances,
+         instances);
 
 
       //
       // Serialize output
       //
-
-      service_io << CASUAL_MAKE_NVP( serviceReturn);
 
       //## output protected section begin [2010.200]
       //## output protected section end   [2010.200]

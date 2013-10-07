@@ -109,6 +109,7 @@ struct Settings
 
    std::string compiler = "gcc";
    bool verbose = false;
+   bool keepSource = false;
 
 
    template< typename A>
@@ -118,7 +119,8 @@ struct Settings
       archive & CASUAL_MAKE_NVP( resourceKey);
       archive & CASUAL_MAKE_NVP( linkDirectives);
       archive & CASUAL_MAKE_NVP( verbose);
-      archive & CASUAL_MAKE_NVP( compiler);
+      archive & CASUAL_MAKE_NVP( verbose);
+      archive & CASUAL_MAKE_NVP( keepSource);
 
    }
 };
@@ -224,7 +226,8 @@ int main( int argc, char **argv)
             argument::directive( {"-r", "--resource-key"}, "key of the resource", settings.resourceKey),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
             argument::directive( {"-l", "--link-directives"}, "additional link directives", settings.linkDirectives),
-            argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose));
+            argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
+            argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keepSource));
 
          if( ! handler.parse( argc, argv))
          {
@@ -256,7 +259,13 @@ int main( int argc, char **argv)
          file.close();
       }
 
+      if( settings.keepSource)
+      {
+         path.release();
+      }
+
       return build( path, xa_switch, settings);
+
 
    }
    catch( ...)
