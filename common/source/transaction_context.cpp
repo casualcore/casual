@@ -128,7 +128,8 @@ namespace casual
                throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
             }
 
-            typedef message::server::resource::Manager RM;
+
+            using RM = message::resource::Manager;
 
             for( Resource& rm : m_state.resources)
             {

@@ -119,7 +119,7 @@ namespace casual
             std::string note;
 
             Resource resource;
-            std::vector< std::string> dependecies;
+            std::vector< std::string> dependencies;
 
             template< typename A>
             void serialize( A& archive)
@@ -127,7 +127,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( resource);
-               archive & CASUAL_MAKE_NVP( dependecies);
+               archive & CASUAL_MAKE_NVP( dependencies);
             }
          };
 

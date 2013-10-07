@@ -105,7 +105,7 @@ LinkIsolatedUnittest( "casual-common-isolated",
     "unittest/isolated/obj/test_error.o",
     "unittest/isolated/obj/test_signal.o", 
     "unittest/isolated/obj/test_types.o"],
-	["casual-common"] )	
+	["casual-common", "casual-mockup"] )	
 
 #
 # Install

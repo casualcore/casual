@@ -39,34 +39,6 @@ namespace casual
          */
 
 
-
-         void addGroups( State& state, const config::domain::Domain& domain)
-         {
-            for( auto& g : domain.groups)
-            {
-               auto group = std::make_shared< broker::Group>();
-               group->name = g.name;
-               group->note = g.note;
-               if( ! g.resource.key.empty())
-               {
-                  Group::Resource resource;
-                  resource.key = g.resource.key;
-                  resource.openinfo = g.resource.openinfo;
-                  resource.closeinfo = g.resource.closeinfo;
-                  group->resource.emplace_back( std::move( resource));
-               }
-               state.groups.emplace( group->name, std::move( group));
-            }
-            for( auto& g : domain.groups)
-            {
-               auto& group = state.groups.at( g.name);
-               for( auto& dependency : g.dependecies)
-               {
-                  group->dependencies.push_back( state.groups.at( dependency));
-               }
-            }
-         }
-
          namespace local
          {
             struct Dependency
@@ -77,7 +49,7 @@ namespace casual
                Dependency( group_iterator start, group_iterator end) : start( start), end( end) {}
 
 
-               bool operator () ( const std::shared_ptr< broker::Group>& value) const
+               bool operator () ( const value_type& value) const
                {
                   if( start == end)
                   {
@@ -137,9 +109,111 @@ namespace casual
          }
 
 
+         namespace remove
+         {
+            void group( State& state, const std::string& name)
+            {
+               auto group = state.groups.find( name);
+
+               if( group != std::end( state.groups))
+               {
+                  state.groups.erase( group);
+
+                  for( auto& server : state.servers)
+                  {
+                     auto found = std::find(
+                           std::begin( server.second->memberships),
+                           std::end( server.second->memberships),
+                           group->second);
+                     if( found != std::end( server.second->memberships))
+                     {
+                        server.second->memberships.erase( found);
+                     }
+                  }
+               }
+               else
+               {
+                  // TODO: error? "warning"?
+               }
+
+            }
+
+            void groups( State& state, const std::vector< std::string>& remove)
+            {
+               for( auto& group : remove)
+               {
+                  remove::group( state, group);
+               }
+            }
+         } // remove
+
+         namespace add
+         {
+            namespace prepare
+            {
+               std::shared_ptr< broker::Group> group( State& state, const config::domain::Group& group)
+               {
+                  auto findGroup = state.groups.find( group.name);
+
+                  if( findGroup == std::end( state.groups))
+                  {
+                     auto groupToAdd = std::make_shared< broker::Group>();
+                     groupToAdd->name = group.name;
+                     groupToAdd->note = group.note;
+
+                     if( ! group.resource.key.empty())
+                     {
+                       Group::Resource resource;
+                       resource.instances = std::stoul( group.resource.instances);
+                       resource.key = group.resource.key;
+                       resource.openinfo = group.resource.openinfo;
+                       resource.closeinfo = group.resource.closeinfo;
+                       groupToAdd->resource.emplace_back( std::move( resource));
+                     }
+
+                     findGroup = state.groups.emplace( groupToAdd->name, std::move( groupToAdd)).first;
+                  }
+                  return findGroup->second;
+               }
+
+            } // local
+
+            void group( State& state, const config::domain::Group& group)
+            {
+               auto groupToAdd = prepare::group( state, group);
+
+               for( auto& dependency : group.dependencies)
+               {
+                  groupToAdd->dependencies.push_back( state.groups.at( dependency));
+               }
+            }
+
+            void groups( State& state, const std::vector< config::domain::Group>& groups)
+            {
+               for( auto& group : groups)
+               {
+                  add::prepare::group( state, group);
+               }
+
+               for( auto& group : groups)
+               {
+                  add::group( state, group);
+               }
+            }
+
+         } // add
+
+         namespace update
+         {
+            void groups( State& state, const std::vector< config::domain::Group>& update, const std::vector< std::string>& remove)
+            {
+               remove::groups( state, remove);
+               add::groups( state, update);
+            }
+
+         } // update
+
 
       } // action
    } // broker
 } // casual
-
-

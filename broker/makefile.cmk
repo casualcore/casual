@@ -87,7 +87,7 @@ LinkIsolatedUnittest( "casual-broker-isolated",
 	"unittest/isolated/obj/test_broker.o",
 	"unittest/isolated/obj/test_broker_confguration.o",
 	"unittest/isolated/obj/test_broker_transformation.o"],
-    ["casual-common", "casual-sf", "casual-configuration"])
+    ["casual-common", "casual-sf", "casual-configuration", "casual-mockup"])
 
 	
 #

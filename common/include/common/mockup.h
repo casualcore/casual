@@ -11,6 +11,9 @@
 #define MOCKUP_H_
 
 #include "common/queue.h"
+#include "common/message.h"
+
+
 #include <cassert>
 
 namespace casual
@@ -19,101 +22,86 @@ namespace casual
    {
       namespace mockup
       {
-         namespace queue
-         {
-            typedef platform::message_type_type message_type_type;
 
-            template< typename M>
-            class mockup_base
+         namespace ipc
+         {
+            class Queue
             {
             public:
+               typedef platform::queue_id_type id_type;
+               typedef common::ipc::message::Complete message_type;
 
-               typedef common::platform::queue_id_type id_type;
-
-               struct ipc_type
+               enum
                {
-                  typedef common::platform::queue_id_type id_type;
-
-                  ipc_type( id_type id) : id{ id} {}
-
-                  id_type id;
+                  cNoBlocking = common::platform::cIPC_NO_WAIT
                };
 
-               typedef M message_type;
+               Queue( id_type id) : m_id{ id} {};
 
-               mockup_base( ipc_type queue)
+               /*
+               Queue( Queue&&) = default;
+               Queue( const Queue&) = delete;
+               Queue& operator = ( const Queue&) = delete;
+               */
+
+               //!
+               //! Writes message to mockup-queue
+               //! @{
+               bool operator () ( message_type& message) const
                {
-                  queue_id = queue.id;
+                  return operator() ( message, 0);
                }
+               bool operator () ( message_type& message, const long flags) const;
+               //! @}
 
-              bool send( marshal::output::Binary& archive, message_type_type type)
-              {
-                 assert( type == M::message_type);
+               //!
+               //! Tries to find the first logic complete message
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               //! @attention mockup - use only with unittest
+               //!
+               std::vector< message_type> operator () ( const long flags);
 
-                 marshal::input::Binary input{ std::move( archive)};
-                 M value;
-                 input >> value;
-                 queue.push_back( std::move( value));
+               //!
+               //! Tries to find the first logic complete message with a specific type
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               //! @attention mockup - use only with unittest
+               //!
+               std::vector< message_type> operator () ( message_type::message_type_type type, const long flags);
 
-                 return true;
-              }
+            private:
 
-              static void reset()
-              {
-                 queue.clear();
-                 queue_id = 0;
-              }
-
-              static id_type queue_id;
-              static std::deque< message_type> queue;
+               id_type m_id = 0;
             };
 
-            template< typename M>
-            typename mockup_base< M>::id_type mockup_base< M>::queue_id = 0;
+         } // ipc
 
-            template< typename M>
-            std::deque< M> mockup_base< M>::queue = std::deque< message_type>{};
 
+         namespace queue
+         {
+
+            void clearAllQueues();
+
+            typedef platform::message_type_type message_type_type;
 
 
 
             namespace non_blocking
             {
-               template< typename M>
-               using base_writer = mockup_base< M>;
 
-               //
-               // Use the blocking reader as base,
-               //
-               template< typename M>
-               struct base_reader : public mockup_base< M>
-               {
-                  using mockup_base< M>::mockup_base;
+               template< typename P>
+               using basic_writer = common::queue::internal::basic_writer< common::queue::policy::NonBlocking, P, ipc::Queue>;
 
-                  std::vector< marshal::input::Binary> next()
-                  {
-                     std::vector< marshal::input::Binary> result;
+               typedef basic_writer< common::queue::policy::NoAction> Writer;
 
-                     if( ! mockup_base< M>::queue.empty())
-                     {
-                        marshal::output::Binary output;
+               template< typename P>
+               using basic_reader = common::queue::internal::basic_reader< common::queue::policy::NonBlocking, P, ipc::Queue>;
 
-                        output << mockup_base< M>::queue.front();
-                        mockup_base< M>::queue.pop_front();
+               typedef basic_reader< common::queue::policy::NoAction> Reader;
 
-                        result.emplace_back( std::move( output));
-                     }
-
-                     return result;
-                  }
-
-                  std::vector< marshal::input::Binary> read( message_type_type type)
-                  {
-                     assert( type == M::message_type);
-
-                     return next();
-                  }
-               };
 
             } // non_blocking
 
@@ -121,123 +109,18 @@ namespace casual
             namespace blocking
             {
 
-               template< typename M>
-               using base_writer = mockup_base< M>;
+               template< typename P>
+               using basic_writer = common::queue::internal::basic_writer< common::queue::policy::Blocking, P, ipc::Queue>;
 
-               template< typename M>
-               struct base_reader : public non_blocking::base_reader< M>
-               {
-                  typedef non_blocking::base_reader< M> base_type;
-                  using base_type::base_reader;
+               typedef basic_writer< common::queue::policy::NoAction> Writer;
 
-                  marshal::input::Binary next()
-                  {
-                     return base_type::next.at( 0);
-                  }
+               template< typename P>
+               using basic_reader = common::queue::internal::basic_reader< common::queue::policy::Blocking, P, ipc::Queue>;
 
-                  marshal::input::Binary read( message_type_type type)
-                  {
-                     return std::move( base_type::read( type).at( 0));
-                  }
-               };
+               typedef basic_reader< common::queue::policy::NoAction> Reader;
+
+
             }// blocking
-
-         /*
-            template< typename M>
-            struct WriteMessage
-            {
-               typedef common::platform::queue_id_type id_type;
-               typedef M message_type;
-
-               //! so it can be used with ipc_wrapper
-               typedef id_type ipc_type;
-
-               WriteMessage( id_type id)
-               {
-                  reset();
-                  queue_id = id;
-               }
-
-               template< typename T>
-               bool operator () ( T& value)
-               {
-                  //
-                  // Value as a lvalue, and we can't just move it.
-                  // So, why not write and read to a real queue, hence also test the queue stuff...
-                  //
-
-                  common::queue::ipc_wrapper< common::queue::blocking::Reader> reader;
-
-                  common::queue::ipc_wrapper< common::queue::blocking::Writer> writer( reader.ipc().id());
-                  writer( value);
-
-                  T result;
-                  reader( result);
-                  replies.push_back( std::move( result));
-
-                  return true;
-               }
-
-               static void reset()
-               {
-                  replies.clear();
-                  queue_id = 0;
-               }
-
-               static id_type queue_id;
-               static std::vector< message_type> replies;
-            };
-
-            template< typename M>
-            typename WriteMessage< M>::id_type WriteMessage< M>::queue_id = 0;
-
-            template< typename M>
-            std::vector< M> WriteMessage< M>::replies = std::vector< message_type>{};
-
-
-
-
-            template< typename M>
-            struct ReadMessage
-            {
-               typedef common::platform::queue_id_type id_type;
-               typedef M message_type;
-
-               //! so it can be used with ipc_wrapper
-               typedef id_type ipc_type;
-
-               ReadMessage( id_type id)
-               {
-                  queue_id = id;
-               }
-
-               template< typename T>
-               void operator () ( T& value)
-               {
-                  if( ! replies.empty())
-                  {
-                     value = std::move( replies.front());
-                     replies.pop_front();
-                  }
-               }
-
-               static void reset()
-               {
-                  replies.clear();
-                  queue_id = 0;
-               }
-
-               static id_type queue_id;
-               static std::deque< message_type> replies;
-            };
-
-            template< typename M>
-            typename ReadMessage< M>::id_type ReadMessage< M>::queue_id = 0;
-
-            template< typename M>
-            std::deque< M> ReadMessage< M>::replies = std::deque< message_type>{};
-
-             */
          } // queue
 
          namespace xa_switch

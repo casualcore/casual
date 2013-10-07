@@ -42,6 +42,7 @@ namespace casual
             cMonitorDisconnect,
             cMonitorNotify,
             cTransactionManagerConnect = 100,
+            cTransactionManagerConfiguration,
             cTransactionBeginRequest,
             cTransactionBeginReply,
             cTransactionCommit,
@@ -117,6 +118,27 @@ namespace casual
             }
          };
 
+         namespace resource
+         {
+            struct Manager
+            {
+               std::size_t instances = 0;
+               std::size_t id = 0;
+               std::string key;
+               std::string openinfo;
+               std::string closeinfo;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & id;
+                  archive & key;
+                  archive & openinfo;
+                  archive & closeinfo;
+               }
+            };
+
+         } // resource
 
 
          namespace server
@@ -188,32 +210,7 @@ namespace casual
 
             };
 
-            namespace resource
-            {
-               struct Manager
-               {
-                  /*
-                  Manager() = default;
-                  Manager( Manager&&) = default;
-                  Manager& operator = ( Manager&&) = default;
-                  */
 
-                  std::size_t id = 0;
-                  std::string key;
-                  std::string openinfo;
-                  std::string closeinfo;
-
-                  template< typename A>
-                  void marshal( A& archive)
-                  {
-                     archive & id;
-                     archive & key;
-                     archive & openinfo;
-                     archive & closeinfo;
-                  }
-               };
-
-            }
 
             //!
             //! Sent from the broker with "start-up-information" for a server
@@ -501,6 +498,18 @@ namespace casual
             //! Used to connect the transaction manager to broker
             //!
             typedef server::basic_connect< cTransactionManagerConnect> Connect;
+
+
+            struct Configuration : message::basic_messsage< cTransactionManagerConfiguration>
+            {
+               std::vector< message::resource::Manager> resources;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & resources;
+               }
+            };
 
 
             template< message::Type type>

@@ -28,6 +28,12 @@ namespace casual
    {
       namespace action
       {
+         struct Base
+         {
+            Base( broker::State& state) : m_state( state) {}
+
+            broker::State& m_state;
+         };
 
          namespace transform
          {
@@ -55,8 +61,10 @@ namespace casual
                }
             };
 
-            struct Server
+            struct Server : Base
             {
+               using Base::Base;
+
                std::shared_ptr< broker::Server> operator () ( const config::domain::Server& server) const
                {
                   auto result = std::make_shared< broker::Server>();
@@ -67,6 +75,18 @@ namespace casual
                   result->note = server.note;
                   result->restrictions = server.restriction;
                   std::sort( std::begin( result->restrictions), std::end( result->restrictions));
+
+                  for( auto& group : server.memberships)
+                  {
+                     result->memberships.push_back( m_state.groups.at( group));
+                  }
+
+                  if( ! server.instances.empty())
+                  {
+                     result->configuredInstances = std::stoul( server.instances);
+                  }
+
+                  m_state.servers.emplace( result->alias, result);
 
                   return result;
                }
@@ -85,6 +105,41 @@ namespace casual
 
                   return result;
                }
+
+               struct Resource
+               {
+
+                  inline common::message::resource::Manager operator () ( const broker::Group::Resource& resource) const
+                  {
+                     common::message::resource::Manager result;
+
+                     result.instances = resource.instances;
+                     result.id = resource.id;
+                     result.key = resource.key;
+                     result.openinfo = resource.openinfo;
+                     result.closeinfo = resource.closeinfo;
+
+                     return result;
+
+                  }
+               };
+
+               inline common::message::transaction::Configuration configuration( const State::group_mapping_type& groups)
+               {
+                  common::message::transaction::Configuration result;
+
+                  for( auto& group : groups)
+                  {
+                     std::transform(
+                        std::begin( group.second->resource),
+                        std::end( group.second->resource),
+                        std::back_inserter( result.resources),
+                        Resource{});
+                  }
+
+                  return result;
+               }
+
             } // transaction
 
             inline common::message::server::Configuration configuration( const std::shared_ptr< broker::Server::Instance>& instance, State& state)
@@ -97,17 +152,11 @@ namespace casual
                {
                   for( auto& group : instance->server->memberships)
                   {
-                     // 0..1 resource
-                     for( auto& resource: group->resource)
-                     {
-                        common::message::server::resource::Manager manager;
-                        manager.id = resource.id;
-                        manager.key = resource.key;
-                        manager.openinfo = resource.openinfo;
-                        manager.closeinfo = resource.closeinfo;
-
-                        result.resourceManagers.push_back( manager);
-                     }
+                     std::transform(
+                        std::begin( group->resource),
+                        std::end( group->resource),
+                        std::back_inserter( result.resourceManagers),
+                        transaction::Resource());
                   }
                }
                return result;
@@ -124,17 +173,10 @@ namespace casual
          }
 
 
-         void addGroups( State& state, const config::domain::Domain& domain);
-
          std::vector< std::vector< std::shared_ptr< broker::Group> > > bootOrder( State& state);
 
 
-         struct Base
-         {
-            Base( broker::State& state) : m_state( state) {}
 
-            broker::State& m_state;
-         };
 
 
          namespace add
@@ -274,14 +316,7 @@ namespace casual
             {
                bool operator () ( const std::shared_ptr< Server::Instance>& server) const
                {
-
-                  switch( server->state)
-                  {
-                     case Server::Instance::State::shutdown:
-                        return true;
-                     default:
-                        return Running()( server);
-                  }
+                  return server->state != Server::Instance::State::prospect;
                }
             };
 
@@ -382,9 +417,131 @@ namespace casual
                }
             }
 
+            void groups( State& state, const std::vector< std::string>& remove);
+
          } // remove
 
+         namespace add
+         {
+            void groups( State& state, const std::vector< config::domain::Group>& groups);
 
+         } // add
+
+         namespace update
+         {
+            void groups( State& state, const std::vector< config::domain::Group>& update, const std::vector< std::string>& remove);
+
+            void servers( State& state, const std::vector< config::domain::Server>& update, const std::vector< std::string>& remove);
+
+            template< typename P>
+            struct basic_instances : Base
+            {
+               using policy_type = P;
+
+               using Base::Base;
+
+               std::vector< std::shared_ptr< broker::Server::Instance>> operator () ( std::shared_ptr< broker::Server>& server, std::size_t instances)
+               {
+                  if( instances > server->instances.size())
+                  {
+                     return boot( server, instances - server->instances.size());
+                  }
+                  else
+                  {
+                     return shutdown( server, server->instances.size() - instances);
+                  }
+               }
+            private:
+               std::vector< std::shared_ptr< broker::Server::Instance>> boot( std::shared_ptr< broker::Server>& server, std::size_t instances)
+               {
+                  std::vector< std::shared_ptr< broker::Server::Instance>> result;
+
+                  while( instances-- != 0)
+                  {
+                     auto pid = policy_type::boot( server->path, server->arguments);
+
+                     auto instance = std::make_shared< Server::Instance>();
+                     instance->pid = pid;
+                     instance->server = server;
+                     instance->alterState( Server::Instance::State::prospect);
+
+                     server->instances.push_back( instance);
+
+                     m_state.instances.emplace( pid, instance);
+                     result.push_back( std::move( instance));
+                  }
+
+                  return result;
+               }
+
+               std::vector< std::shared_ptr< broker::Server::Instance>> shutdown( std::shared_ptr< broker::Server>& server, std::size_t instances)
+               {
+                  assert( server->instances.size() <= instances);
+
+                  std::vector< std::shared_ptr< broker::Server::Instance>> result(
+                        std::end( server->instances) - instances,
+                        std::end( server->instances));
+
+
+                  for( auto& instance : result)
+                  {
+                     policy_type::shutdown( *instance);
+
+                     instance->alterState( Server::Instance::State::shutdown);
+                  }
+
+                  return result;
+               }
+            };
+
+            struct Policy
+            {
+               static common::platform::pid_type boot( const std::string& path, const std::vector< std::string>& arguments)
+               {
+                  return common::process::spawn( path, arguments);
+               }
+
+               static void shutdown( broker::Server::Instance& instance)
+               {
+                  common::process::terminate( instance.pid);
+               }
+            };
+
+            using Instances = basic_instances< Policy>;
+
+         } // update
+
+         namespace filter
+         {
+            namespace empty
+            {
+               struct Membership
+               {
+                  template< typename T>
+                  bool operator () ( T& value) const
+                  {
+                     return value->memberships.empty();
+                  }
+               };
+            } // empty
+
+            struct Membership
+            {
+               using groups_type = std::vector< std::shared_ptr< broker::Group>>;
+
+               Membership( const groups_type& groups) : groups( groups) {}
+
+               template< typename T>
+               bool operator () ( T& value) const
+               {
+                  return std::find_first_of( std::begin( value->memberships), std::end( value->memberships),
+                        std::begin( groups), std::end( groups)) != std::end( value->memberships);
+               }
+            private:
+               const groups_type& groups;
+            };
+
+         } // filter
 
          namespace boot
          {
@@ -415,7 +572,9 @@ namespace casual
                   //
                   // Boot the instance...
                   //
-                  boot::instance( state, state.transactionManager);
+                  update::Instances bootInstances{ state};
+
+                  bootInstances( state.transactionManager, 1);
                }
             } // transaction
 
@@ -423,37 +582,25 @@ namespace casual
             {
                using Base::Base;
 
-               void operator () ( const config::domain::Server& config)
+               template< typename T>
+               void operator () ( T& server)
                {
-                  auto server = transform::Server()( config);
-
-                  for( auto& group : config.memberships)
-                  {
-                     server->memberships.emplace_back( m_state.groups.at( group));
-                  }
 
                   //
                   // boot all the instances
                   //
-                  for( auto count = std::stoul( config.instances); count > 0; --count)
-                  {
-                     boot::instance( m_state, server);
-                  }
+                  update::Instances bootInstances{ m_state};
 
-                  m_state.servers.emplace( server->alias, server);
+                  bootInstances( server, server->configuredInstances);
                }
 
             };
 
+
             template< typename Q, typename TMH, typename CH>
             void domain( State& state, const config::domain::Domain& domain, Q& queueReader, TMH& tmConnectHhandler, CH& connectHandler)
             {
-
-
-               if( state.groups.empty())
-               {
-                  addGroups( state, domain);
-               }
+               add::groups( state, domain.groups);
 
                //
                // Boot the transaction manager first
@@ -471,6 +618,9 @@ namespace casual
 
                   tmConnectHhandler.dispatch( message);
 
+
+
+
                }
                catch( const common::exception::signal::Timeout& exception)
                {
@@ -479,31 +629,57 @@ namespace casual
 
                }
 
+               // TODO: Handle executables...
+
                //
-               // boot 'excluded" servers and executables first.
+               // Transform servers
                //
-               auto servers = domain.servers;
-               //auto executables = domain.executables;
+               std::vector< std::shared_ptr< broker::Server>> servers;
 
-               auto serversEnd = std::stable_partition( std::begin( servers), std::end( servers), config::domain::filter::Excluded());
-               std::for_each( std::begin( servers), serversEnd, boot::Server{ state});
-
-
-               //auto executablesEnd = std::stable_partition( std::begin( executables), std::end( executables), config::domain::filter::Excluded());
-               //std::for_each( std::begin( executables), executablesEnd, boot::Executable( state));
+               std::transform(
+                  std::begin( domain.servers),
+                  std::end( domain.servers),
+                  std::back_inserter( servers),
+                  transform::Server{ state});
 
 
-               for( auto& batch : bootOrder( state))
+               auto serversStart = std::begin( servers);
+
+               auto bootOrder = action::bootOrder( state);
+
+
+               for( auto& batch : bootOrder)
                {
+                  /*
+                  typedef sf::functional::Chain< sf::functional::link::Or> Chain;
+
+                  serversEnd = std::stable_partition( serversStart, std::end( servers),
+                        Chain::link(
+                              filter::empty::Membership{},
+                              filter::Membership{ batch}));
+                   */
+
+                  for( auto& group : batch)
                   {
-                     common::trace::Exit trace( "spawn batch");
-                     for( auto& group : batch)
-                     {
-                        auto serversStart = serversEnd;
-                        serversEnd = std::stable_partition( serversStart, std::end( servers), config::domain::filter::Membership{ group->name});
-                        std::for_each( serversStart, serversEnd, boot::Server{ state});
-                     }
+                     common::logger::debug << "boot group: " << group->name;
                   }
+
+
+
+                  auto serversEnd = std::stable_partition( serversStart, std::end( servers),
+                        [&]( const std::shared_ptr< broker::Server>& server)
+                        {
+                           return filter::empty::Membership{}( server) || filter::Membership{ batch}( server);
+                        });
+
+
+                  common::logger::debug << "boot " << std::distance( serversStart, serversEnd) << " servers";
+
+
+                  std::for_each(
+                     serversStart,
+                     serversEnd,
+                     boot::Server{ state});
 
                   //
                   // Wait for the batch boot
@@ -514,10 +690,14 @@ namespace casual
                   typename CH::message_type message;
 
                   // TODO: temp
-                  typedef State::instance_mapping_type::value_type value_type;
-                  auto unconnectedServer = []( const value_type& value){ return ! find::Booted{}( value.second);};
+                  typedef std::shared_ptr< broker::Server> server_type;
 
-                  do
+                  auto connectedServer = []( const server_type& value)
+                        {
+                           return std::all_of( std::begin( value->instances), std::end( value->instances), find::Booted{});
+                        };
+
+                  while( ! std::all_of( serversStart, serversEnd, connectedServer))
                   {
                      try
                      {
@@ -532,7 +712,9 @@ namespace casual
                         throw common::exception::signal::Terminate{};
                      }
                   }
-                  while( std::any_of( std::begin( state.instances), std::end( state.instances), unconnectedServer));
+
+                  serversStart = serversEnd;
+
                }
             }
          } // boot
