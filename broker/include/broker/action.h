@@ -392,7 +392,8 @@ namespace casual
 
             inline void instance( State& state, const std::shared_ptr< Server>& server)
             {
-               auto pid = common::process::spawn( server->path, {}); // todo:, commonserver->arguments);
+
+               auto pid = common::process::spawn( server->path, server->arguments);
 
                auto instance = std::make_shared< Server::Instance>();
                instance->pid = pid;
