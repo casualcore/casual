@@ -37,6 +37,7 @@ extern "C"
 {
    extern void _broker_listServers( TPSVCINFO *serviceInfo);
    extern void _broker_listServices( TPSVCINFO *serviceInfo);
+   extern void _broker_updateInstances( TPSVCINFO *serviceInfo);
 }
 
 
@@ -74,6 +75,7 @@ namespace casual
 				}
 			}
 		}
+
 
 
 		Broker::Broker()
@@ -195,6 +197,7 @@ namespace casual
 
             arguments.m_services.emplace_back( "_broker_listServers", &_broker_listServers);
             arguments.m_services.emplace_back( "_broker_listServices", &_broker_listServices);
+            arguments.m_services.emplace_back( "_broker_updateInstances", &_broker_updateInstances);
 
 
             arguments.m_argc = 1;
@@ -214,6 +217,14 @@ namespace casual
             }
          }
 		}
+
+      std::vector<admin::ServerVO> Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)
+      {
+         std::vector<admin::ServerVO> result;
+
+
+         return result;
+      }
 
 	} // broker
 

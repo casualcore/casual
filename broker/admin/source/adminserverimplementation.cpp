@@ -84,6 +84,16 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
    //## service implementation protected section end   [2010]
 }
 
+std::vector<admin::ServerVO> AdminServerImplementation::_broker_updateInstances( const std::vector<admin::update::InstancesVO>& instances)
+{
+   std::vector<admin::ServerVO> result;
+
+
+   return result;
+}
+
+
+
 //## declarations protected section begin [.40]
 //## declarations protected section end   [.40]
 
@@ -92,3 +102,5 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
 
 //## declarations protected section begin [.50]
 //## declarations protected section end   [.50]
+
+

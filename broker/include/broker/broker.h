@@ -18,6 +18,8 @@
 #include "common/message.h"
 #include "common/environment.h"
 
+#include "broker/brokervo.h"
+
 
 #include <vector>
 #include <string>
@@ -201,7 +203,7 @@ namespace casual
 
 			//void addServers( const std::vector< action::server::>)
 
-			//void bootServers( const std::vector< action::server::Instances>& servers);
+			std::vector< admin::ServerVO> serverInstances( const std::vector< admin::update::InstancesVO>& instances);
 
 			const State& state() const
 			{
@@ -218,9 +220,8 @@ namespace casual
 			State m_state;
 
 		};
-	}
-
-}
+	} // broker
+} // casual
 
 
 

@@ -56,6 +56,11 @@ public:
    //!
    std::vector< admin::ServiceVO> _broker_listServices( );
 
+   //!
+   //!
+   //!
+   std::vector< admin::ServerVO> _broker_updateInstances( const std::vector< admin::update::InstancesVO>& instances);
+
    //## declarations protected section begin [.300]
    //## declarations protected section end   [.300]
 

@@ -203,6 +203,69 @@ void _broker_listServices( TPSVCINFO *serviceInfo)
       reply.flags);
 }
 	
+
+void _broker_updateInstances( TPSVCINFO *serviceInfo)
+{
+   casual::sf::service::reply::State reply;
+
+   try
+   {
+
+
+      auto service_io = local::server->createService( serviceInfo);
+
+      //
+      // Instantiate and serialize input parameters
+      //
+
+
+
+      //## input protected section begin [2010.110]
+      //## input protected section end   [2010.110]
+
+
+      //
+      // Instantiate the output parameters
+      //
+
+
+      //## output protected section begin [2010.120]
+      //## output protected section end   [2010.120]
+
+
+      //
+      // Call the implementation
+      //
+
+      std::vector< admin::ServiceVO> serviceReturn = service_io.call(
+         *local::implementation,
+         &local::implementation_type::_broker_listServices);
+
+
+      //
+      // Serialize output
+      //
+
+      service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+      //## output protected section begin [2010.200]
+      //## output protected section end   [2010.200]
+
+      reply = service_io.finalize();
+   }
+   catch( ...)
+   {
+      local::server->handleException( serviceInfo, reply);
+   }
+
+   tpreturn(
+      reply.value,
+      reply.code,
+      reply.data,
+      reply.size,
+      reply.flags);
+}
+
 	
 
 } // broker
