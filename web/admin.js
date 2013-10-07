@@ -2,22 +2,51 @@ var app = angular.module('myCasualAdminApp', []);
 
 function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	
+	var promise;
+	
 	$http.defaults.cache = false;
 	
 	$scope.serverMap = {};
 	$scope.servers = [];
 	$scope.services = [];
 	$scope.instances = [];
+	$scope.buttonlabel = "edit";
+	$scope.editing = false;
+	$scope.buttonclass = "btn btn-sm btn-success"
 	
 	$scope.submit = function() {
 		$log.info("submit");
 		doGetCasualServerInfo();
 		doGetCasualServiceInfo();
-		$timeout( $scope.submit, 5000, false )
+		promise = $timeout( $scope.submit, 5000, false )
 	}
 	
 	$scope.commit = function() {
 		$log.info("commit");
+		if ($scope.buttonlabel == "edit")
+		{
+			$scope.buttonlabel = "commit";
+			$scope.buttonclass = "btn btn-sm btn-danger";
+			$scope.editing = true;
+			//
+			// cancel timeout to be able to edit
+			//
+			$timeout.cancel( promise);
+		}
+		else
+		{
+			$scope.buttonlabel = "edit";
+			$scope.buttonclass = "btn btn-sm btn-success";
+			$scope.editing = false;
+			//
+			// do some updating
+			//
+			
+			//
+			// start timeout again
+			//
+			promise = $timeout( $scope.submit, 5000, false );
+		}
 	}
 	
 	$scope.showInstance = function( instances)
@@ -96,3 +125,4 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	$scope.submit();
 
 }
+

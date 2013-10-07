@@ -9,6 +9,7 @@
     </head>
     
      <body ng-app="myCasualAdminApp" >
+      <form ng-controller="CasualAdminCtrl">
         <div class="navbar navbar-default navbar-fixed-top" ng-init="state1='active'; state2='default'">
             <div class="container">
                 <div class="navbar-header">
@@ -25,14 +26,15 @@
                         <li ng-class="state2"><a id="link-2" href ng-click="showServices = true; state1 = 'default'; state2='active'">services</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a class="btn btn-success" href ng-click="commit()">commit</a></li>
+                        <li ><input class="form-control" type="text" ng-model="alias" placeholder="filter"/></li>
+                        <li >&nbsp;&nbsp;&nbsp; </li>
+                        <li ng-class="buttonclass"><a href="" ng-click="commit()">{{buttonlabel}}</a></li>
                     </ul>
                 </div>
             </div>
         </div>
         <div class="custom-container">
             <div class="container">
-                  <form ng-submit="submit()" ng-controller="CasualAdminCtrl">
                     <div class="row" ng-show="!showServices">
                          <div class="col-md-5" >
                            <br>
@@ -43,10 +45,11 @@
                                <th>NAME</th>
                                <th>PATH</th>
                                <th>INSTANCES</th>
-                               <tr ng-repeat="server in servers"/>
+                               <tr ng-repeat="server in servers | filter:alias"/>
                                   <td><a href ng-click='showInstance( server.instances)'>{{server.alias}}</a></td>
                                   <td>{{server.path}}</td>
-                                  <td><input type="number" name="input" ng-model="server.instances.length"></td>
+                                  <td ng-show="editing"><input type="number" name="input" ng-model="server.instances.length"/></td>
+                                  <td ng-show="!editing">{{server.instances.length}}</td>
                                </tr>
                             </table>
                          </div>
@@ -88,9 +91,10 @@
                              </table>
                         </div>
                     </div>
-                </form>
             </div>
         </div>
+     </form>
     </body>
  </html>
+
 
