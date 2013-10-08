@@ -65,7 +65,7 @@
                                <th>STATE</th>
                                <th>INVOKED</th>
                                <tr ng-repeat="instance in instances | filter:searchText"/>
-                                  <td>{{getServer(instance.pid)}}</td>
+                                  <td>{{instance.alias}}</td>
                                   <td>{{instance.pid}}</td>
                                   <td>{{getState(instance.state)}}</td>
                                   <td>{{instance.invoked}}</td>
