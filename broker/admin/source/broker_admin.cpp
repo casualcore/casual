@@ -122,6 +122,25 @@ namespace casual
       }
 
 
+      void updateInstances( const std::vector< std::string>& values)
+      {
+         if( values.size() == 2)
+         {
+            admin::update::InstancesVO instance;
+
+            instance.alias = values[ 0];
+            instance.instances = std::stoul( values[ 1]);
+
+            sf::xatmi::service::binary::Sync<> service( "_broker_updateInstances");
+
+            service << CASUAL_MAKE_NVP( std::vector< admin::update::InstancesVO>{ instance});
+
+            service.call();
+
+         }
+      }
+
+
    }
 
 }
@@ -130,7 +149,7 @@ namespace casual
 
 int usage( int argc, char** argv)
 {
-   std::cerr << "usage:\n  " << argv[ 0] << " (--list-servers | --list-services)" << std::endl;
+   std::cerr << "usage:\n  " << argv[ 0] << " (--list-servers | --list-services | -update-instances)" << std::endl;
    return 2;
 }
 
@@ -143,8 +162,11 @@ int main( int argc, char** argv)
    parser.add(
          casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
          casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
+         casual::common::argument::directive( {"-usi", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::updateInstances),
          casual::common::argument::directive( {"-lsvr-json", "--list-servers-json"}, "list all servers", &casual::broker::listServicesJSON)
    );
+
+
 
 
    try

@@ -42,7 +42,10 @@ namespace casual
 
          RemoveGuard::~RemoveGuard()
          {
-            remove( m_path);
+            if( ! released)
+            {
+               remove( m_path);
+            }
          }
 
          const std::string& RemoveGuard::path() const
@@ -50,10 +53,6 @@ namespace casual
             return m_path;
          }
 
-         ScopedPath::ScopedPath( const std::string& path)
-               : RemoveGuard( path)
-         {
-         }
 
          ScopedPath::operator const std::string&()
          {

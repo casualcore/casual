@@ -228,7 +228,7 @@ namespace casual
                   return typename helper< typename std::decay< T>::type>::cardinality();
                }
 
-               template< typename, typename T>
+               template< typename T>
                auto cardinality( void (*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
                {
                   return typename helper< typename std::decay< T>::type>::cardinality();
@@ -254,10 +254,10 @@ namespace casual
                   return result_type( std::bind( member, &object, _1));
                }
 
-               template< typename O, typename T>
-               auto static make( void (*function)( T)) -> dispatch< C, std::function<void()>, typename deduce::helper< typename std::decay< T>::type >::type>
+               template< typename T>
+               auto static make( void (*function)( T)) -> dispatch< C, std::function<void( T)>, typename deduce::helper< typename std::decay< T>::type >::type>
                {
-                  typedef dispatch< C, std::function<void()>, typename deduce::helper< typename std::decay< T>::type >::type> result_type;
+                  typedef dispatch< C, std::function<void( T)>, typename deduce::helper< typename std::decay< T>::type >::type> result_type;
                   return result_type( function);
                }
 

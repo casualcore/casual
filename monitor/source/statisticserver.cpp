@@ -21,17 +21,6 @@
 //## declarations protected section end   [.20]
 
 
-extern "C"
-{
-   int tpsvrinit(int argc, char **argv);
-   void tpsvrdone();
-   
-   
-   void getMonitorStatistics( TPSVCINFO *transb);
-   
-   
-}
-
 namespace local
 {
    namespace
@@ -42,6 +31,17 @@ namespace local
       casual::sf::server::implementation::type< implementation_type> implementation;
    }
 }
+
+
+extern "C"
+{
+
+namespace casual
+{
+namespace statistics
+{
+namespace monitor
+{
 
 
 
@@ -143,3 +143,11 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
 }
 	
 	
+
+} // monitor
+} // statistics
+} // casual
+
+
+} // extern "C"
+

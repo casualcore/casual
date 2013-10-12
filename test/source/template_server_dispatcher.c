@@ -43,7 +43,7 @@ int main( int argc, char** argv)
 
 
 	struct casual_xa_switch_mapping xa_mapping[] = {
-	        { "rm-mockup", &casual_mockup_xa_switch_static},
+	        //{ "rm-mockup", &casual_mockup_xa_switch_static},
 	        { 0, 0} /* null ending */
 	   };
 

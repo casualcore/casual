@@ -476,11 +476,11 @@ namespace casual
 
                std::vector< std::shared_ptr< broker::Server::Instance>> shutdown( std::shared_ptr< broker::Server>& server, std::size_t instances)
                {
-                  assert( server->instances.size() <= instances);
+                  assert( server->instances.size() >= instances);
 
-                  std::vector< std::shared_ptr< broker::Server::Instance>> result(
+                  std::vector< std::shared_ptr< broker::Server::Instance>> result{
                         std::end( server->instances) - instances,
-                        std::end( server->instances));
+                        std::end( server->instances)};
 
 
                   for( auto& instance : result)
@@ -549,7 +549,8 @@ namespace casual
 
             inline void instance( State& state, const std::shared_ptr< Server>& server)
             {
-               auto pid = common::process::spawn( server->path, {}); // todo:, commonserver->arguments);
+
+               auto pid = common::process::spawn( server->path, server->arguments);
 
                auto instance = std::make_shared< Server::Instance>();
                instance->pid = pid;

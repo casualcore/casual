@@ -10,6 +10,9 @@
 #include "broker/transformation.h"
 
 
+#include "common/trace.h"
+
+
 //## includes protected section end   [.10]
 
 namespace casual
@@ -84,6 +87,15 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
    //## service implementation protected section end   [2010]
 }
 
+void AdminServerImplementation::_broker_updateInstances( const std::vector<admin::update::InstancesVO>& instances)
+{
+   common::Trace trace( "AdminServerImplementation::_broker_updateInstances");
+
+   Broker::instance().serverInstances( instances);
+}
+
+
+
 //## declarations protected section begin [.40]
 //## declarations protected section end   [.40]
 
@@ -92,3 +104,5 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
 
 //## declarations protected section begin [.50]
 //## declarations protected section end   [.50]
+
+

@@ -35,7 +35,7 @@ LinkExecutable( "casual-transaction-manager",
 
 
 #
-# Compile and link resurce-proxy-server archive
+# Compile and link resurce-proxy-server lib
 #
 Compile( "source/resource_proxy_server.cpp", "obj/resource_proxy_server.o")
 Compile( "source/resource_proxy.cpp", "obj/resource_proxy.o")
@@ -58,5 +58,17 @@ LinkIsolatedUnittest( "test_transaction_configuration",
 
 InstallLibrary("casual-resource-proxy-server","$CASUAL_HOME/lib/.")
 InstallExecutable("casual-transaction-manager","$CASUAL_HOME/bin/.")
+
+
+#
+# Mockup resource proxy
+#
+Compile( "source/template_build_resource_proxy.c", "obj/template_build_resource_proxy.o")
+
+LinkExecutable( "rm-proxy-casual-mockup",
+    [ "obj/template_build_resource_proxy.o"],
+    [ "casual-mockup", "casual-resource-proxy-server"])
+
+InstallExecutable("rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")
 
 
