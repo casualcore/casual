@@ -12,6 +12,7 @@
 #include "common/error.h"
 #include "common/arguments.h"
 #include "common/environment.h"
+#include "common/trace.h"
 
 
 
@@ -22,6 +23,8 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
 {
    try
    {
+
+      casual::common::Trace trace{ "casual_start_reource_proxy"};
 
       casual::transaction::resource::State state;
       state.xaSwitches = serverArguments->xaSwitches;

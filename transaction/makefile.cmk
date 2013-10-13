@@ -53,7 +53,14 @@ Compile( "unittest/isolated/source/test_configuration.cpp", "obj/test_configurat
 
 LinkIsolatedUnittest( "test_transaction_configuration",
     ["obj/test_configuration.o"],
-    [ "manager-archive", "casual-common", "casual-sf", "casual-configuration", "sqlite3"])
+    [ 
+     "manager-archive", 
+     "casual-common", 
+     "casual-sf", 
+     "casual-configuration", 
+     "sqlite3", 
+     "casual-mockup"
+     ])
 
 
 InstallLibrary("casual-resource-proxy-server","$CASUAL_HOME/lib/.")

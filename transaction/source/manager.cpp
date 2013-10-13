@@ -110,16 +110,6 @@ namespace casual
 
 
 
-      /*
-      void startResurceProxies( State& state)
-      {
-         common::trace::Exit log( "transaction manager start resource proxies");
-
-
-      }
-      */
-
-
       State::State( const std::string& database) : db( database) {}
 
 
@@ -133,7 +123,8 @@ namespace casual
 
          local::createTables( m_state.db);
 
-         state::configure( m_state);
+         common::logger::debug << "transaction manager queue: " << m_receiveQueue.id();
+
       }
 
       Manager::~Manager()
@@ -173,8 +164,21 @@ namespace casual
       {
          common::Trace trace( "transaction::Manager::start");
 
+
+         QueueBlockingReader queueReader( m_receiveQueue, m_state);
+
          //
-         // Start the rm-proxy-servers
+         // Connect and get configuration from broker
+         //
+         {
+
+            QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
+
+            action::configure( m_state, brokerQueue, queueReader);
+         }
+
+         //
+         // Start resource-proxies
          //
          {
             common::trace::Exit trace( "transaction manager start rm-proxy-servers");
@@ -183,21 +187,7 @@ namespace casual
                std::begin( m_state.resources),
                std::end( m_state.resources),
                action::boot::Proxie( m_state));
-         }
 
-         {
-            common::trace::Exit trace( "transaction manager notify broker");
-
-            //
-            // Notify the broker about us...
-            //
-            message::transaction::Connect message;
-
-            message.path = common::environment::file::executable();
-            message.server.queue_id = m_receiveQueue.id();
-
-            queue::blocking::Writer write( ipc::getBrokerQueue());
-            write( message);
          }
 
 
@@ -207,12 +197,11 @@ namespace casual
 
          message::dispatch::Handler handler;
 
-         handler.add< handle::Begin>( m_state);
-         handler.add< handle::Commit>( m_state);
-         handler.add< handle::Rollback>( m_state);
+         handler.add( handle::Begin{ m_state});
+         handler.add( handle::Commit{ m_state});
+         handler.add( handle::Rollback{ m_state});
+         handler.add( handle::ResourceConnect{ m_state});
 
-
-         QueueBlockingReader queueReader( m_receiveQueue, m_state);
 
          while( true)
          {
@@ -260,6 +249,7 @@ namespace casual
                   */
 
                m_state.pendingReplies.clear();
+
 
             }
          }

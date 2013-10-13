@@ -55,9 +55,10 @@ namespace casual
                   {
                      absent,
                      started,
-                     startupError,
                      idle,
-                     busy
+                     busy,
+                     startupError,
+                     shutdown
                   };
 
                   std::shared_ptr< Proxy> proxy;
@@ -87,23 +88,7 @@ namespace casual
 
 
 
-         namespace filter
-         {
-            struct Instance
-            {
-               Instance( common::platform::pid_type pid)
-                     : pid( pid)
-               {
-               }
 
-               bool operator () ( const resource::Proxy::Instance& instance) const
-               {
-                  return instance.id.pid == pid;
-               }
-            private:
-               common::platform::pid_type pid;
-            };
-         } // filter
 
          namespace pending
          {
@@ -141,12 +126,13 @@ namespace casual
       {
          State( const std::string& db);
 
+         using instances_mapping_type = std::map< common::platform::pid_type, std::shared_ptr< state::resource::Proxy::Instance>>;
 
          sql::database::Connection db;
          std::map< std::string, config::xa::Switch> xaConfig;
 
          std::vector< std::shared_ptr< state::resource::Proxy>> resources;
-         std::map< common::platform::pid_type, std::shared_ptr< state::resource::Proxy::Instance>> instances;
+         instances_mapping_type instances;
 
          //!
          //! Replies that will be sent after an atomic write
@@ -154,14 +140,56 @@ namespace casual
          std::vector< state::pending::Reply> pendingReplies;
 
 
-
-
-
       };
-
 
       namespace state
       {
+         namespace filter
+         {
+            struct Instance
+            {
+               Instance( common::platform::pid_type pid)
+                     : pid( pid)
+               {
+               }
+
+               bool operator () ( const resource::Proxy::Instance& instance) const
+               {
+                  return instance.id.pid == pid;
+               }
+            private:
+               common::platform::pid_type pid;
+            };
+
+            struct Started
+            {
+               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
+               {
+                  return instance->state > resource::Proxy::Instance::State::absent;
+               }
+
+               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
+               {
+                  return std::all_of( std::begin( proxy->instances), std::end( proxy->instances), Started{});
+               }
+            };
+
+            struct Running
+            {
+               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
+               {
+                  return instance->state == resource::Proxy::Instance::State::idle
+                        || instance->state == resource::Proxy::Instance::State::busy;
+               }
+
+               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
+               {
+                  return std::any_of( std::begin( proxy->instances), std::end( proxy->instances), Running{});
+               }
+            };
+
+         } // filter
+
          struct Base
          {
             Base( State& state) : m_state( state) {}
@@ -171,13 +199,12 @@ namespace casual
 
          };
 
-         void configure( State& state);
+         void configure( State& state, const common::message::transaction::Configuration& configuration);
 
          namespace remove
          {
             void instance( common::platform::pid_type pid, State& state);
          } // remove
-
 
 
       } // state

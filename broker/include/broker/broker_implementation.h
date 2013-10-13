@@ -169,8 +169,8 @@ namespace casual
                   auto configuration = action::transform::transaction::configuration( m_state.groups);
 
                   queue_type tmQueue{ message.server.queue_id, m_state};
-
                   tmQueue( configuration);
+
                }
             };
 

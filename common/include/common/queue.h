@@ -161,6 +161,11 @@ namespace casual
                   return policy_send( transport);
                }
 
+               const ipc_value_type ipc() const
+               {
+                  return m_ipc;
+               }
+
             private:
 
                template< typename M>
@@ -232,6 +237,10 @@ namespace casual
                   return policy_read( message);
                }
 
+               const ipc_value_type ipc() const
+               {
+                  return m_ipc;
+               }
 
             private:
 

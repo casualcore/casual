@@ -60,6 +60,8 @@ namespace casual
                : Base( "environment variable not found: " + description) {}
          };
 
+
+
          struct QueueFailed : public Base
          {
             using Base::Base;
@@ -145,9 +147,6 @@ namespace casual
             struct basic_severity : public base
             {
                using base::base;
-
-               //basic_severity( const std::string& description)
-               //   : base( description) {}
 
                int severity() const noexcept { return value;}
             };

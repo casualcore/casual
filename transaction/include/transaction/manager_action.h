@@ -10,6 +10,9 @@
 
 #include "transaction/manager_state.h"
 
+#include "common/environment.h"
+#include "common/trace.h"
+
 namespace casual
 {
    namespace transaction
@@ -36,6 +39,41 @@ namespace casual
          {
 
          };
+
+
+         template< typename BQ, typename RQ>
+         void configure( State& state, BQ& brokerWriter, RQ& receiveQueue)
+         {
+            {
+               common::trace::Exit trace( "transaction manager connect to broker");
+
+               //
+               // Do the initialization dance with the broker
+               //
+               common::message::transaction::Connect connect;
+
+               connect.path = common::environment::file::executable();
+               connect.server.queue_id = receiveQueue.ipc().id();
+
+               brokerWriter( connect);
+            }
+
+            {
+               common::trace::Exit trace( "transaction manager configure");
+
+               //
+               // Wait for configuration
+               //
+               common::message::transaction::Configuration configuration;
+               receiveQueue( configuration);
+
+               //
+               // configure state
+               //
+               state::configure( state, configuration);
+            }
+
+         }
 
 
       } // action

@@ -613,13 +613,24 @@ namespace casual
 
                   common::trace::Exit trace( "transaction monitor connect");
 
-                  typename TMH::message_type message;
-                  queueReader( message);
+                  typename TMH::message_type connect;
+                  queueReader( connect);
 
-                  tmConnectHhandler.dispatch( message);
+                  tmConnectHhandler.dispatch( connect);
 
+                  //
+                  // wait for ack
+                  //
+                  common::message::transaction::Connected connected;
+                  queueReader( connected);
 
-
+                  if( ! connected.success)
+                  {
+                     //
+                     // Abort boot
+                     //
+                     throw common::exception::NotReallySureWhatToNameThisException{};
+                  }
 
                }
                catch( const common::exception::signal::Timeout& exception)

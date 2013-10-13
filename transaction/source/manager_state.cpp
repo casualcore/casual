@@ -39,17 +39,22 @@ namespace casual
 
                namespace transform
                {
-
-                  struct Group
+                  struct Resource
                   {
-                     std::shared_ptr< state::resource::Proxy> operator () ( const config::domain::Group& value) const
+                     std::shared_ptr< state::resource::Proxy> operator () ( const common::message::resource::Manager& value) const
                      {
+                        common::Trace trace{ "transform::Resource"};
+
                         auto result = std::make_shared< state::resource::Proxy>();
 
-                        result->key = value.resource.key;
-                        result->openinfo = value.resource.openinfo;
-                        result->closeinfo = value.resource.closeinfo;
-                        result->concurency = std::stoul( value.resource.instances);
+                        result->id = value.id;
+                        result->key = value.key;
+                        result->openinfo = value.openinfo;
+                        result->closeinfo = value.closeinfo;
+                        result->concurency = value.instances;
+
+                        common::logger::debug << "resource.openinfo: " << result->openinfo;
+                        common::logger::debug << "resource.concurency: " << result->concurency;
 
                         return result;
                      }
@@ -60,7 +65,7 @@ namespace casual
             }
          } // local
 
-         void configure( State& state)
+         void configure( State& state, const common::message::transaction::Configuration& configuration)
          {
             {
                trace::Exit log( "transaction manager xa-switch configuration");
@@ -82,15 +87,11 @@ namespace casual
             {
                trace::Exit log( "transaction manager resource configuration");
 
-               auto domain = config::domain::get();
-
-               auto resourcesEnd = std::partition(
-                     std::begin( domain.groups), std::end( domain.groups), local::filter::Resource());
-
                std::transform(
-                     std::begin( domain.groups),
-                     resourcesEnd,
-                     std::back_inserter( state.resources), local::transform::Group());
+                     std::begin( configuration.resources),
+                     std::end( configuration.resources),
+                     std::back_inserter( state.resources),
+                     local::transform::Resource{});
             }
 
          }
