@@ -60,18 +60,21 @@ namespace casual
 
             struct Open : public Base
             {
-               //typedef message::transaction::Begin message_type;
 
                using Base::Base;
 
                void operator() ()
                {
 
+                  common::trace::Exit logOpen{ "resource proxy open"};
+
                   message::transaction::resource::connect::Reply reply;
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
 
                   reply.state = m_state.xaSwitches->xaSwitch->xa_open_entry( m_state.rm_openinfo.c_str(), rm_id, TMNOFLAGS);
+
+                  common::trace::Exit logConnect{ "resource connect to transaction monitor"};
 
                   typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
                   writer_type tm_queue( m_state.tm_queue);
@@ -167,14 +170,13 @@ namespace casual
          } // validate
 
         Proxy::Proxy( State&& state)
-           : m_state(std::move(state))
+           : m_state( std::move(state))
          {
            validate::state( m_state);
 
            {
               common::trace::Exit log( "resource proxy open resource");
 
-              handle::Open( m_state)();
            }
 
          }
@@ -182,6 +184,8 @@ namespace casual
          void Proxy::start()
          {
             common::logger::debug << "resource proxy start";
+
+            handle::Open{ m_state}();
 
             //
             // prepare message dispatch handlers...

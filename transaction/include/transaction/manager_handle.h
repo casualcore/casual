@@ -75,6 +75,7 @@ namespace casual
 
 
 
+         //template< typename BQ>
          struct ResourceConnect : public state::Base
          {
             typedef common::message::transaction::resource::connect::Reply message_type;
@@ -83,12 +84,13 @@ namespace casual
 
             void dispatch( message_type& message)
             {
+               common::logger::information << "resource proxy pid: " <<  message.id.pid << " connected";
+
+
                auto instance = m_state.instances.find( message.id.pid);
 
                if( instance != std::end( m_state.instances))
                {
-                  common::logger::debug << "transaction manager pid: " <<  message.id.pid << " connected";
-
                   if( message.state == XA_OK)
                   {
                      instance->second->state = state::resource::Proxy::Instance::State::idle;
@@ -97,18 +99,38 @@ namespace casual
                   }
                   else
                   {
+                     common::logger::error << "resource proxy pid: " <<  message.id.pid << " startup error";
                      instance->second->state = state::resource::Proxy::Instance::State::startupError;
+                     //throw common::exception::signal::Terminate{};
                      // TODO: what to do?
                   }
-
                }
                else
                {
                   common::logger::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard";
                }
+
+               if( ! m_connected && std::all_of( std::begin( m_state.resources), std::end( m_state.resources), state::filter::Running{}))
+               {
+                  //
+                  // We now have enough resource proxies up and running to guarantee consistency
+                  // notify broker
+                  //
+                  common::message::transaction::Connected running;
+
+                  QueueBlockingWriter brokerWriter( common::ipc::getBrokerQueue().id(), m_state);
+                  brokerWriter( running);
+
+
+                  m_connected = true;
+               }
             }
+         private:
+            bool m_connected = false;
 
          };
+
+         //using ResourceConnect = basic_resource_connect< QueueBlockingWriter>;
 
          struct Begin : public state::Base
          {

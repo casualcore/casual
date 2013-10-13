@@ -43,6 +43,7 @@ namespace casual
             cMonitorNotify,
             cTransactionManagerConnect = 100,
             cTransactionManagerConfiguration,
+            cTransactionManagerReady,
             cTransactionBeginRequest,
             cTransactionBeginReply,
             cTransactionCommit,
@@ -131,6 +132,7 @@ namespace casual
                template< typename A>
                void marshal( A& archive)
                {
+                  archive & instances;
                   archive & id;
                   archive & key;
                   archive & openinfo;
@@ -508,6 +510,18 @@ namespace casual
                void marshal( A& archive)
                {
                   archive & resources;
+               }
+            };
+
+
+            struct Connected : message::basic_messsage< cTransactionManagerReady>
+            {
+               bool success = true;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & success;
                }
             };
 

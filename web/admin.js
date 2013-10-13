@@ -12,13 +12,19 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	$scope.instances = [];
 	$scope.buttonlabel = "edit";
 	$scope.editing = false;
-	$scope.buttonclass = "btn btn-sm btn-success"
+	$scope.buttonclass = "btn btn-sm btn-success";
+	
+	function Instance(alias, instances)
+	{
+		this.alias = alias;
+		this.instances = instances;
+	}
 	
 	$scope.submit = function() {
 		$log.info("submit");
 		doGetCasualServerInfo();
 		doGetCasualServiceInfo();
-		promise = $timeout( $scope.submit, 5000, false )
+		promise = $timeout( $scope.submit, 30000, false )
 	}
 	
 	$scope.commit = function() {
@@ -41,19 +47,23 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 			//
 			// do some updating
 			//
+			var myInstanceArr = new Array();
 			for (var i = 0; i < $scope.servers.length; i++) {
 	  			var element = $scope.servers[i];
 	  			var servername = element.alias;
 	  			if (element.instances.length != element.instances.newlength)
 	  			{
 	  				$log.info("updating: servername=" + servername + ", instances=" + element.instances.newlength);
+	  				var aInstance = new Instance( servername, element.instances.newlength)
+	  				myInstanceArr.push( aInstance)
+	  				uppdateInstances( myInstanceArr)
 	  			}
 	 		}
 			
 			//
 			// start timeout again
 			//
-			promise = $timeout( $scope.submit, 5000, false );
+			promise = $timeout( $scope.submit, 2000, false );
 		}
 	}
 	
@@ -80,7 +90,24 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
         else
             return "unknown"
     }
+	
+    function uppdateInstances( instanceArr)
+    {
+    	var jsonstring = angular.toJson( instanceArr)
+    	$scope.instances = [];
+    	$log.log(jsonstring)
+		$http.defaults.headers.common.Accept = 'application/json';
+		$http
+				.post('http://casual.laz.se/test1/casual/casual?service=_broker_updateInstances&protocol=JSON', '{"instances":' + jsonstring + '}')
+				.success(uppdateInstancesCallback)
+				.error(errorCallback);   	
+    }
+
+	function uppdateInstancesCallback(reply) {
 		
+		$log.log(reply);
+	}
+    
 	function doGetCasualServerInfo() {
 		$http.defaults.headers.common.Accept = 'application/json';
 		$http
@@ -99,6 +126,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
   			var servername = element.alias;
   			for (var j = 0; j < element.instances.length; j++)
   			{
+  				element.instances[j].alias = servername;
   				$scope.serverMap[element.instances[j].pid] = servername;
   			}
   			element.instances.newlength = element.instances.length

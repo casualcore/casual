@@ -72,6 +72,9 @@ namespace casual
                //!
                std::vector< message_type> operator () ( message_type::message_type_type type, const long flags);
 
+
+               id_type id() const { return m_id;}
+
             private:
 
                id_type m_id = 0;
