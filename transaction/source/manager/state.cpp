@@ -96,33 +96,75 @@ namespace casual
 
          }
 
-
-         void remove::instance( common::platform::pid_type pid, State& state)
+         namespace filter
          {
-            auto instance = state.instances.find( pid);
 
-            if( instance != std::end( state.instances))
+            Instance::Instance( common::platform::pid_type pid)
+                  : pid( pid)
             {
-               auto& proxy = instance->second->proxy;
-               auto findIter = std::find(
-                     std::begin( proxy->instances),
-                     std::end( proxy->instances),
-                     instance->second);
+            }
 
-               if( findIter != std::end( proxy->instances))
+            bool Instance::operator () ( const resource::Proxy::Instance& instance) const
+            {
+               return instance.id.pid == pid;
+            }
+
+
+            bool Started::operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
+            {
+               return instance->state > resource::Proxy::Instance::State::absent;
+            }
+
+            bool Started::operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
+            {
+               return std::all_of( std::begin( proxy->instances), std::end( proxy->instances), Started{});
+            }
+
+
+            bool Running::operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
+            {
+               return instance->state == resource::Proxy::Instance::State::idle
+                     || instance->state == resource::Proxy::Instance::State::busy;
+            }
+
+            bool Running::operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
+            {
+               return std::any_of( std::begin( proxy->instances), std::end( proxy->instances), Running{});
+            }
+
+
+         } // filter
+
+
+         namespace remove
+         {
+            void instance( common::platform::pid_type pid, State& state)
+            {
+               auto instance = state.instances.find( pid);
+
+               if( instance != std::end( state.instances))
                {
-                  proxy->instances.erase( findIter);
+                  auto& proxy = instance->second->proxy;
+                  auto findIter = std::find(
+                        std::begin( proxy->instances),
+                        std::end( proxy->instances),
+                        instance->second);
+
+                  if( findIter != std::end( proxy->instances))
+                  {
+                     proxy->instances.erase( findIter);
+                  }
+                  else
+                  {
+                     throw exception::NotReallySureWhatToNameThisException( "inconsistency in state - action: abort");
+                  }
                }
                else
                {
-                  throw exception::NotReallySureWhatToNameThisException( "inconsistency in state - action: abort");
+                  logger::error << "failed to find instance - pid: " << pid;
                }
             }
-            else
-            {
-               logger::error << "failed to find instance - pid: " << pid;
-            }
-         }
+         } // remove
       } // state
    } // transaction
 
