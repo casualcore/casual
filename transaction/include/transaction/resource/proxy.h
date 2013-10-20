@@ -8,7 +8,7 @@
 #ifndef RESOURCE_PROXY_H_
 #define RESOURCE_PROXY_H_
 
-#include "resource_proxy_server.h"
+#include "transaction/resource/proxy_server.h"
 
 #include "common/platform.h"
 

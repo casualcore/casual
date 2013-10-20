@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "transaction/manager_state.h"
+#include "transaction/manager/state.h"
 
 #include "common/exception.h"
 #include "common/trace.h"

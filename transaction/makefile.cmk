@@ -19,17 +19,17 @@ SetLibraryPaths( ["bin",
 #
 # Compile and link the transaction manager
 #
-Compile( "source/manager.cpp", "obj/manager.o")
-Compile( "source/manager_state.cpp", "obj/manager_state.o")   
+Compile( "source/manager/manager.cpp", "obj/manager/manager.o")
+Compile( "source/manager/state.cpp", "obj/manager/state.o")   
 
 LinkArchive( "manager-archive",
-     ["obj/manager.o",
-    "obj/manager_state.o"])
+     ["obj/manager/manager.o",
+    "obj/manager/state.o"])
  
-Compile( "source/manager_main.cpp", "obj/manager_main.o")
+Compile( "source/manager/main.cpp", "obj/manager/main.o")
 
 LinkExecutable( "casual-transaction-manager",
-    ["obj/manager_main.o"],
+    ["obj/manager/main.o"],
     [ "manager-archive", "casual-sf", "casual-common", "casual-configuration", "sqlite3"])
 
 
@@ -37,22 +37,22 @@ LinkExecutable( "casual-transaction-manager",
 #
 # Compile and link resurce-proxy-server lib
 #
-Compile( "source/resource_proxy_server.cpp", "obj/resource_proxy_server.o")
-Compile( "source/resource_proxy.cpp", "obj/resource_proxy.o")
+Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o")
+Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o")
 
 LinkLibrary( "casual-resource-proxy-server",
-   ["obj/resource_proxy_server.o",
-   "obj/resource_proxy.o"],
+   ["obj/resource/proxy_server.o",
+   "obj/resource/proxy.o"],
    ["casual-common"])
 
 
 #
 # unittest
 #
-Compile( "unittest/isolated/source/test_configuration.cpp", "obj/test_configuration.o")
+Compile( "unittest/isolated/source/test_configuration.cpp", "unittest/isolated/obj/test_configuration.o")
 
 LinkIsolatedUnittest( "test_transaction_configuration",
-    ["obj/test_configuration.o"],
+    ["unittest/isolated/obj/test_configuration.o"],
     [ 
      "manager-archive", 
      "casual-common", 
@@ -70,10 +70,10 @@ InstallExecutable("casual-transaction-manager","$CASUAL_HOME/bin/.")
 #
 # Mockup resource proxy
 #
-Compile( "source/template_build_resource_proxy.c", "obj/template_build_resource_proxy.o")
+Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")
 
 LinkExecutable( "rm-proxy-casual-mockup",
-    [ "obj/template_build_resource_proxy.o"],
+    [ "obj/resource/template_build_resource_proxy.o"],
     [ "casual-mockup", "casual-resource-proxy-server"])
 
 InstallExecutable("rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")

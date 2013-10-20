@@ -107,10 +107,9 @@ namespace casual
             };
 
 
-            void pump( Handler& handler, ipc::receive::Queue& ipc = ipc::getReceiveQueue())
+            template< typename RQ>
+            void pump( Handler& handler, RQ&& receiveQueue)
             {
-               queue::blocking::Reader receiveQueue( ipc);
-
                while( true)
                {
                   auto marshal = receiveQueue.next();

@@ -88,7 +88,8 @@ int casual_start_server( casual_server_argument* serverArgument)
       //
       // Start the message-pump
       //
-      common::message::dispatch::pump( handler);
+      common::queue::blocking::Reader receiveQueue( common::ipc::getReceiveQueue());
+      common::message::dispatch::pump( handler, receiveQueue);
 	}
 	catch( ...)
 	{
