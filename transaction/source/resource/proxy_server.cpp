@@ -6,8 +6,8 @@
 //!
 
 
-#include "transaction/resource_proxy_server.h"
-#include "transaction/resource_proxy.h"
+#include "transaction/resource/proxy_server.h"
+#include "transaction/resource/proxy.h"
 
 #include "common/error.h"
 #include "common/arguments.h"

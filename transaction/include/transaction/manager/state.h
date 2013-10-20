@@ -148,48 +148,46 @@ namespace casual
          {
             struct Instance
             {
-               Instance( common::platform::pid_type pid)
-                     : pid( pid)
-               {
-               }
+               Instance( common::platform::pid_type pid);
 
-               bool operator () ( const resource::Proxy::Instance& instance) const
-               {
-                  return instance.id.pid == pid;
-               }
+               bool operator () ( const resource::Proxy::Instance& instance) const;
+
             private:
                common::platform::pid_type pid;
             };
 
+
             struct Started
             {
-               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
-               {
-                  return instance->state > resource::Proxy::Instance::State::absent;
-               }
+               //!
+               //! @return true if instance is started
+               //!
+               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const;
 
-               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
-               {
-                  return std::all_of( std::begin( proxy->instances), std::end( proxy->instances), Started{});
-               }
+               //!
+               //! @return true if at least one instance in resource-proxy is started
+               //!
+               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const;
             };
 
             struct Running
             {
-               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
-               {
-                  return instance->state == resource::Proxy::Instance::State::idle
-                        || instance->state == resource::Proxy::Instance::State::busy;
-               }
+               //!
+               //! @return true if instance is running
+               //!
+               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const;
 
-               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
-               {
-                  return std::any_of( std::begin( proxy->instances), std::end( proxy->instances), Running{});
-               }
+               //!
+               //! @return true if at least one instance in resource-proxy is running
+               //!
+               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const;
             };
 
          } // filter
 
+         //!
+         //! Base that holds the state
+         //!
          struct Base
          {
             Base( State& state) : m_state( state) {}

@@ -9,7 +9,7 @@
 #define MANAGER_HANDLE_H_
 
 
-#include "transaction/manager_state.h"
+#include "transaction/manager/state.h"
 
 #include "common/message.h"
 #include "common/logger.h"
@@ -75,12 +75,14 @@ namespace casual
 
 
 
-         //template< typename BQ>
+         template< typename BQ>
          struct ResourceConnect : public state::Base
          {
             typedef common::message::transaction::resource::connect::Reply message_type;
 
-            using Base::Base;
+            using broker_queue = BQ;
+
+            ResourceConnect( State& state, broker_queue& brokerQueue) : state::Base( state), m_brokerQueue( brokerQueue) {}
 
             void dispatch( message_type& message)
             {
@@ -117,18 +119,23 @@ namespace casual
                   // notify broker
                   //
                   common::message::transaction::Connected running;
-
-                  QueueBlockingWriter brokerWriter( common::ipc::getBrokerQueue().id(), m_state);
-                  brokerWriter( running);
-
+                  m_brokerQueue( running);
 
                   m_connected = true;
                }
             }
          private:
+            broker_queue& m_brokerQueue;
             bool m_connected = false;
 
          };
+
+         template< typename BQ>
+         ResourceConnect< BQ> resourceConnect( State& state, BQ&& brokerQueue)
+         {
+            return ResourceConnect< BQ>{ state, std::forward< BQ>( brokerQueue)};
+         }
+
 
          //using ResourceConnect = basic_resource_connect< QueueBlockingWriter>;
 

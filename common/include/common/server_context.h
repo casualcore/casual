@@ -166,8 +166,12 @@ namespace casual
 
                typedef message::service::callee::Call message_type;
 
+               basic_call( basic_call&&) = default;
+
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
+
+
 
 
                //!

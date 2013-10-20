@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 
 
-#include "transaction/manager.h"
-#include "transaction/manager_handle.h"
-#include "transaction/manager_action.h"
+#include "transaction/manager/manager.h"
+#include "transaction/manager/handle.h"
+#include "transaction/manager/action.h"
 
 #include "common/message.h"
 #include "common/mockup.h"

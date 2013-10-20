@@ -8,7 +8,7 @@
 #ifndef MANAGER_ACTION_H_
 #define MANAGER_ACTION_H_
 
-#include "transaction/manager_state.h"
+#include "transaction/manager/state.h"
 
 #include "common/environment.h"
 #include "common/trace.h"

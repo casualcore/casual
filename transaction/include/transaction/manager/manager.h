@@ -8,7 +8,7 @@
 #ifndef MONITOR_H_
 #define MONITOR_H_
 
-#include "transaction/manager_state.h"
+#include "transaction/manager/state.h"
 
 #include "common/ipc.h"
 #include "common/message.h"

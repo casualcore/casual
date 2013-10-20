@@ -5,9 +5,9 @@
 //!     Author: Lazan
 //!
 
-#include "transaction/manager.h"
-#include "transaction/manager_handle.h"
-#include "transaction/manager_action.h"
+#include "transaction/manager/manager.h"
+#include "transaction/manager/handle.h"
+#include "transaction/manager/action.h"
 
 
 #include "common/message.h"
@@ -166,13 +166,12 @@ namespace casual
 
 
          QueueBlockingReader queueReader( m_receiveQueue, m_state);
+         QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
 
          //
          // Connect and get configuration from broker
          //
          {
-
-            QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
 
             action::configure( m_state, brokerQueue, queueReader);
          }
@@ -200,7 +199,7 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::ResourceConnect{ m_state});
+         handler.add( handle::resourceConnect( m_state, brokerQueue));
 
 
          while( true)
