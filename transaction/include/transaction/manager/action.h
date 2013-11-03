@@ -20,6 +20,8 @@ namespace casual
       namespace action
       {
 
+
+
          /*
          template< typename Q>
          struct Send : state::Base
@@ -39,6 +41,26 @@ namespace casual
          {
 
          };
+
+         /*
+         namespace pending
+         {
+            struct Resources : state::Base
+            {
+
+               bool operator () ( state::resource::Proxy& resource)
+               {
+                  if( resource.id = m_resurceId)
+                  {
+
+                  }
+               }
+
+            private:
+               std::size_t m_resurceId;
+            };
+         } // pending
+          */
 
 
          template< typename BQ, typename RQ>
@@ -90,6 +112,8 @@ namespace casual
 
 
       } // action
+
+
    } // transaction
 
 

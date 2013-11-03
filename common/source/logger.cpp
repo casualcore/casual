@@ -35,6 +35,7 @@ namespace casual
             {
                namespace
                {
+
                   struct Context
                   {
                      static Context& instance()
@@ -48,32 +49,41 @@ namespace casual
 
                      void log( const int priority, const std::string& message)
                      {
-                        std::lock_guard< std::mutex> lock( m_streamMutex);
+                        if( active( priority))
+                        {
+                           std::lock_guard< std::mutex> lock( m_streamMutex);
 
-                        //
-                        // TODO: Wont work on unix... rm does not remove the file. Hence
-                        // we will not be able to detect removal with standard stuff...
-                        //
-                        /*
-                           if( ! m_output.fail() || open())
-                           {
-                              log( m_output, priority, message);
-                           }
-                           else
-                           {
-                              log( std::cerr,  priority, message);
-                           }
-                        */
-                        log( m_output, priority, message);
+                           //
+                           // TODO: Wont work on unix... rm does not remove the file. Hence
+                           // we will not be able to detect removal with standard stuff...
+                           //
+                           /*
+                              if( ! m_output.fail() || open())
+                              {
+                                 log( m_output, priority, message);
+                              }
+                              else
+                              {
+                                 log( std::cerr,  priority, message);
+                              }
+                           */
+                           log( m_output, priority, message);
 
+                        }
                      }
 
                      bool active( int priority) const
                      {
-                        return ( m_mask & priority) == priority;
+                        return ( m_mask & mask( priority)) == mask( priority);
                      }
 
                   private:
+
+                     long mask( int value) const
+                     {
+                        return  1 << value;
+                     }
+
                      ~Context()
                      {
 
@@ -87,14 +97,14 @@ namespace casual
                            const std::string log = common::environment::variable::get( "CASUAL_LOG");
 
                            if( log.find( "debug") != std::string::npos)
-                              m_mask |= common::platform::cLOG_debug;
+                              m_mask |= mask( common::platform::cLOG_debug);
                            if( log.find( "information") != std::string::npos)
-                              m_mask |= common::platform::cLOG_info;
+                              m_mask |= mask( common::platform::cLOG_info);
                            if( log.find( "warning") != std::string::npos)
-                              m_mask |= common::platform::cLOG_warning;
+                              m_mask |= mask( common::platform::cLOG_warning);
                         }
 
-                        m_mask |= common::platform::cLOG_error;
+                        m_mask |= mask( common::platform::cLOG_error);
 
                         open();
                      }
@@ -167,7 +177,7 @@ namespace casual
 
                      std::ofstream m_output;
                      std::mutex m_streamMutex;
-                     int m_mask;
+                     long m_mask;
 
                   };
 
