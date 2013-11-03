@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-char* CasualOrderDescription( int code);
+const char* CasualOrderDescription( int code);
 
 
 int CasualOrderAddPrepare( char* buffer);
@@ -63,7 +63,7 @@ int CasualOrderGetDouble(  char* buffer, double* value);
 int CasualOrderGetString(  char* buffer, char** value);
 int CasualOrderGetBinary(  char* buffer, char** value, long* size);
 
-int CasualOrderCopyBuffer( char* source, char* target);
+int CasualOrderCopyBuffer( char* target, const char* source);
 
 int CasualOrderUsed( const char* buffer, long* length);
 
@@ -71,8 +71,6 @@ int CasualOrderUsed( const char* buffer, long* length);
 #ifdef __cplusplus
 }
 #endif
-
-
 
 
 #endif /* CASUAL_ORDER_BUFFER_H_ */
