@@ -12,6 +12,7 @@
 
 #include "common/ipc.h"
 #include "common/message.h"
+#include "common/transaction_id.h"
 
 #include <stack>
 
@@ -60,7 +61,7 @@ namespace casual
             //typedef TRANSACTION_TIMEOUT Seconds;
             //Seconds timeout = 0;
 
-            XID xid;
+            ID xid;
             common::platform::pid_type owner = 0;
             State state = State::inactive;
             bool suspended = false;

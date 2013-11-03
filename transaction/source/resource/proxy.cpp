@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "transaction/resource_proxy.h"
+#include "transaction/resource/proxy.h"
 
 #include "common/message.h"
 #include "common/exception.h"
@@ -48,23 +48,31 @@ namespace casual
          namespace handle
          {
 
+            template< typename TQ>
             struct Base
             {
-               Base( State& state) : m_state( state) {}
+
+               Base( State& state, TQ& tm_queue) : m_state( state), m_tmQueue( tm_queue) {}
 
             protected:
                State& m_state;
+               TQ& m_tmQueue;
 
             };
 
 
-            struct Open : public Base
+            template< typename TQ>
+            struct Open : public Base< TQ>
             {
 
-               using Base::Base;
+               using Base< TQ>::Base;
 
                void operator() ()
                {
+                  //
+                  // Note: base is template parameter dependent, we have to use this->.
+                  // this-> should never be used in other constructs...
+                  //
 
                   common::trace::Exit logOpen{ "resource proxy open"};
 
@@ -72,82 +80,120 @@ namespace casual
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
 
-                  reply.state = m_state.xaSwitches->xaSwitch->xa_open_entry( m_state.rm_openinfo.c_str(), rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_open_entry( this->m_state.rm_openinfo.c_str(), rm_id, TMNOFLAGS);
 
                   common::trace::Exit logConnect{ "resource connect to transaction monitor"};
 
-                  typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
-                  writer_type tm_queue( m_state.tm_queue);
-                  tm_queue( reply);
+                  this->m_tmQueue( reply);
 
                   if( reply.state != XA_OK)
                   {
-                     throw exception::NotReallySureWhatToNameThisException( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo);
+                     throw exception::NotReallySureWhatToNameThisException( "failed to open xa resurce " + this->m_state.rm_key + " with: " + this->m_state.rm_openinfo);
                   }
                }
             };
-
-            struct Prepare : public Base
+            template< typename TQ>
+            Open< TQ> open( State& state, TQ&& tmQueue)
             {
+               return Open< TQ>{ state, std::forward<TQ>( tmQueue)};
+            }
+
+            template< typename TQ>
+            struct Prepare : public Base< TQ>
+            {
+
                typedef message::transaction::resource::prepare::Request message_type;
 
-               using Base::Base;
+               using Base< TQ>::Base;
 
                void dispatch( message_type& message)
                {
+                  //
+                  // Note: base is template parameter dependent, we have to use this->.
+                  // this-> should never be used in other constructs...
+                  //
+
                   message::transaction::resource::prepare::Reply reply;
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = m_state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid, rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
 
-                  typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
-                  writer_type tm_queue( m_state.tm_queue);
-                  tm_queue( reply);
+                  this->m_tmQueue( reply);
                }
             };
 
-            struct Commit : public Base
+            template< typename TQ>
+            Prepare< TQ> prepare( State& state, TQ&& tmQueue)
             {
+               return Prepare< TQ>{ state, std::forward<TQ>( tmQueue)};
+            }
+
+            template< typename TQ>
+            struct Commit : public Base< TQ>
+            {
+
                typedef message::transaction::resource::commit::Request message_type;
 
-               using Base::Base;
+               using Base< TQ>::Base;
 
                void dispatch( message_type& message)
                {
+                  //
+                  // Note: base is template parameter dependent, we have to use this->.
+                  // this-> should never be used in other constructs...
+                  //
+
                   message::transaction::resource::commit::Reply reply;
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = m_state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid, rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
 
-                  typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
-                  writer_type tm_queue( m_state.tm_queue);
-                  tm_queue( reply);
+                  this->m_tmQueue( reply);
 
                }
             };
 
-            struct Rollback : public Base
+            template< typename TQ>
+            Commit< TQ> commit( State& state, TQ&& tmQueue)
+            {
+               return Commit< TQ>{ state, std::forward<TQ>( tmQueue)};
+            }
+
+            template< typename TQ>
+            struct Rollback : public Base< TQ>
             {
                typedef message::transaction::resource::rollback::Request message_type;
 
-               using Base::Base;
+               using Base< TQ>::Base;
 
                void dispatch( message_type& message)
                {
+                  //
+                  // Note: base is template parameter dependent, we have to use this->.
+                  // this-> should never be used in other constructs...
+                  //
+
                   message::transaction::resource::rollback::Reply reply;
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = m_state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid, rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
 
-                  typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
-                  writer_type tm_queue( m_state.tm_queue);
-                  tm_queue( reply);
+
+                  this->m_tmQueue( reply);
 
                }
             };
+
+            template< typename TQ>
+            Rollback< TQ> rollback( State& state, TQ&& tmQueue)
+            {
+               return Rollback< TQ>{ state, std::forward<TQ>( tmQueue)};
+            }
+
+
 
          } // handle
 
@@ -185,7 +231,10 @@ namespace casual
          {
             common::logger::debug << "resource proxy start";
 
-            handle::Open{ m_state}();
+            typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
+            writer_type tm_queue( m_state.tm_queue);
+
+            handle::open( m_state, tm_queue)();
 
             //
             // prepare message dispatch handlers...
@@ -193,11 +242,12 @@ namespace casual
 
             message::dispatch::Handler handler;
 
-            handler.add< handle::Prepare>( m_state);
-            handler.add< handle::Commit>( m_state);
-            handler.add< handle::Rollback>( m_state);
+            handler.add( handle::prepare( m_state, tm_queue));
+            handler.add( handle::commit( m_state, tm_queue));
+            handler.add( handle::rollback( m_state, tm_queue));
 
-            message::dispatch::pump( handler);
+            common::queue::blocking::Reader receiveQueue( common::ipc::getReceiveQueue());
+            message::dispatch::pump( handler, receiveQueue);
 
          }
       } // resource

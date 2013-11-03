@@ -27,19 +27,19 @@ namespace casual
             RemoveGuard( const std::string& path);
             ~RemoveGuard();
 
-            RemoveGuard( RemoveGuard&&) = default;
+            RemoveGuard( RemoveGuard&&);
 
             RemoveGuard( const RemoveGuard&) = delete;
             RemoveGuard& operator =( const RemoveGuard&) = delete;
 
             const std::string& path() const;
 
-            void release() { released = true; };
+            void release() { m_released = true; };
 
          private:
 
-            const std::string m_path;
-            bool released = false;
+            std::string m_path;
+            bool m_released = false;
          };
 
          class ScopedPath: public RemoveGuard

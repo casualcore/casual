@@ -9,7 +9,7 @@
 #define MANAGER_HANDLE_H_
 
 
-#include "transaction/manager_state.h"
+#include "transaction/manager/state.h"
 
 #include "common/message.h"
 #include "common/logger.h"
@@ -75,12 +75,14 @@ namespace casual
 
 
 
-         //template< typename BQ>
+         template< typename BQ>
          struct ResourceConnect : public state::Base
          {
             typedef common::message::transaction::resource::connect::Reply message_type;
 
-            using Base::Base;
+            using broker_queue = BQ;
+
+            ResourceConnect( State& state, broker_queue& brokerQueue) : state::Base( state), m_brokerQueue( brokerQueue) {}
 
             void dispatch( message_type& message)
             {
@@ -117,18 +119,23 @@ namespace casual
                   // notify broker
                   //
                   common::message::transaction::Connected running;
-
-                  QueueBlockingWriter brokerWriter( common::ipc::getBrokerQueue().id(), m_state);
-                  brokerWriter( running);
-
+                  m_brokerQueue( running);
 
                   m_connected = true;
                }
             }
          private:
+            broker_queue& m_brokerQueue;
             bool m_connected = false;
 
          };
+
+         template< typename BQ>
+         ResourceConnect< BQ> resourceConnect( State& state, BQ&& brokerQueue)
+         {
+            return ResourceConnect< BQ>{ state, std::forward< BQ>( brokerQueue)};
+         }
+
 
          //using ResourceConnect = basic_resource_connect< QueueBlockingWriter>;
 
@@ -140,16 +147,11 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               long state = 0;
-               auto started = std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count();
-               auto xid = common::transform::xid( message.xid);
 
-               const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?); )"};
+               m_state.log.begin( message);
 
                state::pending::Reply reply;
                reply.target = message.id.queue_id;
-
-               m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.id.pid, state, started);
 
                m_state.pendingReplies.push_back( std::move( reply));
             }
@@ -157,7 +159,7 @@ namespace casual
 
          struct Commit : public state::Base
          {
-            typedef common::message::transaction::Commit message_type;
+            typedef common::message::transaction::commit::Request message_type;
 
             using Base::Base;
 
@@ -169,7 +171,7 @@ namespace casual
 
          struct Rollback : public state::Base
          {
-            typedef common::message::transaction::Rollback message_type;
+            typedef common::message::transaction::rollback::Request message_type;
 
             using Base::Base;
 
@@ -178,6 +180,34 @@ namespace casual
 
             }
          };
+
+         struct Involved : public state::Base
+         {
+            typedef common::message::transaction::resource::Involved message_type;
+
+            using Base::Base;
+
+            void dispatch( message_type& message)
+            {
+               auto transaction = m_state.transactions.find( message.xid);
+
+               if( transaction != std::end( m_state.transactions))
+               {
+                  std::copy(
+                     std::begin( message.resources),
+                     std::end( message.resources),
+                     std::back_inserter( transaction->second.resoursesInvolved));
+
+                  std::sort( std::begin( transaction->second.resoursesInvolved), std::end( transaction->second.resoursesInvolved));
+
+                  auto end = std::unique( std::begin( transaction->second.resoursesInvolved), std::end( transaction->second.resoursesInvolved));
+
+                  transaction->second.resoursesInvolved.erase( end, std::end( transaction->second.resoursesInvolved));
+               }
+
+            }
+         };
+
 
       } // handle
    } // transaction

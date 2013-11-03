@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 
 
-#include "transaction/manager.h"
-#include "transaction/manager_handle.h"
-#include "transaction/manager_action.h"
+#include "transaction/manager/manager.h"
+#include "transaction/manager/handle.h"
+#include "transaction/manager/action.h"
 
 #include "common/message.h"
 #include "common/mockup.h"
@@ -27,6 +27,11 @@ namespace casual
          common::platform::queue_id_type tm() { return 20;}
 
       } // id
+
+      common::file::ScopedPath transactionLogPath()
+      {
+         return common::file::ScopedPath{ "unittest_transaction_log.db"};
+      }
 
       void prepareConfigurationResponse()
       {
@@ -64,7 +69,8 @@ namespace casual
       local::prepareConfigurationResponse();
 
 
-      transaction::State state( "unittest_transaction.db");
+      auto path = local::transactionLogPath();
+      transaction::State state( path);
 
       common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
       common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};
@@ -84,7 +90,8 @@ namespace casual
       local::prepareConfigurationResponse();
 
 
-      transaction::State state( "unittest_transaction.db");
+      auto path = local::transactionLogPath();
+      transaction::State state( path);
 
       common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
       common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};

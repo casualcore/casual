@@ -166,8 +166,14 @@ namespace casual
 
                typedef message::service::callee::Call message_type;
 
+               basic_call( basic_call&&) = delete;
+               basic_call& operator = ( basic_call&&) = delete;
+
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
+               basic_call& operator = ( basic_call&) = delete;
+
+
 
 
                //!
@@ -220,7 +226,7 @@ namespace casual
 
                   try
                   {
-                     logger::information << "terminated";
+                     Trace trace{ "basic_call::~basic_call"};
                      //
                      // Call tpsrvdone
                      //

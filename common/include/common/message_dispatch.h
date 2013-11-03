@@ -42,8 +42,12 @@ namespace casual
                typedef H handler_type;
                typedef typename handler_type::message_type message_type;
 
+               handle_holder( handle_holder&&) = default;
+               handle_holder& operator = ( handle_holder&&) = default;
+
+
                template< typename... Arguments>
-               handle_holder( Arguments&&... arguments) : m_handler( std::forward< Arguments>( arguments)...) {}
+               handle_holder( Arguments&&... arguments) : m_handler{ std::forward< Arguments>( arguments)...} {}
 
                void marshal( marshal::input::Binary& binary)
                {
@@ -79,7 +83,7 @@ namespace casual
                {
                   // TODO: change to std::make_unique
                   handlers_type::mapped_type holder(
-                        new handle_holder< H>{ std::move( handler)});
+                        new handle_holder< H>{ std::forward< H>( handler)});
 
                   m_handlers[ H::message_type::message_type] = std::move( holder);
                }
@@ -107,10 +111,9 @@ namespace casual
             };
 
 
-            void pump( Handler& handler, ipc::receive::Queue& ipc = ipc::getReceiveQueue())
+            template< typename RQ>
+            void pump( Handler& handler, RQ&& receiveQueue)
             {
-               queue::blocking::Reader receiveQueue( ipc);
-
                while( true)
                {
                   auto marshal = receiveQueue.next();

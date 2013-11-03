@@ -8,7 +8,7 @@
 #ifndef MANAGER_ACTION_H_
 #define MANAGER_ACTION_H_
 
-#include "transaction/manager_state.h"
+#include "transaction/manager/state.h"
 
 #include "common/environment.h"
 #include "common/trace.h"
@@ -74,6 +74,19 @@ namespace casual
             }
 
          }
+
+
+
+         namespace boot
+         {
+            struct Proxie : state::Base
+            {
+               using state::Base::Base;
+
+               void operator () ( const std::shared_ptr< state::resource::Proxy>& proxy);
+            };
+         } // boot
+
 
 
       } // action

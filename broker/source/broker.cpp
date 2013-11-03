@@ -178,17 +178,14 @@ namespace casual
 
          message::dispatch::Handler handler;
 
-         handler.add< handle::Connect>( m_state);
-         handler.add< handle::Disconnect>( m_state);
-         handler.add< handle::Advertise>( m_state);
-         handler.add< handle::Unadvertise>( m_state);
-         handler.add< handle::ServiceLookup>( m_state);
-         handler.add< handle::ACK>( m_state);
-         handler.add< handle::MonitorConnect>( m_state);
-         handler.add< handle::MonitorDisconnect>( m_state);
-
-         // taken care of in the startup...
-         //handler.add< handle::TransactionManagerConnect>( m_state);
+         handler.add( handle::Connect{ m_state});
+         handler.add( handle::Disconnect{ m_state});
+         handler.add( handle::Advertise{ m_state});
+         handler.add( handle::Unadvertise{ m_state});
+         handler.add( handle::ServiceLookup{ m_state});
+         handler.add( handle::ACK{ m_state});
+         handler.add( handle::MonitorConnect{ m_state});
+         handler.add( handle::MonitorDisconnect{ m_state});
 
          //
          // Prepare the xatmi-services
@@ -205,18 +202,13 @@ namespace casual
             const char* executable = common::environment::file::executable().c_str();
             arguments.m_argv = &const_cast< char*&>( executable);
 
+            //handler.add( handle::Call{ arguments, m_state});
             handler.add< handle::Call>( arguments, m_state);
+
          }
 
-         while( true)
-         {
-            auto marshal = blockingReader.next();
+         message::dispatch::pump( handler, blockingReader);
 
-            if( ! handler.dispatch( marshal))
-            {
-               common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
-            }
-         }
 		}
 
       void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)

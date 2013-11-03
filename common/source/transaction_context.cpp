@@ -8,6 +8,7 @@
 #include "common/transaction_context.h"
 #include "common/logger.h"
 #include "common/queue.h"
+#include "common/trace.h"
 
 #include <map>
 #include <algorithm>
@@ -174,7 +175,7 @@ namespace casual
             {
                message::transaction::begin::Request request;
                request.id.queue_id = ipc::getReceiveQueue().id();
-               unique_xid( request.xid);
+               request.xid.generate();
                writer( request);
 
                message::transaction::begin::Reply reply;
@@ -184,7 +185,7 @@ namespace casual
                {
                   trans.state = Transaction::State::active;
                   trans.owner = process::id();
-                  trans.xid = reply.xid;
+                  trans.xid = std::move( reply.xid);
                }
 
                return reply.state;
@@ -193,22 +194,24 @@ namespace casual
 
          void Context::associateOrStart( const message::Transaction& transaction)
          {
+            common::Trace trace{ "transaction::Context::associateOrStart"};
+
             Transaction trans;
 
 
             queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
 
-            if( is_null( transaction.xid))
+            if( transaction.xid)
             {
-               queue::blocking::Reader reader( ipc::getReceiveQueue());
+               trans.owner = transaction.creator;
+               trans.xid = transaction.xid;
+               trans.state = Transaction::State::active;
 
                //auto code = local::startTransaction( writer, reader, trans);
             }
             else
             {
-               trans.owner = transaction.creator;
-               trans.xid = transaction.xid;
-               trans.state = Transaction::State::active;
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
             }
 
             //

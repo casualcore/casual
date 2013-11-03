@@ -14,6 +14,7 @@
 #include "common/process.h"
 #include "common/exception.h"
 #include "common/uuid.h"
+#include "common/transaction_id.h"
 
 #include <vector>
 #include <chrono>
@@ -46,8 +47,10 @@ namespace casual
             cTransactionManagerReady,
             cTransactionBeginRequest,
             cTransactionBeginReply,
-            cTransactionCommit,
-            cTransactionRollback,
+            cTransactionCommitRequest,
+            cTransactionCommitReply,
+            cTransactionRollbackRequest,
+            cTransactionRollbackReply,
             cTransactionGenericReply,
             //cTransactionPrepareReply,
             cTransactionResurceConnectReply,
@@ -77,13 +80,8 @@ namespace casual
          {
             typedef common::platform::pid_type pid_type;
 
-            Transaction() : creator( 0)
-            {
-               xid.formatID = common::cNull_XID;
-            }
-
-            XID xid;
-            pid_type creator;
+            transaction::ID xid;
+            pid_type creator = 0;
 
             template< typename A>
             void marshal( A& archive)
@@ -531,7 +529,7 @@ namespace casual
             {
                typedef basic_transaction< type> base_type;
 
-               XID xid;
+               common::transaction::ID xid;
 
                template< typename A>
                void marshal( A& archive)
@@ -592,10 +590,17 @@ namespace casual
             } // begin
 
 
+            namespace commit
+            {
+               typedef basic_request< cTransactionCommitRequest> Request;
+               typedef basic_reply< cTransactionCommitReply> Reply;
+            } // commit
 
-            typedef basic_request< cTransactionCommit> Commit;
-            typedef basic_request< cTransactionRollback> Rollback;
-
+            namespace rollback
+            {
+               typedef basic_request< cTransactionRollbackRequest> Request;
+               typedef basic_reply< cTransactionRollbackReply> Reply;
+            } // rollback
 
 
             namespace resource

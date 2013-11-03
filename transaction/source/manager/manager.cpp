@@ -5,9 +5,9 @@
 //!     Author: Lazan
 //!
 
-#include "transaction/manager.h"
-#include "transaction/manager_handle.h"
-#include "transaction/manager_action.h"
+#include "transaction/manager/manager.h"
+#include "transaction/manager/handle.h"
+#include "transaction/manager/action.h"
 
 
 #include "common/message.h"
@@ -31,86 +31,7 @@ namespace casual
    {
 
 
-
-      namespace local
-      {
-         namespace
-         {
-            void createTables( sql::database::Connection& db)
-            {
-               db.execute( R"( CREATE TABLE IF NOT EXISTS trans (
-                     gtrid         BLOB,
-                     bqual         BLOB,
-                     pid           NUMBER,
-                     state         NUMBER,
-                     started       NUMBER,
-                     PRIMARY KEY (gtrid, bqual)); )");
-            }
-
-
-
-            struct ScopedWrite : public state::Base
-            {
-               ScopedWrite( State& state) : Base( state)
-               {
-                  // TODO: error checking?
-                  m_state.db.begin();
-               }
-
-               ~ScopedWrite()
-               {
-                  m_state.db.commit();
-               }
-            };
-
-
-
-         } // <unnamed>
-      } // local
-
-
-      namespace action
-      {
-         namespace boot
-         {
-            struct Proxie : state::Base
-            {
-               using state::Base::Base;
-
-               void operator () ( const std::shared_ptr< state::resource::Proxy>& proxy)
-               {
-                  for( auto index = proxy->concurency; index > 0; --index)
-                  {
-                     auto& info = m_state.xaConfig.at( proxy->key);
-
-                     auto instance = std::make_shared< state::resource::Proxy::Instance>();
-
-                     instance->id.pid = process::spawn(
-                           info.server,
-                           {
-                                 "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
-                                 "--rm-key", info.key,
-                                 "--rm-openinfo", proxy->openinfo,
-                                 "--rm-closeinfo", proxy->closeinfo
-                           }
-                        );
-
-                     m_state.instances.emplace( instance->id.pid, instance);
-                     instance->proxy = proxy;
-
-                     instance->state = state::resource::Proxy::Instance::State::started;
-
-                     proxy->instances.emplace_back( std::move( instance));
-                  }
-               }
-            };
-         } // boot
-      } // action
-
-
-
-
-      State::State( const std::string& database) : db( database) {}
+      State::State( const std::string& database) : log( database) {}
 
 
       Manager::Manager( const Settings& settings) :
@@ -119,9 +40,6 @@ namespace casual
       {
          common::trace::Exit trace( "transaction manager startup");
 
-
-
-         local::createTables( m_state.db);
 
          common::logger::debug << "transaction manager queue: " << m_receiveQueue.id();
 
@@ -166,13 +84,12 @@ namespace casual
 
 
          QueueBlockingReader queueReader( m_receiveQueue, m_state);
+         QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
 
          //
          // Connect and get configuration from broker
          //
          {
-
-            QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
 
             action::configure( m_state, brokerQueue, queueReader);
          }
@@ -200,13 +117,13 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::ResourceConnect{ m_state});
+         handler.add( handle::resourceConnect( m_state, brokerQueue));
 
 
          while( true)
          {
             {
-               local::ScopedWrite batchWrite( m_state);
+               scoped::Writer batchWrite( m_state.log);
 
                //
                // Blocking

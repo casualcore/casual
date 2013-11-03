@@ -3,7 +3,7 @@
 *
 */
 
-#include "transaction/resource_proxy_server.h"
+#include "transaction/resource/proxy_server.h"
 #include <xa.h>
 
 #ifdef __cplusplus

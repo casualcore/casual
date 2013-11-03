@@ -13,7 +13,8 @@
 
 #include "config/xa_switch.h"
 
-#include "sql/database.h"
+#include "transaction/manager/log.h"
+
 
 
 #include <map>
@@ -67,21 +68,14 @@ namespace casual
 
                };
 
-               std::size_t id = next_id();
+               std::size_t id = 0;
 
                std::string key;
                std::string openinfo;
                std::string closeinfo;
-               std::size_t concurency;
+               std::size_t concurency = 0;
 
                std::vector< std::shared_ptr< Instance>> instances;
-
-               static std::size_t next_id()
-               {
-                  static std::size_t id = 0;
-                  return id++;
-               }
-
             };
 
          } // resource
@@ -119,16 +113,21 @@ namespace casual
 
          } // pending
 
+         struct Transaction
+         {
+
+            std::vector< std::size_t> resoursesInvolved;
+         };
 
       } // state
 
       struct State
       {
-         State( const std::string& db);
+         State( const std::string& database);
 
          using instances_mapping_type = std::map< common::platform::pid_type, std::shared_ptr< state::resource::Proxy::Instance>>;
 
-         sql::database::Connection db;
+
          std::map< std::string, config::xa::Switch> xaConfig;
 
          std::vector< std::shared_ptr< state::resource::Proxy>> resources;
@@ -139,6 +138,10 @@ namespace casual
          //!
          std::vector< state::pending::Reply> pendingReplies;
 
+         std::map< common::transaction::ID, state::Transaction> transactions;
+
+
+         transaction::Log log;
 
       };
 
@@ -148,48 +151,46 @@ namespace casual
          {
             struct Instance
             {
-               Instance( common::platform::pid_type pid)
-                     : pid( pid)
-               {
-               }
+               Instance( common::platform::pid_type pid);
 
-               bool operator () ( const resource::Proxy::Instance& instance) const
-               {
-                  return instance.id.pid == pid;
-               }
+               bool operator () ( const resource::Proxy::Instance& instance) const;
+
             private:
                common::platform::pid_type pid;
             };
 
+
             struct Started
             {
-               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
-               {
-                  return instance->state > resource::Proxy::Instance::State::absent;
-               }
+               //!
+               //! @return true if instance is started
+               //!
+               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const;
 
-               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
-               {
-                  return std::all_of( std::begin( proxy->instances), std::end( proxy->instances), Started{});
-               }
+               //!
+               //! @return true if at least one instance in resource-proxy is started
+               //!
+               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const;
             };
 
             struct Running
             {
-               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
-               {
-                  return instance->state == resource::Proxy::Instance::State::idle
-                        || instance->state == resource::Proxy::Instance::State::busy;
-               }
+               //!
+               //! @return true if instance is running
+               //!
+               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const;
 
-               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
-               {
-                  return std::any_of( std::begin( proxy->instances), std::end( proxy->instances), Running{});
-               }
+               //!
+               //! @return true if at least one instance in resource-proxy is running
+               //!
+               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const;
             };
 
          } // filter
 
+         //!
+         //! Base that holds the state
+         //!
          struct Base
          {
             Base( State& state) : m_state( state) {}
