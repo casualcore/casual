@@ -13,8 +13,6 @@
 #include <tuple>
 #include <chrono>
 
-#include <string>
-
 #include <xa.h>
 
 
@@ -25,6 +23,7 @@ namespace casual
       typedef std::vector< char> binary_type;
 
       typedef char* raw_buffer_type;
+      typedef const char* const_raw_buffer_type;
 
       // TODO: change to: typedef std::chrono::steady_clock clock_type;
       // When clang has to_time_t for steady_clock

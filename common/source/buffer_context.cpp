@@ -10,9 +10,34 @@
 #include "common/exception.h"
 #include "common/logger.h"
 
+#include "casual_octet_buffer.h"
+#include "casual_order_buffer.h"
+#include "casual_string_buffer.h"
+
+
 #include <stdexcept>
 
 #include <algorithm>
+
+
+//
+// TODO: move from here
+//
+extern long CasualOctetCreate( char* buffer, long size);
+extern long CasualOctetExpand( char* buffer, long size);
+extern long CasualOctetReduce( char* buffer, long size);
+extern long CasualOctetNeeded( char* buffer, long size);
+
+extern long CasualOrderCreate( char* buffer, long size);
+extern long CasualOrderExpand( char* buffer, long size);
+extern long CasualOrderReduce( char* buffer, long size);
+extern long CasualOrderNeeded( char* buffer, long size);
+
+extern long CasualStringCreate( char* buffer, long size);
+extern long CasualStringExpand( char* buffer, long size);
+extern long CasualStringReduce( char* buffer, long size);
+extern long CasualStringNeeded( char* buffer, long size);
+
 
 namespace casual
 {
@@ -40,6 +65,36 @@ namespace casual
 
          }
 
+         Callback Callback::create( const std::string& type, const std::string& subtype)
+         {
+            //
+            // TODO: better
+            //
+
+            if( type == CASUAL_OCTET && subtype.empty())
+            {
+               return Callback( CasualOctetCreate, CasualOctetExpand, CasualOctetReduce, CasualOctetNeeded);
+            }
+
+            if( type == CASUAL_ORDER && subtype.empty())
+            {
+               return Callback( CasualOrderCreate, CasualOrderExpand, CasualOrderReduce, CasualOrderNeeded);
+            }
+
+            if( type == CASUAL_STRING && subtype.empty())
+            {
+               return Callback( CasualStringCreate, CasualStringExpand, CasualStringReduce, CasualStringNeeded);
+            }
+
+            //
+            // TODO: throw if unknown buffer ... or ?
+            //
+
+            //throw common::exception::xatmi::SystemError();
+
+            return Callback( CasualOctetCreate, CasualOctetExpand, CasualOctetReduce, CasualOctetNeeded);
+
+         }
 
 
          Context::Context()
@@ -53,9 +108,10 @@ namespace casual
             return singleton;
          }
 
-         common::raw_buffer_type Context::allocate(const std::string& type, const std::string& subtype, std::size_t size)
+         common::raw_buffer_type Context::allocate(const std::string& type, const std::string& subtype, const std::size_t size)
          {
 
+            // TODO: create Callback from type+subtype
             m_memoryPool.emplace_back( type, subtype, size);
 
             common::logger::debug << "allocates type: " << type << " subtype: " << subtype << " @" << static_cast< const void*>( m_memoryPool.back().raw()) << " size: " << size;
@@ -65,7 +121,7 @@ namespace casual
 
 
 
-         raw_buffer_type Context::reallocate( raw_buffer_type memory, std::size_t size)
+         raw_buffer_type Context::reallocate( const_raw_buffer_type memory, const std::size_t size)
          {
             auto& buffer = *getFromPool( memory);
 
@@ -79,13 +135,13 @@ namespace casual
 
 
 
-         Buffer& Context::get( raw_buffer_type memory)
+         Buffer& Context::get( const_raw_buffer_type memory)
          {
             return *getFromPool( memory);
          }
 
 
-         Buffer Context::extract( raw_buffer_type memory)
+         Buffer Context::extract( const_raw_buffer_type memory)
          {
             auto iter = getFromPool( memory);
             Buffer buffer = std::move( *iter);
@@ -105,7 +161,7 @@ namespace casual
             empty.swap( m_memoryPool);
          }
 
-         Context::pool_type::iterator Context::getFromPool( raw_buffer_type memory)
+         Context::pool_type::iterator Context::getFromPool( const_raw_buffer_type memory)
          {
             auto findIter = std::find_if(
                m_memoryPool.begin(),
@@ -120,7 +176,7 @@ namespace casual
             return findIter;
          }
 
-         void Context::deallocate( raw_buffer_type memory)
+         void Context::deallocate( const_raw_buffer_type memory)
          {
             common::logger::debug << "deallocates: " << static_cast< const void*>( memory);
 

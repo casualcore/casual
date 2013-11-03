@@ -1,0 +1,40 @@
+from casual.make.functiondefinitions import *
+
+INCLUDE_PATHS = [ "include",
+	"$(UNITTEST_INCLUDE_PATH)"]
+
+LIBRARY_PATHS = ["bin"]
+
+SetIncludePaths( INCLUDE_PATHS)
+SetLibraryPaths( LIBRARY_PATHS)
+
+
+Compile( "source/casual_octet_buffer.cpp", "obj/casual_octet_buffer.o")
+Compile( "source/casual_order_buffer.cpp", "obj/casual_order_buffer.o")
+Compile( "source/casual_string_buffer.cpp", "obj/casual_string_buffer.o")
+
+LinkLibrary( "casual-buffers",
+	[
+	"obj/casual_octet_buffer.o",
+	"obj/casual_order_buffer.o",
+	"obj/casual_string_buffer.o",
+	],
+	[])
+
+	
+#
+# unittest
+#
+Compile( "unittest/isolated/source/test_casual_order_buffer.cpp", "unittest/isolated/obj/test_casual_order_buffer.o")
+
+
+LinkIsolatedUnittest( "casual-buffers-isolated",
+    [
+    "unittest/isolated/obj/test_casual_order_buffer.o",
+    ],
+    ["casual-buffers"])
+
+#
+# Install
+#    
+InstallLibrary("casual-buffers", "$CASUAL_HOME/lib/.")

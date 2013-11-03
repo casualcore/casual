@@ -12,6 +12,7 @@
 
 #include <string>
 #include <list>
+#include <functional>
 
 namespace casual
 {
@@ -19,12 +20,57 @@ namespace casual
    {
       namespace buffer
       {
+
+         struct Callback
+         {
+            //
+            // Functions shall return -1 on failure
+            //
+            typedef std::function<long(char*,long)> interface;
+
+            interface m_create;
+            interface m_expand;
+            interface m_reduce;
+            //interface m_remove;
+            interface m_needed;
+
+
+            Callback()
+            : m_create( nullptr),
+              m_expand( nullptr),
+              m_reduce( nullptr),
+              //m_remove( nullptr),
+              m_needed( nullptr)
+            {}
+
+
+            Callback(
+               interface create_function,
+               interface expand_function,
+               interface reduce_function,
+               //interface remove_function,
+               interface needed_function)
+             : m_create( create_function),
+               m_expand( expand_function),
+               m_reduce( reduce_function),
+               //m_remove( remove_function),
+               m_needed( needed_function)
+            {}
+
+            Callback( Callback&&) = default;
+            Callback( const Callback&) = default;
+            Callback& operator = ( Callback&&) = default;
+            Callback& operator = ( const Callback&) = default;
+
+            static Callback create( const std::string& type, const std::string& subtype);
+         };
+
          struct Buffer
          {
             Buffer() {}
 
-            Buffer( const std::string& type, const std::string& subtype, std::size_t size)
-               : m_type( type), m_subtype( subtype), m_memory( size) {}
+            Buffer( const std::string& type, const std::string& subtype, const std::size_t size)
+               : m_type( type), m_subtype( subtype), m_memory( size), m_callback( Callback::create( m_type, m_subtype)) {}
 
 
             Buffer( Buffer&& rhs) = default;
@@ -44,7 +90,7 @@ namespace casual
                return m_memory.size();
             }
 
-            inline raw_buffer_type reallocate( std::size_t size)
+            inline raw_buffer_type reallocate( const std::size_t size)
             {
                if( m_memory.size() < size)
                {
@@ -53,14 +99,19 @@ namespace casual
                return raw();
             }
 
-            const std::string& type()
+            const std::string& type() const
             {
                return m_type;
             }
 
-            const std::string& subtype()
+            const std::string& subtype() const
             {
                return m_subtype;
+            }
+
+            const Callback& callback() const
+            {
+               return m_callback;
             }
 
             template< typename A>
@@ -74,7 +125,8 @@ namespace casual
          private:
             std::string m_type;
             std::string m_subtype;
-            common::binary_type m_memory;
+            binary_type m_memory;
+            Callback m_callback;
          };
 
          class Context
@@ -90,26 +142,25 @@ namespace casual
 
             raw_buffer_type allocate( const std::string& type, const std::string& subtype, std::size_t size);
 
-            raw_buffer_type reallocate( raw_buffer_type memory, std::size_t size);
+            raw_buffer_type reallocate( const_raw_buffer_type memory, std::size_t size);
 
-            void deallocate( raw_buffer_type memory);
+            void deallocate( const_raw_buffer_type memory);
 
-            Buffer& get( raw_buffer_type memory);
+            Buffer& get( const_raw_buffer_type memory);
 
             //!
             //! @return the buffer, after it has been erased from the pool
             //!
             //!
-            Buffer extract( raw_buffer_type memory);
+            Buffer extract( const_raw_buffer_type memory);
 
             Buffer& add( Buffer&& buffer);
 
             void clear();
 
-
          private:
 
-            pool_type::iterator getFromPool( raw_buffer_type memory);
+            pool_type::iterator getFromPool( const_raw_buffer_type memory);
 
             Context();
             pool_type m_memoryPool;
@@ -121,9 +172,7 @@ namespace casual
             struct Deallocator
             {
                Deallocator( char* buffer) : m_memory( buffer)
-               {
-
-               }
+               {}
 
                ~Deallocator()
                {
@@ -143,9 +192,6 @@ namespace casual
       } // buffer
 	} // common
 } // casual
-
-
-
 
 
 

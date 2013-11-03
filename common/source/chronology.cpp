@@ -2,7 +2,7 @@
  * chronology.cpp
  *
  *  Created on: 5 maj 2013
- *      Author: kristian
+ *      Author: Kristone
  */
 
 #include "common/chronology.h"

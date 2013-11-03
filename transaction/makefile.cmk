@@ -10,6 +10,7 @@ SetIncludePaths( ["include",
 
 SetLibraryPaths( ["bin",
     "../common/bin",
+    "../buffers/bin",
     "../configuration/bin",
     "../serviceframework/bin",
     "../xatmi/bin"])

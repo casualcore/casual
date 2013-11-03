@@ -10,10 +10,11 @@ INCLUDE_PATHS=[
 	'../xatmi/include',
 	'../transaction/include',
 	'../serviceframework/include',
+	'../buffers/include',
 	'$(UNITTEST_INCLUDE_PATH)'
 	]
 
-LIBRARY_PATHS= []
+LIBRARY_PATHS= ['../buffers/bin']
 
 SetIncludePaths( INCLUDE_PATHS)
 SetLibraryPaths( LIBRARY_PATHS)
@@ -51,7 +52,7 @@ LinkLibrary( "casual-common",
 	"obj/error.o",
 	"obj/chronology.o",
 	"obj/process.o"],
-	[UUIDLIB])
+	[UUIDLIB, 'casual-buffers'])
 
 
 #

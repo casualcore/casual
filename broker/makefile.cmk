@@ -16,6 +16,7 @@ INCLUDE_PATHS= ["include",
 LIBRARY_PATHS = ["../common/bin",
     "../serviceframework/bin",
 	"../xatmi/bin",
+	"../buffers/bin",
 	"../configuration/bin",
 	"$(YAML_LIBRARY_PATH)",
 	"$(JSON_LIBRARY_PATH)"]
