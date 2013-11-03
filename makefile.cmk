@@ -1,5 +1,6 @@
 from casual.make.functiondefinitions import *
 
+Build( "buffers/makefile.cmk")
 Build( "common/makefile.cmk")
 Build( "xatmi/makefile.cmk")
 
