@@ -103,11 +103,11 @@ TEST( casual_order_buffer, add_and_get)
    EXPECT_TRUE( long_decimal > 987.6 && long_decimal < 987.7);
 
 
-   char* string;
+   const char* string;
    EXPECT_TRUE( CasualOrderGetString( buffer, &string) == CASUAL_ORDER_SUCCESS);
    EXPECT_TRUE( std::string( string) == "Hello!");
 
-   char* binary;
+   const char* binary;
    long size;
    EXPECT_TRUE( CasualOrderGetBinary( buffer, &binary, &size) == CASUAL_ORDER_SUCCESS);
    EXPECT_TRUE( std::string( binary, size) == "Some Data");

@@ -175,7 +175,7 @@ namespace
          return CASUAL_ORDER_SUCCESS;
       }
 
-      int get( char* const buffer, char*& value, long& length)
+      int get( char* const buffer, const char*& value, long& length)
       {
          constexpr auto size_size = bytes< long>();
 
@@ -308,13 +308,13 @@ int CasualOrderGetDouble( char* const buffer, double* const value)
    return internal::get( buffer, *value);
 }
 
-int CasualOrderGetString( char* const buffer, char** value)
+int CasualOrderGetString( char* const buffer, const char** value)
 {
    long size;
    return internal::get( buffer, *value, size);
 }
 
-int CasualOrderGetBinary( char* const buffer, char** value, long* const size)
+int CasualOrderGetBinary( char* const buffer, const char** value, long* const size)
 {
    return internal::get( buffer, *value, *size);
 }

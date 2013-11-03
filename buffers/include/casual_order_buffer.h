@@ -40,7 +40,7 @@ const char* CasualOrderDescription( int code);
 int CasualOrderAddPrepare( char* buffer);
 
 #ifdef __bool_true_false_are_defined
-int CasualOrderAddBool( char* buffer, bool value);
+int CasualOrderAddBool(    char* buffer, bool value);
 #endif
 int CasualOrderAddChar(    char* buffer, char value);
 int CasualOrderAddShort(   char* buffer, short value);
@@ -60,8 +60,8 @@ int CasualOrderGetShort(   char* buffer, short* value);
 int CasualOrderGetLong(    char* buffer, long* value);
 int CasualOrderGetFloat(   char* buffer, float* value);
 int CasualOrderGetDouble(  char* buffer, double* value);
-int CasualOrderGetString(  char* buffer, char** value);
-int CasualOrderGetBinary(  char* buffer, char** value, long* size);
+int CasualOrderGetString(  char* buffer, const char** value);
+int CasualOrderGetBinary(  char* buffer, const char** value, long* size);
 
 int CasualOrderCopyBuffer( char* target, const char* source);
 
