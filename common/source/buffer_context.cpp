@@ -116,7 +116,14 @@ namespace casual
 
             common::logger::debug << "allocates type: " << type << " subtype: " << subtype << " @" << static_cast< const void*>( m_memoryPool.back().raw()) << " size: " << size;
 
-            return m_memoryPool.back().raw();
+            auto& buffer = m_memoryPool.back();
+
+            if( buffer.callback().m_create( buffer.raw(), buffer.size()) != 0)
+            {
+               throw exception::xatmi::SystemError();
+            }
+
+            return buffer.raw();
          }
 
 
@@ -125,7 +132,34 @@ namespace casual
          {
             auto& buffer = *getFromPool( memory);
 
-            buffer.reallocate( size);
+            // check if the user is about to increase size
+            if( buffer.size() < size)
+            {
+               // do the actual expansion
+               buffer.reallocate( size);
+
+               // tell the buffer it has been expanded
+               if( buffer.callback().m_expand( buffer.raw(), size) != 0)
+               {
+                  throw exception::xatmi::SystemError();
+               }
+
+            }
+
+            // check if the user is about to decrease size
+            if( buffer.size() > size)
+            {
+               // tell the buffer it is about to be reduced
+               if( buffer.callback().m_reduce( buffer.raw(), size) != 0)
+               {
+                  throw exception::xatmi::SystemError();
+               }
+
+               // do the actual reduction
+               buffer.reallocate( size);
+
+            }
+
 
             common::logger::debug << "reallocates from: " <<
                   static_cast< const void*>( memory) << " to: " << static_cast< const void*>( buffer.raw()) << " new size: " << buffer.size();

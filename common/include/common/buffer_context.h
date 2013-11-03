@@ -24,7 +24,7 @@ namespace casual
          struct Callback
          {
             //
-            // Functions shall return -1 on failure
+            // Functions shall return 0 on succes
             //
             typedef std::function<long(char*,long)> interface;
 
@@ -92,10 +92,7 @@ namespace casual
 
             inline raw_buffer_type reallocate( const std::size_t size)
             {
-               if( m_memory.size() < size)
-               {
-                  m_memory.resize( size);
-               }
+               m_memory.resize( size);
                return raw();
             }
 
