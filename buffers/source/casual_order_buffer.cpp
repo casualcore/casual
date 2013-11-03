@@ -5,77 +5,27 @@
 //      Author: Kristone
 //
 
+#include "common/network.h"
+
 #include <cstring>
 
 #include "casual_order_buffer.h"
-
-//#include <arpa/inet.h>
-//#include <netinet/in.h>
 
 namespace
 {
    namespace internal
    {
-      const char* description( const int code)
+
+      template< typename T>
+      auto encode( const T value) -> decltype(casual::common::network::transcoder<T>::encode(T()))
       {
-
-         switch( code)
-         {
-            case CASUAL_ORDER_SUCCESS:
-               return "Success";
-            case CASUAL_ORDER_NO_SPACE:
-               return "No space";
-            case CASUAL_ORDER_NO_PLACE:
-               return "No place";
-            case CASUAL_ORDER_INTERNAL_FAILURE:
-               return "Internal failure";
-            default:
-               return "Uknown code";
-         }
-
+         return casual::common::network::transcoder< T>::encode( value);
       }
 
       template< typename T>
-      struct transcoder
+      T decode( const decltype(casual::common::network::transcoder<T>::encode(T())) value)
       {
-         static T encode( const T value)
-         {
-            return value;
-         }
-         static T decode( const T value)
-         {
-            return value;
-         }
-      };
-
-      /*
-       template<>
-       struct transcoder<short>
-       {
-       // TODO: somehow use decltype
-       static uint16_t encode( const short value){return htons(value);}
-       static short decode( const uint16_t value){return ntohs(value);}
-       };
-
-       template<>
-       struct transcoder<long>
-       {
-       // TODO: somehow use decltype
-       static uint32_t encode( const long value){return htonl(value);}
-       static long decode( const uint32_t value){return ntohl(value);}
-       };
-       */
-
-      template< typename T>
-      auto encode( const T value) -> decltype(transcoder<T>::encode(T()))
-      {
-         return transcoder< T>::encode( value);
-      }
-
-      template< typename T>
-      T decode( const decltype(transcoder<T>::encode(T())) value)
-      {
-         return transcoder< T>::decode( value);
+         return casual::common::network::transcoder< T>::decode( value);
       }
 
       template< typename T>
@@ -259,7 +209,19 @@ namespace
 
 const char* CasualOrderDescription( const int code)
 {
-   return internal::description( code);
+   switch( code)
+   {
+      case CASUAL_ORDER_SUCCESS:
+         return "Success";
+      case CASUAL_ORDER_NO_SPACE:
+         return "No space";
+      case CASUAL_ORDER_NO_PLACE:
+         return "No place";
+      case CASUAL_ORDER_INTERNAL_FAILURE:
+         return "Internal failure";
+      default:
+         return "Uknown code";
+   }
 }
 
 int CasualOrderAddPrepare( char* buffer)

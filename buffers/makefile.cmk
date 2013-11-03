@@ -1,6 +1,7 @@
 from casual.make.functiondefinitions import *
 
 INCLUDE_PATHS = [ "include",
+	"../common/include", 
 	"$(UNITTEST_INCLUDE_PATH)"]
 
 LIBRARY_PATHS = ["bin"]
