@@ -58,114 +58,6 @@ namespace casual
             };
 
 
-            /*
-             * To complicated... But works, and I got to "code-masturbate" for an hour or so...
-
-            namespace policy
-            {
-               struct Default
-               {
-                  Default() : m_receiveQueue{ ipc::getReceiveQueue()} {}
-                  Default( ipc::receive::Queue& ipc) : m_receiveQueue{ ipc} {}
-
-
-
-                  template< typename T>
-                  void start( T& handler)
-                  {
-                     while( true)
-                     {
-                        auto marshal = m_receiveQueue.next();
-
-                        if( ! handler.dispatch( marshal))
-                        {
-                           common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
-                        }
-                     }
-                  }
-
-
-               private:
-                  queue::blocking::Reader m_receiveQueue;
-               };
-
-            }
-
-            namespace detail
-            {
-               template<class>
-               struct sfinae_true : std::true_type{};
-
-
-               template< typename T, typename ...Args>
-               static auto test_start( int, Args&& ...args) -> sfinae_true< decltype( std::declval<T>().start( std::forward< Args>( args)...))>;
-
-               template< typename, typename ...Args>
-               static auto test_start( long, Args&&...) -> std::false_type;
-
-
-               template< typename T, typename ...Args>
-               struct has_start : decltype( test_start< T>( 0, std::declval< Args...>())) {};
-            }
-
-
-
-            template< typename P>
-            class basic_handler
-            {
-            public:
-
-               typedef P policy_type;
-               typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
-
-               template< typename... Arguments>
-               basic_handler( Arguments&& ...arguments) : m_policy( std::forward< Arguments>( arguments)...) {}
-
-               template< typename H, typename... Arguments>
-               void add( Arguments&& ...arguments)
-               {
-                  // TODO: change to std::make_unique
-                  handlers_type::mapped_type handler(
-                        new handle_holder< H>{ std::forward< Arguments>( arguments)...});
-
-                  m_handlers[ H::message_type::message_type] = std::move( handler);
-               }
-
-               bool dispatch( marshal::input::Binary& binary)
-               {
-                  auto findIter = m_handlers.find( binary.type());
-
-                  if( findIter != std::end( m_handlers))
-                  {
-                     findIter->second->marshal( binary);
-                     return true;
-                  }
-                  return false;
-               }
-
-               template< typename ...Args>
-               typename std::enable_if< detail::has_start< policy_type, basic_handler&, Args...>::value>::type
-               start( Args&& ...args)
-               {
-                  return m_policy.start( *this, std::forward< Args>( args)...);
-               }
-
-
-
-               std::size_t size() const
-               {
-                  return m_handlers.size();
-               }
-
-            private:
-               policy_type m_policy;
-               handlers_type m_handlers;
-            };
-
-            typedef basic_handler< policy::Default> Handler;
-
-            */
-
             class Handler
             {
             public:
@@ -180,6 +72,16 @@ namespace casual
                         new handle_holder< H>{ std::forward< Arguments>( arguments)...});
 
                   m_handlers[ H::message_type::message_type] = std::move( handler);
+               }
+
+               template< typename H>
+               void add( H&& handler)
+               {
+                  // TODO: change to std::make_unique
+                  handlers_type::mapped_type holder(
+                        new handle_holder< H>{ std::move( handler)});
+
+                  m_handlers[ H::message_type::message_type] = std::move( holder);
                }
 
                bool dispatch( marshal::input::Binary& binary)

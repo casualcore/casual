@@ -161,6 +161,11 @@ namespace casual
                   return policy_send( transport);
                }
 
+               const ipc_value_type ipc() const
+               {
+                  return m_ipc;
+               }
+
             private:
 
                template< typename M>
@@ -178,14 +183,16 @@ namespace casual
 
                auto policy_send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type>()))
                {
-                  try
+                  while( true)
                   {
-                     return block_policy::send( transport, m_ipc);
-                  }
-                  catch( ...)
-                  {
-                     m_policy.apply();
-                     return policy_send( transport);
+                     try
+                     {
+                        return block_policy::send( transport, m_ipc);
+                     }
+                     catch( ...)
+                     {
+                        m_policy.apply();
+                     }
                   }
                }
 
@@ -232,33 +239,41 @@ namespace casual
                   return policy_read( message);
                }
 
+               const ipc_value_type ipc() const
+               {
+                  return m_ipc;
+               }
 
             private:
 
                auto policy_next() -> decltype( block_policy::next( std::declval< ipc_value_type>()))
                {
-                  try
+                  while( true)
                   {
-                     return block_policy::next( m_ipc);
-                  }
-                  catch( ...)
-                  {
-                     m_policy.apply();
-                     return policy_next();
+                     try
+                     {
+                        return block_policy::next( m_ipc);
+                     }
+                     catch( ...)
+                     {
+                        m_policy.apply();
+                     }
                   }
                }
 
                template< typename M>
                auto policy_read( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
                {
-                  try
+                  while( true)
                   {
-                     return block_policy::fetch( m_ipc, message);
-                  }
-                  catch( ...)
-                  {
-                     m_policy.apply();
-                     return policy_read( message);
+                     try
+                     {
+                        return block_policy::fetch( m_ipc, message);
+                     }
+                     catch( ...)
+                     {
+                        m_policy.apply();
+                     }
                   }
                }
 
