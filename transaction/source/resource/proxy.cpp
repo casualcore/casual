@@ -117,7 +117,7 @@ namespace casual
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid, rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
 
                   this->m_tmQueue( reply);
                }
@@ -148,7 +148,7 @@ namespace casual
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid, rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
 
                   this->m_tmQueue( reply);
 
@@ -179,7 +179,7 @@ namespace casual
 
                   reply.id.pid = common::process::id();
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid, rm_id, TMNOFLAGS);
+                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
 
 
                   this->m_tmQueue( reply);

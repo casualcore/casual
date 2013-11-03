@@ -69,43 +69,7 @@ namespace casual
       } // local
 
 
-      namespace action
-      {
-         namespace boot
-         {
-            struct Proxie : state::Base
-            {
-               using state::Base::Base;
 
-               void operator () ( const std::shared_ptr< state::resource::Proxy>& proxy)
-               {
-                  for( auto index = proxy->concurency; index > 0; --index)
-                  {
-                     auto& info = m_state.xaConfig.at( proxy->key);
-
-                     auto instance = std::make_shared< state::resource::Proxy::Instance>();
-
-                     instance->id.pid = process::spawn(
-                           info.server,
-                           {
-                                 "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
-                                 "--rm-key", info.key,
-                                 "--rm-openinfo", proxy->openinfo,
-                                 "--rm-closeinfo", proxy->closeinfo
-                           }
-                        );
-
-                     m_state.instances.emplace( instance->id.pid, instance);
-                     instance->proxy = proxy;
-
-                     instance->state = state::resource::Proxy::Instance::State::started;
-
-                     proxy->instances.emplace_back( std::move( instance));
-                  }
-               }
-            };
-         } // boot
-      } // action
 
 
 

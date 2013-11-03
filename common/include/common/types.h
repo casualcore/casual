@@ -34,11 +34,6 @@ namespace casual
       typedef clock_type::time_point time_type;
 
 
-      enum
-      {
-         cNull_XID = -1
-      };
-
       namespace transform
       {
          inline char* public_buffer( raw_buffer_type buffer)
@@ -59,120 +54,43 @@ namespace casual
             return common::time_type( time_type::duration( representation));
          }
 
+         /*
          inline std::tuple< binary_type, binary_type> xid( const XID& value)
          {
             return std::tuple< binary_type, binary_type>{
                {  value.data, value.data + value.gtrid_length },
                {  value.data + value.gtrid_length, value.data + value.gtrid_length + value.bqual_length}};
          }
+         */
 
 
-      }
-   }
+
+      } // transform
+   } // common
+
 
    //!
    //! Overload for time_type
    //!
    //! @{
    template< typename M>
-   void marshal_value( M& marshler, common::time_type& value)
+   void casual_marshal_value( casual::common::time_type& value, M& marshler)
    {
       auto time = value.time_since_epoch().count();
       marshler << time;
    }
 
    template< typename M>
-   void unmarshal_value( M& unmarshler, common::time_type& value)
+   void casual_unmarshal_value( casual::common::time_type& value, M& unmarshler)
    {
-      common::time_type::rep representation;
+      casual::common::time_type::rep representation;
       unmarshler >> representation;
-      value = common::time_type( common::time_type::duration( representation));
+      value = casual::common::time_type( casual::common::time_type::duration( representation));
    }
    //! @}
 
-   //!
-   //! Overload for XID
-   //!
-   //! @{
-   template< typename M>
-   void marshal_value( M& marshler, const XID& value)
-   {
-      marshler << value.formatID;
-
-      if( value.formatID != common::cNull_XID)
-      {
-
-         marshler << value.gtrid_length;
-         marshler << value.bqual_length;
-
-         const auto size = marshler.m_buffer.size();
-         marshler.m_buffer.resize( size + value.gtrid_length + value.bqual_length);
-         std::copy(
-             std::begin( value.data),
-             std::begin( value.data) + value.gtrid_length + value.bqual_length,
-             &marshler.m_buffer[ size]);
-      }
-   }
-
-   template< typename M>
-   void unmarshal_value( M& unmarshler, XID& value)
-   {
-      unmarshler >> value.formatID;
-
-      if( value.formatID != common::cNull_XID)
-      {
-         unmarshler >> value.gtrid_length;
-         unmarshler >> value.bqual_length;
-
-         auto start = std::begin( unmarshler.m_buffer) + unmarshler.m_offset;
-         auto end = start + value.gtrid_length + value.bqual_length;
-
-         std::copy(
-               start,
-               end,
-               value.data);
-      }
-   }
-   //! @}
-
-
-   inline bool is_null( const XID& xid)
-   {
-      return xid.formatID == common::cNull_XID;
-   }
 
 } // casual
-
-inline bool operator < ( const XID& lhs, const XID& rhs)
-{
-   return std::lexicographical_compare(
-         std::begin( lhs.data), std::begin( lhs.data) + lhs.gtrid_length + lhs.bqual_length,
-         std::begin( rhs.data), std::begin( rhs.data) + rhs.gtrid_length + rhs.bqual_length);
-}
-
-inline bool operator == ( const XID& lhs, const XID& rhs)
-{
-   // TODO: will work in C++14
-   /*
-   return std::equal(
-         std::begin( lhs.data), std::begin( lhs.data) + lhs.gtrid_length + lhs.bqual_length,
-         std::begin( rhs.data), std::begin( rhs.data) + rhs.gtrid_length + rhs.bqual_length);
-   */
-   return lhs.gtrid_length + lhs.bqual_length == rhs.gtrid_length + rhs.bqual_length &&
-         std::equal(
-           std::begin( lhs.data), std::begin( lhs.data) + lhs.gtrid_length + lhs.bqual_length,
-           std::begin( rhs.data));
-}
-
-inline bool operator == ( const XID& xid, std::nullptr_t)
-{
-   return xid.formatID == casual::common::cNull_XID;
-}
-
-inline bool operator == ( std::nullptr_t, const XID& xid)
-{
-   return xid.formatID == casual::common::cNull_XID;
-}
 
 
 

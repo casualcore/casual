@@ -16,8 +16,6 @@
 
 namespace casual
 {
-
-
 	namespace common
 	{
 
@@ -25,13 +23,24 @@ namespace casual
 		{
 			typedef platform::uuid_type uuid_type;
 
+			enum Format
+			{
+			   cNull = -1,
+			   cFormatId = 10
+			};
+
 			Uuid();
 			Uuid( Uuid&&) = default;
 			Uuid( const Uuid&) = default;
 
+			Uuid( uuid_type& uuid);
+
+			Uuid( const std::string& uuid);
+
+
 			Uuid& operator = ( const Uuid&) = default;
 
-			Uuid( uuid_type& uuid);
+
 
 			std::string string() const;
 			void string( const std::string& value);
@@ -55,14 +64,16 @@ namespace casual
 
 			static Uuid make();
 
+			static std::string toString( const uuid_type& uuid);
+
 
 		private:
 			uuid_type m_uuid;
 
 		};
 
-	}
-}
+	} // common
+} // casaul
 
 bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs);
 

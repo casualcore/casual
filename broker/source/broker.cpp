@@ -202,7 +202,9 @@ namespace casual
             const char* executable = common::environment::file::executable().c_str();
             arguments.m_argv = &const_cast< char*&>( executable);
 
-            handler.add( handle::Call{ arguments, m_state});
+            //handler.add( handle::Call{ arguments, m_state});
+            handler.add< handle::Call>( arguments, m_state);
+
          }
 
          message::dispatch::pump( handler, blockingReader);

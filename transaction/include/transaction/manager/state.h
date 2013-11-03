@@ -67,21 +67,14 @@ namespace casual
 
                };
 
-               std::size_t id = next_id();
+               std::size_t id = 0;
 
                std::string key;
                std::string openinfo;
                std::string closeinfo;
-               std::size_t concurency;
+               std::size_t concurency = 0;
 
                std::vector< std::shared_ptr< Instance>> instances;
-
-               static std::size_t next_id()
-               {
-                  static std::size_t id = 0;
-                  return id++;
-               }
-
             };
 
          } // resource
@@ -119,6 +112,11 @@ namespace casual
 
          } // pending
 
+         struct Transaction
+         {
+
+            std::vector< std::size_t> resoursesInvolved;
+         };
 
       } // state
 
@@ -139,6 +137,7 @@ namespace casual
          //!
          std::vector< state::pending::Reply> pendingReplies;
 
+         std::map< common::transaction::ID, state::Transaction> transactions;
 
       };
 

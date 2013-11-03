@@ -196,7 +196,7 @@ namespace casual
 
                void Default::transaction( const message::service::callee::Call& message)
                {
-                  if( ! casual::is_null( message.transaction.xid) || message.service.auto_transaction)
+                  if( message.transaction.xid || message.service.auto_transaction)
                   {
                      transaction::Context::instance().associateOrStart( message.transaction);
                   }

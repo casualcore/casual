@@ -149,14 +149,14 @@ namespace casual
             {
                long state = 0;
                auto started = std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count();
-               auto xid = common::transform::xid( message.xid);
+               //auto xid = common::transform::xid( message.xid);
 
                const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?); )"};
 
                state::pending::Reply reply;
                reply.target = message.id.queue_id;
 
-               m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.id.pid, state, started);
+               //m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.id.pid, state, started);
 
                m_state.pendingReplies.push_back( std::move( reply));
             }
@@ -185,6 +185,34 @@ namespace casual
 
             }
          };
+
+         struct Involved : public state::Base
+         {
+            typedef common::message::transaction::resource::Involved message_type;
+
+            using Base::Base;
+
+            void dispatch( message_type& message)
+            {
+               auto transaction = m_state.transactions.find( message.xid);
+
+               if( transaction != std::end( m_state.transactions))
+               {
+                  std::copy(
+                     std::begin( message.resources),
+                     std::end( message.resources),
+                     std::back_inserter( transaction->second.resoursesInvolved));
+
+                  std::sort( std::begin( transaction->second.resoursesInvolved), std::end( transaction->second.resoursesInvolved));
+
+                  auto end = std::unique( std::begin( transaction->second.resoursesInvolved), std::end( transaction->second.resoursesInvolved));
+
+                  transaction->second.resoursesInvolved.erase( end, std::end( transaction->second.resoursesInvolved));
+               }
+
+            }
+         };
+
 
       } // handle
    } // transaction

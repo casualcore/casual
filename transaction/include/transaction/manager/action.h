@@ -76,6 +76,19 @@ namespace casual
          }
 
 
+
+         namespace boot
+         {
+            struct Proxie : state::Base
+            {
+               using state::Base::Base;
+
+               void operator () ( const std::shared_ptr< state::resource::Proxy>& proxy);
+            };
+         } // boot
+
+
+
       } // action
    } // transaction
 

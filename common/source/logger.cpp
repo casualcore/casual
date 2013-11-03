@@ -12,10 +12,14 @@
 #include "common/exception.h"
 #include "common/chronology.h"
 #include "common/server_context.h"
+#include "common/transaction_context.h"
 
 // temp
 #include <iostream>
 #include <fstream>
+
+
+#include <mutex>
 
 
 
@@ -35,19 +39,31 @@ namespace casual
                   {
                      static Context& instance()
                      {
+                        //
+                        // Meyers singleton is guaranteed to be thread safe in C++11
+                        //
                         static Context singleton;
                         return singleton;
                      }
 
                      void log( const int priority, const std::string& message)
                      {
+                        std::lock_guard< std::mutex> lock( m_streamMutex);
 
-                        if( ! m_output.good())
-                        {
-                           open( priority, message);
-                           return;
-                        }
-
+                        //
+                        // TODO: Wont work on unix... rm does not remove the file. Hence
+                        // we will not be able to detect removal with standard stuff...
+                        //
+                        /*
+                           if( ! m_output.fail() || open())
+                           {
+                              log( m_output, priority, message);
+                           }
+                           else
+                           {
+                              log( std::cerr,  priority, message);
+                           }
+                        */
                         log( m_output, priority, message);
 
                      }
@@ -87,14 +103,16 @@ namespace casual
                      {
                         //syslog( priority, "%s - %s", m_prefix.c_str(), message.c_str());
 
-                        out <<
-                           common::chronology::local() <<
-                           '|' << common::environment::getDomainName() <<
-                           '|' << common::calling::Context::instance().callId().string() <<
-                           '|' << common::process::id() <<
-                           '|' << common::file::basename( common::environment::file::executable()) <<
-                           '|' << common::calling::Context::instance().currentService() <<
-                           "|";
+                        static const std::string basename{ common::file::basename( common::environment::file::executable())};
+
+                        out << common::chronology::local()
+                           << '|' << common::environment::getDomainName()
+                           << '|' << common::calling::Context::instance().callId().string()
+                           << '|' << common::transaction::Context::instance().currentTransaction().xid.stringGlobal()
+                           << '|' << common::process::id()
+                           << '|' << basename
+                           << '|' << common::calling::Context::instance().currentService()
+                           << "|";
 
                         // TODO: Temp while we roll our own...
                         switch( priority)
@@ -147,19 +165,8 @@ namespace casual
 
                      }
 
-                     void open( const int priority, const std::string& message)
-                     {
-                        if( open())
-                        {
-                           log( m_output, priority, message);
-                        }
-                        else
-                        {
-                           log( std::cerr,  priority, message);
-                        }
-                     }
-
                      std::ofstream m_output;
+                     std::mutex m_streamMutex;
                      int m_mask;
 
                   };

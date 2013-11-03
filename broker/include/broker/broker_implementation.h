@@ -488,6 +488,9 @@ namespace casual
 
             Policy( broker::State& state) : m_state( state) {}
 
+            Policy( Policy&&) = default;
+            Policy& operator = ( Policy&&) = default;
+
 
             message::server::Configuration connect( message::server::Connect& message)
             {

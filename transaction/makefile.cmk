@@ -20,11 +20,15 @@ SetLibraryPaths( ["bin",
 # Compile and link the transaction manager
 #
 Compile( "source/manager/manager.cpp", "obj/manager/manager.o")
-Compile( "source/manager/state.cpp", "obj/manager/state.o")   
+Compile( "source/manager/state.cpp", "obj/manager/state.o")
+Compile( "source/manager/action.cpp", "obj/manager/action.o")
 
 LinkArchive( "manager-archive",
-     ["obj/manager/manager.o",
-    "obj/manager/state.o"])
+     [
+      "obj/manager/manager.o",
+      "obj/manager/state.o",
+      "obj/manager/action.o",
+      ])
  
 Compile( "source/manager/main.cpp", "obj/manager/main.o")
 

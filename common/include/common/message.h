@@ -14,6 +14,7 @@
 #include "common/process.h"
 #include "common/exception.h"
 #include "common/uuid.h"
+#include "common/transaction_id.h"
 
 #include <vector>
 #include <chrono>
@@ -77,13 +78,8 @@ namespace casual
          {
             typedef common::platform::pid_type pid_type;
 
-            Transaction() : creator( 0)
-            {
-               xid.formatID = common::cNull_XID;
-            }
-
-            XID xid;
-            pid_type creator;
+            transaction::ID xid;
+            pid_type creator = 0;
 
             template< typename A>
             void marshal( A& archive)
@@ -531,7 +527,7 @@ namespace casual
             {
                typedef basic_transaction< type> base_type;
 
-               XID xid;
+               common::transaction::ID xid;
 
                template< typename A>
                void marshal( A& archive)
