@@ -13,7 +13,8 @@
 
 #include "config/xa_switch.h"
 
-#include "sql/database.h"
+#include "transaction/manager/log.h"
+
 
 
 #include <map>
@@ -122,11 +123,11 @@ namespace casual
 
       struct State
       {
-         State( const std::string& db);
+         State( const std::string& database);
 
          using instances_mapping_type = std::map< common::platform::pid_type, std::shared_ptr< state::resource::Proxy::Instance>>;
 
-         sql::database::Connection db;
+
          std::map< std::string, config::xa::Switch> xaConfig;
 
          std::vector< std::shared_ptr< state::resource::Proxy>> resources;
@@ -138,6 +139,9 @@ namespace casual
          std::vector< state::pending::Reply> pendingReplies;
 
          std::map< common::transaction::ID, state::Transaction> transactions;
+
+
+         transaction::Log log;
 
       };
 

@@ -47,8 +47,10 @@ namespace casual
             cTransactionManagerReady,
             cTransactionBeginRequest,
             cTransactionBeginReply,
-            cTransactionCommit,
-            cTransactionRollback,
+            cTransactionCommitRequest,
+            cTransactionCommitReply,
+            cTransactionRollbackRequest,
+            cTransactionRollbackReply,
             cTransactionGenericReply,
             //cTransactionPrepareReply,
             cTransactionResurceConnectReply,
@@ -588,10 +590,17 @@ namespace casual
             } // begin
 
 
+            namespace commit
+            {
+               typedef basic_request< cTransactionCommitRequest> Request;
+               typedef basic_reply< cTransactionCommitReply> Reply;
+            } // commit
 
-            typedef basic_request< cTransactionCommit> Commit;
-            typedef basic_request< cTransactionRollback> Rollback;
-
+            namespace rollback
+            {
+               typedef basic_request< cTransactionRollbackRequest> Request;
+               typedef basic_reply< cTransactionRollbackReply> Reply;
+            } // rollback
 
 
             namespace resource

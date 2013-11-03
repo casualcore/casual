@@ -42,10 +42,16 @@ namespace casual
 
          RemoveGuard::~RemoveGuard()
          {
-            if( ! released)
+            if( ! m_released)
             {
                remove( m_path);
             }
+         }
+
+         RemoveGuard::RemoveGuard( RemoveGuard&& rhs)
+         {
+            std::swap( m_released, rhs.m_released);
+            std::swap( m_path, rhs.m_path);
          }
 
          const std::string& RemoveGuard::path() const

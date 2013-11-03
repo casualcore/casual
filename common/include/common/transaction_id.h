@@ -74,6 +74,11 @@ namespace casual
 
             bool operator == ( const ID& rhs) const;
 
+            bool operator != ( const ID& rhs) const
+            {
+               return ! ( *this == rhs);
+            }
+
 
             std::string stringGlobal() const;
 

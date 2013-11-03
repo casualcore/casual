@@ -147,16 +147,11 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               long state = 0;
-               auto started = std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count();
-               //auto xid = common::transform::xid( message.xid);
 
-               const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?); )"};
+               m_state.log.begin( message);
 
                state::pending::Reply reply;
                reply.target = message.id.queue_id;
-
-               //m_state.db.execute( sql, std::get< 0>( xid), std::get< 1>( xid), message.id.pid, state, started);
 
                m_state.pendingReplies.push_back( std::move( reply));
             }
@@ -164,7 +159,7 @@ namespace casual
 
          struct Commit : public state::Base
          {
-            typedef common::message::transaction::Commit message_type;
+            typedef common::message::transaction::commit::Request message_type;
 
             using Base::Base;
 
@@ -176,7 +171,7 @@ namespace casual
 
          struct Rollback : public state::Base
          {
-            typedef common::message::transaction::Rollback message_type;
+            typedef common::message::transaction::rollback::Request message_type;
 
             using Base::Base;
 

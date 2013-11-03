@@ -31,50 +31,7 @@ namespace casual
    {
 
 
-
-      namespace local
-      {
-         namespace
-         {
-            void createTables( sql::database::Connection& db)
-            {
-               db.execute( R"( CREATE TABLE IF NOT EXISTS trans (
-                     gtrid         BLOB,
-                     bqual         BLOB,
-                     pid           NUMBER,
-                     state         NUMBER,
-                     started       NUMBER,
-                     PRIMARY KEY (gtrid, bqual)); )");
-            }
-
-
-
-            struct ScopedWrite : public state::Base
-            {
-               ScopedWrite( State& state) : Base( state)
-               {
-                  // TODO: error checking?
-                  m_state.db.begin();
-               }
-
-               ~ScopedWrite()
-               {
-                  m_state.db.commit();
-               }
-            };
-
-
-
-         } // <unnamed>
-      } // local
-
-
-
-
-
-
-
-      State::State( const std::string& database) : db( database) {}
+      State::State( const std::string& database) : log( database) {}
 
 
       Manager::Manager( const Settings& settings) :
@@ -83,9 +40,6 @@ namespace casual
       {
          common::trace::Exit trace( "transaction manager startup");
 
-
-
-         local::createTables( m_state.db);
 
          common::logger::debug << "transaction manager queue: " << m_receiveQueue.id();
 
@@ -169,7 +123,7 @@ namespace casual
          while( true)
          {
             {
-               local::ScopedWrite batchWrite( m_state);
+               scoped::Writer batchWrite( m_state.log);
 
                //
                // Blocking
