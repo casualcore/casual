@@ -27,7 +27,7 @@ Compile( "build_server/build_server.cpp", "build_server/obj/build_server.o")
 
 LinkExecutable( "casual-build-server",
    [ "build_server/obj/build_server.o"],
-   [ "casual-common", "casual-sf", "casual-configuration"])
+   [ "casual-common", "casual-sf", "casual-configuration","casual-buffers"])
 
 
 
