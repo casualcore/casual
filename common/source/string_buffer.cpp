@@ -5,7 +5,7 @@
 //      Author: Kristone
 //
 
-#include "casual_string_buffer.h"
+#include "common/string_buffer.h"
 
 #include <cstring>
 

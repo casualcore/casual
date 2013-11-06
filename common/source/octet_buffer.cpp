@@ -5,7 +5,7 @@
 //      Author: Kristone
 //
 
-#include "casual_octet_buffer.h"
+#include "common/octet_buffer.h"
 
 long CasualOctetCreate( char* const buffer, const long size)
 {

@@ -10,16 +10,11 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_order_buffer.h"
+#include "common/order_buffer.h"
 
 
 #include <string>
 
-
-extern long CasualOrderCreate( char* buffer, long size);
-extern long CasualOrderExpand( char* buffer, long size);
-extern long CasualOrderReduce( char* buffer, long size);
-extern long CasualOrderNeeded( char* buffer, long size);
 
 
 TEST( casual_order_buffer, allocate_with_enough_size__expecting_success)

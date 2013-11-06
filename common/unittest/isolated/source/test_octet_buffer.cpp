@@ -8,14 +8,8 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_octet_buffer.h"
+#include "common/octet_buffer.h"
 
-
-
-extern long CasualOctetCreate( char* buffer, long size);
-extern long CasualOctetExpand( char* buffer, long size);
-extern long CasualOctetReduce( char* buffer, long size);
-extern long CasualOctetNeeded( char* buffer, long size);
 
 
 TEST( casual_octet_buffer, allocate_with_normal_size__expecting_success)

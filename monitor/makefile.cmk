@@ -13,7 +13,6 @@ INCLUDE_PATHS= ["include",
 
 LIBRARY_PATHS = ["bin",
     "../common/bin",
-    "../buffers/bin",
     "../xatmi/bin",
     "../serviceframework/bin",
     "$(JSON_LIBRARY_PATH)"]

@@ -10,33 +10,14 @@
 #include "common/exception.h"
 #include "common/logger.h"
 
-#include "casual_octet_buffer.h"
-#include "casual_order_buffer.h"
-#include "casual_string_buffer.h"
+#include "common/octet_buffer.h"
+#include "common/order_buffer.h"
+#include "common/string_buffer.h"
 
 
 #include <stdexcept>
 
 #include <algorithm>
-
-
-//
-// TODO: move from here
-//
-extern long CasualOctetCreate( char* buffer, long size);
-extern long CasualOctetExpand( char* buffer, long size);
-extern long CasualOctetReduce( char* buffer, long size);
-extern long CasualOctetNeeded( char* buffer, long size);
-
-extern long CasualOrderCreate( char* buffer, long size);
-extern long CasualOrderExpand( char* buffer, long size);
-extern long CasualOrderReduce( char* buffer, long size);
-extern long CasualOrderNeeded( char* buffer, long size);
-
-extern long CasualStringCreate( char* buffer, long size);
-extern long CasualStringExpand( char* buffer, long size);
-extern long CasualStringReduce( char* buffer, long size);
-extern long CasualStringNeeded( char* buffer, long size);
 
 
 namespace casual

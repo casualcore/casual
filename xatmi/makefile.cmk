@@ -5,8 +5,7 @@ INCLUDE_PATHS = [ "include",
 	"$(UNITTEST_INCLUDE_PATH)"]
 
 LIBRARY_PATHS = ["bin",
-    "../common/bin",
-    "../buffers/bin"]
+    "../common/bin"]
 
 SetIncludePaths( INCLUDE_PATHS)
 SetLibraryPaths( LIBRARY_PATHS)

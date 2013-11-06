@@ -5,51 +5,46 @@
 //      Author: Kristone
 //
 
+#include "common/order_buffer.h"
+
 #include "common/network.h"
 
 #include <cstring>
 
-#include "casual_order_buffer.h"
 
 namespace
 {
    namespace internal
    {
 
-      template< typename T>
-      auto encode( const T value) -> decltype(casual::common::network::transcoder<T>::encode(T()))
-      {
-         return casual::common::network::transcoder< T>::encode( value);
-      }
-
-      template< typename T>
-      T decode( const decltype(casual::common::network::transcoder<T>::encode(T())) value)
-      {
-         return casual::common::network::transcoder< T>::decode( value);
-      }
-
-      template< typename T>
-      constexpr auto bytes() -> decltype(sizeof(decltype(encode<T>(T()))))
-      {
-         return sizeof(decltype(encode<T>(T())));
-      }
-
-      template< typename T>
-      auto validate( const long offset, const long beyond) -> decltype(bytes<T>())
-      {
-         return ( beyond - offset) < bytes< T>() ? 0 : bytes< T>();
-      }
-
       namespace data
       {
          template< typename T>
-         T select( const char* const buffer, const long offset)
+         auto encode( const T value) -> decltype(casual::common::network::transcoder<T>::encode(T()))
          {
-            return decode< T>( *reinterpret_cast< const decltype(encode<T>(T()))*>( buffer + offset));
+            return casual::common::network::transcoder< T>::encode( value);
          }
 
          template< typename T>
-         void insert( char* const buffer, const long offset, const T& value)
+         T decode( const decltype(casual::common::network::transcoder<T>::encode(T())) value)
+         {
+            return casual::common::network::transcoder< T>::decode( value);
+         }
+
+         template<typename T>
+         constexpr long bytes()
+         {
+            return sizeof(decltype(encode<T>(0)));
+         }
+
+         template< typename T>
+         T select( const char* const buffer, const long offset)
+         {
+            return decode< T>( *reinterpret_cast< const decltype(encode<T>(0))*>( buffer + offset));
+         }
+
+         template< typename T>
+         void insert( char* const buffer, const long offset, const T value)
          {
             const auto encoded = encode< T>( value);
             std::memcpy( buffer + offset, &encoded, sizeof( encoded));
@@ -59,59 +54,88 @@ namespace
 
       namespace header
       {
-         constexpr auto size() -> decltype(bytes<long>())
+         enum position : long
          {
-            return bytes< long>() * 3;
+            reserved,
+            inserter,
+            selector,
+            beoyond
+         };
+
+         constexpr auto size() -> decltype(data::bytes<long>())
+         {
+            return data::bytes<long>() * position::beoyond;
          }
 
          namespace select
          {
-            template< int offset>
+            template< position offset>
             long parse( const char* const buffer)
             {
-               return data::select< long>( buffer, bytes< long>() * offset);
+               return data::select<long>( buffer, data::bytes<long>() * offset);
             }
 
             long reserved( const char* const buffer)
             {
-               return parse< 0>( buffer);
+               return parse< position::reserved>( buffer);
             }
 
             long inserter( const char* const buffer)
             {
-               return parse< 1>( buffer);
+               return parse< position::inserter>( buffer);
             }
 
             long selector( const char* const buffer)
             {
-               return parse< 2>( buffer);
+               return parse< position::selector>( buffer);
             }
          }
 
          namespace update
          {
-            template< int offset>
+            template< position offset>
             void write( char* const buffer, const long value)
             {
-               data::insert< long>( buffer, bytes< long>() * offset, value);
+               data::insert< long>( buffer, data::bytes<long>() * offset, value);
             }
 
             void reserved( char* const buffer, const long value)
             {
-               write< 0>( buffer, value);
+               write< position::reserved>( buffer, value);
             }
 
             void inserter( char* const buffer, const long value)
             {
-               write< 1>( buffer, value);
+               write< position::inserter>( buffer, value);
             }
 
             void selector( char* const buffer, const long value)
             {
-               write< 2>( buffer, value);
+               write< position::selector>( buffer, value);
             }
 
          }
+      }
+
+      int add( char* const buffer, const char* const value, const long length)
+      {
+         const auto reserved = header::select::reserved( buffer);
+         const auto inserter = header::select::inserter( buffer);
+
+         constexpr auto length_size = data::bytes<long>();
+
+         if( ( reserved - inserter) < (length_size + length))
+         {
+            return CASUAL_ORDER_NO_SPACE;
+         }
+
+         data::insert<long>( buffer, inserter, length);
+
+         std::memcpy( buffer + inserter + length_size, value, length);
+
+         header::update::inserter( buffer, inserter + length_size + length);
+
+         return CASUAL_ORDER_SUCCESS;
       }
 
       template< typename T>
@@ -120,38 +144,16 @@ namespace
          const auto reserved = header::select::reserved( buffer);
          const auto inserter = header::select::inserter( buffer);
 
-         if( const auto size = validate< T>( inserter, reserved))
-         {
-            data::insert< T>( buffer, inserter, value);
-            header::update::inserter( buffer, inserter + size);
-         }
-         else
+         constexpr auto value_size = data::bytes<T>();
+
+         if( ( reserved - inserter) < ( value_size))
          {
             return CASUAL_ORDER_NO_SPACE;
          }
 
-         return CASUAL_ORDER_SUCCESS;
-      }
+         data::insert<T>( buffer, inserter, value);
 
-      int add( char* const buffer, const char* const value, const long length)
-      {
-         constexpr auto size_size = bytes< long>();
-
-         const auto total = size_size + length;
-
-         const auto reserved = header::select::reserved( buffer);
-         const auto inserter = header::select::inserter( buffer);
-
-         if( ( reserved - inserter) < ( size_size + length))
-         {
-            return CASUAL_ORDER_NO_SPACE;
-         }
-
-         data::insert< long>( buffer, inserter, length);
-
-         std::memcpy( buffer + inserter + size_size, value, length);
-
-         header::update::inserter( buffer, inserter + size_size + length);
+         header::update::inserter( buffer, inserter + value_size);
 
          return CASUAL_ORDER_SUCCESS;
       }
@@ -162,43 +164,46 @@ namespace
          const auto inserter = header::select::inserter( buffer);
          const auto selector = header::select::selector( buffer);
 
-         if( const auto size = validate< T>( selector, inserter))
-         {
-            value = data::select< T>( buffer, selector);
-            header::update::selector( buffer, selector + size);
-         }
-         else
+         constexpr auto value_size = data::bytes<T>();
+
+         if( (inserter - selector) < ( value_size))
          {
             return CASUAL_ORDER_NO_PLACE;
          }
+
+         value = data::select<T>( buffer, selector);
+
+         header::update::selector( buffer, selector + value_size);
 
          return CASUAL_ORDER_SUCCESS;
       }
 
       int get( char* const buffer, const char*& value, long& length)
       {
-         constexpr auto size_size = bytes< long>();
-
          const auto inserter = header::select::inserter( buffer);
          const auto selector = header::select::selector( buffer);
 
-         if( ( inserter - selector) < size_size)
+         constexpr auto length_size = data::bytes<long>();
+
+         if( ( inserter - selector) < ( length_size))
          {
             // not even the size can be read so we need to report that
             return CASUAL_ORDER_NO_PLACE;
          }
 
-         length = data::select< long>( buffer, selector);
+         const auto value_size = data::select<long>( buffer, selector);
 
-         if( ( inserter - selector) < ( size_size + length))
+
+         if( ( inserter - selector) < ( length_size + value_size))
          {
             // the size is impossible so we need to report that
             return CASUAL_ORDER_NO_PLACE;
          }
 
-         value = buffer + selector + size_size;
+         value = buffer + selector + length_size;
+         length = value_size;
 
-         header::update::selector( buffer, selector + size_size + length);
+         header::update::selector( buffer, selector + length_size + value_size);
 
          return CASUAL_ORDER_SUCCESS;
       }
@@ -224,7 +229,7 @@ const char* CasualOrderDescription( const int code)
    }
 }
 
-int CasualOrderAddPrepare( char* buffer)
+int CasualOrderAddPrepare( char* const buffer)
 {
    internal::header::update::inserter( buffer, internal::header::size());
 
@@ -329,7 +334,7 @@ int CasualOrderCopyBuffer( char* const target, const char* const source)
       return CASUAL_ORDER_NO_SPACE;
    }
 
-   constexpr auto bytes = internal::bytes< long>();
+   constexpr auto bytes = internal::data::bytes< long>();
 
    // copy inserter and selector (and data) but leave reserved
    std::memcpy( target + bytes, source + bytes, source_inserter - bytes);

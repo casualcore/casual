@@ -7,14 +7,9 @@
 
 #include <gtest/gtest.h>
 
-#include "casual_string_buffer.h"
+#include "common/string_buffer.h"
 
 #include <cstring>
-
-extern long CasualStringCreate( char* buffer, long size);
-extern long CasualStringExpand( char* buffer, long size);
-extern long CasualStringReduce( char* buffer, long size);
-extern long CasualStringNeeded( char* buffer, long size);
 
 
 TEST( casual_string_buffer, allocate_with_normal_size__expecting_success)
