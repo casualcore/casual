@@ -10,6 +10,8 @@
 
 #include <netinet/in.h>
 
+// https://github.com/qca/open-plc-utils/blob/master/tools/endian.h
+
 namespace casual
 {
    namespace common
