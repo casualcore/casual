@@ -121,6 +121,35 @@ namespace casual
 
       } // state
 
+
+
+      namespace action
+      {
+         struct Resource
+         {
+            enum State
+            {
+               cUnset,
+               cPrepareRequest,
+               cPrepared,
+               cCommitRequest,
+               cCommitted
+            };
+
+            std::size_t id;
+            State state = State::cUnset;
+         };
+
+         struct Task
+         {
+            common::transaction::ID xid;
+            std::vector< Resource> resources;
+         };
+
+
+
+      } // action
+
       struct State
       {
          State( const std::string& database);
