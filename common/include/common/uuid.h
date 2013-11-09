@@ -64,7 +64,7 @@ namespace casual
 
 			static Uuid make();
 
-			static std::string toString( const uuid_type& uuid);
+			static std::string toString( const uuid_type uuid);
 
 
 		private:

@@ -8,6 +8,12 @@
 #include "common/transaction_id.h"
 #include "common/uuid.h"
 
+
+
+#include <ios>
+#include <sstream>
+#include <iomanip>
+
 namespace casual
 {
    namespace common
@@ -15,42 +21,72 @@ namespace casual
       namespace transaction
       {
 
+
+         namespace local
+         {
+
+            void casualXid( XID& xid, const Uuid& gtrid, const Uuid& bqual)
+            {
+               xid.formatID = ID::Format::cCasual;
+
+               auto size = sizeof( Uuid::uuid_type);
+
+               memcpy( xid.data, gtrid.get(), size);
+               memcpy( xid.data + size, bqual.get(), size);
+
+               xid.gtrid_length = size;
+               xid.bqual_length = size;
+            }
+
+
+         } // local
+
+
          ID::ID()
          {
             m_xid.formatID = Format::cNull;
          }
 
 
+         ID::ID( const Uuid& gtrid, const Uuid& bqual)
+         {
+            local::casualXid( m_xid, gtrid, bqual);
+         }
 
-         ID::ID( const ID&) = default;
 
-         ID::ID( ID&&) = default;
-         ID& ID::operator = ( ID&&) = default;
+         ID::ID( ID&& rhs) noexcept
+         {
+            m_xid = rhs.m_xid;
+            rhs.m_xid.formatID = Format::cNull;
 
-         ID& ID::operator = ( const ID&) = default;
+         }
+         ID& ID::operator = ( ID&& rhs) noexcept
+         {
+            m_xid = rhs.m_xid;
+            rhs.m_xid.formatID = Format::cNull;
+
+            return *this;
+         }
+
+         ID::ID( const ID& rhs)
+         {
+            memcpy( &m_xid, &rhs.m_xid, sizeof( XID));
+         }
+
+         ID& ID::operator = ( const ID& rhs)
+         {
+            memcpy( &m_xid, &rhs.m_xid, sizeof( XID));
+            return *this;
+         }
 
          ID ID::create()
          {
-            ID result;
-
-            result.generate();
-
-            return result;
+            return ID( Uuid::make(), Uuid::make());
          }
 
          void ID::generate()
          {
-            m_xid.formatID = Format::cCasual;
-
-            auto gtrid = Uuid::make();
-            auto bqual = Uuid::make();
-
-            std::copy( std::begin( gtrid.get()), std::end( gtrid.get()), std::begin( m_xid.data));
-            m_xid.gtrid_length = std::distance(std::begin( gtrid.get()), std::end( gtrid.get()));
-
-            std::copy( std::begin( bqual.get()), std::end( bqual.get()), std::begin( m_xid.data) + m_xid.gtrid_length);
-            m_xid.bqual_length = m_xid.gtrid_length;
-
+            local::casualXid( m_xid, Uuid::make(), Uuid::make());
          }
 
          ID ID::branch() const
@@ -59,7 +95,12 @@ namespace casual
 
             if( result)
             {
-               // TODO: create branch
+               Uuid bqual = Uuid::make();
+
+               auto size = sizeof( Uuid::uuid_type);
+
+               memcpy( result.m_xid.data + result.m_xid.gtrid_length, bqual.get(), size);
+
             }
 
             return result;
@@ -94,25 +135,68 @@ namespace casual
             {
                namespace string
                {
-                  template< typename Iter>
-                  std::string generic( Iter first, std::size_t size)
+
+                  char hex( char value)
                   {
-                     return {};
+                     if( value < 10)
+                     {
+                        return value + 48;
+                     }
+                     return value + 87;
                   }
 
 
-                  template< typename Iter>
-                  std::string fromUuid( Iter first, std::size_t size)
+                  void generic( const char* first, const char* last, std::string& result)
                   {
-                     if( size == sizeof( Uuid::uuid_type))
+                     while( first != last)
                      {
-                        return Uuid::toString( reinterpret_cast< const Uuid::uuid_type&>( first));
+                        result.push_back( hex( ( 0xf0 & *first) >> 4));
+                        result.push_back( hex( 0x0f & *first));
+
+                        ++first;
                      }
-                     else
-                     {
-                        return string::generic( first, size);
-                     }
+
                   }
+
+                  std::string generic( const char* first, const char* last)
+                  {
+
+                     std::string result;
+
+                     auto size = last - first;
+                     result.reserve( size + 4);
+
+                     switch( size)
+                     {
+                        case 16:
+                        {
+                           generic( first, first + 4, result);
+                           result.push_back( '-');
+                           first += 4;
+                        }
+                        case 12:
+                        {
+                           generic( first, first + 2, result);
+                           result.push_back( '-');
+                           generic( first + 2, first + 4, result);
+                           result.push_back( '-');
+                           first += 4;
+                        }
+                        case 8:
+                        {
+                           generic( first, first + 2, result);
+                           result.push_back( '-');
+                           first += 2;
+                        }
+                        default:
+                        {
+                           generic( first, last, result);
+                           break;
+                        }
+                     }
+                     return result;
+                  }
+
                } // string
 
             } // <unnamed>
@@ -123,13 +207,15 @@ namespace casual
 
             switch( m_xid.formatID)
             {
+               /*
                case ID::cCasual:
                {
-                  return local::string::fromUuid( std::begin( m_xid.data), m_xid.gtrid_length);
+                  return local::string::fromUuid( m_xid.data, m_xid.data + m_xid.gtrid_length);
                }
+               */
                default:
                {
-                  return local::string::generic( std::begin( m_xid.data), m_xid.gtrid_length);
+                  return local::string::generic( m_xid.data, m_xid.data + m_xid.gtrid_length);
                }
                case ID::cNull:
                {
@@ -142,16 +228,19 @@ namespace casual
          std::string ID::stringBranch() const
          {
             auto first = std::begin( m_xid.data) +  m_xid.gtrid_length;
+            auto last = first +  m_xid.bqual_length;
 
             switch( m_xid.formatID)
             {
+               /*
                case ID::cCasual:
                {
-                  return local::string::fromUuid( first, m_xid.bqual_length);
+                  return local::string::fromUuid( first, last);
                }
+               */
                default:
                {
-                  return local::string::generic( first, m_xid.bqual_length);
+                  return local::string::generic( first, last);
                }
                case ID::cNull:
                {
@@ -176,23 +265,6 @@ namespace casual
                  std::begin( rhs.m_xid.data));
          }
 
-         namespace string
-         {
-            std::string global( const ID& id)
-            {
-               std::string result;
-
-
-               return result;
-            }
-
-            std::string branch( const ID& id)
-            {
-               // TODO:
-               return {};
-            }
-
-         } // string
 
       } // transaction
    } // common

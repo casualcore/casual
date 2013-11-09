@@ -189,22 +189,23 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               auto transaction = m_state.transactions.find( message.xid);
+               auto task = std::find_if( std::begin( m_state.tasks), std::end( m_state.tasks), action::Task::Find( message.xid));
 
-               if( transaction != std::end( m_state.transactions))
+               if( task != std::end( m_state.tasks))
                {
                   std::copy(
                      std::begin( message.resources),
                      std::end( message.resources),
-                     std::back_inserter( transaction->second.resoursesInvolved));
+                     std::back_inserter( task->resources));
 
-                  std::sort( std::begin( transaction->second.resoursesInvolved), std::end( transaction->second.resoursesInvolved));
+                  std::stable_sort( std::begin( task->resources), std::end( task->resources));
 
-                  auto end = std::unique( std::begin( transaction->second.resoursesInvolved), std::end( transaction->second.resoursesInvolved));
+                  task->resources.erase(
+                        std::unique( std::begin( task->resources), std::end( task->resources)),
+                        std::end( task->resources));
 
-                  transaction->second.resoursesInvolved.erase( end, std::end( transaction->second.resoursesInvolved));
                }
-
+               // TODO: else, what to do?
             }
          };
 

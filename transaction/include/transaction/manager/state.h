@@ -127,23 +127,64 @@ namespace casual
       {
          struct Resource
          {
-            enum State
+            enum class State
             {
-               cUnset,
+               cInvolved,
                cPrepareRequest,
                cPrepared,
                cCommitRequest,
-               cCommitted
+               cCommitted,
+               cNotInvolved,
             };
 
+            Resource( std::size_t id) : id( id) {}
+
+            bool operator < ( const Resource& rhs) const
+            {
+               return id < rhs.id;
+            }
+
+            bool operator == ( const Resource& rhs) const
+            {
+               return id == rhs.id;
+            }
+
+
             std::size_t id;
-            State state = State::cUnset;
+            State state = State::cInvolved;
          };
 
          struct Task
          {
             common::transaction::ID xid;
             std::vector< Resource> resources;
+
+            Resource::State state() const
+            {
+               Resource::State result = Resource::State::cNotInvolved;
+
+               for( auto& resource : resources)
+               {
+                  if( result > resource.state)
+                     result = resource.state;
+               }
+               return result;
+            }
+
+
+            struct Find
+            {
+               Find( const common::transaction::ID& xid) : m_xid( xid) {}
+
+               bool operator () ( const Task& value) const
+               {
+                  return value.xid == m_xid;
+               }
+
+            private:
+               const common::transaction::ID& m_xid;
+            };
+
          };
 
 
@@ -163,11 +204,11 @@ namespace casual
          instances_mapping_type instances;
 
          //!
-         //! Replies that will be sent after an atomic write
+         //! Replies that will be sent after an atomic write to the log
          //!
          std::vector< state::pending::Reply> pendingReplies;
 
-         std::map< common::transaction::ID, state::Transaction> transactions;
+         std::vector< action::Task> tasks;
 
 
          transaction::Log log;
