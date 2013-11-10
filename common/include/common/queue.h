@@ -141,9 +141,9 @@ namespace casual
                typedef IPC ipc_value_type;
                using ipc_type = typename std::decay< ipc_value_type>::type;
 
-               template< typename... Args>
-               basic_writer( ipc_value_type ipc, Args&&... args)
-                  : m_ipc( ipc), m_policy( std::forward< Args>( args)...) {}
+               template< typename ipc_id, typename... Args>
+               basic_writer( ipc_id&& ipc, Args&&... args)
+                  : m_ipc( std::forward< ipc_id>( ipc)), m_policy( std::forward< Args>( args)...) {}
 
 
                //!
@@ -154,7 +154,7 @@ namespace casual
                //! @return true if the whole message is sent. false otherwise
                //!
                template< typename M>
-               auto operator () ( M&& message) -> decltype( block_policy::send( std::declval< ipc::message::Complete>(), std::declval< ipc_value_type>()))
+               auto operator () ( M&& message) -> decltype( block_policy::send( std::declval< ipc::message::Complete>(), std::declval< ipc_value_type&>()))
                {
                   auto transport = prepare( std::forward< M>( message));
 
@@ -173,7 +173,7 @@ namespace casual
                //!
                //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
                //!
-               auto send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type>()))
+               auto send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type&>()))
                {
                   while( true)
                   {
@@ -286,7 +286,7 @@ namespace casual
          {
 
             template< typename P>
-            using basic_writer = internal::basic_writer< policy::Blocking, P, ipc::send::Queue&>;
+            using basic_writer = internal::basic_writer< policy::Blocking, P, ipc::send::Queue>;
 
             typedef basic_writer< policy::NoAction> Writer;
 
@@ -303,7 +303,7 @@ namespace casual
          {
 
             template< typename P>
-            using basic_writer = internal::basic_writer< policy::NonBlocking, P, ipc::send::Queue&>;
+            using basic_writer = internal::basic_writer< policy::NonBlocking, P, ipc::send::Queue>;
 
             typedef basic_writer< policy::NoAction> Writer;
 
@@ -316,6 +316,7 @@ namespace casual
          } // non_blocking
 
 
+         /*
          //!
          //! Wrapper that exposes the queue interface and holds the ipc resource
          //!
@@ -352,6 +353,7 @@ namespace casual
             ipc_type m_ipcQueue;
             queue_type m_queue;
          };
+         */
 
 
       } // queue

@@ -90,14 +90,11 @@ namespace casual
 
 
 
-	   // TOOD: eclipse does not like using...
-	   using QueueBlockingReader = queue::blocking::basic_reader< policy::Broker>;
-	   //typedef queue::blocking::basic_reader< policy::Broker> QueueBlockingReader;
 
-	   // TOOD: eclipse does not like using...
-	   using QueueBlockingWriter = queue::ipc_wrapper< queue::blocking::basic_writer< policy::Broker>>;
-	   using QueueNonBlockingWriter = queue::ipc_wrapper< queue::non_blocking::basic_writer< policy::Broker>>;
-	   //typedef queue::ipc_wrapper< queue::blocking::basic_writer< policy::Broker>> QueueBlockingWriter;
+	   using QueueBlockingReader = queue::blocking::basic_reader< policy::Broker>;
+
+	   using QueueBlockingWriter = queue::blocking::basic_writer< policy::Broker>;
+	   using QueueNonBlockingWriter = queue::non_blocking::basic_writer< policy::Broker>;
 
 
 		namespace handle

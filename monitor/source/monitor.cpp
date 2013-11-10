@@ -138,7 +138,7 @@ namespace monitor
 		message.path = name;
 		message.server.queue_id = m_receiveQueue.id();
 
-		queue::blocking::Writer writer( ipc::getBrokerQueue());
+		queue::blocking::Writer writer( ipc::getBrokerQueue().id());
 		writer(message);
 	}
 
@@ -156,7 +156,7 @@ namespace monitor
 
          message.server.queue_id = m_receiveQueue.id();
 
-         queue::blocking::Writer writer( ipc::getBrokerQueue());
+         queue::blocking::Writer writer( ipc::getBrokerQueue().id());
          writer(message);
 		}
 		catch( ...)

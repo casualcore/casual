@@ -383,7 +383,7 @@ namespace casual
                   template< typename W>
                   struct broker_writer : public W
                   {
-                     broker_writer() : W( ipc::getBrokerQueue()) {}
+                     broker_writer() : W( ipc::getBrokerQueue().id()) {}
                   };
 
 
@@ -401,8 +401,8 @@ namespace casual
                   void transaction( const message::service::Reply& message);
 
                private:
-                  typedef queue::ipc_wrapper< queue::blocking::Writer> reply_writer;
-                  typedef queue::ipc_wrapper< queue::non_blocking::Writer> monitor_writer;
+                  typedef queue::blocking::Writer reply_writer;
+                  typedef queue::non_blocking::Writer monitor_writer;
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
 

@@ -232,8 +232,8 @@ namespace casual
          {
             common::logger::debug << "resource proxy start";
 
-            typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
-            writer_type tm_queue( m_state.tm_queue);
+
+            queue::blocking::Writer tm_queue( m_state.tm_queue);
 
             handle::open( m_state, tm_queue)();
 

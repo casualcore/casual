@@ -68,8 +68,7 @@ namespace casual
       using QueueBlockingReader = common::queue::blocking::basic_reader< policy::Manager>;
       using QueueNonBlockingReader = common::queue::non_blocking::basic_reader< policy::Manager>;
 
-      using QueueBlockingWriter = common::queue::ipc_wrapper< common::queue::blocking::basic_writer< policy::Manager>>;
-      //using QueueNonBlockingWriter = common::queue::ipc_wrapper< common::queue::non_blocking::basic_writer< policy::Manager>>;
+      using QueueBlockingWriter = common::queue::blocking::basic_writer< policy::Manager>;
 
       namespace handle
       {
