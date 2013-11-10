@@ -199,7 +199,7 @@ namespace casual
             Transaction trans;
 
 
-            queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
+            queue::blocking::Writer writer{ m_state.transactionManagerQueue};
 
             if( transaction.xid)
             {
@@ -265,7 +265,7 @@ namespace casual
                }
             }
 
-            queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
+            queue::blocking::Writer writer( m_state.transactionManagerQueue);
             queue::blocking::Reader reader( ipc::getReceiveQueue());
 
             Transaction trans;

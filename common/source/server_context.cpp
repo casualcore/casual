@@ -98,7 +98,7 @@ namespace casual
                message.services.emplace_back( localName);
 
                // TODO: make it consistence safe...
-               queue::blocking::Writer writer( ipc::getBrokerQueue());
+               queue::blocking::Writer writer( ipc::getBrokerQueue().id());
                writer( message);
 
                m_state.services.emplace( localName, Service( localName, function));
@@ -118,7 +118,7 @@ namespace casual
             message.server.queue_id = ipc::getReceiveQueue().id();
             message.services.push_back( message::Service( name));
 
-            queue::blocking::Writer writer( ipc::getBrokerQueue());
+            queue::blocking::Writer writer( ipc::getBrokerQueue().id());
             writer( message);
          }
 

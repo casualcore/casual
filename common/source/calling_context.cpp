@@ -351,8 +351,8 @@ namespace casual
             messageCall.callee = m_state.currentService;
 
 
-            ipc::send::Queue callQueue( lookup.server.front().queue_id);
-            queue::blocking::Writer callWriter( callQueue);
+            //ipc::send::Queue callQueue( lookup.server.front().queue_id);
+            queue::blocking::Writer callWriter( lookup.server.front().queue_id);
 
             local::timeoutWrapper( callWriter, messageCall, callDescriptor);
 
@@ -535,7 +535,7 @@ namespace casual
             serviceLookup.requested = service;
             serviceLookup.server.queue_id = receiveQueue.id();
 
-            queue::blocking::Writer broker( ipc::getBrokerQueue());
+            queue::blocking::Writer broker( ipc::getBrokerQueue().id());
             local::timeoutWrapper( broker, serviceLookup);
 
 
