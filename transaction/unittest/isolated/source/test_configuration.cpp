@@ -28,6 +28,11 @@ namespace casual
 
       } // id
 
+      common::file::ScopedPath transactionLogPath()
+      {
+         return common::file::ScopedPath{ "unittest_transaction_log.db"};
+      }
+
       void prepareConfigurationResponse()
       {
          common::message::transaction::Configuration result;
@@ -64,7 +69,8 @@ namespace casual
       local::prepareConfigurationResponse();
 
 
-      transaction::State state( "unittest_transaction.db");
+      auto path = local::transactionLogPath();
+      transaction::State state( path);
 
       common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
       common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};
@@ -84,7 +90,8 @@ namespace casual
       local::prepareConfigurationResponse();
 
 
-      transaction::State state( "unittest_transaction.db");
+      auto path = local::transactionLogPath();
+      transaction::State state( path);
 
       common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
       common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};
@@ -92,10 +99,10 @@ namespace casual
       transaction::action::configure( state, brokerQueue, queueReader);
 
       ASSERT_TRUE( state.resources.size() == 2);
-      EXPECT_TRUE( state.resources.at( 0)->id == 1);
-      EXPECT_TRUE( state.resources.at( 0)->openinfo == "some open info 1");
-      EXPECT_TRUE( state.resources.at( 1)->id == 2);
-      EXPECT_TRUE( state.resources.at( 1)->closeinfo == "some close info 2");
+      EXPECT_TRUE( state.resources.at( 0).id == 1);
+      EXPECT_TRUE( state.resources.at( 0).openinfo == "some open info 1");
+      EXPECT_TRUE( state.resources.at( 1).id == 2);
+      EXPECT_TRUE( state.resources.at( 1).closeinfo == "some close info 2");
    }
 
    /*

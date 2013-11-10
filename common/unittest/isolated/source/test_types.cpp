@@ -14,13 +14,14 @@ namespace casual
 
    namespace common
    {
+
+      /*
+       * transaction::Id has replaced XID-stuff
+       *
       TEST( casual_common_types, xid_equal_to_nullptr)
       {
-         XID xid;
-         xid.formatID = common::cNull_XID;
 
-         EXPECT_TRUE( xid == nullptr);
-         EXPECT_TRUE( nullptr == xid);
       }
+      */
    } // common
 }

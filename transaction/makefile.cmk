@@ -20,17 +20,31 @@ SetLibraryPaths( ["bin",
 # Compile and link the transaction manager
 #
 Compile( "source/manager/manager.cpp", "obj/manager/manager.o")
-Compile( "source/manager/state.cpp", "obj/manager/state.o")   
+Compile( "source/manager/state.cpp", "obj/manager/state.o")
+Compile( "source/manager/action.cpp", "obj/manager/action.o")
+Compile( "source/manager/log.cpp", "obj/manager/log.o")
 
 LinkArchive( "manager-archive",
-     ["obj/manager/manager.o",
-    "obj/manager/state.o"])
+     [
+      "obj/manager/manager.o",
+      "obj/manager/state.o",
+      "obj/manager/action.o",
+      "obj/manager/log.o",
+      ])
  
 Compile( "source/manager/main.cpp", "obj/manager/main.o")
 
 LinkExecutable( "casual-transaction-manager",
-    ["obj/manager/main.o"],
-    [ "manager-archive", "casual-sf", "casual-common", "casual-configuration", "sqlite3"])
+    [
+     "obj/manager/main.o"
+    ],
+    [ 
+     "manager-archive", 
+     "casual-sf", 
+     "casual-common", 
+     "casual-configuration", 
+     "sqlite3"
+     ])
 
 
 
@@ -50,9 +64,13 @@ LinkLibrary( "casual-resource-proxy-server",
 # unittest
 #
 Compile( "unittest/isolated/source/test_configuration.cpp", "unittest/isolated/obj/test_configuration.o")
+Compile( "unittest/isolated/source/test_transactionlog.cpp", "unittest/isolated/obj/test_transactionlog.o")
 
 LinkIsolatedUnittest( "test_transaction_configuration",
-    ["unittest/isolated/obj/test_configuration.o"],
+    [
+     "unittest/isolated/obj/test_configuration.o",
+     "unittest/isolated/obj/test_transactionlog.o"
+    ],
     [ 
      "manager-archive", 
      "casual-common", 

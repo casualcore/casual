@@ -20,27 +20,6 @@ namespace casual
       namespace action
       {
 
-         /*
-         template< typename Q>
-         struct Send : state::Base
-         {
-            using state::Base::Base;
-
-            auto operator () ( state::pending::Reply& reply) -> decltype( std::declval< Q>()( reply.reply))
-            {
-               Q queue( reply.target, m_state);
-               return queue( reply.reply);
-            }
-         };
-         */
-
-
-         struct base_action
-         {
-
-         };
-
-
          template< typename BQ, typename RQ>
          void configure( State& state, BQ& brokerWriter, RQ& receiveQueue)
          {
@@ -76,7 +55,22 @@ namespace casual
          }
 
 
+
+         namespace boot
+         {
+            struct Proxie : state::Base
+            {
+               using state::Base::Base;
+
+               void operator () ( const state::resource::Proxy& proxy);
+            };
+         } // boot
+
+
+
       } // action
+
+
    } // transaction
 
 

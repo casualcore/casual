@@ -13,6 +13,10 @@
 #include "common/logger.h"
 #include "common/process.h"
 
+#include "common/arguments.h"
+#include "common/string.h"
+#include "common/environment.h"
+
 
 #include <unistd.h>
 
@@ -52,10 +56,21 @@ void casual_test1( TPSVCINFO *serviceContext)
 
 void casual_test2( TPSVCINFO *serviceContext)
 {
+   auto args = casual::common::string::split( serviceContext->data);
+
+   casual::common::Arguments parser;
+
+   std::size_t millesconds = 0;
+
+   parser.add(
+         casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", millesconds)
+   );
+
+   parser.parse( casual::common::environment::file::executable(), args);
 
    casual::common::logger::debug << "casual_test2 called - sleep for a while...";
 
-   casual::common::process::sleep(  std::chrono::milliseconds( 200));
+   casual::common::process::sleep(  std::chrono::milliseconds( millesconds));
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }

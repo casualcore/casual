@@ -34,9 +34,10 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
 
          arguments.add(
             casual::common::argument::directive( {"-q", "--tm-queue"}, "tm queue", state.tm_queue),
-            casual::common::argument::directive( {"-k", "--rm-key"}, "tm queue", state.rm_key),
-            casual::common::argument::directive( {"-o", "--rm-openinfo"}, "tm queue", state.rm_openinfo),
-            casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "tm queue", state.rm_closeinfo)
+            casual::common::argument::directive( {"-k", "--rm-key"}, "resource key", state.rm_key),
+            casual::common::argument::directive( {"-o", "--rm-openinfo"}, "open info", state.rm_openinfo),
+            casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "close info", state.rm_closeinfo),
+            casual::common::argument::directive( {"-i", "--rm-id"}, "close info", state.rm_id)
          );
 
          arguments.parse( serverArguments->argc, serverArguments->argv);

@@ -31,86 +31,7 @@ namespace casual
    {
 
 
-
-      namespace local
-      {
-         namespace
-         {
-            void createTables( sql::database::Connection& db)
-            {
-               db.execute( R"( CREATE TABLE IF NOT EXISTS trans (
-                     gtrid         BLOB,
-                     bqual         BLOB,
-                     pid           NUMBER,
-                     state         NUMBER,
-                     started       NUMBER,
-                     PRIMARY KEY (gtrid, bqual)); )");
-            }
-
-
-
-            struct ScopedWrite : public state::Base
-            {
-               ScopedWrite( State& state) : Base( state)
-               {
-                  // TODO: error checking?
-                  m_state.db.begin();
-               }
-
-               ~ScopedWrite()
-               {
-                  m_state.db.commit();
-               }
-            };
-
-
-
-         } // <unnamed>
-      } // local
-
-
-      namespace action
-      {
-         namespace boot
-         {
-            struct Proxie : state::Base
-            {
-               using state::Base::Base;
-
-               void operator () ( const std::shared_ptr< state::resource::Proxy>& proxy)
-               {
-                  for( auto index = proxy->concurency; index > 0; --index)
-                  {
-                     auto& info = m_state.xaConfig.at( proxy->key);
-
-                     auto instance = std::make_shared< state::resource::Proxy::Instance>();
-
-                     instance->id.pid = process::spawn(
-                           info.server,
-                           {
-                                 "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
-                                 "--rm-key", info.key,
-                                 "--rm-openinfo", proxy->openinfo,
-                                 "--rm-closeinfo", proxy->closeinfo
-                           }
-                        );
-
-                     m_state.instances.emplace( instance->id.pid, instance);
-                     instance->proxy = proxy;
-
-                     instance->state = state::resource::Proxy::Instance::State::started;
-
-                     proxy->instances.emplace_back( std::move( instance));
-                  }
-               }
-            };
-         } // boot
-      } // action
-
-
-
-
-      State::State( const std::string& database) : db( database) {}
+      State::State( const std::string& database) : log( database) {}
 
 
       Manager::Manager( const Settings& settings) :
@@ -119,9 +40,6 @@ namespace casual
       {
          common::trace::Exit trace( "transaction manager startup");
 
-
-
-         local::createTables( m_state.db);
 
          common::logger::debug << "transaction manager queue: " << m_receiveQueue.id();
 
@@ -199,13 +117,16 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resourceConnect( m_state, brokerQueue));
+         handler.add( handle::resource::connect( m_state, brokerQueue));
+         handler.add( handle::resource::Prepare{ m_state});
+         handler.add( handle::resource::Commit{ m_state});
+         handler.add( handle::resource::Rollback{ m_state});
 
 
          while( true)
          {
             {
-               local::ScopedWrite batchWrite( m_state);
+               scoped::Writer batchWrite( m_state.log);
 
                //
                // Blocking

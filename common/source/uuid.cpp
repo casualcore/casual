@@ -40,12 +40,18 @@ namespace casual
 			uuid_copy( m_uuid, uuid);
 		}
 
+		Uuid::Uuid( const std::string& uuid)
+		{
+		   assert( uuid.size() + 1 == sizeof( platform::uuid_string_type));
+
+		   assert( uuid_parse( uuid.c_str(), m_uuid) == 0);
+		}
+
 		std::string Uuid::string() const
 		{
-		   platform::uuid_string_type buffer;
-			uuid_unparse_lower( m_uuid, buffer);
-			return buffer;
+		   return Uuid::toString( m_uuid);
 		}
+
 
 		void Uuid::string( const std::string& value)
 		{
@@ -85,8 +91,15 @@ namespace casual
 			return uuid_compare( m_uuid, rhs.m_uuid) == 0;
 		}
 
-	}
-}
+      std::string Uuid::toString( const uuid_type uuid)
+      {
+         platform::uuid_string_type buffer;
+         uuid_unparse_lower( uuid, buffer);
+         return buffer;
+      }
+
+   } // common
+} // casual
 
 bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs)
 {

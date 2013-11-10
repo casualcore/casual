@@ -11,13 +11,20 @@
 
 #include <sqlite3.h>
 
+
+//
+// std
+//
 #include <stdexcept>
+#include <vector>
+#include <string>
+
+
+
+#include <cstring>
 
 namespace sql
 {
-
-
-
    namespace database
    {
       namespace exception
@@ -33,6 +40,17 @@ namespace sql
          };
       }
 
+
+      struct Blob
+      {
+
+         Blob( long size, const char* data) : size( size), data( data) {};
+
+         long size;
+         const char* data;
+      };
+
+
       inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::string& value)
       {
          return sqlite3_bind_text( statement, index, value.data(), value.size(), SQLITE_TRANSIENT) == SQLITE_OK;
@@ -41,6 +59,11 @@ namespace sql
       inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::vector< char>& value)
       {
          return sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_TRANSIENT) == SQLITE_OK;
+      }
+
+      inline bool parameter_bind( sqlite3_stmt* statement, int index, const Blob& value)
+      {
+         return sqlite3_bind_blob( statement, index, value.data, value.size, SQLITE_TRANSIENT) == SQLITE_OK;
       }
 
       /*
@@ -56,6 +79,21 @@ namespace sql
          return sqlite3_bind_int64( statement, index, value) == SQLITE_OK;
       }
 
+
+      inline void column_get( sqlite3_stmt* statement, int column, long& value)
+      {
+         value = sqlite3_column_int64( statement, column);
+      }
+
+      inline void column_get( sqlite3_stmt* statement, int column, long long& value)
+      {
+         value = sqlite3_column_int64( statement, column);
+      }
+
+      inline void column_get( sqlite3_stmt* statement, int column, int& value)
+      {
+         value = sqlite3_column_int( statement, column);
+      }
 
       inline void column_get( sqlite3_stmt* statement, int column, std::string& value)
       {
@@ -100,7 +138,7 @@ namespace sql
                throw exception::Query{ sqlite3_errmsg( handle)};
             }
 
-            bind( 0, std::forward< Params>( params)...);
+            bind( 1, std::forward< Params>( params)...);
 
          }
 
@@ -154,7 +192,7 @@ namespace sql
          {
             if( ! parameter_bind( m_statement, index, std::forward< T>( value)))
             {
-               throw exception::Query{ sqlite3_errmsg( m_handle)};
+               throw exception::Query{ sqlite3_errmsg( m_handle) + std::string{ " index: "} + std::to_string( index)};
             }
             bind( index + 1, std::forward< Params>( params)...);
          }
