@@ -16,6 +16,7 @@
 #include "common/exception.h"
 #include "common/process.h"
 #include "common/queue.h"
+#include "common/algorithm.h"
 
 using casual::common::exception::signal::child::Terminate;
 using casual::common::process::lifetime;
@@ -74,70 +75,190 @@ namespace casual
       {
 
 
-
-         template< typename BQ>
-         struct ResourceConnect : public state::Base
+         namespace resource
          {
-            typedef common::message::transaction::resource::connect::Reply message_type;
 
-            using broker_queue = BQ;
-
-            ResourceConnect( State& state, broker_queue& brokerQueue) : state::Base( state), m_brokerQueue( brokerQueue) {}
-
-            void dispatch( message_type& message)
+            template< typename BQ>
+            struct Connect : public state::Base
             {
-               common::logger::information << "resource proxy pid: " <<  message.id.pid << " connected";
+               typedef common::message::transaction::resource::connect::Reply message_type;
 
+               using broker_queue = BQ;
 
-               auto instance = m_state.instances.find( message.id.pid);
+               Connect( State& state, broker_queue& brokerQueue) : state::Base( state), m_brokerQueue( brokerQueue) {}
 
-               if( instance != std::end( m_state.instances))
+               void dispatch( message_type& message)
                {
-                  if( message.state == XA_OK)
+                  common::logger::information << "resource proxy pid: " <<  message.id.pid << " connected";
+
+                  auto instanceRange = state::find::instance(
+                        std::begin( m_state.instances),
+                        std::end( m_state.instances),
+                        message);
+
+                  if( ! instanceRange.empty())
                   {
-                     instance->second->state = state::resource::Proxy::Instance::State::idle;
-                     instance->second->id = std::move( message.id);
+                     if( message.state == XA_OK)
+                     {
+                        instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
+                        instanceRange.first->server = std::move( message.id);
+
+                     }
+                     else
+                     {
+                        common::logger::error << "resource proxy pid: " <<  message.id.pid << " startup error";
+                        instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
+                        //throw common::exception::signal::Terminate{};
+                        // TODO: what to do?
+                     }
+                  }
+                  else
+                  {
+                     common::logger::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard";
+                  }
+
+
+                  auto resources = common::sorted::group(
+                        std::begin( m_state.instances),
+                        std::end( m_state.instances),
+                        state::resource::Proxy::Instance::order::Id{});
+
+                  if( ! m_connected && std::all_of( std::begin( resources), std::end( resources), state::filter::Running{}))
+                  {
+                     //
+                     // We now have enough resource proxies up and running to guarantee consistency
+                     // notify broker
+                     //
+                     common::message::transaction::Connected running;
+                     m_brokerQueue( running);
+
+                     m_connected = true;
+                  }
+               }
+            private:
+               broker_queue& m_brokerQueue;
+               bool m_connected = false;
+
+            };
+
+            template< typename BQ>
+            Connect< BQ> connect( State& state, BQ&& brokerQueue)
+            {
+               return Connect< BQ>{ state, std::forward< BQ>( brokerQueue)};
+            }
+
+
+
+            namespace instance
+            {
+               template< typename M>
+               void done( State& state, M& message)
+               {
+                  auto request = std::find_if(
+                        std::begin( state.pendingRequest),
+                        std::end( state.pendingRequest),
+                        action::pending::Request::Find{ message.resource});
+
+                  if( request != std::end( state.pendingRequest))
+                  {
+                     //
+                     // We got a pending request for this resource, let's oblige
+                     //
 
                   }
                   else
                   {
-                     common::logger::error << "resource proxy pid: " <<  message.id.pid << " startup error";
-                     instance->second->state = state::resource::Proxy::Instance::State::startupError;
-                     //throw common::exception::signal::Terminate{};
-                     // TODO: what to do?
+                     auto instance = state::find::instance( std::begin( state.instances), std::end( state.instances), message);
+
+                     if( ! instance.empty())
+                     {
+                        instance.first->state = state::resource::Proxy::Instance::State::idle;
+
+
+                     }
+                     // TODO: else what?
                   }
+
                }
-               else
+            } // instance
+
+
+
+
+            struct Prepare : public state::Base
+            {
+               typedef common::message::transaction::resource::prepare::Reply message_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message)
                {
-                  common::logger::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard";
+
+                  auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
+
+                  if( ! task.empty())
+                  {
+                     auto resource = common::sorted::bound(
+                           std::begin( task.first->resources),
+                           std::end( task.first->resources),
+                           action::Resource{ message.resource});
+
+                     if( ! resource.empty())
+                     {
+                        resource.first->state = action::Resource::State::cPrepared;
+                     }
+                     // TODO: else, what to do?
+
+
+                     auto state = task.first->state();
+
+                     //
+                     // Are we in a prepared state?
+                     //
+                     if( state >= action::Resource::State::cPrepared)
+                     {
+
+                        m_state.log.prepareCommit( task.first->xid);
+
+                     }
+
+                  }
+                  // TODO: else, what to do?
+
                }
 
-               if( ! m_connected && std::all_of( std::begin( m_state.resources), std::end( m_state.resources), state::filter::Running{}))
+            };
+
+
+            struct Commit : public state::Base
+            {
+               typedef common::message::transaction::resource::commit::Reply message_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message)
                {
-                  //
-                  // We now have enough resource proxies up and running to guarantee consistency
-                  // notify broker
-                  //
-                  common::message::transaction::Connected running;
-                  m_brokerQueue( running);
 
-                  m_connected = true;
                }
-            }
-         private:
-            broker_queue& m_brokerQueue;
-            bool m_connected = false;
 
-         };
+            };
 
-         template< typename BQ>
-         ResourceConnect< BQ> resourceConnect( State& state, BQ&& brokerQueue)
-         {
-            return ResourceConnect< BQ>{ state, std::forward< BQ>( brokerQueue)};
-         }
+            struct Rollback : public state::Base
+            {
+               typedef common::message::transaction::resource::rollback::Reply message_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message)
+               {
+
+               }
+
+            };
 
 
-         //using ResourceConnect = basic_resource_connect< QueueBlockingWriter>;
+         } // resource
+
 
          struct Begin : public state::Base
          {
@@ -147,10 +268,11 @@ namespace casual
 
             void dispatch( message_type& message)
             {
+               //auto task = state::
 
                m_state.log.begin( message);
 
-               state::pending::Reply reply;
+               action::pending::Reply reply;
                reply.target = message.id.queue_id;
 
                m_state.pendingReplies.push_back( std::move( reply));

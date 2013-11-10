@@ -117,7 +117,10 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resourceConnect( m_state, brokerQueue));
+         handler.add( handle::resource::connect( m_state, brokerQueue));
+         handler.add( handle::resource::Prepare{ m_state});
+         handler.add( handle::resource::Commit{ m_state});
+         handler.add( handle::resource::Rollback{ m_state});
 
 
          while( true)

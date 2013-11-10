@@ -158,12 +158,34 @@ namespace casual
                {
                   auto transport = prepare( std::forward< M>( message));
 
-                  return policy_send( transport);
+                  return send( transport);
                }
 
                const ipc_value_type ipc() const
                {
                   return m_ipc;
+               }
+
+
+               //!
+               //! Sends/Writes a "complete" message to the queue. which can result in several
+               //! actual ipc-messages.
+               //!
+               //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
+               //!
+               auto send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type>()))
+               {
+                  while( true)
+                  {
+                     try
+                     {
+                        return block_policy::send( transport, m_ipc);
+                     }
+                     catch( ...)
+                     {
+                        m_policy.apply();
+                     }
+                  }
                }
 
             private:
@@ -179,21 +201,6 @@ namespace casual
 
                   message_type_type type = message::type( message);
                   return ipc::message::Complete( type, archive.release());
-               }
-
-               auto policy_send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type>()))
-               {
-                  while( true)
-                  {
-                     try
-                     {
-                        return block_policy::send( transport, m_ipc);
-                     }
-                     catch( ...)
-                     {
-                        m_policy.apply();
-                     }
-                  }
                }
 
                ipc_value_type m_ipc;
@@ -223,31 +230,6 @@ namespace casual
                //!
                auto next() -> decltype( block_policy::next( std::declval< ipc_value_type>()))
                {
-                  return policy_next();
-               }
-
-               //!
-               //! Tries to read a specific message from the queue.
-               //! If other message types is consumed before the requested type
-               //! they will be cached.
-               //!
-               //! @attention Will block until the specific message-type can be read from the queue
-               //!
-               template< typename M>
-               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
-               {
-                  return policy_read( message);
-               }
-
-               const ipc_value_type ipc() const
-               {
-                  return m_ipc;
-               }
-
-            private:
-
-               auto policy_next() -> decltype( block_policy::next( std::declval< ipc_value_type>()))
-               {
                   while( true)
                   {
                      try
@@ -261,8 +243,15 @@ namespace casual
                   }
                }
 
+               //!
+               //! Tries to read a specific message from the queue.
+               //! If other message types is consumed before the requested type
+               //! they will be cached.
+               //!
+               //! @attention Will block until the specific message-type can be read from the queue
+               //!
                template< typename M>
-               auto policy_read( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
+               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
                {
                   while( true)
                   {
@@ -276,6 +265,13 @@ namespace casual
                      }
                   }
                }
+
+               const ipc_value_type ipc() const
+               {
+                  return m_ipc;
+               }
+
+            private:
 
                ipc_value_type m_ipc;
                policy_type m_policy;

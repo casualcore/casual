@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/message.h"
+#include "common/algorithm.h"
 
 #include "config/xa_switch.h"
 
@@ -26,32 +27,15 @@ namespace casual
    {
       namespace state
       {
-
-         namespace pending
-         {
-            template< typename Q>
-            struct base_reply
-            {
-               virtual ~base_reply() {}
-               virtual bool send( Q& queue) const = 0;
-            };
-
-
-            struct Reply
-            {
-               typedef common::platform::queue_id_type queue_id_type;
-
-               queue_id_type target;
-               //common::message::transaction::reply::Generic reply;
-            };
-         } // pending
-
          namespace resource
          {
             struct Proxy
             {
                struct Instance
                {
+                  Instance( std::size_t id) : id( id) {}
+                  Instance( std::size_t id, const common::message::server::Id& server) : id{ id}, server{ server} {}
+
                   enum class State
                   {
                      absent,
@@ -62,9 +46,42 @@ namespace casual
                      shutdown
                   };
 
-                  std::shared_ptr< Proxy> proxy;
-                  common::message::server::Id id;
+                  std::size_t id;
+                  common::message::server::Id server;
                   State state = State::absent;
+
+
+
+                  struct order
+                  {
+                     struct Id
+                     {
+                        bool operator () ( const Instance& lhs, const Instance& rhs) const
+                        {
+                           return lhs.id < rhs.id;
+                        }
+                     };
+
+                     struct Pid
+                     {
+                        bool operator () ( const Instance& lhs, const Instance& rhs) const
+                        {
+                           return lhs.server.pid < rhs.server.pid;
+                        }
+                     };
+                  };
+
+
+
+                  bool operator < ( const Instance& rhs) const
+                  {
+                     order::Id order;
+                     if( order( *this, rhs))
+                        return true;
+                     if(order( rhs, *this))
+                        return false;
+                     return order::Pid{}( *this, rhs);
+                  }
 
                };
 
@@ -75,50 +92,10 @@ namespace casual
                std::string closeinfo;
                std::size_t concurency = 0;
 
-               std::vector< std::shared_ptr< Instance>> instances;
+               //std::vector< Instance> instances;
             };
 
          } // resource
-
-
-
-
-
-         namespace pending
-         {
-            struct base_pending
-            {
-               XID xid;
-               std::vector< std::size_t> involved;
-
-
-            };
-
-            struct Prepare : base_pending
-            {
-
-
-
-            };
-
-            struct Commit : base_pending
-            {
-
-            };
-
-            struct Rollback : base_pending
-            {
-
-            };
-
-         } // pending
-
-         struct Transaction
-         {
-
-            std::vector< std::size_t> resoursesInvolved;
-         };
-
       } // state
 
 
@@ -130,9 +107,11 @@ namespace casual
             enum class State
             {
                cInvolved,
-               cPrepareRequest,
+               cPrepareRequested,
+               cPrepareFailed,
                cPrepared,
-               cCommitRequest,
+               cCommitRequested,
+               cCommitFailed,
                cCommitted,
                cNotInvolved,
             };
@@ -156,6 +135,15 @@ namespace casual
 
          struct Task
          {
+
+            typedef common::platform::queue_id_type queue_id_type;
+
+
+            Task() = default;
+            Task( Task&&) = default;
+
+
+            queue_id_type target;
             common::transaction::ID xid;
             std::vector< Resource> resources;
 
@@ -187,7 +175,41 @@ namespace casual
 
          };
 
+         namespace pending
+         {
+            struct Request
+            {
+               std::size_t resourceId;
+               common::ipc::message::Complete message;
 
+
+               struct Find
+               {
+                  Find( std::size_t resourceId) : m_resourceId( resourceId) {}
+
+                  bool operator () ( const Request& value) const
+                  {
+                     return value.resourceId == m_resourceId;
+                  }
+
+               private:
+                  std::size_t m_resourceId;
+               };
+
+            };
+
+         } // pending
+
+         namespace pending
+         {
+            struct Reply
+            {
+               typedef common::platform::queue_id_type queue_id_type;
+
+               queue_id_type target;
+               common::ipc::message::Complete message;
+            };
+         } // pending
 
       } // action
 
@@ -195,20 +217,24 @@ namespace casual
       {
          State( const std::string& database);
 
-         using instances_mapping_type = std::map< common::platform::pid_type, std::shared_ptr< state::resource::Proxy::Instance>>;
 
+         //typedef instances_type;
 
          std::map< std::string, config::xa::Switch> xaConfig;
 
-         std::vector< std::shared_ptr< state::resource::Proxy>> resources;
-         instances_mapping_type instances;
+         std::vector< state::resource::Proxy> resources;
+         std::vector< state::resource::Proxy::Instance> instances;
+
+
+
+         std::vector< action::Task> tasks;
+
+         std::vector< action::pending::Request> pendingRequest;
 
          //!
          //! Replies that will be sent after an atomic write to the log
          //!
-         std::vector< state::pending::Reply> pendingReplies;
-
-         std::vector< action::Task> tasks;
+         std::vector< action::pending::Reply> pendingReplies;
 
 
          transaction::Log log;
@@ -217,46 +243,105 @@ namespace casual
 
       namespace state
       {
+
+
          namespace filter
          {
-            struct Instance
-            {
-               Instance( common::platform::pid_type pid);
 
-               bool operator () ( const resource::Proxy::Instance& instance) const;
-
-            private:
-               common::platform::pid_type pid;
-            };
-
-
-            struct Started
+            struct Idle
             {
                //!
-               //! @return true if instance is started
+               //! @return true if instance is idle
                //!
-               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const;
-
-               //!
-               //! @return true if at least one instance in resource-proxy is started
-               //!
-               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const;
+               bool operator () ( const resource::Proxy::Instance& instance) const
+               {
+                  return instance.state == resource::Proxy::Instance::State::idle;
+               }
             };
 
             struct Running
             {
+
                //!
                //! @return true if instance is running
                //!
-               bool operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const;
+               bool operator () ( const resource::Proxy::Instance& instance) const;
 
                //!
                //! @return true if at least one instance in resource-proxy is running
                //!
-               bool operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const;
+               template< typename Iter>
+               bool operator () ( const common::Range< Iter>& resource) const
+               {
+                  return std::any_of( resource.first, resource.last, Running{});
+               }
             };
 
+
+
          } // filter
+
+
+         namespace find
+         {
+            template< typename Iter, typename M>
+            common::Range< Iter> instance( Iter first, Iter last, const M& message)
+            {
+               auto resourceRange = common::sorted::bound(
+                     first,
+                     last,
+                     state::resource::Proxy::Instance{ message.resource},
+                     state::resource::Proxy::Instance::order::Id{});
+
+               return common::sorted::bound(
+                     resourceRange.first,
+                     resourceRange.last,
+                     state::resource::Proxy::Instance{ message.resource, message.id},
+                     state::resource::Proxy::Instance::order::Pid{});
+            }
+
+            namespace idle
+            {
+               template< typename Iter>
+               common::Range< Iter> instance( Iter first, Iter last, std::size_t resourceId)
+               {
+                  auto resourceRange = common::sorted::bound(
+                        first,
+                        last,
+                        state::resource::Proxy::Instance{ resourceId},
+                        state::resource::Proxy::Instance::order::Id{});
+
+                  auto instance = std::find_if( resourceRange.first, resourceRange.last, filter::Idle{});
+
+                  if( instance != resourceRange.last)
+                  {
+                     return common::make_range( instance, instance + 1);
+                  }
+                  else
+                  {
+                     return common::make_range( instance, instance);
+                  }
+               }
+            } // idle
+
+            template< typename Iter>
+            common::Range< Iter> task( Iter first, Iter last, const common::transaction::ID& xid)
+            {
+               first = std::find_if( first, last, action::Task::Find( xid));
+
+               if( first != last)
+               {
+                  return common::make_range( first, first + 1);
+               }
+               return common::make_range( last, last);
+            }
+
+
+
+
+         } // find
+
+
 
          //!
          //! Base that holds the state

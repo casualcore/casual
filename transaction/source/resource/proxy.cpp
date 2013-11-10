@@ -78,6 +78,7 @@ namespace casual
 
                   message::transaction::resource::connect::Reply reply;
                   reply.id.pid = common::process::id();
+                  reply.resource = this->m_state.rm_id;
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
 
                   reply.state = this->m_state.xaSwitches->xaSwitch->xa_open_entry( this->m_state.rm_openinfo.c_str(), rm_id, TMNOFLAGS);

@@ -547,12 +547,14 @@ namespace casual
                typedef basic_transaction< type> base_type;
 
                server::Id id;
+               std::size_t resource;
 
                template< typename A>
                void marshal( A& archive)
                {
                   base_type::marshal( archive);
                   archive & id;
+                  archive & resource;
                }
             };
 
