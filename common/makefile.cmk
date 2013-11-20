@@ -108,6 +108,7 @@ Compile( "unittest/isolated/source/test_network_byteorder.cpp", "unittest/isolat
 Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
 Compile( "unittest/isolated/source/test_types.cpp", "unittest/isolated/obj/test_types.o")
 
+Compile( "unittest/isolated/source/test_field_buffer.cpp", "unittest/isolated/obj/test_field_buffer.o")
 Compile( "unittest/isolated/source/test_octet_buffer.cpp", "unittest/isolated/obj/test_octet_buffer.o")
 Compile( "unittest/isolated/source/test_order_buffer.cpp", "unittest/isolated/obj/test_order_buffer.o")
 Compile( "unittest/isolated/source/test_string_buffer.cpp", "unittest/isolated/obj/test_string_buffer.o")
@@ -130,6 +131,7 @@ LinkIsolatedUnittest( "casual-common-isolated",
     "unittest/isolated/obj/test_network_byteorder.o",
     "unittest/isolated/obj/test_signal.o", 
     "unittest/isolated/obj/test_types.o",
+    "unittest/isolated/obj/test_field_buffer.o",
     "unittest/isolated/obj/test_octet_buffer.o",
     "unittest/isolated/obj/test_order_buffer.o",
     "unittest/isolated/obj/test_string_buffer.o",

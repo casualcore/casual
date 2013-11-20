@@ -10,5 +10,15 @@
 
 #include "buffers/casual_field_buffer.h"
 
+//
+// Callback C-functions
+//
+// TODO: Make this C++ (perhaps)
+//
+long CasualFieldCreate( char* buffer, long size);
+long CasualFieldExpand( char* buffer, long size);
+long CasualFieldReduce( char* buffer, long size);
+long CasualFieldNeeded( char* buffer, long size);
+
 
 #endif /* FIELD_BUFFER_H_ */

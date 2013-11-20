@@ -7,11 +7,8 @@
  *
  */
 
-
 #ifndef CASUAL_ORDER_BUFFER_H_
 #define CASUAL_ORDER_BUFFER_H_
-
-
 
 #include <stdbool.h>
 
@@ -36,7 +33,6 @@ extern "C" {
 
 const char* CasualOrderDescription( int code);
 
-
 int CasualOrderAddPrepare( char* buffer);
 
 #ifdef __bool_true_false_are_defined
@@ -48,7 +44,7 @@ int CasualOrderAddLong(    char* buffer, long value);
 int CasualOrderAddFloat(   char* buffer, float value);
 int CasualOrderAddDouble(  char* buffer, double value);
 int CasualOrderAddString(  char* buffer, const char* value);
-int CasualOrderAddBinary(  char* buffer, const char* value, long size);
+int CasualOrderAddBinary(  char* buffer, const char* data, long size);
 
 int CasualOrderGetPrepare( char* buffer);
 
@@ -61,7 +57,7 @@ int CasualOrderGetLong(    char* buffer, long* value);
 int CasualOrderGetFloat(   char* buffer, float* value);
 int CasualOrderGetDouble(  char* buffer, double* value);
 int CasualOrderGetString(  char* buffer, const char** value);
-int CasualOrderGetBinary(  char* buffer, const char** value, long* size);
+int CasualOrderGetBinary(  char* buffer, const char** data, long* size);
 
 int CasualOrderCopyBuffer( char* target, const char* source);
 
@@ -71,6 +67,5 @@ int CasualOrderUsed( const char* buffer, long* length);
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif /* CASUAL_ORDER_BUFFER_H_ */

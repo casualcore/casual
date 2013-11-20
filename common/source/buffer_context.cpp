@@ -10,6 +10,7 @@
 #include "common/exception.h"
 #include "common/logger.h"
 
+#include "common/field_buffer.h"
 #include "common/octet_buffer.h"
 #include "common/order_buffer.h"
 #include "common/string_buffer.h"
@@ -52,6 +53,11 @@ namespace casual
             // TODO: better
             //
 
+            if( type == CASUAL_FIELD && subtype.empty())
+            {
+               return Callback( CasualFieldCreate, CasualFieldExpand, CasualFieldReduce, CasualFieldNeeded);
+            }
+
             if( type == CASUAL_OCTET && subtype.empty())
             {
                return Callback( CasualOctetCreate, CasualOctetExpand, CasualOctetReduce, CasualOctetNeeded);
@@ -66,6 +72,7 @@ namespace casual
             {
                return Callback( CasualStringCreate, CasualStringExpand, CasualStringReduce, CasualStringNeeded);
             }
+
 
             //
             // TODO: throw if unknown buffer ... or ?

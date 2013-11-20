@@ -8,12 +8,9 @@
 #ifndef CASUAL_FIELD_BUFFER_H
 #define CASUAL_FIELD_BUFFER_H
 
-#include <stdbool.h>
-
 
 /* used as type with tpalloc */
 #define CASUAL_FIELD "CFIELD"
-
 
 
 /* success */
@@ -26,58 +23,53 @@
 #define CASUAL_FIELD_UNKNOWN_ID 3
 /* id does not represent supplied type (application/logic error*/
 #define CASUAL_FIELD_INVALID_ID 4
+/* type does not represent any known type (application/logic error*/
+#define CASUAL_FIELD_INVALID_TYPE 5
 /* internal casual defect */
-#define CASUAL_FIELD_INTERNAL_FAILURE 5
+#define CASUAL_FIELD_INTERNAL_FAILURE 9
 
 
-#ifdef __bool_true_false_are_defined
-#define CASUAL_FIELD_BOOL 1
-#endif
+#define CASUAL_FIELD_SHORT 0
+#define CASUAL_FIELD_LONG 1
 #define CASUAL_FIELD_CHAR 2
-#define CASUAL_FIELD_SHORT 3
-#define CASUAL_FIELD_LONG 4
-#define CASUAL_FIELD_FLOAT 5
-#define CASUAL_FIELD_DOUBLE 6
-#define CASUAL_FIELD_STRING 7
-#define CASUAL_FIELD_BINARY 8
+#define CASUAL_FIELD_FLOAT 3
+#define CASUAL_FIELD_DOUBLE 4
+#define CASUAL_FIELD_STRING 5
+#define CASUAL_FIELD_BINARY 6
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 const char* CasualFieldDescription( int code);
 
-#ifdef __bool_true_false_are_defined
-int CasualFieldAddBool(    char* buffer, long id, bool value);
-#endif
 int CasualFieldAddChar(    char* buffer, long id, char value);
 int CasualFieldAddShort(   char* buffer, long id, short value);
 int CasualFieldAddLong(    char* buffer, long id, long value);
 int CasualFieldAddFloat(   char* buffer, long id, float value);
 int CasualFieldAddDouble(  char* buffer, long id, double value);
 int CasualFieldAddString(  char* buffer, long id, const char* value);
-int CasualFieldAddBinary(  char* buffer, long id, const char* value, long size);
+int CasualFieldAddBinary(  char* buffer, long id, const char* value, long count);
 
-int CasualFieldAddData(    char* buffer, long id, void* value, long size);
-
-#ifdef __bool_true_false_are_defined
-int CasualFieldGetBool(    const char* buffer, long id, long index, bool* value);
-#endif
 int CasualFieldGetChar(    const char* buffer, long id, long index, char* value);
 int CasualFieldGetShort(   const char* buffer, long id, long index, short* value);
 int CasualFieldGetLong(    const char* buffer, long id, long index, long* value);
 int CasualFieldGetFloat(   const char* buffer, long id, long index, float* value);
 int CasualFieldGetDouble(  const char* buffer, long id, long index, double* value);
 int CasualFieldGetString(  const char* buffer, long id, long index, const char** value);
-int CasualFieldGetBinary(  const char* buffer, long id, long index, const char** value, long* size);
-
-int CasualFieldGetData(    const char* buffer, long id, long index, const void** value, long* size);
+int CasualFieldGetBinary(  const char* buffer, long id, long index, const char** value, long* count);
 
 
 int CasualFieldExploreBuffer( const char* buffer, long* size, long* used);
-int CasualFieldExploreId( const char* name, long* id);
-int CasualFieldExploreName( long id, const char** name);
-int CasualFieldExploreType( long id, int* type);
+
+int CasualFieldNameOfId( long id, const char** name);
+int CasualFieldIdOfName( const char* name, long* id);
+int CasualFieldTypeOfId( long id, int* type);
+int CasualFieldNameOfType( int type, const char** name);
 
 
+int CasualFieldExist( const char* buffer, long id, long occurrence);
 
 /* remove all content */
 int CasualFieldRemoveAll( char* buffer);
@@ -109,6 +101,8 @@ int CasualFieldIterateNext( const char* buffer, long* id, long* index);
 */
 
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CASUAL_FIELD_BUFFER_H_ */

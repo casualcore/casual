@@ -11,186 +11,412 @@
 
 #include <cstring>
 
-namespace casual
+#include <iostream>
+
+
+namespace
 {
 
-   namespace common
+   namespace local
    {
-      namespace buffer
+      using casual::common::network::byteorder;
+
+      namespace explore
       {
-         namespace
+         int type_from_id( const long id)
+         {
+            //
+            // CASUAL_FIELD_SHORT is 0 'cause FLD_SHORT is 0 and thus we need
+            // to represent invalid id with something else than 0
+            //
+
+            if( id > 0)
+            {
+               const int result = id / 0x200000;
+
+               switch( result)
+               {
+               case CASUAL_FIELD_SHORT:
+               case CASUAL_FIELD_LONG:
+               case CASUAL_FIELD_CHAR:
+               case CASUAL_FIELD_FLOAT:
+               case CASUAL_FIELD_DOUBLE:
+               case CASUAL_FIELD_STRING:
+               case CASUAL_FIELD_BINARY:
+                  return result;
+               default:
+                  break;
+               }
+            }
+
+            return -1;
+
+         }
+
+         const char* name_from_type( const int type)
+         {
+            switch( type)
+            {
+            case CASUAL_FIELD_SHORT:
+               return "FIELD_SHORT";
+            case CASUAL_FIELD_LONG:
+               return "FIELD_LONG";
+            case CASUAL_FIELD_CHAR:
+               return "FIELD_CHAR";
+            case CASUAL_FIELD_FLOAT:
+               return "FIELD_FLOAT";
+            case CASUAL_FIELD_DOUBLE:
+               return "FIELD_DOUBLE";
+            case CASUAL_FIELD_STRING:
+               return "FIELD_STRING";
+            case CASUAL_FIELD_BINARY:
+               return "FIELD_BINARY";
+            default:
+               return nullptr;
+            }
+         }
+
+         const char* name_from_id( const long id)
+         {
+            // TODO
+            return nullptr;
+         }
+
+         long id_from_name( const char* const name)
+         {
+            // TODO
+            return 0;
+         }
+
+      }
+
+
+      namespace arithmetic
+      {
+         template<typename T>
+         inline void write( char* const where, const T& value)
+         {
+            const auto encoded = byteorder<T>::encode( value);
+            std::memcpy( where, &encoded, sizeof( encoded));
+         }
+
+         template<typename T>
+         inline T parse( const char* const where)
+         {
+            return byteorder<T>::decode( *reinterpret_cast< const decltype(byteorder<T>::encode(0))*>( where));
+         }
+
+         template< typename T>
+         constexpr long bytes()
+         {
+            return sizeof(decltype(byteorder<T>::encode(0)));
+         }
+
+      }
+
+      namespace field
+      {
+         enum position : long
+         {
+            id, count, value
+         };
+
+         // minimal size
+         constexpr auto size() -> decltype(arithmetic::bytes<long>())
+         {
+            return arithmetic::bytes< long>() * position::value;
+         }
+
+         namespace insert
+         {
+            void id( char* const selector, const long id)
+            {
+               arithmetic::write( selector + arithmetic::bytes<long>() * position::id, id);
+            }
+
+            void count( char* const selector, const long count)
+            {
+               arithmetic::write( selector + arithmetic::bytes<long>() * position::count, count);
+            }
+
+            // @return the offset
+            char* value( char* const selector)
+            {
+               return selector + arithmetic::bytes<long>() * position::value;
+            }
+
+         }
+
+         namespace select
+         {
+            long id( const char* const selector)
+            {
+               return arithmetic::parse<long>( selector + arithmetic::bytes<long>() * position::id);
+            }
+
+            long count( const char* const selector)
+            {
+               return arithmetic::parse<long>( selector + arithmetic::bytes<long>() * position::count);
+            }
+
+            // @return the offset
+            const char* value( const char* const selector)
+            {
+               return selector + arithmetic::bytes<long>() * position::value;
+            }
+         }
+
+      }
+
+
+      namespace header
+      {
+         enum position : long
+         {
+            reserved, inserter, beoyond
+         };
+
+         constexpr auto size() -> decltype(arithmetic::bytes<long>())
+         {
+            return arithmetic::bytes< long>() * position::beoyond;
+         }
+
+         namespace select
+         {
+            long reserved( const char* const buffer)
+            {
+               return arithmetic::parse<long>( buffer + arithmetic::bytes<long>() * position::reserved);
+            }
+
+            long inserter( const char* const buffer)
+            {
+               return arithmetic::parse<long>( buffer + arithmetic::bytes<long>() * position::inserter);
+            }
+         }
+
+         namespace update
+         {
+            void reserved( char* const buffer, const long value)
+            {
+               arithmetic::write<long>( buffer + arithmetic::bytes< long>() * position::reserved, value);
+            }
+
+            void inserter( char* const buffer, const long value)
+            {
+               arithmetic::write<long>( buffer + arithmetic::bytes< long>() * position::inserter, value);
+            }
+
+         }
+      }
+
+      template<typename T>
+      struct pod_traits{};
+
+      template< > struct pod_traits< char>
+      {
+         static const auto type = CASUAL_FIELD_CHAR;
+      };
+      template< > struct pod_traits< short>
+      {
+         static const auto type = CASUAL_FIELD_SHORT;
+      };
+      template< > struct pod_traits< long>
+      {
+         static const auto type = CASUAL_FIELD_LONG;
+      };
+      template< > struct pod_traits< float>
+      {
+         static const auto type = CASUAL_FIELD_FLOAT;
+      };
+      template< > struct pod_traits< double>
+      {
+         static const auto type = CASUAL_FIELD_DOUBLE;
+      };
+
+      namespace add
+      {
+
+         //
+         // TODO: make pod+string+binary a bit more generic and remove some ugliness
+         //
+
+         char* prepare( char* const buffer, const long id, const long count)
          {
 
-            namespace local
+            const auto reserved = header::select::reserved( buffer);
+            const auto inserter = header::select::inserter( buffer);
+
+            // we need room for id, count and the value it self
+            const auto total = field::size() + count;
+
+            if( (reserved - inserter) < total)
             {
-               namespace explore
-               {
-                  int type( const long id)
-                  {
-                     const int result = id / 100000;
-
-                     if( result < CASUAL_FIELD_BOOL || result > CASUAL_FIELD_BINARY)
-                     {
-                        return 0;
-                     }
-
-                     return result;
-                  }
-
-                  const char* name( const long id)
-                  {
-                     // TODO
-                     return nullptr;
-                  }
-
-                  long id( const char* const name)
-                  {
-                     // TODO
-                     return 0;
-                  }
-
-               }
-               namespace data
-               {
-                  template< typename T>
-                  constexpr long bytes()
-                  {
-                     return sizeof(decltype(network::byteorder<T>::encode(0)));
-                  }
-
-                  template< typename T>
-                  T select( const char* const buffer, const long offset)
-                  {
-                     return network::byteorder< T>::decode( *reinterpret_cast< const decltype(network::byteorder<T>::encode(0))*>( buffer + offset));
-                  }
-
-                  template< typename T>
-                  void insert( char* const buffer, const long offset, const T value)
-                  {
-                     const auto encoded = network::byteorder< T>::encode( value);
-                     std::memcpy( buffer + offset, &encoded, sizeof( encoded));
-                  }
-
-               }
-
-               namespace header
-               {
-                  enum position : long
-                  {
-                     reserved, inserter, beoyond
-                  };
-
-                  constexpr long size()
-                  {
-                     return data::bytes< long>() * position::beoyond;
-                  }
-
-                  namespace select
-                  {
-                     template< position offset>
-                     long parse( const char* const buffer)
-                     {
-                        return data::select< long>( buffer, data::bytes< long>() * offset);
-                     }
-
-                     long reserved( const char* const buffer)
-                     {
-                        return parse< position::reserved>( buffer);
-                     }
-
-                     long inserter( const char* const buffer)
-                     {
-                        return parse< position::inserter>( buffer);
-                     }
-
-                  }
-
-                  namespace update
-                  {
-                     template< position offset>
-                     void write( char* const buffer, const long value)
-                     {
-                        data::insert< long>( buffer, data::bytes< long>() * offset, value);
-                     }
-
-                     void reserved( char* const buffer, const long value)
-                     {
-                        write< position::reserved>( buffer, value);
-                     }
-
-                     void inserter( char* const buffer, const long value)
-                     {
-                        write< position::inserter>( buffer, value);
-                     }
-
-                  }
-               }
-
-               int add( char* const buffer, const long id, const int type, const void* const value, const long length)
-               {
-                  if( explore::type( id) != type)
-                  {
-                     return CASUAL_FIELD_INVALID_ID;
-                  }
-
-                  if( explore::name( id) == nullptr)
-                  {
-                     return CASUAL_FIELD_UNKNOWN_ID;
-                  }
-
-                  const auto reserved = header::select::reserved( buffer);
-                  const auto inserter = header::select::inserter( buffer);
-
-                  constexpr auto id_size = data::bytes< decltype(id)>();
-                  constexpr auto length_size = data::bytes< decltype(length)>();
-
-                  if( ( reserved - inserter) < ( id_size + length_size + length))
-                  {
-                     return CASUAL_FIELD_NO_SPACE;
-                  }
-
-                  auto offset = inserter;
-
-                  data::insert( buffer, offset, id);
-                  offset += id_size;
-                  data::insert( buffer, offset, length);
-                  offset += length_size;
-                  std::memcpy( buffer + offset, value, length);
-                  offset += length;
-
-                  header::update::inserter( buffer, offset);
-
-                  return CASUAL_FIELD_SUCCESS;
-               }
-
-               template< typename T>
-               int add( char* const buffer, const long id, const int type, const T& value)
-               {
-                  const auto encoded_value = network::byteorder< T>::encode( value);
-                  return add( buffer, id, type, &encoded_value, sizeof( encoded_value));
-               }
+               return nullptr;
             }
 
-            const char* CasualFieldDescription( const int code)
+            field::insert::id( buffer + inserter, id);
+            field::insert::count( buffer + inserter, count);
+
+            header::update::inserter( buffer, inserter + total);
+
+            return buffer + inserter;
+
+         }
+
+         template<typename T>
+         int pod( char* const buffer, const long id, const T& value)
+         {
+            if( explore::type_from_id( id) != pod_traits<T>::type)
             {
-               switch( code)
-               {
-                  case CASUAL_FIELD_SUCCESS:
-                     return "Success";
-                  case CASUAL_FIELD_NO_SPACE:
-                     return "No space";
-                  case CASUAL_FIELD_NO_OCCURRENCE:
-                     return "No occurrence";
-                  case CASUAL_FIELD_UNKNOWN_ID:
-                     return "Unknown id";
-                  case CASUAL_FIELD_INVALID_ID:
-                     return "Invalid id";
-                  case CASUAL_FIELD_INTERNAL_FAILURE:
-                     return "Internal failure";
-                  default:
-                     return "Unknown code";
-               }
+               return CASUAL_FIELD_INVALID_ID;
             }
+
+            if( char* const inserter = prepare( buffer, id, arithmetic::bytes<T>()))
+            {
+               arithmetic::write( field::insert::value( inserter), value);
+            }
+            else
+            {
+               return CASUAL_FIELD_NO_SPACE;
+            }
+
+            return CASUAL_FIELD_SUCCESS;
+
+         }
+
+         int string( char* buffer, const long id, const char* const value)
+         {
+            if( explore::type_from_id( id) != CASUAL_FIELD_STRING)
+            {
+               return CASUAL_FIELD_INVALID_ID;
+            }
+
+            const auto count = std::strlen( value) + 1;
+
+            if( char* const inserter = prepare( buffer, id, count))
+            {
+               std::memcpy( field::insert::value( inserter), value, count);
+            }
+            else
+            {
+               return CASUAL_FIELD_NO_SPACE;
+            }
+
+            return CASUAL_FIELD_SUCCESS;
+
+         }
+
+         int binary( char* buffer, const long id, const char* const value, const long count)
+         {
+            if( explore::type_from_id( id) != CASUAL_FIELD_BINARY)
+            {
+               return CASUAL_FIELD_INVALID_ID;
+            }
+
+            if( char* const inserter = prepare( buffer, id, count))
+            {
+               std::memcpy( field::insert::value( inserter), value, count);
+            }
+            else
+            {
+               return CASUAL_FIELD_NO_SPACE;
+            }
+
+            return CASUAL_FIELD_SUCCESS;
+         }
+
+
+      }
+
+      namespace get
+      {
+
+         //
+         // TODO: make pod+string+binary a bit more generic and remove some ugliness
+         //
+
+         const char* prepare( const char* const buffer, const long id, long index)
+         {
+
+            const char* const inserter = buffer + header::select::inserter( buffer);
+            const char* selector = buffer + header::size();
+
+            while( selector < inserter)
+            {
+
+               if( field::select::id( selector) == id)
+               {
+                  if( !index--)
+                  {
+                     return selector;
+                  }
+               }
+
+               selector += field::size() + field::select::count( selector);
+
+            }
+
+            return nullptr;
+
+         }
+
+         template<typename T>
+         int pod( const char* const buffer, const long id, const long index, T& value)
+         {
+            if( explore::type_from_id( id) != pod_traits<T>::type)
+            {
+               return CASUAL_FIELD_INVALID_ID;
+            }
+
+            if( const char* const selector = prepare( buffer, id, index))
+            {
+               value = arithmetic::parse<T>( field::select::value( selector));
+            }
+            else
+            {
+               return CASUAL_FIELD_NO_OCCURRENCE;
+            }
+
+            return CASUAL_FIELD_SUCCESS;
+         }
+
+         int string( const char* const buffer, const long id, const long index, const char*& value)
+         {
+            if( explore::type_from_id( id) != CASUAL_FIELD_STRING)
+            {
+               return CASUAL_FIELD_INVALID_ID;
+            }
+
+            if( const char* const selector = prepare( buffer, id, index))
+            {
+               value = field::select::value( selector);
+            }
+            else
+            {
+               return CASUAL_FIELD_NO_OCCURRENCE;
+            }
+
+            return CASUAL_FIELD_SUCCESS;
+         }
+
+         int binary( const char* const buffer, const long id, const long index, const char*& value, long& count)
+         {
+            if( explore::type_from_id( id) != CASUAL_FIELD_BINARY)
+            {
+               return CASUAL_FIELD_INVALID_ID;
+            }
+
+            if( const char* const selector = prepare( buffer, id, index))
+            {
+               value = field::select::value( selector);
+               count = field::select::count( selector);
+            }
+            else
+            {
+               return CASUAL_FIELD_NO_OCCURRENCE;
+            }
+
+            return CASUAL_FIELD_SUCCESS;
          }
 
       }
@@ -198,240 +424,276 @@ namespace casual
    }
 }
 
-int CasualFieldAddBool( char* const buffer, const long id, const bool value)
+const char* CasualFieldDescription( const int code)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_BOOL, value);
+   switch( code)
+   {
+      case CASUAL_FIELD_SUCCESS:
+         return "Success";
+      case CASUAL_FIELD_NO_SPACE:
+         return "No space";
+      case CASUAL_FIELD_NO_OCCURRENCE:
+         return "No occurrence";
+      case CASUAL_FIELD_UNKNOWN_ID:
+         return "Unknown id";
+      case CASUAL_FIELD_INVALID_ID:
+         return "Invalid id";
+      case CASUAL_FIELD_INVALID_TYPE:
+         return "Invalid type";
+      case CASUAL_FIELD_INTERNAL_FAILURE:
+         return "Internal failure";
+      default:
+         return "Unknown code";
+   }
 }
 
 int CasualFieldAddChar( char* const buffer, const long id, const char value)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_CHAR, value);
+   return local::add::pod( buffer, id, value);
 }
 
 int CasualFieldAddShort( char* const buffer, const long id, const short value)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_SHORT, value);
+   return local::add::pod( buffer, id, value);
 }
 
 int CasualFieldAddLong( char* const buffer, const long id, const long value)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_LONG, value);
+   return local::add::pod( buffer, id, value);
 }
 int CasualFieldAddFloat( char* const buffer, const long id, const float value)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_FLOAT, value);
+   return local::add::pod( buffer, id, value);
 }
 
 int CasualFieldAddDouble( char* const buffer, const long id, const double value)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_DOUBLE, value);
+   return local::add::pod( buffer, id, value);
 }
 
 int CasualFieldAddString( char* const buffer, const long id, const char* const value)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_STRING, value, std::strlen( value) + 1);
+   return local::add::string( buffer, id, value);
 }
 
-int CasualFieldAddBinary( char* const buffer, const long id, const char* const value, const long size)
+int CasualFieldAddBinary( char* const buffer, const long id, const char* const value, const long count)
 {
-   return casual::common::buffer::local::add( buffer, id, CASUAL_FIELD_BINARY, value, size);
-}
-
-int CasualFieldAddData( char* const buffer, const long id, const void* const value, const long size)
-{
-   switch( casual::common::buffer::local::explore::type( id))
-   {
-      case CASUAL_FIELD_BOOL:
-         return CasualFieldAddBool( buffer, id, *reinterpret_cast< const bool*>( value));
-      case CASUAL_FIELD_CHAR:
-         return CasualFieldAddChar( buffer, id, *reinterpret_cast< const char*>( value));
-      case CASUAL_FIELD_SHORT:
-         return CasualFieldAddShort( buffer, id, *reinterpret_cast< const short*>( value));
-      case CASUAL_FIELD_LONG:
-         return CasualFieldAddLong( buffer, id, *reinterpret_cast< const long*>( value));
-      case CASUAL_FIELD_FLOAT:
-         return CasualFieldAddFloat( buffer, id, *reinterpret_cast< const float*>( value));
-      case CASUAL_FIELD_DOUBLE:
-         return CasualFieldAddDouble( buffer, id, *reinterpret_cast< const double*>( value));
-      case CASUAL_FIELD_STRING:
-         return CasualFieldAddString( buffer, id, reinterpret_cast< const char*>( value));
-      case CASUAL_FIELD_BINARY:
-         return CasualFieldAddBinary( buffer, id, reinterpret_cast< const char*>( value), size);
-      default:
-         return CASUAL_FIELD_INVALID_ID;
-   }
-
-   return CASUAL_FIELD_SUCCESS;
-}
-
-int CasualFieldGetBool( const char* const buffer, const long id, const long index, bool* const value)
-{
-   return CASUAL_FIELD_SUCCESS;
+   return local::add::binary( buffer, id, value, count);
 }
 
 int CasualFieldGetChar( const char* const buffer, const long id, const long index, char* const value)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::pod( buffer, id, index, *value);
 }
 
 int CasualFieldGetShort( const char* const buffer, const long id, const long index, short* const value)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::pod( buffer, id, index, *value);
 }
 
 int CasualFieldGetLong( const char* const buffer, const long id, const long index, long* const value)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::pod( buffer, id, index, *value);
 }
 
 int CasualFieldGetFloat( const char* const buffer, const long id, const long index, float* const value)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::pod( buffer, id, index, *value);
 }
 
 int CasualFieldGetDouble( const char* const buffer, const long id, const long index, double* const value)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::pod( buffer, id, index, *value);
 }
 
-int CasualFieldGetString( const char* const buffer, const long id, const long index, char** value)
+int CasualFieldGetString( const char* const buffer, const long id, const long index, const char** value)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::string( buffer, id, index, *value);
 }
 
-int CasualFieldGetBinary( const char* const buffer, const long id, const long index, char** value, long* const size)
+int CasualFieldGetBinary( const char* const buffer, const long id, const long index, const char** value, long* const count)
 {
-   return CASUAL_FIELD_SUCCESS;
+   return local::get::binary( buffer, id, index, *value, *count);
 }
 
-int CasualFieldGetData( const char* const buffer, const long id, const long index, void** value, long* const size)
-{
-   return CASUAL_FIELD_SUCCESS;
-}
 
 int CasualFieldExploreBuffer( const char* buffer, long* const size, long* const used)
 {
    if( size != nullptr)
    {
-      *size = casual::common::buffer::local::header::select::reserved( buffer);
+      *size = local::header::select::reserved( buffer);
    }
 
    if( used != nullptr)
    {
-      *used = casual::common::buffer::local::header::select::inserter( buffer);
+      *used = local::header::select::inserter( buffer);
    }
 
    return CASUAL_FIELD_SUCCESS;
 }
 
-int CasualFieldExploreId( const char* const name, long* const id)
+int CasualFieldNameOfId( long id, const char** name)
 {
-   if( const int result = casual::common::buffer::local::explore::id( name))
+   // TODO
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
+int CasualFieldIdOfName( const char* name, long* const id)
+{
+   // TODO
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
+int CasualFieldTypeOfId( const long id, int* const type)
+{
+   const int result = local::explore::type_from_id( id);
+
+   if( result < 0)
    {
-      *id = result;
+      return CASUAL_FIELD_INVALID_ID;
    }
-   else
-   {
-      return CASUAL_FIELD_UNKNOWN_ID;
-   }
+
+   *type = result;
 
    return CASUAL_FIELD_SUCCESS;
 
 }
 
-int CasualFieldExploreName( const long id, const char** name)
+int CasualFieldNameOfType( const int type, const char** name)
 {
-   if( const char* const result = casual::common::buffer::local::explore::name( id))
+   if( const char* const result = local::explore::name_from_type( type))
    {
       *name = result;
    }
    else
    {
-      return CASUAL_FIELD_UNKNOWN_ID;
+      return CASUAL_FIELD_INVALID_TYPE;
    }
 
    return CASUAL_FIELD_SUCCESS;
 }
 
-int CasualFieldExploreType( const long id, int* const type)
+
+int CasualFieldExist( const char* const buffer, const long id, const long occurrence)
 {
-   if( const int result = casual::common::buffer::local::explore::type( id))
-   {
-      if( casual::common::buffer::local::explore::name( id) != nullptr)
-      {
-         *type = result;
-      }
-      else
-      {
-         return CASUAL_FIELD_UNKNOWN_ID;
-      }
-   }
-   else
+   if( local::explore::type_from_id( id) < 0)
    {
       return CASUAL_FIELD_INVALID_ID;
    }
 
-   return CASUAL_FIELD_SUCCESS;
+   const char* const selector = local::get::prepare( buffer, id, occurrence);
+
+   return selector != nullptr ? CASUAL_FIELD_SUCCESS : CASUAL_FIELD_NO_OCCURRENCE;
 }
 
 int CasualFieldRemoveAll( char* const buffer)
 {
+   // just move the inserter to the beginning
+   local::header::update::inserter( buffer, local::header::size());
+
    return CASUAL_FIELD_SUCCESS;
 }
 
-int CasualFieldRemoveId( char* const buffer, const long id)
+int CasualFieldRemoveId( char* buffer, const long id)
 {
+
+   if( const int result = CasualFieldExist( buffer, id, 0))
+   {
+      return result;
+   }
+
+   while( CasualFieldRemoveOccurrence( buffer, id, 0) == CASUAL_FIELD_SUCCESS)
+   {}
+
    return CASUAL_FIELD_SUCCESS;
+
 }
 
-int CasualFieldRemoveOccurrence( char* const buffer, const long id, const long occurrence)
+
+int CasualFieldRemoveOccurrence( char* const buffer, const long id, long occurrence)
 {
+   if( const int result = CasualFieldExist( buffer, id, 0))
+   {
+      return result;
+   }
+
+   if( const char* const selector = local::get::prepare( buffer, id, occurrence))
+   {
+      // const_cast by fooling the compiler (but that is what we want)
+      char* const inserter = buffer + (selector - buffer);
+
+      local::field::insert::id( inserter, 0);
+   }
+   else
+   {
+      return CASUAL_FIELD_NO_OCCURRENCE;
+   }
+
    return CASUAL_FIELD_SUCCESS;
+
 }
+
 
 int CasualFieldCopyBuffer( char* const target, const char* const source)
 {
+
+   const auto reserved = local::header::select::reserved( target);
+   const auto inserter = local::header::select::inserter( source);
+
+   if( reserved < inserter)
+   {
+      return CASUAL_FIELD_NO_SPACE;
+   }
+
+   constexpr auto bytes = local::arithmetic::bytes< long>();
+
+   // copy inserter and selector (and data) but leave reserved
+   std::memcpy( target + bytes, source + bytes, inserter - bytes);
+
    return CASUAL_FIELD_SUCCESS;
 }
 
+
 long CasualFieldCreate( char* const buffer, const long size)
 {
-   constexpr auto bytes = casual::common::buffer::local::header::size();
+   constexpr auto bytes = local::header::size();
 
    if( size < bytes)
    {
       return CASUAL_FIELD_NO_SPACE;
    }
 
-   casual::common::buffer::local::header::update::reserved( buffer, size);
-   casual::common::buffer::local::header::update::inserter( buffer, bytes);
+   local::header::update::reserved( buffer, size);
+   local::header::update::inserter( buffer, bytes);
 
    return CASUAL_FIELD_SUCCESS;
 }
 
 long CasualFieldExpand( char* const buffer, const long size)
 {
-   casual::common::buffer::local::header::update::reserved( buffer, size);
+   local::header::update::reserved( buffer, size);
 
    return CASUAL_FIELD_SUCCESS;
 }
 
 long CasualFieldReduce( char* const buffer, const long size)
 {
-   const auto inserter = casual::common::buffer::local::header::select::inserter( buffer);
+   const auto inserter = local::header::select::inserter( buffer);
 
    if( size < inserter)
    {
       return CASUAL_FIELD_NO_SPACE;
    }
 
-   casual::common::buffer::local::header::update::reserved( buffer, size);
+   local::header::update::reserved( buffer, size);
 
    return CASUAL_FIELD_SUCCESS;
 }
 
 long CasualFieldNeeded( char* const buffer, const long size)
 {
-   return casual::common::buffer::local::header::select::inserter( buffer);
+   return local::header::select::inserter( buffer);
 }
 

@@ -100,12 +100,12 @@ TEST( casual_order_buffer, add_and_get)
 
    const char* string;
    EXPECT_TRUE( CasualOrderGetString( buffer, &string) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( std::string( string) == "Hello!");
+   EXPECT_TRUE( std::string( string) == "Hello!") << std::string( string);
 
    const char* binary;
    long size;
    EXPECT_TRUE( CasualOrderGetBinary( buffer, &binary, &size) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( std::string( binary, size) == "Some Data");
+   EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size);
    EXPECT_TRUE( size == 9);
 
 }
