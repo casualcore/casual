@@ -152,7 +152,7 @@ namespace casual
          }
          float byteorder< float>::decode( const uint32_t value) noexcept
          {
-            const uint32_t result be32toh(value);
+            const uint32_t result = be32toh(value);
             return *reinterpret_cast< const float*>( &result);
          }
 
@@ -165,7 +165,7 @@ namespace casual
          }
          double byteorder< double>::decode( const uint64_t value) noexcept
          {
-            const uint64_t result be64toh(value);
+            const uint64_t result = be64toh(value);
             return *reinterpret_cast< const double*>( &result);
          }
 
