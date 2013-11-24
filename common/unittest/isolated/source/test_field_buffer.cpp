@@ -291,3 +291,30 @@ TEST( casual_field_buffer, add_to_source_and_copy_buffer_and_get_from_target__ex
 }
 
 
+TEST( casual_field_buffer, test_some_iteration)
+{
+   char buffer[128];
+   ASSERT_TRUE( CasualFieldCreate( buffer, sizeof(buffer)) == CASUAL_FIELD_SUCCESS);
+
+   ASSERT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+   ASSERT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
+   ASSERT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
+
+   long id;
+   long occurrence;
+
+
+   EXPECT_TRUE( CasualFieldFirst( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+   EXPECT_TRUE( id == FLD_SHORT1);
+   EXPECT_TRUE( occurrence == 0);
+   EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+   EXPECT_TRUE( id == FLD_LONG1);
+   EXPECT_TRUE( occurrence == 0);
+   EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+   EXPECT_TRUE( id == FLD_LONG1);
+   EXPECT_TRUE( occurrence == 1);
+   EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
+
+
+}
+

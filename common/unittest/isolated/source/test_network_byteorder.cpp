@@ -27,12 +27,18 @@ namespace casual
             //
             // we could make this as a static check as well ...
             //
-            EXPECT_TRUE( typeid(decltype(byteorder<bool>::encode( 0))) == typeid(bool));
-            EXPECT_TRUE( typeid(decltype(byteorder<char>::encode( 0))) == typeid(char));
-            EXPECT_TRUE( typeid(decltype(byteorder<short>::encode( 0))) == typeid(uint32_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<bool>::encode( 0))) == typeid(uint8_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<char>::encode( 0))) == typeid(uint8_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<short>::encode( 0))) == typeid(uint16_t));
             EXPECT_TRUE( typeid(decltype(byteorder<long>::encode( 0))) == typeid(uint64_t));
             EXPECT_TRUE( typeid(decltype(byteorder<float>::encode( 0))) == typeid(uint32_t));
             EXPECT_TRUE( typeid(decltype(byteorder<double>::encode( 0))) == typeid(uint64_t));
+
+            EXPECT_TRUE( typeid(decltype(byteorder<uint8_t>::encode( 0))) == typeid(uint8_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<uint16_t>::encode( 0))) == typeid(uint16_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<uint32_t>::encode( 0))) == typeid(uint32_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<uint64_t>::encode( 0))) == typeid(uint64_t));
+
          }
 
          TEST( casual_common, network_byteorder__confirm_decode_types)
@@ -46,10 +52,30 @@ namespace casual
             EXPECT_TRUE( typeid(decltype(byteorder<long>::decode( 0))) == typeid(long));
             EXPECT_TRUE( typeid(decltype(byteorder<float>::decode( 0))) == typeid(float));
             EXPECT_TRUE( typeid(decltype(byteorder<double>::decode( 0))) == typeid(double));
+
+            EXPECT_TRUE( typeid(decltype(byteorder<uint8_t>::decode( 0))) == typeid(uint8_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<uint16_t>::decode( 0))) == typeid(uint16_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<uint32_t>::decode( 0))) == typeid(uint32_t));
+            EXPECT_TRUE( typeid(decltype(byteorder<uint64_t>::decode( 0))) == typeid(uint64_t));
+
          }
 
          TEST( casual_common, network_byteorder__encode_decode)
          {
+            {
+               const bool initial = true;
+               const auto encoded = byteorder<bool>::encode( initial);
+               const auto decoded = byteorder<bool>::decode( encoded);
+               EXPECT_TRUE( initial == decoded);
+            }
+
+            {
+               const bool initial = false;
+               const auto encoded = byteorder<bool>::encode( initial);
+               const auto decoded = byteorder<bool>::decode( encoded);
+               EXPECT_TRUE( initial == decoded);
+            }
+
             {
                const char initial = 'a';
                const auto encoded = byteorder<char>::encode( initial);

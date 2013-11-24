@@ -125,13 +125,35 @@ namespace casual
    {
       namespace network
       {
-         uint32_t byteorder< short>::encode( const short value) noexcept
+
+         uint8_t byteorder< bool>::encode( const bool value) noexcept
          {
-            return htobe32(value);
+            return value;
          }
-         short byteorder< short>::decode( const uint32_t value) noexcept
+         bool byteorder< bool>::decode( const uint8_t value) noexcept
          {
-            return be32toh(value);
+            return value;
+         }
+
+         uint8_t byteorder< char>::encode( const char value) noexcept
+         {
+            return value;
+         }
+         char byteorder< char>::decode( const uint8_t value) noexcept
+         {
+            return value;
+         }
+
+         //
+         // short is 16 bit on every 32/64 bit systems except SILP64 systems
+         //
+         uint16_t byteorder< short>::encode( const short value) noexcept
+         {
+            return htobe16(value);
+         }
+         short byteorder< short>::decode( const uint16_t value) noexcept
+         {
+            return be16toh(value);
          }
 
          uint64_t byteorder< long>::encode( const long value) noexcept
@@ -168,6 +190,50 @@ namespace casual
             const uint64_t result be64toh(value);
             return *reinterpret_cast< const double*>( &result);
          }
+
+
+
+
+
+
+
+         uint8_t byteorder< uint8_t>::encode( const uint8_t value) noexcept
+         {
+            return value;
+         }
+         uint8_t byteorder< uint8_t>::decode( const uint8_t value) noexcept
+         {
+            return value;
+         }
+
+         uint16_t byteorder< uint16_t>::encode( const uint16_t value) noexcept
+         {
+            return htobe16(value);
+         }
+         uint16_t byteorder< uint16_t>::decode( const uint16_t value) noexcept
+         {
+            return be16toh( value);
+         }
+
+
+         uint32_t byteorder< uint32_t>::encode( const uint32_t value) noexcept
+         {
+            return htobe32(value);
+         }
+         uint32_t byteorder< uint32_t>::decode( const uint32_t value) noexcept
+         {
+            return be32toh( value);
+         }
+
+         uint64_t byteorder< uint64_t>::encode( const uint64_t value) noexcept
+         {
+            return htobe64(value);
+         }
+         uint64_t byteorder< uint64_t>::decode( const uint64_t value) noexcept
+         {
+            return be64toh( value);
+         }
+
 
       }
    }

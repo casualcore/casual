@@ -69,7 +69,7 @@ int CasualFieldTypeOfId( long id, int* type);
 int CasualFieldNameOfType( int type, const char** name);
 
 
-int CasualFieldExist( const char* buffer, long id, long occurrence);
+int CasualFieldExist( const char* buffer, long id, long index);
 
 /* remove all content */
 int CasualFieldRemoveAll( char* buffer);
@@ -78,7 +78,7 @@ int CasualFieldRemoveAll( char* buffer);
 int CasualFieldRemoveId( char* buffer, long id);
 
 /* removes supplied occurrence with supplied id and collapses possible sequential occurrences but more space will not be available */
-int CasualFieldRemoveOccurrence( char* buffer, long id, long occurrence);
+int CasualFieldRemoveOccurrence( char* buffer, long id, long index);
 
 /* copies content from 'source' to 'target' */
 int CasualFieldCopyBuffer( char* target, const char* source);
@@ -88,17 +88,10 @@ int CasualFieldCopyBuffer( char* target, const char* source);
 
 
 
-/*
-   Iterator-operations
-*/
-/*
-long CasualFieldNumberOfIds( const char* buffer);
-long CasualFieldNumberOfOccurrences( const char* buffer, long id);
-int CasualFieldIterateFirst( const char* buffer, long* id, long* index);
-int CasualFieldIterateFirst( const char* buffer, long* id);
-int CasualFieldIterateNext( const char* buffer, long* id);
-int CasualFieldIterateNext( const char* buffer, long* id, long* index);
-*/
+/* gives a "handle" to the first occurrence in a buffer */
+int CasualFieldFirst( const char* buffer, long* id, long* index);
+/* gives a "handle" to the next occurrence in a buffer (id and index is therefore relevant) */
+int CasualFieldNext( const char* buffer, long* id, long* index);
 
 
 #ifdef __cplusplus
