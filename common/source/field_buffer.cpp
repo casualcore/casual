@@ -19,8 +19,6 @@ namespace
 
    namespace local
    {
-      using casual::common::network::byteorder;
-
       namespace explore
       {
          int type_from_id( const long id)
@@ -96,20 +94,20 @@ namespace
          template<typename T>
          inline void write( char* const where, const T& value)
          {
-            const auto encoded = byteorder<T>::encode( value);
+            const auto encoded = casual::common::network::byteorder<T>::encode( value);
             std::memcpy( where, &encoded, sizeof( encoded));
          }
 
          template<typename T>
          inline T parse( const char* const where)
          {
-            return byteorder<T>::decode( *reinterpret_cast< const decltype(byteorder<T>::encode(0))*>( where));
+            return casual::common::network::byteorder<T>::decode( *reinterpret_cast< const casual::common::network::type<T>*>( where));
          }
 
          template< typename T>
          constexpr long bytes()
          {
-            return sizeof(decltype(byteorder<T>::encode(0)));
+            return casual::common::network::bytes<T>();
          }
 
       }

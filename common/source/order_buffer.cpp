@@ -16,28 +16,26 @@ namespace
 
    namespace local
    {
-      using casual::common::network::byteorder;
-
 
       namespace arithmetic
       {
          template<typename T>
          inline void write( char* const where, const T& value)
          {
-            const auto encoded = byteorder<T>::encode( value);
+            const auto encoded = casual::common::network::byteorder<T>::encode( value);
             std::memcpy( where, &encoded, sizeof( encoded));
          }
 
          template<typename T>
          inline void parse( const char* const where, T& value)
          {
-            value = byteorder<T>::decode( *reinterpret_cast< const decltype(byteorder<T>::encode(0))*>( where));
+            value = casual::common::network::byteorder<T>::decode( *reinterpret_cast< const casual::common::network::type<T>*>( where));
          }
 
          template< typename T>
          constexpr long bytes()
          {
-            return sizeof(decltype(byteorder<T>::encode(0)));
+            return casual::common::network::bytes<T>();
          }
 
       }
@@ -61,8 +59,8 @@ namespace
             inline long parse( const char* const buffer)
             {
                const char* const where = (buffer + arithmetic::bytes<long>() * offset);
-               const auto encoded = *reinterpret_cast< const decltype(byteorder<long>::encode(0))*>( where);
-               return byteorder<long>::decode( encoded);
+               const auto encoded = *reinterpret_cast< const casual::common::network::type<long>*>( where);
+               return casual::common::network::byteorder<long>::decode( encoded);
             }
 
             long reserved( const char* const buffer)
@@ -86,7 +84,7 @@ namespace
             template< position offset>
             inline void write( char* const buffer, const long value)
             {
-               const auto encoded = byteorder<long>::encode( value);
+               const auto encoded = casual::common::network::byteorder<long>::encode( value);
                char* const where = buffer + arithmetic::bytes< long>() * offset;
                std::memcpy( where, &encoded, sizeof( encoded));
             }
