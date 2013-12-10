@@ -18,6 +18,7 @@
 #include "common/queue.h"
 #include "common/algorithm.h"
 
+
 using casual::common::exception::signal::child::Terminate;
 using casual::common::process::lifetime;
 using casual::common::queue::blocking::basic_reader;
@@ -65,10 +66,23 @@ namespace casual
       } // policy
 
 
-      using QueueBlockingReader = common::queue::blocking::basic_reader< policy::Manager>;
-      using QueueNonBlockingReader = common::queue::non_blocking::basic_reader< policy::Manager>;
+      namespace queue
+      {
+         namespace blocking
+         {
+            using Reader = common::queue::blocking::basic_reader< policy::Manager>;
+            using Writer = common::queue::blocking::basic_writer< policy::Manager>;
 
-      using QueueBlockingWriter = common::queue::blocking::basic_writer< policy::Manager>;
+         } // blocking
+
+         namespace non_blocking
+         {
+            using Reader = common::queue::non_blocking::basic_reader< policy::Manager>;
+            using Writer = common::queue::non_blocking::basic_writer< policy::Manager>;
+
+         } // non_blocking
+
+      } // queue
 
       namespace handle
       {
@@ -150,6 +164,18 @@ namespace casual
 
             namespace instance
             {
+
+               template< typename M>
+               void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
+               {
+                  auto instance = state::find::instance( std::begin( state.instances), std::end( state.instances), message);
+
+                  if( ! instance.empty())
+                  {
+                     instance.first->state = newState;
+                  }
+               }
+
                template< typename M>
                void done( State& state, M& message)
                {
@@ -163,18 +189,24 @@ namespace casual
                      //
                      // We got a pending request for this resource, let's oblige
                      //
+                     queue::non_blocking::Writer writer{ message.id.queue_id, state};
 
+                     if( writer.send( request->message))
+                     {
+                        state.pendingRequest.erase( request);
+                     }
+                     else
+                     {
+                        common::logger::warning << "failed to send pending request to resource, although the instance reported idle";
+
+                        instance::state( state, message, state::resource::Proxy::Instance::State::idle);
+                     }
                   }
                   else
                   {
-                     auto instance = state::find::instance( std::begin( state.instances), std::end( state.instances), message);
 
-                     if( ! instance.empty())
-                     {
-                        instance.first->state = state::resource::Proxy::Instance::State::idle;
+                     instance::state( state, message, state::resource::Proxy::Instance::State::idle);
 
-
-                     }
                      // TODO: else what?
                   }
 
@@ -192,6 +224,11 @@ namespace casual
 
                void dispatch( message_type& message)
                {
+
+                  //
+                  // Instance is ready for more work
+                  //
+                  instance::done( m_state, message);
 
                   auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
 
@@ -228,6 +265,11 @@ namespace casual
 
             };
 
+            namespace detail
+            {
+
+            } // detail
+
 
             struct Commit : public state::Base
             {
@@ -237,6 +279,10 @@ namespace casual
 
                void dispatch( message_type& message)
                {
+                  //
+                  // Instance is ready for more work
+                  //
+                  instance::done( m_state, message);
 
                }
 
@@ -250,6 +296,10 @@ namespace casual
 
                void dispatch( message_type& message)
                {
+                  //
+                  // Instance is ready for more work
+                  //
+                  instance::done( m_state, message);
 
                }
 
@@ -286,7 +336,28 @@ namespace casual
 
             void dispatch( message_type& message)
             {
+               //
+               // Find the task
+               //
+               auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
 
+
+               if( ! task.empty())
+               {
+
+                  //
+                  // Prepare prepare-requests
+                  //
+                  action::pending::transform::Request< common::message::transaction::resource::prepare::Request> transform{ message.xid};
+
+                  std::transform(
+                        std::begin( task.first->resources),
+                        std::end( task.first->resources),
+                        std::back_inserter( m_state.pendingRequest),
+                        transform);
+
+               }
+               // TODO: else what?
             }
          };
 

@@ -11,6 +11,7 @@
 #include "common/platform.h"
 #include "common/message.h"
 #include "common/algorithm.h"
+#include "common/marshal.h"
 
 #include "config/xa_switch.h"
 
@@ -196,7 +197,41 @@ namespace casual
                   std::size_t m_resourceId;
                };
 
+
+
             };
+
+            namespace transform
+            {
+               template< typename M>
+               struct Request
+               {
+                  Request( const common::transaction::ID& xid) : xid( xid) {}
+
+                  pending::Request operator () ( const action::Resource& resource) const
+                  {
+                     pending::Request result;
+                     result.resourceId = resource.id;
+
+                     M message;
+                     message.id.queue_id = common::ipc::receive::id();
+                     message.resource = resource.id;
+                     message.xid = xid;
+
+                     common::marshal::output::Binary archive;
+                     archive << message;
+
+                     auto type = common::message::type( message);
+                     result.message = common::ipc::message::Complete( type, archive.release());
+
+                     return result;
+                  }
+
+               private:
+                  const common::transaction::ID& xid;
+               };
+
+            } // transform
 
          } // pending
 

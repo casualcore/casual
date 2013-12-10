@@ -199,7 +199,7 @@ namespace casual
                   marshal::output::Binary archive;
                   archive << message;
 
-                  message_type_type type = message::type( message);
+                  auto type = message::type( message);
                   return ipc::message::Complete( type, archive.release());
                }
 

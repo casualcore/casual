@@ -397,17 +397,45 @@ namespace casual
             }
          }
 
+         namespace broker
+         {
+            send::Queue::id_type id()
+            {
+               return queue().id();
+            }
+
+            send::Queue& queue()
+            {
+               static send::Queue brokerQueue = local::initializeBrokerQueue();
+               return brokerQueue;
+            }
+
+         } // broker
+
+
+         namespace receive
+         {
+            receive::Queue::id_type id()
+            {
+               return queue().id();
+            }
+
+            receive::Queue& queue()
+            {
+               static receive::Queue singleton;
+               return singleton;
+            }
+
+         } // receive
 
          send::Queue& getBrokerQueue()
          {
-            static send::Queue brokerQueue = local::initializeBrokerQueue();
-            return brokerQueue;
+            return broker::queue();
          }
 
          receive::Queue& getReceiveQueue()
          {
-            static receive::Queue singleton;
-            return singleton;
+            return receive::queue();
          }
 
          void remove( platform::queue_id_type id)

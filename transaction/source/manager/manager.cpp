@@ -83,8 +83,8 @@ namespace casual
          common::Trace trace( "transaction::Manager::start");
 
 
-         QueueBlockingReader queueReader( m_receiveQueue, m_state);
-         QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
+         queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
+         queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
 
          //
          // Connect and get configuration from broker
@@ -143,7 +143,7 @@ namespace casual
                //
                {
 
-                  QueueNonBlockingReader nonBlocking( m_receiveQueue, m_state);
+                  queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
 
 
                   for( auto marshler = nonBlocking.next(); ! marshler.empty(); marshler = nonBlocking.next())
