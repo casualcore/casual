@@ -6,7 +6,7 @@
 //!
 
 #include "common/transaction_context.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/queue.h"
 #include "common/trace.h"
 
@@ -199,7 +199,7 @@ namespace casual
             Transaction trans;
 
 
-            queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
+            queue::blocking::Writer writer{ m_state.transactionManagerQueue};
 
             if( transaction.xid)
             {
@@ -265,7 +265,7 @@ namespace casual
                }
             }
 
-            queue::ipc_wrapper< queue::blocking::Writer> writer( m_state.transactionManagerQueue);
+            queue::blocking::Writer writer( m_state.transactionManagerQueue);
             queue::blocking::Reader reader( ipc::getReceiveQueue());
 
             Transaction trans;
@@ -289,7 +289,7 @@ namespace casual
 
                if( result.back() != XA_OK)
                {
-                  logger::error << xaError( result.back()) << " failed to open resource - key: " << xa.key << " id: " << xa.id << " open info: " << xa.openinfo;
+                  log::error << xaError( result.back()) << " failed to open resource - key: " << xa.key << " id: " << xa.id << " open info: " << xa.openinfo << std::endl;
                }
             }
             // TODO: TX_FAIL
@@ -312,7 +312,7 @@ namespace casual
                // TX_FAIL
                if( result.back() != XA_OK)
                {
-                  logger::error << xaError( result.back()) << " failed to close resource - key: " << xa.key << " id: " << xa.id << " close info: " << xa.closeinfo;
+                  log::error << xaError( result.back()) << " failed to close resource - key: " << xa.key << " id: " << xa.id << " close info: " << xa.closeinfo;
                }
             }
             /*

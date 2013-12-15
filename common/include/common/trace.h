@@ -8,7 +8,7 @@
 #ifndef TRACE_H_
 #define TRACE_H_
 
-#include "common/logger.h"
+#include "common/log.h"
 
 #include <string>
 
@@ -22,18 +22,18 @@ namespace casual
          template< typename T>
          Trace( T&& info) : m_information{ std::forward< T>( info)}
          {
-            logger::trace << m_information << " - in";
+            log::trace << m_information << " - in" << std::endl;
          }
 
          ~Trace()
          {
             if( std::uncaught_exception())
             {
-               logger::trace << m_information << " - out*";
+               log::trace << m_information << " - out*" << std::endl;
             }
             else
             {
-               logger::trace << m_information << " - out";
+               log::trace << m_information << " - out" << std::endl;
             }
          }
 
@@ -56,11 +56,11 @@ namespace casual
            {
               if( std::uncaught_exception())
               {
-                 logger::trace << m_information << " - failed";
+                 log::trace << m_information << " - failed" << std::endl;
               }
               else
               {
-                 logger::trace << m_information << " - ok";
+                 log::trace << m_information << " - ok" << std::endl;
               }
            }
 

@@ -12,6 +12,7 @@
 #include "common/queue.h"
 #include "common/trace.h"
 #include "common/message_dispatch.h"
+#include "common/log.h"
 
 /*
 int main( int argc, char** argv)
@@ -78,6 +79,7 @@ namespace casual
 
                   message::transaction::resource::connect::Reply reply;
                   reply.id.pid = common::process::id();
+                  reply.resource = this->m_state.rm_id;
                   reply.id.queue_id = common::ipc::getReceiveQueue().id();
 
                   reply.state = this->m_state.xaSwitches->xaSwitch->xa_open_entry( this->m_state.rm_openinfo.c_str(), rm_id, TMNOFLAGS);
@@ -229,10 +231,10 @@ namespace casual
 
          void Proxy::start()
          {
-            common::logger::debug << "resource proxy start";
+            common::log::debug << "resource proxy start" << std::endl;
 
-            typedef queue::ipc_wrapper< queue::blocking::Writer> writer_type;
-            writer_type tm_queue( m_state.tm_queue);
+
+            queue::blocking::Writer tm_queue( m_state.tm_queue);
 
             handle::open( m_state, tm_queue)();
 

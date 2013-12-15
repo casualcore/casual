@@ -40,7 +40,8 @@ LinkLibrary( "casual-sf",
     "obj/service_protocol.o",
     "obj/archive_logger.o",
     "obj/xatmi_call.o",
-    "obj/trace.o"],
+    "obj/trace.o"
+    ],
     ["casual-common", "casual-xatmi", "yaml-cpp", "json-c"])
 
 

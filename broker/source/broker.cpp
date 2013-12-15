@@ -12,7 +12,7 @@
 #include "config/domain.h"
 
 #include "common/environment.h"
-#include "common/logger.h"
+#include "common/log.h"
 
 #include "common/queue.h"
 #include "common/message_dispatch.h"
@@ -59,7 +59,7 @@ namespace casual
 					   common::file::remove( path);
 					}
 
-					logger::debug << "writing broker queue file: " << path;
+					log::debug << "writing broker queue file: " << path << std::endl;
 
 					std::ofstream brokerQueueFile( path);
 
@@ -112,7 +112,7 @@ namespace casual
 
 		      for( auto& death : process::lifetime::ended())
 		      {
-		         logger::information << "shutdown: " << death.string();
+		         log::information << "shutdown: " << death.string() << std::endl;
 		      }
 
 
@@ -148,11 +148,11 @@ namespace casual
             }
             catch( const exception::FileNotExist& exception)
             {
-               common::logger::information << "failed to open '" << arguments.configurationfile << "' - starting anyway...";
+               common::log::information << "failed to open '" << arguments.configurationfile << "' - starting anyway..." << std::endl;
             }
 
 
-            common::logger::debug << " m_state.configuration.servers.size(): " << domain.servers.size();
+            common::log::debug << " m_state.configuration.servers.size(): " << domain.servers.size() << std::endl;
 
             {
                common::trace::Exit trace( "start processes");

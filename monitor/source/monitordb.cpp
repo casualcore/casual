@@ -44,7 +44,7 @@ namespace monitor
 				{
 					value = row[attribute].front();
 				}
-				common::logger::debug << "getValue(" << attribute << "): " << value;
+				common::log::debug << "getValue(" << attribute << "): " << value << std::endl;
 				return value;
 			}
 		}

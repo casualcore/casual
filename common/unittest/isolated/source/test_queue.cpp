@@ -29,10 +29,10 @@ namespace casual
          {
             ipc::receive::Queue receive;
 
-            ipc::send::Queue send( receive.id());
+            //ipc::send::Queue send( receive.id());
 
             {
-               blocking::Writer writer( send);
+               blocking::Writer writer( receive.id());
                message::service::Advertise message;
 
                message.server.queue_id = 666;
@@ -96,8 +96,8 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            ipc::send::Queue send( receive.id());
-            blocking::Writer writer( send);
+            //ipc::send::Queue send( receive.id());
+            blocking::Writer writer( receive.id());
 
             message::service::Advertise sendMessage;
             sendMessage.serverPath = "banan";
@@ -114,8 +114,8 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            ipc::send::Queue send( receive.id());
-            blocking::Writer writer( send);
+            //ipc::send::Queue send( receive.id());
+            blocking::Writer writer( receive.id());
 
             message::service::Advertise sendMessage;
             sendMessage.serverPath = "banan";

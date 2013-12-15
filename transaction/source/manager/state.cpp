@@ -9,6 +9,8 @@
 
 #include "common/exception.h"
 #include "common/trace.h"
+#include "common/algorithm.h"
+#include "common/log.h"
 
 #include "config/domain.h"
 #include "config/xa_switch.h"
@@ -41,20 +43,20 @@ namespace casual
                {
                   struct Resource
                   {
-                     std::shared_ptr< state::resource::Proxy> operator () ( const common::message::resource::Manager& value) const
+                     state::resource::Proxy operator () ( const common::message::resource::Manager& value) const
                      {
                         common::Trace trace{ "transform::Resource"};
 
-                        auto result = std::make_shared< state::resource::Proxy>();
+                        state::resource::Proxy result;
 
-                        result->id = value.id;
-                        result->key = value.key;
-                        result->openinfo = value.openinfo;
-                        result->closeinfo = value.closeinfo;
-                        result->concurency = value.instances;
+                        result.id = value.id;
+                        result.key = value.key;
+                        result.openinfo = value.openinfo;
+                        result.closeinfo = value.closeinfo;
+                        result.concurency = value.instances;
 
-                        common::logger::debug << "resource.openinfo: " << result->openinfo;
-                        common::logger::debug << "resource.concurency: " << result->concurency;
+                        common::log::debug << "resource.openinfo: " << result.openinfo << std::endl;
+                        common::log::debug << "resource.concurency: " << result.concurency << std::endl;
 
                         return result;
                      }
@@ -99,39 +101,11 @@ namespace casual
          namespace filter
          {
 
-            Instance::Instance( common::platform::pid_type pid)
-                  : pid( pid)
+            bool Running::operator () ( const resource::Proxy::Instance& instance) const
             {
+               return instance.state == resource::Proxy::Instance::State::idle
+                     || instance.state == resource::Proxy::Instance::State::busy;
             }
-
-            bool Instance::operator () ( const resource::Proxy::Instance& instance) const
-            {
-               return instance.id.pid == pid;
-            }
-
-
-            bool Started::operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
-            {
-               return instance->state > resource::Proxy::Instance::State::absent;
-            }
-
-            bool Started::operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
-            {
-               return std::all_of( std::begin( proxy->instances), std::end( proxy->instances), Started{});
-            }
-
-
-            bool Running::operator () ( const std::shared_ptr< resource::Proxy::Instance>& instance) const
-            {
-               return instance->state == resource::Proxy::Instance::State::idle
-                     || instance->state == resource::Proxy::Instance::State::busy;
-            }
-
-            bool Running::operator () ( const std::shared_ptr< state::resource::Proxy>& proxy) const
-            {
-               return std::any_of( std::begin( proxy->instances), std::end( proxy->instances), Running{});
-            }
-
 
          } // filter
 
@@ -140,28 +114,18 @@ namespace casual
          {
             void instance( common::platform::pid_type pid, State& state)
             {
-               auto instance = state.instances.find( pid);
+
+               auto instance = std::find_if( std::begin( state.instances), std::end( state.instances),
+                     [=]( const state::resource::Proxy::Instance& value){ return value.server.pid == pid;});
+
 
                if( instance != std::end( state.instances))
                {
-                  auto& proxy = instance->second->proxy;
-                  auto findIter = std::find(
-                        std::begin( proxy->instances),
-                        std::end( proxy->instances),
-                        instance->second);
-
-                  if( findIter != std::end( proxy->instances))
-                  {
-                     proxy->instances.erase( findIter);
-                  }
-                  else
-                  {
-                     throw exception::NotReallySureWhatToNameThisException( "inconsistency in state - action: abort");
-                  }
+                  state.instances.erase( instance);
                }
                else
                {
-                  logger::error << "failed to find instance - pid: " << pid;
+                  log::error << "failed to find and remove instance - pid: " << pid << std::endl;
                }
             }
          } // remove

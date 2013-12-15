@@ -17,7 +17,6 @@
 
 
 #include "common/error.h"
-#include "common/logger.h"
 #include "common/environment.h"
 
 

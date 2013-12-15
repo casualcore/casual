@@ -15,6 +15,7 @@
 #include "common/queue.h"
 #include "common/environment.h"
 #include "common/message_dispatch.h"
+#include "common/log.h"
 
 #include "config/domain.h"
 
@@ -41,7 +42,7 @@ namespace casual
          common::trace::Exit trace( "transaction manager startup");
 
 
-         common::logger::debug << "transaction manager queue: " << m_receiveQueue.id();
+         common::log::debug << "transaction manager queue: " << m_receiveQueue.id();
 
       }
 
@@ -59,7 +60,7 @@ namespace casual
             {
                for( auto& instances : resource.servers)
                {
-                  logger::information << "terminate: " << instances.id.pid;
+                  log::information << "terminate: " << instances.id.pid;
                   process::terminate( instances.id.pid);
                }
             }
@@ -67,7 +68,7 @@ namespace casual
 
             for( auto death : process::lifetime::ended())
             {
-               logger::information << "shutdown: " << death.string();
+               log::information << "shutdown: " << death.string();
             }
 
          }
@@ -83,8 +84,8 @@ namespace casual
          common::Trace trace( "transaction::Manager::start");
 
 
-         QueueBlockingReader queueReader( m_receiveQueue, m_state);
-         QueueBlockingWriter brokerQueue{ ipc::getBrokerQueue().id(), m_state};
+         queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
+         queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
 
          //
          // Connect and get configuration from broker
@@ -117,7 +118,10 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resourceConnect( m_state, brokerQueue));
+         handler.add( handle::resource::connect( m_state, brokerQueue));
+         handler.add( handle::resource::Prepare{ m_state});
+         handler.add( handle::resource::Commit{ m_state});
+         handler.add( handle::resource::Rollback{ m_state});
 
 
          while( true)
@@ -132,7 +136,7 @@ namespace casual
 
                if( ! handler.dispatch( marshal))
                {
-                  common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+                  common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
                }
 
                //
@@ -140,7 +144,7 @@ namespace casual
                //
                {
 
-                  QueueNonBlockingReader nonBlocking( m_receiveQueue, m_state);
+                  queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
 
 
                   for( auto marshler = nonBlocking.next(); ! marshler.empty(); marshler = nonBlocking.next())
@@ -148,7 +152,7 @@ namespace casual
 
                      if( ! handler.dispatch( marshler.front()))
                      {
-                        common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+                        common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
                      }
 
                      if( m_state.pendingReplies.size() >=  common::platform::transaction_batch)

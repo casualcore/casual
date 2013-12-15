@@ -141,9 +141,9 @@ namespace casual
                typedef IPC ipc_value_type;
                using ipc_type = typename std::decay< ipc_value_type>::type;
 
-               template< typename... Args>
-               basic_writer( ipc_value_type ipc, Args&&... args)
-                  : m_ipc( ipc), m_policy( std::forward< Args>( args)...) {}
+               template< typename ipc_id, typename... Args>
+               basic_writer( ipc_id&& ipc, Args&&... args)
+                  : m_ipc( std::forward< ipc_id>( ipc)), m_policy( std::forward< Args>( args)...) {}
 
 
                //!
@@ -154,16 +154,38 @@ namespace casual
                //! @return true if the whole message is sent. false otherwise
                //!
                template< typename M>
-               auto operator () ( M&& message) -> decltype( block_policy::send( std::declval< ipc::message::Complete>(), std::declval< ipc_value_type>()))
+               auto operator () ( M&& message) -> decltype( block_policy::send( std::declval< ipc::message::Complete>(), std::declval< ipc_value_type&>()))
                {
                   auto transport = prepare( std::forward< M>( message));
 
-                  return policy_send( transport);
+                  return send( transport);
                }
 
                const ipc_value_type ipc() const
                {
                   return m_ipc;
+               }
+
+
+               //!
+               //! Sends/Writes a "complete" message to the queue. which can result in several
+               //! actual ipc-messages.
+               //!
+               //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
+               //!
+               auto send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type&>()))
+               {
+                  while( true)
+                  {
+                     try
+                     {
+                        return block_policy::send( transport, m_ipc);
+                     }
+                     catch( ...)
+                     {
+                        m_policy.apply();
+                     }
+                  }
                }
 
             private:
@@ -177,23 +199,8 @@ namespace casual
                   marshal::output::Binary archive;
                   archive << message;
 
-                  message_type_type type = message::type( message);
+                  auto type = message::type( message);
                   return ipc::message::Complete( type, archive.release());
-               }
-
-               auto policy_send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type>()))
-               {
-                  while( true)
-                  {
-                     try
-                     {
-                        return block_policy::send( transport, m_ipc);
-                     }
-                     catch( ...)
-                     {
-                        m_policy.apply();
-                     }
-                  }
                }
 
                ipc_value_type m_ipc;
@@ -223,31 +230,6 @@ namespace casual
                //!
                auto next() -> decltype( block_policy::next( std::declval< ipc_value_type>()))
                {
-                  return policy_next();
-               }
-
-               //!
-               //! Tries to read a specific message from the queue.
-               //! If other message types is consumed before the requested type
-               //! they will be cached.
-               //!
-               //! @attention Will block until the specific message-type can be read from the queue
-               //!
-               template< typename M>
-               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
-               {
-                  return policy_read( message);
-               }
-
-               const ipc_value_type ipc() const
-               {
-                  return m_ipc;
-               }
-
-            private:
-
-               auto policy_next() -> decltype( block_policy::next( std::declval< ipc_value_type>()))
-               {
                   while( true)
                   {
                      try
@@ -261,8 +243,15 @@ namespace casual
                   }
                }
 
+               //!
+               //! Tries to read a specific message from the queue.
+               //! If other message types is consumed before the requested type
+               //! they will be cached.
+               //!
+               //! @attention Will block until the specific message-type can be read from the queue
+               //!
                template< typename M>
-               auto policy_read( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
+               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
                {
                   while( true)
                   {
@@ -277,6 +266,13 @@ namespace casual
                   }
                }
 
+               const ipc_value_type ipc() const
+               {
+                  return m_ipc;
+               }
+
+            private:
+
                ipc_value_type m_ipc;
                policy_type m_policy;
             };
@@ -290,7 +286,7 @@ namespace casual
          {
 
             template< typename P>
-            using basic_writer = internal::basic_writer< policy::Blocking, P, ipc::send::Queue&>;
+            using basic_writer = internal::basic_writer< policy::Blocking, P, ipc::send::Queue>;
 
             typedef basic_writer< policy::NoAction> Writer;
 
@@ -307,7 +303,7 @@ namespace casual
          {
 
             template< typename P>
-            using basic_writer = internal::basic_writer< policy::NonBlocking, P, ipc::send::Queue&>;
+            using basic_writer = internal::basic_writer< policy::NonBlocking, P, ipc::send::Queue>;
 
             typedef basic_writer< policy::NoAction> Writer;
 
@@ -320,6 +316,7 @@ namespace casual
          } // non_blocking
 
 
+         /*
          //!
          //! Wrapper that exposes the queue interface and holds the ipc resource
          //!
@@ -356,6 +353,7 @@ namespace casual
             ipc_type m_ipcQueue;
             queue_type m_queue;
          };
+         */
 
 
       } // queue

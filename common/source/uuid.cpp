@@ -91,7 +91,7 @@ namespace casual
 			return uuid_compare( m_uuid, rhs.m_uuid) == 0;
 		}
 
-      std::string Uuid::toString( const uuid_type& uuid)
+      std::string Uuid::toString( const uuid_type uuid)
       {
          platform::uuid_string_type buffer;
          uuid_unparse_lower( uuid, buffer);

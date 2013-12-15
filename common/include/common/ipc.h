@@ -253,9 +253,33 @@ namespace casual
             };
          }
 
+         namespace broker
+         {
+            send::Queue::id_type id();
 
+            send::Queue& queue();
+
+         } // broker
+
+
+         //!
+         //! @deprecated use broker::queue(), or probably easier: ipc::broker::id();
+         //!
          send::Queue& getBrokerQueue();
 
+
+         namespace receive
+         {
+            receive::Queue::id_type id();
+
+            receive::Queue& queue();
+
+         } // receive
+
+
+         //!
+         //! @deprecated use receive::queue()
+         //!
          receive::Queue& getReceiveQueue();
 
 

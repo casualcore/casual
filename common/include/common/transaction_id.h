@@ -10,6 +10,10 @@
 
 #include <tx.h>
 
+
+#include "common/uuid.h"
+
+
 #include <string>
 
 
@@ -24,14 +28,32 @@ namespace casual
          {
          public:
 
+            enum Format
+            {
+               cNull = -1,
+               cCasual = 42
+            };
+
             //!
             //! Initialize with null-xid
             //!
             ID();
 
-            ID( ID&&);
-            ID& operator = ( ID&&);
 
+            //!
+            //! Initialize with uuid, gtrid and bqual.
+            //! Sets the format id to "casual"
+            //!
+            //! @note not likely to be used other than unittesting
+            //!
+            ID( const Uuid& gtrid, const Uuid& bqual);
+
+
+            ID( ID&&) noexcept;
+            ID& operator = ( ID&&) noexcept;
+
+
+            ID( const ID&);
             ID& operator = ( const ID&);
 
             //!
@@ -87,13 +109,9 @@ namespace casual
 
          private:
 
-            ID( const ID&);
 
-            enum Format
-            {
-               cNull = -1,
-               cCasual = 42
-            };
+
+
 
             XID m_xid;
          };

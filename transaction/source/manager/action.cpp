@@ -23,31 +23,30 @@ namespace casual
       {
          namespace boot
          {
-            void Proxie::operator () ( const std::shared_ptr< state::resource::Proxy>& proxy)
+            void Proxie::operator () ( const state::resource::Proxy& proxy)
             {
-               for( auto index = proxy->concurency; index > 0; --index)
+               for( auto index = proxy.concurency; index > 0; --index)
                {
-                  auto& info = m_state.xaConfig.at( proxy->key);
+                  auto& info = m_state.xaConfig.at( proxy.key);
 
-                  auto instance = std::make_shared< state::resource::Proxy::Instance>();
+                  state::resource::Proxy::Instance instance( proxy.id);
 
-                  instance->id.pid = process::spawn(
+                  instance.server.pid = process::spawn(
                         info.server,
                         {
                               "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
                               "--rm-key", info.key,
-                              "--rm-openinfo", proxy->openinfo,
-                              "--rm-closeinfo", proxy->closeinfo,
-                              "--rm-id", std::to_string( proxy->id)
+                              "--rm-openinfo", proxy.openinfo,
+                              "--rm-closeinfo", proxy.closeinfo,
+                              "--rm-id", std::to_string( proxy.id)
                         }
                      );
 
-                  m_state.instances.emplace( instance->id.pid, instance);
-                  instance->proxy = proxy;
+                  instance.state = state::resource::Proxy::Instance::State::started;
 
-                  instance->state = state::resource::Proxy::Instance::State::started;
+                  auto order = std::lower_bound( std::begin( m_state.instances), std::end( m_state.instances), instance);
 
-                  proxy->instances.emplace_back( std::move( instance));
+                  m_state.instances.insert( order, std::move( instance));
                }
             }
 
