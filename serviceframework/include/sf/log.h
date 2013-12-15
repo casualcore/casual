@@ -10,7 +10,7 @@
 
 #include "common/log.h"
 
-#include "sf/archive_logger.h"
+#include "sf/archive_log.h"
 
 
 #include <sstream>

@@ -26,6 +26,9 @@ namespace casual
                m_state.value = TPSUCCESS;
             }
 
+            Base::Base( Base&&) = default;
+
+
             bool Base::doCall()
             {
                return true;
