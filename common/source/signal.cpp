@@ -8,7 +8,7 @@
 #include "common/signal.h"
 #include "common/platform.h"
 #include "common/exception.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/process.h"
 
 #include <signal.h>
@@ -178,7 +178,7 @@ namespace casual
          {
             if( kill( pid, signal) == -1)
             {
-               logger::error << "failed to send signal (" << platform::getSignalDescription( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::stringFromErrno();
+               log::error << "failed to send signal (" << platform::getSignalDescription( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::stringFromErrno() << std::endl;
             }
          }
 

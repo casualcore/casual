@@ -13,7 +13,7 @@
 
 #include "common/message.h"
 #include "common/queue.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/environment.h"
 #include "common/server_context.h"
 
@@ -56,11 +56,11 @@ namespace casual
                      switch( death.why)
                      {
                         case process::lifetime::Exit::Why::core:
-                           logger::error << "process crashed " << death.string();
+                           log::error << "process crashed " << death.string() << std::endl;
 
                            break;
                         default:
-                           logger::information << "proccess died: " << death.string();
+                           log::information << "proccess died: " << death.string() << std::endl;
                            break;
                      }
 
@@ -205,7 +205,7 @@ namespace casual
                }
                else
                {
-                  logger::error << "server (pid: " << message.server.pid << ") has not connected before advertising services";
+                  log::error << "server (pid: " << message.server.pid << ") has not connected before advertising services" << std::endl;
 
                }
             }
@@ -318,7 +318,7 @@ namespace casual
                }
                else
                {
-                  logger::error << "server (pid: " << message.server.pid << ") has not connected before unadverties services";
+                  log::error << "server (pid: " << message.server.pid << ") has not connected before unadverties services" << std::endl;
 
                }
             }
@@ -372,7 +372,7 @@ namespace casual
                      writer( reply);
 
                      serviceFound->second->lookedup++;
-                     logger::debug << "serviceFound->second->lookedup: " << serviceFound->second->lookedup;
+                     log::debug << "serviceFound->second->lookedup: " << serviceFound->second->lookedup << std::endl;
                   }
                   else
                   {
@@ -491,8 +491,8 @@ namespace casual
 
             message::server::Configuration connect( message::server::Connect& message)
             {
-               logger::debug << "broker server - message.server.queue_id.: " << message.server.queue_id;
-               logger::debug << "broker server - message.path............: " << message.path;
+               log::debug << "broker server - message.server.queue_id.: " << message.server.queue_id << std::endl;
+               log::debug << "broker server - message.path............: " << message.path << std::endl;
 
                message.server.queue_id = ipc::getReceiveQueue().id();
                message.path = common::environment::file::executable();

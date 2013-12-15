@@ -8,7 +8,7 @@
 #include "sf/server.h"
 
 
-#include "common/logger.h"
+#include "common/log.h"
 
 namespace casual
 {
@@ -52,11 +52,11 @@ namespace casual
                }
                catch( const std::exception& exception)
                {
-                  common::logger::error << exception.what();
+                  common::log::error << exception.what() << std::endl;
                }
                catch( ...)
                {
-                  common::logger::error << "Unknown exception catched...";
+                  common::log::error << "Unknown exception catched..." << std::endl;
                }
 
                reply.code = TPFAIL;

@@ -7,7 +7,7 @@
 
 #include "sf/trace.h"
 
-#include "common/logger.h"
+#include "common/log.h"
 
 namespace casual
 {
@@ -16,12 +16,12 @@ namespace casual
 
       Trace::Trace( const std::string& information) : m_information( information)
       {
-         common::logger::trace << " " << m_information << " IN";
+         common::log::trace << " " << m_information << " IN" << std::endl;
       }
 
       Trace::~Trace()
       {
-         common::logger::trace << " " << m_information << " OUT";
+         common::log::trace << " " << m_information << " OUT" << std::endl;
       }
 
 

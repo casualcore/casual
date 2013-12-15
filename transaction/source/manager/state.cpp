@@ -10,6 +10,7 @@
 #include "common/exception.h"
 #include "common/trace.h"
 #include "common/algorithm.h"
+#include "common/log.h"
 
 #include "config/domain.h"
 #include "config/xa_switch.h"
@@ -54,8 +55,8 @@ namespace casual
                         result.closeinfo = value.closeinfo;
                         result.concurency = value.instances;
 
-                        common::logger::debug << "resource.openinfo: " << result.openinfo;
-                        common::logger::debug << "resource.concurency: " << result.concurency;
+                        common::log::debug << "resource.openinfo: " << result.openinfo << std::endl;
+                        common::log::debug << "resource.concurency: " << result.concurency << std::endl;
 
                         return result;
                      }
@@ -124,7 +125,7 @@ namespace casual
                }
                else
                {
-                  logger::error << "failed to find and remove instance - pid: " << pid;
+                  log::error << "failed to find and remove instance - pid: " << pid << std::endl;
                }
             }
          } // remove

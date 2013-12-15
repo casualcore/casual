@@ -7,6 +7,7 @@
 
 
 #include "sf/xatmi_call.h"
+#include "sf/log.h"
 
 #include "broker/brokervo.h"
 
@@ -35,7 +36,7 @@ namespace casual
       {
          void operator () ( const admin::InstanceVO& value) const
          {
-            std::cout <<
+            std::cout << std::setfill( ' ') <<
                   std::setw( 10) << value.pid <<
                   std::setw( 12) << value.queueId << std::setw( 8);
 
@@ -54,7 +55,7 @@ namespace casual
 
          void operator () ( const admin::ServerVO& value) const
          {
-            std::cout <<  std::setw( 20) << std::left << value.alias << " path: " << value.path << std::endl;
+            std::cout <<  std::setw( 20) << std::setfill( ' ') << std::left << value.alias << " path: " << value.path << std::endl;
 
             std::cout << "  |- PID       QUEUE       STATE      INVOKED  TIMESTAMP" << std::endl;
             for( auto& instance : value.instances)
@@ -66,7 +67,7 @@ namespace casual
 
          void operator () ( const admin::ServiceVO& value) const
          {
-            std::cout <<  std::setw( 32) << std::left << value.name <<
+            std::cout <<  std::setw( 32) << std::setfill( ' ') << std::left << value.name <<
                   std::setw( 12) << std::right << value.instances.size() <<
                   std::setw( 14) << std::right << value.lookedup <<
                   std::setw( 10) << value.timeout << std::endl;
@@ -83,6 +84,8 @@ namespace casual
          std::vector< admin::ServerVO> serviceReply;
 
          reply >> CASUAL_MAKE_NVP( serviceReply);
+
+         sf::log::debug << sf::makeNameValuePair( "server", serviceReply);
 
 
          std::for_each( std::begin( serviceReply), std::end( serviceReply), Print() );

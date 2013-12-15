@@ -10,7 +10,7 @@
 
 #include "common/marshal.h"
 #include "common/queue.h"
-#include "common/logger.h"
+#include "common/log.h"
 
 
 #include <map>
@@ -120,7 +120,7 @@ namespace casual
 
                   if( ! handler.dispatch( marshal))
                   {
-                     common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+                     common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
                   }
                }
             }

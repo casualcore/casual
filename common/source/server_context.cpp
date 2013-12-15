@@ -11,7 +11,7 @@
 #include "common/queue.h"
 #include "common/buffer_context.h"
 #include "common/calling_context.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/error.h"
 
 
@@ -44,7 +44,7 @@ namespace casual
 
          void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)
          {
-            logger::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags;
+            log::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags << std::endl;
 
             //
             // Prepare buffer.
@@ -72,7 +72,7 @@ namespace casual
             if( localName.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
                localName.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               logger::warning << "service name '" << name << "' truncated to '" << localName << "'";
+               log::warning << "service name '" << name << "' truncated to '" << localName << "'";
             }
 
             auto findIter = m_state.services.find( localName);

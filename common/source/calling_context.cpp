@@ -8,6 +8,7 @@
 #include "common/calling_context.h"
 #include "common/message.h"
 #include "common/queue.h"
+#include "common/log.h"
 
 
 #include "common/environment.h"
@@ -309,7 +310,7 @@ namespace casual
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
             common::Trace trace( "calling::Context::asyncCall");
-            common::logger::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags;
+            common::log::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
 
 
@@ -370,7 +371,7 @@ namespace casual
          int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
          {
             common::Trace trace( "calling::Context::getReply");
-            common::logger::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags;
+            common::log::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
 
 
@@ -440,7 +441,7 @@ namespace casual
 
 
             // TOOD: Temp
-            common::logger::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen;
+            common::log::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen << std::endl;
 
             //
             // Add the buffer to the pool

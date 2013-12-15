@@ -111,7 +111,7 @@ namespace casual
 			};
 
 
-			enum logger_priority
+			enum log_category
 			{
 				//! system is unusable
 				cLOG_emergency = LOG_EMERG,

@@ -12,7 +12,7 @@
 #include "transaction/manager/state.h"
 
 #include "common/message.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/exception.h"
 #include "common/process.h"
 #include "common/queue.h"
@@ -51,10 +51,10 @@ namespace casual
                      switch( death.why)
                      {
                         case common::process::lifetime::Exit::Why::core:
-                           common::logger::error << "process crashed: TODO: maybe restart? " << death.string();
+                           common::log::error << "process crashed: TODO: maybe restart? " << death.string() << std::endl;
                            break;
                         default:
-                           common::logger::information << "proccess died: " << death.string();
+                           common::log::information << "proccess died: " << death.string() << std::endl;
                            break;
                      }
 
@@ -102,7 +102,7 @@ namespace casual
 
                void dispatch( message_type& message)
                {
-                  common::logger::information << "resource proxy pid: " <<  message.id.pid << " connected";
+                  common::log::information << "resource proxy pid: " <<  message.id.pid << " connected" << std::endl;
 
                   auto instanceRange = state::find::instance(
                         std::begin( m_state.instances),
@@ -119,7 +119,7 @@ namespace casual
                      }
                      else
                      {
-                        common::logger::error << "resource proxy pid: " <<  message.id.pid << " startup error";
+                        common::log::error << "resource proxy pid: " <<  message.id.pid << " startup error" << std::endl;
                         instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
@@ -127,7 +127,7 @@ namespace casual
                   }
                   else
                   {
-                     common::logger::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard";
+                     common::log::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard" << std::endl;
                   }
 
 
@@ -197,7 +197,7 @@ namespace casual
                      }
                      else
                      {
-                        common::logger::warning << "failed to send pending request to resource, although the instance reported idle";
+                        common::log::warning << "failed to send pending request to resource, although the instance reported idle" << std::endl;
 
                         instance::state( state, message, state::resource::Proxy::Instance::State::idle);
                      }

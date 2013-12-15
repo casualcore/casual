@@ -15,6 +15,7 @@
 #include "common/queue.h"
 #include "common/environment.h"
 #include "common/message_dispatch.h"
+#include "common/log.h"
 
 #include "config/domain.h"
 
@@ -41,7 +42,7 @@ namespace casual
          common::trace::Exit trace( "transaction manager startup");
 
 
-         common::logger::debug << "transaction manager queue: " << m_receiveQueue.id();
+         common::log::debug << "transaction manager queue: " << m_receiveQueue.id();
 
       }
 
@@ -59,7 +60,7 @@ namespace casual
             {
                for( auto& instances : resource.servers)
                {
-                  logger::information << "terminate: " << instances.id.pid;
+                  log::information << "terminate: " << instances.id.pid;
                   process::terminate( instances.id.pid);
                }
             }
@@ -67,7 +68,7 @@ namespace casual
 
             for( auto death : process::lifetime::ended())
             {
-               logger::information << "shutdown: " << death.string();
+               log::information << "shutdown: " << death.string();
             }
 
          }
@@ -135,7 +136,7 @@ namespace casual
 
                if( ! handler.dispatch( marshal))
                {
-                  common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+                  common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
                }
 
                //
@@ -151,7 +152,7 @@ namespace casual
 
                      if( ! handler.dispatch( marshler.front()))
                      {
-                        common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+                        common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
                      }
 
                      if( m_state.pendingReplies.size() >=  common::platform::transaction_batch)

@@ -9,7 +9,7 @@
 #include "common/exception.h"
 #include "common/error.h"
 #include "common/file.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/trace.h"
 #include "common/signal.h"
 #include "common/string.h"
@@ -202,7 +202,7 @@ namespace casual
                      //
                      // We have started the process, hopefully...
                      //
-                     logger::information << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ");
+                     log::information << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ") << std::endl;
                   }
                   /*
                   else
@@ -243,7 +243,7 @@ namespace casual
                   }
                   else
                   {
-                     logger::error << "failed to check state of pid: " << exit.pid << " - " << error::stringFromErrno();
+                     log::error << "failed to check state of pid: " << exit.pid << " - " << error::stringFromErrno() << std::endl;
                      throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
                   }
                }

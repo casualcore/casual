@@ -13,7 +13,7 @@
 
 #include "common/platform.h"
 #include "common/string.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/signal.h"
@@ -378,7 +378,7 @@ namespace casual
                   }
                   else
                   {
-                     common::logger::error << "service " << service.name << " does not exist, hence can't be removed - instance: pid: " << m_instance->pid;
+                     common::log::error << "service " << service.name << " does not exist, hence can't be removed - instance: pid: " << m_instance->pid << std::endl;
                   }
 
                }
@@ -413,7 +413,7 @@ namespace casual
                }
                else
                {
-                  common::logger::error << "failed to remove instance - pid '" << pid << " does not exist - action: discard";
+                  common::log::error << "failed to remove instance - pid '" << pid << " does not exist - action: discard" << std::endl;
                }
             }
 
@@ -635,7 +635,7 @@ namespace casual
                }
                catch( const common::exception::signal::Timeout& exception)
                {
-                  common::logger::error << "failed to get response from transaction manager in a timely manner - action: abort";
+                  common::log::error << "failed to get response from transaction manager in a timely manner - action: abort" << std::endl;
                   throw common::exception::signal::Terminate{};
 
                }
@@ -672,7 +672,7 @@ namespace casual
 
                   for( auto& group : batch)
                   {
-                     common::logger::debug << "boot group: " << group->name;
+                     common::log::debug << "boot group: " << group->name << std::endl;
                   }
 
 
@@ -684,7 +684,7 @@ namespace casual
                         });
 
 
-                  common::logger::debug << "boot " << std::distance( serversStart, serversEnd) << " servers";
+                  common::log::debug << "boot " << std::distance( serversStart, serversEnd) << " servers" << std::endl;
 
 
                   std::for_each(
@@ -719,7 +719,7 @@ namespace casual
                      }
                      catch( const common::exception::signal::Timeout& exception)
                      {
-                        common::logger::error << "failed to get response from spawned instances in a timely manner - action: abort";
+                        common::log::error << "failed to get response from spawned instances in a timely manner - action: abort" << std::endl;
                         throw common::exception::signal::Terminate{};
                      }
                   }

@@ -242,7 +242,15 @@ namespace casual
 
 
          template< typename T, typename RV>
-         Reader& operator >>( Reader& archive, const NameValuePair< T, RV>&& nameValuePair)
+         Reader& operator >>( Reader& archive, const NameValuePair< T, RV>& nameValuePair)
+         {
+            serialize( archive, nameValuePair.getName(), nameValuePair.getValue());
+
+            return archive;
+         }
+
+         template< typename T, typename RV>
+         Reader& operator >>( Reader& archive, NameValuePair< T, RV>&& nameValuePair)
          {
             serialize( archive, nameValuePair.getName(), nameValuePair.getValue());
 
@@ -385,7 +393,15 @@ namespace casual
 
 
          template< typename T, typename RV>
-         Writer& operator <<( Writer& archive, const NameValuePair< T, RV>&& nameValuePair)
+         Writer& operator <<( Writer& archive, const NameValuePair< T, RV>& nameValuePair)
+         {
+            serialize( archive, nameValuePair.getName(), nameValuePair.getConstValue());
+
+            return archive;
+         }
+
+         template< typename T, typename RV>
+         Writer& operator <<( Writer& archive, NameValuePair< T, RV>&& nameValuePair)
          {
             serialize( archive, nameValuePair.getName(), nameValuePair.getConstValue());
 

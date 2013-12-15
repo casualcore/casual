@@ -10,7 +10,7 @@
 #include "common/message.h"
 #include "common/message_dispatch.h"
 #include "common/types.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/trace.h"
 #include "common/environment.h"
 
@@ -167,11 +167,11 @@ namespace monitor
 		//
 		// Test of select
 		//
-		common::logger::debug << "Statistic logging";
+		common::log::debug << "Statistic logging" << std::endl;
 //		auto rowset = m_monitordb.select();
 //		for (auto row = rowset.begin(); row != rowset.end(); ++row )
 //		{
-//			common::logger::debug << *row;
+//			common::log::debug << *row;
 //		}
 	}
 
@@ -196,7 +196,7 @@ namespace monitor
 
 			if( ! handler.dispatch( marshal))
 			{
-			   common::logger::error << "message_type: " << " not recognized - action: discard";
+			   common::log::error << "message_type: " << " not recognized - action: discard" << std::endl;
 			}
 
 			nonBlockingRead( common::platform::statistics_batch);

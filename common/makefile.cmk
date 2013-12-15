@@ -31,7 +31,7 @@ Compile( "source/environment.cpp", "obj/environment.o")
 Compile( "source/file.cpp", "obj/file.o")
 Compile( "source/signal.cpp", "obj/signal.o")
 Compile( "source/platform.cpp", "obj/platform.o")
-Compile( "source/logger.cpp", "obj/logger.o")
+Compile( "source/log.cpp", "obj/log.o")
 Compile( "source/error.cpp", "obj/error.o")
 Compile( "source/chronology.cpp", "obj/chronology.o")
 Compile( "source/process.cpp", "obj/process.o")
@@ -49,7 +49,7 @@ LinkLibrary( "casual-common",
 	"obj/file.o",
 	"obj/signal.o",
 	"obj/platform.o",
-	"obj/logger.o",
+	"obj/log.o",
 	"obj/error.o",
 	"obj/chronology.o",
 	"obj/process.o"],

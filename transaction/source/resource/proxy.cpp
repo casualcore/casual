@@ -12,6 +12,7 @@
 #include "common/queue.h"
 #include "common/trace.h"
 #include "common/message_dispatch.h"
+#include "common/log.h"
 
 /*
 int main( int argc, char** argv)
@@ -230,7 +231,7 @@ namespace casual
 
          void Proxy::start()
          {
-            common::logger::debug << "resource proxy start";
+            common::log::debug << "resource proxy start" << std::endl;
 
 
             queue::blocking::Writer tm_queue( m_state.tm_queue);

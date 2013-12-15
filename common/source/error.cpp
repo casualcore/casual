@@ -7,7 +7,7 @@
 
 
 #include "common/error.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/exception.h"
 #include "common/transaction_context.h"
 
@@ -43,44 +43,44 @@ namespace casual
             }
             catch( const exception::xatmi::severity::Error& exception)
             {
-               logger::error << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
+               log::error << tperrnoStringRepresentation( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
             catch( const exception::xatmi::severity::Information& exception)
             {
-               logger::information << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
+               log::information << tperrnoStringRepresentation( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
             catch( const exception::xatmi::severity::User& exception)
             {
-               logger::debug << tperrnoStringRepresentation( exception.code()) << " - " << exception.what();
+               log::debug << tperrnoStringRepresentation( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
             /*
             catch( const exception::tx::severity::Error& exception)
             {
-               logger::error << transaction::txError( exception.code()) << " - " << exception.what();
+               log::error << transaction::txError( exception.code()) << " - " << exception.what();
                return exception.code();
             }
             catch( const exception::tx::severity::Information& exception)
             {
-               logger::information << transaction::txError( exception.code()) << " - " << exception.what();
+               log::information << transaction::txError( exception.code()) << " - " << exception.what();
                return exception.code();
             }
             catch( const exception::tx::severity::User& exception)
             {
-               logger::debug << transaction::txError( exception.code()) << " - " << exception.what();
+               log::debug << transaction::txError( exception.code()) << " - " << exception.what();
                return exception.code();
             }
             */
             catch( const std::exception& exception)
             {
-               logger::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what();
+               log::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what() << std::endl;
                return TPESYSTEM;
             }
             catch( ...)
             {
-               logger::error << tperrnoStringRepresentation( TPESYSTEM) << " uexpected exception";
+               log::error << tperrnoStringRepresentation( TPESYSTEM) << " uexpected exception" << std::endl;
                return TPESYSTEM;
             }
 

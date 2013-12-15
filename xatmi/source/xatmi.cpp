@@ -11,6 +11,7 @@
 #include "common/calling_context.h"
 #include "common/server_context.h"
 #include "common/types.h"
+#include "common/log.h"
 
 
 #include "common/string.h"
@@ -190,14 +191,14 @@ const char* tperrnostring( int error)
 
 int tpsvrinit(int argc, char **argv)
 {
-  casual::common::logger::debug << "internal tpsvrinit called";
+  casual::common::log::debug << "internal tpsvrinit called" << std::endl;
   return 0;
 }
 
 
 void tpsvrdone()
 {
-  casual::common::logger::debug << "internal tpsvrdone called";
+  casual::common::log::debug << "internal tpsvrdone called" << std::endl;
 }
 
 

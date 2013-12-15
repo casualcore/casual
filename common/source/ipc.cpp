@@ -13,7 +13,7 @@
 #include "common/exception.h"
 #include "common/signal.h"
 #include "common/uuid.h"
-#include "common/logger.h"
+#include "common/log.h"
 
 
 // TODO: header dependency to sf... not so good...
@@ -199,7 +199,7 @@ namespace casual
             {
                if( ! m_cache.empty())
                {
-                  logger::error << "queue: " << m_id << " has unconsumed messages in cache";
+                  log::error << "queue: " << m_id << " has unconsumed messages in cache";
                }
 
                try
@@ -208,7 +208,7 @@ namespace casual
                   // Destroy queue
                   //
                   ipc::remove( m_id);
-                  logger::debug << "queue id: " << m_id << " removed";
+                  log::debug << "queue id: " << m_id << " removed";
                }
                catch( ...)
                {

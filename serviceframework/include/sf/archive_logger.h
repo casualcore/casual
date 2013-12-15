@@ -11,7 +11,8 @@
 #include "sf/basic_archive.h"
 
 
-#include <sstream>
+#include <ostream>
+#include <tuple>
 
 namespace casual
 {
@@ -23,10 +24,15 @@ namespace casual
          namespace logger
          {
 
+
             class Implementation
             {
             public:
                Implementation();
+               Implementation( std::ostream& out);
+
+
+
                ~Implementation();
 
                void handle_start( const char* const name);
@@ -44,33 +50,53 @@ namespace casual
                template<typename T>
                void write( const T& value)
                {
-                  value_start();
-                  write_value( value);
-                  value_end();
+                  write( std::to_string( value));
                }
+
+               void write( std::string&& value);
+               void write( const std::string& value);
+               void write( const std::wstring& value);
+               void write( const common::binary_type& value);
+
 
             private:
 
-               void value_start();
-               void value_end();
+               void flush();
 
-               template<typename T>
-               void write_value( const T& value)
+
+               enum class Type
                {
-                  m_buffer << value;
-               }
+                  value,
+                  container,
+                  composite
+               };
 
-               void write_value( const std::string& value);
-               void write_value( const std::wstring& value);
-               void write_value( const common::binary_type& value);
+               struct buffer_type
+               {
+                  buffer_type( std::size_t indent, const char* name) : indent( indent), name( name) {}
+                  buffer_type( buffer_type&&) = default;
 
-            private:
-               std::ostringstream m_buffer;
-               const char* m_name = 0;
-               std::size_t m_indent = 0;
+                  std::size_t indent;
+                  std::string name;
+                  std::string value;
+                  Type type = Type::value;
+               };
+
+               std::ostream& m_output;
+               std::vector< buffer_type> m_buffer;
+               std::size_t m_indent = 1;
             };
 
 
+            //!
+            //! |-someStuff
+            //! ||-name...........[blabla]
+            //! ||-someOtherName..[foo]
+            //! ||-composite
+            //! |||-foo..[slkjf]
+            //! |||-bar..[42]
+            //! ||-
+            //!
             typedef basic_writer< Implementation> Writer;
 
          } // logger

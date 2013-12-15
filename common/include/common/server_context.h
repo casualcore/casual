@@ -19,7 +19,7 @@
 #include "common/calling_context.h"
 #include "common/transaction_context.h"
 #include "common/platform.h"
-#include "common/logger.h"
+#include "common/log.h"
 #include "common/trace.h"
 
 

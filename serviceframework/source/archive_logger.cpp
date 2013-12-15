@@ -1,104 +1,146 @@
+
+
 #include "sf/archive_logger.h"
-#include "common/logger.h"
 
 #include <iostream>
 #include <iomanip>
 #include <locale>
+#include <algorithm>
 //#include <codecvt>
 
 namespace casual
 {
-namespace sf
-{
-
-namespace archive
-{
-
-namespace logger
-{
-   namespace
+   namespace sf
    {
-      namespace local
+
+      namespace archive
       {
-         const std::size_t indent = 3;
-      }
-   }
 
-   Implementation::Implementation()
-   {
-      m_buffer << std::boolalpha << std::fixed << std::setprecision( 6);
-   }
+         namespace logger
+         {
+            namespace
+            {
+               namespace local
+               {
+                  const std::size_t indent = 3;
 
-   Implementation::~Implementation()
-   {
-      std::clog << m_buffer.str() << std::endl;
-   }
+               }
+            }
 
-   void Implementation::handle_start( const char* const name)
-   {
-      m_name = name;
-      m_buffer << std::setfill( '-') << std::setw( m_indent * local::indent) << "";
-   }
+            Implementation::Implementation( std::ostream& out) : m_output( out)
+            {
 
-   void Implementation::handle_end( const char* const name)
-   {}
+            }
 
-   std::size_t Implementation::handle_container_start( const std::size_t size)
-   {
-      m_buffer << m_name << ' ' << '(' << size << ')' << std::endl;
-      ++m_indent;
+            Implementation::~Implementation()
+            {
+               flush();
+            }
 
-      return size;
-   }
+            void Implementation::handle_start( const char* const name)
+            {
+               m_buffer.emplace_back( m_indent, name);
+            }
 
-   void Implementation::handle_container_end()
-   {
-      --m_indent;
-   }
+            void Implementation::handle_end( const char* const name)
+            {
+            }
 
-   void Implementation::handle_serialtype_start()
-   {
-      m_buffer << m_name << std::endl;
-      ++m_indent;
-   }
+            std::size_t Implementation::handle_container_start( const std::size_t size)
+            {
+               ++m_indent;
 
-   void Implementation::handle_serialtype_end()
-   {
-      --m_indent;
-   }
+               m_buffer.back().type = Type::container;
+               flush();
 
-   void Implementation::value_start()
-   {
-      m_buffer << std::setfill( '.') << std::setw( 25 - m_indent * local::indent) << std::left << m_name << '[';
-   }
+               return size;
+            }
 
-   void Implementation::value_end()
-   {
-      m_buffer << ']' << std::endl;
-   }
+            void Implementation::handle_container_end()
+            {
+               --m_indent;
+               flush();
+            }
 
-   void Implementation::write_value( const std::string& value)
-   {
-      m_buffer << value;
-   }
+            void Implementation::handle_serialtype_start()
+            {
+               ++m_indent;
+               m_buffer.back().type = Type::composite;
+               flush();
+            }
 
-   void Implementation::write_value( const std::wstring& value)
-   {
-      //std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>> converter;
-      //m_buffer << converter.to_bytes( value);
-      m_buffer << "wide string (" << value.size() << ")";
-   }
-
-   void Implementation::write_value( const common::binary_type& value)
-   {
-      m_buffer << "binary data (" << value.size() << ')';
-   }
+            void Implementation::handle_serialtype_end()
+            {
+               --m_indent;
+               flush();
+            }
 
 
-} // logger
+            void Implementation::write( std::string&& value)
+            {
+               m_buffer.back().value = std::move( value);
+            }
 
-} // archive
+            void Implementation::write( const std::string& value)
+            {
+               m_buffer.back().value = value;
+            }
 
-} // sf
+            void Implementation::write( const std::wstring& value)
+            {
+               m_buffer.back().value = "wide string (" + std::to_string( value.size()) + ")";
+            }
+
+            void Implementation::write( const common::binary_type& value)
+            {
+               m_buffer.back().value = "binary data (" + std::to_string( value.size()) + ")";
+            }
+
+            void Implementation::flush()
+            {
+               //
+               // Find the longest name
+               //
+               std::size_t size = 0;
+
+               auto maxSize = [&]( const Implementation::buffer_type& value)
+               {
+                  if( value.name.size() > size) size = value.name.size();
+               };
+
+               std::for_each( std::begin( m_buffer), std::end( m_buffer), maxSize);
+
+
+               auto writer = [&]( const Implementation::buffer_type& value)
+               {
+                  m_output << std::setfill( '|') << std::setw( value.indent);
+
+                  switch( value.type)
+                  {
+                     case Type::composite:
+                     case Type::container:
+                     {
+                        m_output << '-' << value.name;
+                        break;
+                     }
+                     default:
+                     {
+                        m_output << '-' << value.name<< std::setfill( '.') << std::setw( ( size + 3) - value.name.size()) << '[' << value.value << ']';
+                        break;
+                     }
+                  }
+                  m_output << std::endl;
+               };
+
+               std::for_each( std::begin( m_buffer), std::end( m_buffer), writer);
+
+               m_buffer.clear();
+            }
+
+         } // logger
+
+      } // archive
+
+   } // sf
 
 } // casual
