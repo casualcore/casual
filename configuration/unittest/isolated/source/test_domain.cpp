@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "config/domain.h"
-#include "sf/archive_logger.h"
+#include "sf/log.h"
 
 // TODO Temp
 #include "../../../../serviceframework/include/sf/archive_json.h"

@@ -14,6 +14,8 @@
 #include "sf/archive_yaml.h"
 #include "sf/archive_binary.h"
 #include "sf/archive_json.h"
+#include "sf/archive_log.h"
+#include "sf/log.h"
 
 namespace casual
 {
@@ -28,6 +30,8 @@ namespace casual
 
             public:
                Base( TPSVCINFO* serviceInfo);
+
+               Base( Base&&);
 
             private:
 
@@ -101,6 +105,27 @@ namespace casual
                archive::json::Writer m_writer;
             };
 
+
+
+            namespace parameter
+            {
+               template< typename B>
+               class Log : public B
+               {
+               public:
+                  using base_type = B;
+
+                  Log( TPSVCINFO* serviceInfo) : base_type( serviceInfo), m_writer( log::parameter)
+                  {
+                     this->m_input.writers.push_back( &m_writer);
+                     this->m_output.writers.push_back( &m_writer);
+                  }
+
+               private:
+                  archive::logger::Writer m_writer;
+
+               };
+            } // parameter
 
          } // protocol
       } // service

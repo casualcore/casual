@@ -88,6 +88,20 @@ namespace casual
             return singleton;
          }
 
+
+         template< typename T>
+         std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* serviceInfo) const
+         {
+            if( common::log::active( common::log::category::Type::parameter))
+            {
+               return std::unique_ptr< Interface>( new protocol::parameter::Log< T>( serviceInfo));
+            }
+
+            return std::unique_ptr< Interface>( new T( serviceInfo));
+         }
+
+
+
          std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
          {
             common::Trace trace( "sf::service::Factory::create");

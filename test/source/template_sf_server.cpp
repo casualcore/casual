@@ -95,9 +95,9 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
       // Initialize the input parameters to the service implementation
       //
 
-      std::vector< casual::test::vo::TestVO> inputValues;
+      //std::vector< casual::test::vo::TestVO> inputValues;
 
-      service_io >> CASUAL_MAKE_NVP( inputValues);
+      //service_io >> CASUAL_MAKE_NVP( inputValues);
 
 
       //
@@ -110,7 +110,7 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
       //
       // Call the implementation
       //
-      bool serviceReturn = service_io.call( *local::implementation, &local::implementation_type::casual_sf_test1, inputValues, outputValues);
+      bool serviceReturn = service_io.call( *local::implementation, &local::implementation_type::casual_sf_test1, outputValues);
 
       //
       // Serialize output

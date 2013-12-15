@@ -50,7 +50,7 @@ int main( int argc, char** argv)
    }
 
 
-   char* buffer = tpalloc( "STRING", "", argument.size() + 1);
+   char* buffer = tpalloc( "X_OCTET", "binary", argument.size() + 1);
 
    std::copy( argument.begin(), argument.end(), buffer);
    buffer[ argument.size()] = '\0';

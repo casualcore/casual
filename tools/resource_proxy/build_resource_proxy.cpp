@@ -18,7 +18,7 @@
 
 #include "config/xa_switch.h"
 
-#include "sf/archive_logger.h"
+#include "sf/log.h"
 
 #include <string>
 #include <iostream>
@@ -234,9 +234,10 @@ int main( int argc, char **argv)
             return 1;
          }
 
-         //sf::archive::logger::Writer writer;
-         //writer << CASUAL_MAKE_NVP( settings);
-
+         if( settings.verbose)
+         {
+            std::cout << std::endl << CASUAL_MAKE_NVP( settings);
+         }
 
       }
 

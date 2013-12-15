@@ -23,8 +23,11 @@ namespace test
 
    }
 
-   bool ServerImplementation::casual_sf_test1( const std::vector< vo::TestVO>& values, std::vector< vo::TestVO>& outputValues)
+   bool ServerImplementation::casual_sf_test1( std::vector< vo::TestVO>& outputValues)
    {
+
+      outputValues.resize( 3);
+
 
       return true;
 

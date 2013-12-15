@@ -158,8 +158,8 @@ namespace casual
                      result[ log::category::Type::debug] = buffer< log::category::Type::debug>();
                   if( log.find( "trace") != std::string::npos)
                      result[ log::category::Type::trace] = buffer< log::category::Type::trace>();
-                  if( log.find( "information") != std::string::npos)
-                     result[ log::category::Type::information] = buffer< log::category::Type::information>();
+                  if( log.find( "parameter") != std::string::npos)
+                     result[ log::category::Type::parameter] = buffer< log::category::Type::parameter>();
                   if( log.find( "information") != std::string::npos)
                      result[ log::category::Type::information] = buffer< log::category::Type::information>();
                   if( log.find( "warning") != std::string::npos)
@@ -226,7 +226,7 @@ namespace casual
 
          bool active( category::Type category)
          {
-            return true;
+            return local::getBuffer( category) != nullptr;
          }
 
          void write( const std::string category, const std::string& message)
