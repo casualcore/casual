@@ -39,7 +39,7 @@ namespace casual
       {
          if( out.good())
          {
-            sf::archive::logger::Writer writer( out);
+            sf::archive::log::Writer writer( out);
             writer << value;
          }
          return out;

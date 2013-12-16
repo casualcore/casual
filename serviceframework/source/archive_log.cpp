@@ -16,7 +16,7 @@ namespace casual
       namespace archive
       {
 
-         namespace logger
+         namespace log
          {
             namespace
             {

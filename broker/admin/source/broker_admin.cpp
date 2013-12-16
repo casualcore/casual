@@ -7,7 +7,6 @@
 
 
 #include "sf/xatmi_call.h"
-#include "sf/log.h"
 
 #include "broker/brokervo.h"
 
@@ -84,9 +83,6 @@ namespace casual
          std::vector< admin::ServerVO> serviceReply;
 
          reply >> CASUAL_MAKE_NVP( serviceReply);
-
-         sf::log::debug << sf::makeNameValuePair( "server", serviceReply);
-
 
          std::for_each( std::begin( serviceReply), std::end( serviceReply), Print() );
 
