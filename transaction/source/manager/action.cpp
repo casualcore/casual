@@ -34,7 +34,7 @@ namespace casual
                   instance.server.pid = process::spawn(
                         info.server,
                         {
-                              "--tm-queue", std::to_string( ipc::getReceiveQueue().id()),
+                              "--tm-queue", std::to_string( ipc::receive::id()),
                               "--rm-key", info.key,
                               "--rm-openinfo", proxy.openinfo,
                               "--rm-closeinfo", proxy.closeinfo,
