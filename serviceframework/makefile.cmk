@@ -58,6 +58,8 @@ Compile( "unittest/isolated/source/test_service.cpp", "unittest/isolated/obj/tes
 Compile( "unittest/isolated/source/test_uuid.cpp", "unittest/isolated/obj/test_uuid.o")
 Compile( "unittest/isolated/source/test_xatmi_call.cpp", "unittest/isolated/obj/test_xatmi_call.o")
 
+Compile( "unittest/isolated/source/test_vo.cpp", "unittest/isolated/obj/test_vo.o")
+
 
 LinkIsolatedUnittest( "casual-sf-isolated",
 	["unittest/isolated/obj/test_namevaluepair.o",
@@ -68,7 +70,9 @@ LinkIsolatedUnittest( "casual-sf-isolated",
 	"unittest/isolated/obj/test_buffer.o",
 	"unittest/isolated/obj/test_service.o",
 	"unittest/isolated/obj/test_uuid.o",
-	"unittest/isolated/obj/test_xatmi_call.o"],
+	"unittest/isolated/obj/test_xatmi_call.o",
+    "unittest/isolated/obj/test_vo.o"
+    ],
 	["casual-sf", "casual-xatmi", "casual-common", "json-c"])
 
 #

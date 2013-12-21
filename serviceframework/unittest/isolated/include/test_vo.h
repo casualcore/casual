@@ -13,6 +13,8 @@
 
 #include "sf/types.h"
 
+#include "sf/pimpl.h"
+
 namespace casual
 {
    namespace test
@@ -107,9 +109,46 @@ value:
          }
       };
 
-   }
 
-}
+      namespace pimpl
+      {
+         struct Simple
+         {
+
+            // user defined
+            Simple( long value);
+
+            Simple();
+            ~Simple();
+            Simple( const Simple&);
+            Simple& operator = ( const Simple&);
+            Simple( Simple&&) noexcept;
+            Simple& operator = ( Simple&&) noexcept;
+
+
+            long getLong() const;
+            const std::string& getString() const;
+            std::string& getString();
+
+
+            void setLong( long value);
+            void setString( const std::string& value);
+
+
+
+            void serialize( sf::archive::Reader& reader);
+            void serialize( sf::archive::Writer& writer) const;
+
+
+         private:
+            class Implementation;
+            sf::Pimpl< Implementation> m_pimpl;
+         };
+
+      } // pimpl
+
+   } // test
+} // casual
 
 
 
