@@ -11,6 +11,7 @@
 
 #include "sf/reader_policy.h"
 #include "sf/basic_archive.h"
+#include "sf/platform.h"
 
 #include "json-c/json.h"
 
@@ -251,7 +252,7 @@ namespace casual
                      }
                   }
 
-                  void set( json_object* object, common::binary_type& value) { /* has to be base64 */ }
+                  void set( json_object* object, platform::binary_type& value) { /* has to be base64 */ }
 
 
                   template< typename T>
@@ -372,7 +373,7 @@ namespace casual
                   void writeValue( const float value) { createAndAdd( &json_object_new_double, value);}
                   void writeValue( const double value) {createAndAdd( &json_object_new_double, value);}
                   void writeValue( const std::string& value) { createAndAdd( &json_object_new_string, value.c_str());}
-                  void writeValue( const common::binary_type& value) { /* no op - need base64 */ }
+                  void writeValue( const platform::binary_type& value) { /* no op - need base64 */ }
 
 
                   json_object*& m_root;

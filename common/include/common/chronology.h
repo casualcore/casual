@@ -8,7 +8,7 @@
 #ifndef CHRONOLOGY_H_
 #define CHRONOLOGY_H_
 
-#include "common/types.h"
+#include "common/platform.h"
 
 #include <string>
 
@@ -21,9 +21,9 @@ namespace common
    namespace chronology
    {
       std::string local();
-      std::string local( const common::time_type& time);
+      std::string local( const platform::time_type& time);
       std::string universal();
-      std::string universal( const common::time_type& time);
+      std::string universal( const platform::time_type& time);
    }
 
 }

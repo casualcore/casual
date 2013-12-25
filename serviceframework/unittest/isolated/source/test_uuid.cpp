@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "sf/types.h"
+#include "sf/platform.h"
 #include "sf/archive_yaml.h"
 
 
@@ -20,14 +20,14 @@ namespace casual
       YAML::Emitter emitter;
       sf::archive::yaml::Writer writer( emitter);
 
-      sf::Uuid uuid( sf::Uuid::make());
+      sf::platform::Uuid uuid( sf::platform::Uuid::make());
 
       writer << CASUAL_MAKE_NVP( uuid);
 
       std::istringstream stream( emitter.c_str());
       sf::archive::yaml::Reader reader( stream);
 
-      sf::Uuid out;
+      sf::platform::Uuid out;
       reader >> sf::makeNameValuePair( "uuid", out);
 
       EXPECT_TRUE( uuid == out) << " uuid.string(): " << uuid.string() << " out.string(): " << out.string();

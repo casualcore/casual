@@ -22,7 +22,7 @@ namespace casual
    {
       namespace buffer
       {
-         Type type( common::raw_buffer_type buffer)
+         Type type( platform::raw_buffer_type buffer)
          {
 
 
@@ -42,7 +42,7 @@ namespace casual
             return result;
          }
 
-         Raw::Raw( common::raw_buffer_type p_buffer, std::size_t p_size) : buffer( p_buffer), size( p_size)
+         Raw::Raw( platform::raw_buffer_type p_buffer, std::size_t p_size) : buffer( p_buffer), size( p_size)
          {
 
          }
@@ -118,7 +118,7 @@ namespace casual
          }
 
 
-         void Base::xatmi_deleter::operator ()( common::raw_buffer_type xatmiBuffer) const
+         void Base::xatmi_deleter::operator ()( platform::raw_buffer_type xatmiBuffer) const
          {
             tpfree( xatmiBuffer);
          }

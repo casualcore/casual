@@ -28,7 +28,7 @@ namespace casual
     
 //## includes protected section begin [200.10]
 
-#include <sf/types.h>
+#include <sf/platform.h>
 #include <string>
 
 //## includes protected section end   [200.10]
@@ -77,16 +77,16 @@ public:
    void setSrv( std::string value);
 
 
-   sf::Uuid getCallId() const;
-   void setCallId( sf::Uuid value);
+   sf::platform::Uuid getCallId() const;
+   void setCallId( sf::platform::Uuid value);
 
 
-   sf::time_type getStart() const;
-   void setStart( sf::time_type value);
+   sf::platform::time_type getStart() const;
+   void setStart( sf::platform::time_type value);
 
 
-   sf::time_type getEnd() const;
-   void setEnd( sf::time_type value);
+   sf::platform::time_type getEnd() const;
+   void setEnd( sf::platform::time_type value);
 
 
 

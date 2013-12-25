@@ -13,8 +13,6 @@
 #include "sf/archive_yaml.h"
 #include "sf/exception.h"
 
-#include "common/types.h"
-
 
 namespace casual
 {

@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "common/buffer_context.h"
-#include "common/types.h"
 
 
 namespace casual

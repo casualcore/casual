@@ -13,7 +13,6 @@
 #include "common/ipc.h"
 #include "common/queue.h"
 #include "common/transform.h"
-#include "common/types.h"
 #include "common/environment.h"
 
 #include "common/calling_context.h"
@@ -261,7 +260,7 @@ namespace casual
                   //
                   if( message.service.monitor_queue != 0)
                   {
-                     m_state.monitor.start = common::clock_type::now();
+                     m_state.monitor.start = platform::clock_type::now();
                   }
 
                   //
@@ -354,7 +353,7 @@ namespace casual
                      //
                      if( message.service.monitor_queue != 0)
                      {
-                        m_state.monitor.end = common::clock_type::now();
+                        m_state.monitor.end = platform::clock_type::now();
                         m_state.monitor.callId = message.callId;
                         m_state.monitor.service = message.service.name;
                         m_state.monitor.parentService = message.callee;

@@ -9,6 +9,7 @@
 #define ARCHIVE_LOGGER_H_
 
 #include "sf/basic_archive.h"
+#include "sf/platform.h"
 
 
 #include <ostream>
@@ -56,7 +57,7 @@ namespace casual
                void write( std::string&& value);
                void write( const std::string& value);
                void write( const std::wstring& value);
-               void write( const common::binary_type& value);
+               void write( const platform::binary_type& value);
 
 
             private:

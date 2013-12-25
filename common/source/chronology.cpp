@@ -26,7 +26,7 @@ namespace chronology
    {
 
       template<typename F>
-      std::string format( const common::time_type& time, F function)
+      std::string format( const platform::time_type& time, F function)
       {
          //
          // to_time_t does not exist as a static member in common::clock_type
@@ -53,20 +53,20 @@ namespace chronology
 
    std::string local()
    {
-      return local( common::clock_type::now());
+      return local( platform::clock_type::now());
    }
 
-   std::string local( const common::time_type& time)
+   std::string local( const platform::time_type& time)
    {
       return internal::format( time, &std::localtime);
    }
 
    std::string universal()
    {
-      return local( common::clock_type::now());
+      return local( platform::clock_type::now());
    }
 
-   std::string universal( const common::time_type& time)
+   std::string universal( const platform::time_type& time)
    {
       return internal::format( time, &std::gmtime);
    }

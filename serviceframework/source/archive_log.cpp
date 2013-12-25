@@ -91,7 +91,7 @@ namespace casual
                m_buffer.back().value = "wide string (" + std::to_string( value.size()) + ")";
             }
 
-            void Implementation::write( const common::binary_type& value)
+            void Implementation::write( const platform::binary_type& value)
             {
                m_buffer.back().value = "binary data (" + std::to_string( value.size()) + ")";
             }

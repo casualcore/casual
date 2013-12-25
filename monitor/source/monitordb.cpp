@@ -7,6 +7,7 @@
 #include "monitor/monitordb.h"
 #include "common/trace.h"
 #include "common/environment.h"
+#include "common/chronology.h"
 
 
 #include <vector>
@@ -153,12 +154,15 @@ namespace monitor
      		vo::MonitorVO vo;
      		vo.setSrv( local::getValue( *row, "service"));
      		vo.setParentService( local::getValue( *row, "parentservice"));
-     		sf::Uuid callId;
+     		sf::platform::Uuid callId;
      		callId.string( local::getValue( *row, "callid"));
      		vo.setCallId( callId);
      		//vo.setTransactionId( local::getValue( *row, "transactionid"));
-     		vo.setStart( common::transform::time( strtoll(local::getValue( *row,"start").c_str(), 0, 10)));
-     		vo.setEnd( common::transform::time( strtoll(local::getValue( *row,"end").c_str(), 0, 10)));
+
+     		std::chrono::microseconds start{ strtoll(local::getValue( *row,"start").c_str(), 0, 10)};
+     		vo.setStart( common::platform::time_type{ start});
+     		std::chrono::microseconds end{ strtoll(local::getValue( *row,"end").c_str(), 0, 10)};
+     		vo.setEnd( common::platform::time_type{ end});
 			result.push_back( vo);
 		}
 

@@ -42,6 +42,8 @@
 // std
 //
 #include <string>
+#include <vector>
+#include <chrono>
 
 namespace casual
 {
@@ -142,8 +144,60 @@ namespace casual
 
 			std::string getSignalDescription( signal_type);
 
+
+			namespace resource
+         {
+            typedef std::size_t id_type;
+
+         } // resource
+
+
+
+			typedef std::vector< char> binary_type;
+
+         typedef char* raw_buffer_type;
+
+         inline char* public_buffer( raw_buffer_type buffer)
+         {
+            return const_cast< char*>( buffer);
+         }
+
+         // TODO: change to: typedef std::chrono::steady_clock clock_type;
+         // When clang has to_time_t for steady_clock
+         typedef std::chrono::system_clock clock_type;
+
+
+         typedef clock_type::time_point time_type;
+
+
+
+
+
+
+
 		} // platform
-	} // utility
+	} // common
+
+	//!
+   //! Overload for time_type
+   //!
+   //! @{
+   template< typename M>
+   void casual_marshal_value( common::platform::time_type& value, M& marshler)
+   {
+      auto time = value.time_since_epoch().count();
+      marshler << time;
+   }
+
+   template< typename M>
+   void casual_unmarshal_value( common::platform::time_type& value, M& unmarshler)
+   {
+      common::platform::time_type::rep representation;
+      unmarshler >> representation;
+      value = common::platform::time_type( common::platform::time_type::duration( representation));
+   }
+   //! @}
+
 } // casual
 
 

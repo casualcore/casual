@@ -9,7 +9,7 @@
 
 #include "common/ipc.h"
 #include "common/buffer_context.h"
-#include "common/types.h"
+//#include "common/types.h"
 #include "common/platform.h"
 #include "common/process.h"
 #include "common/exception.h"
@@ -476,8 +476,8 @@ namespace casual
 
                std::string transactionId;
 
-               common::time_type start;
-               common::time_type end;
+               common::platform::time_type start;
+               common::platform::time_type end;
 
                template< typename A>
                void marshal( A& archive)
@@ -584,7 +584,7 @@ namespace casual
                      archive & start;
                   }
 
-                  common::time_type start;
+                  common::platform::time_type start;
                };
 
                typedef basic_reply< cTransactionBeginReply> Reply;

@@ -105,8 +105,7 @@ namespace casual
                   common::log::information << "resource proxy pid: " <<  message.id.pid << " connected" << std::endl;
 
                   auto instanceRange = state::find::instance(
-                        std::begin( m_state.instances),
-                        std::end( m_state.instances),
+                        common::make_range( m_state.instances),
                         message);
 
                   if( ! instanceRange.empty())
@@ -130,10 +129,8 @@ namespace casual
                      common::log::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard" << std::endl;
                   }
 
-
                   auto resources = common::sorted::group(
-                        std::begin( m_state.instances),
-                        std::end( m_state.instances),
+                        common::make_range( m_state.instances),
                         state::resource::Proxy::Instance::order::Id{});
 
                   if( ! m_connected && std::all_of( std::begin( resources), std::end( resources), state::filter::Running{}))
@@ -168,7 +165,7 @@ namespace casual
                template< typename M>
                void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
                {
-                  auto instance = state::find::instance( std::begin( state.instances), std::end( state.instances), message);
+                  auto instance = state::find::instance( common::make_range( state.instances), message);
 
                   if( ! instance.empty())
                   {
@@ -182,7 +179,7 @@ namespace casual
                   auto request = std::find_if(
                         std::begin( state.pendingRequest),
                         std::end( state.pendingRequest),
-                        action::pending::Request::Find{ message.resource});
+                        action::pending::resource::Request::Find{ message.resource});
 
                   if( request != std::end( state.pendingRequest))
                   {
@@ -230,13 +227,14 @@ namespace casual
                   //
                   instance::done( m_state, message);
 
-                  auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
+                  auto task = common::find(
+                        common::make_range( m_state.tasks),
+                        action::Task::Find( message.xid));
 
                   if( ! task.empty())
                   {
                      auto resource = common::sorted::bound(
-                           std::begin( task.first->resources),
-                           std::end( task.first->resources),
+                           common::make_range( task.first->resources),
                            action::Resource{ message.resource});
 
                      if( ! resource.empty())
@@ -339,7 +337,7 @@ namespace casual
                //
                // Find the task
                //
-               auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
+               auto task = common::find( common::make_range( m_state.tasks), action::Task::Find{ message.xid});
 
 
                if( ! task.empty())

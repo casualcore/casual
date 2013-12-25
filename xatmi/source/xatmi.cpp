@@ -10,7 +10,7 @@
 #include "common/buffer_context.h"
 #include "common/calling_context.h"
 #include "common/server_context.h"
-#include "common/types.h"
+#include "common/platform.h"
 #include "common/log.h"
 
 
@@ -34,7 +34,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 			subtype ? subtype : "",
 			size);
 
-	return casual::common::transform::public_buffer( buffer);
+	return casual::common::platform::public_buffer( buffer);
 }
 
 char* tprealloc(char * addr, long size)
@@ -44,7 +44,7 @@ char* tprealloc(char * addr, long size)
 		addr,
 		size);
 
-	return casual::common::transform::public_buffer( buffer);
+	return casual::common::platform::public_buffer( buffer);
 
 }
 

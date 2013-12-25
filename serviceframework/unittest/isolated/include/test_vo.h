@@ -10,8 +10,9 @@
 
 
 #include "sf/namevaluepair.h"
+#include "sf/archive.h"
 
-#include "sf/types.h"
+#include "sf/platform.h"
 
 #include "sf/pimpl.h"
 
@@ -38,7 +39,7 @@ namespace casual
          std::string m_string;
          short m_short;
          long long m_longlong;
-         sf::time_type m_time;
+         sf::platform::time_type m_time;
 
          template< typename A>
          void serialize( A& archive)
@@ -99,7 +100,7 @@ value:
 
       struct Binary : public SimpleVO
       {
-         common::binary_type m_binary;
+         sf::platform::binary_type m_binary;
 
          template< typename A>
          void serialize( A& archive)

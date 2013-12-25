@@ -24,7 +24,7 @@ namespace casual
 
             result.xid = common::transaction::ID::create();
             result.id.queue_id = 100;
-            result.start = common::clock_type::now();
+            result.start = common::platform::clock_type::now();
 
 
             return result;

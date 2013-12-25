@@ -41,8 +41,8 @@ namespace casual
             common::transaction::ID xid;
             common::platform::pid_type pid = 0;
             State state = cUnknown;
-            common::time_type started;
-            common::time_type updated;
+            common::platform::time_type started;
+            common::platform::time_type updated;
          };
 
 

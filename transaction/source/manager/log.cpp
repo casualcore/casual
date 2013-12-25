@@ -7,6 +7,8 @@
 
 #include "transaction/manager/log.h"
 
+#include "common/algorithm.h"
+
 #include <chrono>
 
 
@@ -47,7 +49,7 @@ namespace casual
 
             void update( sql::database::Connection& connection, const common::transaction::ID& id, long state)
             {
-               auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::clock_type::now()).time_since_epoch().count();
+               auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
                auto gtrid = local::global( id);
                auto bqual = local::branch( id);
@@ -72,7 +74,7 @@ namespace casual
             {
                auto started = std::chrono::time_point_cast< std::chrono::microseconds>( message.start).time_since_epoch().count();
 
-               auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::clock_type::now()).time_since_epoch().count();
+               auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
                const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" };
 
@@ -115,14 +117,20 @@ namespace casual
                      Log::Row result;
 
                      {
-                        auto gtrid = row.get< common::binary_type>( 0);
-                        std::copy( std::begin( gtrid), std::end( gtrid), std::begin( result.xid.xid().data));
+                        auto gtrid = row.get< common::platform::binary_type>( 0);
+
+                        common::copy( common::make_range( gtrid), std::begin( result.xid.xid().data));
+
                         result.xid.xid().gtrid_length = gtrid.size();
                      }
 
                      {
-                        auto bqual = row.get< common::binary_type>( 1);
-                        std::copy( std::begin( bqual), std::end( bqual), std::begin( result.xid.xid().data) + result.xid.xid().gtrid_length);
+                        auto bqual = row.get< common::platform::binary_type>( 1);
+
+                        common::copy(
+                              common::make_range( bqual),
+                              std::begin( result.xid.xid().data) + result.xid.xid().gtrid_length);
+
                         result.xid.xid().bqual_length = bqual.size();
                      }
 
@@ -131,8 +139,8 @@ namespace casual
                      result.pid = row.get< common::platform::pid_type>( 3);
                      result.state = static_cast< Log::State>( row.get< long>( 4));
 
-                     result.started = common::time_type{ std::chrono::microseconds{ row.get< common::time_type::rep>( 5)}};
-                     result.updated = common::time_type{ std::chrono::microseconds{ row.get< common::time_type::rep>( 6)}};
+                     result.started = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 5)}};
+                     result.updated = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 6)}};
 
                      return result;
                   }

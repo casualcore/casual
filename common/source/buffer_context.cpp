@@ -53,7 +53,7 @@ namespace casual
             return singleton;
          }
 
-         common::raw_buffer_type Context::allocate(const std::string& type, const std::string& subtype, std::size_t size)
+         platform::raw_buffer_type Context::allocate(const std::string& type, const std::string& subtype, std::size_t size)
          {
 
             m_memoryPool.emplace_back( type, subtype, size);
@@ -65,7 +65,7 @@ namespace casual
 
 
 
-         raw_buffer_type Context::reallocate( raw_buffer_type memory, std::size_t size)
+         platform::raw_buffer_type Context::reallocate( platform::raw_buffer_type memory, std::size_t size)
          {
             auto& buffer = *getFromPool( memory);
 
@@ -79,13 +79,13 @@ namespace casual
 
 
 
-         Buffer& Context::get( raw_buffer_type memory)
+         Buffer& Context::get( platform::raw_buffer_type memory)
          {
             return *getFromPool( memory);
          }
 
 
-         Buffer Context::extract( raw_buffer_type memory)
+         Buffer Context::extract( platform::raw_buffer_type memory)
          {
             auto iter = getFromPool( memory);
             Buffer buffer = std::move( *iter);
@@ -105,7 +105,7 @@ namespace casual
             empty.swap( m_memoryPool);
          }
 
-         Context::pool_type::iterator Context::getFromPool( raw_buffer_type memory)
+         Context::pool_type::iterator Context::getFromPool( platform::raw_buffer_type memory)
          {
             auto findIter = std::find_if(
                m_memoryPool.begin(),
@@ -120,7 +120,7 @@ namespace casual
             return findIter;
          }
 
-         void Context::deallocate( raw_buffer_type memory)
+         void Context::deallocate( platform::raw_buffer_type memory)
          {
             common::log::debug << "deallocates: " << static_cast< const void*>( memory) << std::endl;
 

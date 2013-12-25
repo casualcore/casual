@@ -75,7 +75,7 @@ namespace casual
 
             void readPOD ( std::string& value) { m_readerImplementation.read( value);}
 
-            void readPOD( common::binary_type& value) { m_readerImplementation.read( value);}
+            void readPOD( platform::binary_type& value) { m_readerImplementation.read( value);}
 
             implementation_type m_readerImplementation;
 
@@ -135,7 +135,7 @@ namespace casual
 
             void writePOD (const std::string& value) { m_writerImplementation.write( value);}
 
-            void writePOD (const common::binary_type& value) { m_writerImplementation.write( value);}
+            void writePOD (const platform::binary_type& value) { m_writerImplementation.write( value);}
 
             implementation_type m_writerImplementation;
 

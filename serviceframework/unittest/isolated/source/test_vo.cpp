@@ -28,7 +28,7 @@ namespace casual
             std::string m_string;
             short m_short;
             long long m_longlong;
-            sf::time_type m_time;
+            sf::platform::time_type m_time;
 
             template< typename A>
             void serialize( A& archive)
