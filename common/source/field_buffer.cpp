@@ -9,7 +9,14 @@
 
 #include "common/network_byteorder.h"
 
+#include "sf/namevaluepair.h"
+
+
 #include <cstring>
+
+#include <string>
+#include <vector>
+
 
 namespace
 {
@@ -18,6 +25,34 @@ namespace
    {
       namespace explore
       {
+
+         struct field
+         {
+            std::string name;
+            long id; // relative-id
+            std::string type;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( id);
+               archive & CASUAL_MAKE_NVP( type);
+            }
+         };
+
+         struct group
+         {
+            long base;
+            std::vector<field> fields;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( base);
+               archive & CASUAL_MAKE_NVP( fields);
+            }
+         };
 
          int type_from_id( const long id)
          {
