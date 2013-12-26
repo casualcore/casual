@@ -12,6 +12,7 @@ INCLUDE_PATHS= ["include",
 	
 LIBRARY_PATHS= ["../xatmi/bin",
 	"../common/bin",
+	"../buffers/bin",
 	"../serviceframework/bin",
 	"$(YAML_LIBRARY_PATH)",
 	"$(JSON_LIBRARY_PATH)",
@@ -87,7 +88,7 @@ Compile( "unittest/isolated/source/test_yaml_sf_generation.cpp", "unittest/isola
 
 LinkIsolatedUnittest( "casual-test-isolated",
     ["unittest/isolated/obj/test_yaml_sf_generation.o"],
-    ["casual-sf", "casual-xatmi"])
+    ["casual-sf", "casual-xatmi", "yaml-cpp"])
 	
 	
 #

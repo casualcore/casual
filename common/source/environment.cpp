@@ -10,10 +10,10 @@
 #include "common/exception.h"
 #include "common/file.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 
-#include <time.h>
+#include <ctime>
 
 
 namespace casual
@@ -26,12 +26,12 @@ namespace casual
 			{
 				bool exists( const std::string& name)
 				{
-					return getenv( name.c_str()) != 0;
+					return getenv( name.c_str()) != nullptr;
 				}
 
 				std::string get( const std::string& name)
 				{
-					char* result = getenv( name.c_str());
+					const char* const result = getenv( name.c_str());
 
 					if( result)
 					{
@@ -44,9 +44,6 @@ namespace casual
 
 				}
 			}
-
-
-
 
 
 			namespace directory
@@ -125,9 +122,6 @@ namespace casual
 				// TODO: Maybe store the domainname in broker-queue-file?
 				return "domain-1";
 			}
-
-
-
 
 
 		}

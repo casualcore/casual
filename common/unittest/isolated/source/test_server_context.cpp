@@ -183,7 +183,7 @@ namespace casual
             void test_service( TPSVCINFO *serviceInfo)
             {
 
-               auto buffer = buffer::Context::instance().allocate( "X_OCTET", "STRING", 1024);
+               auto buffer = buffer::Context::instance().allocate( {"X_OCTET", ""}, 1024);
 
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';

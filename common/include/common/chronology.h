@@ -2,7 +2,7 @@
  * chronology.h
  *
  *  Created on: 5 maj 2013
- *      Author: kristian
+ *      Author: Kristone
  */
 
 #ifndef CHRONOLOGY_H_

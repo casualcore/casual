@@ -10,9 +10,17 @@
 #include "common/exception.h"
 #include "common/log.h"
 
+#include "common/field_buffer.h"
+#include "common/octet_buffer.h"
+#include "common/order_buffer.h"
+#include "common/string_buffer.h"
+
+
 #include <stdexcept>
 
 #include <algorithm>
+#include <map>
+
 
 namespace casual
 {
@@ -40,6 +48,60 @@ namespace casual
 
          }
 
+         namespace implementation
+         {
+
+            Base::~Base() {}
+
+            Buffer Base::create( buffer::Type&& type, std::size_t size)
+            {
+               return doCreate( std::move( type), size);
+            }
+
+            void Base::reallocate( Buffer& buffer, std::size_t size)
+            {
+               doReallocate( buffer, size);
+            }
+
+            void Base::network( Buffer& buffer)
+            {
+               doNetwork( buffer);
+            }
+
+            namespace local
+            {
+               namespace
+               {
+                  typedef std::map< buffer::Type, implementation::Base&> implementations_type;
+                  implementations_type& implementations()
+                  {
+                     static implementations_type singleton;
+                     return singleton;
+                  }
+               }
+
+            } // local
+
+
+            bool registrate( Base& implemenation, const buffer::Type& type)
+            {
+               local::implementations().emplace( type, implemenation);
+               return true;
+            }
+
+            Base& get( const buffer::Type& type)
+            {
+               auto found = local::implementations().find( type);
+               if( found == std::end( local::implementations()))
+               {
+                  throw exception::xatmi::buffer::TypeNotSupported( "type: " + type.type + " subtype: " + type.subtype);
+               }
+               return found->second;
+            }
+
+
+
+         } // implementation
 
 
          Context::Context()
@@ -53,39 +115,43 @@ namespace casual
             return singleton;
          }
 
-         platform::raw_buffer_type Context::allocate(const std::string& type, const std::string& subtype, std::size_t size)
+         platform::raw_buffer_type Context::allocate( buffer::Type&& type, std::size_t size)
          {
+            auto& impl = implementation::get( type);
 
-            m_memoryPool.emplace_back( type, subtype, size);
-
-            common::log::debug << "allocates type: " << type << " subtype: " << subtype << " @" << static_cast< const void*>( m_memoryPool.back().raw()) << " size: " << size << std::endl;
-
-            return m_memoryPool.back().raw();
-         }
+            m_memoryPool.push_back( impl.create( std::move( type), size));
+            auto& buffer = m_memoryPool.back();
 
 
-
-         platform::raw_buffer_type Context::reallocate( platform::raw_buffer_type memory, std::size_t size)
-         {
-            auto& buffer = *getFromPool( memory);
-
-            buffer.reallocate( size);
-
-            common::log::debug << "reallocates from: " <<
-                  static_cast< const void*>( memory) << " to: " << static_cast< const void*>( buffer.raw()) << " new size: " << buffer.size() << std::endl;
+            common::log::debug << "allocates type: " << buffer.type() << " subtype: " << buffer.subtype() << " @" << static_cast< const void*>( buffer.raw()) << " size: " << buffer.size() << std::endl;
 
             return buffer.raw();
          }
 
 
 
-         Buffer& Context::get( platform::raw_buffer_type memory)
+         platform::raw_buffer_type Context::reallocate( platform::const_raw_buffer_type memory, std::size_t size)
+         {
+            auto& buffer = *getFromPool( memory);
+
+            buffer.implementation().reallocate( buffer, size);
+
+
+            common::log::debug << "reallocates from: " <<
+                  static_cast< const void*>( memory) << " to: " << static_cast< const void*>( buffer.raw()) << " new size: " << buffer.size();
+
+            return buffer.raw();
+         }
+
+
+
+         Buffer& Context::get( platform::const_raw_buffer_type memory)
          {
             return *getFromPool( memory);
          }
 
 
-         Buffer Context::extract( platform::raw_buffer_type memory)
+         Buffer Context::extract( platform::const_raw_buffer_type memory)
          {
             auto iter = getFromPool( memory);
             Buffer buffer = std::move( *iter);
@@ -105,7 +171,7 @@ namespace casual
             empty.swap( m_memoryPool);
          }
 
-         Context::pool_type::iterator Context::getFromPool( platform::raw_buffer_type memory)
+         Context::pool_type::iterator Context::getFromPool( platform::const_raw_buffer_type memory)
          {
             auto findIter = std::find_if(
                m_memoryPool.begin(),
@@ -120,7 +186,7 @@ namespace casual
             return findIter;
          }
 
-         void Context::deallocate( platform::raw_buffer_type memory)
+         void Context::deallocate( platform::const_raw_buffer_type memory)
          {
             common::log::debug << "deallocates: " << static_cast< const void*>( memory) << std::endl;
 

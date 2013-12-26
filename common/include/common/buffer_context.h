@@ -19,12 +19,48 @@ namespace casual
    {
       namespace buffer
       {
+         struct Type
+         {
+            Type() = default;
+            Type( const std::string& type, const std::string& subtype) : type( type), subtype( subtype) {}
+            Type( const char* type, const char* subtype) : type( type ? type : ""), subtype( subtype ? subtype : "") {}
+
+            std::string type;
+            std::string subtype;
+
+            template< typename A>
+            void marshal( A& archive)
+            {
+               archive & type;
+               archive & subtype;
+            }
+         };
+
+         inline bool operator < ( const Type& lhs, const Type& rhs)
+         {
+            if( lhs.type < rhs.type)
+               return true;
+            if( rhs.type < lhs.type)
+               return false;
+            return lhs.subtype < rhs.subtype;
+
+         }
+
+         namespace implementation
+         {
+            class Base;
+         }
+
+
          struct Buffer
          {
             Buffer() {}
 
             Buffer( const std::string& type, const std::string& subtype, std::size_t size)
-               : m_type( type), m_subtype( subtype), m_memory( size) {}
+               : m_type{ type, subtype}, m_memory( size) {}
+
+            Buffer( buffer::Type&& type, std::size_t size)
+               : m_type( std::move( type)), m_memory( size) {}
 
 
             Buffer( Buffer&& rhs) = default;
@@ -39,7 +75,8 @@ namespace casual
             {
                return m_memory.data();
             }
-            std::size_t size() const
+
+            inline std::size_t size() const
             {
                return m_memory.size();
             }
@@ -53,29 +90,68 @@ namespace casual
                return raw();
             }
 
-            const std::string& type()
+            inline const std::string& type() const
             {
-               return m_type;
+               return m_type.type;
             }
 
-            const std::string& subtype()
+            inline const std::string& subtype() const
             {
-               return m_subtype;
+               return m_type.subtype;
             }
 
             template< typename A>
             void marshal( A& archive)
             {
                archive & m_type;
-               archive & m_subtype;
                archive & m_memory;
             }
 
+            inline implementation::Base& implementation()
+            {
+               return *m_implemenation;
+            }
+
+
          private:
-            std::string m_type;
-            std::string m_subtype;
+            implementation::Base* m_implemenation = nullptr;
+            Type m_type;
             platform::binary_type m_memory;
+
          };
+
+
+
+         namespace implementation
+         {
+            class Base
+            {
+            public:
+               virtual ~Base();
+
+               Buffer create( buffer::Type&& type, std::size_t size);
+               void reallocate( Buffer& buffer, std::size_t size);
+
+               void network( Buffer& buffer);
+
+            private:
+
+               virtual Buffer doCreate( buffer::Type&& type, std::size_t size) = 0;
+               virtual void doReallocate( Buffer& buffer, std::size_t size) = 0;
+               virtual void doNetwork( Buffer& buffer) = 0;
+            };
+
+            bool registrate( Base& implemenation, const buffer::Type& type);
+
+            template< typename I>
+            bool registrate( const buffer::Type& type)
+            {
+               static I implemenation;
+               return registrate( implemenation, type);
+            }
+
+
+         } // implementation
 
          class Context
          {
@@ -86,21 +162,24 @@ namespace casual
             Context( const Context&) = delete;
             Context& operator = ( const Context&) = delete;
 
+
+
+
             static Context& instance();
 
-            platform::raw_buffer_type allocate( const std::string& type, const std::string& subtype, std::size_t size);
+            platform::raw_buffer_type allocate( buffer::Type&& type, std::size_t size);
 
-            platform::raw_buffer_type reallocate( platform::raw_buffer_type memory, std::size_t size);
+            platform::raw_buffer_type reallocate( platform::const_raw_buffer_type memory, std::size_t size);
 
-            void deallocate( platform::raw_buffer_type memory);
+            void deallocate( platform::const_raw_buffer_type memory);
 
-            Buffer& get( platform::raw_buffer_type memory);
+            Buffer& get( platform::const_raw_buffer_type memory);
 
             //!
             //! @return the buffer, after it has been erased from the pool
             //!
             //!
-            Buffer extract( platform::raw_buffer_type memory);
+            Buffer extract( platform::const_raw_buffer_type memory);
 
             Buffer& add( Buffer&& buffer);
 
@@ -109,7 +188,7 @@ namespace casual
 
          private:
 
-            pool_type::iterator getFromPool( platform::raw_buffer_type memory);
+            pool_type::iterator getFromPool( platform::const_raw_buffer_type memory);
 
             Context();
             pool_type m_memoryPool;
