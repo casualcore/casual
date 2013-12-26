@@ -9,7 +9,7 @@
 #define BUFFER_H_
 
 #include "sf/exception.h"
-#include "common/types.h"
+#include "sf/platform.h"
 
 //
 // std
@@ -56,16 +56,16 @@ namespace casual
 
          };
 
-         Type type( common::raw_buffer_type buffer);
+         Type type( platform::raw_buffer_type buffer);
 
          //!
          //! Holds the buffer and its size together. Has no resource responsibility
          //!
          struct Raw
          {
-            Raw( common::raw_buffer_type p_buffer, std::size_t p_size);
+            Raw( platform::raw_buffer_type p_buffer, std::size_t p_size);
 
-            common::raw_buffer_type buffer;
+            platform::raw_buffer_type buffer;
             long size;
          };
 
@@ -107,7 +107,7 @@ namespace casual
 
             struct xatmi_deleter
             {
-               void operator () ( common::raw_buffer_type xatmiBuffer) const;
+               void operator () ( platform::raw_buffer_type xatmiBuffer) const;
             };
 
             virtual void doReset( Raw buffer);
@@ -145,7 +145,7 @@ namespace casual
                write( &value, sizeof( T));
             }
 
-            void write( const common::binary_type& value)
+            void write( const platform::binary_type& value)
             {
                write( value.size());
                write( value.data(), value.size());
@@ -174,7 +174,7 @@ namespace casual
                read_assign( value);
             }
 
-            void read( common::binary_type& value)
+            void read( platform::binary_type& value)
             {
                read_assign( value);
             }

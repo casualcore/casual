@@ -16,7 +16,6 @@
 #include "common/uuid.h"
 #include "common/platform.h"
 
-#include "common/types.h"
 
 
 //
@@ -96,13 +95,13 @@ namespace casual
             struct Complete
             {
                typedef platform::message_type_type message_type_type;
-               typedef common::binary_type payload_type;
+               typedef platform::binary_type payload_type;
 
                Complete() = default;
 
                Complete( Transport& transport);
 
-               Complete( message_type_type messageType, common::binary_type&& buffer)
+               Complete( message_type_type messageType, platform::binary_type&& buffer)
                   : type( messageType), correlation( Uuid::make()), payload( std::move( buffer)), complete( true)
                {}
 

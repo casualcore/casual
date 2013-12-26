@@ -10,7 +10,7 @@
 
 #include "monitor/monitordb.h"
 #include "common/message.h"
-#include "common/types.h"
+#include "common/platform.h"
 
 #include <iostream>
 
@@ -59,9 +59,9 @@ namespace statistics
 
 				message.service = "myService";
 				message.parentService = "myParentService";
-				message.start = common::clock_type::now();
+				message.start = common::platform::clock_type::now();
 				sleep(1);
-				message.end = common::clock_type::now();
+				message.end = common::platform::clock_type::now();
 				db.insert(message);
 			}
 			catch (...)

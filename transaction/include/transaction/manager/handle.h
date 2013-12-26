@@ -105,8 +105,7 @@ namespace casual
                   common::log::information << "resource proxy pid: " <<  message.id.pid << " connected" << std::endl;
 
                   auto instanceRange = state::find::instance(
-                        std::begin( m_state.instances),
-                        std::end( m_state.instances),
+                        common::range::make( m_state.instances),
                         message);
 
                   if( ! instanceRange.empty())
@@ -130,10 +129,8 @@ namespace casual
                      common::log::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard" << std::endl;
                   }
 
-
-                  auto resources = common::sorted::group(
-                        std::begin( m_state.instances),
-                        std::end( m_state.instances),
+                  auto resources = common::range::sorted::group(
+                        common::range::make( m_state.instances),
                         state::resource::Proxy::Instance::order::Id{});
 
                   if( ! m_connected && std::all_of( std::begin( resources), std::end( resources), state::filter::Running{}))
@@ -168,7 +165,7 @@ namespace casual
                template< typename M>
                void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
                {
-                  auto instance = state::find::instance( std::begin( state.instances), std::end( state.instances), message);
+                  auto instance = state::find::instance( common::range::make( state.instances), message);
 
                   if( ! instance.empty())
                   {
@@ -179,21 +176,20 @@ namespace casual
                template< typename M>
                void done( State& state, M& message)
                {
-                  auto request = std::find_if(
-                        std::begin( state.pendingRequest),
-                        std::end( state.pendingRequest),
-                        action::pending::Request::Find{ message.resource});
+                  auto request = common::range::find(
+                        common::range::make( state.pendingRequest),
+                        action::pending::resource::Request::Find{ message.resource});
 
-                  if( request != std::end( state.pendingRequest))
+                  if( ! request.empty())
                   {
                      //
                      // We got a pending request for this resource, let's oblige
                      //
                      queue::non_blocking::Writer writer{ message.id.queue_id, state};
 
-                     if( writer.send( request->message))
+                     if( writer.send( request.first->message))
                      {
-                        state.pendingRequest.erase( request);
+                        common::range::erase( state.pendingRequest, request);
                      }
                      else
                      {
@@ -230,13 +226,14 @@ namespace casual
                   //
                   instance::done( m_state, message);
 
-                  auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
+                  auto task = common::range::find(
+                        common::range::make( m_state.tasks),
+                        action::Task::Find( message.xid));
 
                   if( ! task.empty())
                   {
-                     auto resource = common::sorted::bound(
-                           std::begin( task.first->resources),
-                           std::end( task.first->resources),
+                     auto resource = common::range::sorted::bound(
+                           common::range::make( task.first->resources),
                            action::Resource{ message.resource});
 
                      if( ! resource.empty())
@@ -264,12 +261,6 @@ namespace casual
                }
 
             };
-
-            namespace detail
-            {
-
-            } // detail
-
 
             struct Commit : public state::Base
             {
@@ -317,14 +308,33 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               //auto task = state::
+               if( message.xid.null())
+               {
+                  message.xid.generate();
+               }
 
-               m_state.log.begin( message);
+               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find{ message.xid});
 
-               action::pending::Reply reply;
-               reply.target = message.id.queue_id;
+               if( task.empty())
+               {
+                  //auto task = state::
 
-               m_state.pendingReplies.push_back( std::move( reply));
+                  m_state.log.begin( message);
+
+                  action::pending::Reply reply;
+                  reply.target = message.id.queue_id;
+
+
+                  m_state.pendingReplies.push_back( std::move( reply));
+
+               }
+               else
+               {
+                  common::log::error << "Attempt to start a transaction " << message.xid.stringGlobal() << ", which is already in progress" << std::endl;
+                  // TODO: send reply
+               }
+
+
             }
          };
 
@@ -339,7 +349,7 @@ namespace casual
                //
                // Find the task
                //
-               auto task = state::find::task( std::begin( m_state.tasks), std::end( m_state.tasks), message.xid);
+               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find{ message.xid});
 
 
                if( ! task.empty())
@@ -350,14 +360,17 @@ namespace casual
                   //
                   action::pending::transform::Request< common::message::transaction::resource::prepare::Request> transform{ message.xid};
 
-                  std::transform(
-                        std::begin( task.first->resources),
-                        std::end( task.first->resources),
-                        std::back_inserter( m_state.pendingRequest),
+                  common::range::transform(
+                        common::range::make( task.first->resources),
+                        m_state.pendingRequest,
                         transform);
 
                }
-               // TODO: else what?
+               else
+               {
+                  common::log::error << "Attempt to commit a transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: error reply" << std::endl;
+
+               }
             }
          };
 
@@ -381,23 +394,21 @@ namespace casual
 
             void dispatch( message_type& message)
             {
-               auto task = std::find_if( std::begin( m_state.tasks), std::end( m_state.tasks), action::Task::Find( message.xid));
+               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find( message.xid));
 
-               if( task != std::end( m_state.tasks))
+               if( ! task.empty())
                {
-                  std::copy(
-                     std::begin( message.resources),
-                     std::end( message.resources),
-                     std::back_inserter( task->resources));
+                  common::range::copy(
+                     common::range::make( message.resources),
+                     std::back_inserter( task.first->resources));
 
-                  std::stable_sort( std::begin( task->resources), std::end( task->resources));
-
-                  task->resources.erase(
-                        std::unique( std::begin( task->resources), std::end( task->resources)),
-                        std::end( task->resources));
+                  common::range::trim( task.first->resources, common::range::unique( common::range::sort( common::range::make( task.first->resources))));
 
                }
-               // TODO: else, what to do?
+               else
+               {
+                  common::log::error << "Resource " << common::range::make( message.resources) << " claims to be involved in transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: discard" << std::endl;
+               }
             }
          };
 

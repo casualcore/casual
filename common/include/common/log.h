@@ -10,10 +10,8 @@
 
 #include <string>
 
-//
-// TODO: Temp, we will not use iostream later on!
-//
-#include <sstream>
+
+#include <ostream>
 
 #include "common/platform.h"
 
@@ -28,7 +26,6 @@ namespace casual
          {
             enum class Type
             {
-               none = 0,
                debug = 10,
                trace,
                parameter,
@@ -78,7 +75,15 @@ namespace casual
          extern std::ostream error;
 
 
+         //!
+         //! @return true if the log-category is active.
+         //!
          bool active( category::Type category);
+
+         void activate( category::Type category);
+
+         void deactivate( category::Type category);
+
 
 
          void write( category::Type category, const char* message);

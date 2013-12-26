@@ -28,7 +28,7 @@ namespace casual
                TPSVCINFO result;
 
                strncpy( result.name, message.service.name.data(), sizeof( result.name) );
-               result.data = common::transform::public_buffer( message.buffer.raw());
+               result.data = platform::public_buffer( message.buffer.raw());
                result.len = message.buffer.size();
                result.cd = message.callDescriptor;
                result.flags = 0;

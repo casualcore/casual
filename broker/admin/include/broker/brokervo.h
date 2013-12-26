@@ -5,8 +5,7 @@
 #ifndef BROKERVO_H_
 #define BROKERVO_H_
 #include "sf/namevaluepair.h"
-#include "sf/types.h"
-#include "common/types.h"
+#include "sf/platform.h"
 
 
 namespace casual
@@ -21,7 +20,7 @@ namespace casual
             long queueId;
             long state;
             long invoked;
-            common::time_type last;
+            sf::platform::time_type last;
 
             template< typename A>
             void serialize( A& archive)

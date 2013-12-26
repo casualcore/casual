@@ -94,14 +94,14 @@ namespace casual
             void alterState( State state)
             {
                this->state = state;
-               last = common::clock_type::now();
+               last = common::platform::clock_type::now();
             }
 
 
             common::message::server::Id::queue_id_type queue_id = 0;
             pid_type pid = 0;
             std::size_t invoked = 0;
-            common::time_type last;
+            common::platform::time_type last;
             std::shared_ptr< Server> server;
             std::vector< std::shared_ptr< Service>> services;
 

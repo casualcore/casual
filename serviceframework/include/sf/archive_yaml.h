@@ -10,7 +10,6 @@
 
 #include "sf/basic_archive.h"
 #include "sf/reader_policy.h"
-#include "common/types.h"
 
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>
@@ -232,7 +231,7 @@ namespace casual
                      node >> value;
                   }
 
-                  void readValue( const YAML::Node& node, common::binary_type& value)
+                  void readValue( const YAML::Node& node, platform::binary_type& value)
                   {
                      YAML::Binary binary;
                      node >> binary;
@@ -353,7 +352,7 @@ namespace casual
                      m_output << value;
                   }
 
-                  void writeValue( const common::binary_type& value)
+                  void writeValue( const platform::binary_type& value)
                   {
                      // TODO: can we cast an be conformant?
                      const unsigned char* data = reinterpret_cast< const unsigned char*>( value.data());

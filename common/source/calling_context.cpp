@@ -436,7 +436,7 @@ namespace casual
             // We deliver the message
             //
             *idPtr = reply.callDescriptor;
-            *odata = common::transform::public_buffer( reply.buffer.raw());
+            *odata = platform::public_buffer( reply.buffer.raw());
             olen = reply.buffer.size();
 
 

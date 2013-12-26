@@ -28,6 +28,7 @@ Compile( "source/service.cpp", "obj/service.o")
 Compile( "source/service_protocol.cpp", "obj/service_protocol.o")
 Compile( "source/archive_log.cpp", "obj/archive_log.o")
 Compile( "source/xatmi_call.cpp", "obj/xatmi_call.o")
+Compile( "source/platform.cpp", "obj/platform.o")
 
 Compile( "source/trace.cpp", "obj/trace.o")
 
@@ -40,7 +41,8 @@ LinkLibrary( "casual-sf",
     "obj/service_protocol.o",
     "obj/archive_log.o",
     "obj/xatmi_call.o",
-    "obj/trace.o"
+    "obj/trace.o",
+    "obj/platform.o"
     ],
     ["casual-common", "casual-xatmi", "yaml-cpp", "json-c"])
 
@@ -58,6 +60,8 @@ Compile( "unittest/isolated/source/test_service.cpp", "unittest/isolated/obj/tes
 Compile( "unittest/isolated/source/test_uuid.cpp", "unittest/isolated/obj/test_uuid.o")
 Compile( "unittest/isolated/source/test_xatmi_call.cpp", "unittest/isolated/obj/test_xatmi_call.o")
 
+Compile( "unittest/isolated/source/test_vo.cpp", "unittest/isolated/obj/test_vo.o")
+
 
 LinkIsolatedUnittest( "casual-sf-isolated",
 	["unittest/isolated/obj/test_namevaluepair.o",
@@ -68,7 +72,9 @@ LinkIsolatedUnittest( "casual-sf-isolated",
 	"unittest/isolated/obj/test_buffer.o",
 	"unittest/isolated/obj/test_service.o",
 	"unittest/isolated/obj/test_uuid.o",
-	"unittest/isolated/obj/test_xatmi_call.o"],
+	"unittest/isolated/obj/test_xatmi_call.o",
+    "unittest/isolated/obj/test_vo.o"
+    ],
 	["casual-sf", "casual-xatmi", "casual-common", "json-c"])
 
 #

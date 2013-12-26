@@ -89,11 +89,10 @@ Compile( "unittest/isolated/source/test_string.cpp", "unittest/isolated/obj/test
 Compile( "unittest/isolated/source/test_error.cpp", "unittest/isolated/obj/test_error.o")
 
 Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
-Compile( "unittest/isolated/source/test_types.cpp", "unittest/isolated/obj/test_types.o")
 
 Compile( "unittest/isolated/source/test_transaction_id.cpp", "unittest/isolated/obj/test_transaction_id.o")
 
-
+Compile( "unittest/isolated/source/test_algorithm.cpp", "unittest/isolated/obj/test_algorithm.o")
 
 
 LinkIsolatedUnittest( "casual-common-isolated", 
@@ -111,8 +110,8 @@ LinkIsolatedUnittest( "casual-common-isolated",
     "unittest/isolated/obj/test_string.o",
     "unittest/isolated/obj/test_error.o",
     "unittest/isolated/obj/test_signal.o", 
-    "unittest/isolated/obj/test_types.o",
-    "unittest/isolated/obj/test_transaction_id.o"
+    "unittest/isolated/obj/test_transaction_id.o",
+    "unittest/isolated/obj/test_algorithm.o"
     ],
 	[
      "casual-common",

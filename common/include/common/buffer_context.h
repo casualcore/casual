@@ -8,7 +8,7 @@
 #ifndef CASUAL_BUFFER_H_
 #define CASUAL_BUFFER_H_
 
-#include "common/types.h"
+#include "common/platform.h"
 
 #include <string>
 #include <list>
@@ -35,7 +35,7 @@ namespace casual
             Buffer& operator = ( const Buffer&) = delete;
 
 
-            inline raw_buffer_type raw()
+            inline platform::raw_buffer_type raw()
             {
                return m_memory.data();
             }
@@ -44,7 +44,7 @@ namespace casual
                return m_memory.size();
             }
 
-            inline raw_buffer_type reallocate( std::size_t size)
+            inline platform::raw_buffer_type reallocate( std::size_t size)
             {
                if( m_memory.size() < size)
                {
@@ -74,7 +74,7 @@ namespace casual
          private:
             std::string m_type;
             std::string m_subtype;
-            common::binary_type m_memory;
+            platform::binary_type m_memory;
          };
 
          class Context
@@ -88,19 +88,19 @@ namespace casual
 
             static Context& instance();
 
-            raw_buffer_type allocate( const std::string& type, const std::string& subtype, std::size_t size);
+            platform::raw_buffer_type allocate( const std::string& type, const std::string& subtype, std::size_t size);
 
-            raw_buffer_type reallocate( raw_buffer_type memory, std::size_t size);
+            platform::raw_buffer_type reallocate( platform::raw_buffer_type memory, std::size_t size);
 
-            void deallocate( raw_buffer_type memory);
+            void deallocate( platform::raw_buffer_type memory);
 
-            Buffer& get( raw_buffer_type memory);
+            Buffer& get( platform::raw_buffer_type memory);
 
             //!
             //! @return the buffer, after it has been erased from the pool
             //!
             //!
-            Buffer extract( raw_buffer_type memory);
+            Buffer extract( platform::raw_buffer_type memory);
 
             Buffer& add( Buffer&& buffer);
 
@@ -109,7 +109,7 @@ namespace casual
 
          private:
 
-            pool_type::iterator getFromPool( raw_buffer_type memory);
+            pool_type::iterator getFromPool( platform::raw_buffer_type memory);
 
             Context();
             pool_type m_memoryPool;

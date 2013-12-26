@@ -11,7 +11,6 @@
 
 
 #include "common/ipc.h"
-#include "common/types.h"
 #include "common/uuid.h"
 
 
@@ -67,7 +66,7 @@ namespace casual
          {
             struct Binary
             {
-               typedef common::binary_type buffer_type;
+               typedef platform::binary_type buffer_type;
 
                Binary()
                {
@@ -169,7 +168,7 @@ namespace casual
                      std::end( value));
                }
 
-               void write( common::binary_type& value)
+               void write( platform::binary_type& value)
                {
                   writePod( value.size());
 
@@ -203,7 +202,7 @@ namespace casual
 
             struct Binary
             {
-               typedef common::binary_type buffer_type;
+               typedef platform::binary_type buffer_type;
                typedef buffer_type::size_type offest_type;
                typedef ipc::message::Transport transport_type;
                typedef transport_type::message_type_type message_type_type;
@@ -329,7 +328,7 @@ namespace casual
                   consume( std::begin( value), size);
                }
 
-               void read( common::binary_type& value)
+               void read( platform::binary_type& value)
                {
                   std::string::size_type size;
                   *this >> size;

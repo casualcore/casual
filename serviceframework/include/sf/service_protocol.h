@@ -122,7 +122,7 @@ namespace casual
                   }
 
                private:
-                  archive::logger::Writer m_writer;
+                  archive::log::Writer m_writer;
 
                };
             } // parameter

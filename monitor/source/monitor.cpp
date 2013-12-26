@@ -9,10 +9,11 @@
 #include "common/queue.h"
 #include "common/message.h"
 #include "common/message_dispatch.h"
-#include "common/types.h"
+#include "common/platform.h"
 #include "common/log.h"
 #include "common/trace.h"
 #include "common/environment.h"
+#include "common/chronology.h"
 
 
 #include <vector>
@@ -34,9 +35,9 @@ namespace
 		os << "parentService: " << message.parentService << ", ";
 		os << "service: " << message.service << ", ";
 		os << "callId: " << message.callId.string() << ", ";
-		os << "start: " << transform::time( message.start) << ", ";
+		os << "start: " << chronology::local( message.start) << ", ";
 		// os << "end: " << transform::time( message.end) << ", ";
-		os << "difference: " << time_type::duration( message.end - message.start).count() << " usec";
+		os << "difference: " << platform::time_type::duration( message.end - message.start).count() << " usec";
 		//
 		// TODO: etc...
 		//

@@ -144,46 +144,53 @@ namespace casual
                }
 
 
-
-               std::map< log::category::Type, logger_buffer*> initializeActiveBuffers()
-               {
-                  std::map< log::category::Type, logger_buffer*> result;
-
-                  // Always error
-                  result[ log::category::Type::error] = buffer< log::category::Type::error>();
-
-                  const std::string log = common::environment::variable::get( "CASUAL_LOG");
-
-                  if( log.find( "debug") != std::string::npos)
-                     result[ log::category::Type::debug] = buffer< log::category::Type::debug>();
-                  if( log.find( "trace") != std::string::npos)
-                     result[ log::category::Type::trace] = buffer< log::category::Type::trace>();
-                  if( log.find( "parameter") != std::string::npos)
-                     result[ log::category::Type::parameter] = buffer< log::category::Type::parameter>();
-                  if( log.find( "information") != std::string::npos)
-                     result[ log::category::Type::information] = buffer< log::category::Type::information>();
-                  if( log.find( "warning") != std::string::npos)
-                     result[ log::category::Type::warning] = buffer< log::category::Type::warning>();
-
-                  return result;
-               }
-
-
                logger_buffer* getBuffer( log::category::Type category)
                {
-                  static std::map< log::category::Type, logger_buffer*> buffers = initializeActiveBuffers();
-
-                  logger_buffer* result = nullptr;
-
-                  auto found = buffers.find( category);
-                  if( found != std::end( buffers))
+                  switch( category)
                   {
-                     return found->second;
+                     case log::category::Type::debug:
+                           return buffer< log::category::Type::debug>(); break;
+                     case log::category::Type::trace:
+                           return buffer< log::category::Type::trace>(); break;
+                     case log::category::Type::parameter:
+                           return buffer< log::category::Type::parameter>();  break;
+                     case log::category::Type::information:
+                           return buffer< log::category::Type::information>(); break;
+                     case log::category::Type::warning:
+                           return buffer< log::category::Type::warning>();  break;
+                     case log::category::Type::error:
+                        return buffer< log::category::Type::error>();  break;
                   }
-                  return result;
+                  return nullptr;
                }
 
 
+               logger_buffer* getActiveBuffer( log::category::Type category)
+               {
+                  const std::string log = common::environment::variable::get( "CASUAL_LOG");
+
+                  switch( category)
+                  {
+                     case log::category::Type::debug:
+                        if( log.find( "debug") != std::string::npos)
+                           return getBuffer( category); break;
+                     case log::category::Type::trace:
+                        if( log.find( "trace") != std::string::npos)
+                           return getBuffer( category); break;
+                     case log::category::Type::parameter:
+                        if( log.find( "parameter") != std::string::npos)
+                           return getBuffer( category); break;
+                     case log::category::Type::information:
+                        if( log.find( "information") != std::string::npos)
+                           return getBuffer( category); break;
+                     case log::category::Type::warning:
+                        if( log.find( "warning") != std::string::npos)
+                           return getBuffer( category); break;
+                     case log::category::Type::error:
+                        return getBuffer( category); break;
+                  }
+                  return nullptr;
+               }
 
             } // unnamed
 
@@ -203,7 +210,6 @@ namespace casual
                   case Type::information: return "information"; break;
                   case Type::warning: return "warning"; break;
                   case Type::error: return "error"; break;
-                  case Type::none: break;
                }
                return "";
             }
@@ -211,23 +217,67 @@ namespace casual
          } // category
 
 
-         std::ostream debug{ local::getBuffer( category::Type::debug)};
+         std::ostream debug{ local::getActiveBuffer( category::Type::debug)};
 
-         std::ostream trace{ local::getBuffer( category::Type::trace)};
+         std::ostream trace{ local::getActiveBuffer( category::Type::trace)};
 
-         std::ostream parameter{ local::getBuffer( category::Type::parameter)};
+         std::ostream parameter{ local::getActiveBuffer( category::Type::parameter)};
 
-         std::ostream information{ local::getBuffer( category::Type::information)};
+         std::ostream information{ local::getActiveBuffer( category::Type::information)};
 
-         std::ostream warning{ local::getBuffer( category::Type::warning)};
+         std::ostream warning{ local::getActiveBuffer( category::Type::warning)};
 
-         std::ostream error{ local::getBuffer( category::Type::error)};
+         //
+         // Always on
+         //
+         std::ostream error{ local::buffer< log::category::Type::error>()};
 
 
          bool active( category::Type category)
          {
-            return local::getBuffer( category) != nullptr;
+            return local::getActiveBuffer( category) != nullptr;
          }
+
+         namespace local
+         {
+            namespace
+            {
+               std::map< category::Type, std::ostream&> initializeStreams()
+               {
+                  std::map< category::Type, std::ostream&> result;
+
+                  result.emplace( category::Type::debug, debug);
+                  result.emplace( category::Type::trace, trace);
+                  result.emplace( category::Type::parameter, parameter);
+                  result.emplace( category::Type::information, information);
+                  result.emplace( category::Type::warning, warning);
+                  //result.emplace( category::Type::error, error);
+
+                  return result;
+               }
+
+               std::ostream& getStream( category::Type category)
+               {
+                  static std::map< category::Type, std::ostream&> streams = initializeStreams();
+
+                  return streams.at( category);
+               }
+            } //
+         } // local
+
+
+         void activate( category::Type category)
+         {
+            std::ostream& stream = local::getStream( category);
+            stream.rdbuf( local::getBuffer( category));
+         }
+
+         void deactivate( category::Type category)
+         {
+            std::ostream& stream = local::getStream( category);
+            stream.rdbuf( nullptr);
+         }
+
 
          void write( const std::string category, const std::string& message)
          {
