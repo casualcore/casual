@@ -11,9 +11,6 @@
 
 #include <cstring>
 
-#include <iostream>
-
-
 namespace
 {
 
@@ -21,6 +18,7 @@ namespace
    {
       namespace explore
       {
+
          int type_from_id( const long id)
          {
             //
@@ -30,7 +28,7 @@ namespace
 
             if( id > 0)
             {
-               const int result = id / 0x200000;
+               const int result = id / CASUAL_FIELD_TYPE_BASE;
 
                switch( result)
                {
