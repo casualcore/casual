@@ -30,10 +30,10 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = sort( make_range( us));
+         auto sorted = range::sort( range::make( us));
 
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( equal( sorted, make_range( s)));
+         EXPECT_TRUE( range::equal( sorted, range::make( s)));
       }
 
 
@@ -42,10 +42,10 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = sort( make_range( us), std::less< int>());
+         auto sorted = range::sort( range::make( us), std::less< int>());
 
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( equal( sorted, make_range( s)));
+         EXPECT_TRUE( range::equal( sorted, range::make( s)));
 
       }
 
@@ -54,10 +54,10 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = sort( make_reverse_range( us));
+         auto sorted = range::sort( range::make_reverse( us));
 
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( equal( sorted, make_range( s)));
+         EXPECT_TRUE( range::equal( sorted, range::make( s)));
       }
 
 
@@ -66,10 +66,10 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = sort( make_reverse_range( us), std::less< int>());
+         auto sorted = range::sort( range::make_reverse( us), std::less< int>());
 
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( equal( sorted, make_range( s))) << "sorted : " << sorted << "\nunsortd: " << make_range( s);
+         EXPECT_TRUE( range::equal( sorted, range::make( s))) << "sorted : " << sorted << "\nunsortd: " << range::make( s);
 
       }
 
@@ -77,7 +77,7 @@ namespace casual
       {
          auto us = local::unsorted();
 
-         auto part = partition( make_range( us), []( int value) { return value == 3;});
+         auto part = range::partition( range::make( us), []( int value) { return value == 3;});
 
          ASSERT_TRUE( part.size() == 2);
          EXPECT_TRUE( *part.first == 3);
@@ -87,7 +87,7 @@ namespace casual
       {
          auto us = local::unsorted();
 
-         auto part = partition( make_reverse_range( us), []( int value) { return value == 3;});
+         auto part = range::partition( range::make_reverse( us), []( int value) { return value == 3;});
 
          ASSERT_TRUE( part.size() == 2);
          EXPECT_TRUE( *part.first == 3);
@@ -97,7 +97,7 @@ namespace casual
       {
          auto us = local::unsorted();
 
-         auto found =  common::find( make_range( us), 3);
+         auto found =  range::find( range::make( us), 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found.first == 3);
@@ -108,7 +108,7 @@ namespace casual
       {
          auto us = local::unsorted();
 
-         auto found =  common::find( make_reverse_range( us), 3);
+         auto found =  range::find( range::make_reverse( us), 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found.first == 3);
@@ -120,9 +120,9 @@ namespace casual
          auto us = local::unsorted();
 
 
-         auto found =  common::find(
-               common::partition(
-                     common::sort( make_range( us)),
+         auto found =  range::find(
+               range::partition(
+                     range::sort( range::make( us)),
                []( int value) { return value == 3;}), 3);
 
          ASSERT_TRUE( ! found.empty());

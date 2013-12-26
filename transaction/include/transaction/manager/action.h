@@ -67,13 +67,8 @@ namespace casual
          } // boot
 
 
-
       } // action
-
-
    } // transaction
-
-
 } // casual
 
 #endif // MANAGER_ACTION_H_

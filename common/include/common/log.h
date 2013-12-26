@@ -10,10 +10,8 @@
 
 #include <string>
 
-//
-// TODO: Temp, we will not use iostream later on!
-//
-#include <sstream>
+
+#include <ostream>
 
 #include "common/platform.h"
 

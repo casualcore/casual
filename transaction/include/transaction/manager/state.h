@@ -32,10 +32,12 @@ namespace casual
          {
             struct Proxy
             {
+               using id_type = common::platform::resource::id_type;
+
                struct Instance
                {
-                  Instance( std::size_t id) : id( id) {}
-                  Instance( std::size_t id, const common::message::server::Id& server) : id{ id}, server{ server} {}
+                  Instance( id_type id) : id( id) {}
+                  Instance( id_type id, const common::message::server::Id& server) : id{ id}, server{ server} {}
 
                   enum class State
                   {
@@ -47,7 +49,7 @@ namespace casual
                      shutdown
                   };
 
-                  std::size_t id;
+                  id_type id;
                   common::message::server::Id server;
                   State state = State::absent;
 
@@ -86,14 +88,12 @@ namespace casual
 
                };
 
-               std::size_t id = 0;
+               id_type id = 0;
 
                std::string key;
                std::string openinfo;
                std::string closeinfo;
                std::size_t concurency = 0;
-
-               //std::vector< Instance> instances;
             };
 
          } // resource
@@ -105,6 +105,8 @@ namespace casual
       {
          struct Resource
          {
+            using id_type = common::platform::resource::id_type;
+
             enum class State
             {
                cInvolved,
@@ -114,10 +116,13 @@ namespace casual
                cCommitRequested,
                cCommitFailed,
                cCommitted,
+               cRollbackRequested,
+               cRollbackFailed,
+               cRollbacked,
                cNotInvolved,
             };
 
-            Resource( std::size_t id) : id( id) {}
+            Resource( id_type id) : id( id) {}
 
             bool operator < ( const Resource& rhs) const
             {
@@ -130,7 +135,7 @@ namespace casual
             }
 
 
-            std::size_t id;
+            id_type id;
             State state = State::cInvolved;
          };
 
@@ -182,25 +187,25 @@ namespace casual
             {
                struct Request
                {
-                  using reource_id_type = common::platform::resource::id_type;
+                  using id_type = common::platform::resource::id_type;
 
                   common::ipc::message::Complete message;
-                  std::vector< reource_id_type> resources;
+                  std::vector< id_type> resources;
 
 
                   struct Find
                   {
-                     Find( reource_id_type resourceId) : m_resourceId( resourceId) {}
+                     Find( id_type id) : id( id) {}
 
                      bool operator () ( const Request& value) const
                      {
                         return std::find(
                            std::begin( value.resources),
-                           std::end( value.resources), m_resourceId) != std::end( value.resources);
+                           std::end( value.resources), id) != std::end( value.resources);
                      }
 
                   private:
-                     reource_id_type m_resourceId;
+                     id_type id;
                   };
                };
             } // resource
@@ -326,12 +331,12 @@ namespace casual
             template< typename Iter, typename M>
             common::Range< Iter> instance( common::Range< Iter> range, const M& message)
             {
-               auto resourceRange = common::sorted::bound(
+               auto resourceRange = common::range::sorted::bound(
                      range,
                      state::resource::Proxy::Instance{ message.resource},
                      state::resource::Proxy::Instance::order::Id{});
 
-               return common::sorted::bound(
+               return common::range::sorted::bound(
                      resourceRange,
                      state::resource::Proxy::Instance{ message.resource, message.id},
                      state::resource::Proxy::Instance::order::Pid{});
@@ -342,12 +347,12 @@ namespace casual
                template< typename Iter>
                common::Range< Iter> instance( common::Range< Iter> range, common::platform::resource::id_type id)
                {
-                  auto resourceRange = common::sorted::bound(
+                  auto resourceRange = common::range::sorted::bound(
                         range,
                         state::resource::Proxy::Instance{ id},
                         state::resource::Proxy::Instance::order::Id{});
 
-                  return common::find( resourceRange, filter::Idle{});
+                  return common::range::find( resourceRange, filter::Idle{});
                }
             } // idle
 
