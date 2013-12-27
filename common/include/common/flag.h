@@ -9,7 +9,6 @@
 #define CASUAL_UTILITY_FLAG_H_
 
 
-
 namespace casual
 {
 	namespace common

@@ -13,6 +13,7 @@ SetIncludePaths( ["include",
     "$(UNITTEST_INCLUDE_PATH)"])
 
 SetLibraryPaths( ["bin",
+    "../buffer/bin",
     "../common/bin",
     "../xatmi/bin",
     "../configuration/bin",

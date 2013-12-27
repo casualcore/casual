@@ -11,7 +11,7 @@ INCLUDE_PATHS = ["include",
     "$(JSON_INCLUDE_PATH)",
 	"$(UNITTEST_INCLUDE_PATH)"]
 	
-LIBRARY_PATHS= ["../common/bin",
+LIBRARY_PATHS = ["../common/bin",
     "../xatmi/bin",
     "$(YAML_LIBRARY_PATH)",
     "$(JSON_LIBRARY_PATH)"]
@@ -73,9 +73,9 @@ LinkIsolatedUnittest( "casual-sf-isolated",
 	"unittest/isolated/obj/test_service.o",
 	"unittest/isolated/obj/test_uuid.o",
 	"unittest/isolated/obj/test_xatmi_call.o",
-    "unittest/isolated/obj/test_vo.o"
+    "unittest/isolated/obj/test_vo.o",
     ],
-	["casual-sf", "casual-xatmi", "casual-common", "json-c"])
+	["casual-sf", "casual-xatmi", "casual-common", "json-c", "yaml-cpp"])
 
 #
 # Install

@@ -1,0 +1,62 @@
+
+
+from casual.make.functiondefinitions import *
+
+Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+
+INCLUDE_PATHS= ["include",
+   "../common/include",
+   "../xatmi/include",
+   "$(UNITTEST_INCLUDE_PATH)"]
+
+
+LIBRARY_PATHS = ["bin",
+    "../common/bin",
+    "../xatmi/bin",
+    "$(JSON_LIBRARY_PATH)"]
+
+SetIncludePaths( INCLUDE_PATHS)
+SetLibraryPaths( LIBRARY_PATHS)
+
+Compile( "source/string.cpp", "obj/string.o")
+Compile( "source/octet.cpp", "obj/octet.o")
+Compile( "source/order.cpp", "obj/order.o")
+Compile( "source/field.cpp", "obj/field.o")
+
+LinkLibrary( "casual-buffer",
+    [
+     "obj/string.o",
+     "obj/octet.o",
+     "obj/order.o",
+     "obj/field.o"
+    ],
+    [
+     "casual-common",
+    ])
+
+
+
+#
+# Unittest
+#
+Compile( "unittest/isolated/source/test_field_buffer.cpp", "unittest/isolated/obj/test_field_buffer.o")
+Compile( "unittest/isolated/source/test_octet_buffer.cpp", "unittest/isolated/obj/test_octet_buffer.o")
+Compile( "unittest/isolated/source/test_order_buffer.cpp", "unittest/isolated/obj/test_order_buffer.o")
+Compile( "unittest/isolated/source/test_string_buffer.cpp", "unittest/isolated/obj/test_string_buffer.o")
+
+LinkIsolatedUnittest( "test-buffer",
+   [
+    "unittest/isolated/obj/test_octet_buffer.o",
+    "unittest/isolated/obj/test_order_buffer.o",
+    "unittest/isolated/obj/test_string_buffer.o",
+    "unittest/isolated/obj/test_field_buffer.o",
+   ],
+   ["casual-common", "casual-xatmi", "casual-buffer"])  
+   
+#
+# Install
+#
+InstallLibrary("casual-buffer", "$CASUAL_HOME/lib/.")
+
+
+

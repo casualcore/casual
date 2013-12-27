@@ -8,8 +8,10 @@ else:
 INCLUDE_PATHS=[ 
     'include',
 	'../xatmi/include',
+	'../buffers/include',
 	'../transaction/include',
 	'../serviceframework/include',
+	'../buffers/include',
 	'$(UNITTEST_INCLUDE_PATH)'
 	]
 
@@ -35,9 +37,13 @@ Compile( "source/log.cpp", "obj/log.o")
 Compile( "source/error.cpp", "obj/error.o")
 Compile( "source/chronology.cpp", "obj/chronology.o")
 Compile( "source/process.cpp", "obj/process.o")
+Compile( "source/network_byteorder.cpp", "obj/network_byteorder.o")
+
+
 
 LinkLibrary( "casual-common", 
-	["obj/server_context.o",
+	[
+	"obj/server_context.o",
 	"obj/calling_context.o",
 	"obj/buffer_context.o",
 	"obj/transaction_context.o",
@@ -52,7 +58,9 @@ LinkLibrary( "casual-common",
 	"obj/log.o",
 	"obj/error.o",
 	"obj/chronology.o",
-	"obj/process.o"],
+	"obj/process.o",
+	"obj/network_byteorder.o",
+	],
 	[UUIDLIB])
 
 
@@ -87,17 +95,18 @@ Compile( "unittest/isolated/source/test_file.cpp", "unittest/isolated/obj/test_f
 Compile( "unittest/isolated/source/test_process.cpp", "unittest/isolated/obj/test_process.o")
 Compile( "unittest/isolated/source/test_string.cpp", "unittest/isolated/obj/test_string.o")
 Compile( "unittest/isolated/source/test_error.cpp", "unittest/isolated/obj/test_error.o")
+Compile( "unittest/isolated/source/test_network_byteorder.cpp", "unittest/isolated/obj/test_network_byteorder.o")
 
 Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
 
 Compile( "unittest/isolated/source/test_transaction_id.cpp", "unittest/isolated/obj/test_transaction_id.o")
-
 Compile( "unittest/isolated/source/test_algorithm.cpp", "unittest/isolated/obj/test_algorithm.o")
+
 
 
 LinkIsolatedUnittest( "casual-common-isolated", 
 	[
-     "unittest/isolated/obj/test_buffer.o",
+	"unittest/isolated/obj/test_buffer.o",
 	"unittest/isolated/obj/test_ipc.o",
 	"unittest/isolated/obj/test_marshal.o",
 	"unittest/isolated/obj/test_queue.o",
@@ -109,13 +118,15 @@ LinkIsolatedUnittest( "casual-common-isolated",
     "unittest/isolated/obj/test_process.o",
     "unittest/isolated/obj/test_string.o",
     "unittest/isolated/obj/test_error.o",
+    "unittest/isolated/obj/test_network_byteorder.o",
     "unittest/isolated/obj/test_signal.o", 
     "unittest/isolated/obj/test_transaction_id.o",
-    "unittest/isolated/obj/test_algorithm.o"
+    "unittest/isolated/obj/test_algorithm.o",
     ],
 	[
      "casual-common",
-     "casual-mockup"] )	
+     "casual-mockup"
+    ])		
 
 #
 # Install

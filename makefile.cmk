@@ -3,7 +3,10 @@ from casual.make.functiondefinitions import *
 Build( "common/makefile.cmk")
 Build( "xatmi/makefile.cmk")
 
+Build( "buffer/makefile.cmk")
+
 Build( "serviceframework/makefile.cmk")
+
 
 
 Build( "configuration/makefile.cmk")
