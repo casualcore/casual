@@ -37,6 +37,7 @@ Compile( "source/error.cpp", "obj/error.o")
 Compile( "source/chronology.cpp", "obj/chronology.o")
 Compile( "source/process.cpp", "obj/process.o")
 Compile( "source/network_byteorder.cpp", "obj/network_byteorder.o")
+Compile( "source/transcoding.cpp", "obj/transcoding.o")
 
 Compile( "source/field_buffer.cpp", "obj/field_buffer.o")
 Compile( "source/octet_buffer.cpp", "obj/octet_buffer.o")
@@ -64,12 +65,13 @@ LinkLibrary( "casual-common",
 	"obj/chronology.o",
 	"obj/process.o",
 	"obj/network_byteorder.o",
+	"obj/transcoding.o",
 	"obj/field_buffer.o",
 	"obj/octet_buffer.o",
 	"obj/order_buffer.o",
 	"obj/string_buffer.o",
 	],
-	[UUIDLIB])
+	[UUIDLIB, "resolv"])
 
 
 #
@@ -104,6 +106,7 @@ Compile( "unittest/isolated/source/test_process.cpp", "unittest/isolated/obj/tes
 Compile( "unittest/isolated/source/test_string.cpp", "unittest/isolated/obj/test_string.o")
 Compile( "unittest/isolated/source/test_error.cpp", "unittest/isolated/obj/test_error.o")
 Compile( "unittest/isolated/source/test_network_byteorder.cpp", "unittest/isolated/obj/test_network_byteorder.o")
+Compile( "unittest/isolated/source/test_transcoding.cpp", "unittest/isolated/obj/test_transcoding.o")
 
 Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
 Compile( "unittest/isolated/source/test_types.cpp", "unittest/isolated/obj/test_types.o")
@@ -129,6 +132,7 @@ LinkIsolatedUnittest( "casual-common-isolated",
     "unittest/isolated/obj/test_string.o",
     "unittest/isolated/obj/test_error.o",
     "unittest/isolated/obj/test_network_byteorder.o",
+    "unittest/isolated/obj/test_transcoding.o",
     "unittest/isolated/obj/test_signal.o", 
     "unittest/isolated/obj/test_types.o",
     "unittest/isolated/obj/test_field_buffer.o",
