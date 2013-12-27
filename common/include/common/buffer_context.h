@@ -54,64 +54,32 @@ namespace casual
 
          struct Buffer
          {
-            Buffer() {}
-
-            Buffer( const std::string& type, const std::string& subtype, std::size_t size)
-               : m_type{ type, subtype}, m_memory( size) {}
-
-            Buffer( buffer::Type&& type, std::size_t size)
-               : m_type( std::move( type)), m_memory( size) {}
-
-
-            Buffer( Buffer&& rhs) = default;
-            Buffer& operator = ( Buffer&& rhs) = default;
+            Buffer();
+            Buffer( buffer::Type&& type, std::size_t size, implementation::Base& implementaion);
+            Buffer( buffer::Type&& type, std::size_t size);
+            Buffer( Buffer&& rhs);
+            Buffer& operator = ( Buffer&& rhs);
 
 
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
 
-            inline platform::raw_buffer_type raw()
-            {
-               return m_memory.data();
-            }
+            platform::raw_buffer_type raw();
 
-            inline std::size_t size() const
-            {
-               return m_memory.size();
-            }
+            std::size_t size() const;
 
-            inline platform::raw_buffer_type reallocate( std::size_t size)
-            {
-               if( m_memory.size() < size)
-               {
-                  m_memory.resize( size);
-               }
-               return raw();
-            }
+            void reallocate( std::size_t size);
 
-            inline const std::string& type() const
-            {
-               return m_type.type;
-            }
+            const Type& type() const;
 
-            inline const std::string& subtype() const
-            {
-               return m_type.subtype;
-            }
+            implementation::Base& implementation();
+
+            const platform::binary_type& memory() const;
+            platform::binary_type& memory();
 
             template< typename A>
-            void marshal( A& archive)
-            {
-               archive & m_type;
-               archive & m_memory;
-            }
-
-            inline implementation::Base& implementation()
-            {
-               return *m_implemenation;
-            }
-
+            void marshal( A& archive);
 
          private:
             implementation::Base* m_implemenation = nullptr;
@@ -129,29 +97,44 @@ namespace casual
             public:
                virtual ~Base();
 
-               Buffer create( buffer::Type&& type, std::size_t size);
+               void create( Buffer& buffer, std::size_t size);
                void reallocate( Buffer& buffer, std::size_t size);
 
                void network( Buffer& buffer);
 
             private:
 
-               virtual Buffer doCreate( buffer::Type&& type, std::size_t size) = 0;
-               virtual void doReallocate( Buffer& buffer, std::size_t size) = 0;
-               virtual void doNetwork( Buffer& buffer) = 0;
+               virtual void doCreate( Buffer& buffer, std::size_t size);
+               virtual void doReallocate( Buffer& buffer, std::size_t size);
+               virtual void doNetwork( Buffer& buffer);
             };
 
-            bool registrate( Base& implemenation, const buffer::Type& type);
+            bool registrate( Base& implemenation, const std::vector< buffer::Type>& types);
 
             template< typename I>
-            bool registrate( const buffer::Type& type)
+            bool registrate( const std::vector< buffer::Type>& types)
             {
                static I implemenation;
-               return registrate( implemenation, type);
+               return registrate( implemenation, types);
             }
 
+            Base& get( const buffer::Type& type);
 
          } // implementation
+
+
+         template< typename A>
+         void Buffer::marshal( A& archive)
+         {
+            archive & m_type;
+            archive & m_memory;
+
+            if( ! m_implemenation)
+            {
+               m_implemenation = &implementation::get( m_type);
+            }
+         }
+
 
          class Context
          {

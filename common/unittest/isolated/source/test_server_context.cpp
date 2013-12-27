@@ -212,7 +212,7 @@ namespace casual
             {
                message::service::callee::Call message;
 
-               message.buffer = { "STRING", "", 1024};
+               message.buffer = { { "X_OCTET", ""}, 1024};
                message.callDescriptor = 10;
                message.service.name = "test_service";
                message.reply.queue_id = Policy::id::instance();

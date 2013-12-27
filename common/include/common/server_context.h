@@ -12,7 +12,6 @@
 #include "common/message.h"
 #include "common/ipc.h"
 #include "common/queue.h"
-#include "common/transform.h"
 #include "common/environment.h"
 
 #include "common/calling_context.h"
@@ -307,7 +306,7 @@ namespace casual
 
                      calling::Context::instance().currentService( message.service.name);
 
-                     TPSVCINFO serviceInformation = transform::ServiceInformation()( message);
+                     TPSVCINFO serviceInformation = transformServiceInformation( message);
 
                      //
                      // Before we call the user function we have to add the buffer to the "buffer-pool"
@@ -364,6 +363,21 @@ namespace casual
                   }
                }
             private:
+
+               TPSVCINFO transformServiceInformation( message::service::callee::Call& message) const
+               {
+                  TPSVCINFO result;
+
+                  strncpy( result.name, message.service.name.data(), sizeof( result.name) );
+                  result.data = platform::public_buffer( message.buffer.raw());
+                  result.len = message.buffer.size();
+                  result.cd = message.callDescriptor;
+                  result.flags = 0;
+
+                  return result;
+               }
+
+
                policy_type m_policy;
                server::State& m_state = server::Context::instance().getState();
 

@@ -29,6 +29,9 @@
 #define CASUAL_FIELD_INTERNAL_FAILURE 9
 
 
+/* should this be here? */
+#define CASUAL_FIELD_TYPE_BASE 0x8000
+
 #define CASUAL_FIELD_SHORT 0
 #define CASUAL_FIELD_LONG 1
 #define CASUAL_FIELD_CHAR 2

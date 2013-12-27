@@ -7,11 +7,12 @@
 
 #include <gtest/gtest.h>
 
-#include "common/string_buffer.h"
+#include "buffer/string.h"
 
 #include <cstring>
 
 
+/*
 TEST( casual_string_buffer, allocate_with_normal_size__expecting_success)
 {
    char buffer[64];
@@ -52,3 +53,6 @@ TEST( casual_string_buffer, allocate_and_write_and_reallocate_with_size_too_smal
    std::strcpy( buffer, "let's go bananas someday");
    EXPECT_TRUE( CasualStringReduce( buffer, sizeof(buffer) / 2) == CASUAL_STRING_NO_SPACE);
 }
+*/
+
+

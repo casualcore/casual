@@ -15,14 +15,13 @@ namespace casual
 {
    namespace common
    {
-
       namespace buffer
       {
 
 
          TEST( casual_common, buffer_allocate)
          {
-            auto buffer = Context::instance().allocate( { "STRING", ""}, 2048);
+            auto buffer = Context::instance().allocate( { "X_OCTET", ""}, 2048);
 
             EXPECT_TRUE( buffer != nullptr);
 
@@ -33,7 +32,7 @@ namespace casual
 
          TEST( casual_common, buffer_reallocate)
          {
-            auto buffer = Context::instance().allocate( { "STRING", ""}, 2048);
+            auto buffer = Context::instance().allocate( { "X_OCTET", ""}, 2048);
 
             EXPECT_TRUE( buffer != nullptr);
 

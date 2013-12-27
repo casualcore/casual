@@ -10,11 +10,6 @@
 #include "common/exception.h"
 #include "common/log.h"
 
-#include "common/field_buffer.h"
-#include "common/octet_buffer.h"
-#include "common/order_buffer.h"
-#include "common/string_buffer.h"
-
 
 #include <stdexcept>
 
@@ -45,17 +40,68 @@ namespace casual
                const void* m_toFind;
             };
 
-
          }
+
+         Buffer::Buffer() {}
+
+
+         Buffer::Buffer( buffer::Type&& type, std::size_t size, implementation::Base& implementaion)
+            : m_implemenation( &implementaion), m_type( std::move( type))
+         {
+            m_implemenation->create( *this, size);
+         }
+
+         Buffer::Buffer( buffer::Type&& type, std::size_t size)
+            : Buffer( std::move( type), size, implementation::get( type)) {}
+
+         Buffer::Buffer( Buffer&& rhs) = default;
+         Buffer& Buffer::operator = ( Buffer&& rhs) = default;
+
+
+         platform::raw_buffer_type Buffer::raw()
+         {
+            return m_memory.data();
+         }
+
+         std::size_t Buffer::size() const
+         {
+            return m_memory.size();
+         }
+
+         void Buffer::reallocate( std::size_t size)
+         {
+            m_implemenation->reallocate( *this, size);
+         }
+
+         const Type& Buffer::type() const
+         {
+            return m_type;
+         }
+
+         implementation::Base& Buffer::implementation()
+         {
+            return *m_implemenation;
+         }
+
+         const platform::binary_type& Buffer::memory() const
+         {
+            return m_memory;
+         }
+         platform::binary_type& Buffer::memory()
+         {
+            return m_memory;
+         }
+
+
 
          namespace implementation
          {
 
             Base::~Base() {}
 
-            Buffer Base::create( buffer::Type&& type, std::size_t size)
+            void Base::create( Buffer& buffer, std::size_t size)
             {
-               return doCreate( std::move( type), size);
+               doCreate( buffer, size);
             }
 
             void Base::reallocate( Buffer& buffer, std::size_t size)
@@ -66,6 +112,22 @@ namespace casual
             void Base::network( Buffer& buffer)
             {
                doNetwork( buffer);
+            }
+
+
+            void Base::doCreate( Buffer& buffer, std::size_t size)
+            {
+               buffer.memory().resize( size);
+
+            }
+            void Base::doReallocate( Buffer& buffer, std::size_t size)
+            {
+               buffer.memory().resize( size);
+            }
+
+            void Base::doNetwork( Buffer& buffer)
+            {
+               // no op
             }
 
             namespace local
@@ -82,10 +144,12 @@ namespace casual
 
             } // local
 
-
-            bool registrate( Base& implemenation, const buffer::Type& type)
+            bool registrate( Base& implemenation, const std::vector< buffer::Type>& types)
             {
-               local::implementations().emplace( type, implemenation);
+               for( auto& type : types)
+               {
+                  local::implementations().emplace( type, implemenation);
+               }
                return true;
             }
 
@@ -94,10 +158,26 @@ namespace casual
                auto found = local::implementations().find( type);
                if( found == std::end( local::implementations()))
                {
-                  throw exception::xatmi::buffer::TypeNotSupported( "type: " + type.type + " subtype: " + type.subtype);
+                  throw exception::xatmi::buffer::TypeNotSupported( "buffer type not suported - type: " + type.type + " subtype: " + type.subtype);
                }
                return found->second;
             }
+
+
+            //
+            // Default implementation for standard X_OCTET
+            //
+            struct XOCTET : public Base
+            {
+
+               static const bool registration;
+            };
+
+            const bool XOCTET::registration = registrate< XOCTET>({
+               { "X_OCTET", ""},
+               {"X_OCTET", "binary"},
+               {"X_OCTET", "YAML"},
+               {"X_OCTET", "JSON"}});
 
 
 
@@ -117,13 +197,10 @@ namespace casual
 
          platform::raw_buffer_type Context::allocate( buffer::Type&& type, std::size_t size)
          {
-            auto& impl = implementation::get( type);
-
-            m_memoryPool.push_back( impl.create( std::move( type), size));
+            m_memoryPool.emplace_back( std::move( type), size);
             auto& buffer = m_memoryPool.back();
 
-
-            common::log::debug << "allocates type: " << buffer.type() << " subtype: " << buffer.subtype() << " @" << static_cast< const void*>( buffer.raw()) << " size: " << buffer.size() << std::endl;
+            common::log::debug << "allocates type: " << buffer.type().type << " subtype: " << buffer.type().subtype << " @" << static_cast< const void*>( buffer.raw()) << " size: " << buffer.size() << std::endl;
 
             return buffer.raw();
          }
@@ -133,9 +210,7 @@ namespace casual
          platform::raw_buffer_type Context::reallocate( platform::const_raw_buffer_type memory, std::size_t size)
          {
             auto& buffer = *getFromPool( memory);
-
-            buffer.implementation().reallocate( buffer, size);
-
+            buffer.reallocate( size);
 
             common::log::debug << "reallocates from: " <<
                   static_cast< const void*>( memory) << " to: " << static_cast< const void*>( buffer.raw()) << " new size: " << buffer.size();

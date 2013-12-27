@@ -20,7 +20,7 @@ namespace casual
 
       TEST( casual_xatmi_buffer, STRING_allocate)
       {
-         char* buffer = tpalloc( "STRING", 0, 2048);
+         char* buffer = tpalloc( "X_OCTET", 0, 2048);
 
          ASSERT_TRUE( buffer != 0);
 
@@ -31,7 +31,7 @@ namespace casual
 
       TEST( casual_xatmi_buffer, STRING_reallocate)
       {
-         char* buffer = tpalloc( "STRING", 0, 2048);
+         char* buffer = tpalloc( "X_OCTET", 0, 2048);
 
          ASSERT_TRUE( buffer != 0);
 

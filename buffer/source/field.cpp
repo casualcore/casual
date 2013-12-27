@@ -5,11 +5,12 @@
 //      Author: Kristone
 //
 
-#include "common/field_buffer.h"
+#include "buffer/field.h"
 
 #include "common/network_byteorder.h"
+#include "common/buffer_context.h"
 
-#include "sf/namevaluepair.h"
+//#include "sf/namevaluepair.h"
 
 
 #include <cstring>
@@ -18,14 +19,18 @@
 #include <vector>
 
 
-namespace
-{
 
-   namespace local
+
+
+
+namespace local
+{
+   namespace
    {
+
       namespace explore
       {
-
+         /*
          struct field
          {
             std::string name;
@@ -53,6 +58,7 @@ namespace
                archive & CASUAL_MAKE_NVP( fields);
             }
          };
+   */
 
          int type_from_id( const long id)
          {
@@ -60,6 +66,7 @@ namespace
             // CASUAL_FIELD_SHORT is 0 'cause FLD_SHORT is 0 and thus we need
             // to represent invalid id with something else than 0
             //
+
 
             if( id > 0)
             {
@@ -119,7 +126,8 @@ namespace
             return 0;
          }
 
-      }
+      } // explore
+
 
 
       namespace arithmetic
@@ -763,7 +771,7 @@ int CasualFieldNext( const char* const buffer, long* const id, long* const index
 
 
 
-
+/*
 long CasualFieldCreate( char* const buffer, const long size)
 {
    constexpr auto bytes = local::header::size();
@@ -799,9 +807,70 @@ long CasualFieldReduce( char* const buffer, const long size)
 
    return CASUAL_FIELD_SUCCESS;
 }
+*/
 
+// TODO: don't understand what this is...
 long CasualFieldNeeded( char* const buffer, const long size)
 {
    return local::header::select::inserter( buffer);
 }
+
+
+namespace casual
+{
+   namespace buffer
+   {
+      namespace implementation
+      {
+
+         class Field : public common::buffer::implementation::Base
+         {
+            void doCreate( common::buffer::Buffer& buffer, std::size_t size) override
+            {
+               constexpr auto bytes = local::header::size();
+
+               if( size < bytes)
+               {
+                  // throw if this is an error
+                  size = bytes;
+               }
+
+               buffer.memory().resize( size);
+
+               local::header::update::reserved( buffer.raw(), size);
+               local::header::update::inserter( buffer.raw(), bytes);
+
+            }
+
+            void doReallocate( common::buffer::Buffer& buffer, std::size_t size) override
+            {
+               const auto inserter = local::header::select::inserter( buffer.raw());
+
+               if( size < inserter)
+               {
+                  // throw if this is an error
+                  size = inserter;
+               }
+
+               buffer.memory().resize( size);
+
+               local::header::update::reserved( buffer.raw(), size);
+            }
+
+            static const bool initialized;
+         };
+
+
+         const bool Field::initialized = common::buffer::implementation::registrate< Field>( {{ CASUAL_FIELD, ""}});
+
+
+
+      } // implementation
+   } // buffer
+} // casual
+
+
+
+
+
 

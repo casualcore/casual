@@ -89,7 +89,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          const int type_size = { 8 };
          memset( type, '\0', type_size);
-         local::copy_max( buffer.type().begin(), buffer.type().end(), type_size, type);
+         local::copy_max( buffer.type().type.begin(), buffer.type().type.end(), type_size, type);
       }
 
       //
@@ -99,7 +99,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          const int subtype_size = { 16 };
          memset( subtype, '\0', subtype_size);
-         local::copy_max( buffer.subtype().begin(), buffer.subtype().end(), subtype_size, subtype);
+         local::copy_max( buffer.type().subtype.begin(), buffer.type().subtype.end(), subtype_size, subtype);
       }
 
       return buffer.size();

@@ -5,16 +5,22 @@
 //      Author: Kristone
 //
 
-#include "common/order_buffer.h"
+#include "buffer/order.h"
 
+#include "common/buffer_context.h"
 #include "common/network_byteorder.h"
 
 #include <cstring>
 
-namespace
-{
 
-   namespace local
+
+
+
+
+
+namespace local
+{
+   namespace
    {
 
       namespace arithmetic
@@ -252,8 +258,8 @@ namespace
 
       }
 
-   }
-}
+   } // <unamed>
+} // local
 
 
 const char* CasualOrderDescription( const int code)
@@ -391,6 +397,7 @@ int CasualOrderUsed( const char* const buffer, long* const size)
    return CASUAL_ORDER_SUCCESS;
 }
 
+/*
 long CasualOrderCreate( char* const buffer, const long size)
 {
    constexpr auto bytes = local::header::size();
@@ -427,9 +434,67 @@ long CasualOrderReduce( char* const buffer, const long size)
 
    return CASUAL_ORDER_SUCCESS;
 }
+*/
 
+//  TODO: Don't understand what this is...
 long CasualOrderNeeded( char* const buffer, const long size)
 {
    return local::header::select::inserter( buffer);
 }
+
+
+namespace casual
+{
+   namespace buffer
+   {
+      namespace implementation
+      {
+
+         class Order : public common::buffer::implementation::Base
+         {
+            void doCreate( common::buffer::Buffer& buffer, std::size_t size) override
+            {
+               constexpr auto bytes = local::header::size();
+
+               if( size < bytes)
+               {
+                  // throw if this is an error...
+                  size = bytes;
+               }
+
+               buffer.memory().resize( size);
+
+               local::header::update::reserved( buffer.raw(), size);
+               local::header::update::inserter( buffer.raw(), bytes);
+               local::header::update::selector( buffer.raw(), bytes);
+            }
+
+            void doReallocate( common::buffer::Buffer& buffer, std::size_t size) override
+            {
+
+               const auto inserter = local::header::select::inserter( buffer.raw());
+
+               if( size < inserter)
+               {
+                  // throw if this is an error...
+                  size = inserter;
+               }
+
+               buffer.memory().resize( size);
+
+               local::header::update::reserved( buffer.raw(), size);
+            }
+
+
+            static const bool initialized;
+         };
+
+         const bool Order::initialized = common::buffer::implementation::registrate< Order>( {{ CASUAL_ORDER, ""}});
+
+      } // implementation
+   } // buffer
+} // casual
+
+
+
 

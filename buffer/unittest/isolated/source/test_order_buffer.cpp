@@ -10,13 +10,16 @@
 
 #include <gtest/gtest.h>
 
-#include "common/order_buffer.h"
+#include "buffer/order.h"
+#include "xatmi.h"
 
 
 #include <string>
 
 
 
+
+/*
 TEST( casual_order_buffer, allocate_with_enough_size__expecting_success)
 {
    char buffer[512];
@@ -55,12 +58,12 @@ TEST( casual_order_buffer, allocate_with_insufficient_size__expecting_failure)
    char buffer[5];
    EXPECT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_NO_SPACE);
 }
-
+*/
 
 TEST( casual_order_buffer, add_and_get)
 {
-   char buffer[512];
-   ASSERT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
+   auto buffer = tpalloc( CASUAL_ORDER, "", 1024);
+   ASSERT_TRUE( buffer != nullptr);
 
    EXPECT_TRUE( CasualOrderAddBool( buffer, false) == CASUAL_ORDER_SUCCESS);
    EXPECT_TRUE( CasualOrderAddChar( buffer, 'a') == CASUAL_ORDER_SUCCESS);
@@ -112,8 +115,8 @@ TEST( casual_order_buffer, add_and_get)
 
 TEST( casual_order_buffer, detect_out_of_space)
 {
-   char buffer[64];
-   EXPECT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
+   auto buffer = tpalloc( CASUAL_ORDER, "", 64);
+   ASSERT_TRUE( buffer != nullptr);
 
 
    EXPECT_TRUE( CasualOrderAddLong( buffer, 123456) == CASUAL_ORDER_SUCCESS);
@@ -123,8 +126,8 @@ TEST( casual_order_buffer, detect_out_of_space)
 
 TEST( casual_order_buffer, detect_out_of_place)
 {
-   char buffer[64];
-   EXPECT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
+   auto buffer = tpalloc( CASUAL_ORDER, "", 64);
+      ASSERT_TRUE( buffer != nullptr);
 
 
    EXPECT_TRUE( CasualOrderAddLong( buffer, 123456) == CASUAL_ORDER_SUCCESS);
@@ -137,15 +140,14 @@ TEST( casual_order_buffer, detect_out_of_place)
 
 TEST( casual_order_buffer, copy_buffer__expecting_success)
 {
-   char source[64];
-   ASSERT_TRUE( CasualOrderCreate( source, sizeof(source)) == CASUAL_ORDER_SUCCESS);
+   auto source = tpalloc( CASUAL_ORDER, "", 64);
+   ASSERT_TRUE( source != nullptr);
 
    ASSERT_TRUE( CasualOrderAddChar( source, 'a') == CASUAL_ORDER_SUCCESS);
    ASSERT_TRUE( CasualOrderAddLong( source, 654321) == CASUAL_ORDER_SUCCESS);
 
-   char target[64];
-   ASSERT_TRUE( CasualOrderCreate( target, sizeof(target)) == CASUAL_ORDER_SUCCESS);
-
+   auto target = tpalloc( CASUAL_ORDER, "", 64);
+   ASSERT_TRUE( target != nullptr);
 
    EXPECT_TRUE( CasualOrderCopyBuffer( target, source) == CASUAL_ORDER_SUCCESS);
 
