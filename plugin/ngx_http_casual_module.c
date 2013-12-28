@@ -114,7 +114,7 @@ static ngx_int_t ngx_http_casual_handler(ngx_http_request_t *r)
    //
    // Only POST supported
    //
-   if (!(r->method & (NGX_HTTP_POST)))
+   if( ! ( r->method & (NGX_HTTP_POST)))
    {
       return NGX_HTTP_NOT_ALLOWED;
    }

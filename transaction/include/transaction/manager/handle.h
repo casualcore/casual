@@ -416,7 +416,6 @@ namespace casual
       } // handle
    } // transaction
 
-
 } // casual
 
 #endif // MANAGER_HANDLE_H_

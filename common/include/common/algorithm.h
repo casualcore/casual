@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <type_traits>
 
 #include <assert.h>
 
@@ -70,41 +71,29 @@ namespace casual
             return Range< Iter>( first, last);
          }
 
-         template< typename C>
-         auto make( C& container) -> decltype( make( std::begin( container), std::end( container)))
+         template< typename C, class = typename std::enable_if<std::is_lvalue_reference< C>::value>::type >
+         auto make( C&& container) -> decltype( make( std::begin( container), std::end( container)))
          {
             return make( std::begin( container), std::end( container));
          }
 
-         template< typename C>
-         auto make( const C& container) -> decltype( make( std::begin( container), std::end( container)))
-         {
-            return make( std::begin( container), std::end( container));
-         }
 
-         template< typename C>
-         auto make_reverse( C& container) -> decltype( make( container.rbegin(), container.rend()))
-         {
-            return make( container.rbegin(), container.rend());
-         }
-
-         template< typename C>
-         auto make_reverse( const C& container) -> decltype( make( container.rbegin(), container.rend()))
+         template< typename C, class = typename std::enable_if<std::is_lvalue_reference< C>::value>::type >
+         auto make_reverse( C&& container) -> decltype( make( container.rbegin(), container.rend()))
          {
             return make( container.rbegin(), container.rend());
          }
 
 
-
-         template< typename Iter, typename C>
-         Range< Iter> sort( Range< Iter> range, C compare)
+         template< typename R, typename C>
+         R sort( R range, C compare)
          {
             std::sort( std::begin( range), std::end( range), compare);
             return range;
          }
 
-         template< typename Iter>
-         Range< Iter> sort( Range< Iter> range)
+         template< typename R>
+         R sort( R range)
          {
             std::sort( std::begin( range), std::end( range));
             return range;
