@@ -159,58 +159,6 @@ namespace casual
 
 
 
-            namespace instance
-            {
-
-               template< typename M>
-               void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
-               {
-                  auto instance = state::find::instance( common::range::make( state.instances), message);
-
-                  if( ! instance.empty())
-                  {
-                     instance.first->state = newState;
-                  }
-               }
-
-               template< typename M>
-               void done( State& state, M& message)
-               {
-                  auto request = common::range::find(
-                        common::range::make( state.pendingRequest),
-                        action::pending::resource::Request::Find{ message.resource});
-
-                  if( ! request.empty())
-                  {
-                     //
-                     // We got a pending request for this resource, let's oblige
-                     //
-                     queue::non_blocking::Writer writer{ message.id.queue_id, state};
-
-                     if( writer.send( request.first->message))
-                     {
-                        common::range::erase( state.pendingRequest, request);
-                     }
-                     else
-                     {
-                        common::log::warning << "failed to send pending request to resource, although the instance reported idle" << std::endl;
-
-                        instance::state( state, message, state::resource::Proxy::Instance::State::idle);
-                     }
-                  }
-                  else
-                  {
-
-                     instance::state( state, message, state::resource::Proxy::Instance::State::idle);
-
-                     // TODO: else what?
-                  }
-
-               }
-            } // instance
-
-
-
 
             struct Prepare : public state::Base
             {
@@ -218,47 +166,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message)
-               {
-
-                  //
-                  // Instance is ready for more work
-                  //
-                  instance::done( m_state, message);
-
-                  auto task = common::range::find(
-                        common::range::make( m_state.tasks),
-                        action::Task::Find( message.xid));
-
-                  if( ! task.empty())
-                  {
-                     auto resource = common::range::sorted::bound(
-                           common::range::make( task.first->resources),
-                           action::Resource{ message.resource});
-
-                     if( ! resource.empty())
-                     {
-                        resource.first->state = action::Resource::State::cPrepared;
-                     }
-                     // TODO: else, what to do?
-
-
-                     auto state = task.first->state();
-
-                     //
-                     // Are we in a prepared state?
-                     //
-                     if( state >= action::Resource::State::cPrepared)
-                     {
-
-                        m_state.log.prepareCommit( task.first->xid);
-
-                     }
-
-                  }
-                  // TODO: else, what to do?
-
-               }
+               void dispatch( message_type& message);
 
             };
 
@@ -268,14 +176,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message)
-               {
-                  //
-                  // Instance is ready for more work
-                  //
-                  instance::done( m_state, message);
-
-               }
+               void dispatch( message_type& message);
 
             };
 
@@ -285,14 +186,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message)
-               {
-                  //
-                  // Instance is ready for more work
-                  //
-                  instance::done( m_state, message);
-
-               }
+               void dispatch( message_type& message);
 
             };
 
@@ -306,36 +200,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-               if( message.xid.null())
-               {
-                  message.xid.generate();
-               }
-
-               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find{ message.xid});
-
-               if( task.empty())
-               {
-                  //auto task = state::
-
-                  m_state.log.begin( message);
-
-                  action::pending::Reply reply;
-                  reply.target = message.id.queue_id;
-
-
-                  m_state.pendingReplies.push_back( std::move( reply));
-
-               }
-               else
-               {
-                  common::log::error << "Attempt to start a transaction " << message.xid.stringGlobal() << ", which is already in progress" << std::endl;
-                  // TODO: send reply
-               }
-
-
-            }
+            void dispatch( message_type& message);
          };
 
          struct Commit : public state::Base
@@ -344,34 +209,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-               //
-               // Find the task
-               //
-               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find{ message.xid});
-
-
-               if( ! task.empty())
-               {
-
-                  //
-                  // Prepare prepare-requests
-                  //
-                  action::pending::transform::Request< common::message::transaction::resource::prepare::Request> transform{ message.xid};
-
-                  common::range::transform(
-                        common::range::make( task.first->resources),
-                        m_state.pendingRequest,
-                        transform);
-
-               }
-               else
-               {
-                  common::log::error << "Attempt to commit a transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: error reply" << std::endl;
-
-               }
-            }
+            void dispatch( message_type& message);
          };
 
          struct Rollback : public state::Base
@@ -380,10 +218,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-
-            }
+            void dispatch( message_type& message);
          };
 
          struct Involved : public state::Base
@@ -392,24 +227,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find( message.xid));
-
-               if( ! task.empty())
-               {
-                  common::range::copy(
-                     common::range::make( message.resources),
-                     std::back_inserter( task.first->resources));
-
-                  common::range::trim( task.first->resources, common::range::unique( common::range::sort( common::range::make( task.first->resources))));
-
-               }
-               else
-               {
-                  common::log::error << "Resource " << common::range::make( message.resources) << " claims to be involved in transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: discard" << std::endl;
-               }
-            }
+            void dispatch( message_type& message);
          };
 
 

@@ -188,8 +188,8 @@ namespace casual
          }
 
 
-         template< typename Iter1, typename Iter2, typename P>
-         bool equal( Range< Iter1> lhs, Range< Iter2> rhs, P predicate)
+         template< typename R1, typename R2, typename P>
+         bool equal( R1&& lhs, R2&& rhs, P predicate)
          {
             if( lhs.size() != rhs.size())
             {
@@ -199,8 +199,8 @@ namespace casual
          }
 
 
-         template< typename Iter1, typename Iter2>
-         bool equal( Range< Iter1> lhs, Range< Iter2> rhs)
+         template< typename R1, typename R2>
+         bool equal( R1&& lhs, R2&& rhs)
          {
             if( lhs.size() != rhs.size())
             {
@@ -210,29 +210,27 @@ namespace casual
          }
 
 
-         template< typename Iter, typename P>
-         bool all_of( Range< Iter> range, P predicate)
+         template< typename R, typename P>
+         bool all_of( R&& range, P predicate)
          {
-            return std::all_of( range.first, range.last, predicate);
+            return std::all_of( std::begin( range), std::end( range), predicate);
          }
 
          template< typename Iter, typename T>
-         typename std::enable_if< std::is_convertible< T, typename Range< Iter>::value_type>::value, Range< Iter>>::type
-         find( Range< Iter> range, T vlaue)
+         //typename std::enable_if< std::is_convertible< T, typename Range< Iter>::value_type>::value, Range< Iter>>::type
+         Range< Iter> find( Range< Iter> range, T&& value)
          {
-            Range< Iter> result{ range};
-            result.first = std::find( range.first, range.last, vlaue);
-            return result;
+            range.first = std::find( range.first, range.last, std::forward< T>( value));
+            return range;
          }
 
 
          template< typename Iter, typename P>
-         typename std::enable_if< ! std::is_convertible< P, typename Range< Iter>::value_type>::value, Range< Iter>>::type
-         find( Range< Iter> range, P predicate)
+         //typename std::enable_if< ! std::is_convertible< P, typename Range< Iter>::value_type>::value, Range< Iter>>::type
+         Range< Iter> find_if( Range< Iter> range, P predicate)
          {
-            Range< Iter> result{ range};
-            result.first = std::find_if( range.first, range.last, predicate);
-            return result;
+            range.first = std::find_if( range.first, range.last, predicate);
+            return range;
          }
 
 

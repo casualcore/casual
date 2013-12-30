@@ -20,6 +20,8 @@
 
 
 #include <map>
+#include <deque>
+#include <vector>
 
 namespace casual
 {
@@ -103,6 +105,38 @@ namespace casual
 
       namespace action
       {
+
+         namespace pending
+         {
+            struct Reply
+            {
+               typedef common::platform::queue_id_type queue_id_type;
+
+               template< typename M>
+               Reply( queue_id_type target, M&& information) : target( target)
+               {
+                  common::marshal::output::Binary archive;
+                  archive << information;
+
+                  auto type = common::message::type( information);
+                  message = common::ipc::message::Complete( type, archive.release());
+               }
+
+               Reply( Reply&&) = default;
+
+
+               queue_id_type target;
+               common::ipc::message::Complete message;
+            };
+         } // pending
+
+      } // action
+
+
+
+
+      struct Transaction
+      {
          struct Resource
          {
             using id_type = common::platform::resource::id_type;
@@ -124,138 +158,114 @@ namespace casual
 
             Resource( id_type id) : id( id) {}
 
-            bool operator < ( const Resource& rhs) const
-            {
-               return id < rhs.id;
-            }
-
-            bool operator == ( const Resource& rhs) const
-            {
-               return id == rhs.id;
-            }
-
-
             id_type id;
             State state = State::cInvolved;
          };
 
-         struct Task
+         enum class Task
          {
+            logBegin,
+            replyBegin,
+            waitForCommitOrRollback,
+            waitForPrepare,
+            rollback
+         };
 
-            typedef common::platform::queue_id_type queue_id_type;
+
+         typedef common::message::server::Id id_type;
 
 
-            Task() = default;
-            Task( Task&&) = default;
+         Transaction() = default;
+         Transaction( Transaction&&) = default;
 
 
-            queue_id_type target;
-            common::transaction::ID xid;
-            std::vector< Resource> resources;
+         id_type instigator;
+         common::transaction::ID xid;
+         std::vector< Resource> resources;
+         std::deque< Task> tasks;
 
-            Resource::State state() const
+         Resource::State state() const
+         {
+            Resource::State result = Resource::State::cNotInvolved;
+
+            for( auto& resource : resources)
             {
-               Resource::State result = Resource::State::cNotInvolved;
+               if( result > resource.state)
+                  result = resource.state;
+            }
+            return result;
+         }
+      };
 
-               for( auto& resource : resources)
-               {
-                  if( result > resource.state)
-                     result = resource.state;
-               }
-               return result;
+      inline bool operator < ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id < rhs.id; }
+      inline bool operator == ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id == rhs.id; }
+
+      namespace find
+      {
+         struct Transaction
+         {
+            Transaction( const common::transaction::ID& xid) : m_xid( xid) {}
+            bool operator () ( const transaction::Transaction& value) const
+            {
+               return value.xid == m_xid;
             }
 
-
-            struct Find
+            struct Resource
             {
-               Find( const common::transaction::ID& xid) : m_xid( xid) {}
+               using id_type = transaction::Transaction::Resource::id_type;
 
-               bool operator () ( const Task& value) const
+               Resource( id_type id) : m_id( id) {}
+               bool operator () ( const transaction::Transaction::Resource& value) const
                {
-                  return value.xid == m_xid;
+                  return value.id == m_id;
                }
-
             private:
-               const common::transaction::ID& m_xid;
+               id_type m_id;
             };
+
+         private:
+            const common::transaction::ID& m_xid;
+         };
+
+      } // find
+
+      namespace transform
+      {
+         struct Transaction
+         {
+            transaction::Transaction operator () ( const common::message::transaction::begin::Request& message) const
+            {
+               transaction::Transaction result;
+
+               result.instigator = message.id;
+               result.xid = message.xid;
+               result.tasks = {
+                     transaction::Transaction::Task::logBegin,
+                     transaction::Transaction::Task::replyBegin,
+                     transaction::Transaction::Task::waitForCommitOrRollback};
+
+               return result;
+            }
 
          };
 
          namespace pending
          {
-            namespace resource
+            template< typename M>
+            action::pending::Reply reply( const transaction::Transaction& transaction, common::platform::queue_id_type queue)
             {
-               struct Request
-               {
-                  using id_type = common::platform::resource::id_type;
+               M message;
+               message.id.queue_id = common::ipc::receive::id();
+               message.xid = transaction.xid;
+               message.state = 0; // TODO:
 
-                  common::ipc::message::Complete message;
-                  std::vector< id_type> resources;
-
-
-                  struct Find
-                  {
-                     Find( id_type id) : id( id) {}
-
-                     bool operator () ( const Request& value) const
-                     {
-                        return std::find(
-                           std::begin( value.resources),
-                           std::end( value.resources), id) != std::end( value.resources);
-                     }
-
-                  private:
-                     id_type id;
-                  };
-               };
-            } // resource
-
-            namespace transform
-            {
-               template< typename M>
-               struct Request
-               {
-                  Request( const common::transaction::ID& xid) : xid( xid) {}
-
-                  pending::resource::Request operator () ( const action::Resource& resource) const
-                  {
-                     pending::resource::Request result;
-                     //result.resourceId = resource.id;
-
-                     M message;
-                     message.id.queue_id = common::ipc::receive::id();
-                     message.resource = resource.id;
-                     message.xid = xid;
-
-                     common::marshal::output::Binary archive;
-                     archive << message;
-
-                     auto type = common::message::type( message);
-                     result.message = common::ipc::message::Complete( type, archive.release());
-
-                     return result;
-                  }
-
-               private:
-                  const common::transaction::ID& xid;
-               };
-
-            } // transform
-
+               return action::pending::Reply( queue, message);
+            }
          } // pending
 
-         namespace pending
-         {
-            struct Reply
-            {
-               typedef common::platform::queue_id_type queue_id_type;
 
-               queue_id_type target;
-               common::ipc::message::Complete message;
-            };
-         } // pending
+      } // transform
 
-      } // action
 
       struct State
       {
@@ -270,10 +280,7 @@ namespace casual
          std::vector< state::resource::Proxy::Instance> instances;
 
 
-
-         std::vector< action::Task> tasks;
-
-         std::vector< action::pending::resource::Request> pendingRequest;
+         std::vector< Transaction> transactions;
 
          //!
          //! Replies that will be sent after an atomic write to the log

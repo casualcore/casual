@@ -132,34 +132,23 @@ namespace casual
                //
                // Blocking
                //
-               auto marshal = queueReader.next();
 
-               if( ! handler.dispatch( marshal))
-               {
-                  common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
-               }
+               handler.dispatch( queueReader.next());
+
 
                //
-               // Consume until the queue is empty or we've pending replies equal to transaction_batch
+               // Consume until the queue is empty or we've got pending replies equal to transaction_batch
                //
                {
 
                   queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
 
-
-                  for( auto marshler = nonBlocking.next(); ! marshler.empty(); marshler = nonBlocking.next())
+                  while( handler.dispatch( nonBlocking.next()) &&
+                        m_state.pendingReplies.size() < common::platform::transaction_batch)
                   {
-
-                     if( ! handler.dispatch( marshler.front()))
-                     {
-                        common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
-                     }
-
-                     if( m_state.pendingReplies.size() >=  common::platform::transaction_batch)
-                     {
-                        break;
-                     }
+                     ;
                   }
+
                }
 
                /*

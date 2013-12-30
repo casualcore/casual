@@ -169,6 +169,11 @@ namespace casual
                }
             };
 
+            inline std::ostream& operator << ( std::ostream& out, const Id& value)
+            {
+               return out << "pid: " << value.pid << " queue: " << value.queue_id;
+            }
+
             template< message::Type type>
             struct basic_connect : basic_messsage< type>
             {
@@ -529,11 +534,13 @@ namespace casual
             {
                typedef basic_transaction< type> base_type;
 
+               server::Id id;
                common::transaction::ID xid;
 
                template< typename A>
                void marshal( A& archive)
                {
+                  archive & id;
                   archive & xid;
                }
             };
@@ -546,14 +553,12 @@ namespace casual
             {
                typedef basic_transaction< type> base_type;
 
-               server::Id id;
                std::size_t resource;
 
                template< typename A>
                void marshal( A& archive)
                {
                   base_type::marshal( archive);
-                  archive & id;
                   archive & resource;
                }
             };

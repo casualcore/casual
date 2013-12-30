@@ -88,7 +88,20 @@ namespace casual
                   m_handlers[ H::message_type::message_type] = std::move( holder);
                }
 
-               bool dispatch( marshal::input::Binary& binary)
+               template< typename B>
+               bool dispatch( B&& binary)
+               {
+                  return doDispatch( binary);
+               }
+
+               std::size_t size() const
+               {
+                  return m_handlers.size();
+               }
+
+            private:
+
+               bool doDispatch( marshal::input::Binary& binary)
                {
                   auto findIter = m_handlers.find( binary.type());
 
@@ -97,19 +110,29 @@ namespace casual
                      findIter->second->marshal( binary);
                      return true;
                   }
+                  else
+                  {
+                     common::log::error << "message_type: " << binary.type() << " not recognized - action: discard" << std::endl;
+                  }
                   return false;
                }
 
 
-               std::size_t size() const
+               bool doDispatch( std::vector< marshal::input::Binary>& binary)
                {
-                  return m_handlers.size();
+                  if( binary.empty())
+                  {
+                     return false;
+                  }
+
+                  doDispatch( binary.front());
+
+                  return true;
                }
 
-            private:
+
                handlers_type m_handlers;
             };
-
 
             template< typename RQ>
             void pump( Handler& handler, RQ&& receiveQueue)
@@ -118,13 +141,9 @@ namespace casual
                {
                   auto marshal = receiveQueue.next();
 
-                  if( ! handler.dispatch( marshal))
-                  {
-                     common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
-                  }
+                   handler.dispatch( marshal);
                }
             }
-
 
 
          } // dispatch
