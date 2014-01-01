@@ -8,9 +8,10 @@
 #include "transaction/manager/state.h"
 
 #include "common/exception.h"
-#include "common/trace.h"
 #include "common/algorithm.h"
-#include "common/log.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
+
 
 #include "config/domain.h"
 #include "config/xa_switch.h"
@@ -55,8 +56,8 @@ namespace casual
                         result.closeinfo = value.closeinfo;
                         result.concurency = value.instances;
 
-                        common::log::debug << "resource.openinfo: " << result.openinfo << std::endl;
-                        common::log::debug << "resource.concurency: " << result.concurency << std::endl;
+                        log::internal::debug << "resource.openinfo: " << result.openinfo << std::endl;
+                        log::internal::debug << "resource.concurency: " << result.concurency << std::endl;
 
                         return result;
                      }
@@ -70,7 +71,7 @@ namespace casual
          void configure( State& state, const common::message::transaction::Configuration& configuration)
          {
             {
-               trace::Exit log( "transaction manager xa-switch configuration");
+               trace::internal::Scope trace( "transaction manager xa-switch configuration");
 
                auto resources = config::xa::switches::get();
 
@@ -87,7 +88,7 @@ namespace casual
             // configure resources
             //
             {
-               trace::Exit log( "transaction manager resource configuration");
+               trace::internal::Scope trace( "transaction manager resource configuration");
 
                std::transform(
                      std::begin( configuration.resources),

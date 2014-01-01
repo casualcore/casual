@@ -26,6 +26,14 @@ namespace casual
          {
             enum class Type
             {
+               //
+               // casual internal logging
+               casual_debug,
+               casual_trace,
+               casual_transaction,
+
+               //
+               // Public logging
                debug = 10,
                trace,
                parameter,

@@ -11,7 +11,10 @@
 #include "transaction/manager/state.h"
 
 #include "common/environment.h"
-#include "common/trace.h"
+#include "common/internal/trace.h"
+#include "common/internal/log.h"
+
+#include "sf/log.h"
 
 namespace casual
 {
@@ -24,7 +27,7 @@ namespace casual
          void configure( State& state, BQ& brokerWriter, RQ& receiveQueue)
          {
             {
-               common::trace::Exit trace( "transaction manager connect to broker");
+               common::trace::internal::Scope trace( "connect to broker");
 
                //
                // Do the initialization dance with the broker
@@ -38,7 +41,7 @@ namespace casual
             }
 
             {
-               common::trace::Exit trace( "transaction manager configure");
+               common::trace::internal::Scope trace( "configure");
 
                //
                // Wait for configuration

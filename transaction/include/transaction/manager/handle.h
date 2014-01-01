@@ -82,6 +82,12 @@ namespace casual
 
          } // non_blocking
 
+         struct Policy
+         {
+            using block_writer = blocking::Writer;
+            using non_block_writer = non_blocking::Writer;
+         };
+
       } // queue
 
       namespace handle
@@ -194,6 +200,82 @@ namespace casual
          } // resource
 
 
+         //!
+         //! A wrapper that does generic checks and get the
+         //! transaction - pass it to base
+         //!
+         template< typename B, int error_code = TX_PROTOCOL_ERROR>
+         struct basic_wrapper : public B
+         {
+            using base_type = B;
+            using base_type::base_type;
+            using message_type = typename base_type::message_type;
+            using reply_type = typename base_type::reply_type;
+
+            void dispatch( message_type& message);
+         };
+
+
+         namespace domain
+         {
+            //!
+            //! This is only used when this TM act as an resource to
+            //! other TM:s, as in other domains.
+            //!
+            template< typename QP>
+            struct basic_prepare : public state::Base
+            {
+               typedef common::message::transaction::resource::prepare::Request message_type;
+               typedef common::message::transaction::resource::prepare::Reply reply_type;
+
+               using Base::Base;
+
+               void dispatch( message_type& message, Transaction& transaction);
+
+               void invokeResources( Transaction& transaction);
+            };
+
+            using Prepare = basic_wrapper< basic_prepare< queue::Policy>>;
+
+
+            //!
+            //! This is only used when this TM act as an resource to
+            //! other TM:s, as in other domains.
+            //!
+            template< typename QP>
+            struct basic_commit : public state::Base
+            {
+               typedef common::message::transaction::resource::commit::Request message_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message);
+            };
+
+            using Commit = basic_commit< queue::Policy>;
+
+
+            //!
+            //! This is only used when this TM act as an resource to
+            //! other TM:s, as in other domains.
+            //!
+            template< typename QP>
+            struct basic_rollback : public state::Base
+            {
+               typedef common::message::transaction::resource::rollback::Request message_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message);
+
+            };
+
+            using Rollback = basic_rollback< queue::Policy>;
+
+         } // domain
+
+
+
          struct Begin : public state::Base
          {
             typedef common::message::transaction::begin::Request message_type;
@@ -203,14 +285,20 @@ namespace casual
             void dispatch( message_type& message);
          };
 
-         struct Commit : public state::Base
+         template< typename QP>
+         struct basic_commit : public state::Base
          {
             typedef common::message::transaction::commit::Request message_type;
+            typedef common::message::transaction::commit::Reply reply_type;
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void dispatch( message_type& message, Transaction& transaction);
          };
+
+         using Commit = basic_wrapper< basic_commit< queue::Policy>>;
+
+
 
          struct Rollback : public state::Base
          {
@@ -235,5 +323,14 @@ namespace casual
    } // transaction
 
 } // casual
+
+
+//
+// Include the implementation
+//
+#include "transaction/manager/handle.hpp"
+
+
+
 
 #endif // MANAGER_HANDLE_H_

@@ -12,13 +12,16 @@
 #include "config/domain.h"
 
 #include "common/environment.h"
-#include "common/log.h"
+
+#include "common/internal/trace.h"
+#include "common/internal/log.h"
 
 #include "common/queue.h"
 #include "common/message_dispatch.h"
 #include "common/process.h"
 
 #include "sf/archive_maker.h"
+#include "sf/log.h"
 
 
 #include <xatmi.h>
@@ -112,7 +115,7 @@ namespace casual
 
 		      for( auto& death : process::lifetime::ended())
 		      {
-		         log::information << "shutdown: " << death.string() << std::endl;
+		         sf::log::information << "shutdown: " << death.string() << std::endl;
 		      }
 
 
@@ -125,7 +128,7 @@ namespace casual
 
       void Broker::start( const Settings& arguments)
       {
-         common::trace::Exit temp( "broker start");
+         common::log::information << "broker start";
 
          broker::QueueBlockingReader blockingReader( m_receiveQueue, m_state);
 
@@ -133,6 +136,7 @@ namespace casual
          // Initialize configuration and such
          //
          {
+            common::trace::internal::Scope trace{ "broker configuration"};
 
             //
             // Make the key public for others...
@@ -151,11 +155,15 @@ namespace casual
                common::log::information << "failed to open '" << arguments.configurationfile << "' - starting anyway..." << std::endl;
             }
 
+            //
+            // Set domain name
+            //
+            environment::domain::name( domain.name);
 
-            common::log::debug << " m_state.configuration.servers.size(): " << domain.servers.size() << std::endl;
+            common::log::internal::debug << CASUAL_MAKE_NVP( domain);
 
             {
-               common::trace::Exit trace( "start processes");
+               common::trace::internal::Scope trace( "start processes");
 
 
 
@@ -171,6 +179,7 @@ namespace casual
          }
 
 
+         common::log::internal::debug << "prepare message-pump handlers\n";
          //
          // Prepare message-pump handlers
          //
@@ -206,6 +215,8 @@ namespace casual
             handler.add< handle::Call>( arguments, m_state);
 
          }
+
+         common::log::internal::debug << "start message pump\n";
 
          message::dispatch::pump( handler, blockingReader);
 

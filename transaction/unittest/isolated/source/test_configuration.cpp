@@ -15,6 +15,8 @@
 
 #include "common/message.h"
 #include "common/mockup.h"
+#include "common/internal/trace.h"
+#include "common/internal/log.h"
 
 namespace casual
 {

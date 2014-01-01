@@ -231,12 +231,14 @@ namespace casual
 
                queue_id_type transactionManagerQueue = 0;
                std::vector< resource::Manager> resourceManagers;
+               std::string domain;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & transactionManagerQueue;
                   archive & resourceManagers;
+                  archive & domain;
                }
             };
 

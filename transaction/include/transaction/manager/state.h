@@ -164,11 +164,13 @@ namespace casual
 
          enum class Task
          {
-            logBegin,
-            replyBegin,
+            invalid,
+            logAndReplyBegin,
             waitForCommitOrRollback,
-            waitForPrepare,
-            rollback
+            waitForResourcesPrepare,
+            waitForResourcesCommit,
+            waitForResourcesRollback,
+
          };
 
 
@@ -179,10 +181,10 @@ namespace casual
          Transaction( Transaction&&) = default;
 
 
-         id_type instigator;
+         id_type owner;
          common::transaction::ID xid;
          std::vector< Resource> resources;
-         std::deque< Task> tasks;
+         Task task = Task::invalid;
 
          Resource::State state() const
          {
@@ -199,6 +201,7 @@ namespace casual
 
       inline bool operator < ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id < rhs.id; }
       inline bool operator == ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id == rhs.id; }
+      inline std::ostream& operator << ( std::ostream& out, const Transaction::Resource& value) { return out << value.id; }
 
       namespace find
       {
@@ -237,12 +240,9 @@ namespace casual
             {
                transaction::Transaction result;
 
-               result.instigator = message.id;
+               result.owner = message.id;
                result.xid = message.xid;
-               result.tasks = {
-                     transaction::Transaction::Task::logBegin,
-                     transaction::Transaction::Task::replyBegin,
-                     transaction::Transaction::Task::waitForCommitOrRollback};
+               result.task = transaction::Transaction::Task::logAndReplyBegin;
 
                return result;
             }
@@ -362,10 +362,6 @@ namespace casual
                   return common::range::find( resourceRange, filter::Idle{});
                }
             } // idle
-
-
-
-
          } // find
 
 

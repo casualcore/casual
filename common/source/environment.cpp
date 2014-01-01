@@ -116,12 +116,31 @@ namespace casual
 				return time( 0);
 			}
 
-			std::string getDomainName()
-			{
-				//
-				// TODO: Maybe store the domainname in broker-queue-file?
-				return "domain-1";
-			}
+			namespace local
+         {
+            namespace
+            {
+               std::string& domainName()
+               {
+                  static std::string path;
+                  return path;
+               }
+            }
+		   }
+
+			namespace domain
+         {
+            const std::string& name()
+            {
+               return local::domainName();
+            }
+
+            void name( const std::string& value)
+            {
+               local::domainName() = value;
+            }
+         } // domain
+
 
 
 		}

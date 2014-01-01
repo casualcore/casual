@@ -198,6 +198,7 @@ namespace casual
                   // Connect to casual
                   //
                   auto configuration = m_policy.connect( message);
+                  environment::domain::name( configuration.domain);
 
                   //
                   // Apply the configuration

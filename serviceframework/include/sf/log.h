@@ -10,6 +10,7 @@
 
 #include "common/log.h"
 
+#include "sf/namevaluepair.h"
 #include "sf/archive_log.h"
 
 

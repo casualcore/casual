@@ -48,16 +48,19 @@ namespace casual
       template< typename Iter>
       std::ostream& operator << ( std::ostream& out, Range< Iter> range)
       {
-         out << "[";
-         while( range.first != range.last)
+         if( out.good())
          {
-            out << *range.first;
-            if( range.first + 1 != range.last)
-               out << ",";
+            out << "[";
+            while( range.first != range.last)
+            {
+               out << *range.first;
+               if( range.first + 1 != range.last)
+                  out << ",";
 
-            ++range.first;
+               ++range.first;
+            }
+            out << "]";
          }
-         out << "]";
          return out;
       }
 

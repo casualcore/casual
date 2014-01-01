@@ -39,10 +39,6 @@ namespace casual
           m_receiveQueue( ipc::getReceiveQueue()),
           m_state( settings.database)
       {
-         common::trace::Exit trace( "transaction manager startup");
-
-
-         common::log::debug << "transaction manager queue: " << m_receiveQueue.id();
 
       }
 
@@ -81,7 +77,7 @@ namespace casual
 
       void Manager::start()
       {
-         common::Trace trace( "transaction::Manager::start");
+         common::log::internal::transaction << "transaction manager start\n";
 
 
          queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
@@ -91,6 +87,7 @@ namespace casual
          // Connect and get configuration from broker
          //
          {
+            common::log::internal::transaction << "configure\n";
 
             action::configure( m_state, brokerQueue, queueReader);
          }
@@ -99,15 +96,16 @@ namespace casual
          // Start resource-proxies
          //
          {
-            common::trace::Exit trace( "transaction manager start rm-proxy-servers");
+            common::log::internal::transaction << "start rm-proxy-servers\n";
 
-            std::for_each(
-               std::begin( m_state.resources),
-               std::end( m_state.resources),
+            common::range::for_each(
+               common::range::make( m_state.resources),
                action::boot::Proxie( m_state));
 
          }
 
+
+         common::log::internal::transaction << "prepare message dispatch handlers\n";
 
          //
          // prepare message dispatch handlers...
@@ -122,7 +120,13 @@ namespace casual
          handler.add( handle::resource::Prepare{ m_state});
          handler.add( handle::resource::Commit{ m_state});
          handler.add( handle::resource::Rollback{ m_state});
+         handler.add( handle::domain::Prepare{ m_state});
+         handler.add( handle::domain::Commit{ m_state});
+         handler.add( handle::domain::Rollback{ m_state});
 
+
+         common::log::internal::transaction << "start message pump\n";
+         common::log::information << "transaction manager started\n";
 
          while( true)
          {

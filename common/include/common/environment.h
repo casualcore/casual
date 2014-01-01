@@ -79,11 +79,16 @@ namespace casual
 
 			platform::seconds_type getTime();
 
-			std::string getDomainName();
+			namespace domain
+         {
+			   //!
+			   //! @return the name of the casual domain.
+			   //!
+			   const std::string& name();
 
+			   void name( const std::string& value);
 
-
-
+         } // domain
 
 
 		}

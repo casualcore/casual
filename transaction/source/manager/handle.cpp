@@ -140,8 +140,6 @@ namespace casual
                //
                instance::done( m_state, message);
             }
-
-
          } // resource
 
 
@@ -162,12 +160,7 @@ namespace casual
                      state.pendingReplies.emplace_back( target, message);
                   }
                } // send
-
-
-
             } //
-
-
          } // local
 
 
@@ -188,15 +181,11 @@ namespace casual
                m_state.transactions.push_back( transform::Transaction()( message));
                auto& transaction = m_state.transactions.back();
 
-               assert( transaction.tasks.front() == Transaction::Task::logBegin);
                m_state.log.begin( message);
-               transaction.tasks.pop_front();
 
-
-               assert( transaction.tasks.front() == Transaction::Task::replyBegin);
                m_state.pendingReplies.push_back( transform::pending::reply< reply_type>( transaction, message.id.queue_id));
-               transaction.tasks.pop_front();
 
+               transaction.task = Transaction::Task::waitForCommitOrRollback;
             }
             else
             {
@@ -210,38 +199,6 @@ namespace casual
          }
 
 
-         void Commit::dispatch( message_type& message)
-         {
-            //
-            // Find the transaction
-            //
-            auto transaction = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
-
-            if( ! transaction.empty())
-            {
-               if( transaction.first->tasks.front() != Transaction::Task::waitForCommitOrRollback)
-               {
-
-               }
-
-
-               //
-               // Prepare prepare-requests
-               //
-               //action::pending::transform::Request< common::message::transaction::resource::prepare::Request> transform{ message.xid};
-
-
-
-            }
-            else
-            {
-               common::log::error << "Attempt to commit a transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: error reply" << std::endl;
-
-               typedef common::message::transaction::commit::Reply reply_type;
-               local::send::reply< reply_type>( m_state, message.id.queue_id, TX_PROTOCOL_ERROR, message.xid);
-            }
-         }
-
          void Rollback::dispatch( message_type& message)
          {
             //
@@ -251,7 +208,7 @@ namespace casual
 
             if( ! transaction.empty())
             {
-               if( transaction.first->tasks.front() != Transaction::Task::waitForCommitOrRollback)
+               if( transaction.first->task != Transaction::Task::waitForCommitOrRollback)
                {
 
                }
