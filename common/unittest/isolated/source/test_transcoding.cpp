@@ -12,6 +12,8 @@
 
 #include "common/transcoding.h"
 
+#include <algorithm>
+
 namespace casual
 {
 
@@ -45,6 +47,47 @@ namespace casual
          EXPECT_TRUE( transcoding::Base64::decode( "QUJD") == local::from_string( "ABC"));
          EXPECT_TRUE( transcoding::Base64::decode( "QUJDRA==") == local::from_string( "ABCD"));
       }
+
+      TEST( casual_common_transcoding, UT8_encode)
+      {
+         //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
+
+         {
+            const std::string source = { static_cast<std::string::value_type>(0xA4)};
+            const std::string expect( u8"€");
+            const std::string result = transcoding::UTF8::encode( source, "ISO-8859-15");
+            EXPECT_TRUE( result == expect);
+         }
+
+      }
+
+      TEST( casual_common_transcoding, UT8_decode)
+      {
+         //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
+
+         {
+            const std::string source( u8"€");
+            const std::string expect = { static_cast<std::string::value_type>(0xA4)};
+            const std::string result = transcoding::UTF8::decode( source, "ISO-8859-15");
+            EXPECT_TRUE( result == expect);
+         }
+
+      }
+
+      TEST( casual_common_transcoding, UT8_encode_decode)
+      {
+         //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
+
+         const std::string source( u8"Casual är det bästa valet för låga kostnader");
+         //const std::string target = transcoding::UTF8::encode( source, "ISO-8859-1");
+         //const std::string result = transcoding::UTF8::decode( target, "ISO-8859-1");
+         const std::string target = transcoding::UTF8::encode( source);
+         const std::string result = transcoding::UTF8::decode( target);
+
+         EXPECT_TRUE( source == result);
+
+      }
+
 
    }
 }
