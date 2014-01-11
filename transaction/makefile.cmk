@@ -57,10 +57,13 @@ LinkExecutable( "casual-transaction-manager",
 Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o")
 Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o")
 
+
 LinkLibrary( "casual-resource-proxy-server",
-   ["obj/resource/proxy_server.o",
-   "obj/resource/proxy.o"],
-   ["casual-common"])
+   [
+    "obj/resource/proxy_server.o",
+    "obj/resource/proxy.o"
+   ],
+   ["casual-common", "casual-sf"])
 
 
 #
@@ -68,11 +71,13 @@ LinkLibrary( "casual-resource-proxy-server",
 #
 Compile( "unittest/isolated/source/test_configuration.cpp", "unittest/isolated/obj/test_configuration.o")
 Compile( "unittest/isolated/source/test_transactionlog.cpp", "unittest/isolated/obj/test_transactionlog.o")
+Compile( "unittest/isolated/source/test_manager.cpp", "unittest/isolated/obj/test_manager.o")
 
 LinkIsolatedUnittest( "test_transaction_configuration",
     [
      "unittest/isolated/obj/test_configuration.o",
-     "unittest/isolated/obj/test_transactionlog.o"
+     "unittest/isolated/obj/test_transactionlog.o",
+     "unittest/isolated/obj/test_manager.o",
     ],
     [ 
      "manager-archive", 

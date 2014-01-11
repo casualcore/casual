@@ -65,7 +65,7 @@ namespace casual
             {
                using state::Base::Base;
 
-               void operator () ( const state::resource::Proxy& proxy);
+               void operator () ( state::resource::Proxy& proxy);
             };
          } // boot
 

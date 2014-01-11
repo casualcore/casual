@@ -11,6 +11,7 @@
 #include "common/algorithm.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
+#include "common/environment.h"
 
 
 #include "config/domain.h"
@@ -70,6 +71,9 @@ namespace casual
 
          void configure( State& state, const common::message::transaction::Configuration& configuration)
          {
+
+            common::environment::domain::name( configuration.domain);
+
             {
                trace::internal::Scope trace( "transaction manager xa-switch configuration");
 
@@ -116,18 +120,21 @@ namespace casual
             void instance( common::platform::pid_type pid, State& state)
             {
 
-               auto instance = std::find_if( std::begin( state.instances), std::end( state.instances),
-                     [=]( const state::resource::Proxy::Instance& value){ return value.server.pid == pid;});
-
-
-               if( instance != std::end( state.instances))
+               for( auto& resource : state.resources)
                {
-                  state.instances.erase( instance);
+                  auto found = common::range::find_if(
+                     common::range::make( resource.instances),
+                     filter::Instance{ pid});
+
+                  if( ! found.empty())
+                  {
+                     resource.instances.erase( found.first);
+                     log::internal::debug << "remove instance: " << pid << std::endl;
+                     return;
+                  }
                }
-               else
-               {
-                  log::error << "failed to find and remove instance - pid: " << pid << std::endl;
-               }
+
+               log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
             }
          } // remove
       } // state

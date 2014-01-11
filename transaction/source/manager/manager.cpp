@@ -81,7 +81,7 @@ namespace casual
 
 
          queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
-         queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
+
 
          //
          // Connect and get configuration from broker
@@ -89,6 +89,7 @@ namespace casual
          {
             common::log::internal::transaction << "configure\n";
 
+            queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
             action::configure( m_state, brokerQueue, queueReader);
          }
 
@@ -116,7 +117,7 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resource::connect( m_state, brokerQueue));
+         handler.add( handle::resource::Connect( m_state, ipc::broker::id()));
          handler.add( handle::resource::Prepare{ m_state});
          handler.add( handle::resource::Commit{ m_state});
          handler.add( handle::resource::Rollback{ m_state});

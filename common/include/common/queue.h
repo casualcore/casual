@@ -173,7 +173,7 @@ namespace casual
                //!
                //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
                //!
-               auto send( ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type&>()))
+               auto send( const ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type&>()))
                {
                   while( true)
                   {

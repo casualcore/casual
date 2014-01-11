@@ -24,7 +24,7 @@ namespace casual
          {
             if( m_log.good())
             {
-               log::trace << m_information << " - in" << std::endl;
+               m_log << m_information << " - in" << std::endl;
             }
          }
 
@@ -34,11 +34,11 @@ namespace casual
             {
                if( std::uncaught_exception())
                {
-                  log::trace << m_information << " - out*" << std::endl;
+                  m_log << m_information << " - out*" << std::endl;
                }
                else
                {
-                  log::trace << m_information << " - out" << std::endl;
+                  m_log << m_information << " - out" << std::endl;
                }
             }
          }

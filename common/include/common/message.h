@@ -61,6 +61,12 @@ namespace casual
             cTransactionResourceCommitReply,
             cTransactionResourceRollbackRequest,
             cTransactionResourceRollbackReply,
+            cTransactionDomainResourcePrepareRequest,
+            cTransactionDomainResourcePrepareReply,
+            cTransactionDomainResourceCommitRequest,
+            cTransactionDomainResourceCommitReply,
+            cTransactionDomainResourceRollbackRequest,
+            cTransactionDomainResourceRollbackReply,
             cTransactionResourceInvolved,
 
          };
@@ -509,11 +515,13 @@ namespace casual
 
             struct Configuration : message::basic_messsage< cTransactionManagerConfiguration>
             {
+               std::string domain;
                std::vector< message::resource::Manager> resources;
 
                template< typename A>
                void marshal( A& archive)
                {
+                  archive & domain;
                   archive & resources;
                }
             };
@@ -555,27 +563,21 @@ namespace casual
             {
                typedef basic_transaction< type> base_type;
 
-               std::size_t resource;
-
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  base_type::marshal( archive);
-                  archive & resource;
-               }
             };
 
             template< message::Type type>
-            struct basic_reply : basic_request< type>
+            struct basic_reply : basic_transaction< type>
             {
-               typedef basic_request< type> base_type;
+               typedef basic_transaction< type> base_type;
 
+               platform::resource::id_type resource = 0;
                int state = 0;
 
                template< typename A>
                void marshal( A& archive)
                {
                   base_type::marshal( archive);
+                  archive & resource;
                   archive & state;
                }
             };
@@ -616,7 +618,7 @@ namespace casual
             {
                struct Involved : basic_transaction< cTransactionResourceInvolved>
                {
-                  std::vector< std::size_t> resources;
+                  std::vector< platform::resource::id_type> resources;
 
                   template< typename A>
                   void marshal( A& archive)
@@ -626,12 +628,41 @@ namespace casual
                   }
                };
 
+               template< message::Type type>
+               struct basic_request : basic_transaction< type>
+               {
+                  typedef basic_transaction< type> base_type;
+
+                  int flags = 0;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     base_type::marshal( archive);
+                     archive & flags;
+                  }
+
+               };
+
                namespace connect
                {
                   //!
                   //! Used to notify the TM that a resource proxy is up and running, or not...
                   //!
-                  typedef basic_reply< cTransactionResurceConnectReply> Reply;
+                  struct Reply : basic_messsage< cTransactionResurceConnectReply>
+                  {
+                     server::Id id;
+                     platform::resource::id_type resource = 0;
+                     int state = 0;
+
+                     template< typename A>
+                     void marshal( A& archive)
+                     {
+                        archive & id;
+                        archive & resource;
+                        archive & state;
+                     }
+                  };
                } // connect
 
                namespace prepare
@@ -654,6 +685,41 @@ namespace casual
                   typedef basic_reply< cTransactionResourceRollbackReply> Reply;
 
                } // rollback
+
+
+               //!
+               //! These request and replies are used between TM and resources when
+               //! the context is of "inter-domain", that is, when TM is acting as
+               //! a resource to other domains.
+               //! The resource is doing exactly the same thing but the context is
+               //! preserved, so that when the TM is invoked by the reply it knows
+               //! the context, and can act accordingly
+               //!
+               namespace domain
+               {
+                  namespace prepare
+                  {
+                     typedef basic_request< cTransactionDomainResourcePrepareRequest> Request;
+                     typedef basic_reply< cTransactionDomainResourcePrepareReply> Reply;
+
+                  } // prepare
+
+                  namespace commit
+                  {
+                     typedef basic_request< cTransactionDomainResourceCommitRequest> Request;
+                     typedef basic_reply< cTransactionDomainResourceCommitReply> Reply;
+
+                  } // commit
+
+                  namespace rollback
+                  {
+                     typedef basic_request< cTransactionDomainResourceRollbackRequest> Request;
+                     typedef basic_reply< cTransactionDomainResourceRollbackReply> Reply;
+
+                  } // rollback
+               } // domain
+
+
 
             } // resource
 

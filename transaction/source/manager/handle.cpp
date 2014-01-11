@@ -28,7 +28,7 @@ namespace casual
                template< typename M>
                void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
                {
-                  auto instance = state::find::instance( common::range::make( state.instances), message);
+                  auto instance = state::find::instance( common::range::make( state.resources), message);
 
                   if( ! instance.empty())
                   {
@@ -99,7 +99,7 @@ namespace casual
 
                   if( ! resource.empty())
                   {
-                     resource.first->state = Transaction::Resource::State::cPrepared;
+                     resource.first->state = Transaction::Resource::State::cPrepareReplied;
                   }
                   else
                   {
@@ -112,7 +112,7 @@ namespace casual
                   //
                   // Are we in a prepared state?
                   //
-                  if( state >= Transaction::Resource::State::cPrepared)
+                  if( state >= Transaction::Resource::State::cPrepareReplied)
                   {
                      m_state.log.prepareCommit( transaction.xid);
                   }
@@ -178,12 +178,12 @@ namespace casual
             if( found.empty())
             {
 
-               m_state.transactions.push_back( transform::Transaction()( message));
+               //m_state.transactions.push_back( transform::Transaction()( message));
                auto& transaction = m_state.transactions.back();
 
                m_state.log.begin( message);
 
-               m_state.pendingReplies.push_back( transform::pending::reply< reply_type>( transaction, message.id.queue_id));
+               //m_state.pendingReplies.push_back( transform::pending::reply< reply_type>( transaction, message.id.queue_id));
 
                transaction.task = Transaction::Task::waitForCommitOrRollback;
             }

@@ -76,7 +76,7 @@ namespace casual
          return m_uuid;
       }
 
-		void Uuid::copy( uuid_type& uuid)
+		void Uuid::copy( uuid_type& uuid) const
 		{
 			uuid_copy( uuid, m_uuid);
 		}

@@ -25,6 +25,7 @@ namespace casual
       {
          typedef typename std::iterator_traits< Iter>::value_type value_type;
 
+         Range() : last( first) {}
          Range( Iter first, Iter last) : first( first), last( last) {}
 
          auto size() const -> decltype( std::distance( Iter(), Iter()))
@@ -53,11 +54,9 @@ namespace casual
             out << "[";
             while( range.first != range.last)
             {
-               out << *range.first;
-               if( range.first + 1 != range.last)
+               out << *range.first++;
+               if( range.first != range.last)
                   out << ",";
-
-               ++range.first;
             }
             out << "]";
          }
@@ -217,6 +216,12 @@ namespace casual
          bool all_of( R&& range, P predicate)
          {
             return std::all_of( std::begin( range), std::end( range), predicate);
+         }
+
+         template< typename R, typename P>
+         bool any_of( R&& range, P predicate)
+         {
+            return std::any_of( std::begin( range), std::end( range), predicate);
          }
 
          template< typename Iter, typename T>

@@ -12,28 +12,9 @@
 #include "common/queue.h"
 #include "common/trace.h"
 #include "common/message_dispatch.h"
-#include "common/log.h"
+#include "common/internal/trace.h"
 
-/*
-int main( int argc, char** argv)
-{
-   std::cout << "rm name: " << tmswitch->name << std::endl;
-   std::cout << "rm flags: " << tmswitch->flags << std::endl;
 
-   auto result = tmswitch->xa_open_entry( "db=test,uid=db2,pwd=db2", 1, TMNOFLAGS);
-
-   std::cout << "open test: " << status( result) << std::endl;
-
-   result = tmswitch->xa_open_entry( "db=test2,uid=db2,pwd=db2", 2, TMNOFLAGS);
-
-   std::cout << "open test2: " << status( result) << std::endl;
-
-   std::cout << "close test: " << status( close( 1)) << std::endl;
-   std::cout << "close test2: " << status( close( 2)) << std::endl;
-
-   return 0;
-}
- */
 
 namespace casual
 {
@@ -41,159 +22,156 @@ namespace casual
    {
       namespace resource
       {
-
-         const int rm_id = 1;
-
-        using namespace common;
+         using namespace common;
 
          namespace handle
          {
 
-            template< typename TQ>
             struct Base
             {
-
-               Base( State& state, TQ& tm_queue) : m_state( state), m_tmQueue( tm_queue) {}
-
+               Base( State& state ) : m_state( state) {}
             protected:
                State& m_state;
-               TQ& m_tmQueue;
-
             };
 
 
             template< typename TQ>
-            struct Open : public Base< TQ>
+            struct basic_open : public Base
             {
+               using tm_queue_type = TQ;
+               using reply_type = message::transaction::resource::connect::Reply;
 
-               using Base< TQ>::Base;
+               using Base::Base;
 
                void operator() ()
                {
-                  //
-                  // Note: base is template parameter dependent, we have to use this->.
-                  // this-> should never be used in other constructs...
-                  //
+                  common::trace::internal::Scope trace{ "open resource"};
 
-                  common::trace::Exit logOpen{ "resource proxy open"};
+                  reply_type reply;
 
-                  message::transaction::resource::connect::Reply reply;
                   reply.id.pid = common::process::id();
-                  reply.resource = this->m_state.rm_id;
-                  reply.id.queue_id = common::ipc::getReceiveQueue().id();
+                  reply.resource = m_state.rm_id;
+                  reply.id.queue_id = common::ipc::receive::id();
 
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_open_entry( this->m_state.rm_openinfo.c_str(), rm_id, TMNOFLAGS);
+                  reply.state = m_state.xaSwitches->xaSwitch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
+
 
                   common::trace::Exit logConnect{ "resource connect to transaction monitor"};
 
-                  this->m_tmQueue( reply);
+                  tm_queue_type m_tmQueue{ m_state.tm_queue};
+                  m_tmQueue( reply);
 
                   if( reply.state != XA_OK)
                   {
-                     throw exception::NotReallySureWhatToNameThisException( "failed to open xa resurce " + this->m_state.rm_key + " with: " + this->m_state.rm_openinfo);
+                     throw exception::NotReallySureWhatToNameThisException( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo);
                   }
                }
             };
-            template< typename TQ>
-            Open< TQ> open( State& state, TQ&& tmQueue)
+
+            template< typename M, typename R, typename P, typename TQ>
+            struct basic_handler : public Base
             {
-               return Open< TQ>{ state, std::forward<TQ>( tmQueue)};
-            }
+               using tm_queue_type = TQ;
+               using message_type = M;
+               using reply_type = R;
+               using policy_type = P;
 
-            template< typename TQ>
-            struct Prepare : public Base< TQ>
-            {
-
-               typedef message::transaction::resource::prepare::Request message_type;
-
-               using Base< TQ>::Base;
+               using Base::Base;
 
                void dispatch( message_type& message)
                {
-                  //
-                  // Note: base is template parameter dependent, we have to use this->.
-                  // this-> should never be used in other constructs...
-                  //
-
-                  message::transaction::resource::prepare::Reply reply;
+                  reply_type reply;
 
                   reply.id.pid = common::process::id();
-                  reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
+                  reply.id.queue_id = common::ipc::receive::id();
+                  reply.resource = m_state.rm_id;
 
-                  this->m_tmQueue( reply);
-               }
-            };
+                  reply.state = policy_type()( m_state, message);
+                  reply.xid = std::move( message.xid);
 
-            template< typename TQ>
-            Prepare< TQ> prepare( State& state, TQ&& tmQueue)
-            {
-               return Prepare< TQ>{ state, std::forward<TQ>( tmQueue)};
-            }
 
-            template< typename TQ>
-            struct Commit : public Base< TQ>
-            {
-
-               typedef message::transaction::resource::commit::Request message_type;
-
-               using Base< TQ>::Base;
-
-               void dispatch( message_type& message)
-               {
-                  //
-                  // Note: base is template parameter dependent, we have to use this->.
-                  // this-> should never be used in other constructs...
-                  //
-
-                  message::transaction::resource::commit::Reply reply;
-
-                  reply.id.pid = common::process::id();
-                  reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
-
-                  this->m_tmQueue( reply);
+                  tm_queue_type m_tmQueue{ m_state.tm_queue};
+                  m_tmQueue( reply);
 
                }
             };
 
-            template< typename TQ>
-            Commit< TQ> commit( State& state, TQ&& tmQueue)
+
+            namespace policy
             {
-               return Commit< TQ>{ state, std::forward<TQ>( tmQueue)};
-            }
-
-            template< typename TQ>
-            struct Rollback : public Base< TQ>
-            {
-               typedef message::transaction::resource::rollback::Request message_type;
-
-               using Base< TQ>::Base;
-
-               void dispatch( message_type& message)
+               struct Prepare
                {
-                  //
-                  // Note: base is template parameter dependent, we have to use this->.
-                  // this-> should never be used in other constructs...
-                  //
+                  template< typename M>
+                  int operator() ( State& state, M& message) const
+                  {
+                     return state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid.xid(), state.rm_id, TMNOFLAGS);
+                  }
+               };
 
-                  message::transaction::resource::rollback::Reply reply;
+               struct Commit
+               {
+                  template< typename M>
+                  int operator() ( State& state, M& message) const
+                  {
+                     return state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid.xid(), state.rm_id, TMNOFLAGS);
+                  }
+               };
 
-                  reply.id.pid = common::process::id();
-                  reply.id.queue_id = common::ipc::getReceiveQueue().id();
-                  reply.state = this->m_state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid.xid(), rm_id, TMNOFLAGS);
+               struct Rollback
+               {
+                  template< typename M>
+                  int operator() ( State& state, M& message) const
+                  {
+                     return state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid.xid(), state.rm_id, TMNOFLAGS);
+                  }
+               };
+
+            } // policy
+
+            using Open = basic_open< queue::blocking::Writer>;
+
+            using Prepare = basic_handler<
+                  message::transaction::resource::prepare::Request,
+                  message::transaction::resource::prepare::Reply,
+                  policy::Prepare,
+                  queue::blocking::Writer>;
 
 
-                  this->m_tmQueue( reply);
+            using Commit = basic_handler<
+                  message::transaction::resource::commit::Request,
+                  message::transaction::resource::commit::Reply,
+                  policy::Commit,
+                  queue::blocking::Writer>;
 
-               }
-            };
+            using Rollback = basic_handler<
+                  message::transaction::resource::rollback::Request,
+                  message::transaction::resource::rollback::Reply,
+                  policy::Rollback,
+                  queue::blocking::Writer>;
 
-            template< typename TQ>
-            Rollback< TQ> rollback( State& state, TQ&& tmQueue)
+
+            namespace domain
             {
-               return Rollback< TQ>{ state, std::forward<TQ>( tmQueue)};
-            }
+               using Prepare = basic_handler<
+                     message::transaction::resource::domain::prepare::Request,
+                     message::transaction::resource::domain::prepare::Reply,
+                     policy::Prepare,
+                     queue::blocking::Writer>;
+
+
+               using Commit = basic_handler<
+                     message::transaction::resource::domain::commit::Request,
+                     message::transaction::resource::domain::commit::Reply,
+                     policy::Commit,
+                     queue::blocking::Writer>;
+
+               using Rollback = basic_handler<
+                     message::transaction::resource::domain::rollback::Request,
+                     message::transaction::resource::domain::rollback::Reply,
+                     policy::Rollback,
+                     queue::blocking::Writer>;
+            } // domain
+
 
 
 
@@ -222,33 +200,32 @@ namespace casual
          {
            validate::state( m_state);
 
-           {
-              common::trace::Exit log( "resource proxy open resource");
-
-           }
-
          }
 
          void Proxy::start()
          {
-            common::log::debug << "resource proxy start" << std::endl;
 
-
-            queue::blocking::Writer tm_queue( m_state.tm_queue);
-
-            handle::open( m_state, tm_queue)();
+            common::log::internal::transaction << "open resource\n";
+            handle::Open{ m_state}();
 
             //
             // prepare message dispatch handlers...
             //
+            common::log::internal::transaction << "prepare message dispatch handlers\n";
 
             message::dispatch::Handler handler;
 
-            handler.add( handle::prepare( m_state, tm_queue));
-            handler.add( handle::commit( m_state, tm_queue));
-            handler.add( handle::rollback( m_state, tm_queue));
+            handler.add( handle::Prepare{ m_state});
+            handler.add( handle::Commit{ m_state});
+            handler.add( handle::Rollback{ m_state});
+            handler.add( handle::domain::Prepare{ m_state});
+            handler.add( handle::domain::Commit{ m_state});
+            handler.add( handle::domain::Rollback{ m_state});
 
-            common::queue::blocking::Reader receiveQueue( common::ipc::getReceiveQueue());
+
+            common::log::internal::transaction << "start message pump\n";
+
+            common::queue::blocking::Reader receiveQueue( common::ipc::receive::queue());
             message::dispatch::pump( handler, receiveQueue);
 
          }

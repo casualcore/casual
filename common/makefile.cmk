@@ -69,7 +69,11 @@ LinkLibrary( "casual-common",
 #
 Compile( "source/mockup.cpp", "obj/mockup.o")
 
-LinkArchive( "casual-mockup", ["obj/mockup.o"])
+LinkLibrary( "casual-mockup", 
+     [
+      "obj/mockup.o"
+     ],
+     ["casual-common"])
 
 
 Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/simple_process.o")

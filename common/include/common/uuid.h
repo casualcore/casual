@@ -54,7 +54,7 @@ namespace casual
 			//!
 			//! @param uuid target to copy to.
 			//!
-			void copy( uuid_type& uuid);
+			void copy( uuid_type& uuid) const;
 
 			bool operator < ( const Uuid& rhs) const;
 			bool operator == ( const Uuid& rhs) const;

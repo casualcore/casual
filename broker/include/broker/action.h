@@ -132,6 +132,8 @@ namespace casual
                {
                   common::message::transaction::Configuration result;
 
+                  result.domain = common::environment::domain::name();
+
                   for( auto& group : groups)
                   {
                      std::transform(
