@@ -76,15 +76,10 @@ def NoParallel():
 ######################################################################
     """
     if getParallelMake() == 0 :
-        #
-        # Detta kan tyckas lite markligt, men vi vill att "not-parallel", dvs
-        # sekventiellt, ska alltid kicka in om anvandaren har valt det.
-        #
         print
         print "#"
-        print "# Parallelitet gar att overrida"
-        print "# NOTPARALLEL har alltid fortur, om vi far"
-        print "# indikation pa bade parallel och not-parallel"
+        print "# Parallelity is overridable"
+        print "# NOTPARALLEL has precedence"
         print "#"
         print "ifdef FORCE_NOTPARALLEL"
         print ".NOTPARALLEL:"
@@ -120,35 +115,36 @@ def CompileDirective(sourcefile,objectfile,directive):
 ##
 ## CompileDirective(sourcefile,objectfile,directive)
 ##
-## kompilerar en kllkodsfil till en objektfil
+## Compiles a source file to an object file, with excplicit directives
 ##
-## sourcefile    Namnet kllkodsfilen, inklusive path och filndelse (src/minfil.cpp)
+## sourcefile    name of the sourcefile (src/myfile.cpp)
 ##    
-## objectfile    den resulterade objektfilen inklusinve path och filndelse (obj/minfil.o)
+## objectfile    name of the output object file (obj/myfile.o)
 ##
-## directive   Kompileringsdirektiv just for detta TU
+## directive   compile directive for this TU
 ##
 ######################################################################
     """
 
     local_object_path=def_CurrentDirectory + "/" + internal_clean_directory_name( os.path.dirname( objectfile))
-    local_dependency_file=internal_dependency_file_name( sourcefile)
-    
-    local_cross_object_file=internal_cross_object_name( objectfile)
     
     local_source_file=def_CurrentDirectory + "/" + sourcefile
     local_object_file=def_CurrentDirectory + "/" + objectfile
+    
+    local_dependency_file=internal_dependency_file_name( local_object_file)
+    local_cross_object_file= internal_cross_object_name( local_object_file)
+
     
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
     print "-include " + local_dependency_file
     print 
-    print local_object_file + ": " + local_source_file + " | " + def_DependencyDirectory +" " + local_object_path                                                                        
+    print local_object_file + ": " + local_source_file + " | " + local_object_path                                                                        
     print "\t$(COMPILER) -o {0} {1}  $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(COMPILE_DIRECTIVES) {2}".format(objectfile, local_source_file, directive )
     print "\t@$(HEADER_DEPENDENCY_COMMAND) -MT '{0} {1}' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) {2} -MF {3}".format(local_cross_object_file, local_object_file, local_source_file, local_dependency_file)
     print 
-    print local_cross_object_file + ": " + local_source_file + " | " + def_DependencyDirectory + " " + local_object_path                                                                      
+    print local_cross_object_file + ": " + local_source_file + " | "  + local_object_path                                                                      
     print "\t$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o " + local_cross_object_file + " " + local_source_file + " $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) "
     print
     
@@ -163,11 +159,11 @@ def Compile(sourcefile,objectfile):
 ##
 ## Compile(sourcefile,objectfile)
 ##
-## kompilerar en kllkodsfil till en objektfil
+## Compiles a source file to an object file
 ##
-## sourcefile    Namnet kllkodsfilen, inklusive path och filndelse (src/minfil.cpp)
+## sourcefile    name of the sourcefile (src/myfile.cpp)
 ##    
-## objectfile    den resulterade objektfilen inklusinve path och filndelse (obj/minfil.o)
+## objectfile    name of the output object file (obj/myfile.o)
 ##
 ######################################################################
     """
@@ -185,73 +181,54 @@ def LinkAtmiServer(name,objectfiles,libs,services):
 ##
 ## LinkAtmiServer(name,objectfiles,libs,services)
 ##
-## Lnkar en ATMI-server
+## Links a XATMI-server
 ##
-## name        Namnet p exekverbara utan fil-suffix.
+## name        name of the server with out prefix or suffix.
 ##    
-## objects    Objektfiler som ska lnkas
+## objectfiles    object files that is linked
 ##
-## libs        libs som exekverbara har beroende mot.
+## libs        dependent libraries
 ##
-## services De tjnster som servern exponerar. Ex "tjanst1 tjanst2"
+## services    public services. I e.  "service1 service2"
 ##
 ######################################################################
     """
 
-    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, "-s \"" + services + "\"", objectfiles, libs, "")
+    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, services, "", objectfiles, libs, "")
     internal_print_services_file_dependency( name, services)
 
 
 
 
-def LinkAtmiServerResource(name,objectfiles,libs,services,resource):
+def LinkAtmiServerResource(name,objectfiles,libs,services,resources):
     """
 ######################################################################
 ##
 ## LinkAtmiServerResource( name, objectfiles, libs, services, resource)
 ##
-## Lankar en ATMI-server mot en resurs
+## Links a XATMI-server with one or more resources
 ##
-## name      Namnet pa exekverbara utan fil-suffix.
-## 
-## objects  Objektfiler som ska lankas inklusive path och filandelser (obj/bla.o)
+## name        name of the server with out prefix or suffix.
+##    
+## objectfiles    object files that is linked
 ##
-## libs      libs som exekverbara har beroende mot.
+## libs        dependent libraries
 ##
-## services tjanster som servern har realiserat
+## services    public services. I e.  "service1 service2"
 ##
-## resource    Resurs som servern ska interagera med.
+## resources    name of a XA resources
 ##
 ######################################################################
     """
-    internal_BASE_LinkATMI( "$(BUILDSERVER) ", name, " -s " + services + " $(DEFAULTSRVMGR) ", objectfiles, libs, " -r " + resource)
+    if not resources:
+        resource_directive = "";
+    else:
+        resource_directive = " -r " + ' '.join( resources)
+        
+        
+    resources = "-r ".join(resources);
+    internal_BASE_LinkATMI("$(BUILDSERVER) ", name, services, "", objectfiles, libs, resource_directive)
     internal_print_services_file_dependency( name, services)
-
-
-def LinkAtmiServerMultipleResources(name,objectfiles,libs,services,resources):
-    """
-######################################################################
-##
-## LinkAtmiServerMultipleResources( name, objectfiles, libs, services, resources)
-##
-## Lankar en ATMI-server mot multipla resurser
-##
-## name      Namnet pa exekverbara utan fil-suffix.
-## 
-## objects  Objektfiler som ska lankas inklusive path och filandelser (obj/bla.o)
-##
-## libs      libs som exekverbara har beroende mot.
-##
-## services tjanster som servern har realiserat
-##
-## resources    [1..N] (unika) Resurser som servern ska interagera med. Alltsa
-##                 om man interagerar med tva db2-resurser sa ska endast en resurs anges (TMSUDB2)
-##
-######################################################################
-    """
-    internal_BASE_LinkATMI("$(BUILDSERVER) ", name, " -s " + services + " $(DEFAULTSRVMGR) ", objectfiles, libs, " -M $(addprefix -r , " + resources + ")")
-    internal_print_services_file_dependency( name, services)
-
 
 
 
@@ -262,13 +239,13 @@ def LinkAtmiClient(name,objectfiles,libs):
 ##
 ## LinkAtmiClient(name,objectfiles,libs)
 ##
-## Lankar en ATMI-klient
+## Links a XATMI client
 ##
-## name        Namnet pa exekverbara utan fil-suffix.
+## name        name of the binary with out prefix or suffix.
 ##    
-## objects    Objektfiler som ska lankas
+## objectfiles    object files that is linked
 ##
-## libs        libs som exekverbara har beroende mot.
+## libs        dependent libraries
 ##
 ######################################################################
     """
@@ -282,13 +259,13 @@ def LinkLibrary(name,objectfiles,libs):
 ## 
 ## LinkLibrary(name,objectfiles,libs)
 ##
-## Lankar ett lib
+## Links a shared library
 ##
-## name        Namnet pa libbet utan lib-prefix och .so - andelse
+## name        name of the binary with out prefix or suffix.
 ##    
-## objectfiles    Objektfiler som ska lankas, inklusive path och suffix (/obj/bla.o)
+## objectfiles    object files that is linked
 ##
-## libs        Andra libbs som libbet har beroende mot.
+## libs        dependent libraries
 ##
 ######################################################################
     """
@@ -306,13 +283,11 @@ def LinkArchive(name,objectfiles):
 ## 
 ##  LinkArchive(name,objectfiles)
 ##
-## Lankar ett arkiv.
+## Links an archive
 ##
-## name        Namnet pa arkivet utan lib-prefix och .a - andelse
+## name        name of the binary with out prefix or suffix.
 ##    
-## objectfiles    Objektfiler som ska lankas, inklusive path och suffix (/obj/bla.o)
-##
-## libs        Andra libbs som arkivet har beroende mot.
+## objectfiles    object files that is linked
 ##
 ######################################################################
     """
@@ -320,7 +295,7 @@ def LinkArchive(name,objectfiles):
     objectfiles = ' '.join(objectfiles)
     
     print "#"
-    print "#    Lankar "+ name
+    print "#    Links "+ name
     
     filename=internal_archive_name_path(name)
     
@@ -355,13 +330,13 @@ def LinkExecutable(name,objectfiles,libs):
 ## 
 ## LinkExecutable(name,objectfiles,libs)
 ##
-## Lankar en exekverbar
+## Links an executable
 ##
-## name        Namnet pa exekverbara utan fil-suffix.
+## name        name of the binary with out prefix or suffix.
 ##    
-## objectfiles Objektfiler som ska lankas, inklusive path och suffix (/obj/bla.o)
+## objectfiles    object files that is linked
 ##
-## libs        libs som exekverbara har beroende mot.
+## libs        dependent libraries
 ##
 ######################################################################
     """
@@ -370,6 +345,7 @@ def LinkExecutable(name,objectfiles,libs):
     print internal_target_deploy_name(name) + ":"
     print "\t-@" + def_Deploy + " " + internal_executable_name(name) + " exe"
     print 
+
 
 def Build(casualMakefile):
     """
@@ -385,14 +361,16 @@ def Build(casualMakefile):
     """
     
     #
-    # Se till sa vi kor sekventiellt default.
+    # Make sure we do this sequential 
     #
     NoParallel()
+    
+    casualMakefile = os.path.abspath( casualMakefile)
     
     USER_CASUAL_MAKE_PATH=os.path.dirname( casualMakefile)
     USER_CASUAL_MAKE_FILE=os.path.basename( casualMakefile)
     
-    USER_MAKE_FILE=os.path.splitext(USER_CASUAL_MAKE_FILE)[0] + ".mk"
+    USER_MAKE_FILE=os.path.splitext(casualMakefile)[0] + ".mk"
     
     local_make_target=internal_convert_path_to_target_name(casualMakefile)
     
@@ -400,8 +378,9 @@ def Build(casualMakefile):
     print "#"
     print "# If " + USER_CASUAL_MAKE_FILE + " is newer than " + USER_MAKE_FILE + " , a new makefile is produced"
     print "#"
-    print USER_CASUAL_MAKE_PATH +"/" + USER_MAKE_FILE + ": " + USER_CASUAL_MAKE_PATH + "/" + USER_CASUAL_MAKE_FILE
-    print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + USER_CASUAL_MAKE_FILE
+    print USER_MAKE_FILE + ": " + casualMakefile
+    print "\t@echo generate makefile from " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + casualMakefile
     print
     internal_make_target_component("all", casualMakefile)
     print
@@ -424,11 +403,6 @@ def Build(casualMakefile):
     internal_make_target_component("install", casualMakefile)
     print
    
-    #
-    # Fixar till sa det blir lite snyggare targets
-    #
-    #TODO:
-    #local_make_target=local_make_target + "//\//_"
    
     print
     print "#"
@@ -446,17 +420,13 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
     """
 ######################################################################
 ##
-## Bygger unittest som ar tankt att koras pa compile-maskinen.
-## Alltsa, det ska vara isolerade tester for att testa av funkitonalitet
-## som inte har nagon koppling till nagon testmiljo eller liknande.
+## LinkIsolatedUnittest(name,objectfiles,libs)
 ##
-## Det skapas ett target for att kora testen
+## name        name of the unittest executable
+##    
+## objectfiles    object files that is linked
 ##
-## name: namn pa unittestbinaren
-##
-## objectfiles: Objektfilerna som ska lankas. Fulla objektfilsnamn ex. obj/minobejektfil.o
-##
-## libs: Libs som binaren ar beroende av.
+## libs        dependent libraries
 ##
 ######################################################################
     """
@@ -484,17 +454,13 @@ def LinkDependentUnittest(name,objectfiles,libs):
     """
 ######################################################################
 ##
-## Bygger unittest som ar beroende av "miljo"-delar.
-## Alltsa, det ska vara tester for att testa av verksamhetsfunkitonalitet
-## som har nagon koppling till nagon testmiljo eller liknande.
+## LinkDependentUnittest(name,objectfiles,libs)
 ##
-## Mer eller mindre motsattsen till LinkIsolatedUnittest
+## name        name of the unittest executable
+##    
+## objectfiles    object files that is linked
 ##
-## name: namn pa unittestbinaren
-##
-## objectfiles: Objektfilerna som ska lankas  Fulla objektfilsnamn ex. obj/minobejektfil.o
-##
-## libs: Libs som binaren ar beroende av.
+## libs        dependent libraries
 ##
 ######################################################################
     """
@@ -502,90 +468,42 @@ def LinkDependentUnittest(name,objectfiles,libs):
     
 
 
-def TargetExecute(target,executable,options):
-    """
-######################################################################
-##
-## TargetExecute
-##
-## Skapar ett target (vilket kan var nagot som aven produceras fran
-## andra 'macron', ex test) 
-## Nar target kors sa exekveras den exekverbara.
-##
-## target: namn for target. Detta bor vara nogot av de befintliga target:s
-##
-## executable: fullt kvalificerande namn pa den exekverbara
-##
-## options: eventuellt options till den exekverbara
-##
-######################################################################
-    """
-
-    internal_set_LD_LIBRARY_PATH()
-    
-    local_target_name=internal_unique_target_name(executable)
-    
-
-    print target + ": " + local_target_name    
-    print
-    
-    print local_target_name + ": " + internal_normalize_path(executable)
-    print "\t@" + executable, options
-    print 
 
 
- 
-def DatabasePrepare(database,username,password,filename,bindname):
-    """
-######################################################################
-##
-## DatabasePrepare(database,username,password,filename,bindname)
-##
-##
-## Special (hack) handling of bind files!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-## the path name must be short, so the bind files are copied to \$(TMP)
-## before bind. Restriction in bind.
-##
-##
-## Special (temporary) fix to handle .pc files that really should be
-## .sqc files. .pc file are copied to .sqc
-##
-##
-## Precompiles a pc file, produces a bind file and binds it agains
-## the database.
-##
-## database     Name of the database
-## username     Name of the user
-## password     The users password
-## filename     The name of the pc file, without extension
-## bindname     The package name without extension
-##
-## 2001-06-20/lsu
-## BindFileName now make use of a shell script, rfvprep. The only
-## reason for this change is that rfvprep can take care of db2 prep
-## warnings (error code 2).
-##
-######################################################################
-    """
-    local_bind_path=os.path.dirname( internal_bind_name_path( bindname))
-    print
-    print "prep all: $(internal_bind_name_path $bindname)"
-    print
-    print "$(internal_bind_name_path $bindname): $def_CurrentDirectory/src/$filename.cpp"
-    print
-    print "$def_CurrentDirectory/src/$filename.cpp: $def_CurrentDirectory/src/$filename.sqc | $local_bind_path"
-#    print "    $def_Prep "$database" "$username" "$password" $def_CurrentDirectory/src/$filename.sqc $(internal_bind_name_path $bindname) \$(PREXTRA_HOST_PATHS)"
-    print "    $def_MV $def_CurrentDirectory/src/$filename.c $def_CurrentDirectory/src/$filename.cpp"
-    print
 
-    internal_register_file_for_clean(internal_bind_name_path(bindname))
-    internal_register_file_for_clean( def_CurrentDirectory + "/src/" + filename + ".cpp")
-    
-    print
-    print "deploy: $(internal_target_deploy_name $bindname)"
-    print 
-    print "$(internal_target_deploy_name $bindname):"
-    print "    -@$def_Deploy $(internal_bind_name $bindname) bnd"    
+#  
+# def DatabasePrepare(database,username,password,filename,bindname):
+#     """
+# ######################################################################
+# ##
+# ## DatabasePrepare(database,username,password,filename,bindname)
+# ##
+# ## TODO
+# ##
+# ######################################################################
+#     """
+#     local_bind_path=os.path.dirname( internal_bind_name_path( bindname))
+#     print
+#     print "prep all: $(internal_bind_name_path $bindname)"
+#     print
+#     print "$(internal_bind_name_path $bindname): $def_CurrentDirectory/src/$filename.cpp"
+#     print
+#     print "$def_CurrentDirectory/src/$filename.cpp: $def_CurrentDirectory/src/$filename.sqc | $local_bind_path"
+# #    print "    $def_Prep "$database" "$username" "$password" $def_CurrentDirectory/src/$filename.sqc $(internal_bind_name_path $bindname) \$(PREXTRA_HOST_PATHS)"
+#     print "    $def_MV $def_CurrentDirectory/src/$filename.c $def_CurrentDirectory/src/$filename.cpp"
+#     print
+# 
+#     internal_register_file_for_clean(internal_bind_name_path(bindname))
+#     internal_register_file_for_clean( def_CurrentDirectory + "/src/" + filename + ".cpp")
+#     
+#     print
+#     print "deploy: $(internal_target_deploy_name $bindname)"
+#     print 
+#     print "$(internal_target_deploy_name $bindname):"
+#     print "    -@$def_Deploy $(internal_bind_name $bindname) bnd"    
+
+
+
 
 def InstallLibrary(source, destination):
     

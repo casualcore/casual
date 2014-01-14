@@ -1,6 +1,6 @@
 ######################################################################
 ## 
-## "globala" statiska variabler som kan användas av användaren
+## "global" variables that can be used and altered by the user
 ##
 ######################################################################
 
@@ -22,17 +22,10 @@ ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=ye
 DEFAULT_LIBS :=  
 
 
-######################################################################
-## 
-## Användarens variabel-deklarationer. Tas oavkortat från imakefilen:
-##
-######################################################################
-
 
 ######################################################################
 ## 
-## Compile/Link konfiguration. Dessa kan vara beroende av vad 
-## användaren har angett för direktiv i sin imake-fil
+## compilation and link configuration
 ##
 ######################################################################
 
@@ -44,25 +37,27 @@ COMPILER = g++
 CROSSCOMPILER = clang++
 
 #
-# Vi är beroende av att vi använder bash
-#
-SHELL = bash
-
-#
-# Vi särskiljer mellan lib och exe enbart för purify och co.
+# Linkers
 #
 LIBRARY_LINKER = g++
 ARCHIVE_LINKER = ar rcs
+
+
+#
+# We make sure we use bash
+#
+SHELL = bash
+
 
 ifndef EXECUTABLE_LINKER
 EXECUTABLE_LINKER = g++
 endif
 
 #
-# Nu stter vi ihop de faktiska kompilator/lnk-direktiven
+# Compile and link directives
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -c -fPIC -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++11
+   COMPILE_DIRECTIVES = -g -c -fPIC -Wall -pedantic -std=c++11
    LINK_DIRECTIVES_LIB =  -g -dynamiclib -fPIC 
    LINK_DIRECTIVES_EXE =  -g -fPIC 
    LINK_DIRECTIVES_ARCHIVE =  -g -fPIC
@@ -80,24 +75,19 @@ else
    LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC 
 endif
 
+CROSS_COMPILE_DIRECTIVES = -g -Wall --analyze -pedantic -fcolor-diagnostics -DNOWHAT -std=c++11 -stdlib=libc++ -U__STRICT_ANSI__ -DGTEST_USE_OWN_TR1_TUPLE=1
+
+
 #
-# Addera det användaren har definerat
+# Add user directive
 #
 COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) $(EXTRA_CC_FLAGS)
 LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) $(EXTRA_LINK_FLAGS)
 LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) $(EXTRA_LINK_FLAGS)
 
-CROSS_COMPILE_DIRECTIVES = -g -Wall --analyze -pedantic -fcolor-diagnostics -DNOWHAT -std=c++11 -stdlib=libc++ -U__STRICT_ANSI__ -DGTEST_USE_OWN_TR1_TUPLE=1
 
 BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
-
-#
-# Purify
-#
-PURIFYOPTIONS = -always-use-cache-dir=yes -lazy-load=no
-PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUXLIB_DIR)
-QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
 #
 # VALGRIND
@@ -108,27 +98,17 @@ else
 VALGRIND_CONFIG=
 endif
 
-#
-# ARCHIVER-options
-#
-ARCHIVEROPTIONS = -r
-
-#
-#
-#
-INCLUDE_PATHS := $(INCLUDE_PATHS) 
-LIBRARY_PATHS := $(LIBRARY_PATHS)
 
 #
 # Default include/library-paths
 #
-DEFAULT_INCLUDE_PATHS := ./inc 
+DEFAULT_INCLUDE_PATHS := ./include
 DEFAULT_LIBRARY_PATHS := ./bin 
  
 
 
 #
-# Sätt inledande växel för kompilatorn och länkaren.
+# Format the include-/library- paths
 # 
 INCLUDE_PATHS := $(addprefix -I, $(INCLUDE_PATHS) )
 LIBRARY_PATHS := $(addprefix -L, $(LIBRARY_PATHS) )
@@ -136,25 +116,25 @@ DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
 DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 
 #
-# För att generera "header-dependencies"
-# Ser till så vi inte får med beroende till db2 och Tuxedo.
+# Header dependency stuff
 #
 HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -isystem $(TUXINCLUDE_DIR)
 
 
 
 #
-# Om inget target anges förutsätter vi att det är "all" som menas...
+# If no target is given we assume "all"
 #
 .PHONY all:
 
 
 #
-# Dummy targets för de targets som inte alltid finns i alla
-# makefiler.
+# Dummy targets to make sure they will run, even if there is a corresponding file
+# with the same name
 #
 .PHONY make:
 .PHONY prep:
+.PHONY test:
 .PHONY cross:
 .PHONY export_begin:
 .PHONY export_headers:
@@ -165,34 +145,14 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -
 
 
 
-
-
-
 #
-# Purify och quantify
-# Vi ska länka med just purify/quantify för alla exekverbara...
-# purify/quantify är beroende av att allt byggs...
-#
-pure: EXECUTABLE_LINKER := $(PURIFY_LINKER)
-pure: all
-
-quantify: EXECUTABLE_LINKER := $(QUANTIFY_LINKER)
-quantify: all
-
-#
-# Se till så eventuella sub-make-filer får tillgång till 
-# vad vi har satt EXECUTABLE_LINKER till.
+# 
 #
 export EXECUTABLE_LINKER
 
-#
-# Test är beroende av att allt är byggt
-#
-test: all
 
 #
-# link är mest för att få likformighet mot "compile".
-# Vi likställer link med "all"
+# target 'link' is only to get symmetry with compile  
 #
 link: all
 
@@ -200,7 +160,7 @@ link: all
 
 ######################################################################
 ## 
-## Det transformerade innehållet i imakefilen följer:
+## Transformed casual make file follows below
 ##
 ######################################################################
 

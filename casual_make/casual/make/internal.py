@@ -41,7 +41,6 @@ def_Deploy="make.deploy.ksh"
 
 def_CurrentDirectory=os.getcwd()
 
-def_DependencyDirectory=def_CurrentDirectory + "/dependencies";
 
 def_PARALLEL_MAKE=0
 def_LD_LIBRARY_PATH_SET = 0
@@ -60,14 +59,13 @@ USER_CASUAL_MAKE_FILE=""
 
 
 #
-# Tar bort inledande './' Mest for att det ska 
-# se snyggare ut i makefilen.
+# Normalize name 
 #
 def internal_clean_directory_name(name):
     return str.replace(name, "./", "")
 
 #
-# byter ut alla / mot _
+# replace / to _
 #
 def internal_convert_path_to_target_name(name):
     return "target_" + str.replace( name, "/", "_" )
@@ -85,27 +83,24 @@ def internal_post_make_rules():
     # for att nyttjas i andra sammanhang.
     # vi skriver till filen som miljovariabeln INCLUDE_PATHS_FILE dikterar.
     # 
-    print
-    print "#"
-    print "# Skriver vilka include-paths som nyttjas till filen som miljovariabeln INCLUDE_PATHS_FILE dikterar."
-    print "#"
-    print "   clean_include_paths = $(subst -I,, $(strip $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS)))"
-    print "print_include_paths:"
-    print "\t@for inc in $(clean_include_paths); do \\"
-    print "\t\tif [[ $$inc != \"./inc\" ]] ; then \\"
-    print "\t\tCURRENT_PATH=`pwd`; if cd $$inc 2>/dev/null; then pwd >> $$INCLUDE_PATHS_FILE; cd $$CURRENT_PATH; else echo \"error: invalid include path: $$inc in $(THIS_MAKEFILE)\" > /dev/stderr; fi\\"
-    print "\t\tfi ; \\"
-    print "\tdone "
-    print
+#     print
+#     print "#"
+#     print "# Skriver vilka include-paths som nyttjas till filen som miljovariabeln INCLUDE_PATHS_FILE dikterar."
+#     print "#"
+#     print "   clean_include_paths = $(subst -I,, $(strip $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS)))"
+#     print "print_include_paths:"
+#     print "\t@for inc in $(clean_include_paths); do \\"
+#     print "\t\tif [[ $$inc != \"./inc\" ]] ; then \\"
+#     print "\t\tCURRENT_PATH=`pwd`; if cd $$inc 2>/dev/null; then pwd >> $$INCLUDE_PATHS_FILE; cd $$CURRENT_PATH; else echo \"error: invalid include path: $$inc in $(THIS_MAKEFILE)\" > /dev/stderr; fi\\"
+#     print "\t\tfi ; \\"
+#     print "\tdone "
+#     print
 
-    #
-    # Tillhandhall mojlighet att tvinga sekventiell 
-    # hantering
-    #
+
     if def_PARALLEL_MAKE < 2:
         print
         print "#"
-        print "# Sekventiell hantering gar att tvinga"
+        print "# Sequential processing can be forced"
         print "#"
         print "ifdef FORCE_NOTPARALLEL"
         print ".NOTPARALLEL:"
@@ -113,51 +108,39 @@ def internal_post_make_rules():
         print
        
     #
-    # Se till att skapa targets for "katalog-skapning"
+    # Targets for creating directories
     #
     for path in pathsToCreate:
         print
         print path + ":"
-        print "\t-" + def_MKDIR_RECURSIVE + " " + path
-        print "\t-" + def_CHMOD + " 777 " + path
+        #print "\t@echo Create directory: " + path
+        print "\t" + def_MKDIR_RECURSIVE + " " + path
         print
-    
-    #
-    # Skapa target for att skapa dependency-katalogen
-    #
-    print def_DependencyDirectory + ":"
-    print "\t-" + def_MKDIR_RECURSIVE + " " + def_DependencyDirectory
-    print "\t-" + def_CHMOD + " 777 " + def_DependencyDirectory
-    print
 
     
     #
-    # Se till att skapa targets for clean
+    # Target for clean
     #
+    
     
     print
     print "clean:"
     
     for objectpath in objectPathsForClean:
         print "\t-" + def_RM + " " + objectpath + "/*.o"
+        print "\t-" + def_RM + " " + objectpath + "/*.d"
     
     
-    #
-    # Ta bort dependency-filerna
-    #
-    print "\t-" + def_RM + " " + def_DependencyDirectory + "/*.d"
     
     #
-    # Ta bort de ovriga registrerade filerna.
+    # Remove all other known files.
     #
     for filename in filesToRemove:
         print "\t-" + def_RM + " " + filename
     
     
-    
-    
     #
-    # Skriver ut alla meddelanden som vi samlat pa oss.
+    # Prints all messages that we've collected
     #
     if messages :
         sys.stderr.write( os.getcwd() + "/" + USER_CASUAL_MAKE_FILE + ":\n" )
@@ -165,7 +148,7 @@ def internal_post_make_rules():
 
 
 #
-# Registreringa av filer och paths som ska skapas/tas bort 
+# Registration of files that will be removed with clean
 #
 
 def internal_register_object_path_for_clean( objectpath):
@@ -188,8 +171,7 @@ def internal_register_path_for_create( path):
 
 
 #
-# Registrera varningar, som sedan skrivs till stderr
-# vid "post"
+# Register warnings
 #
 
 def internal_register_message(message):
@@ -199,7 +181,7 @@ def internal_register_message(message):
 
 
 #
-# Funktioner for att abstrahera "namn-omvandling"
+# Name and path's helpers
 #
 
 def internal_normalize_path(path):
@@ -304,23 +286,20 @@ def internal_cross_object_name(name):
     return internal_normalize_path( str.replace( name, ".o", "_crosscompile" + def_ObjectSuffix))
 
 
-def internal_cross_dependecies(objects):
+def internal_cross_dependecies(objectfile):
 
-    #
-    # Byt ut '.o' mot _crosscompile.o, och lagg dit full path
-    #
-    return "$(addprefix " + def_CurrentDirectory + "/, $(subst .o,_crosscompile" + def_ObjectSuffix + "," + objects + "))"
+    return objectfile.replace(".o", "") + "._crosscompile"
 
-def internal_dependency_file_name(sourcefile):
-
-    return def_DependencyDirectory + "/$(subst .cpp,.d,$(notdir " + sourcefile + "))"
+def internal_dependency_file_name(objectfile):
+    
+    return objectfile.replace(".o", "") + ".d"
 
 def internal_set_LD_LIBRARY_PATH():
     """ """
     if def_LD_LIBRARY_PATH_SET < 1:
         print "#"
-        print "# Satter LD_LIBRARY_PATH sa att isolated-tests kan hitta alla beroenden"
-        print "# Vi satter bara denna en gang, aven om det ar flera isolated som ska testas"
+        print "# Set LD_LIBRARY_PATH so that unittest has access to dependent libraries"
+        print "# We only set this once"
         print "#"
         print "space :=  "
         print "space +=  "
@@ -337,29 +316,41 @@ def internal_prepare_old_objectlist(objects):
 
     for o in objects:
         print "obj/" + o + def_ObjectSuffix
-        
+ 
+ 
+def internal_print_services_file_dependency(name, services):
+
+    #
+    # If services is a file, we want dependencie to that file
+    #
+    service_file =  ' '.join(services)
+    
+    if service_file.startswith( "@"):
+        print internal_executable_name_path( name) + ": " + service_file
+        print 
+               
 #
 # Intern hjalpfuntktion for att lanka atmi...
 #
-def internal_BASE_LinkATMI(atmibuild, name, predirectives, objectfiles, libs, buildserverdirective):
+def internal_BASE_LinkATMI(atmibuild, name, services, predirectives, objectfiles, libs, buildserverdirective):
     
     objectfiles = ' '.join(objectfiles)
     libs = ' '.join(libs)
     
     print "#"
-    print "#    Lankar $name"
+    print "#  Links " +  name
     
     #
-    # Vi maste satta ett annat namn for exekverbara atmi binarers target
-    # da det finns imakefiler som anvander samma namn for atmi-binarer och libs
-    # i samma imakefil, och atmi-binaren har beroende till libbet -> cirkulara
-    # beroenden... Det skulle vara onskvart om man sarskiljde namnen istallet...
+    # We have to make sure that the target name is "unique"
     #
-    atmi_target_name=name + "_atmi"
+    atmi_target_name=name + "_xatmi"
     
     internal_library_targets( libs)
     
     DEPENDENT_TARGETS=internal_library_dependencies( libs)
+    
+    if services:
+        services_directive = "-s " + ' '.join( services)
     
     
     
@@ -378,9 +369,11 @@ def internal_BASE_LinkATMI(atmibuild, name, predirectives, objectfiles, libs, bu
     print "libs_" + atmi_target_name + " = $(addprefix -l, " + libs + ")"
     print
     print "compile: $(objects_" + atmi_target_name + ")"
+    
+    internal_print_services_file_dependency( name, services)
     print 
     print internal_executable_name_path(name) + ": $(objects_" + atmi_target_name + ") " + DEPENDENT_TARGETS
-    print "\t" + atmibuild + " -o " + internal_executable_name_path( name) + " " + predirectives + " -f \"$(objects_" + atmi_target_name + ")\" -f \"$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + atmi_target_name + ")  $(DEFAULT_LIBS)\"" + buildserverdirective + " -f \"$(LINK_DIRECTIVES_EXE)\" -f \"$(INCLUDE_PATHS)\""
+    print "\t" + atmibuild + " -o " + internal_executable_name_path( name) + " " + services_directive + " " + predirectives + " -f \"$(objects_" + atmi_target_name + ")\" -f \"$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + atmi_target_name + ")  $(DEFAULT_LIBS)\"" + buildserverdirective + " -f \"$(LINK_DIRECTIVES_EXE)\" -f \"$(INCLUDE_PATHS)\""
     print
     print "$(internal_target_deploy_name $atmi_target_name):"
     print "\t-@$def_Deploy $(internal_executable_name $name) exe"
@@ -391,16 +384,7 @@ def internal_BASE_LinkATMI(atmibuild, name, predirectives, objectfiles, libs, bu
 
 
 
-def internal_print_services_file_dependency(name, services):
-
-    #
-    # Vi kollar om services till servern ar angiven som fil. Om sa
-    # ser vi till att fa ett beroende till denna fil, for att buildserver och 
-    # omlankning ska ske om anvandaren forandrar tjansteutbudet.
-    #
-    if services == "@*" :
-        print "$(internal_executable_name_path $name): $services#*@"
-        print  
+ 
 
 def internal_library_targets( libs):
 
@@ -410,18 +394,21 @@ def internal_library_targets( libs):
     # Skapa dummys som ser till att ingen omlankning sker om
     # libbet inte byggs i denna makefil
     #
-    print "# INTERMEDIATE-deklaration av targets, for att gmake ska acceptera targets";
-    print "# om de inte finns definerade \"pa riktigt\" i denna makefil.";
-    print "# Vi maste aven ta med archive_targets da vi inte vet om det ar ett arkiv eller inte";
+    print "#";
+    print "# INTERMEDIATE-declaration for targets";
+    print "# so that we can have (dummy) dependencies even if the target is not produces in this makefile";
+    print "#";
     for lib in libs.split():
         print ".INTERMEDIATE: " + internal_target_name(lib)
         print ".INTERMEDIATE: " + internal_archive_target_name(lib)
     print
     
     #
-    # Skapa tomma targets for att beroendendet ovan ska funka    
+    # empty targets to make it work?
     #
-    print "# dummy targets, som kickar in om inte beroendet finns i denna makefil";
+    print "#";
+    print "# dummy targets, that will be used if the real target is absent";
+    print "#";
     for lib in libs.split():
         print internal_target_name(lib) + ":"
         print internal_archive_target_name(lib) + ":"
@@ -445,7 +432,7 @@ def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
     libs = ' '.join(libs)
 
     print "#"
-    print "#    Lankar $name"
+    print "# Links: " + name
     
     internal_library_targets( libs)
 
@@ -498,23 +485,21 @@ def internal_install(target, source, destination):
 
 def internal_make_target_component(target,casualMakefile):
 
+    casualMakefile = os.path.abspath( casualMakefile)
+
     USER_CASUAL_MAKE_PATH=os.path.dirname(casualMakefile)
     USER_CASUAL_MAKE_FILE=os.path.basename(casualMakefile)
     
-    USER_MAKE_FILE=os.path.splitext(USER_CASUAL_MAKE_FILE)[0] + ".mk"   
+    USER_MAKE_FILE=os.path.splitext(casualMakefile)[0] + ".mk"   
      
     local_unique_target=internal_convert_path_to_target_name(casualMakefile) + "_" + target
     
-    #
-    # Fixar till sa det blir lite snyggare targets
-    #
-    #local_unique_target=$local_unique_target//\//_
-    #local_unique_target=$local_unique_target//./
     
     print target + ": " + local_unique_target
     print
-    print local_unique_target + ": " + USER_CASUAL_MAKE_PATH + "/" + USER_MAKE_FILE
-    print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + "; $(MAKE) -f " + USER_MAKE_FILE + " " + target
+    print local_unique_target + ": " + USER_MAKE_FILE
+    print "\t@echo build " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + "; $(MAKE) -f " + USER_MAKE_FILE + " " + target
     
 def setParallelMake( value):
     def_PARALLEL_MAKE=value
