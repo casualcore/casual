@@ -411,8 +411,9 @@ def Build(casualMakefile):
     print "make: " + local_make_target
     print
     print local_make_target + ":"
-    print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + USER_CASUAL_MAKE_FILE
-    print "\t" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" +  "$(MAKE) -f " + USER_MAKE_FILE + " make"
+    print "\t@echo generate makefile from " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" +  "$(MAKE) -f " + USER_MAKE_FILE + " make"
     print
 
 

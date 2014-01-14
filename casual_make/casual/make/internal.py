@@ -498,7 +498,7 @@ def internal_make_target_component(target,casualMakefile):
     print target + ": " + local_unique_target
     print
     print local_unique_target + ": " + USER_MAKE_FILE
-    print "\t@echo build " + casualMakefile
+    print "\t@echo " + casualMakefile + " " + target
     print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + "; $(MAKE) -f " + USER_MAKE_FILE + " " + target
     
 def setParallelMake( value):
