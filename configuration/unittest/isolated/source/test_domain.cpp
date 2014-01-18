@@ -39,7 +39,7 @@ namespace casual
 	   std::cerr << json_object_to_json_string( root);
 	   */
 
-
+	   EXPECT_TRUE( domain.name == "domain1") << "nane: " << domain.name;
 	   EXPECT_TRUE( domain.groups.size() == 5) << "size: " << domain.groups.size();
 	}
 

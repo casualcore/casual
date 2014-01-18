@@ -12,6 +12,9 @@
 
 #include "common/platform.h"
 
+
+#include "sf/namevaluepair.h"
+
 namespace casual
 {
    namespace transaction
@@ -28,10 +31,23 @@ namespace casual
             std::string rm_key;
             std::string rm_openinfo;
             std::string rm_closeinfo;
+            std::string domain;
 
 
             casual_xa_switch_mapping* xaSwitches = nullptr;
             common::platform::queue_id_type tm_queue = 0;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( rm_id);
+               archive & CASUAL_MAKE_NVP( rm_key);
+               archive & CASUAL_MAKE_NVP( rm_openinfo);
+               archive & CASUAL_MAKE_NVP( rm_closeinfo);
+               archive & CASUAL_MAKE_NVP( tm_queue);
+               archive & CASUAL_MAKE_NVP( domain);
+            }
+
          };
 
          namespace validate

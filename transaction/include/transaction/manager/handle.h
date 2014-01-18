@@ -82,6 +82,12 @@ namespace casual
 
          } // non_blocking
 
+         struct Policy
+         {
+            using block_writer = blocking::Writer;
+            using non_block_writer = non_blocking::Writer;
+         };
+
       } // queue
 
       namespace handle
@@ -91,125 +97,23 @@ namespace casual
          namespace resource
          {
 
-            template< typename BQ>
-            struct Connect : public state::Base
+            template< typename QP>
+            struct basic_connect : public state::Base
             {
                typedef common::message::transaction::resource::connect::Reply message_type;
 
-               using broker_queue = BQ;
+               basic_connect( State& state, common::platform::queue_id_type brokerQueueId)
+                  : state::Base( state), m_brokerQueueId( brokerQueueId) {}
 
-               Connect( State& state, broker_queue& brokerQueue) : state::Base( state), m_brokerQueue( brokerQueue) {}
+               void dispatch( message_type& message);
 
-               void dispatch( message_type& message)
-               {
-                  common::log::information << "resource proxy pid: " <<  message.id.pid << " connected" << std::endl;
-
-                  auto instanceRange = state::find::instance(
-                        common::range::make( m_state.instances),
-                        message);
-
-                  if( ! instanceRange.empty())
-                  {
-                     if( message.state == XA_OK)
-                     {
-                        instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
-                        instanceRange.first->server = std::move( message.id);
-
-                     }
-                     else
-                     {
-                        common::log::error << "resource proxy pid: " <<  message.id.pid << " startup error" << std::endl;
-                        instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
-                        //throw common::exception::signal::Terminate{};
-                        // TODO: what to do?
-                     }
-                  }
-                  else
-                  {
-                     common::log::error << "transaction manager - unexpected resource connecting - pid: " << message.id.pid << " - action: discard" << std::endl;
-                  }
-
-                  auto resources = common::range::sorted::group(
-                        common::range::make( m_state.instances),
-                        state::resource::Proxy::Instance::order::Id{});
-
-                  if( ! m_connected && std::all_of( std::begin( resources), std::end( resources), state::filter::Running{}))
-                  {
-                     //
-                     // We now have enough resource proxies up and running to guarantee consistency
-                     // notify broker
-                     //
-                     common::message::transaction::Connected running;
-                     m_brokerQueue( running);
-
-                     m_connected = true;
-                  }
-               }
             private:
-               broker_queue& m_brokerQueue;
+               common::platform::queue_id_type m_brokerQueueId;
                bool m_connected = false;
 
             };
 
-            template< typename BQ>
-            Connect< BQ> connect( State& state, BQ&& brokerQueue)
-            {
-               return Connect< BQ>{ state, std::forward< BQ>( brokerQueue)};
-            }
-
-
-
-            namespace instance
-            {
-
-               template< typename M>
-               void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
-               {
-                  auto instance = state::find::instance( common::range::make( state.instances), message);
-
-                  if( ! instance.empty())
-                  {
-                     instance.first->state = newState;
-                  }
-               }
-
-               template< typename M>
-               void done( State& state, M& message)
-               {
-                  auto request = common::range::find(
-                        common::range::make( state.pendingRequest),
-                        action::pending::resource::Request::Find{ message.resource});
-
-                  if( ! request.empty())
-                  {
-                     //
-                     // We got a pending request for this resource, let's oblige
-                     //
-                     queue::non_blocking::Writer writer{ message.id.queue_id, state};
-
-                     if( writer.send( request.first->message))
-                     {
-                        common::range::erase( state.pendingRequest, request);
-                     }
-                     else
-                     {
-                        common::log::warning << "failed to send pending request to resource, although the instance reported idle" << std::endl;
-
-                        instance::state( state, message, state::resource::Proxy::Instance::State::idle);
-                     }
-                  }
-                  else
-                  {
-
-                     instance::state( state, message, state::resource::Proxy::Instance::State::idle);
-
-                     // TODO: else what?
-                  }
-
-               }
-            } // instance
-
-
+            using Connect = basic_connect< queue::Policy>;
 
 
             struct Prepare : public state::Base
@@ -218,47 +122,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message)
-               {
-
-                  //
-                  // Instance is ready for more work
-                  //
-                  instance::done( m_state, message);
-
-                  auto task = common::range::find(
-                        common::range::make( m_state.tasks),
-                        action::Task::Find( message.xid));
-
-                  if( ! task.empty())
-                  {
-                     auto resource = common::range::sorted::bound(
-                           common::range::make( task.first->resources),
-                           action::Resource{ message.resource});
-
-                     if( ! resource.empty())
-                     {
-                        resource.first->state = action::Resource::State::cPrepared;
-                     }
-                     // TODO: else, what to do?
-
-
-                     auto state = task.first->state();
-
-                     //
-                     // Are we in a prepared state?
-                     //
-                     if( state >= action::Resource::State::cPrepared)
-                     {
-
-                        m_state.log.prepareCommit( task.first->xid);
-
-                     }
-
-                  }
-                  // TODO: else, what to do?
-
-               }
+               void dispatch( message_type& message);
 
             };
 
@@ -268,14 +132,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message)
-               {
-                  //
-                  // Instance is ready for more work
-                  //
-                  instance::done( m_state, message);
-
-               }
+               void dispatch( message_type& message);
 
             };
 
@@ -285,19 +142,136 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message)
-               {
-                  //
-                  // Instance is ready for more work
-                  //
-                  instance::done( m_state, message);
-
-               }
+               void dispatch( message_type& message);
 
             };
 
 
          } // resource
+
+
+
+
+
+         //!
+         //! This is used when this TM act as an resource to
+         //! other TM:s, as in other domains.
+         //!
+         namespace domain
+         {
+
+            template< typename QP>
+            struct basic_prepare : public state::Base
+            {
+               typedef common::message::transaction::resource::prepare::Request message_type;
+               typedef common::message::transaction::resource::prepare::Reply reply_type;
+
+               using Base::Base;
+
+               void dispatch( message_type& message);
+            };
+
+            using Prepare = basic_prepare< queue::Policy>;
+
+
+            template< typename QP>
+            struct basic_commit : public state::Base
+            {
+               typedef common::message::transaction::resource::commit::Request message_type;
+               typedef common::message::transaction::resource::commit::Reply reply_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message);
+            };
+
+            using Commit = basic_commit< queue::Policy>;
+
+
+            template< typename QP>
+            struct basic_rollback : public state::Base
+            {
+               typedef common::message::transaction::resource::rollback::Request message_type;
+               typedef common::message::transaction::resource::rollback::Reply reply_type;
+
+               using state::Base::Base;
+
+               void dispatch( message_type& message);
+
+            };
+
+            using Rollback = basic_rollback< queue::Policy>;
+
+
+            //!
+            //! These handles responses from the resources in an inter-domain-context.
+            //!
+            namespace resource
+            {
+
+
+              //!
+              //! A wrapper that does generic checks and get the
+              //! transaction and resource - pass it to base
+              //!
+              template< typename B>
+              struct basic_wrapper : public B
+              {
+                 using base_type = B;
+                 using base_type::base_type;
+                 using message_type = typename base_type::message_type;
+                 using queue_policy = typename base_type::queue_policy;
+
+                 void dispatch( message_type& message);
+              };
+
+
+               template< typename QP>
+               struct basic_prepare : public state::Base
+               {
+                  typedef QP queue_policy;
+                  typedef common::message::transaction::resource::domain::prepare::Reply message_type;
+
+                  using Base::Base;
+
+                  void dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+               };
+
+               using Prepare = basic_wrapper< basic_prepare< queue::Policy>>;
+
+
+               template< typename QP>
+               struct basic_commit : public state::Base
+               {
+                  typedef QP queue_policy;
+                  typedef common::message::transaction::resource::domain::commit::Reply message_type;
+
+                  using state::Base::Base;
+
+                  void dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+               };
+
+               using Commit = basic_wrapper<basic_commit< queue::Policy>>;
+
+
+               template< typename QP>
+               struct basic_rollback : public state::Base
+               {
+                  typedef QP queue_policy;
+                  typedef common::message::transaction::resource::domain::rollback::Reply message_type;
+
+                  using state::Base::Base;
+
+                  void dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+
+               };
+
+               using Rollback = basic_wrapper< basic_rollback< queue::Policy>>;
+
+            } // resource
+
+         } // domain
+
 
 
          struct Begin : public state::Base
@@ -306,73 +280,23 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-               if( message.xid.null())
-               {
-                  message.xid.generate();
-               }
-
-               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find{ message.xid});
-
-               if( task.empty())
-               {
-                  //auto task = state::
-
-                  m_state.log.begin( message);
-
-                  action::pending::Reply reply;
-                  reply.target = message.id.queue_id;
-
-
-                  m_state.pendingReplies.push_back( std::move( reply));
-
-               }
-               else
-               {
-                  common::log::error << "Attempt to start a transaction " << message.xid.stringGlobal() << ", which is already in progress" << std::endl;
-                  // TODO: send reply
-               }
-
-
-            }
+            void dispatch( message_type& message);
          };
 
-         struct Commit : public state::Base
+         template< typename QP>
+         struct basic_commit : public state::Base
          {
             typedef common::message::transaction::commit::Request message_type;
+            typedef common::message::transaction::commit::Reply reply_type;
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-               //
-               // Find the task
-               //
-               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find{ message.xid});
-
-
-               if( ! task.empty())
-               {
-
-                  //
-                  // Prepare prepare-requests
-                  //
-                  action::pending::transform::Request< common::message::transaction::resource::prepare::Request> transform{ message.xid};
-
-                  common::range::transform(
-                        common::range::make( task.first->resources),
-                        m_state.pendingRequest,
-                        transform);
-
-               }
-               else
-               {
-                  common::log::error << "Attempt to commit a transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: error reply" << std::endl;
-
-               }
-            }
+            void dispatch( message_type& message);
          };
+
+         using Commit = basic_commit< queue::Policy>;
+
+
 
          struct Rollback : public state::Base
          {
@@ -380,10 +304,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-
-            }
+            void dispatch( message_type& message);
          };
 
          struct Involved : public state::Base
@@ -392,31 +313,22 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message)
-            {
-               auto task = common::range::find( common::range::make( m_state.tasks), action::Task::Find( message.xid));
-
-               if( ! task.empty())
-               {
-                  common::range::copy(
-                     common::range::make( message.resources),
-                     std::back_inserter( task.first->resources));
-
-                  common::range::trim( task.first->resources, common::range::unique( common::range::sort( common::range::make( task.first->resources))));
-
-               }
-               else
-               {
-                  common::log::error << "Resource " << common::range::make( message.resources) << " claims to be involved in transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: discard" << std::endl;
-               }
-            }
+            void dispatch( message_type& message);
          };
 
 
       } // handle
    } // transaction
 
-
 } // casual
+
+
+//
+// Include the implementation
+//
+#include "transaction/manager/handle.hpp"
+
+
+
 
 #endif // MANAGER_HANDLE_H_

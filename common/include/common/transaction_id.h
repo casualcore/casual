@@ -15,6 +15,7 @@
 
 
 #include <string>
+#include <ostream>
 
 
 
@@ -109,12 +110,19 @@ namespace casual
 
          private:
 
-
-
-
-
             XID m_xid;
          };
+
+         inline std::ostream& operator << ( std::ostream& out, const ID& value)
+         {
+            if( out.good())
+            {
+               out << value.stringGlobal() << "|" << value.stringBranch();
+            }
+            return out;
+         }
+
+
 
          //!
          //! Overload for transaction::Id

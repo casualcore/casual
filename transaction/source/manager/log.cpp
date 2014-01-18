@@ -8,6 +8,8 @@
 #include "transaction/manager/log.h"
 
 #include "common/algorithm.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 #include <chrono>
 
@@ -59,10 +61,10 @@ namespace casual
                connection.execute( sql, state, updated, gtrid, bqual);
             }
 
-            void remove( sql::database::Connection& connection, const common::transaction::ID& id)
+            void remove( sql::database::Connection& connection, const common::transaction::ID& xid)
             {
-               auto gtrid = local::global( id);
-               auto bqual = local::branch( id);
+               auto gtrid = local::global( xid);
+               auto bqual = local::branch( xid);
 
                const std::string sql{ R"( DELETE FROM trans WHERE gtrid = ? AND bqual = ?; )" };
 
@@ -146,8 +148,6 @@ namespace casual
                   }
                };
             } // transform
-
-
          }
       }
 
@@ -160,6 +160,7 @@ namespace casual
 
       void Log::begin( const common::message::transaction::begin::Request& request)
       {
+         common::log::internal::transaction << "log begin for xid: " << request.xid << "\n";
 
          local::insertBegin( m_connection, request);
 
@@ -193,6 +194,11 @@ namespace casual
          return result;
       }
 
+      void Log::remove( const common::transaction::ID& xid)
+      {
+         local::remove( m_connection, xid);
+      }
+
       std::vector< Log::Row> Log::select()
       {
          std::vector< Row> result;
@@ -214,6 +220,7 @@ namespace casual
 
       void Log::writeCommit()
       {
+         common::trace::internal::Scope trace{ "transaction log write persistence"};
          m_connection.commit();
       }
 

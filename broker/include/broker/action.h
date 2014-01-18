@@ -13,10 +13,14 @@
 
 #include "common/platform.h"
 #include "common/string.h"
-#include "common/log.h"
+
+#include "common/internal/log.h"
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/signal.h"
+
+
+#include "sf/log.h"
 
 
 //TODO: temp
@@ -128,6 +132,8 @@ namespace casual
                {
                   common::message::transaction::Configuration result;
 
+                  result.domain = common::environment::domain::name();
+
                   for( auto& group : groups)
                   {
                      std::transform(
@@ -146,6 +152,7 @@ namespace casual
             {
                common::message::server::Configuration result;
 
+               result.domain = common::environment::domain::name();
                result.transactionManagerQueue = state.transactionManagerQueue;
 
                if( instance->server)
@@ -611,7 +618,7 @@ namespace casual
 
                   boot::transaction::manager( state, domain.transactionmanager);
 
-                  common::trace::Exit trace( "transaction monitor connect");
+                  common::log::internal::transaction << "wait for transaction monitor connect";
 
                   typename TMH::message_type connect;
                   queueReader( connect);

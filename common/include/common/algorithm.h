@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <type_traits>
 
 #include <assert.h>
 
@@ -24,6 +25,7 @@ namespace casual
       {
          typedef typename std::iterator_traits< Iter>::value_type value_type;
 
+         Range() : last( first) {}
          Range( Iter first, Iter last) : first( first), last( last) {}
 
          auto size() const -> decltype( std::distance( Iter(), Iter()))
@@ -47,16 +49,17 @@ namespace casual
       template< typename Iter>
       std::ostream& operator << ( std::ostream& out, Range< Iter> range)
       {
-         out << "[";
-         while( range.first != range.last)
+         if( out.good())
          {
-            out << *range.first;
-            if( range.first + 1 != range.last)
-               out << ",";
-
-            ++range.first;
+            out << "[";
+            while( range.first != range.last)
+            {
+               out << *range.first++;
+               if( range.first != range.last)
+                  out << ",";
+            }
+            out << "]";
          }
-         out << "]";
          return out;
       }
 
@@ -70,41 +73,29 @@ namespace casual
             return Range< Iter>( first, last);
          }
 
-         template< typename C>
-         auto make( C& container) -> decltype( make( std::begin( container), std::end( container)))
+         template< typename C, class = typename std::enable_if<std::is_lvalue_reference< C>::value>::type >
+         auto make( C&& container) -> decltype( make( std::begin( container), std::end( container)))
          {
             return make( std::begin( container), std::end( container));
          }
 
-         template< typename C>
-         auto make( const C& container) -> decltype( make( std::begin( container), std::end( container)))
-         {
-            return make( std::begin( container), std::end( container));
-         }
 
-         template< typename C>
-         auto make_reverse( C& container) -> decltype( make( container.rbegin(), container.rend()))
-         {
-            return make( container.rbegin(), container.rend());
-         }
-
-         template< typename C>
-         auto make_reverse( const C& container) -> decltype( make( container.rbegin(), container.rend()))
+         template< typename C, class = typename std::enable_if<std::is_lvalue_reference< C>::value>::type >
+         auto make_reverse( C&& container) -> decltype( make( container.rbegin(), container.rend()))
          {
             return make( container.rbegin(), container.rend());
          }
 
 
-
-         template< typename Iter, typename C>
-         Range< Iter> sort( Range< Iter> range, C compare)
+         template< typename R, typename C>
+         R sort( R range, C compare)
          {
             std::sort( std::begin( range), std::end( range), compare);
             return range;
          }
 
-         template< typename Iter>
-         Range< Iter> sort( Range< Iter> range)
+         template< typename R>
+         R sort( R range)
          {
             std::sort( std::begin( range), std::end( range));
             return range;
@@ -199,8 +190,8 @@ namespace casual
          }
 
 
-         template< typename Iter1, typename Iter2, typename P>
-         bool equal( Range< Iter1> lhs, Range< Iter2> rhs, P predicate)
+         template< typename R1, typename R2, typename P>
+         bool equal( R1&& lhs, R2&& rhs, P predicate)
          {
             if( lhs.size() != rhs.size())
             {
@@ -210,8 +201,8 @@ namespace casual
          }
 
 
-         template< typename Iter1, typename Iter2>
-         bool equal( Range< Iter1> lhs, Range< Iter2> rhs)
+         template< typename R1, typename R2>
+         bool equal( R1&& lhs, R2&& rhs)
          {
             if( lhs.size() != rhs.size())
             {
@@ -221,29 +212,33 @@ namespace casual
          }
 
 
-         template< typename Iter, typename P>
-         bool all_of( Range< Iter> range, P predicate)
+         template< typename R, typename P>
+         bool all_of( R&& range, P predicate)
          {
-            return std::all_of( range.first, range.last, predicate);
+            return std::all_of( std::begin( range), std::end( range), predicate);
+         }
+
+         template< typename R, typename P>
+         bool any_of( R&& range, P predicate)
+         {
+            return std::any_of( std::begin( range), std::end( range), predicate);
          }
 
          template< typename Iter, typename T>
-         typename std::enable_if< std::is_convertible< T, typename Range< Iter>::value_type>::value, Range< Iter>>::type
-         find( Range< Iter> range, T vlaue)
+         //typename std::enable_if< std::is_convertible< T, typename Range< Iter>::value_type>::value, Range< Iter>>::type
+         Range< Iter> find( Range< Iter> range, T&& value)
          {
-            Range< Iter> result{ range};
-            result.first = std::find( range.first, range.last, vlaue);
-            return result;
+            range.first = std::find( range.first, range.last, std::forward< T>( value));
+            return range;
          }
 
 
          template< typename Iter, typename P>
-         typename std::enable_if< ! std::is_convertible< P, typename Range< Iter>::value_type>::value, Range< Iter>>::type
-         find( Range< Iter> range, P predicate)
+         //typename std::enable_if< ! std::is_convertible< P, typename Range< Iter>::value_type>::value, Range< Iter>>::type
+         Range< Iter> find_if( Range< Iter> range, P predicate)
          {
-            Range< Iter> result{ range};
-            result.first = std::find_if( range.first, range.last, predicate);
-            return result;
+            range.first = std::find_if( range.first, range.last, predicate);
+            return range;
          }
 
 

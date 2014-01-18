@@ -30,6 +30,9 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
+         // shall not compile
+         //auto sorted = range::sort( range::make( local::unsorted()));
+
          auto sorted = range::sort( range::make( us));
 
          EXPECT_TRUE( ! sorted.empty());

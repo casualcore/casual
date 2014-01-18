@@ -34,9 +34,15 @@ namespace casual
                   queues.clear();
                }
 
-               void add( queue_id_type id, common::ipc::message::Complete&& message)
+               void add( queue_id_type id, const common::ipc::message::Complete& message)
                {
-                  queues[ id].push_back( std::move( message));
+                  common::ipc::message::Complete temp;
+                  temp.complete = message.complete;
+                  temp.correlation = message.correlation;
+                  temp.payload = message.payload;
+                  temp.type = message.type;
+
+                  queues[ id].push_back( std::move( temp));
                }
 
                std::vector< common::ipc::message::Complete> get( queue_id_type id)
@@ -94,7 +100,7 @@ namespace casual
          namespace ipc
          {
 
-            bool Queue::operator () ( message_type& message, const long flags) const
+            bool Queue::operator () ( const message_type& message, const long flags) const
             {
                local::Resources::instance().add( m_id, std::move( message));
 

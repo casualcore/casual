@@ -53,7 +53,7 @@ LinkAtmiServer("casual-monitor-request-server",
     "casual-common",
     "casual-sf",
     "sqlite3"],
-    "getMonitorStatistics")
+    ["getMonitorStatistics"])
 
 	
 	

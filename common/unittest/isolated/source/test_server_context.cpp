@@ -49,21 +49,10 @@ namespace casual
          {
             struct Policy
             {
-               /*
-               template< typename base_type>
-               using reader_q = queue::ipc_wrapper< queue::blocking::basic_reader< queue::policy::NoAction, base_type>>;
-
-               template< typename base_type>
-               using writer_q = queue::ipc_wrapper< queue::blocking::basic_writer< queue::policy::NoAction, base_type>>;
-             */
 
                typedef mockup::queue::blocking::Writer writer_queue;
                typedef mockup::queue::non_blocking::Reader reader_queue;
 
-
-
-               //typedef writer_q< reply_queue> reply_writer;
-               //typedef writer_q< monitor_queue> monitor_writer;
 
                struct id
                {
@@ -72,19 +61,6 @@ namespace casual
                   static common::platform::queue_id_type monitor() { return 500;}
                };
 
-
-
-            private:
-
-               /*
-               typedef writer_q< connect_queue> connect_writer;
-               typedef writer_q< ack_queue> ack_writer;
-               typedef writer_q< disconnect_queue> non_blocking_broker_writer;
-               typedef reader_q< configuration_queue> configuration_reader;
-               */
-
-
-            public:
 
                static void reset()
                {
@@ -183,7 +159,7 @@ namespace casual
             void test_service( TPSVCINFO *serviceInfo)
             {
 
-               auto buffer = buffer::Context::instance().allocate( "X_OCTET", "STRING", 1024);
+               auto buffer = buffer::Context::instance().allocate( {"X_OCTET", ""}, 1024);
 
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
@@ -212,7 +188,7 @@ namespace casual
             {
                message::service::callee::Call message;
 
-               message.buffer = { "STRING", "", 1024};
+               message.buffer = { { "X_OCTET", ""}, 1024};
                message.callDescriptor = 10;
                message.service.name = "test_service";
                message.reply.queue_id = Policy::id::instance();
@@ -220,31 +196,6 @@ namespace casual
                return message;
             }
 
-            /*
-            struct ScopedBrokerQueue
-            {
-               ScopedBrokerQueue()
-               {
-                  if( common::file::exists( common::environment::file::brokerQueue()))
-                  {
-                     throw exception::QueueFailed( "Broker queue file exists - Can't run tests within an existing casual domain");
-                  }
-
-                  path.reset( new file::ScopedPath( common::environment::file::brokerQueue()));
-
-                  std::ofstream out( common::environment::file::brokerQueue());
-                  out << brokerQueue.id();
-
-               }
-
-               ScopedBrokerQueue( ScopedBrokerQueue&&) = default;
-
-            private:
-
-               std::unique_ptr< file::ScopedPath> path;
-               ipc::receive::Queue brokerQueue;
-            };
-            */
 
          } // <unnamed>
       } // local

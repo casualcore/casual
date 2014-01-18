@@ -40,9 +40,9 @@ namespace casual
          {
             common::transaction::ID xid;
             common::platform::pid_type pid = 0;
-            State state = cUnknown;
             common::platform::time_type started;
             common::platform::time_type updated;
+            State state = cUnknown;
          };
 
 
@@ -53,6 +53,8 @@ namespace casual
          void commit( const common::message::transaction::commit::Request& request);
 
          void rollback( const common::message::transaction::rollback::Request& request);
+
+         void remove( const common::transaction::ID& xid);
 
 
          void prepareCommit( const common::transaction::ID& id);

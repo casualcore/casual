@@ -23,13 +23,14 @@ namespace casual
       {
          namespace boot
          {
-            void Proxie::operator () ( const state::resource::Proxy& proxy)
+            void Proxie::operator () ( state::resource::Proxy& proxy)
             {
                for( auto index = proxy.concurency; index > 0; --index)
                {
                   auto& info = m_state.xaConfig.at( proxy.key);
 
-                  state::resource::Proxy::Instance instance( proxy.id);
+                  state::resource::Proxy::Instance instance;//( proxy.id);
+                  instance.id = proxy.id;
 
                   instance.server.pid = process::spawn(
                         info.server,
@@ -38,15 +39,14 @@ namespace casual
                               "--rm-key", info.key,
                               "--rm-openinfo", proxy.openinfo,
                               "--rm-closeinfo", proxy.closeinfo,
-                              "--rm-id", std::to_string( proxy.id)
+                              "--rm-id", std::to_string( proxy.id),
+                              "--domain", common::environment::domain::name()
                         }
                      );
 
                   instance.state = state::resource::Proxy::Instance::State::started;
 
-                  auto order = std::lower_bound( std::begin( m_state.instances), std::end( m_state.instances), instance);
-
-                  m_state.instances.insert( order, std::move( instance));
+                  proxy.instances.push_back( std::move( instance));
                }
             }
 

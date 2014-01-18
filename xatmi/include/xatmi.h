@@ -11,20 +11,20 @@
 #ifndef XATMI_H_
 #define XATMI_H_
 
-#define TPNOBLOCK 0x00000001
-#define TPSIGRSTRT 0x00000002
-#define TPNOREPLY 0x00000004
-#define TPNOTRAN 0x00000008
-#define TPTRAN 0x00000010
-#define TPNOTIME 0x00000020
-#define TPGETANY 0x00000080
-#define TPNOCHANGE 0x00000100
-#define TPCONV 0x00000400
-#define TPSENDONLY 0x00000800
-#define TPRECVONLY 0x00001000
+#define TPNOBLOCK    0x00000001
+#define TPSIGRSTRT   0x00000002
+#define TPNOREPLY    0x00000004
+#define TPNOTRAN     0x00000008
+#define TPTRAN       0x00000010
+#define TPNOTIME     0x00000020
+#define TPGETANY     0x00000080
+#define TPNOCHANGE   0x00000100
+#define TPCONV       0x00000400
+#define TPSENDONLY   0x00000800
+#define TPRECVONLY   0x00001000
 
-#define TPFAIL		0x00000001
-#define TPSUCCESS	0x00000002
+#define TPFAIL		   0x00000001
+#define TPSUCCESS	   0x00000002
 
 struct tpsvcinfo {
 #define XATMI_SERVICE_NAME_LENGTH  128
@@ -36,8 +36,8 @@ struct tpsvcinfo {
 };
 typedef struct tpsvcinfo TPSVCINFO;
 
-#define X_OCTET		"X_OCTET"
-#define X_C_TYPE	"X_C_TYPE"
+#define X_OCTET	"X_OCTET"
+#define X_C_TYPE  "X_C_TYPE"
 #define X_COMMON	"X_COMMON"
 
 #define TPEBADDESC 2
@@ -58,11 +58,11 @@ typedef struct tpsvcinfo TPSVCINFO;
 #define TPEEVENT 22
 #define TPEMATCH 23
 
-#define TPEV_DISCONIMM 0x0001
-#define TPEV_SVCERR 0x0002
-#define TPEV_SVCFAIL 0x0004
-#define TPEV_SVCSUCC 0x0008
-#define TPEV_SENDONLY 0x0020
+#define TPEV_DISCONIMM  0x0001
+#define TPEV_SVCERR     0x0002
+#define TPEV_SVCFAIL    0x0004
+#define TPEV_SVCSUCC    0x0008
+#define TPEV_SENDONLY   0x0020
 
 // NOW STARTS THE MAIN OPERATION LIST
 
@@ -73,25 +73,25 @@ extern "C" {
 typedef void( *tpservice)( TPSVCINFO *);
 
 extern char* tpalloc( const char* type, const char* subtype, long size); // MEMORY
-extern char* tprealloc( char * addr, long size); // MEMORY
+extern char* tprealloc( const char* ptr, long size); // MEMORY
 
 
-extern int tpcall( const char * svc, char* idata, long ilen, char ** odata, long *olen, long flags); // COMMUNICATION
-extern int tpacall( const char * svc, char* idata, long ilen, long flags); // COMMUNICATION
-extern int tpgetrply(int *idPtr, char ** odata, long *olen, long flags); // COMMUNICATION
-extern int tpcancel(int id); // COMMUNICATION
-extern long tptypes( char* ptr, char* type, char* subtype); // MEMORY
-extern void tpfree(char* ptr); // MEMORY
+extern int tpcall( const char* svc, char* idata, long ilen, char** odata, long* olen, long flags); // COMMUNICATION
+extern int tpacall( const char* svc, char* idata, long ilen, long flags); // COMMUNICATION
+extern int tpgetrply( int* idPtr, char ** odata, long* olen, long flags); // COMMUNICATION
+extern int tpcancel( int id); // COMMUNICATION
+extern long tptypes( const char* buffer, char* type, char* subtype); // MEMORY
+extern void tpfree( const char* ptr); // MEMORY
 
-extern void tpreturn(int rval, long rcode, char* data, long len, long flags); // TJJ ADDED
+extern void tpreturn( int rval, long rcode, char* data, long len, long flags); // TJJ ADDED
 
 extern int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *)); // SERVER
 extern int tpunadvertise( const char* svcname); // SERVER
 
-extern int tpsend(int id, char* idata, long ilen, long flags, long *revent); // COMMUNICATION
-extern int tprecv(int id, char ** odata, long *olen, long flags, long* event); // COMMUNICATION
-extern int tpconnect(char * svc, char* idata, long ilen, long flags); // COMMUNICATION
-extern int tpdiscon(int id); // COMMUNICATION
+extern int tpsend( int id, char* idata, long ilen, long flags, long *revent); // COMMUNICATION
+extern int tprecv( int id, char ** odata, long *olen, long flags, long* event); // COMMUNICATION
+extern int tpconnect( char* svc, char* idata, long ilen, long flags); // COMMUNICATION
+extern int tpdiscon( int id); // COMMUNICATION
 
 extern int tperrno;
 extern long tpurcode;
@@ -108,7 +108,7 @@ extern  long _get_tpurcode(void); // CLIENT
  */
 extern const char* tperrnostring( int error);
 
-extern int tpsvrinit(int argc, char **argv);
+extern int tpsvrinit( int argc, char** argv);
 
 
 extern void tpsvrdone();

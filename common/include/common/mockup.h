@@ -47,11 +47,11 @@ namespace casual
                //!
                //! Writes message to mockup-queue
                //! @{
-               bool operator () ( message_type& message) const
+               bool operator () ( const message_type& message) const
                {
                   return operator() ( message, 0);
                }
-               bool operator () ( message_type& message, const long flags) const;
+               bool operator () ( const message_type& message, const long flags) const;
                //! @}
 
                //!

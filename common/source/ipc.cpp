@@ -81,7 +81,7 @@ namespace casual
 
             }
 
-            bool Queue::send( message::Complete& message, const long flags) const
+            bool Queue::send( const message::Complete& message, const long flags) const
             {
                //
                // partition the payload and send the resulting physical messages

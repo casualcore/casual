@@ -6,6 +6,7 @@
 //!
 
 #include "common/log.h"
+#include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/platform.h"
 #include "common/process.h"
@@ -13,6 +14,8 @@
 #include "common/chronology.h"
 #include "common/server_context.h"
 #include "common/transaction_context.h"
+#include "common/algorithm.h"
+#include "common/string.h"
 
 //
 // std
@@ -53,7 +56,7 @@ namespace casual
                      std::lock_guard< std::mutex> lock( m_streamMutex);
 
                      m_output << common::chronology::local()
-                        << '|' << common::environment::getDomainName()
+                        << '|' << common::environment::domain::name()
                         << '|' << common::calling::Context::instance().callId().string()
                         << '|' << common::transaction::Context::instance().currentTransaction().xid.stringGlobal()
                         << '|' << common::process::id()
@@ -137,58 +140,49 @@ namespace casual
 
 
                template< log::category::Type category>
-               logger_buffer* buffer()
+               logger_buffer* bufferFactory()
                {
                   static logger_buffer result( category);
                   return &result;
                }
 
-
-               logger_buffer* getBuffer( log::category::Type category)
+               struct buffer_holder
                {
-                  switch( category)
-                  {
-                     case log::category::Type::debug:
-                           return buffer< log::category::Type::debug>(); break;
-                     case log::category::Type::trace:
-                           return buffer< log::category::Type::trace>(); break;
-                     case log::category::Type::parameter:
-                           return buffer< log::category::Type::parameter>();  break;
-                     case log::category::Type::information:
-                           return buffer< log::category::Type::information>(); break;
-                     case log::category::Type::warning:
-                           return buffer< log::category::Type::warning>();  break;
-                     case log::category::Type::error:
-                        return buffer< log::category::Type::error>();  break;
-                  }
-                  return nullptr;
+                  std::function< logger_buffer*()> factory;
+               };
+
+
+               const buffer_holder& getBuffer( log::category::Type category)
+               {
+                  static const std::map< log::category::Type, buffer_holder> buffers{
+                     { log::category::Type::casual_debug, { bufferFactory< log::category::Type::casual_debug>}},
+                     { log::category::Type::casual_trace, { bufferFactory< log::category::Type::casual_trace>}},
+                     { log::category::Type::casual_transaction, { bufferFactory< log::category::Type::casual_transaction>}},
+
+                     { log::category::Type::debug, { bufferFactory< log::category::Type::debug>}},
+                     { log::category::Type::trace, { bufferFactory< log::category::Type::trace>}},
+                     { log::category::Type::parameter, { bufferFactory< log::category::Type::parameter>}},
+                     { log::category::Type::information, { bufferFactory< log::category::Type::information>}},
+                     { log::category::Type::warning, { bufferFactory< log::category::Type::warning>}},
+                     { log::category::Type::error, { bufferFactory< log::category::Type::error>}},
+                  };
+
+                  return buffers.at( category);
                }
 
 
                logger_buffer* getActiveBuffer( log::category::Type category)
                {
-                  const std::string log = common::environment::variable::get( "CASUAL_LOG");
+                  auto environment = common::string::split( common::environment::variable::get( "CASUAL_LOG"), ',');
 
-                  switch( category)
+                  auto found = range::find( range::make( environment), log::category::name( category));
+
+                  if( ! found.empty())
                   {
-                     case log::category::Type::debug:
-                        if( log.find( "debug") != std::string::npos)
-                           return getBuffer( category); break;
-                     case log::category::Type::trace:
-                        if( log.find( "trace") != std::string::npos)
-                           return getBuffer( category); break;
-                     case log::category::Type::parameter:
-                        if( log.find( "parameter") != std::string::npos)
-                           return getBuffer( category); break;
-                     case log::category::Type::information:
-                        if( log.find( "information") != std::string::npos)
-                           return getBuffer( category); break;
-                     case log::category::Type::warning:
-                        if( log.find( "warning") != std::string::npos)
-                           return getBuffer( category); break;
-                     case log::category::Type::error:
-                        return getBuffer( category); break;
+                     //std::cerr << std::to_string( process::id()) + " - " + log::category::name( category) << std::endl;
+                     return getBuffer( category).factory();
                   }
+
                   return nullptr;
                }
 
@@ -204,6 +198,10 @@ namespace casual
             {
                switch( type)
                {
+                  case Type::casual_debug: return "casual.debug"; break;
+                  case Type::casual_trace: return "casual.trace"; break;
+                  case Type::casual_transaction: return "casual.transaction"; break;
+
                   case Type::debug: return "debug"; break;
                   case Type::trace: return "trace"; break;
                   case Type::parameter: return "parameter"; break;
@@ -216,6 +214,15 @@ namespace casual
 
          } // category
 
+         namespace internal
+         {
+            std::ostream debug{ local::getActiveBuffer( category::Type::casual_debug)};
+
+            std::ostream trace{ local::getActiveBuffer( category::Type::casual_trace)};
+
+            std::ostream transaction{ local::getActiveBuffer( category::Type::casual_transaction)};
+
+         } // internal
 
          std::ostream debug{ local::getActiveBuffer( category::Type::debug)};
 
@@ -230,7 +237,7 @@ namespace casual
          //
          // Always on
          //
-         std::ostream error{ local::buffer< log::category::Type::error>()};
+         std::ostream error{ local::getBuffer( log::category::Type::error).factory()};
 
 
          bool active( category::Type category)
@@ -242,23 +249,18 @@ namespace casual
          {
             namespace
             {
-               std::map< category::Type, std::ostream&> initializeStreams()
-               {
-                  std::map< category::Type, std::ostream&> result;
-
-                  result.emplace( category::Type::debug, debug);
-                  result.emplace( category::Type::trace, trace);
-                  result.emplace( category::Type::parameter, parameter);
-                  result.emplace( category::Type::information, information);
-                  result.emplace( category::Type::warning, warning);
-                  //result.emplace( category::Type::error, error);
-
-                  return result;
-               }
-
                std::ostream& getStream( category::Type category)
                {
-                  static std::map< category::Type, std::ostream&> streams = initializeStreams();
+                  static std::map< category::Type, std::ostream&> streams{
+                     { category::Type::casual_debug, internal::debug },
+                     { category::Type::casual_trace, internal::trace },
+                     { category::Type::casual_transaction, internal::transaction },
+                     { category::Type::debug, debug },
+                     { category::Type::trace, trace },
+                     { category::Type::parameter, parameter },
+                     { category::Type::information, information },
+                     { category::Type::warning, warning },
+                  };
 
                   return streams.at( category);
                }
@@ -268,33 +270,26 @@ namespace casual
 
          void activate( category::Type category)
          {
-            std::ostream& stream = local::getStream( category);
-            stream.rdbuf( local::getBuffer( category));
+            local::getStream( category).rdbuf( local::getBuffer( category).factory());
          }
 
          void deactivate( category::Type category)
          {
-            std::ostream& stream = local::getStream( category);
-            stream.rdbuf( nullptr);
-         }
-
-
-         void write( const std::string category, const std::string& message)
-         {
-            local::File::instance().log(  category, message);
+            local::getStream( category).rdbuf( nullptr);
          }
 
 
          void write( category::Type category, const char* message)
          {
-            write( category::name( category), message);
+            local::getStream( category) << message;
          }
 
          void write( category::Type category, const std::string& message)
          {
-            write( category::name( category), message);
+            local::getStream( category) << message;
          }
       } // log
+
    } // common
 } // casual
 

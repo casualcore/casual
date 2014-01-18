@@ -39,10 +39,6 @@ namespace casual
           m_receiveQueue( ipc::getReceiveQueue()),
           m_state( settings.database)
       {
-         common::trace::Exit trace( "transaction manager startup");
-
-
-         common::log::debug << "transaction manager queue: " << m_receiveQueue.id();
 
       }
 
@@ -81,17 +77,19 @@ namespace casual
 
       void Manager::start()
       {
-         common::Trace trace( "transaction::Manager::start");
+         common::log::internal::transaction << "transaction manager start\n";
 
 
          queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
-         queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
+
 
          //
          // Connect and get configuration from broker
          //
          {
+            common::log::internal::transaction << "configure\n";
 
+            queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
             action::configure( m_state, brokerQueue, queueReader);
          }
 
@@ -99,15 +97,16 @@ namespace casual
          // Start resource-proxies
          //
          {
-            common::trace::Exit trace( "transaction manager start rm-proxy-servers");
+            common::log::internal::transaction << "start rm-proxy-servers\n";
 
-            std::for_each(
-               std::begin( m_state.resources),
-               std::end( m_state.resources),
+            common::range::for_each(
+               common::range::make( m_state.resources),
                action::boot::Proxie( m_state));
 
          }
 
+
+         common::log::internal::transaction << "prepare message dispatch handlers\n";
 
          //
          // prepare message dispatch handlers...
@@ -118,11 +117,17 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resource::connect( m_state, brokerQueue));
+         handler.add( handle::resource::Connect( m_state, ipc::broker::id()));
          handler.add( handle::resource::Prepare{ m_state});
          handler.add( handle::resource::Commit{ m_state});
          handler.add( handle::resource::Rollback{ m_state});
+         handler.add( handle::domain::Prepare{ m_state});
+         handler.add( handle::domain::Commit{ m_state});
+         handler.add( handle::domain::Rollback{ m_state});
 
+
+         common::log::internal::transaction << "start message pump\n";
+         common::log::information << "transaction manager started\n";
 
          while( true)
          {
@@ -132,34 +137,23 @@ namespace casual
                //
                // Blocking
                //
-               auto marshal = queueReader.next();
 
-               if( ! handler.dispatch( marshal))
-               {
-                  common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
-               }
+               handler.dispatch( queueReader.next());
+
 
                //
-               // Consume until the queue is empty or we've pending replies equal to transaction_batch
+               // Consume until the queue is empty or we've got pending replies equal to transaction_batch
                //
                {
 
                   queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
 
-
-                  for( auto marshler = nonBlocking.next(); ! marshler.empty(); marshler = nonBlocking.next())
+                  while( handler.dispatch( nonBlocking.next()) &&
+                        m_state.pendingReplies.size() < common::platform::transaction_batch)
                   {
-
-                     if( ! handler.dispatch( marshler.front()))
-                     {
-                        common::log::error << "message_type: " << marshal.type() << " not recognized - action: discard" << std::endl;
-                     }
-
-                     if( m_state.pendingReplies.size() >=  common::platform::transaction_batch)
-                     {
-                        break;
-                     }
+                     ;
                   }
+
                }
 
                /*

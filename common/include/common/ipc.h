@@ -178,7 +178,7 @@ namespace casual
                //!
                //! @return true if sent, false otherwise
                //!
-               bool operator () ( message::Complete& message) const
+               bool operator () ( const message::Complete& message) const
                {
                   return send( message, 0);
                }
@@ -188,7 +188,7 @@ namespace casual
                //!
                //! @return true if sent, false otherwise
                //!
-               bool operator () ( message::Complete& message, const long flags) const
+               bool operator () ( const message::Complete& message, const long flags) const
                {
                   return send( message, flags);
                }
@@ -196,7 +196,7 @@ namespace casual
             private:
 
                bool send( message::Transport& message, const long flags) const;
-               bool send( message::Complete& message, const long flags) const;
+               bool send( const message::Complete& message, const long flags) const;
             };
 
          }

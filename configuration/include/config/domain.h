@@ -159,7 +159,7 @@ namespace casual
          struct Domain
          {
 
-
+            std::string name;
             Default casual_default;
             transaction::Manager transactionmanager;
             std::vector< Group> groups;
@@ -170,6 +170,7 @@ namespace casual
             template< typename A>
             void serialize( A& archive)
             {
+               archive & CASUAL_MAKE_NVP( name);
                archive & sf::makeNameValuePair( "default", casual_default);
                archive & CASUAL_MAKE_NVP( transactionmanager);
                archive & CASUAL_MAKE_NVP( groups);

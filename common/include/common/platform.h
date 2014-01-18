@@ -155,11 +155,13 @@ namespace casual
 
 			typedef std::vector< char> binary_type;
 
-         typedef char* raw_buffer_type;
+         //typedef char* raw_buffer_type;
+			using raw_buffer_type = char*;
+			using const_raw_buffer_type = const char*;
 
-         inline char* public_buffer( raw_buffer_type buffer)
+         inline raw_buffer_type public_buffer( const_raw_buffer_type buffer)
          {
-            return const_cast< char*>( buffer);
+            return const_cast< raw_buffer_type>( buffer);
          }
 
          // TODO: change to: typedef std::chrono::steady_clock clock_type;
