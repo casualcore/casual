@@ -258,7 +258,7 @@ namespace trace
 
 int build( const std::string& c_file, const Settings& settings)
 {
-   trace::Exit log( "build resurce proxy", settings.verbose);
+   trace::Exit log( "build server", settings.verbose);
    //
    // Compile and link
    //
