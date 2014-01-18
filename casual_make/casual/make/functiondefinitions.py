@@ -21,13 +21,13 @@ include=list()
 
 def NoDefaultLibs():
     """
-######################################################################
-## 
-## NoDefaultLibs()
-##
-## Makes sure nothing is linked default
-##
-######################################################################
+
+ 
+ NoDefaultLibs()
+
+ Makes sure nothing is linked default
+
+
     """
 
     print "DEFAULT_LIBS :=";
@@ -36,14 +36,14 @@ def NoDefaultLibs():
 
 def NoDefaultIncludePaths():
     """
-######################################################################
-## 
-## NoDefaultIncludePaths()
-##
-## Makes sure that no default include paths are set
-## Do not interfere with INCLUDE_PATHS set by users 
-##
-######################################################################
+
+ 
+ NoDefaultIncludePaths()
+
+ Makes sure that no default include paths are set
+ Do not interfere with INCLUDE_PATHS set by users 
+
+
     """
     print "DEFAULT_INCLUDE_PATHS :=";
     print
@@ -51,14 +51,14 @@ def NoDefaultIncludePaths():
 
 def NoDefaultLibraryPaths():
     """
-######################################################################
-## 
-## NoDefaultLibraryPaths()
-##
-## Makes sure that no default library paths are set
-## Do not interfere with LIBRARY_PATHS set by users 
-##
-######################################################################
+
+ 
+ NoDefaultLibraryPaths()
+
+ Makes sure that no default library paths are set
+ Do not interfere with LIBRARY_PATHS set by users 
+
+
     """
     print "DEFAULT_LIBRARY_PATHS :="
     print
@@ -67,13 +67,13 @@ def NoDefaultLibraryPaths():
 
 def NoParallel():
     """
-######################################################################
-## 
-## NoParallel()
-##
-## Makes sure that noting is executed parallel in this makefile
-##
-######################################################################
+
+ 
+ NoParallel()
+
+ Makes sure that noting is executed parallel in this makefile
+
+
     """
     if getParallelMake() == 0 :
         print
@@ -96,14 +96,14 @@ def NoParallel():
 
 def Parallel():
     """
-######################################################################
-## 
-## Parallel()
-##
-## Makes sure that execution is parallel in this makefile
-## This statement has to be first in this makefile
-##
-######################################################################
+
+ 
+ Parallel()
+
+ Makes sure that execution is parallel in this makefile
+ This statement has to be first in this makefile
+
+
     """
     setParallelMake( 1)
 
@@ -111,19 +111,19 @@ def Parallel():
 
 def CompileDirective(sourcefile,objectfile,directive):
     """
-#####################################################################
-##
-## CompileDirective(sourcefile,objectfile,directive)
-##
-## Compiles a source file to an object file, with excplicit directives
-##
-## sourcefile    name of the sourcefile (src/myfile.cpp)
-##    
-## objectfile    name of the output object file (obj/myfile.o)
-##
-## directive   compile directive for this TU
-##
-######################################################################
+
+
+ CompileDirective(sourcefile,objectfile,directive)
+
+ Compiles a source file to an object file, with excplicit directives
+
+ param: sourcefile    name of the sourcefile (src/myfile.cpp)
+    
+ param: objectfile    name of the output object file (obj/myfile.o)
+
+ param: directive   compile directive for this TU
+
+
     """
 
     local_object_path=def_CurrentDirectory + "/" + internal_clean_directory_name( os.path.dirname( objectfile))
@@ -155,17 +155,17 @@ def CompileDirective(sourcefile,objectfile,directive):
 
 def Compile(sourcefile,objectfile):
     """
-#####################################################################
-##
-## Compile(sourcefile,objectfile)
-##
-## Compiles a source file to an object file
-##
-## sourcefile    name of the sourcefile (src/myfile.cpp)
-##    
-## objectfile    name of the output object file (obj/myfile.o)
-##
-######################################################################
+
+
+ Compile(sourcefile,objectfile)
+
+ Compiles a source file to an object file
+
+ param: sourcefile    name of the sourcefile (src/myfile.cpp)
+    
+ param: objectfile    name of the output object file (obj/myfile.o)
+
+
     """
 
     CompileDirective( sourcefile, objectfile, "")
@@ -177,21 +177,21 @@ def Compile(sourcefile,objectfile):
 
 def LinkAtmiServer(name,objectfiles,libs,services):
     """
-######################################################################
-##
-## LinkAtmiServer(name,objectfiles,libs,services)
-##
-## Links a XATMI-server
-##
-## name        name of the server with out prefix or suffix.
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-## services    public services. I e.  "service1 service2"
-##
-######################################################################
+
+
+ LinkAtmiServer(name,objectfiles,libs,services)
+
+ Links a XATMI-server
+
+ param: name        name of the server with out prefix or suffix.
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
+ param: services    a list of public services. I e.  ["service1", "service2"]
+
+
     """
 
     internal_BASE_LinkATMI( "$(BUILDSERVER)", name, services, "", objectfiles, libs, "")
@@ -202,23 +202,24 @@ def LinkAtmiServer(name,objectfiles,libs,services):
 
 def LinkAtmiServerResource(name,objectfiles,libs,services,resources):
     """
-######################################################################
-##
-## LinkAtmiServerResource( name, objectfiles, libs, services, resource)
-##
-## Links a XATMI-server with one or more resources
-##
-## name        name of the server with out prefix or suffix.
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-## services    public services. I e.  "service1 service2"
-##
-## resources    name of a XA resources
-##
-######################################################################
+
+
+ LinkAtmiServerResource( name, objectfiles, libs, services, resource)
+
+ Links a XATMI-server with one or more resources
+
+ param: name        name of the server with out prefix or suffix.
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
+ param: services    a list of public services. I e.  ["service1", "service2"]
+
+ param: resources   a list of XA resources. I e ["db2-rm"] - the names shall 
+                correspond to those defined in configuration/resources.(yaml|json|...)
+
+
     """
     if not resources:
         resource_directive = "";
@@ -235,19 +236,19 @@ def LinkAtmiServerResource(name,objectfiles,libs,services,resources):
 
 def LinkAtmiClient(name,objectfiles,libs):
     """
-######################################################################
-##
-## LinkAtmiClient(name,objectfiles,libs)
-##
-## Links a XATMI client
-##
-## name        name of the binary with out prefix or suffix.
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-######################################################################
+
+
+ LinkAtmiClient(name,objectfiles,libs)
+
+ Links a XATMI client
+
+ param: name        name of the binary with out prefix or suffix.
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
+
     """
 
     internal_BASE_LinkATMI( "$(BUILDCLIENT)",name, "", objectfiles, libs, "")
@@ -255,19 +256,18 @@ def LinkAtmiClient(name,objectfiles,libs):
 
 def LinkLibrary(name,objectfiles,libs):
     """
-######################################################################
-## 
-## LinkLibrary(name,objectfiles,libs)
-##
-## Links a shared library
-##
-## name        name of the binary with out prefix or suffix.
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-######################################################################
+
+ 
+ LinkLibrary(name,objectfiles,libs)
+
+ Links a shared library
+
+ param: name        name of the binary with out prefix or suffix.
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
     """
     internal_base_link("$(LIBRARY_LINKER)", name, internal_shared_library_name_path( name), objectfiles, libs, " $(LINK_DIRECTIVES_LIB)")
     
@@ -279,17 +279,15 @@ def LinkLibrary(name,objectfiles,libs):
 
 def LinkArchive(name,objectfiles):
     """
-######################################################################
-## 
-##  LinkArchive(name,objectfiles)
-##
-## Links an archive
-##
-## name        name of the binary with out prefix or suffix.
-##    
-## objectfiles    object files that is linked
-##
-######################################################################
+
+ 
+  LinkArchive(name,objectfiles)
+
+ Links an archive
+
+ param: name        name of the binary with out prefix or suffix.
+    
+ param: objectfiles    object files that is linked
     """
 
     objectfiles = ' '.join(objectfiles)
@@ -326,19 +324,19 @@ def LinkArchive(name,objectfiles):
 
 def LinkExecutable(name,objectfiles,libs):
     """
-######################################################################
-## 
-## LinkExecutable(name,objectfiles,libs)
-##
-## Links an executable
-##
-## name        name of the binary with out prefix or suffix.
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-######################################################################
+
+ 
+ LinkExecutable(name,objectfiles,libs)
+
+ Links an executable
+
+ param: name        name of the binary with out prefix or suffix.
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
+
     """
     internal_base_link("$(EXECUTABLE_LINKER)", name, internal_executable_name_path( name), objectfiles, libs, "$(LINK_DIRECTIVES_EXE)")
     
@@ -349,15 +347,15 @@ def LinkExecutable(name,objectfiles,libs):
 
 def Build(casualMakefile):
     """
-######################################################################
-## 
-## Build(casualMakefile)
-##
-## "builds" another casual-make-file: jumps to the spcific file and execute make
-##
-## casualMakefile    The file to build
-##
-######################################################################
+
+ 
+ Build(casualMakefile)
+
+ "builds" another casual-make-file: jumps to the spcific file and execute make
+
+ param: casualMakefile    The file to build
+
+
     """
     
     #
@@ -419,17 +417,17 @@ def Build(casualMakefile):
 
 def LinkIsolatedUnittest(name,objectfiles,libs):
     """
-######################################################################
-##
-## LinkIsolatedUnittest(name,objectfiles,libs)
-##
-## name        name of the unittest executable
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-######################################################################
+
+
+ LinkIsolatedUnittest(name,objectfiles,libs)
+
+ param: name        name of the unittest executable
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
+
     """
 
     internal_base_link( "$(EXECUTABLE_LINKER)", name, internal_executable_name_path(name), objectfiles, libs, "$(ISOLATED_UNITTEST_LIB) $(LINK_DIRECTIVES_EXE)")
@@ -453,17 +451,17 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
 
 def LinkDependentUnittest(name,objectfiles,libs):
     """
-######################################################################
-##
-## LinkDependentUnittest(name,objectfiles,libs)
-##
-## name        name of the unittest executable
-##    
-## objectfiles    object files that is linked
-##
-## libs        dependent libraries
-##
-######################################################################
+
+
+ LinkDependentUnittest(name,objectfiles,libs)
+
+ param: name        name of the unittest executable
+    
+ param: objectfiles    object files that is linked
+
+ param: libs        dependent libraries
+
+
     """
     internal_BASE_LinkATMI("$(BUILDCLIENT)", name, "" , objectfiles, libs , "-f $(DEPENDENT_UNITTEST_LIB)")
     
