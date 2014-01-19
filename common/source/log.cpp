@@ -24,7 +24,7 @@
 #include <map>
 #include <iostream>
 
-#include <mutex>
+#include <thread>
 
 
 
@@ -60,6 +60,7 @@ namespace casual
                         << '|' << common::calling::Context::instance().callId().string()
                         << '|' << common::transaction::Context::instance().currentTransaction().xid.stringGlobal()
                         << '|' << common::process::id()
+                        << '|' << std::this_thread::get_id()
                         << '|' << basename
                         << '|' << common::calling::Context::instance().currentService()
                         << "|" << category << "|" <<  message << std::endl;
@@ -216,40 +217,35 @@ namespace casual
 
          namespace internal
          {
-            std::ostream debug{ local::getActiveBuffer( category::Type::casual_debug)};
+            internal::Stream debug{ local::getActiveBuffer( category::Type::casual_debug)};
 
-            std::ostream trace{ local::getActiveBuffer( category::Type::casual_trace)};
+            internal::Stream trace{ local::getActiveBuffer( category::Type::casual_trace)};
 
-            std::ostream transaction{ local::getActiveBuffer( category::Type::casual_transaction)};
+            internal::Stream transaction{ local::getActiveBuffer( category::Type::casual_transaction)};
 
          } // internal
 
-         std::ostream debug{ local::getActiveBuffer( category::Type::debug)};
+         internal::Stream debug{ local::getActiveBuffer( category::Type::debug)};
 
-         std::ostream trace{ local::getActiveBuffer( category::Type::trace)};
+         internal::Stream trace{ local::getActiveBuffer( category::Type::trace)};
 
-         std::ostream parameter{ local::getActiveBuffer( category::Type::parameter)};
+         internal::Stream parameter{ local::getActiveBuffer( category::Type::parameter)};
 
-         std::ostream information{ local::getActiveBuffer( category::Type::information)};
+         internal::Stream information{ local::getActiveBuffer( category::Type::information)};
 
-         std::ostream warning{ local::getActiveBuffer( category::Type::warning)};
+         internal::Stream warning{ local::getActiveBuffer( category::Type::warning)};
 
          //
          // Always on
          //
-         std::ostream error{ local::getBuffer( log::category::Type::error).factory()};
+         internal::Stream error{ local::getBuffer( log::category::Type::error).factory()};
 
-
-         bool active( category::Type category)
-         {
-            return local::getActiveBuffer( category) != nullptr;
-         }
 
          namespace local
          {
             namespace
             {
-               std::ostream& getStream( category::Type category)
+               std::ostream& stream( category::Type category)
                {
                   static std::map< category::Type, std::ostream&> streams{
                      { category::Type::casual_debug, internal::debug },
@@ -264,29 +260,37 @@ namespace casual
 
                   return streams.at( category);
                }
-            } //
+            } // <unnamed>
          } // local
+
+
+         bool active( category::Type category)
+         {
+            return local::getActiveBuffer( category) != nullptr;
+         }
 
 
          void activate( category::Type category)
          {
-            local::getStream( category).rdbuf( local::getBuffer( category).factory());
+            local::stream( category).rdbuf( local::getBuffer( category).factory());
          }
 
          void deactivate( category::Type category)
          {
-            local::getStream( category).rdbuf( nullptr);
+            local::stream( category).rdbuf( nullptr);
          }
+
+
 
 
          void write( category::Type category, const char* message)
          {
-            local::getStream( category) << message;
+            local::stream( category) << message;
          }
 
          void write( category::Type category, const std::string& message)
          {
-            local::getStream( category) << message;
+            local::stream( category) << message;
          }
       } // log
 
