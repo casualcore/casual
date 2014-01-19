@@ -22,17 +22,17 @@ namespace casual
             //!
             //! Log with category 'casual.debug'
             //!
-            extern std::ostream debug;
+            extern internal::Stream debug;
 
             //!
             //! Log with category 'casual.trace'
             //!
-            extern std::ostream trace;
+            extern internal::Stream trace;
 
             //!
             //! Log with category 'casual.transaction'
             //!
-            extern std::ostream transaction;
+            extern internal::Stream transaction;
 
 
          } // internal
