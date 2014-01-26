@@ -143,10 +143,10 @@ namespace casual
             handler.add( handle::Begin{ state});
             handler.add( handle::basic_commit< mockup::queue::Policy>{ state});
             handler.add( handle::Rollback{ state});
-            handler.add( handle::resource::basic_connect< mockup::queue::Policy>( state, ipc::broker));
-            handler.add( handle::resource::Prepare{ state});
-            handler.add( handle::resource::Commit{ state});
-            handler.add( handle::resource::Rollback{ state});
+            handler.add( handle::resource::reply::basic_connect< mockup::queue::Policy>( state, ipc::broker));
+            handler.add( handle::resource::reply::Prepare{ state});
+            handler.add( handle::resource::reply::Commit{ state});
+            handler.add( handle::resource::reply::Rollback{ state});
             handler.add( handle::domain::basic_prepare< mockup::queue::Policy>{ state});
             handler.add( handle::domain::basic_commit< mockup::queue::Policy>{ state});
             handler.add( handle::domain::basic_rollback< mockup::queue::Policy>{ state});

@@ -16,6 +16,7 @@
 #include "common/internal/log.h"
 
 #include "tx.h"
+#include "xa.h"
 
 namespace casual
 {
@@ -29,18 +30,19 @@ namespace casual
          {
             namespace send
             {
-
-
-               template< typename M>
-               void reply( State& state, common::platform::queue_id_type target, int code, const common::transaction::ID& xid)
+               namespace delayed
                {
-                  M message;
-                  message.id.queue_id = common::ipc::receive::id();
-                  message.xid = xid;
-                  message.state = code;
+                  template< typename R, typename M>
+                  void reply( State& state, const M& request, int code)
+                  {
+                     R message;
+                     message.id.queue_id = common::ipc::receive::id();
+                     message.xid = request.xid;
+                     message.state = code;
 
-                  state.pendingReplies.emplace_back( target, message);
-               }
+                     state.pendingReplies.emplace_back( request.id.queue_id, message);
+                  }
+               } // delayed
 
                template< typename Q, typename M>
                struct Reply : state::Base
@@ -59,14 +61,34 @@ namespace casual
 
                      Q queue{ request.id.queue_id, m_state};
 
+                     send( queue, reply);
+                  }
+               private:
+
+                  template< typename Q2, typename R>
+                  typename std::enable_if< common::queue::is_blocking< Q2>::value, void>::type
+                  send( Q2& queue, R& reply)
+                  {
+                     queue.send( reply.message);
+                  }
+
+                  template< typename Q2, typename R>
+                  typename std::enable_if< ! common::queue::is_blocking< Q2>::value, void>::type
+                  send( Q2& queue, R& reply)
+                  {
                      if( ! queue.send( reply.message))
                      {
-                        common::log::internal::transaction << "failed to send reply directly to : " << request.id << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
+                        //common::log::internal::transaction << "failed to send reply directly to : " << request.id << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
                         m_state.pendingReplies.push_back( std::move( reply));
                      }
                   }
 
+
                };
+
+
+
+
 
                template< typename Q>
                void commitReply( State& state, const Transaction& transaction, int code = XA_OK)
@@ -203,6 +225,7 @@ namespace casual
                }
             } // instance
 
+            /*
             namespace check
             {
                template< typename R, typename M>
@@ -221,6 +244,7 @@ namespace casual
                   return true;
                }
             } // check
+            */
 
 
             namespace transform
@@ -247,6 +271,18 @@ namespace casual
                inline int denormalize( int normalized)
                {
                   return normalized;
+               }
+
+               inline int normalize( const std::vector< Transaction::Resource>& resources)
+               {
+                  //
+                  // We start with read-only
+                  //
+                  int result = XA_RDONLY;
+
+
+
+                  return result;
                }
 
 
@@ -380,11 +416,9 @@ namespace casual
                   request( transaction,
                         Transaction::Resource::State::cPrepareReplied,
                         Transaction::Resource::State::cRollbackRequested, message.flags);
-
                }
                else
                {
-
                   common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
 
                   //
@@ -400,12 +434,119 @@ namespace casual
 
             namespace resource
             {
-
-
-               template< typename B>
-               void basic_wrapper< B>::dispatch( message_type& message)
+               namespace reply
                {
 
+                  template< typename QP>
+                  void basic_prepare< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  {
+                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::prepare reply"};
+
+                     resource.result = Transaction::Resource::convert( message.state);
+                     resource.state = Transaction::Resource::State::cPrepareReplied;
+
+
+                     if( common::range::all_of( common::range::make( transaction.resources),
+                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
+                     {
+
+                        //
+                        // All resources has replied, we're done with prepare stage.
+                        //
+                        using reply_type = common::message::transaction::resource::prepare::Reply;
+                        using sender_type = typename queue_policy::block_writer;
+
+
+                        auto result = transaction.results();
+
+                        common::log::internal::transaction << "domain prepared: " << transaction.xid << " - state: " << result << std::endl;
+
+                        //
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+                        // Send reply
+                        //
+                        internal::send::Reply<
+                           sender_type,
+                           reply_type> sender{ m_state};
+
+                        sender( message, Transaction::Resource::convert( result));
+                     }
+
+                     //
+                     // else we wait...
+                  }
+
+                  template< typename QP>
+                  void basic_commit< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  {
+                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::commit reply"};
+
+                     resource.result = Transaction::Resource::convert( message.state);
+                     resource.state = Transaction::Resource::State::cCommitReplied;
+
+
+                     if( common::range::all_of( common::range::make( transaction.resources),
+                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cCommitReplied}))
+                     {
+
+                        //
+                        // All resources has committed, we're done with commit stage.
+                        // We can remove the transaction.
+                        //
+
+
+
+                        using reply_type = common::message::transaction::resource::commit::Reply;
+                        using sender_type = typename queue_policy::block_writer;
+
+
+                        auto result = transaction.results();
+
+                        common::log::internal::transaction << "domain committed: " << transaction.xid << " - state: " << result << std::endl;
+
+                        //
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+                        // Send reply
+                        //
+                        internal::send::Reply<
+                           sender_type,
+                           reply_type> sender{ m_state};
+
+                        sender( message, Transaction::Resource::convert( result));
+                     }
+
+                     //
+                     // else we wait...
+
+
+
+                  }
+
+                  template< typename QP>
+                  void basic_rollback< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  {
+                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::rollback reply"};
+
+                     //using non_block_writer = typename queue_policy::non_block_writer;
+
+                  }
+               } // reply
+            } // resource
+         } // domain
+
+
+         namespace resource
+         {
+            namespace reply
+            {
+
+               template< typename QP, typename H>
+               void Wrapper< QP, H>::dispatch( message_type& message)
+               {
                   using non_block_writer = typename queue_policy::non_block_writer;
 
                   //
@@ -430,9 +571,9 @@ namespace casual
                      if( ! resource.empty())
                      {
                         //
-                        // We found all the stuff, let sub-class take care of business
+                        // We found all the stuff, let the real handler handle the message
                         //
-                        base_type::dispatch( message, transaction, *resource.first);
+                        m_handler.dispatch( message, transaction, *resource.first);
                      }
                      else
                      {
@@ -446,122 +587,160 @@ namespace casual
                      // TODO: what to do? We have previously sent a prepare request, why do we not find the xid?
                      common::log::error << "failed to locate xid: " << message.xid << " - action: discard?\n";
                   }
-
-
                }
 
 
 
                template< typename QP>
-               void basic_prepare< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               void basic_connect< QP>::dispatch( message_type& message)
                {
-                  common::trace::internal::Scope trace{ "transaction::handle::domain::resource::prepare reply"};
+                  common::trace::internal::Scope trace{ "transaction::handle::resource::connect reply"};
 
-                  resource.result = internal::result::normalize( message.state);
-                  resource.state = Transaction::Resource::State::cPrepareReplied;
+                  common::log::internal::transaction << "resource (id: " << message.resource << ") " <<  message.id << " connected" << std::endl;
 
-                  const auto state = transaction.state();
+                  auto instanceRange = state::find::instance(
+                        common::range::make( m_state.resources),
+                        message);
 
-
-                  if( common::range::all_of( common::range::make( transaction.resources),
-                        Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
+                  if( ! instanceRange.empty())
                   {
-                     auto results = transaction.results();
+                     if( message.state == XA_OK)
+                     {
+                        instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
+                        instanceRange.first->server = std::move( message.id);
 
-
-
-                  }
-
-
-                  //
-                  // else we wait...
-               }
-
-               template< typename QP>
-               void basic_commit< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
-               {
-                  common::trace::internal::Scope trace{ "transaction::handle::domain::resource::commit reply"};
-
-
-                  using non_block_writer = typename queue_policy::non_block_writer;
-
-
-
-               }
-
-               template< typename QP>
-               void basic_rollback< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
-               {
-                  common::trace::internal::Scope trace{ "transaction::handle::domain::resource::rollback reply"};
-
-                  using non_block_writer = typename queue_policy::non_block_writer;
-
-
-
-               }
-
-
-            } // resource
-
-         } // domain
-
-
-         namespace resource
-         {
-            template< typename QP>
-            void basic_connect< QP>::dispatch( message_type& message)
-            {
-               common::trace::internal::Scope trace{ "transaction::handle::resource::connect reply"};
-
-               common::log::internal::transaction << "resource (id: " << message.resource << ") " <<  message.id << " connected" << std::endl;
-
-               auto instanceRange = state::find::instance(
-                     common::range::make( m_state.resources),
-                     message);
-
-               if( ! instanceRange.empty())
-               {
-                  if( message.state == XA_OK)
-                  {
-                     instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
-                     instanceRange.first->server = std::move( message.id);
-
+                     }
+                     else
+                     {
+                        common::log::error << "resource proxy pid: " <<  message.id.pid << " startup error" << std::endl;
+                        instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
+                        //throw common::exception::signal::Terminate{};
+                        // TODO: what to do?
+                     }
                   }
                   else
                   {
-                     common::log::error << "resource proxy pid: " <<  message.id.pid << " startup error" << std::endl;
-                     instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
-                     //throw common::exception::signal::Terminate{};
-                     // TODO: what to do?
+                     common::log::error << "transaction manager - unexpected resource connecting - process: " << message.id << " - action: discard" << std::endl;
+                  }
+
+
+                  if( ! m_connected && common::range::all_of( common::range::make( m_state.resources), state::filter::Running{}))
+                  {
+                     //
+                     // We now have enough resource proxies up and running to guarantee consistency
+                     // notify broker
+                     //
+
+                     common::log::internal::transaction << "enough resources are connected - send connect to broker\n";
+
+                     using block_writer = typename queue_policy::block_writer;
+                     block_writer brokerQueue{ m_brokerQueueId, m_state};
+
+                     common::message::transaction::Connected running;
+                     brokerQueue( running);
+
+                     m_connected = true;
                   }
                }
-               else
+
+
+               template< typename QP>
+               void basic_prepare< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
-                  common::log::error << "transaction manager - unexpected resource connecting - process: " << message.id << " - action: discard" << std::endl;
+                  resource.state = Transaction::Resource::State::cPrepareReplied;
+                  resource.result = Transaction::Resource::convert( message.state);
+
+                  auto state = transaction.state();
+
+                  //
+                  // Are we in a prepared state?
+                  //
+                  if( state == Transaction::Resource::State::cPrepareReplied)
+                  {
+                     //
+                     // Normalize all the resources reply-state
+                     //
+
+
+
+
+
+                     m_state.log.prepareCommit( transaction.xid);
+                  }
+                  //
+                  // Else we wait for more replies...
+                  //
+
+               }
+
+               template< typename QP>
+               void basic_commit< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               {
+                  //
+                  // Instance is ready for more work
+                  //
+                  //instance::done( m_state, message);
+
+               }
+
+               template< typename QP>
+               void basic_rollback< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               {
+                  //
+                  // Instance is ready for more work
+                  //
+                  //instance::done( m_state, message);
                }
 
 
-               if( ! m_connected && common::range::all_of( common::range::make( m_state.resources), state::filter::Running{}))
-               {
-                  //
-                  // We now have enough resource proxies up and running to guarantee consistency
-                  // notify broker
-                  //
-
-                  common::log::internal::transaction << "enough resources are connected - send connect to broker\n";
-
-                  typedef QP queue_policy;
-                  using block_writer = typename queue_policy::block_writer;
-                  block_writer brokerQueue{ m_brokerQueueId, m_state};
-
-                  common::message::transaction::Connected running;
-                  brokerQueue( running);
-
-                  m_connected = true;
-               }
-            }
+            } // reply
 
          } // resource
+
+
+         template< typename QP>
+         void basic_begin< QP> ::dispatch( message_type& message)
+         {
+            common::trace::internal::Scope trace{ "transaction::handle::begin request"};
+
+            using non_block_writer = typename queue_policy::non_block_writer;
+
+            if( message.xid.null())
+            {
+               message.xid.generate();
+            }
+
+            auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+
+            if( found.empty())
+            {
+               auto& transaction = m_state.transactions.back();
+
+               m_state.log.begin( message);
+
+               //
+               // prepare send reply. Will be sent after persistent write to file
+               //
+               internal::send::delayed::reply< reply_type>( m_state, message, XA_OK);
+
+               transaction.task = Transaction::Task::waitForCommitOrRollback;
+            }
+            else
+            {
+               common::log::error << "XAER_DUPID Attempt to start a transaction " << message.xid << ", which is already in progress" << std::endl;
+
+               //
+               // Send reply
+               //
+               internal::send::Reply<
+                  non_block_writer,
+                  reply_type> sender{ m_state};
+
+               sender( message, XAER_DUPID);
+            }
+
+
+         }
 
 
          template< typename QP>
@@ -569,7 +748,6 @@ namespace casual
          {
             common::trace::internal::Scope trace{ "transaction::handle::commit request"};
 
-            typedef QP queue_policy;
             using non_block_writer = typename queue_policy::non_block_writer;
 
             auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
@@ -656,10 +834,54 @@ namespace casual
                //
                internal::send::Reply<
                   non_block_writer,
-                  common::message::transaction::resource::prepare::Reply> sender{ m_state};
+                  reply_type> sender{ m_state};
 
                sender( message, XAER_NOTA);
             }
+         }
+
+
+         template< typename QP>
+         void basic_rollback< QP>::dispatch( message_type& message)
+         {
+            using non_block_writer = typename queue_policy::non_block_writer;
+
+            //
+            // Find the transaction
+            //
+            auto found = common::range::find_if(
+                  common::range::make( m_state.transactions), find::Transaction{ message.xid});
+
+            if( ! found.empty())
+            {
+               auto& transaction = *found.first;
+
+               if( transaction.task != Transaction::Task::waitForCommitOrRollback)
+               {
+
+               }
+
+               internal::send::resource::Requests<
+                  non_block_writer,
+                  common::message::transaction::resource::rollback::Request> request{ m_state};
+
+               request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cRollbackRequested);
+
+            }
+            else
+            {
+               common::log::error << "Attempt to rollback a transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: error reply" << std::endl;
+
+               //
+               // Send reply
+               //
+               internal::send::Reply<
+                  non_block_writer,
+                  reply_type> sender{ m_state};
+
+               sender( message, XAER_NOTA);
+            }
+
          }
 
       } // handle

@@ -117,13 +117,16 @@ namespace casual
          handler.add( handle::Begin{ m_state});
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resource::Connect( m_state, ipc::broker::id()));
-         handler.add( handle::resource::Prepare{ m_state});
-         handler.add( handle::resource::Commit{ m_state});
-         handler.add( handle::resource::Rollback{ m_state});
+         handler.add( handle::resource::reply::Connect( m_state, ipc::broker::id()));
+         handler.add( handle::resource::reply::Prepare{ m_state});
+         handler.add( handle::resource::reply::Commit{ m_state});
+         handler.add( handle::resource::reply::Rollback{ m_state});
          handler.add( handle::domain::Prepare{ m_state});
          handler.add( handle::domain::Commit{ m_state});
          handler.add( handle::domain::Rollback{ m_state});
+         handler.add( handle::domain::resource::reply::Prepare{ m_state});
+         handler.add( handle::domain::resource::reply::Commit{ m_state});
+         handler.add( handle::domain::resource::reply::Rollback{ m_state});
 
 
          common::log::internal::transaction << "start message pump\n";

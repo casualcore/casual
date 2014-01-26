@@ -104,6 +104,7 @@ namespace casual
                }
 
                base_message( base_message&&) = default;
+               base_message& operator = ( base_message&&) = default;
 
                common::ipc::message::Complete message;
             };
@@ -169,11 +170,50 @@ namespace casual
                cNotInvolved,
             };
 
+
+
+            //!
+            //! Used to rank the return codes from the resources, the lower the enum value (higher up),
+            //! the more severe...
+            //!
+            enum class Result
+            {
+               cXA_HEURHAZ,
+               cXA_HEURMIX,
+               cXA_HEURCOM,
+               cXA_HEURRB,
+               cXAER_RMFAIL,
+               cXAER_RMERR,
+               cXA_RBINTEGRITY,
+               cXA_RBCOMMFAIL,
+               cXA_RBROLLBACK,
+               cXA_RBOTHER,
+               cXA_RBDEADLOCK,
+               cXAER_PROTO,
+               cXA_RBPROTO,
+               cXA_RBTIMEOUT,
+               cXA_RBTRANSIENT,
+               cXAER_INVAL,
+               cXA_NOMIGRATE,
+               cXAER_OUTSIDE,
+               cXAER_NOTA,
+               cXAER_ASYNC,
+               cXA_RETRY,
+               cXAER_DUPID,
+               cXA_OK,      //! Went as expected
+               cXA_RDONLY,  //! Went "better" than expected
+            };
+
             Resource( id_type id) : id( id) {}
 
             id_type id;
             State state = State::cInvolved;
-            int result = XA_OK;
+            Result result = Result::cXA_OK;
+
+            static Result convert( int value);
+            static int convert( Result value);
+
+            void setResult( int value);
 
 
             struct state
@@ -216,11 +256,7 @@ namespace casual
                private:
                   id_type m_id;
                };
-
             };
-
-
-
          };
 
          enum class Task
@@ -259,16 +295,10 @@ namespace casual
             return result;
          }
 
-         std::vector< int> results() const
-         {
-            std::vector< int> result;
-
-            for( auto& resource : resources)
-            {
-               result.push_back( resource.result);
-            }
-            return result;
-         }
+         //!
+         //! @return the most severe result from the resources
+         //!
+         Resource::Result results() const;
       };
 
       inline bool operator < ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id < rhs.id; }
@@ -465,6 +495,9 @@ namespace casual
 
 
       } // state
+
+
+
    } // transaction
 } // casual
 

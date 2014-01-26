@@ -133,6 +133,32 @@ namespace casual
 
       }
 
+      enum class Enum
+      {
+         zero,
+         one,
+         two,
+      };
+
+      TEST( casual_common_algorithm, enum_as_integer)
+      {
+         auto e = Enum::two;
+
+         EXPECT_TRUE( common::as_integer( e) == 2);
+      }
+
+      TEST( casual_common_algorithm, enum_ostream)
+      {
+         auto e = Enum::two;
+
+         std::ostringstream out;
+
+         out << e;
+
+         EXPECT_TRUE( out.str() == "2");
+      }
+
+
 
    } // algorithm
 

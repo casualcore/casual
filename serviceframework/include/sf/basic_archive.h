@@ -78,8 +78,119 @@ namespace casual
             void readPOD( platform::binary_type& value) { m_readerImplementation.read( value);}
 
             implementation_type m_readerImplementation;
+         };
+
+
+         template< typename I, typename RP>
+         class basic_reader_node : public Reader
+         {
+
+         public:
+
+            typedef I implementation_type;
+            typedef RP relaxed_policy;
+
+            template< typename... Arguments>
+            basic_reader_node( Arguments&&... arguments)
+             : m_readerImplementation( std::forward< Arguments>( arguments)...)
+               {
+
+               }
+
+            basic_reader_node( basic_reader_node&&) = default;
+
+         private:
+
+
+            void handle_start( const char* name) { m_name = name; m_readerImplementation.handle_start( name);}
+
+            void handle_end( const char* name) { m_readerImplementation.handle_end( name); }
+
+            std::size_t handle_container_start( std::size_t size)
+            {
+               if( m_ignoreScope == 0)
+               {
+                  if( m_readerImplementation.has_node( m_name))
+                  {
+                     return m_readerImplementation.handle_container_start( size);
+                  }
+
+                  //
+                  // Throws or not. name is to provide better messages
+                  //
+                  m_policy.apply( m_name);
+               }
+               ++m_ignoreScope;
+               return 0;
+            }
+
+            void handle_container_end()
+            {
+               if( m_ignoreScope == 0)
+                  m_readerImplementation.handle_container_end();
+               else
+                  --m_ignoreScope;
+            }
+
+            void handle_serialtype_start()
+            {
+               if( m_ignoreScope == 0)
+               {
+                  if( m_readerImplementation.has_node( m_name))
+                  {
+                     m_readerImplementation.handle_serialtype_start();
+                  }
+                  else
+                  {
+
+                     //
+                     // Throws or not. name is to provide better messages
+                     //
+                     m_policy.apply( m_name);
+                     ++m_ignoreScope;
+                  }
+               }
+               else
+               {
+                  ++m_ignoreScope;
+               }
+            }
+
+            void handle_serialtype_end()
+            {
+               if( m_ignoreScope == 0)
+                  m_readerImplementation.handle_serialtype_end();
+               else
+                  --m_ignoreScope;
+            }
+
+            void readPOD( bool& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD( char& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD( short& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD( long& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD( long long& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD( float& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD ( double& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD ( std::string& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            void readPOD( platform::binary_type& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
+
+            implementation_type m_readerImplementation;
+            relaxed_policy m_policy;
+            const char* m_name = nullptr;
+            std::size_t m_ignoreScope = 0;
 
          };
+
+
+
 
          template< typename I>
          class basic_writer : public Writer

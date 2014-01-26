@@ -315,6 +315,12 @@ namespace casual
 
          } // non_blocking
 
+         template< typename Q>
+         struct is_blocking : public std::integral_constant< bool, std::is_same< typename Q::block_policy, policy::Blocking>::value>
+         {
+
+         };
+
 
          /*
          //!

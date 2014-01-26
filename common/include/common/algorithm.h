@@ -20,6 +20,13 @@ namespace casual
    namespace common
    {
 
+      template< typename Enum>
+      auto as_integer( Enum value) -> typename std::underlying_type< Enum>::type
+      {
+         return static_cast< typename std::underlying_type< Enum>::type>(value);
+      }
+
+
       template< typename Iter>
       struct Range
       {
@@ -211,6 +218,30 @@ namespace casual
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs));
          }
 
+         //!
+         //! @return true if all elements in the range compare equal
+         //!
+         template< typename R>
+         bool uniform( R&& range)
+         {
+            if( range.size() < 2)
+            {
+               return true;
+            }
+
+            auto current = range.first;
+
+            while( current != range.last)
+            {
+               if( *current != *++current)
+               {
+                  return false;
+               }
+            }
+            return true;
+         }
+
+
 
          template< typename R, typename P>
          bool all_of( R&& range, P predicate)
@@ -294,6 +325,21 @@ namespace casual
       } // range
    } // common
 
+
 } // casual
+
+namespace std
+{
+   template< typename Enum>
+   typename enable_if< is_enum< Enum>::value, ostream&>::type
+   operator << ( ostream& out, Enum value)
+   {
+     return out << casual::common::as_integer( value);
+   }
+
+} // std
+
+
+
 
 #endif // ALGORITHM_H_
