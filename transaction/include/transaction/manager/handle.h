@@ -144,7 +144,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  void dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                };
                using Prepare = Wrapper< queue::Policy, basic_prepare< queue::Policy>>;
@@ -158,7 +158,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  void dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                };
                using Commit = Wrapper< queue::Policy, basic_commit< queue::Policy>>;
@@ -172,7 +172,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  void dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                };
 
@@ -241,53 +241,52 @@ namespace casual
             namespace resource
             {
 
+               namespace reply
+               {
 
-            namespace reply
-            {
+                   template< typename QP>
+                   struct basic_prepare : public state::Base
+                   {
+                      typedef QP queue_policy;
+                      typedef common::message::transaction::resource::domain::prepare::Reply message_type;
 
-                template< typename QP>
-                struct basic_prepare : public state::Base
-                {
-                   typedef QP queue_policy;
-                   typedef common::message::transaction::resource::domain::prepare::Reply message_type;
+                      using Base::Base;
 
-                   using Base::Base;
+                      bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                   };
 
-                   void dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
-                };
-
-                using Prepare = handle::resource::reply::Wrapper< queue::Policy, basic_prepare< queue::Policy>>;
-
-
-                template< typename QP>
-                struct basic_commit : public state::Base
-                {
-                   typedef QP queue_policy;
-                   typedef common::message::transaction::resource::domain::commit::Reply message_type;
-
-                   using state::Base::Base;
-
-                   void dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
-                };
-
-                using Commit = handle::resource::reply::Wrapper< queue::Policy, basic_commit< queue::Policy>>;
+                   using Prepare = handle::resource::reply::Wrapper< queue::Policy, basic_prepare< queue::Policy>>;
 
 
-                template< typename QP>
-                struct basic_rollback : public state::Base
-                {
-                   typedef QP queue_policy;
-                   typedef common::message::transaction::resource::domain::rollback::Reply message_type;
+                   template< typename QP>
+                   struct basic_commit : public state::Base
+                   {
+                      typedef QP queue_policy;
+                      typedef common::message::transaction::resource::domain::commit::Reply message_type;
 
-                   using state::Base::Base;
+                      using state::Base::Base;
 
-                   void dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                      bool dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                   };
 
-                };
+                   using Commit = handle::resource::reply::Wrapper< queue::Policy, basic_commit< queue::Policy>>;
 
-                using Rollback = handle::resource::reply::Wrapper< queue::Policy, basic_rollback< queue::Policy>>;
 
-            } // reply
+                   template< typename QP>
+                   struct basic_rollback : public state::Base
+                   {
+                      typedef QP queue_policy;
+                      typedef common::message::transaction::resource::domain::rollback::Reply message_type;
+
+                      using state::Base::Base;
+
+                      bool dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+
+                   };
+
+                   using Rollback = handle::resource::reply::Wrapper< queue::Policy, basic_rollback< queue::Policy>>;
+
+               } // reply
 
             } // resource
 

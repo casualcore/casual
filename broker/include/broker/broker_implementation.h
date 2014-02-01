@@ -16,6 +16,7 @@
 #include "common/log.h"
 #include "common/environment.h"
 #include "common/server_context.h"
+#include "common/algorithm.h"
 
 //
 // std
@@ -197,11 +198,9 @@ namespace casual
                   //
                   // Add all the services, with this corresponding server
                   //
-                  std::for_each(
-                     std::begin( message.services),
-                     std::end( message.services),
+                  common::range::for_each(
+                     common::range::make( message.services),
                      action::add::Service( m_state, findInstance->second));
-
                }
                else
                {
@@ -273,9 +272,8 @@ namespace casual
                //
                // Add services
                //
-               std::for_each(
-                  std::begin( message.services),
-                  std::end( message.services),
+               common::range::for_each(
+                  common::range::make( message.services),
                   action::add::Service( m_state, instance->second));
 
                //
@@ -310,9 +308,8 @@ namespace casual
                   //
                   // Remove services, with this corresponding server
                   //
-                  std::for_each(
-                     std::begin( message.services),
-                     std::end( message.services),
+                  common::range::for_each(
+                     common::range::make( message.services),
                      action::remove::Service( m_state, findInstance->second));
 
                }
@@ -351,22 +348,21 @@ namespace casual
                   //
                   // Try to find an idle instance.
                   //
-                  auto idleInstace = std::find_if(
-                        std::begin( instances),
-                        std::end( instances),
+                  auto idleFound = common::range::find_if(
+                        common::range::make( instances),
                         action::find::idle::Instance());
 
-                  if( idleInstace != std::end( instances))
+                  if( ! idleFound.empty())
                   {
                      //
                      // flag it as busy.
                      //
-                     (*idleInstace)->alterState( Server::Instance::State::busy);
+                     (*idleFound.first)->alterState( Server::Instance::State::busy);
 
                      message::service::name::lookup::Reply reply;
                      reply.service = serviceFound->second->information;
                      reply.service.monitor_queue = m_state.monitorQueue;
-                     reply.server.push_back( action::transform::Instance()( *idleInstace));
+                     reply.server.push_back( action::transform::Instance()( *idleFound.first));
 
                      queue_writer_type writer( message.server.queue_id, m_state);
                      writer( reply);
@@ -379,7 +375,7 @@ namespace casual
                      //
                      // All servers are busy, we stack the request
                      //
-                     m_state.pending.push_back( message);
+                     m_state.pending.push_back( std::move( message));
                   }
                }
                else
@@ -438,12 +434,11 @@ namespace casual
                      // There are pending requests, check if there is one that is
                      // waiting for a service that this, now idle, instance has advertised.
                      //
-                     auto pendingIter = std::find_if(
-                           std::begin( m_state.pending),
-                           std::end( m_state.pending),
-                           action::find::Pending( instance->second));
+                     auto pendingFound = common::range::find_if(
+                        common::range::make( m_state.pending),
+                        action::find::Pending( instance->second));
 
-                     if( pendingIter != std::end( m_state.pending))
+                     if( ! pendingFound.empty())
                      {
                         //
                         // We now know that there are one idle server that has advertised the
@@ -451,12 +446,12 @@ namespace casual
                         // We can use the normal request to get the response
                         //
                         servicelookup_type serviceLookup( m_state);
-                        serviceLookup.dispatch( *pendingIter);
+                        serviceLookup.dispatch( *pendingFound.first);
 
                         //
                         // Remove pending
                         //
-                        m_state.pending.erase( pendingIter);
+                        m_state.pending.erase( pendingFound.first);
                      }
                   }
                }
@@ -505,9 +500,8 @@ namespace casual
                //
                // Add services
                //
-               std::for_each(
-                  std::begin( message.services),
-                  std::end( message.services),
+               common::range::for_each(
+                  common::range::make( message.services),
                   action::add::Service( m_state, instance->second));
 
                //

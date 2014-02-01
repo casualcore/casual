@@ -460,7 +460,7 @@ namespace casual
          request.server.pid = 30;
          request.server.queue_id = 30;
 
-         state.pending.push_back( request);
+         state.pending.push_back( std::move( request));
 
          // server "10" is ready for action...
          message::service::ACK message;

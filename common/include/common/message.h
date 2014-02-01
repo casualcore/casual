@@ -162,6 +162,11 @@ namespace casual
 
                Id() = default;
                Id( queue_id_type id, pid_type pid) : queue_id( id), pid( pid) {}
+               Id( Id&&) = default;
+               Id& operator = ( Id&&) = default;
+
+               Id( const Id&) = default;
+               Id& operator = ( const Id&) = default;
 
 
                queue_id_type queue_id = 0;
@@ -295,6 +300,9 @@ namespace casual
                   //!
                   struct Request : basic_messsage< cServiceNameLookupRequest>
                   {
+                     Request() = default;
+                     Request( Request&&) = default;
+                     Request& operator = ( Request&&) = default;
 
                      std::string requested;
                      server::Id server;

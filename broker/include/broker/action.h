@@ -668,21 +668,11 @@ namespace casual
 
                for( auto& batch : bootOrder)
                {
-                  /*
-                  typedef sf::functional::Chain< sf::functional::link::Or> Chain;
-
-                  serversEnd = std::stable_partition( serversStart, std::end( servers),
-                        Chain::link(
-                              filter::empty::Membership{},
-                              filter::Membership{ batch}));
-                   */
 
                   for( auto& group : batch)
                   {
                      common::log::debug << "boot group: " << group->name << std::endl;
                   }
-
-
 
                   auto serversEnd = std::stable_partition( serversStart, std::end( servers),
                         [&]( const std::shared_ptr< broker::Server>& server)

@@ -205,6 +205,8 @@ namespace casual
             };
 
             Resource( id_type id) : id( id) {}
+            Resource( Resource&&) noexcept = default;
+            Resource& operator = ( Resource&&) noexcept = default;
 
             id_type id;
             State state = State::cInvolved;
@@ -276,6 +278,7 @@ namespace casual
 
          Transaction() = default;
          Transaction( Transaction&&) = default;
+         Transaction& operator = ( Transaction&&) = default;
 
 
          id_type owner;

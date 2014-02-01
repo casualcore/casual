@@ -44,8 +44,11 @@ namespace casual
                   }
                } // delayed
 
+               template< typename Q, typename M, typename Enable = void>
+               struct Reply;
+
                template< typename Q, typename M>
-               struct Reply : state::Base
+               struct Reply< Q, M, typename std::enable_if< ! common::queue::is_blocking< Q>::value>::type> : state::Base
                {
                   using state::Base::Base;
 
@@ -61,29 +64,31 @@ namespace casual
 
                      Q queue{ request.id.queue_id, m_state};
 
-                     send( queue, reply);
-                  }
-               private:
-
-                  template< typename Q2, typename R>
-                  typename std::enable_if< common::queue::is_blocking< Q2>::value, void>::type
-                  send( Q2& queue, R& reply)
-                  {
-                     queue.send( reply.message);
-                  }
-
-                  template< typename Q2, typename R>
-                  typename std::enable_if< ! common::queue::is_blocking< Q2>::value, void>::type
-                  send( Q2& queue, R& reply)
-                  {
                      if( ! queue.send( reply.message))
                      {
-                        //common::log::internal::transaction << "failed to send reply directly to : " << request.id << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
+                        common::log::internal::transaction << "failed to send reply directly to : " << request.id << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
                         m_state.pendingReplies.push_back( std::move( reply));
                      }
                   }
+               };
 
+               template< typename Q, typename M>
+               struct Reply< Q, M, typename std::enable_if< common::queue::is_blocking< Q>::value>::type> : state::Base
+               {
+                  using state::Base::Base;
 
+                  template< typename T>
+                  void operator () ( const T& request, int code)
+                  {
+                     M message;
+                     message.id.queue_id = common::ipc::receive::id();
+                     message.xid = request.xid;
+                     message.state = code;
+
+                     Q queue{ request.id.queue_id, m_state};
+
+                     queue( message);
+                  }
                };
 
 
@@ -438,7 +443,7 @@ namespace casual
                {
 
                   template< typename QP>
-                  void basic_prepare< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  bool basic_prepare< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
                      common::trace::internal::Scope trace{ "transaction::handle::domain::resource::prepare reply"};
 
@@ -476,10 +481,11 @@ namespace casual
 
                      //
                      // else we wait...
+                     return false;
                   }
 
                   template< typename QP>
-                  void basic_commit< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  bool basic_commit< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
                      common::trace::internal::Scope trace{ "transaction::handle::domain::resource::commit reply"};
 
@@ -522,17 +528,17 @@ namespace casual
                      //
                      // else we wait...
 
-
-
+                     return false;
                   }
 
                   template< typename QP>
-                  void basic_rollback< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  bool basic_rollback< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
                      common::trace::internal::Scope trace{ "transaction::handle::domain::resource::rollback reply"};
 
                      //using non_block_writer = typename queue_policy::non_block_writer;
 
+                     return false;
                   }
                } // reply
             } // resource
@@ -558,7 +564,7 @@ namespace casual
                   // Find the transaction
                   //
                   auto found = common::range::find_if(
-                        common::range::make( this->m_state.transactions), find::Transaction{ message.xid});
+                        common::range::make( m_state.transactions), find::Transaction{ message.xid});
 
                   if( ! found.empty())
                   {
@@ -573,7 +579,13 @@ namespace casual
                         //
                         // We found all the stuff, let the real handler handle the message
                         //
-                        m_handler.dispatch( message, transaction, *resource.first);
+                        if( m_handler.dispatch( message, transaction, *resource.first))
+                        {
+                           //
+                           // We remove the transaction from our state
+                           //
+                           m_state.transactions.erase( found.first);
+                        }
                      }
                      else
                      {
@@ -645,7 +657,7 @@ namespace casual
 
 
                template< typename QP>
-               void basic_prepare< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_prepare< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   resource.state = Transaction::Resource::State::cPrepareReplied;
                   resource.result = Transaction::Resource::convert( message.state);
@@ -670,26 +682,29 @@ namespace casual
                   //
                   // Else we wait for more replies...
                   //
-
+                  return false;
                }
 
                template< typename QP>
-               void basic_commit< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_commit< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   //
                   // Instance is ready for more work
                   //
                   //instance::done( m_state, message);
 
+                  return false;
                }
 
                template< typename QP>
-               void basic_rollback< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_rollback< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   //
                   // Instance is ready for more work
                   //
                   //instance::done( m_state, message);
+
+                  return false;
                }
 
 
