@@ -300,253 +300,36 @@ namespace casual
 
 
 
-         namespace domain
-         {
 
-            template< typename QP>
-            void basic_prepare< QP>::dispatch( message_type& message)
-            {
-               common::trace::internal::Scope trace{ "transaction::handle::domain::prepare request"};
-
-               typedef QP queue_policy;
-               using non_block_writer = typename queue_policy::non_block_writer;
-
-               //
-               // Find the transaction
-               //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
-
-               if( ! found.empty() && ! found.first->resources.empty())
-               {
-                  auto& transaction = *found.first;
-                  common::log::internal::transaction << "prepare - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
-
-                  internal::send::resource::Requests<
-                     non_block_writer,
-                     common::message::transaction::resource::domain::prepare::Request> request{ m_state};
-
-                  request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cPrepareRequested, message.flags);
-
-               }
-               else
-               {
-                  //
-                  // We don't have the transaction. This could be for three reasons:
-                  // 1) We had it, but it was already prepared from another domain, and XA
-                  // optimization kicked in ("read only") and the transaction was done
-                  // 2) casual have made some optimizations.
-                  // 3) no resources involved
-                  // Either way, we don't have it, and this domain does not own the transaction
-                  // so we just reply that it has been prepared with "read only"
-                  //
-
-                  common::log::internal::transaction << "XA_RDONLY transaction (" << message.xid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
-
-                  //
-                  // Send reply
-                  //
-                  internal::send::Reply<
-                     non_block_writer,
-                     reply_type> sender{ m_state};
-
-                  sender( message, XA_RDONLY);
-
-               }
-            }
-
-            template< typename QP>
-            void basic_commit< QP>::dispatch( message_type& message)
-            {
-
-               common::trace::internal::Scope trace{ "transaction::handle::domain::commit request"};
-
-               typedef QP queue_policy;
-               using non_block_writer = typename queue_policy::non_block_writer;
-
-               //
-               // Find the transaction
-               //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
-
-               if( ! found.empty())
-               {
-                  auto& transaction = *found.first;
-                  common::log::internal::transaction << "commit - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
-
-                  internal::send::resource::Requests<
-                     non_block_writer,
-                     common::message::transaction::resource::domain::commit::Request> request{ m_state};
-
-                  request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested, message.flags);
-
-               }
-               else
-               {
-
-                  common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
-
-                  //
-                  // Send reply
-                  //
-                  internal::send::Reply<
-                     non_block_writer,
-                     reply_type> sender{ m_state};
-
-                  sender( message, XAER_NOTA);
-               }
-            }
-
-            template< typename QP>
-            void basic_rollback< QP>::dispatch( message_type& message)
-            {
-               common::trace::internal::Scope trace{ "transaction::handle::domain::rollback request"};
-
-               typedef QP queue_policy;
-               using non_block_writer = typename queue_policy::non_block_writer;
-
-               //
-               // Find the transaction
-               //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
-
-               if( ! found.empty())
-               {
-                  auto& transaction = *found.first;
-                  common::log::internal::transaction << "rollback - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
-
-                  internal::send::resource::Requests<
-                     non_block_writer,
-                     common::message::transaction::resource::domain::commit::Request> request{ m_state};
-
-                  request( transaction,
-                        Transaction::Resource::State::cPrepareReplied,
-                        Transaction::Resource::State::cRollbackRequested, message.flags);
-               }
-               else
-               {
-                  common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
-
-                  //
-                  // Send reply
-                  //
-                  internal::send::Reply<
-                     non_block_writer,
-                     reply_type> sender{ m_state};
-
-                  sender( message, XAER_NOTA);
-               }
-            }
-
-            namespace resource
-            {
-               namespace reply
-               {
-
-                  template< typename QP>
-                  bool basic_prepare< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
-                  {
-                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::prepare reply"};
-
-                     resource.result = Transaction::Resource::convert( message.state);
-                     resource.state = Transaction::Resource::State::cPrepareReplied;
-
-
-                     if( common::range::all_of( common::range::make( transaction.resources),
-                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
-                     {
-
-                        //
-                        // All resources has replied, we're done with prepare stage.
-                        //
-                        using reply_type = common::message::transaction::resource::prepare::Reply;
-                        using sender_type = typename queue_policy::block_writer;
-
-
-                        auto result = transaction.results();
-
-                        common::log::internal::transaction << "domain prepared: " << transaction.xid << " - state: " << result << std::endl;
-
-                        //
-                        // This TM does not own the transaction, so we don't need to store
-                        // state.
-                        //
-                        // Send reply
-                        //
-                        internal::send::Reply<
-                           sender_type,
-                           reply_type> sender{ m_state};
-
-                        sender( message, Transaction::Resource::convert( result));
-                     }
-
-                     //
-                     // else we wait...
-                     return false;
-                  }
-
-                  template< typename QP>
-                  bool basic_commit< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
-                  {
-                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::commit reply"};
-
-                     resource.result = Transaction::Resource::convert( message.state);
-                     resource.state = Transaction::Resource::State::cCommitReplied;
-
-
-                     if( common::range::all_of( common::range::make( transaction.resources),
-                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cCommitReplied}))
-                     {
-
-                        //
-                        // All resources has committed, we're done with commit stage.
-                        // We can remove the transaction.
-                        //
-
-
-
-                        using reply_type = common::message::transaction::resource::commit::Reply;
-                        using sender_type = typename queue_policy::block_writer;
-
-
-                        auto result = transaction.results();
-
-                        common::log::internal::transaction << "domain committed: " << transaction.xid << " - state: " << result << std::endl;
-
-                        //
-                        // This TM does not own the transaction, so we don't need to store
-                        // state.
-                        //
-                        // Send reply
-                        //
-                        internal::send::Reply<
-                           sender_type,
-                           reply_type> sender{ m_state};
-
-                        sender( message, Transaction::Resource::convert( result));
-                     }
-
-                     //
-                     // else we wait...
-
-                     return false;
-                  }
-
-                  template< typename QP>
-                  bool basic_rollback< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
-                  {
-                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::rollback reply"};
-
-                     //using non_block_writer = typename queue_policy::non_block_writer;
-
-                     return false;
-                  }
-               } // reply
-            } // resource
-         } // domain
 
 
          namespace resource
          {
+            inline void Involved::dispatch( message_type& message)
+            {
+               auto transcation = common::range::find_if(
+                     common::range::make( m_state.transactions), find::Transaction( message.xid));
+
+               if( ! transcation.empty())
+               {
+                  common::range::copy(
+                     common::range::make( message.resources),
+                     std::back_inserter( transcation.first->resources));
+
+                  common::range::trim( transcation.first->resources, common::range::unique( common::range::sort( common::range::make( transcation.first->resources))));
+               }
+               else
+               {
+                  //
+                  // We assume it's instigated from another domain, and that domain
+                  // own's the transaction
+                  // TODO: keep track of domain-id?
+                  //
+
+                  common::log::error << "resource " << common::range::make( message.resources) << " (process " << message.id << ") claims to be involved in transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: discard" << std::endl;
+               }
+            }
+
             namespace reply
             {
 
@@ -898,6 +681,252 @@ namespace casual
             }
 
          }
+
+
+         namespace domain
+         {
+
+            template< typename QP>
+            void basic_prepare< QP>::dispatch( message_type& message)
+            {
+               common::trace::internal::Scope trace{ "transaction::handle::domain::prepare request"};
+
+               typedef QP queue_policy;
+               using non_block_writer = typename queue_policy::non_block_writer;
+
+               //
+               // Find the transaction
+               //
+               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+
+               if( ! found.empty() && ! found.first->resources.empty())
+               {
+                  auto& transaction = *found.first;
+                  common::log::internal::transaction << "prepare - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
+
+                  internal::send::resource::Requests<
+                     non_block_writer,
+                     common::message::transaction::resource::domain::prepare::Request> request{ m_state};
+
+                  request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cPrepareRequested, message.flags);
+
+               }
+               else
+               {
+                  //
+                  // We don't have the transaction. This could be for three reasons:
+                  // 1) We had it, but it was already prepared from another domain, and XA
+                  // optimization kicked in ("read only") and the transaction was done
+                  // 2) casual have made some optimizations.
+                  // 3) no resources involved
+                  // Either way, we don't have it, and this domain does not own the transaction
+                  // so we just reply that it has been prepared with "read only"
+                  //
+
+                  common::log::internal::transaction << "XA_RDONLY transaction (" << message.xid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
+
+                  //
+                  // Send reply
+                  //
+                  internal::send::Reply<
+                     non_block_writer,
+                     reply_type> sender{ m_state};
+
+                  sender( message, XA_RDONLY);
+
+               }
+            }
+
+            template< typename QP>
+            void basic_commit< QP>::dispatch( message_type& message)
+            {
+
+               common::trace::internal::Scope trace{ "transaction::handle::domain::commit request"};
+
+               typedef QP queue_policy;
+               using non_block_writer = typename queue_policy::non_block_writer;
+
+               //
+               // Find the transaction
+               //
+               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+
+               if( ! found.empty())
+               {
+                  auto& transaction = *found.first;
+                  common::log::internal::transaction << "commit - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
+
+                  internal::send::resource::Requests<
+                     non_block_writer,
+                     common::message::transaction::resource::domain::commit::Request> request{ m_state};
+
+                  request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested, message.flags);
+
+               }
+               else
+               {
+
+                  common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
+
+                  //
+                  // Send reply
+                  //
+                  internal::send::Reply<
+                     non_block_writer,
+                     reply_type> sender{ m_state};
+
+                  sender( message, XAER_NOTA);
+               }
+            }
+
+            template< typename QP>
+            void basic_rollback< QP>::dispatch( message_type& message)
+            {
+               common::trace::internal::Scope trace{ "transaction::handle::domain::rollback request"};
+
+               typedef QP queue_policy;
+               using non_block_writer = typename queue_policy::non_block_writer;
+
+               //
+               // Find the transaction
+               //
+               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+
+               if( ! found.empty())
+               {
+                  auto& transaction = *found.first;
+                  common::log::internal::transaction << "rollback - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
+
+                  internal::send::resource::Requests<
+                     non_block_writer,
+                     common::message::transaction::resource::domain::commit::Request> request{ m_state};
+
+                  request( transaction,
+                        Transaction::Resource::State::cPrepareReplied,
+                        Transaction::Resource::State::cRollbackRequested, message.flags);
+               }
+               else
+               {
+                  common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
+
+                  //
+                  // Send reply
+                  //
+                  internal::send::Reply<
+                     non_block_writer,
+                     reply_type> sender{ m_state};
+
+                  sender( message, XAER_NOTA);
+               }
+            }
+
+            namespace resource
+            {
+               namespace reply
+               {
+
+                  template< typename QP>
+                  bool basic_prepare< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  {
+                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::prepare reply"};
+
+                     resource.result = Transaction::Resource::convert( message.state);
+                     resource.state = Transaction::Resource::State::cPrepareReplied;
+
+
+                     if( common::range::all_of( common::range::make( transaction.resources),
+                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
+                     {
+
+                        //
+                        // All resources has replied, we're done with prepare stage.
+                        //
+                        using reply_type = common::message::transaction::resource::prepare::Reply;
+                        using sender_type = typename queue_policy::block_writer;
+
+
+                        auto result = transaction.results();
+
+                        common::log::internal::transaction << "domain prepared: " << transaction.xid << " - state: " << result << std::endl;
+
+                        //
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+                        // Send reply
+                        //
+                        internal::send::Reply<
+                           sender_type,
+                           reply_type> sender{ m_state};
+
+                        sender( message, Transaction::Resource::convert( result));
+                     }
+
+                     //
+                     // else we wait...
+                     return false;
+                  }
+
+                  template< typename QP>
+                  bool basic_commit< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  {
+                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::commit reply"};
+
+                     resource.result = Transaction::Resource::convert( message.state);
+                     resource.state = Transaction::Resource::State::cCommitReplied;
+
+
+                     if( common::range::all_of( common::range::make( transaction.resources),
+                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cCommitReplied}))
+                     {
+
+                        //
+                        // All resources has committed, we're done with commit stage.
+                        // We can remove the transaction.
+                        //
+
+
+
+                        using reply_type = common::message::transaction::resource::commit::Reply;
+                        using sender_type = typename queue_policy::block_writer;
+
+
+                        auto result = transaction.results();
+
+                        common::log::internal::transaction << "domain committed: " << transaction.xid << " - state: " << result << std::endl;
+
+                        //
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+                        // Send reply
+                        //
+                        internal::send::Reply<
+                           sender_type,
+                           reply_type> sender{ m_state};
+
+                        sender( message, Transaction::Resource::convert( result));
+                     }
+
+                     //
+                     // else we wait...
+
+                     return false;
+                  }
+
+                  template< typename QP>
+                  bool basic_rollback< QP>::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  {
+                     common::trace::internal::Scope trace{ "transaction::handle::domain::resource::rollback reply"};
+
+                     //using non_block_writer = typename queue_policy::non_block_writer;
+
+                     return false;
+                  }
+               } // reply
+            } // resource
+         } // domain
+
 
       } // handle
    } // transaction
