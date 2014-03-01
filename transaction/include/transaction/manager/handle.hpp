@@ -307,11 +307,15 @@ namespace casual
          {
             inline void Involved::dispatch( message_type& message)
             {
+               common::trace::internal::Scope trace{ "transaction::handle::resource::Involved"};
+
                auto transcation = common::range::find_if(
                      common::range::make( m_state.transactions), find::Transaction( message.xid));
 
                if( ! transcation.empty())
                {
+                  common::log::internal::transaction << "involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << std::endl;
+
                   common::range::copy(
                      common::range::make( message.resources),
                      std::back_inserter( transcation.first->resources));
@@ -322,11 +326,16 @@ namespace casual
                {
                   //
                   // We assume it's instigated from another domain, and that domain
-                  // own's the transaction
+                  // own's the transaction.
                   // TODO: keep track of domain-id?
                   //
+                  // We indicate that this TM is owner of the transaction, for the time being...
+                  //
+                  // Note: We don't keep this transaction persistent.
+                  //
+                  m_state.transactions.emplace_back( common::message::server::Id::current(), message.xid);
 
-                  common::log::error << "resource " << common::range::make( message.resources) << " (process " << message.id << ") claims to be involved in transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: discard" << std::endl;
+                  common::log::internal::transaction << "inter-domain involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << std::endl;
                }
             }
 
@@ -442,6 +451,8 @@ namespace casual
                template< typename QP>
                bool basic_prepare< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
+                  common::trace::internal::Scope trace{ "transaction::handle::resource::prepare reply"};
+
                   resource.state = Transaction::Resource::State::cPrepareReplied;
                   resource.result = Transaction::Resource::convert( message.state);
 
@@ -452,15 +463,78 @@ namespace casual
                   //
                   if( state == Transaction::Resource::State::cPrepareReplied)
                   {
+
+                     using non_block_writer = typename queue_policy::non_block_writer;
+                     using reply_type = common::message::transaction::prepare::Reply;
+
                      //
-                     // Normalize all the resources reply-state
+                     // Normalize all the resources return-state
                      //
+                     auto result = transaction.results();
+
+                     switch( result)
+                     {
+                        case Transaction::Resource::Result::cXA_RDONLY:
+                        {
+                           common::log::internal::transaction << "prepare reply - xid: " << transaction.xid << " read only\n";
+
+                           //
+                           // Read-only optimazation. We can send the reply directly and
+                           // discard the transaction
+                           //
+                           m_state.log.remove( transaction.xid);
+
+                           //
+                           // Send reply
+                           //
+                           internal::send::Reply<
+                              non_block_writer,
+                              reply_type> sender{ m_state};
+
+                           sender( message, XA_RDONLY);
+
+                           //
+                           // Indicate that wrapper should remove the transaction from state
+                           //
+                           return true;
+                        }
+                        case Transaction::Resource::Result::cXA_OK:
+                        {
+                           common::log::internal::transaction << "prepare reply - xid: " << transaction.xid << " read only\n";
+
+                           //
+                           // Prepare has gone ok. Log state
+                           //
+                           m_state.log.prepareCommit( transaction.xid);
+
+                           //
+                           // prepare send reply. Will be sent after persistent write to file
+                           //
+                           internal::send::delayed::reply< reply_type>( m_state, message, XA_OK);
+
+                           //
+                           // All XA_OK is to be committed.
+                           //
+                           auto resources = common::range::partition(
+                              common::range::make( transaction.resources),
+                              Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK});
 
 
 
 
 
-                     m_state.log.prepareCommit( transaction.xid);
+
+                           break;
+                        }
+                        default:
+                        {
+                           //
+                           // Something has gone wrong.
+                           //
+
+                           break;
+                        }
+                     }
                   }
                   //
                   // Else we wait for more replies...
@@ -471,10 +545,8 @@ namespace casual
                template< typename QP>
                bool basic_commit< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
-                  //
-                  // Instance is ready for more work
-                  //
-                  //instance::done( m_state, message);
+                  common::trace::internal::Scope trace{ "transaction::handle::resource::commit reply"};
+
 
                   return false;
                }
@@ -482,10 +554,8 @@ namespace casual
                template< typename QP>
                bool basic_rollback< QP>::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
-                  //
-                  // Instance is ready for more work
-                  //
-                  //instance::done( m_state, message);
+                  common::trace::internal::Scope trace{ "transaction::handle::resource::rollback reply"};
+
 
                   return false;
                }
@@ -512,16 +582,22 @@ namespace casual
 
             if( found.empty())
             {
-               auto& transaction = m_state.transactions.back();
 
-               m_state.log.begin( message);
+               //
+               // Add transaction
+               //
+               {
+                  m_state.log.begin( message);
+
+                  m_state.transactions.emplace_back( message.id, message.xid);
+               }
+
+
 
                //
                // prepare send reply. Will be sent after persistent write to file
                //
                internal::send::delayed::reply< reply_type>( m_state, message, XA_OK);
-
-               transaction.task = Transaction::Task::waitForCommitOrRollback;
             }
             else
             {
@@ -559,13 +635,6 @@ namespace casual
                //
                //if( ! internal::check::owner< reply_type>( this->m_state, transaction, message))
                //   return;
-
-
-
-               if( transaction.task != Transaction::Task::waitForCommitOrRollback)
-               {
-                  // TODO
-               }
 
                switch( transaction.resources.size())
                {
@@ -653,11 +722,6 @@ namespace casual
             if( ! found.empty())
             {
                auto& transaction = *found.first;
-
-               if( transaction.task != Transaction::Task::waitForCommitOrRollback)
-               {
-
-               }
 
                internal::send::resource::Requests<
                   non_block_writer,

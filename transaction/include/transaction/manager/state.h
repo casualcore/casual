@@ -28,6 +28,7 @@ namespace casual
 
    namespace transaction
    {
+
       namespace state
       {
          namespace resource
@@ -245,6 +246,21 @@ namespace casual
                };
             };
 
+            struct result
+            {
+               struct Filter
+               {
+                  Filter( Result result) : m_result( result) {}
+
+                  bool operator () ( const Resource& value) const
+                  {
+                     return value.result == m_result;
+                  }
+               private:
+                  Result m_result;
+               };
+            };
+
             struct id
             {
                struct Filter
@@ -261,17 +277,6 @@ namespace casual
             };
          };
 
-         enum class Task
-         {
-            invalid,
-            logAndReplyBegin,
-            waitForCommitOrRollback,
-            waitForResourcesPrepare,
-            waitForResourcesCommit,
-            waitForResourcesRollback,
-
-         };
-
 
          typedef common::message::server::Id id_type;
 
@@ -280,11 +285,12 @@ namespace casual
          Transaction( Transaction&&) = default;
          Transaction& operator = ( Transaction&&) = default;
 
+         Transaction( id_type owner, common::transaction::ID xid) : owner( owner), xid( xid) {}
+
 
          id_type owner;
          common::transaction::ID xid;
          std::vector< Resource> resources;
-         Task task = Task::invalid;
 
          Resource::State state() const
          {

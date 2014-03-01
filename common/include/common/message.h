@@ -48,6 +48,7 @@ namespace casual
             cTransactionBeginRequest,
             cTransactionBeginReply,
             cTransactionCommitRequest,
+            cTransactionPrepareReply,
             cTransactionCommitReply,
             cTransactionRollbackRequest,
             cTransactionRollbackReply,
@@ -160,6 +161,7 @@ namespace casual
                typedef common::platform::pid_type pid_type;
 
 
+
                Id() = default;
                Id( queue_id_type id, pid_type pid) : queue_id( id), pid( pid) {}
                Id( Id&&) = default;
@@ -167,6 +169,9 @@ namespace casual
 
                Id( const Id&) = default;
                Id& operator = ( const Id&) = default;
+
+
+               inline static Id current() { return Id{ ipc::receive::id(), process::id()};}
 
 
                queue_id_type queue_id = 0;
@@ -613,6 +618,11 @@ namespace casual
             {
                typedef basic_request< cTransactionCommitRequest> Request;
                typedef basic_reply< cTransactionCommitReply> Reply;
+            } // commit
+
+            namespace prepare
+            {
+               typedef basic_reply< cTransactionPrepareReply> Reply;
             } // commit
 
             namespace rollback
