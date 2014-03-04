@@ -18,8 +18,16 @@ SetLibraryPaths( ["../xatmi/bin",
 	"$(IBM_DB_LIB)"
 	])
 
-Compile( "source/template_server.cpp", "obj/template_server.o")
 
+
+Compile( "source/sf_testproxy.cpp", "obj/sf_testproxy.o")
+
+LinkArchive( "sftestproxy", ["obj/sf_testproxy.o"])
+
+
+
+
+Compile( "source/template_server.cpp", "obj/template_server.o")
 
 LinkAtmiServerResource( "test",
 	[ "obj/template_server.o"],

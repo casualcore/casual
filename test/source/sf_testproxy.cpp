@@ -8,6 +8,8 @@
 
 #include "sf_testproxy.h"
 
+#include "sf/archive.h"
+
 
 //## includes protected section begin [.10]
 #include <string>
@@ -33,16 +35,26 @@ namespace test
          //## declarations protected section begin [.100]
          //## declarations protected section end   [.100]
 
-         void Casual_sf_test1::send( const std::string)
+         Casual_sf_test1::Casual_sf_test1() : Casual_sf_test1( 0) {}
+
+         Casual_sf_test1::Casual_sf_test1( long flags) : casual::sf::proxy::Async( "casual_sf_test1", flags)
+         {
+
+         }
+
+         void Casual_sf_test1::send( const std::string& value)
          {
             //## protected section begin [666.100]
             //## protected section end   [666.100]
 
-            // some more code...
+            auto&& helper = interface();
+
+            helper << CASUAL_MAKE_NVP( value);
 
             //## protected section begin [666.120]
             //## protected section end   [666.120]
 
+            helper.send();
          }
 
 
@@ -51,11 +63,18 @@ namespace test
             //## protected section begin [666.150]
             //## protected section end   [666.120]
 
-            // some more code...
+            auto&& helper = interface();
+
+            std::vector< std::string> serviceReturnValue;
+
+            helper >> CASUAL_MAKE_NVP( serviceReturnValue);
 
             //## protected section begin [666.170]
             //## protected section end   [666.170]
-            return {};
+
+            helper.finalize();
+
+            return serviceReturnValue;
          }
 
 
@@ -66,18 +85,36 @@ namespace test
 
       namespace sync
       {
+
+         Casual_sf_test1::Casual_sf_test1() : Casual_sf_test1( 0) {}
+
+         Casual_sf_test1::Casual_sf_test1( long flags) : casual::sf::proxy::Sync( "casual_sf_test1", flags)
+         {
+
+         }
+
+
          std::vector< std::string> Casual_sf_test1::call( const std::string& value)
          {
             //## protected section begin [666.200]
             //## protected section end   [666.200]
 
-            // some more code
+            auto&& helper = interface();
 
+            helper << CASUAL_MAKE_NVP( value);
+
+            helper.call();
+
+            std::vector< std::string> serviceReturnValue;
+
+            helper >> CASUAL_MAKE_NVP( serviceReturnValue);
 
             //## protected section begin [666.280]
             //## protected section end   [666.280]
 
-            return {};
+            helper.finalize();
+
+            return serviceReturnValue;
          }
 
 
@@ -92,11 +129,7 @@ namespace test
          return sync::Casual_sf_test1().call( value);
       }
 
-
-
-   };
-
-
+   } // proxyName
 
 } // test
 

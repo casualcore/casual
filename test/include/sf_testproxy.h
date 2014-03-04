@@ -3,6 +3,9 @@
 #ifndef SF_TESTPROXY_H_
 #define SF_TESTPROXY_H_
 
+
+#include <sf/proxy.h>
+
 //## includes protected section begin [.10]
 #include <string>
 #include <vector>
@@ -37,11 +40,12 @@ namespace test
          // service name med inledande versal
          // comments genereras här.
          // Jag antar att Casual_sf_test1 har id 666 i detta exempel
-         class Casual_sf_test1 : public casual::sf::proxy::async
+         class Casual_sf_test1 : public casual::sf::proxy::Async
          {
          public:
 
-            using casual::sf::proxy::async::async;
+            Casual_sf_test1();
+            Casual_sf_test1( long flags);
 
             //## declarations protected section begin [666.100]
             //## declarations protected section end   [666.100]
@@ -49,7 +53,7 @@ namespace test
 
             // (in, inout)
             //  vi skulle kunna splitta comments om arguemt baserat på in, out osv
-            void send( const std::string);
+            void send( const std::string& value);
 
             // return, (out, inout)
             //  vi skulle kunna splitta comments om arguemt baserat på in, out osv
@@ -68,11 +72,12 @@ namespace test
          // service name med inledande versal
          // comments genereras här.
          // Jag antar att Casual_sf_test1 har id 666 i detta exempel
-         class Casual_sf_test1 : public casual::sf::proxy::sync
+         class Casual_sf_test1 : public casual::sf::proxy::Sync
          {
          public:
 
-            using casual::sf::proxy::sync::sync;
+            Casual_sf_test1();
+            Casual_sf_test1( long flags);
 
             //## declarations protected section begin [666.200]
             //## declarations protected section end   [666.200]
