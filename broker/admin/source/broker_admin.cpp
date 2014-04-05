@@ -77,8 +77,8 @@ namespace casual
 
       void listServers()
       {
-         sf::xatmi::service::binary::Sync<> service( "_broker_listServers");
-         auto reply = service.call();
+         sf::xatmi::service::binary::Sync service( "_broker_listServers");
+         auto reply = service();
 
          std::vector< admin::ServerVO> serviceReply;
 
@@ -90,8 +90,8 @@ namespace casual
 
       void listServices()
       {
-         sf::xatmi::service::binary::Sync<> service( "_broker_listServices");
-         auto reply = service.call();
+         sf::xatmi::service::binary::Sync service( "_broker_listServices");
+         auto reply = service();
 
          std::vector< admin::ServiceVO> serviceReply;
 
@@ -130,11 +130,11 @@ namespace casual
             instance.alias = values[ 0];
             instance.instances = std::stoul( values[ 1]);
 
-            sf::xatmi::service::binary::Sync<> service( "_broker_updateInstances");
+            sf::xatmi::service::binary::Sync service( "_broker_updateInstances");
 
             service << CASUAL_MAKE_NVP( std::vector< admin::update::InstancesVO>{ instance});
 
-            service.call();
+            service();
 
          }
       }

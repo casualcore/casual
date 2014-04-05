@@ -33,8 +33,8 @@ void casual_test1( TPSVCINFO *serviceContext)
 {
 
 
-   char* buffer = tpalloc( "STRING", 0, 500);
-   buffer = tprealloc( buffer, 3000);
+   //char* buffer = tpalloc( "STRING", 0, 500);
+   //buffer = tprealloc( buffer, 3000);
 
    {
       casual::common::log::debug << "transb->name: " << serviceContext->name << std::endl;
@@ -43,13 +43,13 @@ void casual_test1( TPSVCINFO *serviceContext)
 
 
 
-      std::string test = "bla bla bla";
-      std::copy( test.begin(), test.end(), buffer);
-      buffer[ test.size()] = '\0';
+//      std::string test = "bla bla bla";
+//      std::copy( test.begin(), test.end(), buffer);
+//      buffer[ test.size()] = '\0';
    }
 
 
-	tpreturn( TPSUCCESS, 0, buffer, 3000, 0);
+	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 
 
 }

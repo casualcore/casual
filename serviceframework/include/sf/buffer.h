@@ -36,8 +36,8 @@ namespace casual
       {
          struct Type
          {
-            Type( const std::string& type_name, const std::string& subtype_name)
-             : name( type_name), subname( subtype_name) {}
+            Type( std::string name, std::string subname)
+             : name( std::move( name)), subname( std::move( subname)) {}
 
             Type() = default;
             Type( Type&&) = default;
@@ -58,18 +58,98 @@ namespace casual
 
          Type type( platform::raw_buffer_type buffer);
 
+
          //!
          //! Holds the buffer and its size together. Has no resource responsibility
          //!
          struct Raw
          {
-            Raw( platform::raw_buffer_type p_buffer, std::size_t p_size);
+            typedef platform::raw_buffer_type iterator;
+            typedef const iterator const_iterator;
+
+            Raw( iterator buffer, std::size_t size);
+
+            iterator begin() noexcept { return buffer;}
+            iterator end() noexcept { return buffer + size;}
+            const_iterator begin() const noexcept { return buffer;}
+            const_iterator end() const noexcept { return buffer + size;}
+
 
             platform::raw_buffer_type buffer;
             long size;
          };
 
-         inline Raw raw( TPSVCINFO* serviceInfo)
+
+         struct Buffer
+         {
+            using buffer_type =  platform::raw_buffer_type;
+            using iterator = buffer_type;
+            using const_iterator = const iterator;
+            using size_type = std::size_t;
+
+            struct Raw
+            {
+               Raw( buffer_type buffer, size_type size) : buffer{ buffer}, size{ size} {}
+
+               buffer_type buffer;
+               size_type size;
+            };
+
+
+            Buffer( const Type& type, size_type size);
+            Buffer( const Raw& buffer);
+            Buffer( Buffer&&);
+            ~Buffer();
+
+            buffer_type data() noexcept;
+            const buffer_type data() const noexcept;
+
+            size_type size() const noexcept;
+
+            Raw release() noexcept;
+
+
+            void resize( size_type size);
+
+
+            iterator begin() noexcept { return m_buffer.get();}
+            iterator end() noexcept { return m_buffer.get() + m_size;}
+            const_iterator begin() const noexcept { return m_buffer.get();}
+            const_iterator end() const noexcept { return m_buffer.get() + m_size;}
+
+            void swap( Buffer& buffer) noexcept;
+
+
+         private:
+            struct deleter_type
+            {
+               void operator () ( buffer_type buffer) const;
+            };
+
+            using holder_type = std::unique_ptr< typename std::remove_pointer< buffer_type>::type, deleter_type>;
+
+            holder_type m_buffer;
+            size_type m_size;
+         };
+
+         Type type( const Buffer& source);
+
+         Buffer copy( const Buffer& source);
+
+
+
+
+
+
+
+
+
+         Raw allocate( const Type& type, std::size_t size);
+
+         Raw copy( const Raw& buffer);
+
+
+         inline Raw getRaw( TPSVCINFO* serviceInfo)
          {
             return Raw( serviceInfo->data, serviceInfo->len);
          }
@@ -103,6 +183,14 @@ namespace casual
 
             Type type() const;
 
+            void swap( Base& other);
+
+            //!
+            //! clears the buffer.
+            //! @note No deallocation is done.
+            //!
+            void clear();
+
          private:
 
             struct xatmi_deleter
@@ -111,6 +199,7 @@ namespace casual
             };
 
             virtual void doReset( Raw buffer);
+            virtual void doClear() = 0;
 
          protected:
 
@@ -163,7 +252,7 @@ namespace casual
                Raw raw = Base::raw();
                if( m_read_offset + static_cast< long>( sizeof( T)) > raw.size)
                {
-                  throw exception::NotReallySureWhatToCallThisExcepion();
+                  throw exception::NotReallySureWhatToCallThisExcepion( "Attempt to read out of bounds");
                }
                memcpy( &value, raw.buffer + m_read_offset, sizeof( T));
                m_read_offset += sizeof( T);
@@ -204,10 +293,16 @@ namespace casual
                Raw raw = Base::raw();
                if( m_read_offset + static_cast< long>( size) > raw.size)
                {
-                  throw exception::NotReallySureWhatToCallThisExcepion();
+                  throw exception::NotReallySureWhatToCallThisExcepion( "Attempt to read out of bounds");
                }
                value.assign( raw.buffer + m_read_offset, raw.buffer + m_read_offset + size);
                m_read_offset += size;
+            }
+
+            void doClear()
+            {
+               m_write_offset = 0;
+               m_read_offset = 0;
             }
 
 
@@ -227,6 +322,9 @@ namespace casual
 
             std::string str() const;
             void str( const std::string& new_string);
+
+         private:
+            void doClear() {}
 
          };
 

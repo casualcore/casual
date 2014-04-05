@@ -27,9 +27,14 @@ namespace casual
 
          const std::string& tperrnoStringRepresentation( int error);
 
-      }
-   }
-}
+
+         namespace xatmi
+         {
+            std::string error( int error);
+         } // xatmi
+      } // error
+   } // common
+} // casual
 
 
 

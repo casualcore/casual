@@ -32,17 +32,18 @@ namespace test
 
       namespace async
       {
+         /*
          //## declarations protected section begin [.100]
          //## declarations protected section end   [.100]
 
-         Casual_sf_test1::Casual_sf_test1() : Casual_sf_test1( 0) {}
+         SomeService1::SomeService1() : SomeService1( 0) {}
 
-         Casual_sf_test1::Casual_sf_test1( long flags) : casual::sf::proxy::Async( "casual_sf_test1", flags)
+         SomeService1::SomeService1( long flags) : casual::sf::proxy::Async( "casual_sf_test1", flags)
          {
 
          }
 
-         void Casual_sf_test1::send( const std::string& value)
+         void SomeService1::send( const std::string& value)
          {
             //## protected section begin [666.100]
             //## protected section end   [666.100]
@@ -58,7 +59,7 @@ namespace test
          }
 
 
-         std::vector< std::string> Casual_sf_test1::receive()
+         std::vector< std::string> SomeService1::receive()
          {
             //## protected section begin [666.150]
             //## protected section end   [666.120]
@@ -73,6 +74,39 @@ namespace test
             //## protected section end   [666.170]
 
             helper.finalize();
+
+            return serviceReturnValue;
+         }
+
+         */
+
+
+
+         SomeService2::SomeService2() : SomeService2( 0) {}
+         SomeService2::SomeService2( long flags) : m_send{ "casual_sf_test2", flags} {}
+
+
+
+         SomeService2::Receive SomeService2::operator() ( const std::string& value)
+         {
+            m_send << CASUAL_MAKE_NVP( value);
+
+            return Receive{ m_send()};
+         }
+
+
+         SomeService2::Receive::Receive( casual::sf::proxy::async::Receive&& receive)
+            : m_receive{ std::move( receive)} {}
+
+
+
+         std::vector< std::string> SomeService2::Receive::operator() ()
+         {
+            auto result = m_receive();
+
+            std::vector< std::string> serviceReturnValue;
+
+            result >> CASUAL_MAKE_NVP( serviceReturnValue);
 
             return serviceReturnValue;
          }

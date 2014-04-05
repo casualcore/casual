@@ -138,8 +138,8 @@ namespace casual
          }
 
 
-         template< typename Iter1, typename Iter2>
-         void copy( Range< Iter1> range, Iter2 output)
+         template< typename R, typename Iter2>
+         void copy( R&& range, Iter2 output)
          {
             std::copy( std::begin( range), std::end( range), output);
          }

@@ -388,7 +388,7 @@ namespace casual
                      throw common::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
                   }
 
-                  send::Queue::id_type id;
+                  send::Queue::id_type id{ 0};
                   file >> id;
 
                   return send::Queue( id);

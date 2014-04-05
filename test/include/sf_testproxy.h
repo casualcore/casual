@@ -37,15 +37,16 @@ namespace test
          //## declarations protected section end   [.100]
 
 
+         /*
          // service name med inledande versal
          // comments genereras här.
          // Jag antar att Casual_sf_test1 har id 666 i detta exempel
-         class Casual_sf_test1 : public casual::sf::proxy::Async
+         class SomeService1 : public casual::sf::proxy::Async
          {
          public:
 
-            Casual_sf_test1();
-            Casual_sf_test1( long flags);
+            SomeService1();
+            SomeService1( long flags);
 
             //## declarations protected section begin [666.100]
             //## declarations protected section end   [666.100]
@@ -59,6 +60,43 @@ namespace test
             //  vi skulle kunna splitta comments om arguemt baserat på in, out osv
             std::vector< std::string> receive();
          };
+         */
+
+
+         //
+         // Another design
+         //
+         class SomeService2
+         {
+         public:
+
+            SomeService2();
+            SomeService2( long flags);
+
+            //## declarations protected section begin [666.100]
+            //## declarations protected section end   [666.100]
+
+            class Receive
+            {
+            public:
+               typedef std::vector< std::string> result_type;
+
+               result_type operator() ();
+
+            //private:
+
+               Receive( casual::sf::proxy::async::Receive&& receive);
+
+               casual::sf::proxy::async::Receive m_receive;
+            };
+
+
+            Receive operator() ( const std::string& value);
+
+         private:
+            casual::sf::proxy::async::Send m_send;
+         };
+
 
          // fler services...
 
@@ -105,7 +143,7 @@ namespace test
 
       //## declarations protected section begin [.80]
       //## declarations protected section end   [.80]
-   };
+   }
 
 
 

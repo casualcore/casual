@@ -88,7 +88,7 @@ namespace casual
                T operator () ( const std::string& value) const
                {
                   std::istringstream converter( value);
-                  T result;
+                  T result{};
                   converter >> result;
                   return result;
                }

@@ -66,11 +66,11 @@ namespace casual
             static Context& instance();
 
 
-
-
             int asyncCall( const std::string& service, char* idata, long ilen, long flags);
 
             int getReply( int* idPtr, char** odata, long& olen, long flags);
+
+            int canccel( int cd);
 
             void clean();
 

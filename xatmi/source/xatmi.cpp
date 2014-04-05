@@ -181,6 +181,20 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
    }
 }
 
+int tpcancel( int id)
+{
+   try
+   {
+      return casual::common::calling::Context::instance().canccel( id);
+   }
+   catch( ...)
+   {
+      tperrno = casual::common::error::handler();
+      return -1;
+   }
+}
+
+
 int tpadvertise( const char* const svcname, void (*func)( TPSVCINFO *))
 {
    try

@@ -373,8 +373,6 @@ namespace casual
             common::Trace trace( "calling::Context::getReply");
             common::log::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
-
-
             //
             // TODO: validate input...
 
@@ -462,6 +460,12 @@ namespace casual
             local::PendingTimeout::instance().check( *idPtr);
 
 
+            return 0;
+         }
+
+         int Context::canccel( int cd)
+         {
+            // TODO:
             return 0;
          }
 

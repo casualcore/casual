@@ -129,8 +129,16 @@ namespace casual
                return noEntryFound;
             }
          }
+
+         namespace xatmi
+         {
+            std::string error( int error)
+            {
+               return tperrnoStringRepresentation( error);
+            }
+         } // xatmi
       } // error
-	} // utility
+	} // common
 } // casual
 
 

@@ -31,7 +31,7 @@ namespace casual
             public:
                Implementation();
                Implementation( std::ostream& out);
-
+               Implementation( Implementation&&) = default;
 
 
                ~Implementation();

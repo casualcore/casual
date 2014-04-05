@@ -8,6 +8,8 @@
 #include "sf/xatmi_call.h"
 #include "sf/exception.h"
 
+#include "common/error.h"
+
 
 #include "xatmi.h"
 
@@ -36,7 +38,7 @@ namespace casual
 
                if( tpcall( service.data(), in.buffer, in.size, &out.buffer, &out.size, flags) == -1)
                {
-                  throw exception::NotReallySureWhatToCallThisExcepion();
+                  throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
                }
 
                output.reset( out);
@@ -50,7 +52,7 @@ namespace casual
 
                if( callDescriptor == -1)
                {
-                  throw exception::NotReallySureWhatToCallThisExcepion();
+                  throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
                }
                return callDescriptor;
             }
@@ -68,10 +70,16 @@ namespace casual
                      case TPEBLOCK:
                         return false;
                      default:
-                        throw exception::NotReallySureWhatToCallThisExcepion();
+                        throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
                   }
                }
                return true;
+            }
+
+            void cancel( call_descriptor_type cd)
+            {
+               tpcancel( cd);
+
             }
 
          } // service

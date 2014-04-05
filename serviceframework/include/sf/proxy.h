@@ -12,6 +12,8 @@
 #include <memory>
 #include <vector>
 
+#include "sf/xatmi_call.h"
+
 namespace casual
 {
    namespace sf
@@ -66,6 +68,7 @@ namespace casual
             };
          } // IO
 
+         /*
          class Async
          {
          public:
@@ -98,13 +101,98 @@ namespace casual
                return *this;
             }
 
+
+            class base_impl;
+
+            template< typename I>
+            class basic_impl;
+
          private:
             const IO::Input& input() const;
             const IO::Output& output() const;
 
-            class Implementation;
-            std::unique_ptr< Implementation> m_implementation;
+            std::unique_ptr< base_impl> m_implementation;
          };
+         */
+
+         namespace async
+         {
+
+            class Result
+            {
+            public:
+
+               ~Result();
+               Result( Result&&);
+
+               template< typename T>
+               const Result& operator >> ( T&& value) const
+               {
+                  output() >> std::forward< T>( value);
+                  return *this;
+               }
+
+               class impl_base;
+
+            private:
+
+               friend class Receive;
+               Result( std::unique_ptr< impl_base>&& implementation);
+
+
+               const IO::Output& output() const;
+
+               std::unique_ptr< impl_base> m_implementation;
+
+            };
+
+            class Receive
+            {
+            public:
+
+               ~Receive();
+               Receive( Receive&&);
+
+               Result operator()();
+
+               class impl_base;
+
+            private:
+
+               friend class Send;
+               Receive( std::unique_ptr< impl_base>&& implementation);
+
+               std::unique_ptr< impl_base> m_implementation;
+            };
+
+            class Send
+            {
+            public:
+               Send( std::string service);
+               Send( std::string service, long flags);
+
+               ~Send();
+               Send( Send&&);
+
+
+               template< typename T>
+               const Send& operator << ( T&& value) const
+               {
+                  input() << std::forward< T>( value);
+                  return *this;
+               }
+
+               Receive operator() ( );
+
+               class impl_base;
+            private:
+
+               const IO::Input& input() const;
+
+
+               std::unique_ptr< impl_base> m_implementation;
+            };
+         } // async
 
 
          class Sync
@@ -115,8 +203,8 @@ namespace casual
             Sync( const std::string& service, long flags);
             ~Sync();
 
-            Sync( const Async&) = delete;
-            Sync& operator = ( const Async&) = delete;
+            Sync( const Sync&) = delete;
+            Sync& operator = ( const Sync&) = delete;
 
             Sync& interface();
 

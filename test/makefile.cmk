@@ -91,8 +91,14 @@ LinkExecutable( "test_client",
 Compile( "source/test_multicall.cpp", "obj/test_multicall.o")
 
 LinkExecutable( "test_multicall_client",
-	["obj/test_multicall.o"], ["casual-common", "casual-xatmi"])
+	["obj/test_multicall.o"], ["casual-common", "casual-xatmi", "casual-sf"])
 	
+
+Compile( "source/test_proxycall.cpp", "obj/test_proxycall.o")
+
+LinkExecutable( "test_proxycall_client",
+	["obj/test_proxycall.o"], 
+	["casual-sf", "sftestproxy", "casual-xatmi"])
 	
 	
 #

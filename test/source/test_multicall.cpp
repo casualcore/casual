@@ -17,6 +17,8 @@
 
 #include "common/arguments.h"
 
+#include "sf/xatmi_call.h"
+
 void help()
 {
    std::cerr << "usage: \n\t" << "test_multicall_client " << " --service --number --argument" << std::endl;
@@ -49,28 +51,27 @@ int main( int argc, char** argv)
       return 10;
    }
 
+   using Async = casual::sf::xatmi::service::binary::Async;
+   Async caller{ service};
 
-   char* buffer = tpalloc( "X_OCTET", "binary", argument.size() + 1);
-
-   std::copy( argument.begin(), argument.end(), buffer);
-   buffer[ argument.size()] = '\0';
-
-   std::vector< int> callDescriptors;
+   std::vector< Async::receive_type> receivers;
 
    for( long index = 0; index < calls; ++index )
    {
-      const int cd = tpacall( service.c_str(), buffer, 0, 0);
-      if( cd != -1)
-      {
-         callDescriptors.push_back( cd);
-      }
-      else
-      {
-         std::cerr << "tpacall returned -1" << std::endl;
-      }
+      receivers.push_back( caller());
    }
 
 
+   for( auto&& recive : receivers)
+   {
+      auto result = recive();
+
+
+   }
+
+
+
+   /*
 
    for( auto cd : callDescriptors)
    {
@@ -86,6 +87,8 @@ int main( int argc, char** argv)
 
    }
 
+
    tpfree( buffer);
 
+   */
 }

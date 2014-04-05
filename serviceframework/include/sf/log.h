@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef LOG_H_
-#define LOG_H_
+#ifndef SF_LOG_H_
+#define SF_LOG_H_
 
 #include "common/log.h"
 
@@ -51,4 +51,4 @@ namespace casual
 
 } // casual
 
-#endif // LOG_H_
+#endif // SF_LOG_H_

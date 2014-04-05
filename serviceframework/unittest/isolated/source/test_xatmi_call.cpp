@@ -20,8 +20,8 @@ namespace casual
       {
          namespace mockup
          {
-            namespace
-            {
+            //namespace
+            //{
                struct xatmi_call_mirror
                {
                   void operator() ( const std::string& service, buffer::Base& input, buffer::Base& output, long flags) const
@@ -34,40 +34,58 @@ namespace casual
                {
                   service::call_descriptor_type operator() ( const std::string& service, buffer::Base& input, long flags)
                   {
-                     m_inputBuffer = &input;
-                     return 10;
+                     static int cd = 10;
+
+                     m_holder.emplace( ++cd, buffer::copy( input.raw()));
+
+                     return cd;
                   }
 
                   bool operator() ( service::call_descriptor_type& cd, buffer::Base& output, long flags)
                   {
-                     if( cd == 10)
+                     auto found = m_holder.find( cd);
+
+                     if( found != std::end( m_holder))
                      {
-                        output.reset( m_inputBuffer->release());
+                        output.reset( found->second);
+                        m_holder.erase( found);
                         return true;
                      }
+
                      return false;
                   }
 
+                  void cancel( service::call_descriptor_type cd)
+                  {
+
+                  }
+
                private:
-                  static buffer::Base* m_inputBuffer;
+                  typedef std::map< int, buffer::Raw> buffer_holder;
+                  static buffer_holder m_holder;
                };
 
-               buffer::Base* xatmi_send_receive_mirror::m_inputBuffer = nullptr;
+               xatmi_send_receive_mirror::buffer_holder xatmi_send_receive_mirror::m_holder;
+               //buffer::Base* xatmi_send_receive_mirror::m_inputBuffer = nullptr;
 
-            }
-         }
+               typedef service::async::basic_call< service::policy::Binary, xatmi_send_receive_mirror> Async;
+
+               typedef service::sync::basic_call< service::policy::Binary, mockup::xatmi_call_mirror> Sync;
+
+            //} // <unnamed>
+         } // mockup
 
 
          TEST( casual_sf_xatmi_call, sync_binary_mockup_mirror)
          {
-            typedef service::basic_sync< service::policy::Binary, 0, mockup::xatmi_call_mirror> Service;
-            Service service( "someService");
+
+            mockup::Sync service( "someService");
 
 
             test::SimpleVO input;
             service << CASUAL_MAKE_NVP( input);
 
-            auto reply = service.call();
+            auto reply = service();
             test::SimpleVO output;
 
             reply >> CASUAL_MAKE_NVP( output);
@@ -79,18 +97,18 @@ namespace casual
 
          TEST( casual_sf_xatmi_call, async_blocking_binary_xatmi_send_receive_mirror)
          {
-            typedef service::basic_async< service::policy::Binary, 0, mockup::xatmi_send_receive_mirror> Service;
-            Service service( "someService");
+            mockup::Async service( "someService");
 
 
             test::SimpleVO input;
+            input.m_long = 42;
             service << CASUAL_MAKE_NVP( input);
 
             // async send
-            service.send();
+            auto receiver = service();
 
             // async recive
-            auto reply = service.receive();
+            auto reply = receiver();
             test::SimpleVO output;
 
             reply >> CASUAL_MAKE_NVP( output);
@@ -101,24 +119,24 @@ namespace casual
 
          TEST( casual_sf_xatmi_call, async_non_blocking_binary_xatmi_send_receive_mirror)
          {
-            typedef service::basic_async< service::policy::Binary, TPNOBLOCK, mockup::xatmi_send_receive_mirror> Service;
-            Service service( "someService");
+            mockup::Async service( "someService");
 
 
             test::SimpleVO input;
+            input.m_long = 42;
             service << CASUAL_MAKE_NVP( input);
 
             // async send
-            service.send();
+            auto receiver = service();
 
             // async no-block recive
-            auto reply = service.receive();
+            auto reply = receiver.receive();
 
             if( ! reply.empty())
             {
                test::SimpleVO output;
 
-               reply.front() >> CASUAL_MAKE_NVP( output);
+               //reply.front() >> CASUAL_MAKE_NVP( output);
 
                EXPECT_TRUE( input.m_long == output.m_long);
             }
