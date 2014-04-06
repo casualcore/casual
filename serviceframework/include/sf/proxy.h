@@ -68,9 +68,45 @@ namespace casual
             };
          } // IO
 
+         namespace sync
+         {
+            class Service;
+         }
+         namespace async
+         {
+            class Receive;
+         } // async
+
+         class Result
+         {
+         public:
+
+            ~Result();
+            Result( Result&&);
+
+            template< typename T>
+            const Result& operator >> ( T&& value) const
+            {
+               output() >> std::forward< T>( value);
+               return *this;
+            }
+
+            class impl_base;
+
+         private:
+
+            friend class sync::Service;
+            friend class async::Receive;
+            Result( std::unique_ptr< impl_base>&& implementation);
+
+            const IO::Output& output() const;
+            std::unique_ptr< impl_base> m_implementation;
+         };
+
          namespace async
          {
 
+            /*
             class Result
             {
             public:
@@ -98,6 +134,7 @@ namespace casual
                std::unique_ptr< impl_base> m_implementation;
 
             };
+            */
 
             class Receive
             {
@@ -112,24 +149,24 @@ namespace casual
 
             private:
 
-               friend class Send;
+               friend class Service;
                Receive( std::unique_ptr< impl_base>&& implementation);
 
                std::unique_ptr< impl_base> m_implementation;
             };
 
-            class Send
+            class Service
             {
             public:
-               Send( std::string service);
-               Send( std::string service, long flags);
+               Service( std::string service);
+               Service( std::string service, long flags);
 
-               ~Send();
-               Send( Send&&);
+               ~Service();
+               Service( Service&&);
 
 
                template< typename T>
-               const Send& operator << ( T&& value) const
+               const Service& operator << ( T&& value) const
                {
                   input() << std::forward< T>( value);
                   return *this;
@@ -148,46 +185,19 @@ namespace casual
 
          namespace sync
          {
-            class Result
+
+            class Service
             {
             public:
+               Service( std::string service);
+               Service( std::string service, long flags);
 
-               ~Result();
-               Result( Result&&);
-
-               template< typename T>
-               const Result& operator >> ( T&& value) const
-               {
-                  output() >> std::forward< T>( value);
-                  return *this;
-               }
-
-               class impl_base;
-
-            private:
-
-               friend class Call;
-               Result( std::unique_ptr< impl_base>&& implementation);
-
-
-               const IO::Output& output() const;
-
-               std::unique_ptr< impl_base> m_implementation;
-
-            };
-
-            class Call
-            {
-            public:
-               Call( std::string service);
-               Call( std::string service, long flags);
-
-               ~Call();
-               Call( Call&&);
+               ~Service();
+               Service( Service&&);
 
 
                template< typename T>
-               const Call& operator << ( T&& value) const
+               const Service& operator << ( T&& value) const
                {
                   input() << std::forward< T>( value);
                   return *this;

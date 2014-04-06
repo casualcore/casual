@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
+#include <ostream>
 
 #include <assert.h>
 

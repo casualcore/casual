@@ -66,7 +66,7 @@ namespace test
             Receive operator() ( const std::string& value);
 
          private:
-            casual::sf::proxy::async::Send m_service;
+            casual::sf::proxy::async::Service m_service;
          };
 
 
@@ -95,7 +95,7 @@ namespace test
             std::vector< std::string> operator() ( const std::string& value);
 
          private:
-            casual::sf::proxy::sync::Call m_service;
+            casual::sf::proxy::sync::Service m_service;
          };
 
          // fler services...

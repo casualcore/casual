@@ -10,12 +10,18 @@
 //!
 
 
-#include "common/log.h"
+
 #include "common/process.h"
 
 #include "common/arguments.h"
 #include "common/string.h"
 #include "common/environment.h"
+
+#include "sf/log.h"
+#include "sf/archive.h"
+#include "sf/namevaluepair.h"
+#include "sf/buffer.h"
+
 
 
 #include <unistd.h>
@@ -56,7 +62,16 @@ void casual_test1( TPSVCINFO *serviceContext)
 
 void casual_test2( TPSVCINFO *serviceContext)
 {
-   auto args = casual::common::string::split( serviceContext->data);
+   casual::sf::buffer::binary::Stream stream{ casual::sf::buffer::raw( serviceContext)};
+
+   std::string argumentString;
+   stream >> argumentString;
+
+
+
+   auto args = casual::common::string::split( argumentString);
+
+   casual::sf::log::debug << CASUAL_MAKE_NVP( args);
 
    casual::common::Arguments parser;
 
@@ -68,7 +83,7 @@ void casual_test2( TPSVCINFO *serviceContext)
 
    parser.parse( casual::common::environment::file::executable(), args);
 
-   casual::common::log::debug << "casual_test2 called - sleep for a while..." << std::endl;
+   casual::sf::log::debug << "casual_test2 called - sleep for  " << millesconds << "ms"<< std::endl;
 
    casual::common::process::sleep(  std::chrono::milliseconds( millesconds));
 

@@ -100,7 +100,7 @@ namespace casual
                basic_result( basic_result&&) = default;
                basic_result( policy_type&& policy) : m_policy{ std::move( policy)}
                {
-                  common::log::internal::debug << "result: " << m_policy.buffer() << std::endl;
+                  common::log::internal::debug << "basic_result buffer: " << m_policy.buffer() << std::endl;
                }
 
                template< typename T>
@@ -110,12 +110,10 @@ namespace casual
                   return *this;
                }
 
-
                policy_type& policy()
                {
                   return m_policy;
                }
-
 
             private:
 
@@ -146,7 +144,7 @@ namespace casual
                   {
                      common::trace::internal::Scope trace{ "service::sync::basic_call::operator()"};
 
-                     common::log::internal::debug << "input: " << m_policy.buffer() << std::endl;
+                     common::log::internal::debug << "buffer: " << m_policy.buffer() << std::endl;
 
                      result_policy resultPolicy;
                      caller_type caller;
@@ -319,13 +317,6 @@ namespace casual
                   };
                }
 
-               namespace binary
-               {
-                  using Send = helper::archive_holder< archive::binary::Writer, buffer::binary::Stream>;
-
-                  using Result = helper::archive_holder< archive::binary::Reader, buffer::binary::Stream>;
-
-               } // binary
 
                struct Binary
                {
@@ -335,8 +326,8 @@ namespace casual
                      flags = 0L
                   };
 
-                  using send_policy = binary::Send;
-                  using result_policy = binary::Result;
+                  using send_policy = helper::archive_holder< archive::binary::Writer, buffer::binary::Stream>;
+                  using result_policy = helper::archive_holder< archive::binary::Reader, buffer::binary::Stream>;
                };
             } // policy
 

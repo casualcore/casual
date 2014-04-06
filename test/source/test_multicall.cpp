@@ -51,6 +51,8 @@ int main( int argc, char** argv)
       return 10;
    }
 
+   std::cout << "argument: " << argument << std::endl;
+
    using Async = casual::sf::xatmi::service::binary::Async;
    Async caller{ service};
 
@@ -58,6 +60,7 @@ int main( int argc, char** argv)
 
    for( long index = 0; index < calls; ++index )
    {
+      caller << CASUAL_MAKE_NVP( argument);
       receivers.push_back( caller());
    }
 
