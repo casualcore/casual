@@ -12,8 +12,9 @@
 #include "sf/archive_binary.h"
 #include "sf/buffer.h"
 
-// TODO: Temp
-#include "common/trace.h"
+
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 //
 // xatmi
@@ -42,12 +43,14 @@ namespace casual
             typedef int call_descriptor_type;
             constexpr long valid_sync_flags();
 
-            void call( const std::string& service, buffer::Base& input, buffer::Base& output, long flags);
+
+            void call( const std::string& service, buffer::Buffer& input, buffer::Buffer& output, long flags);
 
 
-            call_descriptor_type send( const std::string& service, buffer::Base& input, long flags);
+            call_descriptor_type send( const std::string& service, buffer::Buffer& input, long flags);
 
-            bool receive( call_descriptor_type& callDescriptor, buffer::Base& output, long flags);
+            bool receive( call_descriptor_type& callDescriptor, buffer::Buffer& output, long flags);
+
 
             void cancel( call_descriptor_type cd);
 
@@ -58,7 +61,8 @@ namespace casual
             {
                struct xatmi_call
                {
-                  void operator() ( const std::string& service, buffer::Base& input, buffer::Base& output, long flags) const
+
+                  void operator() ( const std::string& service, buffer::Buffer& input, buffer::Buffer& output, long flags) const
                   {
                      call( service, input, output, flags);
                   }
@@ -66,12 +70,13 @@ namespace casual
 
                struct xatmi_send_receive
                {
-                  call_descriptor_type operator() ( const std::string& service, buffer::Base& input, long flags) const
+
+                  call_descriptor_type operator() ( const std::string& service, buffer::Buffer& input, long flags) const
                   {
                      return send( service, input, flags);
                   }
 
-                  bool operator() ( call_descriptor_type& cd, buffer::Base& output, long flags) const
+                  bool operator() ( call_descriptor_type& cd, buffer::Buffer& output, long flags) const
                   {
                      return receive( cd, output, flags);
                   }
@@ -93,7 +98,10 @@ namespace casual
                typedef P policy_type;
 
                basic_result( basic_result&&) = default;
-               basic_result( policy_type&& policy) : m_policy{ std::move( policy)} {}
+               basic_result( policy_type&& policy) : m_policy{ std::move( policy)}
+               {
+                  common::log::internal::debug << "result: " << m_policy.buffer() << std::endl;
+               }
 
                template< typename T>
                basic_result& operator >> ( T&& value)
@@ -101,6 +109,14 @@ namespace casual
                   m_policy.archive() >> std::forward< T>( value);
                   return *this;
                }
+
+
+               policy_type& policy()
+               {
+                  return m_policy;
+               }
+
+
             private:
 
                policy_type m_policy;
@@ -128,12 +144,18 @@ namespace casual
 
                   result_type operator () ()
                   {
+                     common::trace::internal::Scope trace{ "service::sync::basic_call::operator()"};
+
+                     common::log::internal::debug << "input: " << m_policy.buffer() << std::endl;
+
                      result_policy resultPolicy;
                      caller_type caller;
 
                      caller( m_service, m_policy.buffer(), resultPolicy.buffer(), m_flags);
 
                      m_policy.buffer().clear();
+
+                     common::log::internal::debug << "output: " << resultPolicy.buffer() << std::endl;
 
                      return result_type{ std::move( resultPolicy)};
                   }
@@ -142,6 +164,11 @@ namespace casual
                   {
                      m_policy.archive() << std::forward< T>( value);
                      return *this;
+                  }
+
+                  send_policy& policy()
+                  {
+                     return m_policy;
                   }
 
                private:
@@ -208,6 +235,8 @@ namespace casual
                      return result;
                   }
 
+
+
                private:
 
                   template< typename T1, typename T2>
@@ -256,6 +285,12 @@ namespace casual
                      return reply;
                   }
 
+
+                  send_policy& policy()
+                  {
+                     return m_policy;
+                  }
+
                private:
                   const std::string m_service;
                   const long m_flags;
@@ -272,6 +307,8 @@ namespace casual
                   struct archive_holder
                   {
                      archive_holder() : m_archive( m_buffer) {}
+                     archive_holder( archive_holder&& other)
+                        : m_buffer( std::move( other.m_buffer)), m_archive( m_buffer) {}
 
                      A& archive() { return m_archive;}
                      B& buffer() { return m_buffer;}
@@ -284,9 +321,9 @@ namespace casual
 
                namespace binary
                {
-                  using Send = helper::archive_holder< archive::binary::Writer, buffer::Binary>;
+                  using Send = helper::archive_holder< archive::binary::Writer, buffer::binary::Stream>;
 
-                  using Result = helper::archive_holder< archive::binary::Reader, buffer::Binary>;
+                  using Result = helper::archive_holder< archive::binary::Reader, buffer::binary::Stream>;
 
                } // binary
 

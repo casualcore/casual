@@ -27,6 +27,8 @@ namespace casual
 
             typedef I implementation_type;
 
+
+
             template< typename... Arguments>
             basic_reader( Arguments&&... arguments)
              : m_readerImplementation( std::forward< Arguments>( arguments)...)

@@ -26,7 +26,7 @@ namespace casual
                {
                public:
 
-                  typedef buffer::Binary buffer_type;
+                  typedef buffer::binary::Stream buffer_type;
 
                   Writer( buffer_type& buffer) : m_buffer( buffer) {}
 
@@ -50,7 +50,7 @@ namespace casual
                   template< typename T>
                   void write( T&& value)
                   {
-                     m_buffer.write( std::forward< T>( value));
+                     m_buffer << std::forward< T>( value);
                   }
                private:
                   buffer_type& m_buffer;
@@ -61,7 +61,7 @@ namespace casual
                {
                public:
 
-                  typedef buffer::Binary buffer_type;
+                  typedef buffer::binary::Stream buffer_type;
 
                   Reader( buffer_type& buffer) : m_buffer( buffer) {}
 
@@ -85,7 +85,7 @@ namespace casual
                   template< typename T>
                   void read( T& value)
                   {
-                     m_buffer.read( value);
+                     m_buffer >> value;
                   }
                private:
                   buffer_type& m_buffer;

@@ -32,66 +32,16 @@ namespace test
 
       namespace async
       {
-         /*
-         //## declarations protected section begin [.100]
-         //## declarations protected section end   [.100]
-
-         SomeService1::SomeService1() : SomeService1( 0) {}
-
-         SomeService1::SomeService1( long flags) : casual::sf::proxy::Async( "casual_sf_test1", flags)
-         {
-
-         }
-
-         void SomeService1::send( const std::string& value)
-         {
-            //## protected section begin [666.100]
-            //## protected section end   [666.100]
-
-            auto&& helper = interface();
-
-            helper << CASUAL_MAKE_NVP( value);
-
-            //## protected section begin [666.120]
-            //## protected section end   [666.120]
-
-            helper.send();
-         }
-
-
-         std::vector< std::string> SomeService1::receive()
-         {
-            //## protected section begin [666.150]
-            //## protected section end   [666.120]
-
-            auto&& helper = interface();
-
-            std::vector< std::string> serviceReturnValue;
-
-            helper >> CASUAL_MAKE_NVP( serviceReturnValue);
-
-            //## protected section begin [666.170]
-            //## protected section end   [666.170]
-
-            helper.finalize();
-
-            return serviceReturnValue;
-         }
-
-         */
-
-
 
          SomeService2::SomeService2() : SomeService2( 0) {}
-         SomeService2::SomeService2( long flags) : m_send{ "casual_sf_test2", flags} {}
-
+         SomeService2::SomeService2( long flags) : m_service{ "casual_sf_test2", flags} {}
 
 
          SomeService2::Receive SomeService2::operator() ( const std::string& value)
          {
-            m_send << CASUAL_MAKE_NVP( value);
+            m_service << CASUAL_MAKE_NVP( value);
 
-            return Receive{ m_send()};
+            return Receive{ m_service()};
          }
 
 
@@ -120,33 +70,20 @@ namespace test
       namespace sync
       {
 
-         Casual_sf_test1::Casual_sf_test1() : Casual_sf_test1( 0) {}
+         SomeService2::SomeService2() : SomeService2( 0L) {}
 
-         Casual_sf_test1::Casual_sf_test1( long flags) : casual::sf::proxy::Sync( "casual_sf_test1", flags)
+         SomeService2::SomeService2( long flags) : m_service{ "casual_sf_test2", flags} {}
+
+
+         std::vector< std::string> SomeService2::operator() ( const std::string& value)
          {
+            m_service << CASUAL_MAKE_NVP( value);
 
-         }
-
-
-         std::vector< std::string> Casual_sf_test1::call( const std::string& value)
-         {
-            //## protected section begin [666.200]
-            //## protected section end   [666.200]
-
-            auto&& helper = interface();
-
-            helper << CASUAL_MAKE_NVP( value);
-
-            helper.call();
+            auto result = m_service();
 
             std::vector< std::string> serviceReturnValue;
 
-            helper >> CASUAL_MAKE_NVP( serviceReturnValue);
-
-            //## protected section begin [666.280]
-            //## protected section end   [666.280]
-
-            helper.finalize();
+            result >> CASUAL_MAKE_NVP( serviceReturnValue);
 
             return serviceReturnValue;
          }
@@ -154,13 +91,13 @@ namespace test
 
          // fler services...
 
-      } // asynk
+      } // sync
 
 
 
-      std::vector< std::string> casual_sf_test1( const std::string& value)
+      std::vector< std::string> someService2( const std::string& value)
       {
-         return sync::Casual_sf_test1().call( value);
+         return sync::SomeService2()( value);
       }
 
    } // proxyName
@@ -168,4 +105,5 @@ namespace test
 } // test
 
 } // casual
+
 

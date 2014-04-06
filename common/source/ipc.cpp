@@ -13,7 +13,7 @@
 #include "common/exception.h"
 #include "common/signal.h"
 #include "common/uuid.h"
-#include "common/log.h"
+#include "common/internal/log.h"
 
 
 // TODO: header dependency to sf... not so good...
@@ -208,7 +208,7 @@ namespace casual
                   // Destroy queue
                   //
                   ipc::remove( m_id);
-                  log::debug << "queue id: " << m_id << " removed";
+                  log::internal::debug << "queue id: " << m_id << " removed" << std::endl;
                }
                catch( ...)
                {

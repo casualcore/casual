@@ -38,13 +38,13 @@ namespace casual
 
          Context::Context()
          {
-            trace::Exit log{ "server::Context instansiated"};
+            trace::internal::Scope log{ "server::Context instansiated"};
          }
 
 
          void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)
          {
-            log::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags << std::endl;
+            log::internal::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags << std::endl;
 
             //
             // Prepare buffer.
@@ -61,7 +61,7 @@ namespace casual
 
          void Context::advertiseService( const std::string& name, tpservice function)
          {
-            trace::Exit log{ "server::Context advertise service " + name};
+            trace::internal::Scope trace{ "server::Context advertise service " + name};
 
             //
             // validate
@@ -107,7 +107,7 @@ namespace casual
 
          void Context::unadvertiseService( const std::string& name)
          {
-            trace::Exit log{ "server::Context unadvertise service" + name};
+            trace::internal::Scope log{ "server::Context unadvertise service" + name};
 
             if( m_state.services.erase( name) != 1)
             {

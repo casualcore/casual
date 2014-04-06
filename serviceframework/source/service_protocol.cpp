@@ -56,7 +56,7 @@ namespace casual
 
 
             Binary::Binary( TPSVCINFO* serviceInfo) : Base( serviceInfo),
-                  m_readerBuffer( buffer::getRaw( serviceInfo)), m_reader( m_readerBuffer), m_writer( m_writerBuffer)
+                  m_readerBuffer( buffer::raw( serviceInfo)), m_reader( m_readerBuffer), m_writer( m_writerBuffer)
             {
                common::Trace trace{ "Binary::Binary"};
 
@@ -98,7 +98,7 @@ namespace casual
 
                buffer.str( m_outputstream.c_str());
 
-               buffer::Raw raw = buffer.release();
+               auto raw = buffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
 
@@ -121,7 +121,7 @@ namespace casual
                buffer::X_Octet buffer{ "JSON", json.size() };
                buffer.str( json);
 
-               buffer::Raw raw = buffer.release();
+               auto raw = buffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
 

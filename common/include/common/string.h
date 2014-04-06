@@ -103,7 +103,7 @@ namespace casual
 
 		} // string
 
-		namespace local
+		namespace internal
       {
 		   template< typename R>
 		   struct from_string;
@@ -125,10 +125,30 @@ namespace casual
 		template< typename R>
 		R from_string( const std::string& value)
 		{
-		   return local::from_string< typename std::decay< R>::type>::get( value);
+		   return internal::from_string< typename std::decay< R>::type>::get( value);
 		}
 
 
+		namespace type
+      {
+		   namespace internal
+         {
+		      std::string name( const std::type_info& type);
+         } // internal
+
+		   template< typename T>
+		   std::string name()
+		   {
+		      return internal::name( typeid( T));
+		   }
+
+		   template< typename T>
+         std::string name( T&&)
+         {
+            return internal::name( typeid( T));
+         }
+
+      } // type
 
 
 

@@ -65,10 +65,10 @@ namespace casual
 
             private:
 
-               buffer::Binary m_readerBuffer;
+               buffer::binary::Stream m_readerBuffer;
                archive::binary::Reader m_reader;
 
-               buffer::Binary m_writerBuffer;
+               buffer::binary::Stream m_writerBuffer;
                archive::binary::Writer m_writer;
 
 

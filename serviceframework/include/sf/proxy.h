@@ -68,53 +68,6 @@ namespace casual
             };
          } // IO
 
-         /*
-         class Async
-         {
-         public:
-
-            Async( const std::string& service);
-            Async( const std::string& service, long flags);
-            ~Async();
-
-            Async( const Async&) = delete;
-            Async& operator = ( const Async&) = delete;
-
-            Async& interface();
-
-            void send();
-            void receive();
-            void finalize();
-
-
-            template< typename T>
-            const Async& operator << ( T&& value) const
-            {
-               input() << std::forward< T>( value);
-               return *this;
-            }
-
-            template< typename T>
-            const Async& operator >> ( T&& value) const
-            {
-               output() >> std::forward< T>( value);
-               return *this;
-            }
-
-
-            class base_impl;
-
-            template< typename I>
-            class basic_impl;
-
-         private:
-            const IO::Input& input() const;
-            const IO::Output& output() const;
-
-            std::unique_ptr< base_impl> m_implementation;
-         };
-         */
-
          namespace async
          {
 
@@ -188,54 +141,69 @@ namespace casual
             private:
 
                const IO::Input& input() const;
-
-
                std::unique_ptr< impl_base> m_implementation;
             };
          } // async
 
 
-         class Sync
+         namespace sync
          {
-         public:
-
-            Sync( const std::string& service);
-            Sync( const std::string& service, long flags);
-            ~Sync();
-
-            Sync( const Sync&) = delete;
-            Sync& operator = ( const Sync&) = delete;
-
-            Sync& interface();
-
-
-            void call();
-            void finalize();
-
-
-            template< typename T>
-            const Sync& operator << ( T&& value) const
+            class Result
             {
-               input() << std::forward< T>( value);
-               return *this;
-            }
+            public:
 
-            template< typename T>
-            const Sync& operator >> ( T&& value) const
+               ~Result();
+               Result( Result&&);
+
+               template< typename T>
+               const Result& operator >> ( T&& value) const
+               {
+                  output() >> std::forward< T>( value);
+                  return *this;
+               }
+
+               class impl_base;
+
+            private:
+
+               friend class Call;
+               Result( std::unique_ptr< impl_base>&& implementation);
+
+
+               const IO::Output& output() const;
+
+               std::unique_ptr< impl_base> m_implementation;
+
+            };
+
+            class Call
             {
-               output() >> std::forward< T>( value);
-               return *this;
-            }
+            public:
+               Call( std::string service);
+               Call( std::string service, long flags);
 
-         private:
-            const IO::Input& input() const;
-            const IO::Output& output() const;
+               ~Call();
+               Call( Call&&);
 
 
-            class Implementation;
-            std::unique_ptr< Implementation> m_implementation;
-         };
+               template< typename T>
+               const Call& operator << ( T&& value) const
+               {
+                  input() << std::forward< T>( value);
+                  return *this;
+               }
 
+               Result operator() ();
+
+               class impl_base;
+
+            private:
+               const IO::Input& input() const;
+               std::unique_ptr< impl_base> m_implementation;
+            };
+
+
+         } // sync
 
       } // proxy
    } // sf

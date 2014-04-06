@@ -54,134 +54,6 @@ namespace casual
          } // local
 
 
-         /*
-         struct Async::base_impl
-         {
-            virtual ~base_impl() = default;
-
-            virtual void send() = 0;
-            virtual void receive() = 0;
-         };
-
-         template< typename I>
-         struct Async::basic_impl : public Async::base_impl
-         {
-            template< typename ...Args>
-            basic_impl( Args... args) : m_implementation( std::forward< Args>( args)...) {}
-
-            void send() override { m_implementation.send();}
-            void receive() override { m_implementation.receive();}
-
-
-            I m_implementation;
-         };
-
-
-         namespace local
-         {
-            namespace
-            {
-               namespace async
-               {
-
-                  struct Binary : local::base_implementation
-                  {
-                     typedef local::base_implementation base_type;
-
-                     Binary( const std::string& service, long flags)
-                      : base_type( service, flags), writer{ buffer}, reader{ buffer}
-                     {
-
-                     }
-
-                     void send()
-                     {
-                        callDescriptor = xatmi::service::send( service, buffer, flags);
-
-                     }
-
-                     void receive()
-                     {
-                        if( ! xatmi::service::receive( callDescriptor, buffer, flags))
-                        {
-                           // TODO: somehow there's a noblock flag...
-                        }
-                     }
-
-                     sf::xatmi::service::call_descriptor_type callDescriptor = 0;
-
-                     buffer::Binary buffer;
-
-                     archive::binary::Writer writer;
-                     archive::binary::Reader reader;
-                  };
-
-                  std::unique_ptr< Async::base_impl> create( const std::string& service, long flags)
-                  {
-                     //
-                     // We could create mockups and such...
-                     //
-
-
-                     if( log::parameter.good())
-                     {
-                        typedef ParameterLog< Async::basic_impl< Binary>> Implementation;
-                        return std::unique_ptr< Async::base_impl>( new Implementation{ service, flags});
-                     }
-
-                     return std::unique_ptr< Async::base_impl>{ new Async::basic_impl< Binary>{ service, flags}};
-                  }
-
-               } // async
-            } // <unnamed>
-         } // local
-
-         */
-
-         /*
-         Async::Async( const std::string& service) : Async( service, 0) {}
-
-         Async::Async( const std::string& service, long flags) : m_implementation( local::async::create( service, flags))
-         {
-
-         }
-
-         Async::~Async() {}
-
-         Async& Async::interface()
-         {
-            return *this;
-         }
-
-         void Async::send()
-         {
-            m_implementation->send();
-         }
-
-         void Async::receive()
-         {
-            m_implementation->receive();
-         }
-
-         void Async::finalize()
-         {
-
-         }
-
-         const IO::Input& Async::input() const
-         {
-            return m_implementation->input;
-         }
-
-         const IO::Output& Async::output() const
-         {
-            return m_implementation->output;
-         }
-
-         */
-
-
-
          namespace async
          {
 
@@ -267,54 +139,55 @@ namespace casual
 
             namespace protocol
             {
-               namespace binary
+
+               template< typename C>
+               struct basic_protocol
                {
+                  using send_type = C;
+                  using receive_type = decltype( std::declval< send_type>()());
+                  using result_type = decltype( std::declval< receive_type>()());
+
+
                   struct Result
                   {
-                     Result( xatmi::service::call_descriptor_type cd, long flags)
-                        : m_reader{ m_buffer}
+                     template< typename ...Args>
+                     Result( Args&&... args) : m_result( std::forward< Args>( args)...)
                      {
-                        m_output.readers.push_back( &m_reader);
-                        xatmi::service::receive( cd, m_buffer, flags);
+                        m_output.readers.push_back( &m_result.policy().archive());
                      }
 
                      IO::Output& output() { return m_output;}
 
                   private:
-                     buffer::Binary m_buffer;
-                     archive::binary::Reader m_reader;
+                     result_type m_result;
                      IO::Output m_output;
                   };
 
                   struct Receive
                   {
-                     Receive( xatmi::service::call_descriptor_type cd, long flags)
-                        : m_cd( cd), m_flags( flags) {}
+                     template< typename ...Args>
+                     Receive( Args&&... args) : m_receivce( std::forward< Args>( args)...) {}
 
                      Result receive()
                      {
-                        return Result{ m_cd, m_flags};
+                        return Result{ m_receivce()};
                      }
 
                   private:
-                     xatmi::service::call_descriptor_type m_cd;
-                     long m_flags;
+                     receive_type m_receivce;
                   };
 
                   struct Send
                   {
-                     Send( std::string service, long flags)
-                        : m_service{ std::move( service)}, m_flags{ flags}, m_writer{ m_buffer}
+                     template< typename ...Args>
+                     Send( Args&&... args) : m_send( std::forward< Args>( args)...)
                      {
-                        m_input.writers.push_back( &m_writer);
+                        m_input.writers.push_back( &m_send.policy().archive());
                      }
 
                      Receive send()
                      {
-                        buffer::Binary sendBuffer;
-                        std::swap( m_buffer, sendBuffer);
-
-                        return Receive{ xatmi::service::send( m_service, sendBuffer, m_flags), m_flags};
+                        return Receive{ m_send()};
                      }
 
                      IO::Input& input()
@@ -323,14 +196,13 @@ namespace casual
                      }
                   private:
 
-                     const std::string m_service;
-                     const long m_flags;
-
-                     buffer::Binary m_buffer;
-                     archive::binary::Writer m_writer;
+                     send_type m_send;
                      IO::Input m_input;
                   };
-               } // binary
+
+               };
+
+               typedef basic_protocol< xatmi::service::binary::Async> Binary;
 
                namespace log
                {
@@ -396,16 +268,21 @@ namespace casual
 
                std::unique_ptr< Send::impl_base> create( std::string service, long flags)
                {
+                  //
+                  // We could create other protocols later, including mockup.
+                  //
+
                   if( common::log::parameter.good())
                   {
-                     return std::unique_ptr< Send::impl_base>{ new send::basic_impl< log::Send< binary::Send>>{ std::move( service), flags}};
+                     return std::unique_ptr< Send::impl_base>{ new send::basic_impl< log::Send< Binary::Send>>{ std::move( service), flags}};
                   }
-                  return std::unique_ptr< Send::impl_base>{ new send::basic_impl< binary::Send>{ std::move( service), flags}};
+                  return std::unique_ptr< Send::impl_base>{ new send::basic_impl< Binary::Send>{ std::move( service), flags}};
                }
             } // protocol
 
 
             Send::Send( std::string service) : Send( std::move( service), 0) {}
+
             Send::Send( std::string service, long flags)
                : m_implementation( protocol::create( std::move( service), flags))
             {}
@@ -454,62 +331,155 @@ namespace casual
          } // async
 
 
-
-         struct Sync::Implementation : public local::base_implementation
+         namespace sync
          {
-            using local::base_implementation::base_implementation;
 
-            void call()
+            struct Result::impl_base
             {
-               xatmi::service::call( service, buffer, buffer, flags);
+               virtual ~impl_base() = default;
+               virtual IO::Output& output() = 0;
+            };
+
+            namespace result
+            {
+               template< typename T>
+               struct basic_impl : public Result::impl_base
+               {
+                  template< typename ...Args>
+                  basic_impl( Args&&... args) : m_implemenentation( std::forward< Args>( args)...) {}
+
+                  IO::Output& output() override
+                  {
+                     return m_implemenentation.output();
+                  }
+               private:
+                  T m_implemenentation;
+               };
+            } // result
+
+
+
+            struct Call::impl_base
+            {
+               virtual ~impl_base() = default;
+               virtual std::auto_ptr< Result::impl_base> call() = 0;
+               virtual IO::Input& input() = 0;
+            };
+
+            namespace send
+            {
+               template< typename T>
+               struct basic_impl : public Call::impl_base
+               {
+
+                  template< typename ...Args>
+                  basic_impl( Args&&... args) : m_implemenentation( std::forward< Args>( args)...) {}
+
+                  std::auto_ptr< Result::impl_base> call() override
+                  {
+                     using receive_type = decltype( m_implemenentation.call());
+                     return std::auto_ptr< Result::impl_base>{ new result::basic_impl< receive_type>{ m_implemenentation.call()}};
+                  }
+
+                  IO::Input& input() override
+                  {
+                     return m_implemenentation.input();
+                  }
+               private:
+                  T m_implemenentation;
+               };
+            } // send
+
+
+            namespace protocol
+            {
+
+               template< typename C>
+               struct basic_protocol
+               {
+                  using call_type = C;
+                  using result_type = decltype( std::declval< call_type>()());
+
+
+                  struct Result
+                  {
+                     template< typename ...Args>
+                     Result( Args&&... args) : m_result( std::forward< Args>( args)...)
+                     {
+                        m_output.readers.push_back( &m_result.policy().archive());
+                     }
+
+                     IO::Output& output() { return m_output;}
+
+                  private:
+                     result_type m_result;
+                     IO::Output m_output;
+                  };
+
+
+                  struct Call
+                  {
+                     template< typename ...Args>
+                     Call( Args&&... args) : m_call( std::forward< Args>( args)...)
+                     {
+                        m_input.writers.push_back( &m_call.policy().archive());
+                     }
+
+                     Result send()
+                     {
+                        return Result{ m_call()};
+                     }
+
+                     IO::Input& input()
+                     {
+                        return m_input;
+                     }
+                  private:
+
+                     call_type m_call;
+                     IO::Input m_input;
+                  };
+
+               };
             }
 
 
-            buffer::Binary buffer;
+            Result::~Result() = default;
+            Result::Result( Result&&) = default;
 
-            archive::binary::Writer writer = archive::binary::Writer{ buffer};
-            archive::binary::Reader reader = archive::binary::Reader{ buffer};
+            Result::Result( std::unique_ptr< impl_base>&& implementation)
+            {
+            }
 
-         };
+            const IO::Output& Result::output() const
+            {
+               return m_implementation->output();
+            }
 
+            Call::Call( std::string service) : Call( std::move( service), 0L) {}
 
-         Sync::Sync( const std::string& service) : Sync( service, 0) {}
+            Call::Call( std::string service, long flags)
+            {
+            }
 
-         Sync::Sync( const std::string& service, long flags) : m_implementation( new Implementation( service, flags))
-         {
+            Call::~Call() = default;
+            Call::Call( Call&&) = default;
 
-         }
+            Result Call::operator ()()
+            {
+               return Result{ m_implementation->call()};
+            }
 
-         Sync::~Sync() {}
+            const IO::Input& Call::input() const
+            {
+               return m_implementation->input();
+            }
 
-         Sync& Sync::interface()
-         {
-            return *this;
-         }
-
-         void Sync::call()
-         {
-            m_implementation->call();
-         }
-
-         void Sync::finalize()
-         {
-
-         }
-
-         const IO::Input& Sync::input() const
-         {
-            return m_implementation->input;
-         }
-
-         const IO::Output& Sync::output() const
-         {
-            return m_implementation->output;
-         }
-
+         } // sync
       } // proxy
    } // sf
 
 
 } // casual
+
 

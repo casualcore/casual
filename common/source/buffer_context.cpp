@@ -8,7 +8,7 @@
 #include "common/buffer_context.h"
 
 #include "common/exception.h"
-#include "common/log.h"
+#include "common/internal/log.h"
 
 
 #include <stdexcept>
@@ -200,7 +200,7 @@ namespace casual
             m_memoryPool.emplace_back( std::move( type), size);
             auto& buffer = m_memoryPool.back();
 
-            common::log::debug << "allocates type: " << buffer.type().type << " subtype: " << buffer.type().subtype << " @" << static_cast< const void*>( buffer.raw()) << " size: " << buffer.size() << std::endl;
+            common::log::internal::debug << "allocates type: " << buffer.type().type << " subtype: " << buffer.type().subtype << " @" << static_cast< const void*>( buffer.raw()) << " size: " << buffer.size() << std::endl;
 
             return buffer.raw();
          }
@@ -212,8 +212,8 @@ namespace casual
             auto& buffer = *getFromPool( memory);
             buffer.reallocate( size);
 
-            common::log::debug << "reallocates from: " <<
-                  static_cast< const void*>( memory) << " to: " << static_cast< const void*>( buffer.raw()) << " new size: " << buffer.size();
+            common::log::internal::debug << "reallocates from: " <<
+                  static_cast< const void*>( memory) << " to: " << static_cast< const void*>( buffer.raw()) << " new size: " << buffer.size() << std::endl;
 
             return buffer.raw();
          }
@@ -263,7 +263,7 @@ namespace casual
 
          void Context::deallocate( platform::const_raw_buffer_type memory)
          {
-            common::log::debug << "deallocates: " << static_cast< const void*>( memory) << std::endl;
+            common::log::internal::debug << "deallocates: " << static_cast< const void*>( memory) << std::endl;
 
             if( memory != 0)
             {

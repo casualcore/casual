@@ -82,7 +82,7 @@ namespace casual
 
       TEST( casual_broker_transformation, server_to_nested)
       {
-         sf::buffer::Binary buffer;
+         sf::buffer::binary::Stream buffer;
 
          {
             Composite composite;

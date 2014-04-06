@@ -11,6 +11,7 @@
 #include "common/error.h"
 
 
+
 #include "xatmi.h"
 
 
@@ -29,52 +30,77 @@ namespace casual
                return TPNOCHANGE | TPSIGRSTRT | TPNOTIME;
             }
 
-            void call( const std::string& service, buffer::Base& input, buffer::Base& output, long flags)
+            void call( const std::string& service, buffer::Buffer& input, buffer::Buffer& output, long flags)
             {
-               common::Trace trace{ "service::call"};
+               common::trace::internal::Scope trace{ "service::call"};
 
-               buffer::Raw in = input.raw();
-               buffer::Raw out = output.release();
+               common::log::internal::debug << "input: " << input << std::endl;
 
-               if( tpcall( service.data(), in.buffer, in.size, &out.buffer, &out.size, flags) == -1)
+
+               auto out = output.release();
+               long size = out.size;
+
+               if( tpcall( service.data(), input.data(), input.size(), &out.buffer, &size, flags) == -1)
                {
+                  output.reset( out);
                   throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
                }
 
+               out.size = size;
                output.reset( out);
+
+               common::log::internal::debug << "output: " << output << std::endl;
+
+
             }
 
-            call_descriptor_type send( const std::string& service, buffer::Base& input, long flags)
+            call_descriptor_type send( const std::string& service, buffer::Buffer& input, long flags)
             {
-               buffer::Raw in = input.raw();
+               common::trace::internal::Scope trace{ "service::send"};
 
-               auto callDescriptor = tpacall( service.c_str(), in.buffer, in.size, flags);
+               common::log::internal::debug << "input: " << input << std::endl;
+
+               auto callDescriptor = tpacall( service.c_str(), input.data(), input.size(), flags);
 
                if( callDescriptor == -1)
                {
                   throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
                }
                return callDescriptor;
+
             }
 
-            bool receive( call_descriptor_type& callDescriptor, buffer::Base& output, long flags)
+            bool receive( call_descriptor_type& callDescriptor, buffer::Buffer& output, long flags)
             {
-               buffer::Raw out = output.release();
+               common::trace::internal::Scope trace{ "service::receive"};
 
-               auto cd = tpgetrply( &callDescriptor, &out.buffer, &out.size, flags);
+               auto out = output.release();
+               long size = out.size;
+               auto cd = tpgetrply( &callDescriptor, &out.buffer, &size, flags);
 
                if( cd == -1)
                {
-                  switch( tperrno)
-                  {
-                     case TPEBLOCK:
-                        return false;
-                     default:
-                        throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
-                  }
+                 switch( tperrno)
+                 {
+                    case TPEBLOCK:
+                    {
+                       return false;
+                    }
+                    default:
+                    {
+                       output.reset( out);
+                       throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
+                    }
+                 }
                }
+               out.size = size;
+               output.reset( out);
+
+               common::log::internal::debug << "output: " << output << std::endl;
+
                return true;
             }
+
 
             void cancel( call_descriptor_type cd)
             {

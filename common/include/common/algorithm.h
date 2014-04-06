@@ -30,7 +30,8 @@ namespace casual
       template< typename Iter>
       struct Range
       {
-         typedef typename std::iterator_traits< Iter>::value_type value_type;
+         using iterator = Iter;
+         using value_type = typename std::iterator_traits< typename std::decay< Iter>::type>::value_type;
 
          Range() : last( first) {}
          Range( Iter first, Iter last) : first( first), last( last) {}
@@ -46,11 +47,11 @@ namespace casual
          }
 
 
-         Iter begin() const { return first;}
-         Iter end() const { return last;}
+         iterator begin() const { return first;}
+         iterator end() const { return last;}
 
-         Iter first;
-         Iter last;
+         iterator first;
+         iterator last;
       };
 
       template< typename Iter>
@@ -318,7 +319,7 @@ namespace casual
             template< typename Iter, typename T>
             std::vector< Range< Iter>> group( Range< Iter> range)
             {
-               return group( range, std::less< typename std::iterator_traits< Iter>::value_type>{});
+               return group( range, std::less< typename Range< Iter>::value_type>{});
             }
 
          } // sorted

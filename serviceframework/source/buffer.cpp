@@ -44,250 +44,186 @@ namespace casual
          }
 
 
-         //namespace raw
-         //{
-
-            Buffer::Buffer( const Type& type, std::size_t size)
-               : m_buffer{ tpalloc( type.name.c_str(), type.subname.c_str(), size), deleter_type{}}, m_size( size)
+         Buffer::Buffer( const Type& type, std::size_t size)
+            : m_buffer{ tpalloc( type.name.c_str(), type.subname.c_str(), size), deleter_type{}}, m_size( size)
+         {
+            if( ! m_buffer)
             {
-               if( ! m_buffer)
-               {
-                  m_size = 0;
-                  throw exception::memory::Allocation{ "could not allocate buffer: " + common::error::xatmi::error( tperrno)};
-               }
-            }
-
-            Buffer::Buffer( const Raw& buffer)
-               : m_buffer{ buffer.buffer, deleter_type{}}, m_size( buffer.size)
-            {
-
-            }
-
-            Buffer::Buffer( Buffer&&) = default;
-            Buffer::~Buffer() = default;
-
-
-            Buffer::buffer_type Buffer::data() noexcept
-            {
-               return m_buffer.get();
-            }
-
-            const Buffer::buffer_type Buffer::data() const noexcept
-            {
-               return m_buffer.get();
-            }
-
-            Buffer::size_type Buffer::size() const noexcept
-            {
-               return m_size;
-            }
-
-            Buffer::Raw Buffer::release() noexcept
-            {
-               Raw result{ m_buffer.release(), m_size};
                m_size = 0;
-               return result;
-            }
-
-            void Buffer::resize( size_type size)
-            {
-               Buffer buffer{ Raw{ tprealloc( data(), size), size}};
-
-               if( ! buffer.m_buffer)
-               {
-                  throw exception::memory::Allocation{ "failed to resize buffer: " + common::error::xatmi::error( tperrno)};
-               }
-
-               swap( buffer);
-               buffer.release();
-            }
-
-            void Buffer::swap( Buffer& buffer) noexcept
-            {
-               std::swap( m_buffer, buffer.m_buffer);
-               std::swap( m_size, buffer.m_size);
-            }
-
-
-            void Buffer::deleter_type::operator () ( buffer_type buffer) const
-            {
-               tpfree( buffer);
-            }
-
-            Type type( const Buffer& source)
-            {
-               return buffer::type( source.data());
-            }
-
-            Buffer copy( const Buffer& source)
-            {
-               Buffer result{ type( source), source.size()};
-
-               common::range::copy( source, std::begin( result));
-
-               return result;
-            }
-
-
-
-         //} // raw
-
-         Raw::Raw( platform::raw_buffer_type buffer, std::size_t size) : buffer( buffer), size( size)
-         {
-
-         }
-
-         Raw allocate( const Type& type, std::size_t size)
-         {
-            Raw result{ tpalloc( type.name.c_str(), type.subname.c_str(), size), size};
-
-            if( result.buffer == nullptr)
-            {
                throw exception::memory::Allocation{ "could not allocate buffer: " + common::error::xatmi::error( tperrno)};
             }
-            return result;
          }
 
-         Raw copy( const Raw& buffer)
-         {
-            Raw result = allocate( type( buffer.buffer), buffer.size);
-            common::range::copy( buffer, result.buffer);
-            return result;
-         }
-
-         Base::Base( Raw buffer) : m_buffer( buffer.buffer), m_size( buffer.size)
+         Buffer::Buffer( const Raw& buffer)
+            : m_buffer{ buffer.buffer, deleter_type{}}, m_size( buffer.size)
          {
 
          }
 
-         Base::Base( Type&& type, std::size_t size)
-            : Base{ allocate( std::move( type), size)}
+         Buffer::Buffer( Buffer&&) = default;
+         Buffer& Buffer::operator = ( Buffer&&) = default;
+         Buffer::~Buffer() = default;
+
+
+         Buffer::buffer_type Buffer::data() noexcept
          {
+            return m_buffer.get();
          }
 
-         Base::~Base()
+         const Buffer::buffer_type Buffer::data() const noexcept
          {
-
+            return m_buffer.get();
          }
 
-         Raw Base::raw()
-         {
-            return Raw( m_buffer.get(), m_size);
-         }
-
-         std::size_t Base::size() const
+         Buffer::size_type Buffer::size() const noexcept
          {
             return m_size;
          }
 
-         Raw Base::release()
+         Buffer::Raw Buffer::release() noexcept
          {
-            Raw result( m_buffer.release(), m_size);
-
+            Raw result{ m_buffer.release(), m_size};
             m_size = 0;
+            return result;
+         }
+
+         void Buffer::resize( size_type size)
+         {
+            Buffer buffer{ Raw{ tprealloc( data(), size), size}};
+
+            if( ! buffer.m_buffer)
+            {
+               throw exception::memory::Allocation{ "failed to resize buffer: " + common::error::xatmi::error( tperrno)};
+            }
+
+            swap( buffer);
+            buffer.release();
+         }
+
+         void Buffer::reset( Raw raw)
+         {
+            Buffer buffer{ raw};
+            swap( buffer);
+         }
+
+
+
+         void Buffer::swap( Buffer& buffer) noexcept
+         {
+            std::swap( m_buffer, buffer.m_buffer);
+            std::swap( m_size, buffer.m_size);
+            //std::swap( m_write_offset, buffer.m_write_offset);
+            //std::swap( m_read_offset, buffer.m_read_offset);
+         }
+
+         /*
+         void Buffer::clear() noexcept
+         {
+            //m_write_offset = 0;
+            //m_read_offset = 0;
+         }
+         */
+
+
+         void Buffer::deleter_type::operator () ( buffer_type buffer) const
+         {
+            tpfree( buffer);
+         }
+
+         Type type( const Buffer& source)
+         {
+            return buffer::type( source.data());
+         }
+
+         Buffer copy( const Buffer& source)
+         {
+            Buffer result{ type( source), source.size()};
+
+            common::range::copy( source, std::begin( result));
+
+            common::log::internal::debug << "copy - source: " << source << " result: " << result << std::endl;
 
             return result;
          }
 
-         Type Base::type() const
+
+         namespace binary
          {
-            return buffer::type( m_buffer.get());
-         }
 
-         void Base::swap( Base& other)
-         {
-            std::swap( m_buffer, other.m_buffer);
-            std::swap( m_size, other.m_size);
-         }
-
-         void Base::reset( Raw buffer)
-         {
-            doReset( buffer);
-         }
-
-         void Base::clear()
-         {
-            doClear();
-         }
-
-         void Base::doReset( Raw buffer)
-         {
-            m_buffer.reset( buffer.buffer);
-            m_size = buffer.size;
-         }
-
-         void Base::expand( std::size_t expansion)
-         {
-            //
-            // Take the greater of double current size and current size + expansion
-            //
-            const std::size_t newSize = m_size * 2 > m_size + expansion ? m_size * 2 : m_size + expansion;
-
-            char* buffer = m_buffer.release();
-
-            m_buffer.reset( tprealloc( buffer, newSize));
-
-            if( m_buffer.get() == nullptr)
+            void Stream::clear() noexcept
             {
-               m_size = 0;
-               throw common::exception::NotReallySureWhatToNameThisException();
-
+               m_write_offset = 0;
+               m_read_offset = 0;
             }
 
-         }
+            void Stream::swap( Stream& stream) noexcept
+            {
+               Buffer::swap( stream);
+               std::swap( m_write_offset, stream.m_write_offset);
+               std::swap( m_read_offset, stream.m_read_offset);
+            }
 
 
-         void Base::xatmi_deleter::operator ()( platform::raw_buffer_type xatmiBuffer) const
-         {
-            tpfree( xatmiBuffer);
-         }
+            void Stream::consume( void* value, size_type count)
+            {
+               //common::log::internal::debug << "consume - range: " << range.size() << " buffer: " << *this << std::endl;
 
+               if( m_read_offset + count > size())
+               {
+                  throw exception::NotReallySureWhatToCallThisExcepion( "Attempt to read out of bounds  ro: " + std::to_string( m_read_offset) + " size: " + std::to_string( size()));
+               }
 
+               memcpy( value, begin() + m_read_offset, count);
+               m_read_offset += count;
+            }
 
-         Binary::Binary( Binary&&) = default;
-         Binary& Binary::operator = ( Binary&&) = default;
+            void Stream::append( const void* value, size_type count)
+            {
+               //common::log::internal::debug << "append - range: " << range.size()  << " buffer: " << *this << std::endl;
 
+               while( m_write_offset + count > size())
+               {
+                  resize( size() * 2);
+               }
 
-         Binary::Binary() : Base( Type{ "X_OCTET", "binary"}, 1024)
-         {
+               memcpy(  begin() + m_write_offset, value, count);
+               m_write_offset += count;
+            }
 
-         }
-
-         //Binary::Binary( Base&& base) : Base( std::move( base)) {}
-
-
-
+         } // binary
 
          X_Octet::X_Octet( const std::string& subtype) : X_Octet( subtype, 1024)
          {
          }
 
-         X_Octet::X_Octet( const std::string& subtype, std::size_t size) : Base( Type{ "X_OCTET", subtype}, size)
+         X_Octet::X_Octet( const std::string& subtype, std::size_t size) : binary::Stream( Type{ "X_OCTET", subtype}, size)
          {
             if( size)
             {
-               m_buffer.get()[ 0] = '\0';
+               data()[ 0] = '\0';
             }
 
          }
 
-         X_Octet::X_Octet( Raw buffer) : Base( buffer)
+         X_Octet::X_Octet( Buffer::Raw buffer) : binary::Stream( buffer)
          {
          }
 
          std::string X_Octet::str() const
          {
-            return m_buffer.get();
+            return std::string{ std::begin( *this), std::end( *this)};
          }
 
          void X_Octet::str( const std::string& new_string)
          {
             if( new_string.size() > size())
             {
-               expand( new_string.size() - size() + 1);
+               resize( new_string.size() + 1);
             }
-            memcpy( m_buffer.get(), new_string.c_str(), new_string.size());
+            memcpy( data(), new_string.c_str(), new_string.size());
          }
+
+
 
       } // buffer
    } // sf

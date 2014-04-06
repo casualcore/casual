@@ -11,7 +11,7 @@
 // TODO: temporary to test factory
 #include "sf/service_protocol.h"
 
-#include "common/trace.h"
+#include "common/internal/trace.h"
 
 
 //
@@ -104,7 +104,7 @@ namespace casual
 
          std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
          {
-            common::Trace trace( "sf::service::Factory::create");
+            common::trace::internal::Scope trace( "sf::service::Factory::create");
 
             sf::buffer::Type type = sf::buffer::type( serviceInfo->data);
 
@@ -122,7 +122,7 @@ namespace casual
 
          Factory::Factory()
          {
-            common::Trace trace( "sf::service::Factory::Factory");
+            common::trace::internal::Scope trace( "sf::service::Factory::Factory");
 
             registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
             registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));

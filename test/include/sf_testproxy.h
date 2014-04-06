@@ -36,33 +36,6 @@ namespace test
          //## declarations protected section begin [.100]
          //## declarations protected section end   [.100]
 
-
-         /*
-         // service name med inledande versal
-         // comments genereras här.
-         // Jag antar att Casual_sf_test1 har id 666 i detta exempel
-         class SomeService1 : public casual::sf::proxy::Async
-         {
-         public:
-
-            SomeService1();
-            SomeService1( long flags);
-
-            //## declarations protected section begin [666.100]
-            //## declarations protected section end   [666.100]
-
-
-            // (in, inout)
-            //  vi skulle kunna splitta comments om arguemt baserat på in, out osv
-            void send( const std::string& value);
-
-            // return, (out, inout)
-            //  vi skulle kunna splitta comments om arguemt baserat på in, out osv
-            std::vector< std::string> receive();
-         };
-         */
-
-
          //
          // Another design
          //
@@ -83,10 +56,9 @@ namespace test
 
                result_type operator() ();
 
-            //private:
-
+            private:
+               friend class SomeService2;
                Receive( casual::sf::proxy::async::Receive&& receive);
-
                casual::sf::proxy::async::Receive m_receive;
             };
 
@@ -94,7 +66,7 @@ namespace test
             Receive operator() ( const std::string& value);
 
          private:
-            casual::sf::proxy::async::Send m_send;
+            casual::sf::proxy::async::Send m_service;
          };
 
 
@@ -110,17 +82,20 @@ namespace test
          // service name med inledande versal
          // comments genereras här.
          // Jag antar att Casual_sf_test1 har id 666 i detta exempel
-         class Casual_sf_test1 : public casual::sf::proxy::Sync
+         class SomeService2
          {
          public:
 
-            Casual_sf_test1();
-            Casual_sf_test1( long flags);
+            SomeService2();
+            SomeService2( long flags);
 
             //## declarations protected section begin [666.200]
             //## declarations protected section end   [666.200]
 
-            std::vector< std::string> call( const std::string& value);
+            std::vector< std::string> operator() ( const std::string& value);
+
+         private:
+            casual::sf::proxy::sync::Call m_service;
          };
 
          // fler services...
@@ -136,7 +111,7 @@ namespace test
       //## declarations protected section end   [.60]
 
       // comments
-      std::vector< std::string> casual_sf_test1( const std::string& value);
+      std::vector< std::string> someService2( const std::string& value);
 
       // fler services...
 

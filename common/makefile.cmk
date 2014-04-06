@@ -31,6 +31,7 @@ Compile( "source/queue.cpp", "obj/queue.o")
 Compile( "source/uuid.cpp", "obj/uuid.o")
 Compile( "source/environment.cpp", "obj/environment.o")
 Compile( "source/file.cpp", "obj/file.o")
+Compile( "source/string.cpp", "obj/string.o")
 Compile( "source/signal.cpp", "obj/signal.o")
 Compile( "source/platform.cpp", "obj/platform.o")
 Compile( "source/log.cpp", "obj/log.o")
@@ -53,6 +54,7 @@ LinkLibrary( "casual-common",
 	"obj/uuid.o",
 	"obj/environment.o",
 	"obj/file.o",
+    "obj/string.o",
 	"obj/signal.o",
 	"obj/platform.o",
 	"obj/log.o",

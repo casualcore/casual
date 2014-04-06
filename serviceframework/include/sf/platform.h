@@ -22,6 +22,7 @@ namespace casual
       namespace platform
       {
          typedef common::platform::raw_buffer_type raw_buffer_type;
+         using const_raw_buffer_type = common::platform::const_raw_buffer_type;
 
          typedef common::platform::binary_type binary_type;
 

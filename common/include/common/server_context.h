@@ -17,8 +17,8 @@
 #include "common/calling_context.h"
 #include "common/transaction_context.h"
 #include "common/platform.h"
-#include "common/log.h"
-#include "common/trace.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 
 #include <xatmi.h>
@@ -181,6 +181,8 @@ namespace casual
                template< typename... Args>
                basic_call( server::Arguments& arguments, Args&&... arg) : m_policy( std::forward< Args>( arg)...)
                {
+                  trace::internal::Scope trace{ "callee::handle::basic_call::basic_call"};
+
                   m_state.m_server_done = arguments.m_server_done;
 
                   message::server::Connect message;
@@ -223,9 +225,11 @@ namespace casual
                ~basic_call() noexcept
                {
 
+                  trace::internal::Scope trace{ "callee::handle::basic_call::~basic_call"};
+
                   try
                   {
-                     Trace trace{ "basic_call::~basic_call"};
+
                      //
                      // Call tpsrvdone
                      //
@@ -253,7 +257,7 @@ namespace casual
                //!
                void dispatch( message_type& message)
                {
-                  common::Trace trace{ "basic_call::dispatch"};
+                  trace::internal::Scope trace{ "callee::handle::basic_call::dispatch"};
 
                   //
                   // Set starttime. TODO: Should we try to get the startime earlier? Hence, at ipc-queue level?

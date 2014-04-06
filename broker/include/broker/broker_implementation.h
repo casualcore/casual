@@ -13,7 +13,7 @@
 
 #include "common/message.h"
 #include "common/queue.h"
-#include "common/log.h"
+#include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/server_context.h"
 #include "common/algorithm.h"
@@ -368,7 +368,7 @@ namespace casual
                      writer( reply);
 
                      serviceFound->second->lookedup++;
-                     log::debug << "serviceFound->second->lookedup: " << serviceFound->second->lookedup << std::endl;
+                     log::internal::debug << "serviceFound->second->lookedup: " << serviceFound->second->lookedup << std::endl;
                   }
                   else
                   {
@@ -486,8 +486,8 @@ namespace casual
 
             message::server::Configuration connect( message::server::Connect& message)
             {
-               log::debug << "broker server - message.server.queue_id.: " << message.server.queue_id << std::endl;
-               log::debug << "broker server - message.path............: " << message.path << std::endl;
+               log::internal::debug << "broker server - message.server.queue_id.: " << message.server.queue_id << std::endl;
+               log::internal::debug << "broker server - message.path............: " << message.path << std::endl;
 
                message.server.queue_id = ipc::getReceiveQueue().id();
                message.path = common::environment::file::executable();

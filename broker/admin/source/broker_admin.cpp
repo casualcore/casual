@@ -112,10 +112,8 @@ namespace casual
 
          sf::xatmi::service::call( "_broker_listServers", input, output, 0);
 
-         auto raw = output.raw();
-         const std::string json( raw.buffer, raw.buffer + raw.size);
 
-         std::cout << "json:\n" << json << std::endl;
+         std::cout << "json:\n" << output.str() << std::endl;
 
 
       }
