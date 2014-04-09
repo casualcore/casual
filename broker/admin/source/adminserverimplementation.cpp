@@ -11,6 +11,8 @@
 
 
 #include "common/trace.h"
+#include "common/algorithm.h"
+
 
 
 //## includes protected section end   [.10]
@@ -52,13 +54,10 @@ std::vector< admin::ServerVO> AdminServerImplementation::_broker_listServers( )
 
    std::vector< admin::ServerVO> result;
 
-   std::transform(
-      std::begin( broker.state().servers),
-      std::end( broker.state().servers),
-      std::back_inserter( result),
-         admin::transform::Chain::link(
-            admin::transform::Server(),
-            sf::functional::extract::Second()));
+   common::range::transform( broker.state().servers, result,
+      common::chain::Nested::link(
+         admin::transform::Server(),
+         common::extract::Second()));
 
    return result;
 
@@ -74,13 +73,10 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
 
    std::vector< admin::ServiceVO> result;
 
-   std::transform(
-      std::begin( state.services),
-      std::end( state.services),
-      std::back_inserter( result),
-         admin::transform::Chain::link(
+   common::range::transform( state.services, result,
+         common::chain::Nested::link(
             admin::transform::Service(),
-            sf::functional::extract::Second()));
+            common::extract::Second()));
 
    return result;
 

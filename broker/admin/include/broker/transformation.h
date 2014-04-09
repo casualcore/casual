@@ -11,7 +11,6 @@
 #include "broker/brokervo.h"
 #include "broker/broker.h"
 
-#include "sf/functional.h"
 
 namespace casual
 {
@@ -22,7 +21,6 @@ namespace casual
       {
          namespace transform
          {
-            typedef sf::functional::Chain< sf::functional::link::Nested> Chain;
 
             struct Server
             {

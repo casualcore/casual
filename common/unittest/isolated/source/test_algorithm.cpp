@@ -159,6 +159,57 @@ namespace casual
       }
 
 
+      struct True
+      {
+         template< typename T>
+         bool operator () ( T&& value) const
+         {
+            return true;
+         }
+      };
+
+
+      struct False
+      {
+         template< typename T>
+         bool operator () ( T&& value) const
+         {
+            return false;
+         }
+      };
+
+      TEST( casual_common_algorithm, chain_basic)
+      {
+
+         std::vector< int> range{ 1, 2, 4, 5, 6, 7};
+
+         auto last = std::partition( std::begin( range), std::end( range), chain::Or::link( True(), False()));
+
+      }
+
+
+      TEST( casual_common_algorithm, chain_basic_lvalue)
+      {
+         auto functor = chain::Or::link( True(), False());
+
+         std::vector< int> range{ 1, 2, 4, 5, 6, 7};
+
+         auto last = std::partition( std::begin( range), std::end( range), functor);
+      }
+
+      TEST( casual_common_algorithm, chain_basic_lvalue1)
+      {
+         True pred1;
+         False pred2;
+         auto functor = chain::Or::link( pred1, pred2);
+
+         std::vector< int> range{ 1, 2, 4, 5, 6, 7};
+
+         auto last = std::partition( std::begin( range), std::end( range), functor);
+
+      }
+
+
 
    } // algorithm
 

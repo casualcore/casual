@@ -147,8 +147,8 @@ namespace casual
          }
 
 
-         template< typename InputIter, typename OutputIter, typename T>
-         Range< OutputIter> transform( Range< InputIter> range, Range< OutputIter> output, T transform)
+         template< typename InputRange, typename OutputRange, typename T>
+         OutputRange transform( InputRange&& range, OutputRange&& output, T transform)
          {
             assert( range.size() <= output.size());
             std::transform( std::begin( range), std::end( range), std::begin( output), transform);
@@ -325,6 +325,104 @@ namespace casual
 
          } // sorted
       } // range
+
+
+      namespace chain
+      {
+         namespace link
+         {
+
+            template< typename L, typename T1, typename T2>
+            struct basic_link
+            {
+               using link_type = L;
+
+               basic_link( T1&& left, T2&& right) : left( std::forward< T1>( left)), right( std::forward< T2>( right)) {}
+
+               template< typename T>
+               auto operator() ( T&& value) const -> decltype( link_type::link( std::declval< T1>(),  std::declval< T2>(), std::forward< T>( value)))
+               {
+                  return link_type::link( left, right, std::forward< T>( value));
+               }
+            private:
+               T1 left;
+               T2 right;
+            };
+
+            template< typename Link, typename Arg>
+            Arg make( Arg&& param) //-> decltype( std::forward< Arg>( param))
+            {
+               return param; //std::forward< Arg>( param);
+            }
+
+            template< typename L, typename Arg, typename... Args>
+            auto make( Arg&& param, Args&&... params) -> basic_link< L, Arg, decltype( make< L>( std::forward< Args>( params)...))>
+            {
+               using nested_type = decltype( make< L>( std::forward< Args>( params)...));
+               return basic_link< L, Arg, nested_type>( std::forward< Arg>( param), make< L>( std::forward< Args>( params)...));
+            }
+
+            struct Nested
+            {
+               template< typename T1, typename T2, typename T>
+               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( right( value)))
+               {
+                  return left( right( value));
+               }
+            };
+
+            struct And
+            {
+               template< typename T1, typename T2, typename T>
+               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) && right( value))
+               {
+                  return left( value) && right( value);
+               }
+            };
+
+            struct Or
+            {
+               template< typename T1, typename T2, typename T>
+               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) || right( value))
+               {
+                  return left( value) || right( value);
+               }
+            };
+
+         } // link
+
+         template< typename Link>
+         struct basic_chain
+         {
+            template< typename... Args>
+            static auto link( Args&&... params) -> decltype( link::make< Link>( std::forward< Args>( params)...))
+            {
+               return link::make< Link>( std::forward< Args>( params)...);
+            }
+         };
+
+
+         using Nested = basic_chain< link::Nested>;
+         using And = basic_chain< link::And>;
+         using Or = basic_chain< link::Or>;
+
+
+      } // chain
+
+      namespace extract
+      {
+         struct Second
+         {
+            template< typename T>
+            auto operator () ( T&& value) const -> decltype( value.second)
+            {
+               return value.second;
+            }
+         };
+
+      }
+
+
    } // common
 
 

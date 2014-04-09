@@ -14,10 +14,7 @@
 #include "common/signal.h"
 #include "common/uuid.h"
 #include "common/internal/log.h"
-
-
-// TODO: header dependency to sf... not so good...
-#include "sf/functional.h"
+#include "common/algorithm.h"
 
 
 #include <fstream>
@@ -262,9 +259,6 @@ namespace casual
                         message::Transport::correalation_type& m_correlation;
                      };
 
-
-                     typedef sf::functional::Chain< sf::functional::link::And> And;
-
                   } // find
                } // <unnamed>
             } // local
@@ -292,7 +286,7 @@ namespace casual
                std::vector< message::Complete> result;
 
                auto findIter = find(
-                     local::find::And::link(
+                     chain::And::link(
                            local::find::Type( type),
                            local::find::Complete()), flags);
 
