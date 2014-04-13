@@ -67,7 +67,7 @@ namespace casual
                   mockup::queue::clearAllQueues();
 
                   // reset global TM queue
-                  transaction::Context::instance().state().transactionManagerQueue = 0;
+                  //transaction::Context::instance().state().transactionManagerQueue = 0;
 
                   // prep the configuration reply - only message we will read
                   message::server::Configuration message;
@@ -226,7 +226,7 @@ namespace casual
 
          local::Call callHandler( arguments);
 
-         EXPECT_TRUE( transaction::Context::instance().state().transactionManagerQueue == 666);
+         EXPECT_TRUE( transaction::Context::instance().state().manager() == 666);
 
       }
 

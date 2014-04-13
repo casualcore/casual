@@ -76,13 +76,20 @@ namespace casual
                chained = TX_CHAINED,
             };
 
-            ipc::send::Queue::id_type transactionManagerQueue = 0;
+            //!
+            //! @return transaction manager queue
+            //!
+            ipc::send::Queue::id_type manager();
+
+            //ipc::send::Queue::id_type transactionManagerQueue = 0;
 
             std::vector< Resource> resources;
 
             std::stack< Transaction> transactions;
 
             Control control = Control::unchained;
+
+
 
          };
 

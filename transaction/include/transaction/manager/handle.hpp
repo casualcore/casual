@@ -92,9 +92,6 @@ namespace casual
                };
 
 
-
-
-
                template< typename Q>
                void commitReply( State& state, const Transaction& transaction, int code = XA_OK)
                {
@@ -578,9 +575,9 @@ namespace casual
                message.xid.generate();
             }
 
-            auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-            if( found.empty())
+            if( ! found)
             {
 
                //
@@ -624,11 +621,11 @@ namespace casual
 
             using non_block_writer = typename queue_policy::non_block_writer;
 
-            auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-            if( ! found.empty())
+            if( found)
             {
-               auto& transaction = *found.first;
+               auto& transaction = *found;
 
                //
                // Only the instigator can fiddle with the transaction
@@ -652,7 +649,7 @@ namespace casual
                      //
                      internal::send::Reply<
                         non_block_writer,
-                        common::message::transaction::resource::prepare::Reply> sender{ m_state};
+                        common::message::transaction::prepare::Reply> sender{ m_state};
 
                      sender( message, XA_RDONLY);
                      break;
@@ -716,12 +713,11 @@ namespace casual
             //
             // Find the transaction
             //
-            auto found = common::range::find_if(
-                  common::range::make( m_state.transactions), find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-            if( ! found.empty())
+            if( found)
             {
-               auto& transaction = *found.first;
+               auto& transaction = *found;
 
                internal::send::resource::Requests<
                   non_block_writer,
@@ -761,11 +757,11 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-               if( ! found.empty() && ! found.first->resources.empty())
+               if( found && ! found->resources.empty())
                {
-                  auto& transaction = *found.first;
+                  auto& transaction = *found;
                   common::log::internal::transaction << "prepare - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
@@ -813,11 +809,11 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-               if( ! found.empty())
+               if( found)
                {
-                  auto& transaction = *found.first;
+                  auto& transaction = *found;
                   common::log::internal::transaction << "commit - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
@@ -854,11 +850,11 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-               if( ! found.empty())
+               if( found)
                {
-                  auto& transaction = *found.first;
+                  auto& transaction = *found;
                   common::log::internal::transaction << "rollback - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
@@ -898,7 +894,7 @@ namespace casual
                      resource.state = Transaction::Resource::State::cPrepareReplied;
 
 
-                     if( common::range::all_of( common::range::make( transaction.resources),
+                     if( common::range::all_of( transaction.resources,
                            Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
                      {
 
@@ -940,7 +936,7 @@ namespace casual
                      resource.state = Transaction::Resource::State::cCommitReplied;
 
 
-                     if( common::range::all_of( common::range::make( transaction.resources),
+                     if( common::range::all_of( transaction.resources,
                            Transaction::Resource::state::Filter{ Transaction::Resource::State::cCommitReplied}))
                      {
 

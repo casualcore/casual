@@ -6,9 +6,9 @@
 //!
 
 #include "common/transaction_context.h"
-#include "common/log.h"
 #include "common/queue.h"
-#include "common/trace.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 #include <map>
 #include <algorithm>
@@ -80,6 +80,37 @@ namespace casual
          }
 
 
+         int xaTotx( int code)
+         {
+            switch( code)
+            {
+               case XA_RBROLLBACK:
+               case XA_RBCOMMFAIL:
+               case XA_RBDEADLOCK:
+               case XA_RBINTEGRITY:
+               case XA_RBOTHER:
+               case XA_RBPROTO:
+               case XA_RBTIMEOUT:
+               case XA_RBTRANSIENT:
+               case XA_NOMIGRATE:
+               case XA_HEURHAZ: return TX_HAZARD;
+               case XA_HEURCOM:
+               case XA_HEURRB:
+               case XA_HEURMIX: return TX_MIXED;
+               case XA_RETRY:
+               case XA_RDONLY: return TX_OK;
+               case XA_OK: return TX_OK;
+               case XAER_ASYNC:
+               case XAER_RMERR:
+               case XAER_NOTA: return TX_NO_BEGIN;
+               case XAER_INVAL:
+               case XAER_PROTO: return TX_PROTOCOL_ERROR;
+               case XAER_RMFAIL:
+               case XAER_DUPID:
+               case XAER_OUTSIDE: return TX_OUTSIDE;
+            }
+         }
+
 
 
          void handleXAresponse( std::vector< int>& result)
@@ -106,6 +137,26 @@ namespace casual
             return id++;
          }
 
+         namespace local
+         {
+            namespace
+            {
+               ipc::send::Queue::id_type initializeTMQueueId()
+               {
+
+                  return 0;
+               }
+
+            } // <unnamed>
+         } // local
+
+         ipc::send::Queue::id_type State::manager()
+         {
+            const static ipc::send::Queue::id_type id = local::initializeTMQueueId();
+            return id;
+         }
+
+
          Context& Context::instance()
          {
             static Context singleton;
@@ -114,7 +165,7 @@ namespace casual
 
          void Context::apply( const message::server::Configuration& configuration)
          {
-            m_state.transactionManagerQueue = configuration.transactionManagerQueue;
+            //m_state.transactionManagerQueue = configuration.transactionManagerQueue;
 
             //
             // Local copy
@@ -170,6 +221,19 @@ namespace casual
 
          namespace local
          {
+            namespace pop
+            {
+               struct Guard
+               {
+                  Guard( std::stack< Transaction>& transactions) : m_transactions( transactions) {}
+                  ~Guard() { m_transactions.pop();}
+
+                  std::stack< Transaction>& m_transactions;
+               };
+            } // remove
+
+
+
             template< typename QW, typename QR>
             int startTransaction( QW& writer, QR& reader, Transaction& trans)
             {
@@ -199,7 +263,7 @@ namespace casual
             Transaction trans;
 
 
-            queue::blocking::Writer writer{ m_state.transactionManagerQueue};
+            queue::blocking::Writer writer{ m_state.manager()};
 
             if( transaction.xid)
             {
@@ -257,6 +321,8 @@ namespace casual
 
          int Context::begin()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::begin"};
+
             if( ! m_state.transactions.empty())
             {
                if( m_state.transactions.top().state != Transaction::State::inactive)
@@ -265,7 +331,7 @@ namespace casual
                }
             }
 
-            queue::blocking::Writer writer( m_state.transactionManagerQueue);
+            queue::blocking::Writer writer( m_state.manager());
             queue::blocking::Reader reader( ipc::getReceiveQueue());
 
             Transaction trans;
@@ -281,6 +347,8 @@ namespace casual
 
          void Context::open()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::open"};
+
             std::vector< int> result;
 
             for( auto& xa : m_state.resources)
@@ -301,6 +369,8 @@ namespace casual
 
          void Context::close()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::close"};
+
             std::vector< int> result;
 
             for( auto& xa : m_state.resources)
@@ -325,19 +395,56 @@ namespace casual
 
          int Context::commit()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::commit"};
 
             auto transaction = currentTransaction();
 
             if( transaction.xid)
             {
+               //
+               // Regardless what happens we'll remove the current transaction
+               //
+               local::pop::Guard popGuard( m_state.transactions);
 
                message::transaction::commit::Request request;
-
                request.xid = transaction.xid;
+               request.id = message::server::Id::current();
 
+               queue::blocking::Writer writer( m_state.manager());
+               writer( request);
+
+
+
+
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+               //
+               // First we receive the prepare-response
+               //
+
+               message::transaction::prepare::Reply prepareReply;
+               reader( prepareReply);
+
+               log::internal::transaction << "prepare reply: " << xaError( prepareReply.state) << std::endl;
+
+
+               if( prepareReply.state == XA_OK)
+               {
+                  //
+                  // Now we wait for the commit
+                  //
+                  message::transaction::commit::Reply commitReply;
+                  reader( commitReply);
+
+                  log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
+
+                  return xaTotx( commitReply.state);
+               }
+               return xaTotx( prepareReply.state);
             }
             else
             {
+               log::internal::transaction << "no ongoing transaction: " << txError( TX_NO_BEGIN) << std::endl;
                return TX_NO_BEGIN;
             }
 
@@ -346,7 +453,39 @@ namespace casual
 
          int Context::rollback()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::rollback"};
 
+            auto transaction = currentTransaction();
+
+            if( transaction.xid)
+            {
+
+               //
+               // Regardless what happens we'll remove the current transaction
+               //
+               local::pop::Guard popGuard( m_state.transactions);
+
+               message::transaction::rollback::Request request;
+               request.xid = transaction.xid;
+               request.id = message::server::Id::current();
+
+               queue::blocking::Writer writer( m_state.manager());
+               writer( request);
+
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+               message::transaction::rollback::Reply reply;
+               reader( reply);
+
+               log::internal::transaction << "rollback reply xa: " << xaError( reply.state) << " tx: " << txError( xaTotx( reply.state)) << std::endl;
+
+               return xaTotx( reply.state);
+            }
+            else
+            {
+               log::internal::transaction << "no ongoing transaction: " << txError( TX_NO_BEGIN) << std::endl;
+               return TX_NO_BEGIN;
+            }
             return TX_OK;
          }
 
