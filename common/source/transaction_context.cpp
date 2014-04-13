@@ -325,6 +325,22 @@ namespace casual
 
          int Context::commit()
          {
+
+            auto transaction = currentTransaction();
+
+            if( transaction.xid)
+            {
+
+               message::transaction::commit::Request request;
+
+               request.xid = transaction.xid;
+
+            }
+            else
+            {
+               return TX_NO_BEGIN;
+            }
+
             return TX_OK;
          }
 

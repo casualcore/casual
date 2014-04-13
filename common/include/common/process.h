@@ -25,6 +25,11 @@ namespace casual
       {
 
          //!
+         //!
+         //!
+         const std::string& path();
+
+         //!
          //! @return process id (pid) for current process.
          //!
          platform::pid_type id();

@@ -32,7 +32,7 @@ namespace casual
       struct Range
       {
          using iterator = Iter;
-         using value_type = typename std::iterator_traits< typename std::decay< Iter>::type>::value_type;
+         using value_type = typename std::iterator_traits< Iter>::value_type;
 
          Range() : last( first) {}
          Range( Iter first, Iter last) : first( first), last( last) {}
@@ -47,6 +47,35 @@ namespace casual
             return first == last;
          }
 
+         explicit operator bool () const
+         {
+            return ! empty();
+         }
+
+
+         auto operator * () -> decltype( *std::declval< iterator>()) { return *first;}
+         auto operator * () const -> decltype( *std::declval< iterator>()) { return *first;}
+
+
+         value_type* operator -> () { return &(*first);}
+         const value_type* operator -> () const { return &(*first);}
+
+         Range operator ++ ()
+         {
+            Range other{ *this};
+            ++first;
+            return other;
+         }
+
+         Range& operator ++ ( int)
+         {
+            ++first;
+            return *this;
+         }
+
+
+
+
 
          iterator begin() const { return first;}
          iterator end() const { return last;}
@@ -54,6 +83,27 @@ namespace casual
          iterator first;
          iterator last;
       };
+
+      template< typename Iter>
+      Range< Iter> operator + ( const Range< Iter>& lhs, const Range< Iter>& rhs)
+      {
+         Range< Iter> result( lhs);
+         if( rhs.first < result.first) result.first = rhs.first;
+         if( rhs.last > result.last) result = rhs.last;
+         return result;
+      }
+
+      template< typename Iter>
+      Range< Iter> operator - ( const Range< Iter>& lhs, const Range< Iter>& rhs)
+      {
+         Range< Iter> result{ lhs};
+         if( rhs.last > result.first && rhs.last < result.last) result.first = rhs.last;
+
+         if( rhs.first < result.last && rhs.first > result.first) result.last = rhs.first;
+
+         return result;
+      }
+
 
       template< typename Iter>
       std::ostream& operator << ( std::ostream& out, Range< Iter> range)
@@ -94,6 +144,13 @@ namespace casual
          {
             return make( container.rbegin(), container.rend());
          }
+
+         template< typename Iter>
+         Range< Iter> make( Range< Iter> range)
+         {
+            return range;
+         }
+
 
 
          template< typename R, typename C>
@@ -257,21 +314,21 @@ namespace casual
             return std::any_of( std::begin( range), std::end( range), predicate);
          }
 
-         template< typename Iter, typename T>
-         //typename std::enable_if< std::is_convertible< T, typename Range< Iter>::value_type>::value, Range< Iter>>::type
-         Range< Iter> find( Range< Iter> range, T&& value)
+         template< typename R, typename T>
+         auto find( R&& range, T&& value) -> decltype( make( range))
          {
-            range.first = std::find( range.first, range.last, std::forward< T>( value));
-            return range;
+            auto resultRange = make( std::forward< R>( range));
+            resultRange.first = std::find( std::begin( resultRange), std::end( resultRange), std::forward< T>( value));
+            return resultRange;
          }
 
 
-         template< typename Iter, typename P>
-         //typename std::enable_if< ! std::is_convertible< P, typename Range< Iter>::value_type>::value, Range< Iter>>::type
-         Range< Iter> find_if( Range< Iter> range, P predicate)
+         template< typename R, typename P>
+         auto find_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
-            range.first = std::find_if( range.first, range.last, predicate);
-            return range;
+            auto resultRange = make( std::forward< R>( range));
+            resultRange.first = std::find_if( std::begin( resultRange), std::end( resultRange), predicate);
+            return resultRange;
          }
 
 
@@ -281,6 +338,33 @@ namespace casual
             std::for_each( std::begin( range), std::end( range), functor);
             return range;
          }
+
+
+         template< typename R1, typename R2, typename F>
+         auto find_first_of( R1&& target, R2&& source, F functor) -> decltype( make( target))
+         {
+            auto resultRange = make( target);
+
+            resultRange.first = std::find_first_of(
+                  std::begin( resultRange), std::end( resultRange),
+                  std::begin( source), std::end( source), functor);
+
+            return resultRange;
+         }
+
+
+         template< typename R1, typename R2>
+         auto find_first_of( R1&& target, R2&& source) -> decltype( make( target))
+         {
+            auto resultRange = make( target);
+
+            resultRange.first = std::find_first_of(
+                  std::begin( resultRange), std::end( resultRange),
+                  std::begin( source), std::end( source));
+
+            return resultRange;
+         }
+
 
 
 

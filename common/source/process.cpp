@@ -13,6 +13,7 @@
 #include "common/trace.h"
 #include "common/signal.h"
 #include "common/string.h"
+#include "common/environment.h"
 
 
 //
@@ -37,7 +38,28 @@ namespace casual
    {
       namespace process
       {
+         namespace local
+         {
+            namespace
+            {
+               std::string getProcessPath()
+               {
+                  if( environment::variable::exists( "_"))
+                  {
+                     return environment::variable::get( "_");
+                  }
 
+                  return std::string{};
+               }
+
+            } // <unnamed>
+         } // local
+
+         const std::string& path()
+         {
+            static const std::string path = local::getProcessPath();
+            return path;
+         }
 
 
          platform::pid_type id()
