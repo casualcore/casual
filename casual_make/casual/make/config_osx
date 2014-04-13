@@ -57,10 +57,10 @@ endif
 # Compile and link directives
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -c -fPIC -Wall -pedantic -std=c++11
-   LINK_DIRECTIVES_LIB =  -g -dynamiclib -fPIC 
-   LINK_DIRECTIVES_EXE =  -g -fPIC 
-   LINK_DIRECTIVES_ARCHIVE =  -g -fPIC
+   COMPILE_DIRECTIVES = -ggdb -c -fPIC -Wall -pedantic -std=c++11
+   LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib -fPIC 
+   LINK_DIRECTIVES_EXE =  -ggdb -fPIC 
+   LINK_DIRECTIVES_ARCHIVE =  -ggdb -fPIC
    
    ifdef ANALYZE
       COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage -std=c++11

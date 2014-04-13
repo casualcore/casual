@@ -286,9 +286,9 @@ def internal_cross_object_name(name):
     return internal_normalize_path( str.replace( name, ".o", "_crosscompile" + def_ObjectSuffix))
 
 
-def internal_cross_dependecies(objectfile):
-
-    return objectfile.replace(".o", "") + "._crosscompile"
+def internal_cross_dependecies( objectfiles):
+    
+    return internal_object_name_list( objectfiles.replace(".o", "_crosscompile.o"))
 
 def internal_dependency_file_name(objectfile):
     
@@ -363,7 +363,7 @@ def internal_BASE_LinkATMI(atmibuild, name, services, predirectives, objectfiles
     print 
     print "deploy: $(internal_target_deploy_name $atmi_target_name)"
     print 
-    print internal_target_name(atmi_target_name) + ": " + internal_executable_name_path( name) + " | " + local_destination_path
+    print internal_target_name(atmi_target_name) + ": " + internal_executable_name_path( name) + " " + USER_CASUAL_MAKE_FILE + " | " + local_destination_path
     print
     print "objects_" + atmi_target_name + " = " + internal_object_name_list( objectfiles)
     print "libs_" + atmi_target_name + " = $(addprefix -l, " + libs + ")"
@@ -455,7 +455,7 @@ def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
     print 
     print "compile: " + "$(objects_" + name + ")"
     print 
-    print filename + ": $(objects_" + name + ") " + DEPENDENT_TARGETS + " | " + local_destination_path
+    print filename + ": $(objects_" + name + ") " + DEPENDENT_TARGETS + " " + USER_CASUAL_MAKE_FILE + " | " + local_destination_path
 
     if linker == "ARCHIVER":
         print "\t" + linker + " " + linkdirectives + " " + filename  + " $(objects_" + name + ")"
