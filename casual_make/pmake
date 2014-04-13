@@ -111,7 +111,8 @@ def reformat( line):
     compiling = re.search(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*', line)
     archive = re.search(r'(^ar) \S+ (\S+\.a).*', line)
     link = re.search(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*', line)
-    make1 = re.search(r'^[\S\s]+ -f (.*make.*) .*', line)
+    #make1 = re.search(r'^[\S\s]+ -f (.*make.*) .*', line)
+    make1 = re.search(r'^(.*[.]cmk )(.*)', line)
     make2 = re.search(r'(^make\[.*\]:)(.*)', line)
     rm = re.search(r'^rm -f (.*)', line)
     buildserver = re.search(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*', line)
@@ -123,7 +124,7 @@ def reformat( line):
     elif link:
         return bcolors.BLUE + 'Link (' + link.group(1) + '): ' + bcolors.ENDC + link.group(4) + '\n'
     elif make1:
-        return bcolors.HEADER + 'Current makefile: ' + bcolors.ENDC + make1.group(1) + '\n'
+        return bcolors.HEADER + 'makefile: ' + bcolors.ENDC + make1.group(1) + bcolors.GREEN + make1.group(2) + bcolors.ENDC + '\n'
     elif make2:
         return bcolors.HEADER + make2.group(1) + bcolors.ENDC + make2.group(2) + '\n'
     elif rm:
@@ -210,7 +211,7 @@ if __name__ == '__main__':
     process = subprocess.Popen( command.split(), bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     
     while process.poll() is None:
-        print reformat( process.stdout.readline()),
+        sys.stdout.write( reformat( process.stdout.readline()))
     
     #
     # Manually "flush" stdout...
@@ -218,8 +219,13 @@ if __name__ == '__main__':
     line = process.stdout.readline()
     
     while( line):
-        print line,
+        sys.stdout.write( reformat( line))
         line = process.stdout.readline()
+        
+    if process.returncode == 0:
+        print bcolors.GREEN + 'build: SUCCESS' + bcolors.ENDC
+    else:
+        print bcolors.FAIL + 'build: FAILED' + bcolors.ENDC
     
     #print reformat( process.stdout.readline())
     
