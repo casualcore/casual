@@ -57,8 +57,8 @@ namespace casual
          auto operator * () const -> decltype( *std::declval< iterator>()) { return *first;}
 
 
-         value_type* operator -> () { return &(*first);}
-         const value_type* operator -> () const { return &(*first);}
+         iterator operator -> () { return first;}
+         //const value_type* operator -> () const { return &(*first);}
 
          Range operator ++ ()
          {
@@ -72,10 +72,6 @@ namespace casual
             ++first;
             return *this;
          }
-
-
-
-
 
          iterator begin() const { return first;}
          iterator end() const { return last;}
@@ -123,6 +119,39 @@ namespace casual
       }
 
 
+      template< typename T>
+      struct Negate
+      {
+         /*
+         template< typename F>
+         Negate( F&& functor) : m_functor{ std::forward< F>( functor)}
+         {
+
+         }
+         */
+
+         Negate( T&& functor) : m_functor{ std::move( functor)}
+         {
+
+         }
+
+         template< typename... Args>
+         bool operator () ( Args&& ...args) const
+         {
+            return ! m_functor( std::forward< Args>( args)...);
+         }
+
+      private:
+         T m_functor;
+      };
+
+
+      template< typename T>
+      Negate< T> negate( T&& functor)
+      {
+         return Negate< T>{ std::forward< T>( functor)};
+      }
+
 
       namespace range
       {
@@ -154,46 +183,52 @@ namespace casual
 
 
          template< typename R, typename C>
-         R sort( R range, C compare)
+         auto sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
          {
-            std::sort( std::begin( range), std::end( range), compare);
-            return range;
+            auto inputRange = make( std::forward< R>( range));
+            std::sort( std::begin( inputRange), std::end( inputRange), compare);
+            return inputRange;
          }
 
          template< typename R>
-         R sort( R range)
+         auto sort( R&& range) -> decltype( make( std::forward< R>( range)))
          {
-            std::sort( std::begin( range), std::end( range));
-            return range;
+            auto inputRange = make( std::forward< R>( range));
+            std::sort( std::begin( inputRange), std::end( inputRange));
+            return inputRange;
          }
 
-         template< typename Iter, typename C>
-         Range< Iter> stable_sort( Range< Iter> range, C compare)
+         template< typename R, typename C>
+         auto stable_sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
          {
-            std::stable_sort( std::begin( range), std::end( range), compare);
-            return range;
+            auto inputRange = make( std::forward< R>( range));
+            std::stable_sort( std::begin( inputRange), std::end( inputRange), compare);
+            return inputRange;
          }
 
-         template< typename Iter>
-         Range< Iter> stable_sort( Range< Iter> range)
+         template< typename R>
+         auto stable_sort( R&& range) -> decltype( make( std::forward< R>( range)))
          {
-            std::stable_sort( std::begin( range), std::end( range));
-            return range;
+            auto inputRange = make( std::forward< R>( range));
+            std::stable_sort( std::begin( inputRange), std::end( inputRange));
+            return inputRange;
          }
 
-         template< typename Iter, typename P>
-         Range< Iter> partition( Range< Iter> range, P predicate)
+         template< typename R, typename P>
+         auto partition( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
-            range.last = std::partition( std::begin( range), std::end( range), predicate);
-            return range;
+            auto inputRange = make( std::forward< R>( range));
+            inputRange.last = std::partition( std::begin( inputRange), std::end( inputRange), predicate);
+            return inputRange;
          }
 
 
-         template< typename Iter, typename P>
-         Range< Iter> stable_partition( Range< Iter> range, P predicate)
+         template< typename R, typename P>
+         auto stable_partition( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
-            range.last = std::stable_partition( std::begin( range), std::end( range), predicate);
-            return range;
+            auto inputRange = make( std::forward< R>( range));
+            inputRange.last = std::stable_partition( std::begin( inputRange), std::end( inputRange), predicate);
+            return inputRange;
          }
 
 
@@ -204,19 +239,23 @@ namespace casual
          }
 
 
+         /*
          template< typename InputRange, typename OutputRange, typename T>
          OutputRange transform( InputRange&& range, OutputRange&& output, T transform)
          {
-            assert( range.size() <= output.size());
-            std::transform( std::begin( range), std::end( range), std::begin( output), transform);
+            auto inputRange = make( std::forward< InputRange>( range));
+            //assert( inputRange.size() <= output.size());
+            std::transform( std::begin( inputRange), std::end( range), std::begin( output), transform);
             return output;
          }
+         */
 
 
-         template< typename Iter, typename C, typename T>
-         auto transform( Range< Iter> range, C& container, T transform) -> decltype( make( container))
+         template< typename R, typename C, typename T>
+         auto transform( R&& range, C& container, T transform) -> decltype( make( container))
          {
-            std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
+            auto inputRange = make( std::forward< R>( range));
+            std::transform( std::begin( inputRange), std::end( inputRange), std::back_inserter( container), transform);
             return make( container);
          }
 
@@ -333,10 +372,11 @@ namespace casual
 
 
          template< typename R, typename F>
-         R for_each( R range, F functor)
+         auto for_each( R&& range, F functor) -> decltype( make( std::forward< R>( range)))
          {
-            std::for_each( std::begin( range), std::end( range), functor);
-            return range;
+            auto resultRange = make( std::forward< R>( range));
+            std::for_each( std::begin( resultRange), std::end( resultRange), functor);
+            return resultRange;
          }
 
 

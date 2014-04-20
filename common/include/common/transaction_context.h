@@ -67,31 +67,9 @@ namespace casual
             bool suspended = false;
          };
 
-         struct State
-         {
-            typedef TRANSACTION_CONTROL control_type;
-            enum class Control : control_type
-            {
-               unchained = TX_UNCHAINED,
-               chained = TX_CHAINED,
-            };
-
-            //!
-            //! @return transaction manager queue
-            //!
-            ipc::send::Queue::id_type manager();
-
-            //ipc::send::Queue::id_type transactionManagerQueue = 0;
-
-            std::vector< Resource> resources;
-
-            std::stack< Transaction> transactions;
-
-            Control control = Control::unchained;
+         class Context;
 
 
-
-         };
 
          class Context
          {
@@ -125,9 +103,6 @@ namespace casual
             //! @}
 
 
-
-            void apply( const message::server::Configuration& configuration);
-
             //!
             //! Associate ongoing transaction, or start a new one if XID is null
             //!
@@ -145,13 +120,43 @@ namespace casual
             //!
             const Transaction& currentTransaction() const;
 
-            State& state();
+
+            void set( const std::vector< Resource>& resources);
+
 
          private:
 
-            Context();
+            typedef TRANSACTION_CONTROL control_type;
+            enum class Control : control_type
+            {
+               unchained = TX_UNCHAINED,
+               chained = TX_CHAINED,
+            };
 
-            State m_state;
+            Control control = Control::unchained;
+
+
+            std::vector< Resource> m_resources;
+            std::stack< Transaction> m_transactions;
+
+            //!
+            //! Attributes that is initialized from "manager"
+            //!
+            struct Manager
+            {
+               static const Manager& instance();
+
+               ipc::send::Queue::id_type queue = 0;
+               std::vector< message::resource::Manager> resources;
+            private:
+               Manager();
+            };
+
+            const Manager& manager();
+
+            void apply( const message::transaction::client::connect::Reply& configuration);
+
+            Context();
 
          };
 

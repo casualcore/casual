@@ -132,6 +132,8 @@ namespace casual
                   partBegin = partEnd;
                }
 
+               log::internal::debug << "sent message - type: " << message.type << " to " << m_id <<  " size: " << message.payload.size() << std::endl;
+
                return true;
             }
 

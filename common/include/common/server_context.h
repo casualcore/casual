@@ -185,7 +185,7 @@ namespace casual
 
                   m_state.m_server_done = arguments.m_server_done;
 
-                  message::server::Connect message;
+                  message::server::connect::Request message;
 
 
                   for( auto&& service : arguments.m_services)
@@ -194,19 +194,11 @@ namespace casual
                      m_state.services.emplace( service.name, std::move( service));
                   }
 
-                  std::swap( arguments.resources, transaction::Context::instance().state().resources);
 
                   //
                   // Connect to casual
                   //
-                  auto configuration = m_policy.connect( message);
-                  environment::domain::name( configuration.domain);
-
-                  //
-                  // Apply the configuration
-                  //
-                  transaction::Context::instance().apply( configuration);
-
+                  m_policy.connect( message, arguments.resources);
 
                   //
                   // Call tpsrvinit
@@ -405,7 +397,7 @@ namespace casual
                   };
 
 
-                  message::server::Configuration connect( message::server::Connect& message);
+                  void connect( message::server::connect::Request& message, const std::vector< transaction::Resource>& resources);
 
                   void disconnect();
 

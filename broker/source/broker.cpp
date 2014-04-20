@@ -171,8 +171,12 @@ namespace casual
                // Start the servers...
                //
                handle::transaction::ManagerConnect tmConnect( m_state);
-               handle::Connect instanceConnect( m_state);
-               action::boot::domain( m_state, domain, blockingReader, tmConnect, instanceConnect);
+
+               message::dispatch::Handler handler;
+               handler.add( handle::Connect{ m_state});
+               handler.add(  handle::transaction::client::Connect{ m_state});
+
+               action::boot::domain( m_state, domain, blockingReader, tmConnect, handler);
 
             }
 
@@ -195,6 +199,7 @@ namespace casual
          handler.add( handle::ACK{ m_state});
          handler.add( handle::MonitorConnect{ m_state});
          handler.add( handle::MonitorDisconnect{ m_state});
+         handler.add( handle::transaction::client::Connect{ m_state});
 
          //
          // Prepare the xatmi-services

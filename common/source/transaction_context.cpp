@@ -7,8 +7,10 @@
 
 #include "common/transaction_context.h"
 #include "common/queue.h"
+#include "common/environment.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
+#include "common/algorithm.h"
 
 #include <map>
 #include <algorithm>
@@ -108,6 +110,8 @@ namespace casual
                case XAER_RMFAIL:
                case XAER_DUPID:
                case XAER_OUTSIDE: return TX_OUTSIDE;
+               default: return TX_FAIL;
+
             }
          }
 
@@ -137,24 +141,6 @@ namespace casual
             return id++;
          }
 
-         namespace local
-         {
-            namespace
-            {
-               ipc::send::Queue::id_type initializeTMQueueId()
-               {
-
-                  return 0;
-               }
-
-            } // <unnamed>
-         } // local
-
-         ipc::send::Queue::id_type State::manager()
-         {
-            const static ipc::send::Queue::id_type id = local::initializeTMQueueId();
-            return id;
-         }
 
 
          Context& Context::instance()
@@ -163,59 +149,100 @@ namespace casual
             return singleton;
          }
 
-         void Context::apply( const message::server::Configuration& configuration)
+
+         Context::Context()
          {
-            //m_state.transactionManagerQueue = configuration.transactionManagerQueue;
 
-            //
-            // Local copy
-            //
-            auto conf = configuration.resourceManagers;
+         }
 
-            //
-            // Sanity check
-            //
-            if( conf.size() != m_state.resources.size())
-            {
-               throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
-            }
+         Context::Manager::Manager()
+         {
+            trace::internal::Scope trace{ "transaction::Context::Manager::Manager"};
+
+            message::transaction::client::connect::Request request;
+            request.server = message::server::Id::current();
+            request.path = process::path();
+
+            log::internal::debug << "send client connect request" << std::endl;
+            queue::blocking::Writer writer( ipc::broker::id());
+            writer( request);
 
 
-            using RM = message::resource::Manager;
+            queue::blocking::Reader reader( ipc::receive::queue());
+            message::transaction::client::connect::Reply reply;
+            reader( reply);
 
-            for( Resource& rm : m_state.resources)
-            {
-               auto findIter = std::find_if(
-                     std::begin( conf), std::end( conf), [&]( const RM& r){ return r.key == rm.key;});
+            queue = reply.transactionManagerQueue;
+            common::environment::domain::name( reply.domain);
+            std::swap( resources, reply.resourceManagers);
 
-               if( findIter != std::end( conf))
-               {
-                  rm.openinfo = findIter->openinfo;
-                  rm.closeinfo = findIter->closeinfo;
+            log::internal::debug << "received client connect reply from broker" << std::endl;
 
-                  //
-                  // this rm-configuration is done
-                  //
-                  conf.erase( findIter);
-               }
-               else
-               {
-                  throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
-               }
-            }
          }
 
 
+         const Context::Manager& Context::Manager::instance()
+         {
+            static const Manager singleton = Manager();
+            return singleton;
+         }
+
+
+         const Context::Manager& Context::manager()
+         {
+            return Manager::instance();
+         }
+
          const Transaction& Context::currentTransaction() const
          {
-            if( ! m_state.transactions.empty() && ! m_state.transactions.top().suspended)
+            if( ! m_transactions.empty() && ! m_transactions.top().suspended)
             {
-               return m_state.transactions.top();
+               return m_transactions.top();
             }
             else
             {
                static Transaction nullXid;
                return nullXid;
+            }
+         }
+
+
+         void Context::set( const std::vector< Resource>& resources)
+         {
+            trace::internal::Scope trace{ "transaction::Context::set"};
+
+
+            range::copy( resources, std::back_inserter( m_resources));
+            //m_resources = resources;
+
+            //
+            // Sanity check
+            //
+            if( manager().resources.size() != m_resources.size())
+            {
+               throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
+            }
+
+            using RM = message::resource::Manager;
+
+            for( Resource& rm : m_resources)
+            {
+               auto found = range::find_if( manager().resources, [&]( const RM& r){ return r.key == rm.key;});
+
+               if( found)
+               {
+                  rm.openinfo = found->openinfo;
+                  rm.closeinfo = found->closeinfo;
+
+                  //
+                  // this rm-configuration is done
+                  //
+                  //localResources.erase( found.first);
+               }
+               else
+               {
+                  throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
+               }
             }
          }
 
@@ -263,7 +290,7 @@ namespace casual
             Transaction trans;
 
 
-            queue::blocking::Writer writer{ m_state.manager()};
+            queue::blocking::Writer writer{ manager().queue};
 
             if( transaction.xid)
             {
@@ -280,12 +307,12 @@ namespace casual
 
             //
             // TODO: dynamic registration
-            if( ! m_state.resources.empty())
+            if( ! manager().resources.empty())
             {
                message::transaction::resource::Involved message;
                message.xid = trans.xid;
 
-               for( auto& resource : m_state.resources)
+               for( auto& resource : manager().resources)
                {
                   message.resources.push_back( resource.id);
                }
@@ -293,7 +320,7 @@ namespace casual
                writer( message);
             }
 
-            m_state.transactions.push( std::move( trans));
+            m_transactions.push( std::move( trans));
          }
 
          void Context::finalize( const message::service::Reply& message)
@@ -312,10 +339,7 @@ namespace casual
             return TM_OK;
          }
 
-         Context::Context()
-         {
 
-         }
 
 
 
@@ -323,15 +347,15 @@ namespace casual
          {
             common::trace::internal::Scope trace{ "transaction::Context::begin"};
 
-            if( ! m_state.transactions.empty())
+            if( ! m_transactions.empty())
             {
-               if( m_state.transactions.top().state != Transaction::State::inactive)
+               if( m_transactions.top().state != Transaction::State::inactive)
                {
                   return TX_PROTOCOL_ERROR;
                }
             }
 
-            queue::blocking::Writer writer( m_state.manager());
+            queue::blocking::Writer writer( manager().queue);
             queue::blocking::Reader reader( ipc::getReceiveQueue());
 
             Transaction trans;
@@ -339,7 +363,7 @@ namespace casual
             auto code = local::startTransaction( writer, reader, trans);
             if( code  == XA_OK)
             {
-               m_state.transactions.push( std::move( trans));
+               m_transactions.push( std::move( trans));
             }
 
             return code;
@@ -351,7 +375,7 @@ namespace casual
 
             std::vector< int> result;
 
-            for( auto& xa : m_state.resources)
+            for( auto& xa : m_resources)
             {
                result.push_back( xa.xaSwitch->xa_open_entry( xa.openinfo.c_str(), xa.id, TMNOFLAGS));
 
@@ -373,7 +397,7 @@ namespace casual
 
             std::vector< int> result;
 
-            for( auto& xa : m_state.resources)
+            for( auto& xa : m_resources)
             {
                result.push_back( xa.xaSwitch->xa_close_entry( xa.closeinfo.c_str(), xa.id, TMNOFLAGS));
 
@@ -404,13 +428,13 @@ namespace casual
                //
                // Regardless what happens we'll remove the current transaction
                //
-               local::pop::Guard popGuard( m_state.transactions);
+               local::pop::Guard popGuard( m_transactions);
 
                message::transaction::commit::Request request;
                request.xid = transaction.xid;
                request.id = message::server::Id::current();
 
-               queue::blocking::Writer writer( m_state.manager());
+               queue::blocking::Writer writer( manager().queue);
                writer( request);
 
 
@@ -463,13 +487,13 @@ namespace casual
                //
                // Regardless what happens we'll remove the current transaction
                //
-               local::pop::Guard popGuard( m_state.transactions);
+               local::pop::Guard popGuard( m_transactions);
 
                message::transaction::rollback::Request request;
                request.xid = transaction.xid;
                request.id = message::server::Id::current();
 
-               queue::blocking::Writer writer( m_state.manager());
+               queue::blocking::Writer writer( manager().queue);
                writer( request);
 
                queue::blocking::Reader reader( ipc::getReceiveQueue());
@@ -511,10 +535,12 @@ namespace casual
             //return TX_OK;
          }
 
+         /*
          State& Context::state()
          {
             return m_state;
          }
+         */
       } // transaction
    } // common
 } //casual

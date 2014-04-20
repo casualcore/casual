@@ -70,6 +70,19 @@ namespace casual
          } // boot
 
 
+
+         namespace pending
+         {
+            struct Send : state::Base
+            {
+               using state::Base::Base;
+
+               bool operator () ( state::pending::Reply& message) const;
+            };
+
+         } // pending
+
+
       } // action
    } // transaction
 } // casual

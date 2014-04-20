@@ -6,6 +6,7 @@
 //!
 
 #include "transaction/manager/action.h"
+#include "transaction/manager/handle.h"
 
 #include "common/ipc.h"
 #include "common/process.h"
@@ -51,6 +52,19 @@ namespace casual
             }
 
          } // boot
+
+
+         namespace pending
+         {
+
+            bool Send::operator () ( state::pending::Reply& message) const
+            {
+               queue::non_blocking::Writer write{ message.target, m_state};
+               return write.send( message.message);
+            }
+
+
+         } // pending
 
       } // action
    } //transaction
