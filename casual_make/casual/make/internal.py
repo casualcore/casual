@@ -24,7 +24,7 @@ def_ArchiveSuffix=".a"
 def_RM="rm -f ";
 def_CD="cd";
 
-def_RSYNC = "rsync --checksum "
+def_RSYNC = "rsync --checksum -i"
 def_MKDIR_RECURSIVE="mkdir -p";
 def_CHMOD="chmod"
 

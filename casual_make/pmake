@@ -35,6 +35,23 @@ class  Bcolors:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     
+    
+    def header( self, string):
+        return self.HEADER + string + self.ENDC
+    
+    def blue( self, string):
+        return self.BLUE + string + self.ENDC
+
+    def green( self, string):
+        return self.GREEN + string + self.ENDC
+    
+    def warning( self, string):
+        return self.WARNING + string + self.ENDC
+    
+    def fail( self, string):
+        return self.FAIL + string + self.ENDC
+    
+    
     def disable(self):
         self.HEADER = ''
         self.BLUE = ''
@@ -44,6 +61,10 @@ class  Bcolors:
         self.ENDC = ''
 
 bcolors=Bcolors()
+
+
+
+
 
 #
 # Finding out number of CPUs
@@ -103,6 +124,8 @@ def optionsAsString( options):
         
     return result.strip()                
 
+
+
 def reformat( line):
     """ reformat output from make and add som colours"""
     #
@@ -111,30 +134,34 @@ def reformat( line):
     compiling = re.search(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*', line)
     archive = re.search(r'(^ar) \S+ (\S+\.a).*', line)
     link = re.search(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*', line)
-    #make1 = re.search(r'^[\S\s]+ -f (.*make.*) .*', line)
     make1 = re.search(r'^(.*[.]cmk )(.*)', line)
-    make2 = re.search(r'(^make\[.*\]:)(.*)', line)
+    make2 = re.search(r'(^make.*:)(.*)', line)
     rm = re.search(r'^rm -f (.*)', line)
     buildserver = re.search(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*', line)
-    rsync = re.search(r'^[\S\s]*rsync --checksum[\s]+(\S+) (.*)', line)
+    rsync = re.search(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)', line)
+    rsync_output = re.search(r'^(>[a-zA-Z+.]+)[\s]+(.*)', line)
     if compiling:
-        return bcolors.GREEN + 'Compile (' + compiling.group(1) + '): ' + bcolors.ENDC + compiling.group(3) + '\n'
+        #global currentCompiler;
+        #currentCompiler = compiling.group(1);
+        return bcolors.green( 'Compile (' + compiling.group(1) + '): ' ) + compiling.group(3) + '\n'
     elif archive:
-        return bcolors.BLUE + 'Archive (' + archive.group(1) + '): ' + bcolors.ENDC + archive.group(2) + '\n'
+        return bcolors.blue( 'Archive (' + archive.group(1) + '): ' ) + archive.group(2) + '\n'
     elif link:
-        return bcolors.BLUE + 'Link (' + link.group(1) + '): ' + bcolors.ENDC + link.group(4) + '\n'
+        return bcolors.blue( 'Link (' + link.group(1) + '): ' ) + link.group(4) + '\n'
     elif make1:
-        return bcolors.HEADER + 'makefile: ' + bcolors.ENDC + make1.group(1) + bcolors.GREEN + make1.group(2) + bcolors.ENDC + '\n'
+        return bcolors.header( 'makefile: ') + bcolors.blue(  make1.group(2) ) + ' ' + make1.group(1) + '\n'
     elif make2:
-        return bcolors.HEADER + make2.group(1) + bcolors.ENDC + make2.group(2) + '\n'
+        return bcolors.header( make2.group(1) ) + make2.group(2) + '\n'
     elif rm:
-        return bcolors.HEADER + 'rm -f' + bcolors.ENDC + rm.group(1) + '\n'
+        return bcolors.header( 'rm -f' ) + rm.group(1) + '\n'
     elif buildserver:
-        return bcolors.BLUE + 'Buildserver (' + buildserver.group(1) + '): ' + bcolors.ENDC + buildserver.group(2) + '\n'
+        return bcolors.blue( 'Buildserver (' + buildserver.group(1) + '): ' ) + buildserver.group(2) + '\n'
     elif rsync:
-        return bcolors.BLUE + 'Copying: ' + rsync.group(1) +  ' --> ' + rsync.group(2) + '\n'        
+        return bcolors.blue( 'prepare install: ') + rsync.group(1) +  ' --> ' + rsync.group(2) + '\n'
+    elif rsync_output:
+        return bcolors.green( 'updated: ') + rsync_output.group(2) + ' ' + bcolors.blue( rsync_output.group(1)) + '\n'    
     else:
-        return bcolors.FAIL + line + bcolors.ENDC
+        return line;
 
 if __name__ == '__main__':
     #
@@ -164,16 +191,16 @@ if __name__ == '__main__':
     #
     if FORCE_MAKEMAKE == 1 or not os.path.isfile( USER_MAKE_FILE)  or os.path.getmtime(USER_MAKE_FILE) < os.path.getmtime(CORRESPONDING_CASUAL_MAKE_FILE) :
         if not os.path.isfile( CORRESPONDING_CASUAL_MAKE_FILE ):
-            sys.stderr.write( "error: Could not find the casaul make file " + CORRESPONDING_CASUAL_MAKE_FILE)
+            sys.stderr.write( bcolors.fail( 'error: Could not find the casaul make file ') + CORRESPONDING_CASUAL_MAKE_FILE)
             sys.exit( 1)
 
-        print "info: executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
+        print bcolors.header( 'info: ') + "executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
     
         try:
             Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
 
         except:
-            sys.stderr.write("error: Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
+            sys.stderr.write( bcolors.fail( 'error: ' ) + "Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
             raise
             sys.exit(1)
 
@@ -185,7 +212,7 @@ if __name__ == '__main__':
 
 
     if CPU_COUNT == 0:
-        sys.stderr.write( "warning: Could not detect how many CPU's the machine has - guess on 2\n")
+        sys.stderr.write( bcolors.warning( "warning: Could not detect how many CPU's the machine has - guess on 2\n"))
         CPU_COUNT=2
 
 
@@ -197,7 +224,7 @@ if __name__ == '__main__':
     MAX_LOAD=JOB_COUNT
 
 
-    print "info: executes " + MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " --no-builtin-rules --no-keep-going " + GMAKE_OPTIONS + " -f " + USER_MAKE_FILE 
+    print bcolors.header( "info: executes ") + MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " --no-builtin-rules --no-keep-going " + GMAKE_OPTIONS + " -f " + USER_MAKE_FILE 
 
 
     #
@@ -223,9 +250,9 @@ if __name__ == '__main__':
         line = process.stdout.readline()
         
     if process.returncode == 0:
-        print bcolors.GREEN + 'build: SUCCESS' + bcolors.ENDC
+        print 'build: ' + bcolors.green( 'SUCCESS')
     else:
-        print bcolors.FAIL + 'build: FAILED' + bcolors.ENDC
+        print 'build: ' + bcolors.fail( 'FAILED')
     
     #print reformat( process.stdout.readline())
     
