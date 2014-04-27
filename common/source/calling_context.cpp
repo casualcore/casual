@@ -8,15 +8,17 @@
 #include "common/calling_context.h"
 #include "common/message.h"
 #include "common/queue.h"
-#include "common/log.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 
 #include "common/environment.h"
 #include "common/flag.h"
 #include "common/error.h"
 #include "common/exception.h"
-#include "common/trace.h"
 #include "common/signal.h"
+
+#include "common/transaction_context.h"
 
 #include "xatmi.h"
 
@@ -309,8 +311,8 @@ namespace casual
 
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
-            common::Trace trace( "calling::Context::asyncCall");
-            common::log::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+            common::trace::internal::Scope trace( "calling::Context::asyncCall");
+            common::log::internal::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
 
 
@@ -347,6 +349,8 @@ namespace casual
             message::service::caller::Call messageCall( buffer::Context::instance().get( idata));
             messageCall.callDescriptor = callDescriptor;
             messageCall.reply.queue_id = ipc::getReceiveQueue().id();
+            messageCall.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
+            messageCall.transaction.xid = transaction::Context::instance().currentTransaction().xid;
             messageCall.service = lookup.service;
             messageCall.callId = m_state.callId;
             messageCall.callee = m_state.currentService;

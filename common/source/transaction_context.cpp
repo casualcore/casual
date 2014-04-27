@@ -285,7 +285,7 @@ namespace casual
 
          void Context::associateOrStart( const message::Transaction& transaction)
          {
-            common::Trace trace{ "transaction::Context::associateOrStart"};
+            common::trace::internal::Scope trace{ "transaction::Context::associateOrStart"};
 
             Transaction trans;
 
@@ -438,33 +438,52 @@ namespace casual
                writer( request);
 
 
-
-
                queue::blocking::Reader reader( ipc::getReceiveQueue());
 
                //
-               // First we receive the prepare-response
+               // We could get commit-reply directly in an one-phase-commit
                //
 
-               message::transaction::prepare::Reply prepareReply;
-               reader( prepareReply);
+               auto reply = reader.next( {
+                  message::transaction::prepare::Reply::message_type,
+                  message::transaction::commit::Reply::message_type});
 
-               log::internal::transaction << "prepare reply: " << xaError( prepareReply.state) << std::endl;
-
-
-               if( prepareReply.state == XA_OK)
+               //
+               // Did we get commit reply directly?
+               //
+               if( reply.type() == message::transaction::commit::Reply::message_type)
                {
-                  //
-                  // Now we wait for the commit
-                  //
                   message::transaction::commit::Reply commitReply;
-                  reader( commitReply);
+                  reply >> commitReply;
 
                   log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
 
                   return xaTotx( commitReply.state);
                }
-               return xaTotx( prepareReply.state);
+               else
+               {
+
+                  message::transaction::prepare::Reply prepareReply;
+                  reply >> prepareReply;
+
+                  log::internal::transaction << "prepare reply: " << xaError( prepareReply.state) << std::endl;
+
+
+                  if( prepareReply.state == XA_OK)
+                  {
+                     //
+                     // Now we wait for the commit
+                     //
+                     message::transaction::commit::Reply commitReply;
+                     reader( commitReply);
+
+                     log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
+
+                     return xaTotx( commitReply.state);
+                  }
+                  return xaTotx( prepareReply.state);
+
+               }
             }
             else
             {
