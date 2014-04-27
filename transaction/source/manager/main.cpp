@@ -9,7 +9,7 @@
 
 #include "common/error.h"
 #include "common/arguments.h"
-#include "common/environment.h"
+#include "common/process.h"
 
 #include "transaction/manager/manager.h"
 
@@ -29,7 +29,7 @@ int main( int argc, char** argv)
          );
 
          parser.parse( argc, argv);
-         casual::common::environment::file::executable( parser.processName());
+         casual::common::process::path( parser.processName());
       }
 
       casual::transaction::Manager manager( settings);

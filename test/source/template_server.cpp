@@ -15,7 +15,7 @@
 
 #include "common/arguments.h"
 #include "common/string.h"
-#include "common/environment.h"
+#include "common/process.h"
 
 #include "sf/log.h"
 #include "sf/archive.h"
@@ -81,7 +81,7 @@ void casual_test2( TPSVCINFO *serviceContext)
          casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", millesconds)
    );
 
-   parser.parse( casual::common::environment::file::executable(), args);
+   parser.parse( casual::common::process::path(), args);
 
    casual::sf::log::debug << "casual_test2 called - sleep for  " << millesconds << "ms"<< std::endl;
 

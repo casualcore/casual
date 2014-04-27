@@ -25,9 +25,14 @@ namespace casual
       {
 
          //!
-         //!
+         //! @return the path of the current process
          //!
          const std::string& path();
+
+         //!
+         //! Sets the path of the current process
+         //!
+         void path( const std::string& path);
 
          //!
          //! @return process id (pid) for current process.

@@ -47,6 +47,11 @@ namespace casual
             m_xid.formatID = Format::cNull;
          }
 
+         ID::ID( const XID& xid)
+         {
+            memcpy( &m_xid, &xid, sizeof( XID));
+         }
+
 
          ID::ID( const Uuid& gtrid, const Uuid& bqual)
          {

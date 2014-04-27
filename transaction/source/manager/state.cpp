@@ -47,7 +47,7 @@ namespace casual
                   {
                      state::resource::Proxy operator () ( const common::message::resource::Manager& value) const
                      {
-                        common::Trace trace{ "transform::Resource"};
+                        trace::internal::Scope trace{ "transform::Resource"};
 
                         state::resource::Proxy result;
 

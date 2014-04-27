@@ -94,7 +94,7 @@ namespace casual
                message::service::Advertise message;
 
                message.server.queue_id = ipc::getReceiveQueue().id();
-               // TODO: message.serverPath =
+               message.serverPath = process::path();
                message.services.emplace_back( localName);
 
                // TODO: make it consistence safe...
@@ -144,22 +144,25 @@ namespace casual
          {
             namespace policy
             {
-               message::server::Configuration Default::connect( message::server::Connect& message)
+               void Default::connect( message::server::connect::Request& message, const std::vector< transaction::Resource>& resources)
                {
+
                   //
                   // Let the broker know about us, and our services...
                   //
-                  message.server.queue_id = ipc::getReceiveQueue().id();
-                  message.path = common::environment::file::executable();
+                  message.server = message::server::Id::current();
+                  message.path = common::process::path();
                   blocking_broker_writer brokerWriter;
                   brokerWriter( message);
                   //
                   // Wait for configuration reply
                   //
                   queue::blocking::Reader reader( ipc::getReceiveQueue());
-                  message::server::Configuration configuration;
-                  reader( configuration);
-                  return configuration;
+                  message::server::connect::Reply reply;
+                  reader( reply);
+
+                  transaction::Context::instance().set( resources);
+
                }
 
                void Default::reply( platform::queue_id_type id, message::service::Reply& message)

@@ -67,18 +67,18 @@ namespace casual
                   mockup::queue::clearAllQueues();
 
                   // reset global TM queue
-                  transaction::Context::instance().state().transactionManagerQueue = 0;
+                  //transaction::Context::instance().state().transactionManagerQueue = 0;
 
                   // prep the configuration reply - only message we will read
-                  message::server::Configuration message;
-                  message.transactionManagerQueue = 666;
+                  message::server::connect::Reply message;
+                  //message.transactionManagerQueue = 666;
 
                   writer_queue instanceQ( id::instance());
                   instanceQ( message);
                }
 
 
-               message::server::Configuration connect( message::server::Connect& message)
+               void connect( message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
                {
                   //
                   // Let the broker know about us, and our services...
@@ -95,10 +95,9 @@ namespace casual
                   // Wait for configuration reply
                   //
                   reader_queue reader{ id::instance()};
-                  message::server::Configuration configuration;
+                  message::server::connect::Reply configuration;
                   reader( configuration);
 
-                  return configuration;
                }
 
                void disconnect()
@@ -211,7 +210,7 @@ namespace casual
          local::Call callHandler( arguments);
 
          local::Policy::reader_queue broker{ local::Policy::id::broker()};
-         message::server::Connect message;
+         message::server::connect::Request message;
 
          ASSERT_TRUE( broker( message));
          EXPECT_TRUE( message.server.queue_id == local::Policy::id::instance());
@@ -226,7 +225,7 @@ namespace casual
 
          local::Call callHandler( arguments);
 
-         EXPECT_TRUE( transaction::Context::instance().state().transactionManagerQueue == 666);
+         //EXPECT_TRUE( transaction::Context::instance().state().manager() == 666);
 
       }
 

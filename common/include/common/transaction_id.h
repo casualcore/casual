@@ -40,6 +40,8 @@ namespace casual
             //!
             ID();
 
+            ID( const XID& xid);
+
 
             //!
             //! Initialize with uuid, gtrid and bqual.

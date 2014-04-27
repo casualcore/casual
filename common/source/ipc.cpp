@@ -132,6 +132,8 @@ namespace casual
                   partBegin = partEnd;
                }
 
+               log::internal::debug << "sent message - type: " << message.type << " to " << m_id <<  " size: " << message.payload.size() << std::endl;
+
                return true;
             }
 
@@ -181,7 +183,7 @@ namespace casual
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl
-                     << "path: " << environment::file::executable() << std::endl;
+                     << "path: " << process::path() << std::endl;
 
 
                if( m_id  == -1)
@@ -245,6 +247,23 @@ namespace casual
 
                      };
 
+                     struct Types
+                     {
+                        typedef message::Complete::message_type_type message_type;
+                        using message_types = std::vector< message_type>;
+
+                        Types( message_types types) : m_types( std::move( types)) {}
+
+                        bool operator () ( const message::Complete& message) const
+                        {
+                           return ! range::find( m_types, message.type).empty();
+                        }
+
+
+                     private:
+                        message_types m_types;
+
+                     };
 
 
                      struct Correlation
@@ -258,7 +277,6 @@ namespace casual
                      private:
                         message::Transport::correalation_type& m_correlation;
                      };
-
                   } // find
                } // <unnamed>
             } // local
@@ -270,12 +288,12 @@ namespace casual
             {
                std::vector< message::Complete> result;
 
-               auto findIter = find( local::find::Complete(), flags);
+               auto found = find( local::find::Complete(), flags);
 
-               if( findIter != std::end( m_cache))
+               if( found)
                {
-                  result.push_back( std::move( *findIter));
-                  m_cache.erase( findIter);
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
                }
 
                return result;
@@ -285,34 +303,53 @@ namespace casual
             {
                std::vector< message::Complete> result;
 
-               auto findIter = find(
+               auto found = find(
                      chain::And::link(
                            local::find::Type( type),
                            local::find::Complete()), flags);
 
-               if( findIter != std::end( m_cache))
+               if( found)
                {
-                  result.push_back( std::move( *findIter));
-                  m_cache.erase( findIter);
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
                }
 
                return result;
             }
 
-            template< typename P>
-            Queue::cache_type::iterator Queue::find( P predicate, const long flags)
+            std::vector< message::Complete> Queue::operator () ( const std::vector< type_type>& types, const long flags)
             {
-               auto findIter = std::find_if( std::begin( m_cache), std::end( m_cache), predicate);
+               std::vector< message::Complete> result;
+
+               auto found = find(
+                     chain::And::link(
+                           local::find::Types( types),
+                           local::find::Complete()), flags);
+
+               if( found)
+               {
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
+               }
+
+               return result;
+            }
+
+
+            template< typename P>
+            Queue::range_type Queue::find( P predicate, const long flags)
+            {
+               auto found = range::find_if( m_cache, predicate);
 
                message::Transport transport;
 
-               while( findIter == std::end( m_cache) && receive( transport, flags))
+               while( ! found && receive( transport, flags))
                {
-                  findIter = cache( transport);
-                  findIter = std::find_if( findIter, std::end( m_cache), predicate);
+                  found = cache( transport);
+                  found = range::find_if( found, predicate);
                }
 
-               return findIter;
+               return found;
             }
 
 
@@ -349,20 +386,21 @@ namespace casual
                return result > 0;
             }
 
-            Queue::cache_type::iterator Queue::cache( message::Transport& message)
+            Queue::range_type Queue::cache( message::Transport& message)
             {
-               auto findIter = std::find_if( std::begin( m_cache), std::end( m_cache),
+               auto found = range::find_if( m_cache,
                      local::find::Correlation( message.m_payload.m_header.m_correlation));
 
-               if( findIter != std::end( m_cache))
+               if( found)
                {
-                  findIter->add( message);
+                  found->add( message);
                }
                else
                {
-                  return m_cache.emplace( std::end( m_cache), message);
+                  found.first = m_cache.emplace( std::end( m_cache), message);
+                  found.last = std::end( m_cache);
                }
-               return findIter;
+               return found;
             }
 
          } // receive

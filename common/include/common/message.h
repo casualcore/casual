@@ -29,8 +29,8 @@ namespace casual
          enum Type
          {
 
-            cServerConnect  = 10, // message type can't be 0!
-            cServerConfiguration,
+            cServerConnectRequest  = 10, // message type can't be 0!
+            cServerConnectReply,
             cServerDisconnect,
             cServiceAdvertise = 20,
             cServiceUnadvertise,
@@ -42,7 +42,9 @@ namespace casual
             cMonitorConnect = 30,
             cMonitorDisconnect,
             cMonitorNotify,
-            cTransactionManagerConnect = 100,
+            cTransactionClientConnectRequest = 100,
+            cTransactionClientConnectReply,
+            cTransactionManagerConnect = 120,
             cTransactionManagerConfiguration,
             cTransactionManagerReady,
             cTransactionBeginRequest,
@@ -216,47 +218,60 @@ namespace casual
                }
             };
 
-            struct Connect : public basic_connect< cServerConnect>
+
+            namespace connect
             {
-               typedef basic_connect< cServerConnect> base_type;
-
-               std::vector< Service> services;
-
-               template< typename A>
-               void marshal( A& archive)
+               struct Request : public basic_connect< cServerConnectRequest>
                {
-                  base_type::marshal( archive);
-                  archive & services;
-               }
+                  typedef basic_connect< cServerConnectRequest> base_type;
 
-            };
+                  std::vector< Service> services;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     base_type::marshal( archive);
+                     archive & services;
+                  }
+
+               };
 
 
-
-            //!
-            //! Sent from the broker with "start-up-information" for a server
-            //!
-            struct Configuration : basic_messsage< cServerConfiguration>
-            {
-
-               Configuration() = default;
-               Configuration( Configuration&&) = default;
-               Configuration& operator = ( Configuration&&) = default;
-
-               typedef platform::queue_id_type queue_id_type;
-
-               queue_id_type transactionManagerQueue = 0;
-               std::vector< resource::Manager> resourceManagers;
-               std::string domain;
-
-               template< typename A>
-               void marshal( A& archive)
+               //!
+               //! Sent from the broker with "start-up-information" for a server
+               //!
+               struct Reply : basic_messsage< cServerConnectReply>
                {
-                  archive & transactionManagerQueue;
-                  archive & resourceManagers;
-                  archive & domain;
-               }
-            };
+
+                  Reply() = default;
+                  Reply( Reply&&) = default;
+                  Reply& operator = ( Reply&&) = default;
+
+                  typedef platform::queue_id_type queue_id_type;
+
+                  /*
+                  queue_id_type transactionManagerQueue = 0;
+                  std::vector< resource::Manager> resourceManagers;
+                  std::string domain;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & transactionManagerQueue;
+                     archive & resourceManagers;
+                     archive & domain;
+                  }
+                  */
+               };
+
+
+            } // connect
+
+
+
+
+
+
 
             typedef basic_disconnect< cServerDisconnect> Disconnect;
 
@@ -520,6 +535,38 @@ namespace casual
 
          namespace transaction
          {
+
+            namespace client
+            {
+               namespace connect
+               {
+
+                  typedef server::basic_connect< cTransactionClientConnectRequest> Request;
+
+                  //!
+                  //! Sent from the broker with "transaction-information" for a server/client
+                  //!
+                  struct Reply : basic_messsage< cTransactionClientConnectReply>
+                  {
+
+                     typedef platform::queue_id_type queue_id_type;
+
+                     queue_id_type transactionManagerQueue = 0;
+                     std::vector< resource::Manager> resourceManagers;
+                     std::string domain;
+
+                     template< typename A>
+                     void marshal( A& archive)
+                     {
+                        archive & transactionManagerQueue;
+                        archive & resourceManagers;
+                        archive & domain;
+                     }
+                  };
+               } // connect
+
+            } // client
+
             //!
             //! Used to connect the transaction manager to broker
             //!

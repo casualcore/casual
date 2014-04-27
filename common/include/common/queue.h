@@ -62,6 +62,18 @@ namespace casual
                   return marshal::input::Binary( std::move( message.front()));
                }
 
+               template< typename IPC>
+               static marshal::input::Binary next( IPC&& ipc, const std::vector< platform::message_type_type>& types)
+               {
+                  std::vector< marshal::input::Binary> result;
+
+                  auto message = ipc( types, flags);
+
+                  assert( ! message.empty());
+
+                  return marshal::input::Binary( std::move( message.front()));
+               }
+
                template< typename IPC, typename M>
                static void fetch( IPC&& ipc, M& message)
                {
@@ -105,6 +117,22 @@ namespace casual
 
                   return result;
                }
+
+               template< typename IPC>
+               static std::vector< marshal::input::Binary> next( IPC&& ipc, const std::vector< platform::message_type_type>& types)
+               {
+                  std::vector< marshal::input::Binary> result;
+
+                  auto message = ipc( types, flags);
+
+                  if( ! message.empty())
+                  {
+                     result.emplace_back( std::move( message.front()));
+                  }
+
+                  return result;
+               }
+
 
                template< typename IPC, typename M>
                static bool fetch( IPC&& ipc, M& message)
@@ -219,6 +247,7 @@ namespace casual
                typedef P policy_type;
                typedef IPC ipc_value_type;
                using ipc_type = typename std::decay< ipc_value_type>::type;
+               using type_type = platform::message_type_type;
 
                template< typename... Args>
                basic_reader( ipc_value_type ipc, Args&&... args)
@@ -242,6 +271,27 @@ namespace casual
                      }
                   }
                }
+
+
+               //!
+               //! Gets the next binary-message from queue that is any of @p types
+               //! @return binary-marshal that can be used to deserialize an actual message.
+               //!
+               auto next( const std::vector< type_type>& types) -> decltype( block_policy::next( std::declval< ipc_value_type>(), { type_type()}))
+               {
+                  while( true)
+                  {
+                     try
+                     {
+                        return block_policy::next( m_ipc, types);
+                     }
+                     catch( ...)
+                     {
+                        m_policy.apply();
+                     }
+                  }
+               }
+
 
                //!
                //! Tries to read a specific message from the queue.

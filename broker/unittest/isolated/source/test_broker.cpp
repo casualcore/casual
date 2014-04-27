@@ -178,7 +178,7 @@ namespace casual
             //
             // Connect new server, with two services
             //
-            message::server::Connect message;
+            message::server::connect::Request message;
             message.server.pid = 20;
             message.server.queue_id = local::id::instance();
             message.services.resize( 2);
@@ -197,15 +197,15 @@ namespace casual
 
          {
             mockup::queue::non_blocking::Reader reader{ local::id::instance()};
-            message::server::Configuration message;
+            message::server::connect::Reply message;
 
 
             ASSERT_TRUE( reader( message));
-            EXPECT_TRUE( message.transactionManagerQueue == 100);
-            ASSERT_TRUE( message.resourceManagers.size() == 1);
-            EXPECT_TRUE( message.resourceManagers.at( 0).key == "db");
-            EXPECT_TRUE( message.resourceManagers.at( 0).openinfo == "openinfo string");
-            EXPECT_TRUE( message.resourceManagers.at( 0).closeinfo == "closeinfo string");
+//            EXPECT_TRUE( message.transactionManagerQueue == 100);
+//            ASSERT_TRUE( message.resourceManagers.size() == 1);
+//            EXPECT_TRUE( message.resourceManagers.at( 0).key == "db");
+//            EXPECT_TRUE( message.resourceManagers.at( 0).openinfo == "openinfo string");
+//            EXPECT_TRUE( message.resourceManagers.at( 0).closeinfo == "closeinfo string");
          }
       }
 
@@ -222,7 +222,7 @@ namespace casual
          //
          // Connect new server, with two services
          //
-         message::server::Connect message;
+         message::server::connect::Request message;
          message.server.pid = 30;
          message.server.queue_id = local::id::instance();
          message.services.resize( 2);
@@ -246,10 +246,9 @@ namespace casual
          // Check that the "configuration" has been "sent"
          {
             mockup::queue::non_blocking::Reader reader{ local::id::instance()};
-            message::server::Configuration message;
+            message::server::connect::Reply message;
 
-            ASSERT_TRUE( reader( message));
-            EXPECT_TRUE( message.transactionManagerQueue == 100);
+            EXPECT_TRUE( reader( message));
          }
       }
 
@@ -265,7 +264,7 @@ namespace casual
          //
          // Add two new services to NEW server 30
          //
-         message::server::Connect message;
+         message::server::connect::Request message;
          message.server.pid = 30;
          message.server.queue_id = local::id::instance();
          message.services.resize( 2);
@@ -291,10 +290,9 @@ namespace casual
          // Check that the "configuration" has been "sent"
          {
             mockup::queue::non_blocking::Reader reader{ local::id::instance()};
-            message::server::Configuration message;
+            message::server::connect::Reply message;
 
-            ASSERT_TRUE( reader( message));
-            EXPECT_TRUE( message.transactionManagerQueue == 100);
+            EXPECT_TRUE( reader( message));
          }
       }
 

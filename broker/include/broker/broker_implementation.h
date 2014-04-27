@@ -174,7 +174,61 @@ namespace casual
 
             typedef basic_manager_connect< QueueBlockingWriter> ManagerConnect;
 
+            namespace client
+            {
+               //!
+               //! Transaction Client Connect
+               //!
+               template< typename TQ>
+               struct basic_connect : public Base
+               {
+
+                  using queue_type = TQ;
+                  using message_type = message::transaction::client::connect::Request;
+
+                  using Base::Base;
+
+                  void dispatch( message_type& message)
+                  {
+
+                     common::trace::internal::Scope trace{ "broker::handle::transaction::client::basic_connect::dispatch"};
+
+                     common::log::internal::debug << "connect request: " << message.server << std::endl;
+
+                     //
+                     // If the instance was started by the broker, we expect to find it
+                     //
+                     auto foundIter =  m_state.instances.find( message.server.pid);
+
+                     decltype( foundIter->second) instance;
+
+                     if( foundIter != std::end( m_state.instances))
+                     {
+                        common::log::internal::debug << "instance found: " << message.server << std::endl;
+                        instance = foundIter->second;
+                     }
+
+                     //
+                     // Instance is started for the first time.
+                     // Send some configuration
+                     //
+                     message::transaction::client::connect::Reply reply =
+                           action::transform::transaction::client::reply( instance, m_state);
+
+                     queue_type write( message.server.queue_id, m_state);
+                     write( reply);
+
+                  }
+               };
+
+               typedef basic_connect< QueueBlockingWriter> Connect;
+
+            } // client
+
+
          } // transaction
+
+
 
          //!
          //! Advertise 0..N services for a server.
@@ -234,13 +288,17 @@ namespace casual
          template< typename Q>
          struct basic_connect : public Base
          {
-            typedef message::server::Connect message_type;
+            typedef message::server::connect::Request message_type;
             typedef Q queue_writer_type;
 
             using Base::Base;
 
             void dispatch( message_type& message)
             {
+               common::trace::internal::Scope trace{ "broker::handle::basic_connect::dispatch"};
+
+               common::log::internal::debug << "connect request: " << message.server << std::endl;
+
                //
                // If the instance was started by the broker, we expect to find it
                //
@@ -263,17 +321,19 @@ namespace casual
                // Instance is started for the first time.
                // Send some configuration
                //
-               message::server::Configuration configuation =
-                     action::transform::configuration( instance->second, m_state);
+               message::server::connect::Reply reply; //=
+                     //action::transform::configuration( instance->second, m_state);
+
+               common::log::internal::debug << "connect reply: " << message.server << std::endl;
 
                queue_writer_type writer( message.server.queue_id, m_state);
-               writer( configuation);
+               writer( reply);
 
                //
                // Add services
                //
                common::range::for_each(
-                  common::range::make( message.services),
+                  message.services,
                   action::add::Service( m_state, instance->second));
 
                //
@@ -484,13 +544,13 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            message::server::Configuration connect( message::server::Connect& message)
+            void connect(  message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
             {
                log::internal::debug << "broker server - message.server.queue_id.: " << message.server.queue_id << std::endl;
                log::internal::debug << "broker server - message.path............: " << message.path << std::endl;
 
                message.server.queue_id = ipc::getReceiveQueue().id();
-               message.path = common::environment::file::executable();
+               message.path = common::process::path();
 
                //
                // We add the server
@@ -509,7 +569,7 @@ namespace casual
                //
                action::connect( instance->second, message);
 
-               return action::transform::configuration( instance->second, m_state);
+               //return action::transform::configuration( instance->second, m_state);
             }
 
             void disconnect()

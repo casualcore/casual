@@ -15,9 +15,10 @@
 #include "common/string.h"
 
 #include "common/internal/log.h"
-#include "common/trace.h"
+#include "common/internal/trace.h"
 #include "common/queue.h"
 #include "common/signal.h"
+#include "common/algorithm.h"
 
 
 #include "sf/log.h"
@@ -43,7 +44,7 @@ namespace casual
          {
             struct Instance
             {
-               std::shared_ptr< broker::Server::Instance> operator () ( const common::message::server::Connect& message) const
+               std::shared_ptr< broker::Server::Instance> operator () ( const common::message::server::connect::Request& message) const
                {
                   auto result = std::make_shared< broker::Server::Instance>();
 
@@ -128,6 +129,7 @@ namespace casual
                   }
                };
 
+
                inline common::message::transaction::Configuration configuration( const State::group_mapping_type& groups)
                {
                   common::message::transaction::Configuration result;
@@ -146,28 +148,32 @@ namespace casual
                   return result;
                }
 
-            } // transaction
 
-            inline common::message::server::Configuration configuration( const std::shared_ptr< broker::Server::Instance>& instance, State& state)
-            {
-               common::message::server::Configuration result;
-
-               result.domain = common::environment::domain::name();
-               result.transactionManagerQueue = state.transactionManagerQueue;
-
-               if( instance->server)
+               namespace client
                {
-                  for( auto& group : instance->server->memberships)
+
+                  inline common::message::transaction::client::connect::Reply reply( const std::shared_ptr< broker::Server::Instance>& instance, State& state)
                   {
-                     std::transform(
-                        std::begin( group->resource),
-                        std::end( group->resource),
-                        std::back_inserter( result.resourceManagers),
-                        transaction::Resource());
+                     common::message::transaction::client::connect::Reply reply;
+
+                     reply.domain = common::environment::domain::name();
+                     reply.transactionManagerQueue = state.transactionManagerQueue;
+
+                     if( instance && instance->server)
+                     {
+                        for( auto& group : instance->server->memberships)
+                        {
+                           common::range::transform( group->resource,
+                              reply.resourceManagers,
+                              transaction::Resource());
+                        }
+                     }
+                     return reply;
                   }
-               }
-               return result;
-            }
+
+               } // client
+
+            } // transaction
 
          } // transform
 
@@ -177,6 +183,14 @@ namespace casual
          {
             instance->queue_id = message.server.queue_id;
             instance->alterState( broker::Server::Instance::State::idle);
+
+            if( instance->server)
+            {
+               common::log::internal::debug << instance->server->path << " - ";
+            }
+
+            common::log::internal::debug << "pid: " << instance->pid <<  " queue: " << instance->queue_id << " is up and running" << std::endl;
+
          }
 
 
@@ -671,7 +685,7 @@ namespace casual
 
                   for( auto& group : batch)
                   {
-                     common::log::debug << "boot group: " << group->name << std::endl;
+                     common::log::internal::debug << "boot group: " << group->name << std::endl;
                   }
 
                   auto serversEnd = std::stable_partition( serversStart, std::end( servers),
@@ -681,7 +695,7 @@ namespace casual
                         });
 
 
-                  common::log::debug << "boot " << std::distance( serversStart, serversEnd) << " servers" << std::endl;
+                  common::log::internal::debug << "boot " << std::distance( serversStart, serversEnd) << " servers" << std::endl;
 
 
                   std::for_each(
@@ -692,17 +706,17 @@ namespace casual
                   //
                   // Wait for the batch boot
                   //
-                  common::trace::Exit trace( "batch boot wait");
+                  common::trace::internal::Scope trace( "batch boot wait");
 
 
-                  typename CH::message_type message;
+                  //typename CH::message_type message;
 
                   // TODO: temp
                   typedef std::shared_ptr< broker::Server> server_type;
 
                   auto connectedServer = []( const server_type& value)
                         {
-                           return std::all_of( std::begin( value->instances), std::end( value->instances), find::Booted{});
+                           return common::range::all_of( value->instances, find::Booted{});
                         };
 
                   while( ! std::all_of( serversStart, serversEnd, connectedServer))
@@ -711,8 +725,8 @@ namespace casual
                      {
                         common::signal::alarm::Scoped timeout{ 5};
 
-                        queueReader( message);
-                        connectHandler.dispatch( message);
+                        auto marshal = queueReader.next();
+                        connectHandler.dispatch( marshal);
                      }
                      catch( const common::exception::signal::Timeout& exception)
                      {

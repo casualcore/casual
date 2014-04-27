@@ -34,7 +34,7 @@ namespace casual
                //
                common::message::transaction::Connect connect;
 
-               connect.path = common::environment::file::executable();
+               connect.path = common::process::path();
                connect.server.queue_id = receiveQueue.ipc().id();
 
                brokerWriter( connect);
@@ -68,6 +68,19 @@ namespace casual
                void operator () ( state::resource::Proxy& proxy);
             };
          } // boot
+
+
+
+         namespace pending
+         {
+            struct Send : state::Base
+            {
+               using state::Base::Base;
+
+               bool operator () ( state::pending::Reply& message) const;
+            };
+
+         } // pending
 
 
       } // action

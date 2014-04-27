@@ -159,18 +159,14 @@ namespace casual
                   }
 
                }
-
-               /*
-               std::for_each(
-                  std::begin( m_state.pendingReplies),
-                  std::end( m_state.pendingReplies),
-                  action::Send< QueueBlockingWriter>{ m_state});
-                  */
-
-               m_state.pendingReplies.clear();
-
-
             }
+
+            auto notDone = common::range::partition(
+                  m_state.pendingReplies,
+                  common::negate( action::pending::Send{ m_state}));
+
+            common::range::trim( m_state.pendingReplies, notDone);
+
          }
       }
 

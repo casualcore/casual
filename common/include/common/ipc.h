@@ -15,6 +15,7 @@
 #include "common/file.h"
 #include "common/uuid.h"
 #include "common/platform.h"
+#include "common/algorithm.h"
 
 
 
@@ -117,7 +118,6 @@ namespace casual
 
             };
 
-
          } // message
 
 
@@ -212,6 +212,8 @@ namespace casual
                   cNoBlocking = common::platform::cIPC_NO_WAIT
                };
 
+               using type_type = message::Complete::message_type_type;
+
                Queue();
                ~Queue();
 
@@ -233,18 +235,26 @@ namespace casual
                //!
                //! @return 0..1 occurrences of a logical complete message.
                //!
-               std::vector< message::Complete> operator () ( message::Complete::message_type_type type, const long flags);
+               std::vector< message::Complete> operator () ( type_type type, const long flags);
+
+               //!
+               //! Tries to find the first logic complete message with any of the types in @p types
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               std::vector< message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
 
             private:
 
                typedef std::deque< message::Complete> cache_type;
+               using range_type = decltype( range::make( cache_type().begin(), cache_type().end()));
 
                template< typename P>
-               cache_type::iterator find( P predicate, const long flags);
+               range_type find( P predicate, const long flags);
 
                bool receive( message::Transport& message, const long flags);
 
-               cache_type::iterator cache( message::Transport& message);
+               range_type cache( message::Transport& message);
 
                common::file::ScopedPath m_scopedPath;
 

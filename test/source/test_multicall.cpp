@@ -14,6 +14,7 @@
 
 
 #include "xatmi.h"
+#include "tx.h"
 
 #include "common/arguments.h"
 
@@ -53,6 +54,9 @@ int main( int argc, char** argv)
 
    std::cout << "argument: " << argument << std::endl;
 
+   tx_begin();
+
+
    using Async = casual::sf::xatmi::service::binary::Async;
    Async caller{ service};
 
@@ -72,7 +76,7 @@ int main( int argc, char** argv)
 
    }
 
-
+   tx_commit();
 
    /*
 

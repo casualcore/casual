@@ -6,9 +6,11 @@
 //!
 
 #include "common/transaction_context.h"
-#include "common/log.h"
 #include "common/queue.h"
-#include "common/trace.h"
+#include "common/environment.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
+#include "common/algorithm.h"
 
 #include <map>
 #include <algorithm>
@@ -80,6 +82,39 @@ namespace casual
          }
 
 
+         int xaTotx( int code)
+         {
+            switch( code)
+            {
+               case XA_RBROLLBACK:
+               case XA_RBCOMMFAIL:
+               case XA_RBDEADLOCK:
+               case XA_RBINTEGRITY:
+               case XA_RBOTHER:
+               case XA_RBPROTO:
+               case XA_RBTIMEOUT:
+               case XA_RBTRANSIENT:
+               case XA_NOMIGRATE:
+               case XA_HEURHAZ: return TX_HAZARD;
+               case XA_HEURCOM:
+               case XA_HEURRB:
+               case XA_HEURMIX: return TX_MIXED;
+               case XA_RETRY:
+               case XA_RDONLY: return TX_OK;
+               case XA_OK: return TX_OK;
+               case XAER_ASYNC:
+               case XAER_RMERR:
+               case XAER_NOTA: return TX_NO_BEGIN;
+               case XAER_INVAL:
+               case XAER_PROTO: return TX_PROTOCOL_ERROR;
+               case XAER_RMFAIL:
+               case XAER_DUPID:
+               case XAER_OUTSIDE: return TX_OUTSIDE;
+               default: return TX_FAIL;
+
+            }
+         }
+
 
 
          void handleXAresponse( std::vector< int>& result)
@@ -106,60 +141,63 @@ namespace casual
             return id++;
          }
 
+
+
          Context& Context::instance()
          {
             static Context singleton;
             return singleton;
          }
 
-         void Context::apply( const message::server::Configuration& configuration)
+
+         Context::Context()
          {
-            m_state.transactionManagerQueue = configuration.transactionManagerQueue;
 
-            //
-            // Local copy
-            //
-            auto conf = configuration.resourceManagers;
+         }
 
-            //
-            // Sanity check
-            //
-            if( conf.size() != m_state.resources.size())
-            {
-               throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
-            }
+         Context::Manager::Manager()
+         {
+            trace::internal::Scope trace{ "transaction::Context::Manager::Manager"};
+
+            message::transaction::client::connect::Request request;
+            request.server = message::server::Id::current();
+            request.path = process::path();
+
+            log::internal::debug << "send client connect request" << std::endl;
+            queue::blocking::Writer writer( ipc::broker::id());
+            writer( request);
 
 
-            using RM = message::resource::Manager;
+            queue::blocking::Reader reader( ipc::receive::queue());
+            message::transaction::client::connect::Reply reply;
+            reader( reply);
 
-            for( Resource& rm : m_state.resources)
-            {
-               auto findIter = std::find_if(
-                     std::begin( conf), std::end( conf), [&]( const RM& r){ return r.key == rm.key;});
+            queue = reply.transactionManagerQueue;
+            common::environment::domain::name( reply.domain);
+            std::swap( resources, reply.resourceManagers);
 
-               if( findIter != std::end( conf))
-               {
-                  rm.openinfo = findIter->openinfo;
-                  rm.closeinfo = findIter->closeinfo;
+            log::internal::debug << "received client connect reply from broker" << std::endl;
 
-                  //
-                  // this rm-configuration is done
-                  //
-                  conf.erase( findIter);
-               }
-               else
-               {
-                  throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
-               }
-            }
          }
 
 
+         const Context::Manager& Context::Manager::instance()
+         {
+            static const Manager singleton = Manager();
+            return singleton;
+         }
+
+
+         const Context::Manager& Context::manager()
+         {
+            return Manager::instance();
+         }
+
          const Transaction& Context::currentTransaction() const
          {
-            if( ! m_state.transactions.empty() && ! m_state.transactions.top().suspended)
+            if( ! m_transactions.empty() && ! m_transactions.top().suspended)
             {
-               return m_state.transactions.top();
+               return m_transactions.top();
             }
             else
             {
@@ -168,8 +206,61 @@ namespace casual
             }
          }
 
+
+         void Context::set( const std::vector< Resource>& resources)
+         {
+            trace::internal::Scope trace{ "transaction::Context::set"};
+
+
+            range::copy( resources, std::back_inserter( m_resources));
+            //m_resources = resources;
+
+            //
+            // Sanity check
+            //
+            if( manager().resources.size() != m_resources.size())
+            {
+               throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
+            }
+
+            using RM = message::resource::Manager;
+
+            for( Resource& rm : m_resources)
+            {
+               auto found = range::find_if( manager().resources, [&]( const RM& r){ return r.key == rm.key;});
+
+               if( found)
+               {
+                  rm.openinfo = found->openinfo;
+                  rm.closeinfo = found->closeinfo;
+
+                  //
+                  // this rm-configuration is done
+                  //
+                  //localResources.erase( found.first);
+               }
+               else
+               {
+                  throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
+               }
+            }
+         }
+
          namespace local
          {
+            namespace pop
+            {
+               struct Guard
+               {
+                  Guard( std::stack< Transaction>& transactions) : m_transactions( transactions) {}
+                  ~Guard() { m_transactions.pop();}
+
+                  std::stack< Transaction>& m_transactions;
+               };
+            } // remove
+
+
+
             template< typename QW, typename QR>
             int startTransaction( QW& writer, QR& reader, Transaction& trans)
             {
@@ -194,12 +285,12 @@ namespace casual
 
          void Context::associateOrStart( const message::Transaction& transaction)
          {
-            common::Trace trace{ "transaction::Context::associateOrStart"};
+            common::trace::internal::Scope trace{ "transaction::Context::associateOrStart"};
 
             Transaction trans;
 
 
-            queue::blocking::Writer writer{ m_state.transactionManagerQueue};
+            queue::blocking::Writer writer{ manager().queue};
 
             if( transaction.xid)
             {
@@ -216,12 +307,12 @@ namespace casual
 
             //
             // TODO: dynamic registration
-            if( ! m_state.resources.empty())
+            if( ! manager().resources.empty())
             {
                message::transaction::resource::Involved message;
                message.xid = trans.xid;
 
-               for( auto& resource : m_state.resources)
+               for( auto& resource : manager().resources)
                {
                   message.resources.push_back( resource.id);
                }
@@ -229,7 +320,7 @@ namespace casual
                writer( message);
             }
 
-            m_state.transactions.push( std::move( trans));
+            m_transactions.push( std::move( trans));
          }
 
          void Context::finalize( const message::service::Reply& message)
@@ -248,24 +339,23 @@ namespace casual
             return TM_OK;
          }
 
-         Context::Context()
-         {
 
-         }
 
 
 
          int Context::begin()
          {
-            if( ! m_state.transactions.empty())
+            common::trace::internal::Scope trace{ "transaction::Context::begin"};
+
+            if( ! m_transactions.empty())
             {
-               if( m_state.transactions.top().state != Transaction::State::inactive)
+               if( m_transactions.top().state != Transaction::State::inactive)
                {
                   return TX_PROTOCOL_ERROR;
                }
             }
 
-            queue::blocking::Writer writer( m_state.transactionManagerQueue);
+            queue::blocking::Writer writer( manager().queue);
             queue::blocking::Reader reader( ipc::getReceiveQueue());
 
             Transaction trans;
@@ -273,7 +363,7 @@ namespace casual
             auto code = local::startTransaction( writer, reader, trans);
             if( code  == XA_OK)
             {
-               m_state.transactions.push( std::move( trans));
+               m_transactions.push( std::move( trans));
             }
 
             return code;
@@ -281,9 +371,11 @@ namespace casual
 
          void Context::open()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::open"};
+
             std::vector< int> result;
 
-            for( auto& xa : m_state.resources)
+            for( auto& xa : m_resources)
             {
                result.push_back( xa.xaSwitch->xa_open_entry( xa.openinfo.c_str(), xa.id, TMNOFLAGS));
 
@@ -301,9 +393,11 @@ namespace casual
 
          void Context::close()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::close"};
+
             std::vector< int> result;
 
-            for( auto& xa : m_state.resources)
+            for( auto& xa : m_resources)
             {
                result.push_back( xa.xaSwitch->xa_close_entry( xa.closeinfo.c_str(), xa.id, TMNOFLAGS));
 
@@ -325,19 +419,75 @@ namespace casual
 
          int Context::commit()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::commit"};
 
             auto transaction = currentTransaction();
 
             if( transaction.xid)
             {
+               //
+               // Regardless what happens we'll remove the current transaction
+               //
+               local::pop::Guard popGuard( m_transactions);
 
                message::transaction::commit::Request request;
-
                request.xid = transaction.xid;
+               request.id = message::server::Id::current();
 
+               queue::blocking::Writer writer( manager().queue);
+               writer( request);
+
+
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+               //
+               // We could get commit-reply directly in an one-phase-commit
+               //
+
+               auto reply = reader.next( {
+                  message::transaction::prepare::Reply::message_type,
+                  message::transaction::commit::Reply::message_type});
+
+               //
+               // Did we get commit reply directly?
+               //
+               if( reply.type() == message::transaction::commit::Reply::message_type)
+               {
+                  message::transaction::commit::Reply commitReply;
+                  reply >> commitReply;
+
+                  log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
+
+                  return xaTotx( commitReply.state);
+               }
+               else
+               {
+
+                  message::transaction::prepare::Reply prepareReply;
+                  reply >> prepareReply;
+
+                  log::internal::transaction << "prepare reply: " << xaError( prepareReply.state) << std::endl;
+
+
+                  if( prepareReply.state == XA_OK)
+                  {
+                     //
+                     // Now we wait for the commit
+                     //
+                     message::transaction::commit::Reply commitReply;
+                     reader( commitReply);
+
+                     log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
+
+                     return xaTotx( commitReply.state);
+                  }
+                  return xaTotx( prepareReply.state);
+
+               }
             }
             else
             {
+               log::internal::transaction << "no ongoing transaction: " << txError( TX_NO_BEGIN) << std::endl;
                return TX_NO_BEGIN;
             }
 
@@ -346,7 +496,39 @@ namespace casual
 
          int Context::rollback()
          {
+            common::trace::internal::Scope trace{ "transaction::Context::rollback"};
 
+            auto transaction = currentTransaction();
+
+            if( transaction.xid)
+            {
+
+               //
+               // Regardless what happens we'll remove the current transaction
+               //
+               local::pop::Guard popGuard( m_transactions);
+
+               message::transaction::rollback::Request request;
+               request.xid = transaction.xid;
+               request.id = message::server::Id::current();
+
+               queue::blocking::Writer writer( manager().queue);
+               writer( request);
+
+               queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+               message::transaction::rollback::Reply reply;
+               reader( reply);
+
+               log::internal::transaction << "rollback reply xa: " << xaError( reply.state) << " tx: " << txError( xaTotx( reply.state)) << std::endl;
+
+               return xaTotx( reply.state);
+            }
+            else
+            {
+               log::internal::transaction << "no ongoing transaction: " << txError( TX_NO_BEGIN) << std::endl;
+               return TX_NO_BEGIN;
+            }
             return TX_OK;
          }
 
@@ -372,10 +554,12 @@ namespace casual
             //return TX_OK;
          }
 
+         /*
          State& Context::state()
          {
             return m_state;
          }
+         */
       } // transaction
    } // common
 } //casual

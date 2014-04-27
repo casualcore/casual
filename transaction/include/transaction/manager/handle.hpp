@@ -33,15 +33,22 @@ namespace casual
                namespace delayed
                {
                   template< typename R, typename M>
-                  void reply( State& state, const M& request, int code)
+                  void reply( State& state, const M& request, int code, const common::message::server::Id& target)
                   {
                      R message;
                      message.id.queue_id = common::ipc::receive::id();
                      message.xid = request.xid;
                      message.state = code;
 
-                     state.pendingReplies.emplace_back( request.id.queue_id, message);
+                     state.pendingReplies.emplace_back( target.queue_id, message);
                   }
+
+                  template< typename R, typename M>
+                  void reply( State& state, const M& request, int code)
+                  {
+                     reply< R>( state, request, code, request.id);
+                  }
+
                } // delayed
 
                template< typename Q, typename M, typename Enable = void>
@@ -53,23 +60,30 @@ namespace casual
                   using state::Base::Base;
 
                   template< typename T>
-                  void operator () ( const T& request, int code)
+                  void operator () ( const T& request, int code, const common::message::server::Id& target)
                   {
                      M message;
                      message.id.queue_id = common::ipc::receive::id();
                      message.xid = request.xid;
                      message.state = code;
 
-                     state::pending::Reply reply{ request.id.queue_id, message};
+                     state::pending::Reply reply{ target.queue_id, message};
 
-                     Q queue{ request.id.queue_id, m_state};
+                     Q queue{ target.queue_id, m_state};
 
                      if( ! queue.send( reply.message))
                      {
-                        common::log::internal::transaction << "failed to send reply directly to : " << request.id << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
+                        common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
                         m_state.pendingReplies.push_back( std::move( reply));
                      }
                   }
+
+                  template< typename T>
+                  void operator () ( const T& request, int code)
+                  {
+                     operator()( request, code, request.id);
+                  }
+
                };
 
                template< typename Q, typename M>
@@ -78,21 +92,24 @@ namespace casual
                   using state::Base::Base;
 
                   template< typename T>
-                  void operator () ( const T& request, int code)
+                  void operator () ( const T& request, int code, const common::message::server::Id& target)
                   {
                      M message;
                      message.id.queue_id = common::ipc::receive::id();
                      message.xid = request.xid;
                      message.state = code;
 
-                     Q queue{ request.id.queue_id, m_state};
+                     Q queue{ target.queue_id, m_state};
 
                      queue( message);
                   }
+
+                  template< typename T>
+                  void operator () ( const T& request, int code)
+                  {
+                     operator()( request, code, request.id);
+                  }
                };
-
-
-
 
 
                template< typename Q>
@@ -489,9 +506,9 @@ namespace casual
                            //
                            internal::send::Reply<
                               non_block_writer,
-                              reply_type> sender{ m_state};
+                              reply_type> send{ m_state};
 
-                           sender( message, XA_RDONLY);
+                           send( message, XA_RDONLY, transaction.owner);
 
                            //
                            // Indicate that wrapper should remove the transaction from state
@@ -510,7 +527,7 @@ namespace casual
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::delayed::reply< reply_type>( m_state, message, XA_OK);
+                           internal::send::delayed::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
 
                            //
                            // All XA_OK is to be committed.
@@ -519,11 +536,6 @@ namespace casual
                               common::range::make( transaction.resources),
                               Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK});
 
-
-
-
-
-
                            break;
                         }
                         default:
@@ -531,6 +543,8 @@ namespace casual
                            //
                            // Something has gone wrong.
                            //
+                           common::log::internal::debug << "TODO: something has gone wrong...\n";
+
 
                            break;
                         }
@@ -547,7 +561,62 @@ namespace casual
                {
                   common::trace::internal::Scope trace{ "transaction::handle::resource::commit reply"};
 
+                  resource.state = Transaction::Resource::State::cCommitReplied;
 
+                  auto state = transaction.state();
+
+
+                  //
+                  // Are we in a commited state?
+                  //
+                  if( state == Transaction::Resource::State::cCommitReplied)
+                  {
+                     using non_block_writer = typename queue_policy::non_block_writer;
+                     using reply_type = common::message::transaction::commit::Reply;
+
+                     //
+                     // Normalize all the resources return-state
+                     //
+                     auto result = transaction.results();
+
+                     switch( result)
+                     {
+                        case Transaction::Resource::Result::cXA_OK:
+                        {
+
+                           //
+                           // Send reply
+                           //
+                           internal::send::Reply<
+                              non_block_writer,
+                              reply_type> send{ m_state};
+
+                           send( message, XA_OK, transaction.owner);
+
+                           //
+                           // Remove transaction
+                           //
+                           m_state.log.remove( message.xid);
+                           return true;
+
+                           break;
+                        }
+                        default:
+                        {
+                           //
+                           // Something has gone wrong.
+                           //
+                           common::log::error << "TODO: something has gone wrong...\n";
+
+                           //
+                           // prepare send reply. Will be sent after persistent write to file
+                           //
+                           internal::send::delayed::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.owner);
+
+                           break;
+                        }
+                     }
+                  }
                   return false;
                }
 
@@ -578,9 +647,9 @@ namespace casual
                message.xid.generate();
             }
 
-            auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-            if( found.empty())
+            if( ! found)
             {
 
                //
@@ -624,11 +693,11 @@ namespace casual
 
             using non_block_writer = typename queue_policy::non_block_writer;
 
-            auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-            if( ! found.empty())
+            if( found)
             {
-               auto& transaction = *found.first;
+               auto& transaction = *found;
 
                //
                // Only the instigator can fiddle with the transaction
@@ -652,7 +721,7 @@ namespace casual
                      //
                      internal::send::Reply<
                         non_block_writer,
-                        common::message::transaction::resource::prepare::Reply> sender{ m_state};
+                        common::message::transaction::prepare::Reply> sender{ m_state};
 
                      sender( message, XA_RDONLY);
                      break;
@@ -716,12 +785,11 @@ namespace casual
             //
             // Find the transaction
             //
-            auto found = common::range::find_if(
-                  common::range::make( m_state.transactions), find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-            if( ! found.empty())
+            if( found)
             {
-               auto& transaction = *found.first;
+               auto& transaction = *found;
 
                internal::send::resource::Requests<
                   non_block_writer,
@@ -761,11 +829,11 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-               if( ! found.empty() && ! found.first->resources.empty())
+               if( found && ! found->resources.empty())
                {
-                  auto& transaction = *found.first;
+                  auto& transaction = *found;
                   common::log::internal::transaction << "prepare - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
@@ -813,11 +881,11 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-               if( ! found.empty())
+               if( found)
                {
-                  auto& transaction = *found.first;
+                  auto& transaction = *found;
                   common::log::internal::transaction << "commit - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
@@ -854,11 +922,11 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( common::range::make( m_state.transactions), find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
 
-               if( ! found.empty())
+               if( found)
                {
-                  auto& transaction = *found.first;
+                  auto& transaction = *found;
                   common::log::internal::transaction << "rollback - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
@@ -898,7 +966,7 @@ namespace casual
                      resource.state = Transaction::Resource::State::cPrepareReplied;
 
 
-                     if( common::range::all_of( common::range::make( transaction.resources),
+                     if( common::range::all_of( transaction.resources,
                            Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
                      {
 
@@ -940,7 +1008,7 @@ namespace casual
                      resource.state = Transaction::Resource::State::cCommitReplied;
 
 
-                     if( common::range::all_of( common::range::make( transaction.resources),
+                     if( common::range::all_of( transaction.resources,
                            Transaction::Resource::state::Filter{ Transaction::Resource::State::cCommitReplied}))
                      {
 

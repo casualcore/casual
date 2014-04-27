@@ -58,9 +58,9 @@ namespace casual
 			namespace file
 			{
 
-			   void executable( const std::string& path);
+			   //void executable( const std::string& path);
 
-			   const std::string& executable();
+			   //const std::string& executable();
 
 			   std::string brokerQueue();
 
