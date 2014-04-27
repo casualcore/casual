@@ -123,9 +123,9 @@ namespace monitor
 	   //
       // TODO: Use a correct argumentlist handler
       //
-      const std::string name = !arguments.empty() ? arguments.front() : std::string("");
+      const std::string name = ! arguments.empty() ? arguments.front() : std::string("");
 
-	   common::environment::file::executable( name);
+	   common::process::path( name);
 
 		static const std::string cMethodname("Monitor::Monitor");
 		common::Trace trace(cMethodname);

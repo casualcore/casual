@@ -51,19 +51,20 @@ namespace casual
 
                   void log( const std::string& category, const std::string& message)
                   {
-                     static const std::string basename{ common::file::basename( common::environment::file::executable())};
+                     const std::string basename{ file::basename( process::path())};
 
                      std::lock_guard< std::mutex> lock( m_streamMutex);
 
-                     m_output << common::chronology::local()
-                        << '|' << common::environment::domain::name()
-                        << '|' << common::calling::Context::instance().callId().string()
-                        << '|' << common::transaction::Context::instance().currentTransaction().xid.stringGlobal()
-                        << '|' << common::process::id()
+                     m_output << chronology::local()
+                        << '|' << environment::domain::name()
+                        << '|' << calling::Context::instance().callId().string()
+                        << '|' << transaction::Context::instance().currentTransaction().xid.stringGlobal()
+                        << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
-                        << '|' << common::calling::Context::instance().currentService()
-                        << "|" << category << "|" <<  message << std::endl;
+                        << "|" << category
+                        << '|' << calling::Context::instance().currentService()
+                        << "|" << message << std::endl;
                   }
 
                private:
@@ -83,7 +84,7 @@ namespace casual
                         //
                         // We don't want to throw... Or do we?
                         //
-                        std::cerr << environment::file::executable() << " - Could not open log-file: " << logfileName << std::endl;
+                        std::cerr << process::path() << " - Could not open log-file: " << logfileName << std::endl;
                         //throw exception::xatmi::SystemError( "Could not open the log-file: " + logfileName);
                         return false;
                      }

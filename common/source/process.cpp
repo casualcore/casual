@@ -9,8 +9,8 @@
 #include "common/exception.h"
 #include "common/error.h"
 #include "common/file.h"
-#include "common/log.h"
-#include "common/trace.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 #include "common/signal.h"
 #include "common/string.h"
 #include "common/environment.h"
@@ -52,13 +52,23 @@ namespace casual
                   return std::string{};
                }
 
+               std::string& path()
+               {
+                  static std::string path = getProcessPath();
+                  return path;
+               }
+
             } // <unnamed>
          } // local
 
          const std::string& path()
          {
-            static const std::string path = local::getProcessPath();
-            return path;
+            return local::path();
+         }
+
+         void path( const std::string& path)
+         {
+            local::path() = path;
          }
 
 
@@ -224,7 +234,7 @@ namespace casual
                      //
                      // We have started the process, hopefully...
                      //
-                     log::information << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ") << std::endl;
+                     log::internal::debug << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ") << std::endl;
                   }
                   /*
                   else

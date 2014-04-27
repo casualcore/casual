@@ -183,7 +183,7 @@ namespace casual
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl
-                     << "path: " << environment::file::executable() << std::endl;
+                     << "path: " << process::path() << std::endl;
 
 
                if( m_id  == -1)

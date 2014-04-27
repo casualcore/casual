@@ -33,7 +33,7 @@ int main( int argc, char** argv)
 
 	      parser.parse( argc, argv);
 
-	      common::environment::file::executable( parser.processName());
+	      common::process::path( parser.processName());
 	   }
 
 		casual::broker::Broker::instance().start( settings);

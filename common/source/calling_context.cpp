@@ -311,8 +311,8 @@ namespace casual
 
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
-            common::trace::internal::Scope trace( "calling::Context::asyncCall");
-            common::log::internal::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+            trace::internal::Scope trace( "calling::Context::asyncCall");
+            log::internal::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
 
 
@@ -374,8 +374,8 @@ namespace casual
 
          int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
          {
-            common::Trace trace( "calling::Context::getReply");
-            common::log::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+            trace::internal::Scope trace( "calling::Context::getReply");
+            log::internal::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
             //
             // TODO: validate input...
@@ -443,7 +443,7 @@ namespace casual
 
 
             // TOOD: Temp
-            common::log::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen << std::endl;
+            log::internal::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen << std::endl;
 
             //
             // Add the buffer to the pool

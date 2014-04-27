@@ -213,7 +213,7 @@ namespace casual
 
 
             arguments.m_argc = 1;
-            const char* executable = common::environment::file::executable().c_str();
+            const char* executable = common::process::path().c_str();
             arguments.m_argv = &const_cast< char*&>( executable);
 
             //handler.add( handle::Call{ arguments, m_state});

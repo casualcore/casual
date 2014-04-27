@@ -550,7 +550,7 @@ namespace casual
                log::internal::debug << "broker server - message.path............: " << message.path << std::endl;
 
                message.server.queue_id = ipc::getReceiveQueue().id();
-               message.path = common::environment::file::executable();
+               message.path = common::process::path();
 
                //
                // We add the server

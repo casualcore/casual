@@ -17,7 +17,7 @@
 
 
 #include "common/error.h"
-#include "common/environment.h"
+#include "common/process.h"
 
 
 using namespace casual;
@@ -79,7 +79,7 @@ int casual_start_server( casual_server_argument* serverArgument)
       {
          auto arguments = local::transform::ServerArguments()( *serverArgument);
 
-         common::environment::file::executable( serverArgument->argv[ 0]);
+         common::process::path( serverArgument->argv[ 0]);
 
          handler.add< common::callee::handle::Call>( arguments);
       }

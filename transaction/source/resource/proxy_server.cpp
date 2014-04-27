@@ -46,7 +46,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
 
          arguments.parse( serverArguments->argc, serverArguments->argv);
 
-         casual::common::environment::file::executable( arguments.processName());
+         casual::common::process::path( arguments.processName());
          casual::common::environment::domain::name( state.domain);
       }
 

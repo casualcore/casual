@@ -34,7 +34,7 @@ namespace casual
                //
                common::message::transaction::Connect connect;
 
-               connect.path = common::environment::file::executable();
+               connect.path = common::process::path();
                connect.server.queue_id = receiveQueue.ipc().id();
 
                brokerWriter( connect);
