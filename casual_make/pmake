@@ -131,18 +131,17 @@ def reformat( line):
     #
     # All regex at once. Takes no time...
     #
-    compiling = re.search(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*', line)
-    archive = re.search(r'(^ar) \S+ (\S+\.a).*', line)
-    link = re.search(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*', line)
-    make1 = re.search(r'^(.*[.]cmk )(.*)', line)
-    make2 = re.search(r'(^make.*:)(.*)', line)
-    rm = re.search(r'^rm -f (.*)', line)
-    buildserver = re.search(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*', line)
-    rsync = re.search(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)', line)
-    rsync_output = re.search(r'^(>[a-zA-Z+.]+)[\s]+(.*)', line)
+    compiling = reformat.compiling.match( line)
+    archive = reformat.archive.match( line)
+    link = reformat.link.match( line)
+    make1 = reformat.make1.match( line)
+    make2 = reformat.make2.match( line)
+    rm = reformat.make2.match( line)
+    buildserver = reformat.buildserver.match( line)
+    rsync = reformat.rsync.match( line)
+    rsync_output = reformat.rsync_output.match( line)
+    
     if compiling:
-        #global currentCompiler;
-        #currentCompiler = compiling.group(1);
         return bcolors.green( 'Compile (' + compiling.group(1) + '): ' ) + compiling.group(3) + '\n'
     elif archive:
         return bcolors.blue( 'Archive (' + archive.group(1) + '): ' ) + archive.group(2) + '\n'
@@ -162,6 +161,19 @@ def reformat( line):
         return bcolors.green( 'updated: ') + rsync_output.group(2) + ' ' + bcolors.blue( rsync_output.group(1)) + '\n'    
     else:
         return line;
+
+reformat.compiling = re.compile(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*')
+reformat.archive = re.compile(r'(^ar) \S+ (\S+\.a).*')
+reformat.link = re.compile(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*')
+reformat.make1 = re.compile(r'^(.*[.]cmk )(.*)')
+reformat.make2 = re.compile(r'(^make.*:)(.*)')
+reformat.rm = re.compile(r'^rm -f (.*)')
+reformat.buildserver = re.compile(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*')
+reformat.rsync = re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)')
+reformat.rsync_output = re.compile(r'^(>[a-zA-Z+.]+)[\s]+(.*)')  
+
+    
+
 
 if __name__ == '__main__':
     #
