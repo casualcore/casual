@@ -58,7 +58,7 @@ namespace casual
                      m_output << chronology::local()
                         << '|' << environment::domain::name()
                         << '|' << calling::Context::instance().callId().string()
-                        << '|' << transaction::Context::instance().currentTransaction().xid.stringGlobal()
+                        << '|' << transaction::Context::instance().currentTransaction().xid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename

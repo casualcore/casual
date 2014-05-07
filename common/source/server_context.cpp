@@ -197,17 +197,18 @@ namespace casual
                   writer( message);
                }
 
-               void Default::transaction( const message::service::callee::Call& message)
+               void Default::transaction( const message::service::callee::Call& message, const server::Service& service)
                {
-                  if( message.transaction.xid || message.service.auto_transaction)
+                  if( message.transaction.xid || service.startTransaction)
                   {
                      transaction::Context::instance().associateOrStart( message.transaction);
                   }
 
                }
 
-               void Default::transaction( const message::service::Reply& message)
+               void Default::transaction( message::service::Reply& message)
                {
+                  transaction::Context::instance().finalize( message);
                }
 
             } // policy

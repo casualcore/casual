@@ -11,6 +11,8 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <chrono>
 
 
 #include "xatmi.h"
@@ -54,8 +56,13 @@ int main( int argc, char** argv)
 
    std::cout << "argument: " << argument << std::endl;
 
+
+   auto start = casual::common::platform::clock_type::now();
+
+
    tx_begin();
 
+   auto efter_tx_begin = casual::common::platform::clock_type::now();
 
    using Async = casual::sf::xatmi::service::binary::Async;
    Async caller{ service};
@@ -68,6 +75,7 @@ int main( int argc, char** argv)
       receivers.push_back( caller());
    }
 
+   auto efter_call = casual::common::platform::clock_type::now();
 
    for( auto&& recive : receivers)
    {
@@ -76,7 +84,25 @@ int main( int argc, char** argv)
 
    }
 
+   auto efter_receive = casual::common::platform::clock_type::now();
+
    tx_commit();
+
+
+   auto end = casual::common::platform::clock_type::now();
+
+   typedef std::chrono::microseconds us;
+
+   //ms total = end - start;
+
+   std::cout << "time spent (us):" << std::endl << std::right
+         << "   total......: " << std::setw(7) << std::chrono::duration_cast< us>( end - start).count() << std::endl
+         << "   tx_begin...: " << std::setw(7) << std::chrono::duration_cast< us>( efter_tx_begin - start).count() << std::endl
+         << "   send.......: " << std::setw(7) << std::chrono::duration_cast< us>( efter_call - efter_tx_begin).count() << std::endl
+         << "   receive....: " << std::setw(7) << std::chrono::duration_cast< us>( efter_receive - efter_call).count() << std::endl
+         << "   tx_commit..: " << std::setw(7) << std::chrono::duration_cast< us>( end - efter_receive).count() << std::endl;
+
+
 
    /*
 

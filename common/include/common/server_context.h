@@ -52,7 +52,7 @@ namespace casual
 
             std::string name;
             tpservice function;
-            bool startTransaction = false;
+            bool startTransaction = true;
             bool active = true;
 
 
@@ -249,6 +249,12 @@ namespace casual
                //!
                void dispatch( message_type& message)
                {
+                  //
+                  // Set the call-chain-id for this "chain"
+                  //
+                  calling::Context::instance().callId( message.callId);
+
+
                   trace::internal::Scope trace{ "callee::handle::basic_call::dispatch"};
 
                   //
@@ -258,18 +264,6 @@ namespace casual
                   {
                      m_state.monitor.start = platform::clock_type::now();
                   }
-
-                  //
-                  // Set the call-chain-id for this "chain"
-                  //
-                  calling::Context::instance().callId( message.callId);
-
-                  //
-                  // Do transaction stuff...
-                  // - begin transaction if service has "auto-transaction"
-                  // - notify TM about potentially resources involved.
-                  //
-                  m_policy.transaction( message);
 
 
                   //
@@ -300,6 +294,15 @@ namespace casual
                         throw common::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
                      }
 
+                     auto& service = findIter->second;
+
+                     //
+                     // Do transaction stuff...
+                     // - begin transaction if service has "auto-transaction"
+                     // - notify TM about potentially resources involved.
+                     //
+                     m_policy.transaction( message, service);
+
 
                      calling::Context::instance().currentService( message.service.name);
 
@@ -310,7 +313,7 @@ namespace casual
                      //
                      buffer::Context::instance().add( std::move( message.buffer));
 
-                     findIter->second.call( &serviceInformation);
+                     service.call( &serviceInformation);
 
                      //
                      // User service returned, not by tpreturn. The standard does not mention this situation, what to do?
@@ -407,8 +410,8 @@ namespace casual
 
                   void statistics( platform::queue_id_type id, message::monitor::Notify& message);
 
-                  void transaction( const message::service::callee::Call& message);
-                  void transaction( const message::service::Reply& message);
+                  void transaction( const message::service::callee::Call& message, const server::Service& service);
+                  void transaction( message::service::Reply& message);
 
                private:
                   typedef queue::blocking::Writer reply_writer;

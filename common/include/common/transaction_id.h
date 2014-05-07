@@ -115,11 +115,11 @@ namespace casual
             XID m_xid;
          };
 
-         inline std::ostream& operator << ( std::ostream& out, const ID& value)
+         inline std::ostream& operator << ( std::ostream& out, const ID& id)
          {
-            if( out.good())
+            if( out && id)
             {
-               out << value.stringGlobal() << "|" << value.stringBranch();
+               out << id.stringGlobal() << ":" << id.stringBranch();
             }
             return out;
          }

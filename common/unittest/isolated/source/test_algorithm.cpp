@@ -17,9 +17,9 @@ namespace casual
 
       namespace local
       {
-         std::vector< int> unsorted() { return std::vector< int>{ 5,6,3,4,1,8,9,4,3,2};}
+         std::vector< int> unsorted() { return { 5,6,3,4,1,8,9,4,3,2};}
 
-         std::vector< int> sorted() {   return std::vector< int>{ 1,2,3,3,4,4,5,6,8,9};}
+         std::vector< int> sorted() {   return { 1,2,3,3,4,4,5,6,8,9};}
 
       } // local
 
@@ -33,10 +33,11 @@ namespace casual
          // shall not compile
          //auto sorted = range::sort( range::make( local::unsorted()));
 
-         auto sorted = range::sort( range::make( us));
+         auto sorted = range::sort( us);
 
+         //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, range::make( s)));
+         EXPECT_TRUE( range::equal( sorted, s));
       }
 
 
@@ -45,10 +46,11 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = range::sort( range::make( us), std::less< int>());
+         auto sorted = range::sort( us, std::less< int>());
 
+         //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, range::make( s)));
+         EXPECT_TRUE( range::equal( sorted, s));
 
       }
 
@@ -59,8 +61,9 @@ namespace casual
 
          auto sorted = range::sort( range::make_reverse( us));
 
+         //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, range::make( s)));
+         EXPECT_TRUE( range::equal( sorted, s));
       }
 
 
@@ -71,8 +74,9 @@ namespace casual
 
          auto sorted = range::sort( range::make_reverse( us), std::less< int>());
 
+         //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, range::make( s))) << "sorted : " << sorted << "\nunsortd: " << range::make( s);
+         EXPECT_TRUE( range::equal( sorted, s)) << "sorted : " << sorted << "\nunsortd: " << range::make( s);
 
       }
 
@@ -80,10 +84,10 @@ namespace casual
       {
          auto us = local::unsorted();
 
-         auto part = range::partition( range::make( us), []( int value) { return value == 3;});
+         auto part = range::partition( us, []( int value) { return value == 3;});
 
          ASSERT_TRUE( part.size() == 2);
-         EXPECT_TRUE( *part.first == 3);
+         EXPECT_TRUE( *part == 3);
       }
 
       TEST( casual_common_algorithm, partition_reverse)
@@ -100,10 +104,10 @@ namespace casual
       {
          auto us = local::unsorted();
 
-         auto found =  range::find( range::make( us), 3);
+         auto found =  range::find( us, 3);
 
          ASSERT_TRUE( ! found.empty());
-         EXPECT_TRUE( *found.first == 3);
+         EXPECT_TRUE( *found == 3);
 
       }
 
@@ -114,7 +118,7 @@ namespace casual
          auto found =  range::find( range::make_reverse( us), 3);
 
          ASSERT_TRUE( ! found.empty());
-         EXPECT_TRUE( *found.first == 3);
+         EXPECT_TRUE( *found == 3);
 
       }
 
@@ -125,11 +129,21 @@ namespace casual
 
          auto found =  range::find(
                range::partition(
-                     range::sort( range::make( us)),
+                     range::sort( us),
                []( int value) { return value == 3;}), 3);
 
          ASSERT_TRUE( ! found.empty());
-         EXPECT_TRUE( *found.first == 3);
+         EXPECT_TRUE( *found == 3);
+      }
+
+      TEST( casual_common_algorithm, trim_container)
+      {
+         auto s = local::sorted();
+
+         auto found =  range::find( s, 3);
+         auto result = range::trim( s, found);
+
+         EXPECT_TRUE( range::equal( result, s));
 
       }
 
@@ -159,56 +173,145 @@ namespace casual
       }
 
 
-      struct True
+      template< typename T>
+      struct basic_equal
       {
-         template< typename T>
-         bool operator () ( T&& value) const
+         basic_equal( T value) : m_value( std::move( value)) {}
+
+         template< typename V>
+         bool operator () ( V&& value) const
          {
-            return true;
+            return value == m_value;
          }
+
+         T m_value;
       };
 
-
-      struct False
-      {
-         template< typename T>
-         bool operator () ( T&& value) const
-         {
-            return false;
-         }
-      };
+      using Equal = basic_equal< int>;
 
       TEST( casual_common_algorithm, chain_basic)
       {
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
-         auto last = std::partition( std::begin( range), std::end( range), chain::Or::link( True(), False()));
+         auto part = range::partition( range, chain::Or::link( Equal{ 2}, Equal{ 4}));
+
+         EXPECT_TRUE( part.size() == 2);
 
       }
 
 
       TEST( casual_common_algorithm, chain_basic_lvalue)
       {
-         auto functor = chain::Or::link( True(), False());
+         auto functor = chain::Or::link( Equal{ 2}, Equal{ 4});
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
-         auto last = std::partition( std::begin( range), std::end( range), functor);
+         auto part = range::partition( range, functor);
+
+         EXPECT_TRUE( part.size() == 2);
       }
 
       TEST( casual_common_algorithm, chain_basic_lvalue1)
       {
-         True pred1;
-         False pred2;
+         Equal pred1{ 2};
+         Equal pred2{ 4};
          auto functor = chain::Or::link( pred1, pred2);
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
-         auto last = std::partition( std::begin( range), std::end( range), functor);
+         auto part = range::partition( range, functor);
+
+         EXPECT_TRUE( part.size() == 2);
+      }
+
+      struct Value
+      {
+         std::string name;
+         long age;
+         double height;
+      };
+
+      namespace order
+      {
+         namespace name
+         {
+            struct Ascending
+            {
+               bool operator () ( const Value& lhs, const Value& rhs) const { return lhs.name < rhs.name;}
+            };
+
+            using Descending = compare::Inverse< Ascending>;
+         } // name
+
+         namespace age
+         {
+            struct Ascending
+            {
+               bool operator () ( const Value& lhs, const Value& rhs) const { return lhs.age < rhs.age;}
+            };
+
+            using Descending = compare::Inverse< Ascending>;
+         } // age
+
+         namespace height
+         {
+            struct Ascending
+            {
+               bool operator () ( const Value& lhs, const Value& rhs) const { return lhs.height < rhs.height;}
+            };
+
+            using Descending = compare::Inverse< Ascending>;
+         } // hight
+
+      } // order
+
+      namespace local
+      {
+         std::vector< Value> values()
+         {
+            return { { "Tom", 29, 1.75}, { "Charlie", 23, 1.63 }, { "Charlie", 29, 1.90}, { "Tom", 30, 1.63} };
+         }
+      } // local
+
+      TEST( casual_common_algorithm, chain_order_name_asc)
+      {
+         auto values = local::values();
+
+         auto sorted = range::sort( values, chain::Order::link( order::name::Ascending()));
+
+         EXPECT_TRUE( sorted->name == "Charlie");
+      }
+
+      TEST( casual_common_algorithm, chain_order_name_desc__age_asc)
+      {
+         auto values = local::values();
+
+         auto sorted = range::sort( values, chain::Order::link(
+               order::name::Descending(),
+               order::age::Ascending()));
+
+         EXPECT_TRUE( sorted->name == "Tom");
+         EXPECT_TRUE( sorted->age == 29);
+         EXPECT_TRUE( ( sorted.first + 3)->name == "Charlie");
+         EXPECT_TRUE( ( sorted.first + 3)->age == 29);
 
       }
 
+      TEST( casual_common_algorithm, chain_order_age_desc__height_asc)
+      {
+         auto values = local::values();
+
+         auto sorted = range::sort( values, chain::Order::link(
+               order::age::Descending(),
+               order::height::Ascending()));
+
+         EXPECT_TRUE( ( sorted.first + 1)->age == 29);
+         EXPECT_TRUE( ( sorted.first + 1)->height == 1.75);
+         EXPECT_TRUE( ( sorted.first + 2)->age == 29);
+         EXPECT_TRUE( ( sorted.first + 2)->height == 1.90);
+
+      }
 
 
    } // algorithm

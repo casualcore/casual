@@ -21,6 +21,157 @@ namespace casual
    namespace common
    {
 
+      namespace chain
+      {
+         namespace link
+         {
+
+            template< typename L, typename T1, typename T2>
+            struct basic_link
+            {
+               using link_type = L;
+
+               basic_link( T1&& left, T2&& right) : left( std::forward< T1>( left)), right( std::forward< T2>( right)) {}
+
+               template< typename ...Values>
+               auto operator() ( Values&& ...values) const -> decltype( link_type::link( std::declval< T1>(),  std::declval< T2>(), std::forward< Values>( values)...))
+               {
+                  return link_type::link( left, right, std::forward< Values>( values)...);
+               }
+
+               template< typename ...Values>
+               auto operator() ( Values&& ...values) -> decltype( link_type::link( std::declval< T1>(),  std::declval< T2>(), std::forward< Values>( values)...))
+               {
+                  return link_type::link( left, right, std::forward< Values>( values)...);
+               }
+
+            private:
+               T1 left;
+               T2 right;
+            };
+
+            template< typename Link, typename Arg>
+            Arg make( Arg&& param) //-> decltype( std::forward< Arg>( param))
+            {
+               return param; //std::forward< Arg>( param);
+            }
+
+            template< typename L, typename Arg, typename... Args>
+            auto make( Arg&& param, Args&&... params) -> basic_link< L, Arg, decltype( make< L>( std::forward< Args>( params)...))>
+            {
+               using nested_type = decltype( make< L>( std::forward< Args>( params)...));
+               return basic_link< L, Arg, nested_type>( std::forward< Arg>( param), make< L>( std::forward< Args>( params)...));
+            }
+
+            struct Nested
+            {
+               template< typename T1, typename T2, typename T>
+               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( right( value)))
+               {
+                  return left( right( value));
+               }
+            };
+
+            struct And
+            {
+               template< typename T1, typename T2, typename T>
+               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) && right( value))
+               {
+                  return left( value) && right( value);
+               }
+            };
+
+            struct Or
+            {
+               template< typename T1, typename T2, typename T>
+               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) || right( value))
+               {
+                  return left( value) || right( value);
+               }
+            };
+
+            struct Order
+            {
+               template< typename T1, typename T2, typename V1, typename V2>
+               static auto link( T1&& left, T2&& right, V1&& lhs, V2&& rhs) -> decltype( left( lhs, rhs))
+               {
+                  if( left( lhs, rhs))
+                     return true;
+                  if( left( rhs, lhs))
+                     return false;
+                  return right( lhs, rhs);
+               }
+            };
+
+         } // link
+
+         template< typename Link>
+         struct basic_chain
+         {
+            template< typename... Args>
+            static auto link( Args&&... params) -> decltype( link::make< Link>( std::forward< Args>( params)...))
+            {
+               return link::make< Link>( std::forward< Args>( params)...);
+            }
+         };
+
+
+         using Nested = basic_chain< link::Nested>;
+         using And = basic_chain< link::And>;
+         using Or = basic_chain< link::Or>;
+         using Order = basic_chain< link::Order>;
+
+
+      } // chain
+
+      namespace extract
+      {
+         struct Second
+         {
+            template< typename T>
+            auto operator () ( T&& value) const -> decltype( value.second)
+            {
+               return value.second;
+            }
+         };
+
+      }
+
+      namespace compare
+      {
+         template< typename T>
+         auto inverse( T&& functor) -> decltype( std::bind( std::forward< T>( functor), std::placeholders::_2, std::placeholders::_1))
+         {
+            return std::bind( std::forward< T>( functor), std::placeholders::_2, std::placeholders::_1);
+         }
+
+         template< typename T>
+         struct Inverse
+         {
+            template< typename ...Args>
+            Inverse( Args&&... args) : m_functor( std::forward< Args>( args)...) {}
+
+            template< typename V1, typename V2>
+            auto operator () ( V1&& lhs, V2&& rhs) const -> decltype( std::declval< T>()( std::forward< V2>( rhs), std::forward< V1>( lhs)))
+            {
+               return m_functor( std::forward< V2>( rhs), std::forward< V1>( lhs));
+            }
+
+            template< typename V1, typename V2>
+            auto operator () ( V1&& lhs, V2&& rhs) -> decltype( std::declval< T>()( std::forward< V2>( rhs), std::forward< V1>( lhs)))
+            {
+               return m_functor( std::forward< V2>( rhs), std::forward< V1>( lhs));
+            }
+
+         private:
+            T m_functor;
+         };
+
+
+
+      } // order
+
+
       template< typename Enum>
       auto as_integer( Enum value) -> typename std::underlying_type< Enum>::type
       {
@@ -239,18 +390,6 @@ namespace casual
          }
 
 
-         /*
-         template< typename InputRange, typename OutputRange, typename T>
-         OutputRange transform( InputRange&& range, OutputRange&& output, T transform)
-         {
-            auto inputRange = make( std::forward< InputRange>( range));
-            //assert( inputRange.size() <= output.size());
-            std::transform( std::begin( inputRange), std::end( range), std::begin( output), transform);
-            return output;
-         }
-         */
-
-
          template< typename R, typename C, typename T>
          auto transform( R&& range, C& container, T transform) -> decltype( make( container))
          {
@@ -270,17 +409,28 @@ namespace casual
          }
 
 
-         template< typename Iter>
-         Range< Iter> unique( Range< Iter> range)
+         //!
+         //! Applies std::unique on [std::begin( range), std::end( range) )
+         //!
+         //! @return the unique range
+         //!
+         template< typename R>
+         auto unique( R&& range) -> decltype( make( range))
          {
-            range.last = std::unique( range.first, range.last);
-            return range;
+            auto resultRange = make( range);
+            resultRange.last = std::unique( resultRange.first, resultRange.last);
+            return resultRange;
          }
 
-         template< typename C, typename Iter>
-         Range< Iter> trim( C& container, Range< Iter> range)
+         //!
+         //! Trims @p container so it matches @p range
+         //!
+         //! @return range that matches the trimmed @p container
+         //!
+         template< typename C, typename R>
+         auto trim( C& container, R&& range) -> decltype( make( container))
          {
-            auto index = range.first -  std::begin( container);
+            auto index = range.first - std::begin( container);
             container.erase( range.last, std::end( container));
             container.erase( std::begin( container), std::begin( container) + index);
             return make( container);
@@ -288,7 +438,7 @@ namespace casual
 
 
          template< typename C, typename Iter>
-         Range< Iter> erase( C& container, Range< Iter> range)
+         auto erase( C& container, Range< Iter> range) -> decltype( make( container))
          {
             container.erase( range.first, range.last);
             return make( container);
@@ -316,28 +466,7 @@ namespace casual
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs));
          }
 
-         //!
-         //! @return true if all elements in the range compare equal
-         //!
-         template< typename R>
-         bool uniform( R&& range)
-         {
-            if( range.size() < 2)
-            {
-               return true;
-            }
 
-            auto current = range.first;
-
-            while( current != range.last)
-            {
-               if( *current != *++current)
-               {
-                  return false;
-               }
-            }
-            return true;
-         }
 
 
 
@@ -354,7 +483,7 @@ namespace casual
          }
 
          template< typename R, typename T>
-         auto find( R&& range, T&& value) -> decltype( make( range))
+         auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
          {
             auto resultRange = make( std::forward< R>( range));
             resultRange.first = std::find( std::begin( resultRange), std::end( resultRange), std::forward< T>( value));
@@ -381,9 +510,9 @@ namespace casual
 
 
          template< typename R1, typename R2, typename F>
-         auto find_first_of( R1&& target, R2&& source, F functor) -> decltype( make( target))
+         auto find_first_of( R1&& target, R2&& source, F functor) -> decltype( make( std::forward< R1>( target)))
          {
-            auto resultRange = make( target);
+            auto resultRange = make( std::forward< R1>( target));
 
             resultRange.first = std::find_first_of(
                   std::begin( resultRange), std::end( resultRange),
@@ -394,9 +523,9 @@ namespace casual
 
 
          template< typename R1, typename R2>
-         auto find_first_of( R1&& target, R2&& source) -> decltype( make( target))
+         auto find_first_of( R1&& target, R2&& source) -> decltype( make( std::forward< R1>( target)))
          {
-            auto resultRange = make( target);
+            auto resultRange = make( std::forward< R1>( target));
 
             resultRange.first = std::find_first_of(
                   std::begin( resultRange), std::end( resultRange),
@@ -406,145 +535,164 @@ namespace casual
          }
 
 
+         template< typename R1, typename R2>
+         auto intersection( R1&& source, R2&& other) -> decltype( make( std::forward< R1>( source)))
+         {
+            auto resultRange = make( std::forward< R1>( source));
+            using range_type = decltype( make( std::forward< R1>( source)));
+            using value_type = typename range_type::value_type;
+
+            auto lambda = [&]( const value_type& value){ return find( other, value);};
+            return partition( resultRange, lambda);
+         }
+
+         template< typename R1, typename R2, typename F>
+         auto intersection( R1&& source, R2&& other, F functor) -> decltype( make( std::forward< R1>( source)))
+         {
+            auto resultRange = make( std::forward< R1>( source));
+            using range_type = decltype( make( std::forward< R1>( source)));
+            using value_type = typename range_type::value_type;
+
+            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( other), std::bind( functor, std::placeholders::_1, value));};
+            return partition( resultRange, lambda);
+
+         }
+
+         //!
+         //! @return true if all elements in @p other is found in @p source
+         //!
+         template< typename R1, typename R2>
+         bool includes( R1&& source, R2&& other)
+         {
+            using range_type = decltype( make( std::forward< R2>( other)));
+            using value_type = typename range_type::value_type;
+
+            auto lambda = [&]( const value_type& value){ return find( std::forward< R1>( source), value);};
+            return all_of( other, lambda);
+         }
+
+         //!
+         //! Uses @p compare to compare for equality
+         //!
+         //! @return true if all elements in @p other is found in @p source
+         //!
+         template< typename R1, typename R2, typename Compare>
+         bool includes( R1&& source, R2&& other, Compare compare)
+         {
+            using range_type = decltype( make( std::forward< R2>( other)));
+            using value_type = typename range_type::value_type;
+
+            auto lambda = [&]( const value_type& value){ return find_if( source, std::bind( compare, std::placeholders::_1, value));};
+            return all_of( other, lambda);
+
+         }
+
+         //!
+         //! @return true if all elements in the range compare equal
+         //!
+         template< typename R>
+         bool uniform( R&& range)
+         {
+            auto localRange = make( std::forward< R>( range));
+            if( localRange.size() < 2)
+            {
+               return true;
+            }
+
+            auto current = localRange.first;
+
+            while( current != localRange.last && current + 1 != localRange.last)
+            {
+               if( *current != *++current)
+               {
+                  return false;
+               }
+            }
+            return true;
+         }
+
+         //!
+         //! @return true if @p range1 includes @p range2, AND @p range2 includes @p range1
+         //!
+         template< typename R1, typename R2, typename Compare>
+         bool uniform( R1&& range1, R2&& range2, Compare comp)
+         {
+            return includes( std::forward< R1>( range1), std::forward< R2>( range2), comp)
+                  //&& includes( std::forward< R2>( range2), std::forward< R1>( range1), comp);
+                 && includes( std::forward< R2>( range2), std::forward< R1>( range1), compare::inverse( comp));
+         }
+
+
 
 
          namespace sorted
          {
-            template< typename Iter, typename T, typename C>
-            Range< Iter> bound( Range< Iter> range, const T& value, C compare)
+            template< typename R1, typename R2, typename Output>
+            auto intersection( R1&& source, R2&& other, Output& result) -> decltype( make( result))
             {
-               range.first = std::lower_bound( range.first, range.last, value, compare);
-               range.last = std::upper_bound( range.first, range.last, value, compare);
+               std::set_intersection(
+                     std::begin( source), std::end( source),
+                     std::begin( other), std::end( other),
+                     std::back_inserter( result));
 
-               return range;
+               return make( result);
+            }
+
+            template< typename R1, typename R2, typename Output, typename Compare>
+            auto intersection( R1&& source, R2&& other, Output& result, Compare compare) -> decltype( make( result))
+            {
+               std::set_intersection(
+                     std::begin( source), std::end( source),
+                     std::begin( other), std::end( other),
+                     std::back_inserter( result),
+                     compare);
+
+               return make( result);
             }
 
 
-            template< typename Iter, typename T>
-            Range< Iter> bound( Range< Iter> range, const T& value)
+            template< typename R, typename T, typename C>
+            auto bound( R&& range, const T& value, C compare) -> decltype( make( std::forward< R>( range)))
             {
-               return bound( range, value, std::less< T>{});
+               auto resultRange = make( std::forward< R>( range));
+               resultRange.first = std::lower_bound( resultRange.first, resultRange.last, value, compare);
+               resultRange.last = std::upper_bound( resultRange.first, resultRange.last, value, compare);
+
+               return resultRange;
             }
 
 
-            template< typename Iter, typename C>
-            std::vector< Range< Iter>> group( Range< Iter> range, C compare)
+            template< typename R, typename T>
+            auto bound( R&& range, const T& value) -> decltype( make( range))
             {
-               std::vector< Range< Iter>> result;
+               return bound( std::forward< R>( range), value, std::less< T>{});
+            }
 
-               while( ! range.empty())
+
+            template< typename R, typename C>
+            auto group( R&& range, C compare) -> std::vector< decltype( make( std::forward< R>( range)))>
+            {
+               auto localRange = make( range);
+
+               std::vector< decltype( make( std::forward< R>( range)))> result;
+
+               while( ! localRange.empty())
                {
-                  result.push_back( bound( range, *range.first, compare));
-                  range.first = result.back().last;
+                  result.push_back( bound( localRange, *localRange, compare));
+                  localRange.first = result.back().last;
                }
 
                return result;
             }
 
-            template< typename Iter, typename T>
-            std::vector< Range< Iter>> group( Range< Iter> range)
+            template< typename R, typename T>
+            auto group( R&& range) -> std::vector< decltype( make( std::forward< R>( range)))>
             {
-               return group( range, std::less< typename Range< Iter>::value_type>{});
+               return group( std::forward< R>( range), std::less< typename R::value_type>{});
             }
 
          } // sorted
       } // range
-
-
-      namespace chain
-      {
-         namespace link
-         {
-
-            template< typename L, typename T1, typename T2>
-            struct basic_link
-            {
-               using link_type = L;
-
-               basic_link( T1&& left, T2&& right) : left( std::forward< T1>( left)), right( std::forward< T2>( right)) {}
-
-               template< typename T>
-               auto operator() ( T&& value) const -> decltype( link_type::link( std::declval< T1>(),  std::declval< T2>(), std::forward< T>( value)))
-               {
-                  return link_type::link( left, right, std::forward< T>( value));
-               }
-            private:
-               T1 left;
-               T2 right;
-            };
-
-            template< typename Link, typename Arg>
-            Arg make( Arg&& param) //-> decltype( std::forward< Arg>( param))
-            {
-               return param; //std::forward< Arg>( param);
-            }
-
-            template< typename L, typename Arg, typename... Args>
-            auto make( Arg&& param, Args&&... params) -> basic_link< L, Arg, decltype( make< L>( std::forward< Args>( params)...))>
-            {
-               using nested_type = decltype( make< L>( std::forward< Args>( params)...));
-               return basic_link< L, Arg, nested_type>( std::forward< Arg>( param), make< L>( std::forward< Args>( params)...));
-            }
-
-            struct Nested
-            {
-               template< typename T1, typename T2, typename T>
-               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( right( value)))
-               {
-                  return left( right( value));
-               }
-            };
-
-            struct And
-            {
-               template< typename T1, typename T2, typename T>
-               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) && right( value))
-               {
-                  return left( value) && right( value);
-               }
-            };
-
-            struct Or
-            {
-               template< typename T1, typename T2, typename T>
-               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) || right( value))
-               {
-                  return left( value) || right( value);
-               }
-            };
-
-         } // link
-
-         template< typename Link>
-         struct basic_chain
-         {
-            template< typename... Args>
-            static auto link( Args&&... params) -> decltype( link::make< Link>( std::forward< Args>( params)...))
-            {
-               return link::make< Link>( std::forward< Args>( params)...);
-            }
-         };
-
-
-         using Nested = basic_chain< link::Nested>;
-         using And = basic_chain< link::And>;
-         using Or = basic_chain< link::Or>;
-
-
-      } // chain
-
-      namespace extract
-      {
-         struct Second
-         {
-            template< typename T>
-            auto operator () ( T&& value) const -> decltype( value.second)
-            {
-               return value.second;
-            }
-         };
-
-      }
 
 
    } // common

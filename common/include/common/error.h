@@ -32,6 +32,17 @@ namespace casual
          {
             std::string error( int error);
          } // xatmi
+
+         namespace xa
+         {
+            const char* error( int code);
+         } // xa
+
+         namespace tx
+         {
+            const char* error( int code);
+         } // tx
+
       } // error
    } // common
 } // casual

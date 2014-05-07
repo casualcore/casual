@@ -135,37 +135,47 @@ namespace casual
 
          while( true)
          {
+            try
             {
-               scoped::Writer batchWrite( m_state.log);
-
-               //
-               // Blocking
-               //
-
-               handler.dispatch( queueReader.next());
-
-
-               //
-               // Consume until the queue is empty or we've got pending replies equal to transaction_batch
-               //
                {
+                  scoped::Writer batchWrite( m_state.log);
 
-                  queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
+                  //
+                  // Blocking
+                  //
 
-                  while( handler.dispatch( nonBlocking.next()) &&
-                        m_state.pendingReplies.size() < common::platform::transaction_batch)
+                  handler.dispatch( queueReader.next());
+
+
+                  //
+                  // Consume until the queue is empty or we've got pending replies equal to transaction_batch
+                  //
                   {
-                     ;
+
+                     queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
+
+                     while( handler.dispatch( nonBlocking.next()) &&
+                           m_state.pendingReplies.size() < common::platform::transaction_batch)
+                     {
+                        ;
+                     }
+
                   }
-
                }
+
+               common::log::internal::transaction << "manager pending replies: " << m_state.pendingReplies.size() << "\n";
+
+               auto notDone = common::range::partition(
+                     m_state.pendingReplies,
+                     common::negate( action::pending::Send{ m_state}));
+
+               common::range::trim( m_state.pendingReplies, notDone);
             }
-
-            auto notDone = common::range::partition(
-                  m_state.pendingReplies,
-                  common::negate( action::pending::Send{ m_state}));
-
-            common::range::trim( m_state.pendingReplies, notDone);
+            catch( ...)
+            {
+               //error::handler();
+               throw;
+            }
 
          }
       }

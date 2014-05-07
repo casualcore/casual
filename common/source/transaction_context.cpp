@@ -11,6 +11,7 @@
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 #include "common/algorithm.h"
+#include "common/error.h"
 
 #include <map>
 #include <algorithm>
@@ -22,65 +23,6 @@ namespace casual
 
       namespace transaction
       {
-
-         const char* xaError( int code)
-         {
-            static const std::map< int, const char*> mapping{
-               { XA_RBROLLBACK, "XA_RBROLLBACK"},
-               { XA_RBCOMMFAIL, "XA_RBCOMMFAIL"},
-               { XA_RBDEADLOCK, "XA_RBDEADLOCK"},
-               { XA_RBINTEGRITY, "XA_RBINTEGRITY"},
-               { XA_RBOTHER, "XA_RBOTHER"},
-               { XA_RBPROTO, "XA_RBPROTO"},
-               { XA_RBTIMEOUT, "XA_RBTIMEOUT"},
-               { XA_RBTRANSIENT, "XA_RBTRANSIENT"},
-               { XA_NOMIGRATE, "XA_NOMIGRATE"},
-               { XA_HEURHAZ, "XA_HEURHAZ"},
-               { XA_HEURCOM, "XA_HEURCOM"},
-               { XA_HEURRB, "XA_HEURRB"},
-               { XA_HEURMIX, "XA_HEURMIX"},
-               { XA_RETRY, "XA_RETRY"},
-               { XA_RDONLY, "XA_RDONLY"},
-               { XA_OK, "XA_OK"},
-               { XAER_ASYNC, "XAER_ASYNC"},
-               { XAER_RMERR, "XAER_RMERR"},
-               { XAER_NOTA, "XAER_NOTA"},
-               { XAER_INVAL, "XAER_INVAL"},
-               { XAER_PROTO, "XAER_PROTO"},
-               { XAER_RMFAIL, "XAER_RMFAIL"},
-               { XAER_DUPID, "XAER_DUPID"},
-               { XAER_OUTSIDE, "XAER_OUTSIDE"}
-            };
-
-            return mapping.at( code);
-         }
-
-
-
-         const char* txError( int code)
-         {
-            static const std::map< int, const char*> mapping{
-               { TX_NOT_SUPPORTED, "TX_NOT_SUPPORTED"},
-               { TX_OK, "TX_OK"},
-               { TX_OUTSIDE, "TX_OUTSIDE"},
-               { TX_ROLLBACK, "TX_ROLLBACK"},
-               { TX_MIXED, "TX_MIXED"},
-               { TX_HAZARD, "TX_HAZARD"},
-               { TX_PROTOCOL_ERROR, "TX_PROTOCOL_ERROR"},
-               { TX_ERROR, "TX_ERROR"},
-               { TX_FAIL, "TX_FAIL"},
-               { TX_EINVAL, "TX_EINVAL"},
-               { TX_COMMITTED, "TX_COMMITTED"},
-               { TX_NO_BEGIN, "TX_NO_BEGIN"},
-               { TX_ROLLBACK_NO_BEGIN, "TX_ROLLBACK_NO_BEGIN"},
-               { TX_MIXED_NO_BEGIN, "TX_MIXED_NO_BEGIN"},
-               { TX_HAZARD_NO_BEGIN, "TX_HAZARD_NO_BEGIN"},
-               { TX_COMMITTED_NO_BEGIN, "TX_COMMITTED_NO_BEGIN"}
-            };
-
-            return mapping.at( code);
-         }
-
 
          int xaTotx( int code)
          {
@@ -135,12 +77,96 @@ namespace casual
             xid.bqual_length = xid.gtrid_length;
          }
 
-         int Resource::nextResurceId()
+         namespace local
          {
-            static int id = 1;
-            return id++;
+            namespace
+            {
+               XID* non_const_xid( const Transaction& transaction)
+               {
+                  return const_cast< XID*>( &transaction.xid.xid());
+               }
+
+            } // <unnamed>
+         } // local
+
+         int Resource::commmit( const Transaction& transaction, long flags)
+         {
+            log::internal::transaction << "commit resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
+
+            auto result = xaSwitch->xa_commit_entry( local::non_const_xid( transaction), id, flags);
+
+            if( result != XA_OK)
+            {
+               log::error << error::xa::error( result) << " failed to commit resource - " << *this << '\n';
+            }
+            return result;
          }
 
+         int Resource::rollback( const Transaction& transaction, long flags)
+         {
+            log::internal::transaction << "rollback resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
+
+            auto result = xaSwitch->xa_rollback_entry( local::non_const_xid( transaction), id, flags);
+
+            if( result != XA_OK)
+            {
+               log::error << error::xa::error( result) << " failed to rollback resource - " << *this << '\n';
+            }
+            return result;
+         }
+
+         int Resource::start( const Transaction& transaction, long flags)
+         {
+            log::internal::transaction << "start resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
+
+            auto result = xaSwitch->xa_start_entry( local::non_const_xid( transaction), id, flags);
+
+            if( result != XA_OK)
+            {
+               log::error << error::xa::error( result) << " failed to start resource - " << *this << '\n';
+            }
+            return result;
+         }
+
+         int Resource::end( const Transaction& transaction, long flags)
+         {
+            log::internal::transaction << "end resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
+
+            auto result = xaSwitch->xa_end_entry( local::non_const_xid( transaction), id, flags);
+
+            if( result != XA_OK)
+            {
+               log::error << error::xa::error( result) << " failed to end resource - " << *this << '\n';
+            }
+            return result;
+
+         }
+
+         int Resource::open( long flags)
+         {
+            log::internal::transaction << "open resource: " << *this <<  " flags: " << flags << '\n';
+
+            auto result = xaSwitch->xa_open_entry( openinfo.c_str(), id, flags);
+
+            if( result != XA_OK)
+            {
+               log::error << error::xa::error( result) << " failed to open resource - " << *this << '\n';
+            }
+            return result;
+         }
+
+         int Resource::close( long flags)
+         {
+            log::internal::transaction << "close resource: " << *this <<  " flags: " << flags << '\n';
+
+            auto result = xaSwitch->xa_close_entry( closeinfo.c_str(), id, flags);
+
+            if( result != XA_OK)
+            {
+               log::error << error::xa::error( result) << " failed to close resource - " << *this << '\n';
+            }
+            return result;
+         }
 
 
          Context& Context::instance()
@@ -163,7 +189,7 @@ namespace casual
             request.server = message::server::Id::current();
             request.path = process::path();
 
-            log::internal::debug << "send client connect request" << std::endl;
+            log::internal::transaction << "send client connect request" << std::endl;
             queue::blocking::Writer writer( ipc::broker::id());
             writer( request);
 
@@ -176,7 +202,7 @@ namespace casual
             common::environment::domain::name( reply.domain);
             std::swap( resources, reply.resourceManagers);
 
-            log::internal::debug << "received client connect reply from broker" << std::endl;
+            log::internal::transaction << "received client connect reply from broker" << std::endl;
 
          }
 
@@ -212,38 +238,42 @@ namespace casual
             trace::internal::Scope trace{ "transaction::Context::set"};
 
 
-            range::copy( resources, std::back_inserter( m_resources));
-            //m_resources = resources;
+            using RM = message::resource::Manager;
+            auto equalKey = [] ( const Resource& r, const RM& rm){ return r.key == rm.key;};
 
             //
             // Sanity check
             //
-            if( manager().resources.size() != m_resources.size())
+            if( ! range::uniform( resources, manager().resources, equalKey))
             {
                throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
             }
 
-            using RM = message::resource::Manager;
-
-            for( Resource& rm : m_resources)
+            for( auto&& rm : manager().resources)
             {
-               auto found = range::find_if( manager().resources, [&]( const RM& r){ return r.key == rm.key;});
+               auto found = range::find_if( resources, [&]( const Resource& r){ return r.key == rm.key;});
 
                if( found)
                {
-                  rm.openinfo = found->openinfo;
-                  rm.closeinfo = found->closeinfo;
+                  Resource resource{ *found};
+                  resource.openinfo = rm.openinfo;
+                  resource.closeinfo = rm.closeinfo;
+                  resource.id = rm.id;
 
-                  //
-                  // this rm-configuration is done
-                  //
-                  //localResources.erase( found.first);
+                  m_resources.push_back( std::move( resource));
                }
                else
                {
                   throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
                }
             }
+
+            //
+            // We don't need the manager config any more
+            //
+            //decltype( manager().resources) empty;
+            //empty.swap( manager().resources);
+
          }
 
          namespace local
@@ -281,6 +311,10 @@ namespace casual
 
                return reply.state;
             }
+
+
+
+
          } // local
 
          void Context::associateOrStart( const message::Transaction& transaction)
@@ -289,8 +323,6 @@ namespace casual
 
             Transaction trans;
 
-
-            queue::blocking::Writer writer{ manager().queue};
 
             if( transaction.xid)
             {
@@ -302,20 +334,29 @@ namespace casual
             }
             else
             {
+               queue::blocking::Writer writer( manager().queue);
                queue::blocking::Reader reader( ipc::getReceiveQueue());
+
+               auto code = local::startTransaction( writer, reader, trans);
+               if( code  == XA_OK)
+               {
+                  // TODO:
+               }
             }
 
             //
             // TODO: dynamic registration
-            if( ! manager().resources.empty())
+            if( ! m_resources.empty())
             {
+               queue::blocking::Writer writer{ manager().queue};
+
                message::transaction::resource::Involved message;
                message.xid = trans.xid;
 
-               for( auto& resource : manager().resources)
-               {
-                  message.resources.push_back( resource.id);
-               }
+               start( trans, TMNOFLAGS);
+
+               auto ids = std::bind( &Resource::id, std::placeholders::_1);
+               range::transform( m_resources, message.resources, ids);
 
                writer( message);
             }
@@ -323,8 +364,39 @@ namespace casual
             m_transactions.push( std::move( trans));
          }
 
-         void Context::finalize( const message::service::Reply& message)
+         void Context::finalize( message::service::Reply& message)
          {
+            common::trace::internal::Scope trace{ "transaction::Context::finalize"};
+
+            while( ! m_transactions.empty())
+            {
+               auto& transaction = m_transactions.top();
+
+               if( message.returnValue == TPSUCCESS)
+               {
+                  if( transaction.owner == process::id())
+                  {
+                     if( commit( transaction) != XA_OK)
+                     {
+                        message.returnValue = TPESVCERR;
+                     }
+                  }
+                  end( transaction, TMSUCCESS);
+               }
+               else
+               {
+                  if( transaction.owner == process::id())
+                  {
+                     if( rollback( transaction) != XA_OK)
+                     {
+                        message.returnValue = TPESVCERR;
+                     }
+                  }
+                  end( transaction, TMFAIL);
+               }
+
+               m_transactions.pop();
+            }
          }
 
          int Context::resourceRegistration( int rmid, XID* xid, long flags)
@@ -364,6 +436,9 @@ namespace casual
             if( code  == XA_OK)
             {
                m_transactions.push( std::move( trans));
+
+               start( trans, TMNOFLAGS);
+
             }
 
             return code;
@@ -375,15 +450,10 @@ namespace casual
 
             std::vector< int> result;
 
-            for( auto& xa : m_resources)
-            {
-               result.push_back( xa.xaSwitch->xa_open_entry( xa.openinfo.c_str(), xa.id, TMNOFLAGS));
+            auto open = std::bind( &Resource::open, std::placeholders::_1, TMNOFLAGS);
 
-               if( result.back() != XA_OK)
-               {
-                  log::error << xaError( result.back()) << " failed to open resource - key: " << xa.key << " id: " << xa.id << " open info: " << xa.openinfo << std::endl;
-               }
-            }
+            range::transform( m_resources, result, open);
+
             // TODO: TX_FAIL
             if( std::all_of( std::begin( result), std::end( result), []( int value) { return value != XA_OK;}))
             {
@@ -397,18 +467,14 @@ namespace casual
 
             std::vector< int> result;
 
-            for( auto& xa : m_resources)
-            {
-               result.push_back( xa.xaSwitch->xa_close_entry( xa.closeinfo.c_str(), xa.id, TMNOFLAGS));
+            auto close = std::bind( &Resource::close, std::placeholders::_1, TMNOFLAGS);
 
-               // TODO:
-               // TX_PROTOCOL_ERROR
-               // TX_FAIL
-               if( result.back() != XA_OK)
-               {
-                  log::error << xaError( result.back()) << " failed to close resource - key: " << xa.key << " id: " << xa.id << " close info: " << xa.closeinfo;
-               }
-            }
+            range::transform( m_resources, result, close);
+
+            // TODO:
+            // TX_PROTOCOL_ERROR
+            // TX_FAIL
+
             /*
             if( result != TX_OK)
             {
@@ -417,19 +483,13 @@ namespace casual
             */
          }
 
-         int Context::commit()
+
+         int Context::commit( const Transaction& transaction)
          {
             common::trace::internal::Scope trace{ "transaction::Context::commit"};
 
-            auto transaction = currentTransaction();
-
             if( transaction.xid)
             {
-               //
-               // Regardless what happens we'll remove the current transaction
-               //
-               local::pop::Guard popGuard( m_transactions);
-
                message::transaction::commit::Request request;
                request.xid = transaction.xid;
                request.id = message::server::Id::current();
@@ -456,7 +516,7 @@ namespace casual
                   message::transaction::commit::Reply commitReply;
                   reply >> commitReply;
 
-                  log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
+                  log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
 
                   return xaTotx( commitReply.state);
                }
@@ -466,7 +526,7 @@ namespace casual
                   message::transaction::prepare::Reply prepareReply;
                   reply >> prepareReply;
 
-                  log::internal::transaction << "prepare reply: " << xaError( prepareReply.state) << std::endl;
+                  log::internal::transaction << "prepare reply: " << error::xa::error( prepareReply.state) << std::endl;
 
 
                   if( prepareReply.state == XA_OK)
@@ -477,7 +537,7 @@ namespace casual
                      message::transaction::commit::Reply commitReply;
                      reader( commitReply);
 
-                     log::internal::transaction << "commit reply xa: " << xaError( commitReply.state) << " tx: " << txError( xaTotx( commitReply.state)) << std::endl;
+                     log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
 
                      return xaTotx( commitReply.state);
                   }
@@ -487,27 +547,40 @@ namespace casual
             }
             else
             {
-               log::internal::transaction << "no ongoing transaction: " << txError( TX_NO_BEGIN) << std::endl;
+               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
                return TX_NO_BEGIN;
             }
 
             return TX_OK;
          }
 
-         int Context::rollback()
+         int Context::commit()
          {
-            common::trace::internal::Scope trace{ "transaction::Context::rollback"};
-
-            auto transaction = currentTransaction();
-
-            if( transaction.xid)
+            auto& transaction = currentTransaction();
+            if( transaction)
             {
-
                //
                // Regardless what happens we'll remove the current transaction
                //
                local::pop::Guard popGuard( m_transactions);
 
+               return commit( m_transactions.top());
+            }
+            else
+            {
+               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
+               return TX_PROTOCOL_ERROR;
+            }
+
+            return TX_OK;
+         }
+
+         int Context::rollback( const Transaction& transaction)
+         {
+            common::trace::internal::Scope trace{ "transaction::Context::rollback"};
+
+            if( transaction.xid)
+            {
                message::transaction::rollback::Request request;
                request.xid = transaction.xid;
                request.id = message::server::Id::current();
@@ -520,15 +593,36 @@ namespace casual
                message::transaction::rollback::Reply reply;
                reader( reply);
 
-               log::internal::transaction << "rollback reply xa: " << xaError( reply.state) << " tx: " << txError( xaTotx( reply.state)) << std::endl;
+               log::internal::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
 
                return xaTotx( reply.state);
             }
             else
             {
-               log::internal::transaction << "no ongoing transaction: " << txError( TX_NO_BEGIN) << std::endl;
+               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
                return TX_NO_BEGIN;
             }
+            return TX_OK;
+
+         }
+
+         int Context::rollback()
+         {
+            if( ! m_transactions.empty())
+            {
+               //
+               // Regardless what happens we'll remove the current transaction
+               //
+               local::pop::Guard popGuard( m_transactions);
+
+               return rollback( m_transactions.top());
+            }
+            else
+            {
+               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
+               return TX_NO_BEGIN;
+            }
+
             return TX_OK;
          }
 
@@ -554,12 +648,19 @@ namespace casual
             //return TX_OK;
          }
 
-         /*
-         State& Context::state()
+         void Context::start( const Transaction& transaction, long flags)
          {
-            return m_state;
+            auto start = std::bind( &Resource::start, std::placeholders::_1, transaction, flags);
+            range::for_each( m_resources, start);
+
          }
-         */
+
+         void Context::end( const Transaction& transaction, long flags)
+         {
+            auto end = std::bind( &Resource::end, std::placeholders::_1, transaction, flags);
+            range::for_each( m_resources, end);
+         }
+
       } // transaction
    } // common
 } //casual

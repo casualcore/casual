@@ -182,7 +182,7 @@ namespace casual
             {
                using Buffer::Buffer;
 
-               Stream() : Buffer( Type{ "X_OCTET", "binary"}, 128) {}
+               Stream();
 
                template< typename T>
                Stream& operator << ( const T& value)
