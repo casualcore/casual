@@ -26,27 +26,8 @@ namespace casual
          void unique_xid( XID& xid);
 
 
-         const char* xaError( int code);
-
-         const char* txError( int code);
-
-         struct Resource
-         {
-            Resource( const char* key, xa_switch_t* xa) : key( key), xaSwitch( xa), id( nextResurceId()) {}
-
-            const std::string key;
-            xa_switch_t* xaSwitch;
-            const int id;
-
-            std::string openinfo;
-            std::string closeinfo;
-
-            static int nextResurceId();
-         };
-
          struct Transaction
          {
-
 
             // using state_type = TRANSACTION_STATE;
             typedef TRANSACTION_STATE state_type;
@@ -58,6 +39,8 @@ namespace casual
                inactive,
             };
 
+            explicit operator bool() const { return ! xid.null() && ! suspended;}
+
             //typedef TRANSACTION_TIMEOUT Seconds;
             //Seconds timeout = 0;
 
@@ -66,6 +49,40 @@ namespace casual
             State state = State::inactive;
             bool suspended = false;
          };
+
+         inline std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
+         {
+            return out << "{xid: " << rhs.xid << ", owner: " << rhs.owner << ", state: " << rhs.state << ", suspended: " << rhs.suspended << "}";
+         }
+
+         struct Resource
+         {
+            Resource( const char* key, xa_switch_t* xa) : key( key), xaSwitch( xa) {}
+
+
+            int commmit( const Transaction& transaction, long flags);
+            int rollback( const Transaction& transaction, long flags);
+
+            int start( const Transaction& transaction, long flags);
+            int end( const Transaction& transaction, long flags);
+
+            int open( long flags);
+            int close( long flags);
+
+
+            const std::string key;
+            xa_switch_t* xaSwitch;
+            int id = 0;
+
+            std::string openinfo;
+            std::string closeinfo;
+
+         };
+
+         inline std::ostream& operator << ( std::ostream& out, const Resource& resource)
+         {
+            return out << "{key: " << resource.key << ", id: " << resource.id << ", openinfo: " << resource.openinfo << ", closeinfo: " << resource.closeinfo << "}";
+         }
 
          class Context;
 
@@ -112,7 +129,7 @@ namespace casual
             //!
             //! commits or rollback transaction created from this server
             //!
-            void finalize( const message::service::Reply& message);
+            void finalize( message::service::Reply& message);
 
 
             //!
@@ -157,6 +174,16 @@ namespace casual
             void apply( const message::transaction::client::connect::Reply& configuration);
 
             Context();
+
+
+            int commit( const Transaction& transaction);
+            int rollback( const Transaction& transaction);
+
+
+            void start( const Transaction& transaction, long flags);
+            void end( const Transaction& transaction, long flags);
+
+
 
          };
 

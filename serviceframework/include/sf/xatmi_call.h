@@ -28,6 +28,7 @@
 #include <vector>
 #include <type_traits>
 
+
 namespace casual
 {
    namespace sf
@@ -100,7 +101,7 @@ namespace casual
                basic_result( basic_result&&) = default;
                basic_result( policy_type&& policy) : m_policy{ std::move( policy)}
                {
-                  common::log::internal::debug << "basic_result buffer: " << m_policy.buffer() << std::endl;
+                  common::log::internal::debug << "basic_result buffer: " << m_policy.buffer() << '\n';
                }
 
                template< typename T>
@@ -144,7 +145,7 @@ namespace casual
                   {
                      common::trace::internal::Scope trace{ "service::sync::basic_call::operator()"};
 
-                     common::log::internal::debug << "buffer: " << m_policy.buffer() << std::endl;
+                     common::log::internal::debug << "buffer: " << m_policy.buffer() << '\n';
 
                      result_policy resultPolicy;
                      caller_type caller;
@@ -153,7 +154,7 @@ namespace casual
 
                      m_policy.buffer().clear();
 
-                     common::log::internal::debug << "output: " << resultPolicy.buffer() << std::endl;
+                     common::log::internal::debug << "output: " << resultPolicy.buffer() << '\n';
 
                      return result_type{ std::move( resultPolicy)};
                   }

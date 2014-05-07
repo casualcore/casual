@@ -149,6 +149,7 @@ namespace casual
 
          namespace binary
          {
+            Stream::Stream() : Buffer( Type{ "X_OCTET", "binary"}, 128) {}
 
             void Stream::clear() noexcept
             {

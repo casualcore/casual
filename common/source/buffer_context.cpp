@@ -51,6 +51,7 @@ namespace casual
             m_implemenation->create( *this, size);
          }
 
+
          Buffer::Buffer( buffer::Type&& type, std::size_t size)
             : Buffer( std::move( type), size, implementation::get( type)) {}
 
@@ -78,10 +79,6 @@ namespace casual
             return m_type;
          }
 
-         implementation::Base& Buffer::implementation()
-         {
-            return *m_implemenation;
-         }
 
          const platform::binary_type& Buffer::memory() const
          {
@@ -228,9 +225,9 @@ namespace casual
 
          Buffer Context::extract( platform::const_raw_buffer_type memory)
          {
-            auto iter = getFromPool( memory);
-            Buffer buffer = std::move( *iter);
-            m_memoryPool.erase( iter);
+            auto range = getFromPool( memory);
+            Buffer buffer = std::move( *range);
+            m_memoryPool.erase( range.first);
             return buffer;
          }
 
@@ -246,19 +243,16 @@ namespace casual
             empty.swap( m_memoryPool);
          }
 
-         Context::pool_type::iterator Context::getFromPool( platform::const_raw_buffer_type memory)
+         Context::range_type Context::getFromPool( platform::const_raw_buffer_type memory)
          {
-            auto findIter = std::find_if(
-               m_memoryPool.begin(),
-               m_memoryPool.end(),
-               local::FindBuffer( memory));
+            auto found = range::find_if( m_memoryPool, local::FindBuffer( memory));
 
-            if( findIter == m_memoryPool.end())
+            if( ! found)
             {
                throw common::exception::MemoryNotFound();
             }
 
-            return findIter;
+            return found;
          }
 
          void Context::deallocate( platform::const_raw_buffer_type memory)
@@ -269,7 +263,7 @@ namespace casual
             {
                auto buffer = getFromPool( memory);
 
-               m_memoryPool.erase( buffer);
+               m_memoryPool.erase( buffer.first);
             }
 
          }

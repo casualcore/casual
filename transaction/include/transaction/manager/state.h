@@ -313,6 +313,10 @@ namespace casual
       inline bool operator < ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id < rhs.id; }
       inline bool operator == ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id == rhs.id; }
       inline std::ostream& operator << ( std::ostream& out, const Transaction::Resource& value) { return out << value.id; }
+      inline std::ostream& operator << ( std::ostream& out, const Transaction& value)
+      {
+         return out << "{xid: " << value.xid << " owner: " << value.owner << " resources: " << common::range::make( value.resources) << "}";
+      }
 
       namespace find
       {

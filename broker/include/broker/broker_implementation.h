@@ -596,7 +596,7 @@ namespace casual
                sendACK.dispatch( ack);
             }
 
-            void transaction( const message::service::callee::Call& message)
+            void transaction( const message::service::callee::Call&, const server::Service&)
             {
 
             }

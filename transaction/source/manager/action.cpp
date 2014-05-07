@@ -10,6 +10,7 @@
 
 #include "common/ipc.h"
 #include "common/process.h"
+#include "common/internal/log.h"
 
 #include <string>
 
@@ -60,7 +61,12 @@ namespace casual
             bool Send::operator () ( state::pending::Reply& message) const
             {
                queue::non_blocking::Writer write{ message.target, m_state};
-               return write.send( message.message);
+               if( ! write.send( message.message))
+               {
+                  common::log::internal::transaction << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
+                  return false;
+               }
+               return true;
             }
 
 

@@ -12,6 +12,7 @@
 #include "transaction/manager/state.h"
 
 #include "common/message.h"
+#include "common/error.h"
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
 
@@ -160,14 +161,14 @@ namespace casual
                         state::pending::Request request{ message};
 
                         auto resources = common::range::partition(
-                              common::range::make( transaction.resources),
+                              transaction.resources,
                               Transaction::Resource::state::Filter{ filter});
 
                         for( auto& resource : resources)
                         {
                            auto found = state::find::idle::instance( common::range::make( m_state.resources), resource.id);
 
-                           if( found.empty() || ! resource::request< Q>( m_state, request.message, *found.first))
+                           if( found.empty() || ! resource::request< Q>( m_state, request.message, *found))
                            {
                               //
                               // We could not find an idle resource
@@ -470,6 +471,8 @@ namespace casual
                {
                   common::trace::internal::Scope trace{ "transaction::handle::resource::prepare reply"};
 
+                  common::log::internal::transaction << "prepare reply - from: " << message.id << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+
                   resource.state = Transaction::Resource::State::cPrepareReplied;
                   resource.result = Transaction::Resource::convert( message.state);
 
@@ -493,7 +496,7 @@ namespace casual
                      {
                         case Transaction::Resource::Result::cXA_RDONLY:
                         {
-                           common::log::internal::transaction << "prepare reply - xid: " << transaction.xid << " read only\n";
+                           common::log::internal::transaction << "prepare completed - " << transaction << " XA_RDONLY\n";
 
                            //
                            // Read-only optimazation. We can send the reply directly and
@@ -517,7 +520,7 @@ namespace casual
                         }
                         case Transaction::Resource::Result::cXA_OK:
                         {
-                           common::log::internal::transaction << "prepare reply - xid: " << transaction.xid << " read only\n";
+                           common::log::internal::transaction << "prepare completed - " << transaction << " XA_OK\n";
 
                            //
                            // Prepare has gone ok. Log state
@@ -530,11 +533,13 @@ namespace casual
                            internal::send::delayed::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
 
                            //
-                           // All XA_OK is to be committed.
+                           // All XA_OK is to be committed, send commit to all
                            //
-                           auto resources = common::range::partition(
-                              common::range::make( transaction.resources),
-                              Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK});
+                           internal::send::resource::Requests<
+                              non_block_writer,
+                              common::message::transaction::resource::commit::Request> request{ m_state};
+
+                           request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested);
 
                            break;
                         }
@@ -543,7 +548,7 @@ namespace casual
                            //
                            // Something has gone wrong.
                            //
-                           common::log::internal::debug << "TODO: something has gone wrong...\n";
+                           common::log::error << "TODO: something has gone wrong - rollback...\n";
 
 
                            break;
@@ -561,6 +566,8 @@ namespace casual
                {
                   common::trace::internal::Scope trace{ "transaction::handle::resource::commit reply"};
 
+                  common::log::internal::transaction << "commit reply - from: " << message.id << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+
                   resource.state = Transaction::Resource::State::cCommitReplied;
 
                   auto state = transaction.state();
@@ -571,7 +578,7 @@ namespace casual
                   //
                   if( state == Transaction::Resource::State::cCommitReplied)
                   {
-                     using non_block_writer = typename queue_policy::non_block_writer;
+                     //using non_block_writer = typename queue_policy::non_block_writer;
                      using reply_type = common::message::transaction::commit::Reply;
 
                      //
@@ -583,15 +590,21 @@ namespace casual
                      {
                         case Transaction::Resource::Result::cXA_OK:
                         {
+                           common::log::internal::transaction << "commit completed - " << transaction << " XA_OK\n";
 
                            //
                            // Send reply
-                           //
+                           // TODO: We can't send reply directly without checking that the prepare-reply
+                           // has been sent. For now, we do a delayed reply, so we're sure that the
+                           // commit-reply arrives after the prepare-reply
+                           /*
                            internal::send::Reply<
                               non_block_writer,
                               reply_type> send{ m_state};
 
                            send( message, XA_OK, transaction.owner);
+                           */
+                           internal::send::delayed::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
 
                            //
                            // Remove transaction
@@ -709,7 +722,7 @@ namespace casual
                {
                   case 0:
                   {
-                     common::log::internal::transaction << "XA_RDONLY no resources involved for xid: " << transaction.xid << " - action: send reply to owner directly\n";
+                     common::log::internal::transaction << "no resources involved - " << transaction << " XA_RDONLY\n";
 
                      //
                      // We can remove this transaction from the log.
@@ -731,7 +744,7 @@ namespace casual
                      //
                      // Only one resource involved, we do a one-phase-commit optimization.
                      //
-                     common::log::internal::transaction << "TMONEPHASE only one resource involved for xid: " << transaction.xid << " - action: one-phase-commit\n";
+                     common::log::internal::transaction << "only one resource involved - " << transaction << " TMONEPHASE\n";
 
 
                      internal::send::resource::Requests<
@@ -747,7 +760,7 @@ namespace casual
                      //
                      // More than one resource involved, we do the prepare stage
                      //
-                     common::log::internal::transaction << "prepare xid:" << transaction.xid << " owner: " << transaction.owner << "\n";
+                     common::log::internal::transaction << "prepare " << transaction << "\n";
 
 
                      internal::send::resource::Requests<

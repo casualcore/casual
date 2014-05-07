@@ -189,7 +189,7 @@ namespace casual
 
             inline std::ostream& operator << ( std::ostream& out, const Id& value)
             {
-               return out << "pid: " << value.pid << " queue: " << value.queue_id;
+               return out << "{pid: " << value.pid << " queue: " << value.queue_id << "}";
             }
 
             template< message::Type type>

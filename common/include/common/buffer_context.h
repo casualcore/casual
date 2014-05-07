@@ -9,6 +9,7 @@
 #define CASUAL_BUFFER_H_
 
 #include "common/platform.h"
+#include "common/algorithm.h"
 
 #include <string>
 #include <list>
@@ -55,8 +56,8 @@ namespace casual
          struct Buffer
          {
             Buffer();
-            Buffer( buffer::Type&& type, std::size_t size, implementation::Base& implementaion);
             Buffer( buffer::Type&& type, std::size_t size);
+
             Buffer( Buffer&& rhs);
             Buffer& operator = ( Buffer&& rhs);
 
@@ -73,7 +74,7 @@ namespace casual
 
             const Type& type() const;
 
-            implementation::Base& implementation();
+            //implementation::Base& implementation();
 
             const platform::binary_type& memory() const;
             platform::binary_type& memory();
@@ -82,6 +83,8 @@ namespace casual
             void marshal( A& archive);
 
          private:
+            Buffer( buffer::Type&& type, std::size_t size, implementation::Base& implementaion);
+
             implementation::Base* m_implemenation = nullptr;
             Type m_type;
             platform::binary_type m_memory;
@@ -140,7 +143,7 @@ namespace casual
          {
          public:
 
-            typedef std::list< Buffer> pool_type;
+            typedef std::vector< Buffer> pool_type;
 
             Context( const Context&) = delete;
             Context& operator = ( const Context&) = delete;
@@ -170,8 +173,9 @@ namespace casual
 
 
          private:
+            using range_type = decltype( range::make( pool_type().begin(), pool_type().end()));
 
-            pool_type::iterator getFromPool( platform::const_raw_buffer_type memory);
+            range_type getFromPool( platform::const_raw_buffer_type memory);
 
             Context();
             pool_type m_memoryPool;
