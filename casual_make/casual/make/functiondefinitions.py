@@ -109,6 +109,9 @@ def Parallel():
 
 
 
+#
+# TODO: make this just Compile and remove the other one
+#
 def CompileDirective(sourcefile,objectfile,directive):
     """
 
@@ -151,7 +154,7 @@ def CompileDirective(sourcefile,objectfile,directive):
     internal_register_object_path_for_clean( local_object_path)
     internal_register_path_for_create( local_object_path)
 
-    
+    return str( objectfile)
 
 def Compile(sourcefile,objectfile):
     """
@@ -168,9 +171,8 @@ def Compile(sourcefile,objectfile):
 
     """
 
-    CompileDirective( sourcefile, objectfile, "")
+    return CompileDirective( sourcefile, objectfile, "")
 
-    
 
 
 
@@ -195,12 +197,10 @@ def LinkAtmiServer(name,objectfiles,libs,services):
     """
 
     internal_BASE_LinkATMI( "$(BUILDSERVER)", name, services, "", objectfiles, libs, "")
-    internal_print_services_file_dependency( name, services)
 
 
 
-
-def LinkAtmiServerResource(name,objectfiles,libs,services,resources):
+def LinkAtmiServerResource(name,objectfiles,libs,serverdefintion,resources):
     """
 
 
@@ -214,22 +214,22 @@ def LinkAtmiServerResource(name,objectfiles,libs,services,resources):
 
  param: libs        dependent libraries
 
- param: services    a list of public services. I e.  ["service1", "service2"]
+ param: serverdefintion    a list of public services. I e.  ["service1", "service2"]
 
  param: resources   a list of XA resources. I e ["db2-rm"] - the names shall 
                 correspond to those defined in configuration/resources.(yaml|json|...)
 
 
     """
+    
+        
+    
     if not resources:
         resource_directive = "";
     else:
         resource_directive = " -r " + ' '.join( resources)
         
-        
-    resources = "-r ".join(resources);
-    internal_BASE_LinkATMI("$(BUILDSERVER) ", name, services, "", objectfiles, libs, resource_directive)
-    internal_print_services_file_dependency( name, services)
+    internal_BASE_LinkATMI("$(BUILDSERVER) ", name, serverdefintion, "", objectfiles, libs, resource_directive)
 
 
 

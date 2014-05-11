@@ -318,21 +318,15 @@ def internal_prepare_old_objectlist(objects):
         print "obj/" + o + def_ObjectSuffix
  
  
-def internal_print_services_file_dependency(name, services):
+def internal_print_services_file_dependency(name, service_file):
 
-    #
-    # If services is a file, we want dependencie to that file
-    #
-    service_file =  ' '.join(services)
-    
-    if service_file.startswith( "@"):
-        print internal_executable_name_path( name) + ": " + service_file
-        print 
+    print internal_executable_name_path( name) + ": " + service_file
+    print 
                
 #
 # Intern hjalpfuntktion for att lanka atmi...
 #
-def internal_BASE_LinkATMI(atmibuild, name, services, predirectives, objectfiles, libs, buildserverdirective):
+def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, objectfiles, libs, buildserverdirective):
     
     objectfiles = ' '.join(objectfiles)
     libs = ' '.join(libs)
@@ -349,9 +343,13 @@ def internal_BASE_LinkATMI(atmibuild, name, services, predirectives, objectfiles
     
     DEPENDENT_TARGETS=internal_library_dependencies( libs)
     
-    if services:
-        services_directive = "-s " + ' '.join( services)
     
+    if isinstance( serverdefintion, basestring):
+        # We assume it is a path to a server-definition-file
+        services_directive = ' -p ' + serverdefintion
+        internal_print_services_file_dependency( name, serverdefintion)
+    else:
+        services_directive = ' -s ' + ' '.join( serverdefintion)
     
     
     local_destination_path=internal_clean_directory_name( os.path.dirname( internal_executable_name_path(name)))
@@ -370,7 +368,6 @@ def internal_BASE_LinkATMI(atmibuild, name, services, predirectives, objectfiles
     print
     print "compile: $(objects_" + atmi_target_name + ")"
     
-    internal_print_services_file_dependency( name, services)
     print 
     print internal_executable_name_path(name) + ": $(objects_" + atmi_target_name + ") " + DEPENDENT_TARGETS
     print "\t" + atmibuild + " -o " + internal_executable_name_path( name) + " " + services_directive + " " + predirectives + " -f \"$(objects_" + atmi_target_name + ")\" -f \"$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + atmi_target_name + ")  $(DEFAULT_LIBS)\"" + buildserverdirective + " -f \"$(LINK_DIRECTIVES_EXE)\" -f \"$(INCLUDE_PATHS)\""

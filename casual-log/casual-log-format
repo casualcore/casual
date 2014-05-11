@@ -201,7 +201,14 @@ def format( input, output):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser('usage: %prog [logfile...]')
+    parser = optparse.OptionParser("""
+        usage: %prog [logfile...]
+        
+        Format of the logfile:
+        
+        <time>|<domain>|<execution id>|<transaction id>|<process id>|<thread id>|<executable>|<log category>|<service>|<message>...
+        
+        """)
     
     (options, args) = parser.parse_args()
     
