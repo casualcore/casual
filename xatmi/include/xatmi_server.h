@@ -22,6 +22,12 @@ struct casual_service_name_mapping
 {
 	tpservice functionPointer;
 	const char* name;
+
+	/* type of service */
+	long type;
+
+	int autoTransaction;
+
 };
 
 

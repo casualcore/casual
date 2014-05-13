@@ -47,7 +47,7 @@ namespace casual
 
          struct State
          {
-            typedef std::unordered_set< int> pending_calls_type;
+            typedef std::vector< int> pending_calls_type;
             typedef std::unordered_map< int, message::service::Reply> reply_cache_type;
 
             pending_calls_type pendingCalls;
@@ -101,13 +101,7 @@ namespace casual
 
             void consume();
 
-
-            //ipc::send::Queue& m_brokerQueue = ipc::getBrokerQueue();
-            //ipc::receive::Queue& m_receiveQueue = ipc::getReceiveQueue();
-
-
             State m_state;
-
             int m_callingDescriptor = 10;
 
          };

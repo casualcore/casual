@@ -39,8 +39,13 @@ namespace casual
 
          struct Service
          {
+
+
+            Service( const std::string& name, tpservice function, long type, bool startTransaction = true)
+            : name( name), function( function), type( type), startTransaction( startTransaction) {}
+
             Service( const std::string& name, tpservice function)
-            : name( name), function( function) {}
+               : Service( name, function, 0, true) {}
 
             Service( Service&&) = default;
 
@@ -52,6 +57,7 @@ namespace casual
 
             std::string name;
             tpservice function;
+            long type = 0;
             bool startTransaction = true;
             bool active = true;
 
@@ -190,7 +196,7 @@ namespace casual
 
                   for( auto&& service : arguments.m_services)
                   {
-                     message.services.emplace_back( service.name);
+                     message.services.emplace_back( service.name, service.type, service.startTransaction);
                      m_state.services.emplace( service.name, std::move( service));
                   }
 
@@ -430,6 +436,11 @@ namespace casual
             //! the register XATMI functions.
             //!
             typedef basic_call< policy::Default> Call;
+
+
+
+
+
 
          } // handle
       } // callee

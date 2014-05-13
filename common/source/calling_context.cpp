@@ -365,7 +365,7 @@ namespace casual
             //
             // Add the descriptor to pending
             //
-            m_state.pendingCalls.insert( callDescriptor);
+            m_state.pendingCalls.push_back( callDescriptor);
 
             return callDescriptor;
          }
@@ -375,10 +375,14 @@ namespace casual
          int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
          {
             trace::internal::Scope trace( "calling::Context::getReply");
+
             log::internal::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
             //
             // TODO: validate input...
+
+            decltype( range::make( m_state.pendingCalls)) pending;
+
 
             if( common::flag< TPGETANY>( flags))
             {
@@ -386,7 +390,8 @@ namespace casual
             }
             else
             {
-               if( m_state.pendingCalls.find( *idPtr) == m_state.pendingCalls.end())
+               pending = range::find( m_state.pendingCalls, *idPtr);
+               if( ! pending)
                {
                   throw common::exception::xatmi::service::InvalidDescriptor();
                }
@@ -411,7 +416,7 @@ namespace casual
 
             if( replyIter == m_state.replyCache.end())
             {
-               if( !common::flag< TPNOBLOCK>( flags))
+               if( ! common::flag< TPNOBLOCK>( flags))
                {
                   //
                   // We block
@@ -451,11 +456,19 @@ namespace casual
             buffer::Context::instance().add( std::move( reply.buffer));
 
 
-
             //
             // We remove our representation
             //
-            m_state.pendingCalls.erase( *idPtr);
+            if( ! pending)
+            {
+               pending = range::find( m_state.pendingCalls, *idPtr);
+               if( ! pending)
+               {
+                  throw common::exception::xatmi::service::InvalidDescriptor();
+               }
+            }
+
+            m_state.pendingCalls.erase( pending.first);
             m_state.replyCache.erase( replyIter);
 
             //

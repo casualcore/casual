@@ -166,10 +166,7 @@ namespace casual
          private:
             T m_functor;
          };
-
-
-
-      } // order
+      } // compare
 
 
       template< typename Enum>
@@ -387,6 +384,13 @@ namespace casual
          void copy( R&& range, Iter2 output)
          {
             std::copy( std::begin( range), std::end( range), output);
+         }
+
+         template< typename R, typename C>
+         auto move( R&& range, C& container) -> decltype( make( container))
+         {
+            std::move( std::begin( range), std::end( range), std::back_inserter( container));
+            return make( container);
          }
 
 

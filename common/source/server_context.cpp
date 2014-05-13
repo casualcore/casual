@@ -157,7 +157,7 @@ namespace casual
                   //
                   // Wait for configuration reply
                   //
-                  queue::blocking::Reader reader( ipc::getReceiveQueue());
+                  queue::blocking::Reader reader( ipc::receive::queue());
                   message::server::connect::Reply reply;
                   reader( reply);
 

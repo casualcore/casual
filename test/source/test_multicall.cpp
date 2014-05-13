@@ -29,12 +29,24 @@ void help()
 }
 
 
+struct Timeoint
+{
+
+   using time_point = decltype( casual::common::platform::clock_type::now());
+
+   Timeoint( time_point time, std::string info) : time( std::move( time)), info( std::move( info)) {}
+
+   time_point time;
+   std::string info;
+};
+
 int main( int argc, char** argv)
 {
 
    std::string service;
    long calls = 0;
    std::string argument;
+   bool transaction = false;
 
    casual::common::Arguments parser;
 
@@ -42,6 +54,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( { "-s", "--service"}, "service to call", service),
          casual::common::argument::directive( { "-n", "--number"}, "number of async calls to service", calls),
          casual::common::argument::directive( { "-a", "--argument"}, "argument to the service", argument),
+         casual::common::argument::directive( { "-t", "--transaction"}, "call within a transaction", transaction),
          casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
    );
 
@@ -56,13 +69,17 @@ int main( int argc, char** argv)
 
    std::cout << "argument: " << argument << std::endl;
 
+   std::vector< Timeoint> timepoints;
 
-   auto start = casual::common::platform::clock_type::now();
+   timepoints.emplace_back( casual::common::platform::clock_type::now(), "start");
 
 
-   tx_begin();
 
-   auto efter_tx_begin = casual::common::platform::clock_type::now();
+   if( transaction)
+   {
+      tx_begin();
+      timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_begin");
+   }
 
    using Async = casual::sf::xatmi::service::binary::Async;
    Async caller{ service};
@@ -75,33 +92,50 @@ int main( int argc, char** argv)
       receivers.push_back( caller());
    }
 
-   auto efter_call = casual::common::platform::clock_type::now();
+   timepoints.emplace_back( casual::common::platform::clock_type::now(), "call");
+
 
    for( auto&& recive : receivers)
    {
       auto result = recive();
-
-
    }
 
-   auto efter_receive = casual::common::platform::clock_type::now();
+   timepoints.emplace_back( casual::common::platform::clock_type::now(), "receive");
 
-   tx_commit();
+   if( transaction)
+   {
+      tx_commit();
+      timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_commit");
+   }
 
-
-   auto end = casual::common::platform::clock_type::now();
+   //timepoints.emplace_back( casual::common::platform::clock_type::now(), "end");
 
    typedef std::chrono::microseconds us;
 
-   //ms total = end - start;
 
-   std::cout << "time spent (us):" << std::endl << std::right
-         << "   total......: " << std::setw(7) << std::chrono::duration_cast< us>( end - start).count() << std::endl
-         << "   tx_begin...: " << std::setw(7) << std::chrono::duration_cast< us>( efter_tx_begin - start).count() << std::endl
-         << "   send.......: " << std::setw(7) << std::chrono::duration_cast< us>( efter_call - efter_tx_begin).count() << std::endl
-         << "   receive....: " << std::setw(7) << std::chrono::duration_cast< us>( efter_receive - efter_call).count() << std::endl
+   std::cout << "time spent (us):\n";
+
+   auto current = timepoints.begin();
+   auto next = current + 1;
+
+   for( ; next !=  std::end( timepoints); ++current, ++next)
+   {
+      std::cout << std::left << std::setw(10) << std::setfill( '.') << next->info << ": " <<
+            std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( next->time - current->time).count() << "\n";
+   }
+
+   std::cout << std::left << std::setw(10) << std::setfill( '.') << "total" << ": " <<
+      std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( timepoints.back().time - timepoints.front().time).count() << "\n";
+
+
+
+/*
+         << "   total......: " << std::setw(7) << std::chrono::duration_cast< us>( timepoints.back().time - timepoints.front().time).count() << "\n"
+         << "   tx_begin...: " << std::setw(7) << std::chrono::duration_cast< us>( efter_tx_begin - start).count() << "\n"
+         << "   send.......: " << std::setw(7) << std::chrono::duration_cast< us>( efter_call - efter_tx_begin).count() << "\n"
+         << "   receive....: " << std::setw(7) << std::chrono::duration_cast< us>( efter_receive - efter_call).count() << "\n"
          << "   tx_commit..: " << std::setw(7) << std::chrono::duration_cast< us>( end - efter_receive).count() << std::endl;
-
+*/
 
 
    /*

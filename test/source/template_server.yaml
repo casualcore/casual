@@ -1,0 +1,12 @@
+
+server:
+  type: casual-sf
+  services:
+    - name: casual_test1
+      
+      
+    - name: casual_test2
+    
+    - name: casual_test3
+
+

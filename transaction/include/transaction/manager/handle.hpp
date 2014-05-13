@@ -31,7 +31,7 @@ namespace casual
          {
             namespace send
             {
-               namespace delayed
+               namespace persistent
                {
                   template< typename R, typename M>
                   void reply( State& state, const M& request, int code, const common::message::server::Id& target)
@@ -41,7 +41,7 @@ namespace casual
                      message.xid = request.xid;
                      message.state = code;
 
-                     state.pendingReplies.emplace_back( target.queue_id, message);
+                     state.persistentReplies.emplace_back( target.queue_id, std::move( message));
                   }
 
                   template< typename R, typename M>
@@ -49,6 +49,8 @@ namespace casual
                   {
                      reply< R>( state, request, code, request.id);
                   }
+
+
 
                } // delayed
 
@@ -75,7 +77,7 @@ namespace casual
                      if( ! queue.send( reply.message))
                      {
                         common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
-                        m_state.pendingReplies.push_back( std::move( reply));
+                        m_state.persistentReplies.push_back( std::move( reply));
                      }
                   }
 
@@ -113,23 +115,36 @@ namespace casual
                };
 
 
-               template< typename Q>
-               void commitReply( State& state, const Transaction& transaction, int code = XA_OK)
-               {
-                  common::message::transaction::commit::Reply reply;
-                  reply.xid = transaction.xid;
-                  reply.id.queue_id = common::ipc::receive::id();
-
-                  Q write{ transaction.owner.queue_id, state};
-                  if( ! write( reply))
-                  {
-                     common::log::internal::transaction << "failed to send reply to owner: " << transaction.owner << " - action: add to pending replies for retries\n";
-                     state.pendingReplies.emplace_back( transaction.owner.queue_id, reply);
-                  }
-               }
-
                namespace resource
                {
+
+                  namespace persistent
+                  {
+                     template< typename M, typename F>
+                     void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
+                     {
+                        M message;
+                        message.id = common::message::server::Id::current();
+                        message.xid = transaction.xid;
+                        message.flags = flags;
+
+                        state::pending::Request request{ message};
+
+                        auto resources = common::range::partition(
+                           transaction.resources,
+                           filter);
+
+                        typedef Transaction::Resource resource_type;
+
+                        common::range::transform(
+                           resources, request.resources,
+                           std::mem_fn( &resource_type::id));
+
+
+                        state.persistentRequests.push_back( std::move( request));
+                     }
+
+                  } // persistent
 
                   template< typename Q>
                   bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
@@ -168,7 +183,7 @@ namespace casual
                         {
                            auto found = state::find::idle::instance( common::range::make( m_state.resources), resource.id);
 
-                           if( found.empty() || ! resource::request< Q>( m_state, request.message, *found))
+                           if( ! found || ! resource::request< Q>( m_state, request.message, *found))
                            {
                               //
                               // We could not find an idle resource
@@ -210,23 +225,23 @@ namespace casual
                void done( State& state, M& message)
                {
                   auto request = common::range::find_if(
-                        common::range::make( state.pendingRequests),
+                        state.pendingRequests,
                         state::pending::filter::Request{ message.resource});
 
 
-                  if( ! request.empty())
+                  if( request)
                   {
                      //
                      // We got a pending request for this resource, let's oblige
                      //
                      Q queue{ message.id.queue_id, state};
 
-                     if( queue.send( request.first->message))
+                     if( queue.send( request->message))
                      {
-                        request.first->resources.erase(
+                        request->resources.erase(
                            std::find(
-                              std::begin( request.first->resources),
-                              std::end( request.first->resources),
+                              std::begin( request->resources),
+                              std::end( request->resources),
                               message.resource));
 
                         if( request.first->resources.empty())
@@ -236,7 +251,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::warning << "failed to send pending request to resource, although the instance (" << message.id <<  ") reported idle" << std::endl;
+                        common::log::warning << "failed to send pending request to resource, although the instance (" << message.id <<  ") reported idle\n";
 
                         instance::state( state, message, state::resource::Proxy::Instance::State::idle);
                      }
@@ -247,27 +262,6 @@ namespace casual
                   }
                }
             } // instance
-
-            /*
-            namespace check
-            {
-               template< typename R, typename M>
-               bool owner( State& state, const Transaction& transaction, const M& message)
-               {
-                  if( transaction.owner.pid != message.id.pid)
-                  {
-                     common::log::error << "TX_PROTOCOL_ERROR - Only owner of the transaction " << transaction.xid
-                           <<  " can alter it's state (owner ["
-                           << transaction.owner  << "] bad guy: [" << message.id << "]) - action: discard\n";
-
-                     internal::send::reply< R>( state, message.id.queue_id, TX_PROTOCOL_ERROR, transaction.xid);
-
-                     return false;
-                  }
-                  return true;
-               }
-            } // check
-            */
 
 
             namespace transform
@@ -284,39 +278,7 @@ namespace casual
                }
             } // transform
 
-            namespace result
-            {
-               inline int normalize( int origin)
-               {
-                  return origin;
-               }
-
-               inline int denormalize( int normalized)
-               {
-                  return normalized;
-               }
-
-               inline int normalize( const std::vector< Transaction::Resource>& resources)
-               {
-                  //
-                  // We start with read-only
-                  //
-                  int result = XA_RDONLY;
-
-
-
-                  return result;
-               }
-
-
-
-
-            } // result
-
          } // internal
-
-
-
 
 
 
@@ -332,7 +294,7 @@ namespace casual
 
                if( ! transcation.empty())
                {
-                  common::log::internal::transaction << "involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << std::endl;
+                  common::log::internal::transaction << "involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << '\n';
 
                   common::range::copy(
                      common::range::make( message.resources),
@@ -353,7 +315,7 @@ namespace casual
                   //
                   m_state.transactions.emplace_back( common::message::server::Id::current(), message.xid);
 
-                  common::log::internal::transaction << "inter-domain involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << std::endl;
+                  common::log::internal::transaction << "inter-domain involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << '\n';
                }
             }
 
@@ -530,16 +492,23 @@ namespace casual
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::delayed::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
 
                            //
                            // All XA_OK is to be committed, send commit to all
                            //
-                           internal::send::resource::Requests<
-                              non_block_writer,
-                              common::message::transaction::resource::commit::Request> request{ m_state};
 
-                           request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested);
+                           //
+                           // We only want to send to resorces that has reported ok, and is in prepared state
+                           // (could be that some has read-only)
+                           //
+                           auto filter = common::chain::And::link(
+                                 Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK},
+                                 Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied});
+
+                           internal::send::resource::persistent::request<
+                              common::message::transaction::resource::commit::Request>( m_state, transaction, filter);
+
 
                            break;
                         }
@@ -549,6 +518,15 @@ namespace casual
                            // Something has gone wrong.
                            //
                            common::log::error << "TODO: something has gone wrong - rollback...\n";
+
+
+                           internal::send::resource::Requests<
+                              non_block_writer,
+                              common::message::transaction::resource::commit::Request> request{ m_state};
+
+                           request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested);
+
+
 
 
                            break;
@@ -604,7 +582,7 @@ namespace casual
 
                            send( message, XA_OK, transaction.owner);
                            */
-                           internal::send::delayed::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
 
                            //
                            // Remove transaction
@@ -624,7 +602,7 @@ namespace casual
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::delayed::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.owner);
 
                            break;
                         }
@@ -679,7 +657,7 @@ namespace casual
                //
                // prepare send reply. Will be sent after persistent write to file
                //
-               internal::send::delayed::reply< reply_type>( m_state, message, XA_OK);
+               internal::send::persistent::reply< reply_type>( m_state, message, XA_OK);
             }
             else
             {
@@ -1071,6 +1049,64 @@ namespace casual
                } // reply
             } // resource
          } // domain
+
+
+         namespace admin
+         {
+            template< typename QP>
+            void Policy< QP>::connect( common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
+            {
+
+               //using write_type = typename queue_policy::block_writer;
+               //using reader_type = typename queue_policy::block_reader;
+
+               //
+               // Let the broker know about us, and our services...
+               //
+               message.server = common::message::server::Id::current();
+               message.path = common::process::path();
+
+               m_state.persistentReplies.emplace_back( common::ipc::broker::id(), std::move( message));
+
+               //
+               // Wait for configuration reply
+               //
+               //reader_type reader( common::ipc::receive::queue(), m_state);
+               //common::message::server::connect::Reply reply;
+               //reader( reply);
+
+               //write_type write{
+            }
+
+            template< typename QP>
+            void Policy< QP>::disconnect()
+            {
+               //common::message::server::Disconnect message;
+               // TODO
+            }
+
+            template< typename QP>
+            void Policy< QP>::reply( common::platform::queue_id_type id, common::message::service::Reply& message)
+            {
+               using write_type = typename queue_policy::block_writer;
+               write_type write( id, m_state);
+               write( message);
+            }
+
+            template< typename QP>
+            void Policy< QP>::ack( const common::message::service::callee::Call& message)
+            {
+               using write_type = typename queue_policy::block_writer;
+
+               common::message::service::ACK ack;
+               ack.server.queue_id = common::ipc::receive::id();
+               ack.service = message.service.name;
+
+               write_type brokerWriter{ common::ipc::broker::id(), m_state};
+               brokerWriter( ack);
+            }
+
+         } // admin
 
 
       } // handle

@@ -379,9 +379,20 @@ namespace casual
          //!
          //! Replies that will be sent after an atomic write to the log
          //!
-         std::vector< state::pending::Reply> pendingReplies;
+         std::vector< state::pending::Reply> persistentReplies;
 
+         //!
+         //! Resource request, that will be processed as soon as possible,
+         //! that is, as soon as corresponding resources is done/idle
+         //!
          std::vector< state::pending::Request> pendingRequests;
+
+         //!
+         //! Resource request, that will be processed after an atomic
+         //! write to the log. If corresponding resources is busy, for some
+         //! requests, these will be moved to pendingRequests
+         //!
+         std::vector< state::pending::Request> persistentRequests;
 
 
          transaction::Log log;
@@ -430,7 +441,7 @@ namespace casual
                //!
                bool operator () ( const resource::Proxy& resource) const
                {
-                  return std::any_of( std::begin( resource.instances), std::end( resource.instances), Running{});
+                  return common::range::any_of( resource.instances, Running{});
                }
             };
 
@@ -441,43 +452,43 @@ namespace casual
 
          namespace find
          {
-            template< typename Iter>
-            common::Range< Iter> resource( common::Range< Iter> range, common::platform::resource::id_type id)
+            template< typename R>
+            auto resource( R&& range, common::platform::resource::id_type id) -> decltype( common::range::make( range))
             {
                return common::range::sorted::bound(
                   range,
                   state::resource::Proxy{ id});
             }
 
-            template< typename Iter, typename M>
-            auto instance( common::Range< Iter> range, const M& message) -> decltype( common::range::make( range.first->instances))
+            template< typename R, typename M>
+            auto instance( R&& resources, const M& message) -> decltype( common::range::make( std::begin( resources)->instances))
             {
                auto resourceRange = resource(
-                     range,
+                     resources,
                      message.resource);
 
                if( resourceRange.empty())
-                  return decltype( common::range::make( range.first->instances))();
+                  return decltype( common::range::make( std::begin( resources)->instances))();
 
                return common::range::find_if(
-                     common::range::make( resourceRange.first->instances),
+                     resourceRange->instances,
                      filter::Instance{ message.id.pid});
             }
 
             namespace idle
             {
-               template< typename Iter>
-               auto instance( common::Range< Iter> resources, common::platform::resource::id_type id) -> decltype( common::range::make( resources.first->instances))
+               template< typename R>
+               auto instance( R&& resources, common::platform::resource::id_type id) -> decltype( common::range::make( std::begin( resources)->instances))
                {
-                  resources = resource(
+                  auto range = resource(
                         resources,
                         id);
 
-                  if( resources.empty())
-                     return decltype( common::range::make( resources.first->instances))();
+                  if( range.empty())
+                     return decltype( common::range::make( std::begin( resources)->instances))();
 
                   return common::range::find_if(
-                     common::range::make( resources.first->instances),
+                     common::range::make( range->instances),
                      filter::Idle{});
                }
 

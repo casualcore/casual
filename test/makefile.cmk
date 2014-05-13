@@ -32,11 +32,8 @@ Compile( "source/template_server.cpp", "obj/template_server.o")
 LinkAtmiServerResource( "test",
 	[ "obj/template_server.o"],
 	[ "casual-xatmi", "casual-common", "casual-sf"],
-	[
-	"casual_test1",
-	"casual_test2",
-	"casual_test3",
-	], ["rm-mockup"])
+	"source/template_server.yaml",
+	["rm-mockup"])
 
 
 

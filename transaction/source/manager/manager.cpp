@@ -10,6 +10,7 @@
 #include "transaction/manager/action.h"
 
 
+#include "common/server_context.h"
 #include "common/message.h"
 #include "common/trace.h"
 #include "common/queue.h"
@@ -25,6 +26,13 @@
 #include <tx.h>
 
 using namespace casual::common;
+
+
+extern "C"
+{
+   extern void casual_listTransactions( TPSVCINFO *serviceInfo);
+}
+
 
 namespace casual
 {
@@ -129,6 +137,25 @@ namespace casual
          handler.add( handle::domain::resource::reply::Commit{ m_state});
          handler.add( handle::domain::resource::reply::Rollback{ m_state});
 
+         //
+         // Prepare the xatmi-services
+         //
+         {
+            common::server::Arguments arguments;
+
+            arguments.m_services.emplace_back( "casual_listTransactions", &casual_listTransactions, 10, false);
+
+
+            arguments.m_argc = 1;
+            const char* executable = common::process::path().c_str();
+            arguments.m_argv = &const_cast< char*&>( executable);
+
+            //handler.add( handle::Call{ arguments, m_state});
+            handler.add< handle::admin::Call>( arguments, m_state);
+
+         }
+
+
 
          common::log::internal::transaction << "start message pump\n";
          common::log::information << "transaction manager started\n";
@@ -137,6 +164,7 @@ namespace casual
          {
             try
             {
+               try
                {
                   scoped::Writer batchWrite( m_state.log);
 
@@ -150,26 +178,53 @@ namespace casual
                   //
                   // Consume until the queue is empty or we've got pending replies equal to transaction_batch
                   //
+
+                  queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
+
+                  while( handler.dispatch( nonBlocking.next()) &&
+                        m_state.persistentReplies.size() < common::platform::transaction_batch)
                   {
-
-                     queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
-
-                     while( handler.dispatch( nonBlocking.next()) &&
-                           m_state.pendingReplies.size() < common::platform::transaction_batch)
-                     {
-                        ;
-                     }
-
+                     ;
                   }
                }
+               catch( ...)
+               {
+                  throw;
+               }
 
-               common::log::internal::transaction << "manager pending replies: " << m_state.pendingReplies.size() << "\n";
 
-               auto notDone = common::range::partition(
-                     m_state.pendingReplies,
-                     common::negate( action::pending::Send{ m_state}));
+               //
+               // Send persistent replies to clients
+               //
+               {
+                  common::log::internal::transaction << "manager persistent replies: " << m_state.persistentReplies.size() << "\n";
 
-               common::range::trim( m_state.pendingReplies, notDone);
+                  auto notDone = common::range::partition(
+                        m_state.persistentReplies,
+                        common::negate( action::persistent::Send{ m_state}));
+
+                  common::range::trim( m_state.persistentReplies, notDone);
+               }
+
+               //
+               // Send persistent resource requests
+               //
+               {
+                  common::log::internal::transaction << "manager persistent request: " << m_state.persistentRequests.size() << "\n";
+
+                  auto notDone = common::range::partition(
+                        m_state.persistentRequests,
+                        common::negate( action::persistent::Send{ m_state}));
+
+                  //
+                  // Move the ones that did not find an idle resource to pending requests
+                  //
+                  common::range::move( notDone, m_state.pendingRequests);
+
+                  m_state.persistentRequests.clear();
+
+               }
+
             }
             catch( ...)
             {

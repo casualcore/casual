@@ -1,4 +1,5 @@
 from casual.make.functiondefinitions import *
+import sys; 
     
 SetIncludePaths( ["include",
     "../common/include",
@@ -20,31 +21,33 @@ SetLibraryPaths( ["bin",
 #
 # Compile and link the transaction manager
 #
-Compile( "source/manager/manager.cpp", "obj/manager/manager.o")
-Compile( "source/manager/state.cpp", "obj/manager/state.o")
-Compile( "source/manager/action.cpp", "obj/manager/action.o")
-Compile( "source/manager/log.cpp", "obj/manager/log.o")
+
+manager_objecfiles = [
+    Compile( "source/manager/manager.cpp", 'obj/manager/manager.o'),
+    Compile( "source/manager/state.cpp", "obj/manager/state.o"),
+    Compile( "source/manager/action.cpp", "obj/manager/action.o"),
+    Compile( "source/manager/log.cpp", "obj/manager/log.o"),
+    Compile( "source/manager/admin/admin.cpp", "obj/manager/admin/admin.o"),
+    Compile( "source/manager/admin/adminimplementation.cpp", "obj/manager/admin/adminimplementation.o"),
+    Compile( "source/manager/admin/vo/transaction.cpp", "obj/manager/admin/vo/transaction.o"),
+];
 
 LinkArchive( "manager-archive",
-     [
-      "obj/manager/manager.o",
-      "obj/manager/state.o",
-      "obj/manager/action.o",
-      "obj/manager/log.o",
-      ])
+     manager_objecfiles)
  
-Compile( "source/manager/main.cpp", "obj/manager/main.o")
+
 
 LinkExecutable( "casual-transaction-manager",
     [
-     "obj/manager/main.o"
+     Compile( "source/manager/main.cpp", "obj/manager/main.o")
     ],
     [ 
      "manager-archive", 
      "casual-sf", 
      "casual-common", 
      "casual-configuration", 
-     "sqlite3"
+     "sqlite3",
+     "casual-xatmi",
      ])
 
 
@@ -52,14 +55,11 @@ LinkExecutable( "casual-transaction-manager",
 #
 # Compile and link resurce-proxy-server lib
 #
-Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o")
-Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o")
-
 
 LinkLibrary( "casual-resource-proxy-server",
    [
-    "obj/resource/proxy_server.o",
-    "obj/resource/proxy.o"
+    Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o"),
+    Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o"),
    ],
    ["casual-common", "casual-sf"])
 
@@ -67,23 +67,22 @@ LinkLibrary( "casual-resource-proxy-server",
 #
 # unittest
 #
-Compile( "unittest/isolated/source/test_configuration.cpp", "unittest/isolated/obj/test_configuration.o")
-Compile( "unittest/isolated/source/test_transactionlog.cpp", "unittest/isolated/obj/test_transactionlog.o")
-Compile( "unittest/isolated/source/test_manager.cpp", "unittest/isolated/obj/test_manager.o")
+unitest_objectfiles = [
+    Compile( "unittest/isolated/source/test_configuration.cpp", "unittest/isolated/obj/test_configuration.o"),
+    Compile( "unittest/isolated/source/test_transactionlog.cpp", "unittest/isolated/obj/test_transactionlog.o"),
+    Compile( "unittest/isolated/source/test_manager.cpp", "unittest/isolated/obj/test_manager.o"),
+];
 
 LinkIsolatedUnittest( "test_transaction_configuration",
-    [
-     "unittest/isolated/obj/test_configuration.o",
-     "unittest/isolated/obj/test_transactionlog.o",
-     "unittest/isolated/obj/test_manager.o",
-    ],
+    unitest_objectfiles,
     [ 
      "manager-archive", 
      "casual-common", 
      "casual-sf", 
      "casual-configuration", 
      "sqlite3", 
-     "casual-mockup"
+     "casual-mockup",
+     "casual-xatmi"
      ])
 
 
