@@ -15,22 +15,42 @@ import signal
 
 
 class  Color:
-    __magenta = '\033[0;35m'
+    
+    __grey = '\033[30m'
+    
     __red = '\033[31m'
-    __blue = '\033[34m'
+    __bred = '\033[31;1m'
+    
     __green = '\033[32m'
-    __grey = '\033[30;1m'
-    __WARNING = '\033[0;23m'
-    __error = '\033[91m'
+    __bgreen = '\033[32;1m'
     
     __yellow = '\033[33m'
-    __bold_yellow = '\033[33;1m'
+    __byellow = '\033[33;1m'
+    
+    __blue = '\033[34m'
+    __bblue = '\033[34;1m'
+    
+    __magenta = '\033[35m'
+    __bmagenta = '\033[35;1m'
+    
+    __cyan = '\033[36m'
+    __bcyan = '\033[36;1m'
     
     __white = '\033[37m'
-    __bold_white = '\033[37;1m'
+    __bwhite = '\033[37;1m'
     
+    __error = '\033[91m'
+    
+    
+    
+    
+    __WARNING = '\033[0;23m'
     
     __ENDC = '\033[0m'
+    
+    
+    def __bold(self, string):
+        return string + ';1m'
     
     def grey( self, string):
         return self.__grey + string + self.__ENDC
@@ -41,11 +61,26 @@ class  Color:
     def red( self, string):
         return self.__red + string + self.__ENDC
     
+    def bold_red( self, string):
+        return self.__bred + string + self.__ENDC
+    
     def blue( self, string):
         return self.__blue + string + self.__ENDC
+    
+    def bold_blue( self, string):
+        return self.__bblue + string + self.__ENDC
 
     def green( self, string):
         return self.__green + string + self.__ENDC
+    
+    def bold_green( self, string):
+        return self.__bgreen + string + self.__ENDC
+    
+    def cyan( self, string):
+        return self.__cyan + string + self.__ENDC
+    
+    def bold_cyan( self, string):
+        return self.__bcyan + string + self.__ENDC
     
     def warning( self, string):
         return self.__WARNING + string + self.__ENDC
@@ -57,10 +92,10 @@ class  Color:
         return self.__yellow + string + self.__ENDC
     
     def bold_yellow( self, string):
-        return self.__bold_yellow + string + self.__ENDC
+        return self.__byellow + string + self.__ENDC
     
     def bold_white( self, string):
-        return self.__bold_white + string + self.__ENDC
+        return self.__bwhite + string + self.__ENDC
     
     def white( self, string):
         return self.__white + string + self.__ENDC
@@ -125,11 +160,13 @@ def category( name):
     return name;
 
 category.switch = [
-    [ re.compile( 'error'), color.error],
-    [ re.compile( 'warning'), color.warning],
-    [ re.compile( 'information'), color.white],
-    [ re.compile( 'debug'), color.green],
-    [ re.compile( 'casual[.].*'), color.blue],                
+    [ re.compile( '^err'), color.bold_red],
+    [ re.compile( '^war'), color.warning],
+    [ re.compile( '^inf'), color.white],
+    [ re.compile( '^deb'), color.green],
+    [ re.compile( '^tra'), color.bold_green],
+    #[ re.compile( '^casual[.]trace'), color.bold_blue], 
+    [ re.compile( '^casu'), color.blue],                
 ]
 
 
@@ -149,7 +186,7 @@ def format( input, output):
             
             output.write( rows[ 0]);
             output.write( '|');
-            output.write( color.blue( domain( rows[ 1])));
+            output.write( color.cyan( domain( rows[ 1])));
             output.write( '|');
             output.write( color.yellow( truncateUUID( rows[ 2])));
             output.write( '|');
