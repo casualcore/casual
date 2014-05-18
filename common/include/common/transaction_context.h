@@ -123,7 +123,7 @@ namespace casual
             //!
             //! Associate ongoing transaction, or start a new one if XID is null
             //!
-            void associateOrStart( const message::Transaction& transaction);
+            void joinOrStart( const message::Transaction& transaction);
 
 
             //!

@@ -71,13 +71,16 @@ namespace casual
 
 
 
-         namespace pending
+         namespace persistent
          {
             struct Send : state::Base
             {
                using state::Base::Base;
 
                bool operator () ( state::pending::Reply& message) const;
+
+               bool operator () ( state::pending::Request& message) const;
+
             };
 
          } // pending

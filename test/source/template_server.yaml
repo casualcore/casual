@@ -1,0 +1,16 @@
+
+server:
+  type: casual-sf
+  services:
+    - name: casual_test1
+      transaction: join
+      
+      
+    - name: casual_test2
+      transaction: atomic
+    
+    - name: casual-test3
+      function: casual_test3
+      transaction: none
+
+

@@ -93,15 +93,15 @@ namespace casual
             {
                message::service::Advertise message;
 
-               message.server.queue_id = ipc::getReceiveQueue().id();
+               message.server.queue_id = ipc::receive::id();
                message.serverPath = process::path();
                message.services.emplace_back( localName);
 
                // TODO: make it consistence safe...
-               queue::blocking::Writer writer( ipc::getBrokerQueue().id());
+               queue::blocking::Writer writer( ipc::broker::id());
                writer( message);
 
-               m_state.services.emplace( localName, Service( localName, function));
+               m_state.services.emplace( localName, Service( localName, function, 0, Service::cJoin));
             }
          }
 
@@ -157,7 +157,7 @@ namespace casual
                   //
                   // Wait for configuration reply
                   //
-                  queue::blocking::Reader reader( ipc::getReceiveQueue());
+                  queue::blocking::Reader reader( ipc::receive::queue());
                   message::server::connect::Reply reply;
                   reader( reply);
 
@@ -199,9 +199,42 @@ namespace casual
 
                void Default::transaction( const message::service::callee::Call& message, const server::Service& service)
                {
-                  if( message.transaction.xid || service.startTransaction)
+                  log::internal::debug << "service: " << service << std::endl;
+
+                  switch( service.transaction)
                   {
-                     transaction::Context::instance().associateOrStart( message.transaction);
+                     case server::Service::cAuto:
+                     {
+                        transaction::Context::instance().joinOrStart( message.transaction);
+
+                        break;
+                     }
+                     case server::Service::cJoin:
+                     {
+                        if( message.transaction.xid)
+                        {
+                           transaction::Context::instance().joinOrStart( message.transaction);
+                        }
+
+                        break;
+                     }
+                     case server::Service::cAtomic:
+                     {
+
+                        message::Transaction newTransaction;
+                        newTransaction.creator = process::id();
+
+                        transaction::Context::instance().joinOrStart( newTransaction);
+                        break;
+                     }
+                     default:
+                     {
+                        //
+                        // We don't start or join any transactions
+                        //
+                        break;
+                     }
+
                   }
 
                }

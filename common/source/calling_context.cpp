@@ -239,6 +239,34 @@ namespace casual
                }
             }
 
+
+            namespace service
+            {
+               namespace lookup
+               {
+                  void request( const std::string& service)
+                  {
+                     message::service::name::lookup::Request serviceLookup;
+                     serviceLookup.requested = service;
+                     serviceLookup.server.queue_id = ipc::receive::id();
+
+                     queue::blocking::Writer broker( ipc::broker::id());
+                     local::timeoutWrapper( broker, serviceLookup);
+
+                  }
+
+                  message::service::name::lookup::Reply reply()
+                  {
+                     message::service::name::lookup::Reply result;
+                     queue::blocking::Reader reader( ipc::receive::queue());
+                     local::timeoutWrapper( reader, result);
+
+                     return result;
+                  }
+
+               } // lookup
+            } // service
+
          } // local
 
 
@@ -277,58 +305,72 @@ namespace casual
             return m_state.currentService;
          }
 
-         int Context::allocateCallingDescriptor()
+         State::pending_calls_type::iterator Context::reserveDescriptor()
          {
-            if( m_callingDescriptor < 10)
+
+            int currentDescriptor = 1;
+
+            auto found = std::find_if(
+                  std::begin( m_state.pendingCalls), std::end( m_state.pendingCalls),
+                  [&]( int cd)
+                  {
+                     if( cd > currentDescriptor) return true;
+                     if( cd == currentDescriptor) ++currentDescriptor;
+                     return false;
+                  });
+
+
+            if( found == std::end( m_state.pendingCalls))
             {
-               //
-               // all calling descriptors are used, vi have to reuse.
-               // This is highly unlikely, since there have to be std::max< int> pending replies,
-               // which is a extreme high number. But, we have to handle it...
-               //
-               // TODO: We don't try to handle it until we can unit test it.
-               throw common::exception::xatmi::LimitReached( "No free call descriptors");
-
-               /*
-               // TODO: this is not standard-conformant...
-               local::UnusedCallingDescriptor finder;
-
-               pending_calls_type::iterator findIter = std::find_if(
-                     m_pendingReplies.begin(),
-                     m_pendingReplies.end(),
-                     finder);
-
-               if( findIter == m_pendingReplies.end())
+               if( currentDescriptor < 0)
                {
-                  throw exception::xatmi::LimitReached( "No free call descriptors");
+                  throw common::exception::xatmi::LimitReached( "No free call descriptors");
                }
-
-               return finder.unused;
-               */
+               m_state.pendingCalls.push_back( currentDescriptor);
+               return std::end( m_state.pendingCalls) - 1;
             }
-            return m_callingDescriptor++;
+            else
+            {
+               return found;
+            }
          }
 
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
             trace::internal::Scope trace( "calling::Context::asyncCall");
-            log::internal::debug << "service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
-
 
 
             // TODO validate
 
 
+            local::service::lookup::request( service);
 
-            const int callDescriptor = allocateCallingDescriptor();
+            //
+            // We do as much as possible while we wait for the broker reply
+            //
+
+
+            const auto descriptor = reserveDescriptor();
+
+            log::internal::debug << "cd: " << *descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+
 
             const common::platform::seconds_type time = common::environment::getTime();
+
+
+            message::service::caller::Call message( buffer::Context::instance().get( idata));
+            message.callDescriptor = *descriptor;
+            message.reply.queue_id = ipc::getReceiveQueue().id();
+            message.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
+            message.transaction.xid = transaction::Context::instance().currentTransaction().xid;
+            message.callId = m_state.callId;
+            message.callee = m_state.currentService;
 
 
             //
             // Get a queue corresponding to the service
             //
-            message::service::name::lookup::Reply lookup = serviceQueue( service);
+            auto lookup = local::service::lookup::reply();
 
             if( lookup.server.empty())
             {
@@ -339,35 +381,21 @@ namespace casual
             // Keep track of (ev.) coming timeouts
             //
             local::PendingTimeout::instance().add(
-                  local::Timeout( callDescriptor, lookup.service.timeout, time));
+                  local::Timeout( *descriptor, lookup.service.timeout, time));
 
 
             //
             // Call the service
             //
 
-            message::service::caller::Call messageCall( buffer::Context::instance().get( idata));
-            messageCall.callDescriptor = callDescriptor;
-            messageCall.reply.queue_id = ipc::getReceiveQueue().id();
-            messageCall.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
-            messageCall.transaction.xid = transaction::Context::instance().currentTransaction().xid;
-            messageCall.service = lookup.service;
-            messageCall.callId = m_state.callId;
-            messageCall.callee = m_state.currentService;
+            message.service = lookup.service;
 
-
-            //ipc::send::Queue callQueue( lookup.server.front().queue_id);
             queue::blocking::Writer callWriter( lookup.server.front().queue_id);
 
-            local::timeoutWrapper( callWriter, messageCall, callDescriptor);
+            local::timeoutWrapper( callWriter, message, *descriptor);
 
 
-            //
-            // Add the descriptor to pending
-            //
-            m_state.pendingCalls.insert( callDescriptor);
-
-            return callDescriptor;
+            return *descriptor;
          }
 
 
@@ -375,10 +403,14 @@ namespace casual
          int Context::getReply( int* idPtr, char** odata, long& olen, long flags)
          {
             trace::internal::Scope trace( "calling::Context::getReply");
+
             log::internal::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
             //
             // TODO: validate input...
+
+            decltype( range::make( m_state.pendingCalls)) pending;
+
 
             if( common::flag< TPGETANY>( flags))
             {
@@ -386,7 +418,8 @@ namespace casual
             }
             else
             {
-               if( m_state.pendingCalls.find( *idPtr) == m_state.pendingCalls.end())
+               pending = range::find( m_state.pendingCalls, *idPtr);
+               if( ! pending)
                {
                   throw common::exception::xatmi::service::InvalidDescriptor();
                }
@@ -407,16 +440,16 @@ namespace casual
             // First we treat the call as a NOBLOCK call. Later we block if requested
             //
 
-            auto replyIter = find( *idPtr);
+            auto found = find( *idPtr);
 
-            if( replyIter == m_state.replyCache.end())
+            if( ! found)
             {
-               if( !common::flag< TPNOBLOCK>( flags))
+               if( ! common::flag< TPNOBLOCK>( flags))
                {
                   //
                   // We block
                   //
-                  replyIter = fetch( *idPtr);
+                  found = fetch( *idPtr);
                }
                else
                {
@@ -424,7 +457,7 @@ namespace casual
                }
             }
 
-            message::service::Reply reply = std::move( replyIter->second);
+            message::service::Reply reply = std::move( *found);
 
             //
             // Get the user allocated buffer
@@ -451,12 +484,20 @@ namespace casual
             buffer::Context::instance().add( std::move( reply.buffer));
 
 
-
             //
             // We remove our representation
             //
-            m_state.pendingCalls.erase( *idPtr);
-            m_state.replyCache.erase( replyIter);
+            if( ! pending)
+            {
+               pending = range::find( m_state.pendingCalls, *idPtr);
+               if( ! pending)
+               {
+                  throw common::exception::xatmi::service::InvalidDescriptor();
+               }
+            }
+
+            m_state.pendingCalls.erase( pending.first);
+            m_state.replyCache.erase( found.first);
 
             //
             // Check if there has been an timeout
@@ -475,7 +516,6 @@ namespace casual
 
          void Context::clean()
          {
-            m_callingDescriptor = 10;
 
             //
             // TODO: Do some cleaning on buffers, pending replies and such...
@@ -489,22 +529,26 @@ namespace casual
          }
 
 
-         Context::reply_cache_type::iterator Context::find( int callDescriptor)
+         Context::cache_range Context::find( int callDescriptor)
          {
             if( callDescriptor == 0)
             {
-               return m_state.replyCache.begin();
+               return range::make( m_state.replyCache.begin(), m_state.replyCache.end());
             }
-            return m_state.replyCache.find( callDescriptor);
+            return range::find_if( m_state.replyCache,
+                  [=]( const message::service::Reply& message)
+                  {
+                     return message.callDescriptor == callDescriptor;
+                  });
          }
 
 
 
-         Context::reply_cache_type::iterator Context::fetch( int callDescriptor)
+         Context::cache_range Context::fetch( int callDescriptor)
          {
-            reply_cache_type::iterator fetchIter = find( callDescriptor);
+            auto found = find( callDescriptor);
 
-            if( fetchIter == m_state.replyCache.end())
+            if( ! found)
             {
                queue::blocking::Reader reader( ipc::getReceiveQueue());
 
@@ -515,47 +559,24 @@ namespace casual
 
                   local::timeoutWrapper( reader, reply, callDescriptor);
 
-                  fetchIter = add( std::move( reply));
+                  found = add( std::move( reply));
 
-               } while( fetchIter->first != callDescriptor);
+               } while( found->callDescriptor != callDescriptor);
             }
 
-            return fetchIter;
+            return found;
          }
 
-         Context::reply_cache_type::iterator Context::add( message::service::Reply&& reply)
+         Context::cache_range Context::add( message::service::Reply&& reply)
          {
             // TODO: Check if the received message is pending
 
             // TODO: Check if the calling descriptor is already received...
 
-            return m_state.replyCache.emplace( reply.callDescriptor, std::move( reply)).first;
+            m_state.replyCache.push_back( std::move( reply));
 
+            return range::make( m_state.replyCache.end() -1, m_state.replyCache.end());
          }
-
-         message::service::name::lookup::Reply Context::serviceQueue( const std::string& service)
-         {
-            //
-            // Get a queue corresponding to the service
-            //
-            auto& receiveQueue = ipc::getReceiveQueue();
-
-            message::service::name::lookup::Request serviceLookup;
-            serviceLookup.requested = service;
-            serviceLookup.server.queue_id = receiveQueue.id();
-
-            queue::blocking::Writer broker( ipc::getBrokerQueue().id());
-            local::timeoutWrapper( broker, serviceLookup);
-
-
-            message::service::name::lookup::Reply result;
-            queue::blocking::Reader reader( receiveQueue);
-            local::timeoutWrapper( reader, result);
-
-            return result;
-
-         }
-
 
 
          void Context::consume()

@@ -18,12 +18,9 @@
 #include "common/queue.h"
 #include "common/algorithm.h"
 
-
-using casual::common::exception::signal::child::Terminate;
-using casual::common::process::lifetime;
-using casual::common::queue::blocking::basic_reader;
-
-
+// For handle call
+#include "common/transaction_context.h"
+#include "common/server_context.h"
 
 
 namespace casual
@@ -86,6 +83,8 @@ namespace casual
          {
             using block_writer = blocking::Writer;
             using non_block_writer = non_blocking::Writer;
+
+            using block_reader = blocking::Reader;
          };
 
       } // queue
@@ -348,6 +347,43 @@ namespace casual
             } // resource
 
          } // domain
+
+
+         namespace admin
+         {
+            template< typename QP>
+            struct Policy : public state::Base
+            {
+               typedef QP queue_policy;
+
+               using state::Base::Base;
+
+               void connect( common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources);
+
+               void disconnect();
+
+               void reply( common::platform::queue_id_type id, common::message::service::Reply& message);
+
+               void ack( const common::message::service::callee::Call& message);
+
+               void transaction( const common::message::service::callee::Call&, const common::server::Service&)
+               {
+                  // No-op
+               }
+
+               void transaction( const common::message::service::Reply& message)
+               {
+                  // No-op
+               }
+
+               void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message)
+               {
+                  // No-op
+               }
+            };
+
+            typedef common::callee::handle::basic_call< Policy< queue::Policy>> Call;
+         } // admin
 
       } // handle
    } // transaction

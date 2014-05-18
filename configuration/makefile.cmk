@@ -21,10 +21,13 @@ SetLibraryPaths( LIBRARY_PATHS)
 
 Compile( "source/domain.cpp", "obj/domain.o")
 Compile( "source/xa_switch.cpp", "obj/xa_switch.o")
+Compile( "source/serverdefinition.cpp", "obj/serverdefinition.o")
 
 LinkLibrary( "casual-configuration",
     ["obj/domain.o",
-    "obj/xa_switch.o"],
+    "obj/xa_switch.o",
+    "obj/serverdefinition.o",
+    ],
     ["casual-common",
     "casual-sf"])
 

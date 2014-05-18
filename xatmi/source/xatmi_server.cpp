@@ -40,7 +40,12 @@ namespace local
 
                while( service->functionPointer != nullptr)
                {
-                  result.m_services.emplace_back( service->name, service->functionPointer);
+                  result.m_services.emplace_back(
+                        service->name,
+                        service->functionPointer,
+                        service->type,
+                        common::server::Service::TransactionType( service->transaction));
+
                   ++service;
                }
 

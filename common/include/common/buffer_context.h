@@ -58,11 +58,11 @@ namespace casual
             Buffer();
             Buffer( buffer::Type&& type, std::size_t size);
 
-            Buffer( Buffer&& rhs);
-            Buffer& operator = ( Buffer&& rhs);
+            Buffer( Buffer&& rhs) noexcept;
+            Buffer& operator = ( Buffer&& rhs) noexcept;
 
 
-            Buffer( const Buffer&) = delete;
+            Buffer( const Buffer&)  = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
 

@@ -55,7 +55,7 @@ namespace casual
          } // boot
 
 
-         namespace pending
+         namespace persistent
          {
 
             bool Send::operator () ( state::pending::Reply& message) const
@@ -69,6 +69,34 @@ namespace casual
                return true;
             }
 
+            bool Send::operator () ( state::pending::Request& message) const
+            {
+               decltype( message.resources) resources;
+               std::swap( message.resources, resources);
+
+               for( auto&& id : resources)
+               {
+
+                  auto found = state::find::idle::instance( m_state.resources, id);
+
+                  if( found)
+                  {
+                     queue::non_blocking::Writer write{ found->server.queue_id, m_state};
+
+                     if( ! write.send( message.message))
+                     {
+                        common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->server << "\n";
+                        message.resources.push_back( id);
+                     }
+                  }
+                  else
+                  {
+                     message.resources.push_back( id);
+                  }
+               }
+
+               return message.resources.empty();
+            }
 
          } // pending
 

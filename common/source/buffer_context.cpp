@@ -55,8 +55,8 @@ namespace casual
          Buffer::Buffer( buffer::Type&& type, std::size_t size)
             : Buffer( std::move( type), size, implementation::get( type)) {}
 
-         Buffer::Buffer( Buffer&& rhs) = default;
-         Buffer& Buffer::operator = ( Buffer&& rhs) = default;
+         Buffer::Buffer( Buffer&& rhs) noexcept = default;
+         Buffer& Buffer::operator = ( Buffer&& rhs) noexcept = default;
 
 
          platform::raw_buffer_type Buffer::raw()

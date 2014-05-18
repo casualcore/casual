@@ -16,6 +16,7 @@
 
 #include "sf/namevaluepair.h"
 #include "config/xa_switch.h"
+#include "config/serverdefinition.h"
 
 
 
@@ -46,15 +47,50 @@ struct Settings
       }
    }
 
+   struct Service
+   {
+
+      Service( const std::string& name) : name( name), function( name) {}
+      Service() = default;
+      std::string name;
+      std::string function;
+      long type = 0;
+      int transaction = 0;
+   };
+
    std::string output;
    std::string resourceKeys;
 
-   std::vector< std::string> services;
+   std::vector< Service> services;
+
    std::vector< std::string> resources;
    std::vector< std::string> compileLinkDirective;
 
+   void setServerDefinitionPath( const std::string& file)
+   {
+      auto server = config::build::server::get( file);
+
+      using service_type = config::build::server::Server::Service;
+
+      common::range::transform( server.services, services, []( const service_type& service)
+            {
+               static std::map< std::string, int> type{ {"casual-sf", 42}};
+               static std::map< std::string, int> transaction{ {"auto", 0}, {"join", 1}, {"atomic", 2}, {"none", 3}};
+
+               Service result;
+               result.function = service.function;
+               result.name = service.name;
+               result.type = type[ service.type];
+               result.transaction = transaction[ service.transaction];
+
+               return result;
+            });
+
+   }
+
    std::string compiler = "gcc";
    bool verbose = false;
+   bool keep = false;
 
 
    std::vector< config::xa::Switch> xa_switches;
@@ -74,10 +110,16 @@ struct Settings
       }
    }
 
+
    void setServices( const std::vector< std::string>& value)
    {
-      append( services, split( value, ','));
+      auto splittet = split( value, ',');
+
+      common::range::transform( splittet, services, []( const std::string& name){
+         return Service{ name};
+         });
    }
+
 
    void setCompileLinkDirective( const std::vector< std::string>& value)
    {
@@ -147,7 +189,7 @@ extern "C" {
    //
    for( auto& service : settings.services)
    {
-      out << "extern void " << service << "( TPSVCINFO *serviceInfo);" << std::endl;
+      out << "extern void " << service.function << "( TPSVCINFO *serviceInfo);" << std::endl;
    }
 
    out << "\n\n\n";
@@ -173,11 +215,11 @@ int main( int argc, char** argv)
       for( auto& service : settings.services)
       {
          out << R"(
-      {&)" << service << R"(, ")" << service << R"("},)";
+      {&)" << service.function << R"(, ")" << service.name << R"(", )" << service.type << ", " << service.transaction << "},";
       }
 
          out << R"(
-      { 0, 0} /* null ending */
+      { 0, 0, 0, 0} /* null ending */
    };
 
 
@@ -307,11 +349,13 @@ int main( int argc, char **argv)
 
          handler.add(
             argument::directive( {"-o", "--output"}, "name of server to be built", settings.output),
-            argument::directive( {"-s", "--services"}, "comma separated list of services", settings, &Settings::setServices),
+            argument::directive( {"-s", "--service"}, "service names", settings, &Settings::setServices),
+            argument::directive( {"-p", "--path"}, "service names", settings, &Settings::setServerDefinitionPath),
             argument::directive( {"-r", "--resource-keys"}, "key of the resource", settings, &Settings::setResources),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
             argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", settings, &Settings::setCompileLinkDirective),
-            argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose));
+            argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
+            argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep));
 
          if( ! handler.parse( argc, argv))
          {
@@ -339,6 +383,11 @@ int main( int argc, char **argv)
          generate( file, settings);
 
          file.close();
+      }
+
+      if( settings.keep)
+      {
+         path.release();
       }
 
       return build( path, settings);
