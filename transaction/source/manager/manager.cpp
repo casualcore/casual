@@ -143,7 +143,7 @@ namespace casual
          {
             common::server::Arguments arguments;
 
-            arguments.m_services.emplace_back( "casual_listTransactions", &casual_listTransactions, 10, false);
+            arguments.m_services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
 
 
             arguments.m_argc = 1;

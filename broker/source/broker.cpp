@@ -207,9 +207,9 @@ namespace casual
          {
             common::server::Arguments arguments;
 
-            arguments.m_services.emplace_back( "_broker_listServers", &_broker_listServers);
-            arguments.m_services.emplace_back( "_broker_listServices", &_broker_listServices);
-            arguments.m_services.emplace_back( "_broker_updateInstances", &_broker_updateInstances);
+            arguments.m_services.emplace_back( "_broker_listServers", &_broker_listServers, 10, common::server::Service::cNone);
+            arguments.m_services.emplace_back( "_broker_listServices", &_broker_listServices, 10, common::server::Service::cNone);
+            arguments.m_services.emplace_back( "_broker_updateInstances", &_broker_updateInstances, 10, common::server::Service::cNone);
 
 
             arguments.m_argc = 1;

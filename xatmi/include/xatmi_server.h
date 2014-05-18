@@ -26,7 +26,8 @@ struct casual_service_name_mapping
 	/* type of service */
 	long type;
 
-	int autoTransaction;
+	/* transaction policy */
+	int transaction;
 
 };
 

@@ -112,15 +112,15 @@ namespace casual
                : name( name)
             {}
 
-            explicit Service( const std::string& name, long type, bool auto_transaction)
-               : name( name), type( type), auto_transaction( auto_transaction)
+            explicit Service( const std::string& name, long type, int transaction)
+               : name( name), type( type), transaction( transaction)
             {}
 
             std::string name;
             long type = 0;
             Seconds timeout = 0;
             common::platform::queue_id_type monitor_queue = 0;
-            bool auto_transaction = false;
+            int transaction = 0;
 
             template< typename A>
             void marshal( A& archive)
@@ -129,7 +129,7 @@ namespace casual
                archive & type;
                archive & timeout;
                archive & monitor_queue;
-               archive & auto_transaction;
+               archive & transaction;
             }
          };
 
@@ -457,7 +457,8 @@ namespace casual
             {
 
                Reply() = default;
-               Reply( Reply&&) = default;
+               Reply( Reply&&) noexcept = default;
+               Reply& operator = ( Reply&&) noexcept = default;
 
 
                Reply( const Reply&) = delete;

@@ -49,6 +49,7 @@ struct Settings
 
    struct Service
    {
+
       Service( const std::string& name) : name( name), function( name) {}
       Service() = default;
       std::string name;
@@ -71,14 +72,19 @@ struct Settings
 
       using service_type = config::build::server::Server::Service;
 
-      common::range::transform( server.services, services, []( const service_type& service){
-         Service result;
-         result.function = service.function;
-         result.name = service.name;
-         result.type = service.type == "casual-sf" ? 42 : 0;
-         result.transaction = service.transaction == "adopt" ? 0 : 1;
-         return result;
-      });
+      common::range::transform( server.services, services, []( const service_type& service)
+            {
+               static std::map< std::string, int> type{ {"casual-sf", 42}};
+               static std::map< std::string, int> transaction{ {"auto", 0}, {"join", 1}, {"atomic", 2}, {"none", 3}};
+
+               Service result;
+               result.function = service.function;
+               result.name = service.name;
+               result.type = type[ service.type];
+               result.transaction = transaction[ service.transaction];
+
+               return result;
+            });
 
    }
 

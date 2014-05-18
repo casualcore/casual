@@ -40,12 +40,18 @@ namespace casual
          struct Service
          {
 
+            enum TransactionType
+            {
+               cAuto = 0,
+               cJoin = 1,
+               cAtomic = 2,
+               cNone = 3
+            };
 
-            Service( const std::string& name, tpservice function, long type, bool startTransaction = true)
-            : name( name), function( function), type( type), startTransaction( startTransaction) {}
 
-            Service( const std::string& name, tpservice function)
-               : Service( name, function, 0, true) {}
+            Service( const std::string& name, tpservice function, long type, TransactionType transaction)
+            : name( name), function( function), type( type), transaction( transaction) {}
+
 
             Service( Service&&) = default;
 
@@ -58,11 +64,17 @@ namespace casual
             std::string name;
             tpservice function;
             long type = 0;
-            bool startTransaction = true;
+            TransactionType transaction = TransactionType::cAuto;
             bool active = true;
 
 
          };
+
+         inline std::ostream& operator << ( std::ostream& out, const Service& service)
+         {
+            return out << "{name: " << service.name << " type: " << service.type << " transaction: " << service.transaction
+                  << " active: " << service.active << "};";
+         }
 
 
          struct Arguments
@@ -196,7 +208,7 @@ namespace casual
 
                   for( auto&& service : arguments.m_services)
                   {
-                     message.services.emplace_back( service.name, service.type, service.startTransaction);
+                     message.services.emplace_back( service.name, service.type, service.transaction);
                      m_state.services.emplace( service.name, std::move( service));
                   }
 

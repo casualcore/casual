@@ -48,7 +48,8 @@ namespace casual
          struct State
          {
             typedef std::vector< int> pending_calls_type;
-            typedef std::unordered_map< int, message::service::Reply> reply_cache_type;
+            typedef std::deque< message::service::Reply> reply_cache_type;
+            using cache_range = decltype( range::make( reply_cache_type().begin(), reply_cache_type().end()));
 
             pending_calls_type pendingCalls;
             reply_cache_type replyCache;
@@ -82,27 +83,24 @@ namespace casual
 
          private:
 
-            int allocateCallingDescriptor();
+            State::pending_calls_type::iterator reserveDescriptor();
 
-
-            typedef State::pending_calls_type pending_calls_type;
             typedef State::reply_cache_type reply_cache_type;
+
+
+            using cache_range = State::cache_range;
 
             Context();
 
-            reply_cache_type::iterator find( int callDescriptor);
+            cache_range find( int callDescriptor);
 
-            reply_cache_type::iterator fetch( int callDescriptor);
+            cache_range fetch( int callDescriptor);
 
-            reply_cache_type::iterator add( message::service::Reply&& reply);
-
-            message::service::name::lookup::Reply serviceQueue( const std::string& service);
-
+            cache_range add( message::service::Reply&& reply);
 
             void consume();
 
             State m_state;
-            int m_callingDescriptor = 10;
 
          };
       } // calling

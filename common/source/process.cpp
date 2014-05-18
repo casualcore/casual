@@ -145,7 +145,7 @@ namespace casual
                   std::begin( arguments),
                   std::end( arguments),
                   std::back_inserter( c_arguments),
-                  std::bind( &std::string::data, std::placeholders::_1));
+                  std::mem_fn( &std::string::data));
 
             c_arguments.push_back( nullptr);
 

@@ -172,7 +172,7 @@ namespace casual
             {
                server::Arguments arguments;
 
-               arguments.m_services.emplace_back( "test_service", &test_service);
+               arguments.m_services.emplace_back( "test_service", &test_service, 0, server::Service::cAuto);
 
                arguments.m_argc = 1;
 

@@ -32,7 +32,13 @@ namespace casual
                   std::string type;
 
                   //!
-                  //! Can be 'adopt' or 'auto' - default is 'auto'
+                  //! Can be:
+                  //! - 'auto' Join current transaction, or start a new one if there is no current.
+                  //! - 'join' Join current transaction if there is one.
+                  //! - 'atomic' Always start a new transaction.
+                  //! - 'none' Don't start or join any transaction
+                  //!
+                  //! default is 'auto'
                   //!
                   std::string transaction;
 
@@ -51,7 +57,7 @@ namespace casual
                //! Default for all services
                //!
                std::string type;
-               std::string transaction;
+               std::string transaction = "auto";
 
                std::vector< Service> services;
 

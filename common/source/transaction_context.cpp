@@ -317,9 +317,9 @@ namespace casual
 
          } // local
 
-         void Context::associateOrStart( const message::Transaction& transaction)
+         void Context::joinOrStart( const message::Transaction& transaction)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::associateOrStart"};
+            common::trace::internal::Scope trace{ "transaction::Context::joinOrStart"};
 
             Transaction trans;
 
@@ -335,7 +335,7 @@ namespace casual
             else
             {
                queue::blocking::Writer writer( manager().queue);
-               queue::blocking::Reader reader( ipc::getReceiveQueue());
+               queue::blocking::Reader reader( ipc::receive::queue());
 
                auto code = local::startTransaction( writer, reader, trans);
                if( code  == XA_OK)
