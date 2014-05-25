@@ -274,7 +274,7 @@ namespace casual
          //!
          //! @deprecated use broker::queue(), or probably easier: ipc::broker::id();
          //!
-         send::Queue& getBrokerQueue();
+         //send::Queue& getBrokerQueue();
 
 
          namespace receive
@@ -289,7 +289,7 @@ namespace casual
          //!
          //! @deprecated use receive::queue()
          //!
-         receive::Queue& getReceiveQueue();
+         //receive::Queue& getReceiveQueue();
 
 
          //!

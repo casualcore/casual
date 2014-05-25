@@ -218,7 +218,7 @@ namespace casual
 			Broker();
 
 			common::file::ScopedPath m_brokerQueueFile;
-			common::ipc::receive::Queue& m_receiveQueue = common::ipc::getReceiveQueue();
+			common::ipc::receive::Queue& m_receiveQueue = common::ipc::receive::queue();
 
 			State m_state;
 

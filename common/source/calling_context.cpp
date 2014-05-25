@@ -360,7 +360,7 @@ namespace casual
 
             message::service::caller::Call message( buffer::Context::instance().get( idata));
             message.callDescriptor = *descriptor;
-            message.reply.queue_id = ipc::getReceiveQueue().id();
+            message.reply.queue_id = ipc::receive::id();
             message.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
             message.transaction.xid = transaction::Context::instance().currentTransaction().xid;
             message.callId = m_state.callId;
@@ -550,7 +550,7 @@ namespace casual
 
             if( ! found)
             {
-               queue::blocking::Reader reader( ipc::getReceiveQueue());
+               queue::blocking::Reader reader( ipc::receive::queue());
 
                do
                {
@@ -589,7 +589,7 @@ namespace casual
             {
                message::service::Reply reply;
 
-               queue::non_blocking::Reader reader( ipc::getReceiveQueue());
+               queue::non_blocking::Reader reader( ipc::receive::queue());
 
                if( ! local::timeoutWrapper( reader, reply))
                {

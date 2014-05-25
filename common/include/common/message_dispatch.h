@@ -25,48 +25,9 @@ namespace casual
          namespace dispatch
          {
 
-            class base_handler
-            {
-            public:
-               virtual ~base_handler() = default;
-               virtual void marshal( marshal::input::Binary& binary) = 0;
-
-
-            };
-
-            template< typename H>
-            class handle_holder : public base_handler
-            {
-            public:
-
-               typedef H handler_type;
-               typedef typename handler_type::message_type message_type;
-
-               handle_holder( handle_holder&&) = default;
-               handle_holder& operator = ( handle_holder&&) = default;
-
-
-               template< typename... Arguments>
-               handle_holder( Arguments&&... arguments) : m_handler{ std::forward< Arguments>( arguments)...} {}
-
-               void marshal( marshal::input::Binary& binary)
-               {
-                  message_type message;
-                  binary >> message;
-
-                  m_handler.dispatch( message);
-               }
-
-            private:
-               handler_type m_handler;
-            };
-
-
             class Handler
             {
             public:
-
-               typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
 
                template< typename H, typename... Arguments>
                void add( Arguments&& ...arguments)
@@ -101,6 +62,46 @@ namespace casual
 
             private:
 
+               class base_handler
+               {
+               public:
+                  virtual ~base_handler() = default;
+                  virtual void marshal( marshal::input::Binary& binary) = 0;
+
+
+               };
+
+               template< typename H>
+               class handle_holder : public base_handler
+               {
+               public:
+
+                  typedef H handler_type;
+                  typedef typename handler_type::message_type message_type;
+
+                  handle_holder( handle_holder&&) = default;
+                  handle_holder& operator = ( handle_holder&&) = default;
+
+
+                  handle_holder( handler_type&& handler) : m_handler( std::move( handler)) {}
+
+                  template< typename... Arguments>
+                  handle_holder( Arguments&&... arguments) : m_handler{ std::forward< Arguments>( arguments)...} {}
+
+                  void marshal( marshal::input::Binary& binary)
+                  {
+                     message_type message;
+                     binary >> message;
+
+                     m_handler.dispatch( message);
+                  }
+
+               private:
+                  handler_type m_handler;
+               };
+
+
+
                bool doDispatch( marshal::input::Binary& binary)
                {
                   auto findIter = m_handlers.find( binary.type());
@@ -130,6 +131,7 @@ namespace casual
                   return true;
                }
 
+               typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
 
                handlers_type m_handlers;
             };
@@ -145,6 +147,22 @@ namespace casual
                }
             }
 
+
+            //!
+            //! Handles and discard a given message type
+            //!
+            template< typename M>
+            struct Discard
+            {
+               Discard() = default;
+
+               using message_type = M;
+
+               void dispatch( message_type& message)
+               {
+                  // no op
+               }
+            };
 
          } // dispatch
       } // message

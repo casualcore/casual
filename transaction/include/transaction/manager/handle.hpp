@@ -1056,26 +1056,17 @@ namespace casual
             template< typename QP>
             void Policy< QP>::connect( common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
             {
-
-               //using write_type = typename queue_policy::block_writer;
-               //using reader_type = typename queue_policy::block_reader;
-
                //
                // Let the broker know about us, and our services...
                //
                message.server = common::message::server::Id::current();
                message.path = common::process::path();
 
+               //
+               // We delay the message
+               //
                m_state.persistentReplies.emplace_back( common::ipc::broker::id(), std::move( message));
 
-               //
-               // Wait for configuration reply
-               //
-               //reader_type reader( common::ipc::receive::queue(), m_state);
-               //common::message::server::connect::Reply reply;
-               //reader( reply);
-
-               //write_type write{
             }
 
             template< typename QP>

@@ -546,10 +546,8 @@ namespace casual
 
             void connect(  message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
             {
-               log::internal::debug << "broker server - message.server.queue_id.: " << message.server.queue_id << std::endl;
-               log::internal::debug << "broker server - message.path............: " << message.path << std::endl;
 
-               message.server.queue_id = ipc::getReceiveQueue().id();
+               message.server.queue_id = ipc::receive::id();
                message.path = common::process::path();
 
                //
@@ -561,7 +559,7 @@ namespace casual
                // Add services
                //
                common::range::for_each(
-                  common::range::make( message.services),
+                  message.services,
                   action::add::Service( m_state, instance->second));
 
                //
@@ -569,7 +567,6 @@ namespace casual
                //
                action::connect( instance->second, message);
 
-               //return action::transform::configuration( instance->second, m_state);
             }
 
             void disconnect()
@@ -589,7 +586,7 @@ namespace casual
             void ack( const message::service::callee::Call& message)
             {
                message::service::ACK ack;
-               ack.server.queue_id = ipc::getReceiveQueue().id();
+               ack.server.queue_id = ipc::receive::id();
                ack.service = message.service.name;
 
                ACK sendACK( m_state);
