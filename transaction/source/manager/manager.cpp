@@ -44,7 +44,7 @@ namespace casual
 
 
       Manager::Manager( const Settings& settings) :
-          m_receiveQueue( ipc::getReceiveQueue()),
+          m_receiveQueue( ipc::receive::queue()),
           m_state( settings.database)
       {
 
@@ -85,6 +85,8 @@ namespace casual
 
       void Manager::start()
       {
+         auto start = common::platform::clock_type::now();
+
          common::log::internal::transaction << "transaction manager start\n";
 
 
@@ -141,24 +143,41 @@ namespace casual
          // Prepare the xatmi-services
          //
          {
-            common::server::Arguments arguments;
+            common::server::Arguments arguments{ { common::process::path()}};
 
-            arguments.m_services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
+            arguments.services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
 
+            handler.add( handle::admin::Call{ arguments, m_state});
 
-            arguments.m_argc = 1;
-            const char* executable = common::process::path().c_str();
-            arguments.m_argv = &const_cast< char*&>( executable);
-
-            //handler.add( handle::Call{ arguments, m_state});
-            handler.add< handle::admin::Call>( arguments, m_state);
+            //
+            // We discard the connect reply message
+            //
+            handler.add( common::message::dispatch::Discard< common::message::server::connect::Reply>{});
 
          }
 
 
 
          common::log::internal::transaction << "start message pump\n";
-         common::log::information << "transaction manager started\n";
+
+
+
+         auto instances = common::range::accumulate(
+               m_state.resources, 0,
+               []( std::size_t count, const state::resource::Proxy& p)
+               {
+                  return count + p.instances.size();
+               }
+               );
+
+         auto end = common::platform::clock_type::now();
+
+
+         common::log::information << "transaction manager up and running - "
+               << m_state.resources.size() << " resources - "
+               << instances << " instances - boot time: "
+               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
+
 
          while( true)
          {

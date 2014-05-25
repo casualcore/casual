@@ -295,7 +295,7 @@ namespace casual
             int startTransaction( QW& writer, QR& reader, Transaction& trans)
             {
                message::transaction::begin::Request request;
-               request.id.queue_id = ipc::getReceiveQueue().id();
+               request.id.queue_id = ipc::receive::id();
                request.xid.generate();
                writer( request);
 
@@ -428,7 +428,7 @@ namespace casual
             }
 
             queue::blocking::Writer writer( manager().queue);
-            queue::blocking::Reader reader( ipc::getReceiveQueue());
+            queue::blocking::Reader reader( ipc::receive::queue());
 
             Transaction trans;
 
@@ -498,7 +498,7 @@ namespace casual
                writer( request);
 
 
-               queue::blocking::Reader reader( ipc::getReceiveQueue());
+               queue::blocking::Reader reader( ipc::receive::queue());
 
                //
                // We could get commit-reply directly in an one-phase-commit
@@ -588,7 +588,7 @@ namespace casual
                queue::blocking::Writer writer( manager().queue);
                writer( request);
 
-               queue::blocking::Reader reader( ipc::getReceiveQueue());
+               queue::blocking::Reader reader( ipc::receive::queue());
 
                message::transaction::rollback::Reply reply;
                reader( reply);

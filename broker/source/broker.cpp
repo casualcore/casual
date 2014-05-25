@@ -128,7 +128,9 @@ namespace casual
 
       void Broker::start( const Settings& arguments)
       {
-         common::log::information << "broker start";
+
+         auto start = common::platform::clock_type::now();
+
 
          broker::QueueBlockingReader blockingReader( m_receiveQueue, m_state);
 
@@ -205,21 +207,21 @@ namespace casual
          // Prepare the xatmi-services
          //
          {
-            common::server::Arguments arguments;
+            common::server::Arguments arguments{ { common::process::path()}};
 
-            arguments.m_services.emplace_back( "_broker_listServers", &_broker_listServers, 10, common::server::Service::cNone);
-            arguments.m_services.emplace_back( "_broker_listServices", &_broker_listServices, 10, common::server::Service::cNone);
-            arguments.m_services.emplace_back( "_broker_updateInstances", &_broker_updateInstances, 10, common::server::Service::cNone);
+            arguments.services.emplace_back( "_broker_listServers", &_broker_listServers, 10, common::server::Service::cNone);
+            arguments.services.emplace_back( "_broker_listServices", &_broker_listServices, 10, common::server::Service::cNone);
+            arguments.services.emplace_back( "_broker_updateInstances", &_broker_updateInstances, 10, common::server::Service::cNone);
 
-
-            arguments.m_argc = 1;
-            const char* executable = common::process::path().c_str();
-            arguments.m_argv = &const_cast< char*&>( executable);
-
-            //handler.add( handle::Call{ arguments, m_state});
-            handler.add< handle::Call>( arguments, m_state);
-
+            handler.add( handle::Call{ arguments, m_state});
+            //handler.add< handle::Call>( arguments, m_state);
          }
+
+
+         auto end = common::platform::clock_type::now();
+
+         common::log::information << "domain: \'" << common::environment::domain::name() << "\' up and running - " << m_state.instances.size() << " processes - boot time: "
+               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
          common::log::internal::debug << "start message pump\n";
 

@@ -10,6 +10,7 @@
 
 
 #include <algorithm>
+#include <numeric>
 #include <iterator>
 #include <type_traits>
 #include <ostream>
@@ -471,6 +472,21 @@ namespace casual
          }
 
 
+         template< typename R, typename T>
+         auto accumulate( R&& range, T&& value) -> decltype( value + value)
+         {
+            return std::accumulate( std::begin( range), std::end( range), std::forward< T>( value));
+         }
+
+         template< typename R, typename T, typename F>
+         auto accumulate( R&& range, T&& value, F&& functor) -> decltype( functor( std::forward< T>( value), *std::begin( range)))
+         {
+            return std::accumulate(
+                  std::begin( range),
+                  std::end( range),
+                  std::forward< T>( value),
+                  std::forward< F>( functor));
+         }
 
 
 

@@ -30,6 +30,10 @@
 #include <signal.h>
 //#include <fcntl.h>
 
+#include <spawn.h>
+
+
+#include <crt_externs.h>
 
 
 namespace casual
@@ -149,6 +153,14 @@ namespace casual
 
             c_arguments.push_back( nullptr);
 
+
+            std::vector< const char*> c_environment;
+            c_environment.push_back( nullptr);
+
+
+
+            //std::vector< const char*> c_arguments;
+
             /*
             int pipeDesriptor[2];
             if( pipe( pipeDesriptor) == -1)
@@ -162,89 +174,25 @@ namespace casual
             //std::cerr << "local::readFromPipe: " << local::readFromPipe( pipeDesriptor[ 0]) << std::endl;
 
 
-            platform::pid_type pid = fork();
+            posix_spawnattr_t attributes;
 
-            switch( pid)
+
+
+            platform::pid_type pid;
+
+            if( posix_spawnp(
+                  &pid,
+                  path.c_str(),
+                  nullptr,
+                  nullptr, //&attributes,
+                  const_cast< char* const*>( c_arguments.data()),
+                  *_NSGetEnviron()// environ //const_cast< char* const*>( c_environment.data())
+                  ) != 0)
             {
-               case -1:
-               {
-                  throw exception::NotReallySureWhatToNameThisException();
-               }
-               case 0:
-               {
-                  // In the child process.  Iterate through all possible file descriptors
-                  // and explicitly close them.
-                  /*
-                  long maxfd = sysconf( _SC_OPEN_MAX);
-                  for( long filedescripor = 0; filedescripor < maxfd; ++filedescripor)
-                  {
-                     close( filedescripor);
-                  }
-                  */
-
-                  //
-                  // Close other end of the pipe, and make sure it's own end is closed
-                  // when exited
-                  //
-                  //close( pipeDesriptor[ 0]);
-                  //fcntl( pipeDesriptor[ 1], F_SETFD, FD_CLOEXEC);
-
-                  //
-                  // executed by shild, lets start process
-                  //
-                  execvp( path.c_str(), const_cast< char* const*>( c_arguments.data()));
-
-                  //std::cerr << "errno: " << error::stringFromErrno() << std::endl;
-
-                  //
-                  // If we reach this, the execution failed...
-                  // We pipe to the parent
-                  //
-                  //local::writeToPipe( pipeDesriptor[ 1], "execution filed");
-                  _exit( 222);
-
-
-                  // We can't throw, we log it...
-                  //
-                  //logger::error << "failed to execute " + path + " - " + error::stringFromErrno();
-                  // TODO: hack, use pipe to get real exit from the child later on...
-
-                  break;
-               }
-               default:
-               {
-                  //
-                  // Parent process
-                  //
-
-                  //
-                  // Close other end
-                  //
-                  //close( pipeDesriptor[ 1]);
-
-                  //
-                  // read from child
-                  //
-                  //auto result = local::readFromPipe( pipeDesriptor[ 0]);
-                  //close( pipeDesriptor[ 0]);
-
-                  //if( result.empty())
-                  {
-
-                     //
-                     // We have started the process, hopefully...
-                     //
-                     log::internal::debug << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ") << std::endl;
-                  }
-                  /*
-                  else
-                  {
-                     logger::error << "failed to spawn: " << path << " " << string::join( arguments, " ") << " - " << result;
-                  }
-                  */
-                  break;
-               }
+               throw exception::NotReallySureWhatToNameThisException();
             }
+
+            log::internal::debug << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ") << std::endl;
 
             return pid;
          }

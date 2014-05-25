@@ -559,7 +559,7 @@ namespace casual
                // Add services
                //
                common::range::for_each(
-                  common::range::make( message.services),
+                  message.services,
                   action::add::Service( m_state, instance->second));
 
                //
@@ -586,7 +586,7 @@ namespace casual
             void ack( const message::service::callee::Call& message)
             {
                message::service::ACK ack;
-               ack.server.queue_id = ipc::getReceiveQueue().id();
+               ack.server.queue_id = ipc::receive::id();
                ack.service = message.service.name;
 
                ACK sendACK( m_state);

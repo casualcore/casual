@@ -170,14 +170,9 @@ namespace casual
 
             server::Arguments arguments()
             {
-               server::Arguments arguments;
+               server::Arguments arguments{ { "/test/path"}};
 
-               arguments.m_services.emplace_back( "test_service", &test_service, 0, server::Service::cAuto);
-
-               arguments.m_argc = 1;
-
-               static const char* path{ "/test/path"};
-               arguments.m_argv = &const_cast< char*&>( path);
+               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::cAuto);
 
                return arguments;
             }
@@ -199,6 +194,32 @@ namespace casual
          } // <unnamed>
       } // local
 
+
+      TEST( casual_common_service_context, arguments)
+      {
+         server::Arguments arguments{ { "arg1", "arg2"}};
+
+         ASSERT_TRUE( arguments.argc == 2);
+         EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
+         EXPECT_TRUE( arguments.argv[ 1] == std::string( "arg2"));
+
+         EXPECT_TRUE( arguments.arguments.at( 0) == "arg1");
+         EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
+      }
+
+      TEST( casual_common_service_context, arguments_move)
+      {
+         server::Arguments origin{ { "arg1", "arg2"}};
+
+         server::Arguments arguments = std::move( origin);
+
+         ASSERT_TRUE( arguments.argc == 2);
+         EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
+         EXPECT_TRUE( arguments.argv[ 1] == std::string( "arg2"));
+
+         EXPECT_TRUE( arguments.arguments.at( 0) == "arg1");
+         EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
+      }
 
 
       TEST( casual_common_service_context, connect)

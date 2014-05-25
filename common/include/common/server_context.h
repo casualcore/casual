@@ -20,6 +20,8 @@
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 
+#include "common/move.h"
+
 
 #include <xatmi.h>
 #include <xa.h>
@@ -79,15 +81,36 @@ namespace casual
 
          struct Arguments
          {
-            Arguments() = default;
+            //Arguments() = default;
             Arguments( Arguments&&) = default;
 
-            std::vector< Service> m_services;
-            std::function<int( int, char**)> m_server_init = &tpsvrinit;
-            std::function<void()> m_server_done = &tpsvrdone;
-            int m_argc;
-            char** m_argv;
+            Arguments( int argc, char** argv) : argc( argc), argv( argv)
+            {
+
+            }
+
+            Arguments( std::vector< std::string> args) : arguments( std::move( args))
+            {
+               for( auto& argument : arguments)
+               {
+                  c_arguments.push_back( const_cast< char*>( argument.c_str()));
+               }
+               argc = c_arguments.size();
+               argv = c_arguments.data();
+            }
+
+            std::vector< Service> services;
+            std::function<int( int, char**)> server_init = &tpsvrinit;
+            std::function<void()> server_done = &tpsvrdone;
+            int argc;
+            char** argv;
+
+            std::vector< std::string> arguments;
+
             std::vector< transaction::Resource> resources;
+
+         private:
+            std::vector< char*> c_arguments;
          };
 
          struct State
@@ -105,7 +128,7 @@ namespace casual
             message::service::Reply reply;
             message::monitor::Notify monitor;
 
-            std::function<void()> m_server_done;
+            std::function<void()> server_done;
 
          };
 
@@ -135,9 +158,11 @@ namespace casual
             void unadvertiseService( const std::string& name);
 
             //!
-            //! Share state with calle::handle::basic_call
+            //! Share state with callee::handle::basic_call for now...
+            //! if this "design" feels good, we should expose needed functionality
+            //! to callee::handle::basic_call
             //!
-            State& getState();
+            State& state();
 
             void finalize();
 
@@ -169,7 +194,7 @@ namespace casual
             //! -- send reply to caller
             //! -- send ack to broker
             //! -- send time-stuff to monitor (if active)
-            //! -- TODO: transaction stuff
+            //! -- transaction stuff
             //! - destruction
             //! -- send disconnect to broker - disconnect server - unadvertise services
             //!
@@ -182,8 +207,8 @@ namespace casual
 
                typedef message::service::callee::Call message_type;
 
-               basic_call( basic_call&&) = delete;
-               basic_call& operator = ( basic_call&&) = delete;
+               basic_call( basic_call&&) = default;
+               basic_call& operator = ( basic_call&&) = default;
 
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
@@ -201,15 +226,17 @@ namespace casual
                {
                   trace::internal::Scope trace{ "callee::handle::basic_call::basic_call"};
 
-                  m_state.m_server_done = arguments.m_server_done;
+                  auto& state = server::Context::instance().state();
+
+                  state.server_done = arguments.server_done;
 
                   message::server::connect::Request message;
 
 
-                  for( auto&& service : arguments.m_services)
+                  for( auto&& service : arguments.services)
                   {
                      message.services.emplace_back( service.name, service.type, service.transaction);
-                     m_state.services.emplace( service.name, std::move( service));
+                     state.services.emplace( service.name, std::move( service));
                   }
 
 
@@ -221,9 +248,9 @@ namespace casual
                   //
                   // Call tpsrvinit
                   //
-                  if( ! arguments.m_server_init( arguments.m_argc, arguments.m_argv))
+                  if( arguments.server_init( arguments.argc, arguments.argv) != 0)
                   {
-                     exception::NotReallySureWhatToNameThisException( "service init failed");
+                     throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
 
                }
@@ -234,27 +261,31 @@ namespace casual
                //!
                ~basic_call() noexcept
                {
-
-                  trace::internal::Scope trace{ "callee::handle::basic_call::~basic_call"};
-
-                  try
+                  if( m_active)
                   {
 
-                     //
-                     // Call tpsrvdone
-                     //
-                     m_state.m_server_done();
+                     trace::internal::Scope trace{ "callee::handle::basic_call::~basic_call"};
 
-                     //
-                     // If there are open resources, close'em
-                     //
-                     transaction::Context::instance().close();
+                     try
+                     {
+                        auto& state = server::Context::instance().state();
 
-                     m_policy.disconnect();
-                  }
-                  catch( ...)
-                  {
-                     error::handler();
+                        //
+                        // Call tpsrvdone
+                        //
+                        state.server_done();
+
+                        //
+                        // If there are open resources, close'em
+                        //
+                        transaction::Context::instance().close();
+
+                        m_policy.disconnect();
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                     }
                   }
 
                }
@@ -275,12 +306,14 @@ namespace casual
 
                   trace::internal::Scope trace{ "callee::handle::basic_call::dispatch"};
 
+                  auto& state = server::Context::instance().state();
+
                   //
                   // Set starttime. TODO: Should we try to get the startime earlier? Hence, at ipc-queue level?
                   //
                   if( message.service.monitor_queue != 0)
                   {
-                     m_state.monitor.start = platform::clock_type::now();
+                     state.monitor.start = platform::clock_type::now();
                   }
 
 
@@ -290,7 +323,7 @@ namespace casual
                   // ATTENTION: no types with destructor should be instantiated between
                   // setjmp and the else clause for 'if( jumpState == 0)'
                   //
-                  int jumpState = setjmp( m_state.long_jump_buffer);
+                  int jumpState = setjmp( state.long_jump_buffer);
 
                   if( jumpState == 0)
                   {
@@ -303,11 +336,11 @@ namespace casual
                      //
                      // set the call-correlation
                      //
-                     m_state.reply.callDescriptor = message.callDescriptor;
+                     state.reply.callDescriptor = message.callDescriptor;
 
-                     auto findIter = m_state.services.find( message.service.name);
+                     auto findIter = state.services.find( message.service.name);
 
-                     if( findIter == m_state.services.end())
+                     if( findIter == state.services.end())
                      {
                         throw common::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
                      }
@@ -346,14 +379,14 @@ namespace casual
                      // Do transaction stuff...
                      // - commit/rollback transaction if service has "auto-transaction"
                      //
-                     m_policy.transaction( m_state.reply);
+                     m_policy.transaction( state.reply);
 
                      //
                      // User has called tpreturn.
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     m_policy.reply( message.reply.queue_id, m_state.reply);
+                     m_policy.reply( message.reply.queue_id, state.reply);
 
                      //
                      // Send ACK to broker
@@ -370,12 +403,12 @@ namespace casual
                      //
                      if( message.service.monitor_queue != 0)
                      {
-                        m_state.monitor.end = platform::clock_type::now();
-                        m_state.monitor.callId = message.callId;
-                        m_state.monitor.service = message.service.name;
-                        m_state.monitor.parentService = message.callee;
+                        state.monitor.end = platform::clock_type::now();
+                        state.monitor.callId = message.callId;
+                        state.monitor.service = message.service.name;
+                        state.monitor.parentService = message.callee;
 
-                        m_policy.statistics( message.service.monitor_queue, m_state.monitor);
+                        m_policy.statistics( message.service.monitor_queue, state.monitor);
                      }
                      calling::Context::instance().currentService( "");
                   }
@@ -395,10 +428,8 @@ namespace casual
                   return result;
                }
 
-
                policy_type m_policy;
-               server::State& m_state = server::Context::instance().getState();
-
+               move::Active m_active;
             };
 
             namespace policy
@@ -414,7 +445,7 @@ namespace casual
                   template< typename W>
                   struct broker_writer : public W
                   {
-                     broker_writer() : W( ipc::getBrokerQueue().id()) {}
+                     broker_writer() : W( ipc::broker::id()) {}
                   };
 
 

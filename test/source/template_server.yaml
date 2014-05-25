@@ -7,7 +7,7 @@ server:
       
       
     - name: casual_test2
-      transaction: atomic
+      transaction: auto
     
     - name: casual-test3
       function: casual_test3

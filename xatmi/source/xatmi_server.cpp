@@ -34,13 +34,13 @@ namespace local
          {
             common::server::Arguments operator ()( struct casual_server_argument& value) const
             {
-               common::server::Arguments result;
+               common::server::Arguments result( value.argc, value.argv);
 
                auto service = value.services;
 
                while( service->functionPointer != nullptr)
                {
-                  result.m_services.emplace_back(
+                  result.services.emplace_back(
                         service->name,
                         service->functionPointer,
                         service->type,
@@ -57,11 +57,8 @@ namespace local
                   ++xaSwitch;
                }
 
-               result.m_argc = value.argc;
-               result.m_argv = value.argv;
-
-               result.m_server_init = value.serviceInit;
-               result.m_server_done = value.serviceDone;
+               result.server_init = value.serviceInit;
+               result.server_done = value.serviceDone;
 
                return result;
 
@@ -92,7 +89,7 @@ int casual_start_server( casual_server_argument* serverArgument)
       //
       // Start the message-pump
       //
-      common::queue::blocking::Reader receiveQueue( common::ipc::getReceiveQueue());
+      common::queue::blocking::Reader receiveQueue( common::ipc::receive::queue());
       common::message::dispatch::pump( handler, receiveQueue);
 	}
 	catch( ...)

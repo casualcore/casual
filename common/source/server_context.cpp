@@ -115,15 +115,15 @@ namespace casual
             }
 
             message::service::Unadvertise message;
-            message.server.queue_id = ipc::getReceiveQueue().id();
+            message.server.queue_id = ipc::receive::id();
             message.services.push_back( message::Service( name));
 
-            queue::blocking::Writer writer( ipc::getBrokerQueue().id());
+            queue::blocking::Writer writer( ipc::broker::id());
             writer( message);
          }
 
 
-         State& Context::getState()
+         State& Context::state()
          {
             return m_state;
          }
@@ -174,7 +174,7 @@ namespace casual
                void Default::ack( const message::service::callee::Call& message)
                {
                   message::service::ACK ack;
-                  ack.server.queue_id = ipc::getReceiveQueue().id();
+                  ack.server.queue_id = ipc::receive::id();
                   ack.service = message.service.name;
                   blocking_broker_writer brokerWriter;
                   brokerWriter( ack);

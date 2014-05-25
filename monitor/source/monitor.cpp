@@ -64,10 +64,6 @@ namespace monitor
                    return singleton;
                 }
 
-    			common::ipc::receive::Queue& receiveQueue()
-    			{
-    				return m_receiveQueue;
-    			}
 
     			MonitorDB& monitorDB()
     			{
@@ -79,7 +75,6 @@ namespace monitor
     			{
     			}
 
-    			common::ipc::receive::Queue m_receiveQueue;
     			MonitorDB m_monitordb;
     		};
 		}
@@ -117,7 +112,7 @@ namespace monitor
 	}
 
 	Monitor::Monitor(const std::vector<std::string>& arguments) :
-			m_receiveQueue( local::Context::instance().receiveQueue()),
+			m_receiveQueue( common::ipc::receive::queue()),
 			m_monitordb( local::Context::instance().monitorDB())
 	{
 	   //
@@ -139,7 +134,7 @@ namespace monitor
 		message.path = name;
 		message.server.queue_id = m_receiveQueue.id();
 
-		queue::blocking::Writer writer( ipc::getBrokerQueue().id());
+		queue::blocking::Writer writer( ipc::broker::id());
 		writer(message);
 	}
 
@@ -157,7 +152,7 @@ namespace monitor
 
          message.server.queue_id = m_receiveQueue.id();
 
-         queue::blocking::Writer writer( ipc::getBrokerQueue().id());
+         queue::blocking::Writer writer( ipc::broker::id());
          writer(message);
 		}
 		catch( ...)
