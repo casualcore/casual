@@ -31,6 +31,12 @@ namespace casual
 			void handle();
 
 
+			//!
+			//! Clears all pending signals.
+			//!
+			void clear();
+
+
 			namespace alarm
 			{
 				class Scoped

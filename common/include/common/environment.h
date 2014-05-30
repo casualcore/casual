@@ -34,6 +34,17 @@ namespace casual
 					return result;
 				}
 
+				void set( const std::string& name, const std::string& value);
+
+				template< typename T>
+				void set( const std::string& name, T&& value)
+				{
+				   std::ostringstream converter;
+				   converter << value;
+				   const std::string& string = converter.str();
+				   set( name, string);
+				}
+
 			}
 
 			namespace directory

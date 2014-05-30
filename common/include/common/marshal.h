@@ -234,6 +234,13 @@ namespace casual
                }
 
 
+               ipc::message::Complete release()
+               {
+                  m_offset = 0;
+                  return ipc::message::Complete( m_messageType, std::move( m_buffer));
+               }
+
+
 
                void add( transport_type& message)
                {

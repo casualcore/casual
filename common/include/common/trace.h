@@ -22,23 +22,23 @@ namespace casual
          template< typename T>
          base_trace( std::ostream& log, T&& info) : m_log( log), m_information{ std::forward< T>( info)}
          {
-            if( m_log.good())
+            if( m_log)
             {
-               m_log << m_information << " - in" << std::endl;
+               log::thread::Safe{ m_log} << m_information << " - in\n";
             }
          }
 
          ~base_trace()
          {
-            if( m_log.good())
+            if( m_log)
             {
                if( std::uncaught_exception())
                {
-                  m_log << m_information << " - out*" << std::endl;
+                  log::thread::Safe{ m_log} << m_information << " - out*\n";
                }
                else
                {
-                  m_log << m_information << " - out" << std::endl;
+                  log::thread::Safe{ m_log} << m_information << " - out\n";
                }
             }
          }
@@ -56,6 +56,9 @@ namespace casual
       public:
          template< typename T>
          Trace( T&& info) : base_trace( log::trace, std::forward< T>( info)) {}
+
+         template< typename T>
+         Trace( std::ostream& log, T&& info) : base_trace( log, std::forward< T>( info)) {}
       };
 
       namespace trace
@@ -70,11 +73,11 @@ namespace casual
            {
               if( std::uncaught_exception())
               {
-                 log::trace << m_information << " - failed" << std::endl;
+                 log::thread::Safe{ log::trace} << m_information << " - failed\n";
               }
               else
               {
-                 log::trace << m_information << " - ok" << std::endl;
+                 log::thread::Safe{ log::trace} << m_information << " - ok\n";
               }
            }
 
@@ -82,10 +85,8 @@ namespace casual
             std::string m_information;
          };
       }
-   }
-
-
-}
+   } // common
+} // casual
 
 
 

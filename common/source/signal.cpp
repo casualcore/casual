@@ -22,88 +22,107 @@ extern "C"
 	void casual_common_signal_handler( int signal);
 }
 
-namespace local
+namespace casual
 {
-	namespace
-	{
-		struct LastSignal
-		{
-			static LastSignal& instance()
-			{
-				static LastSignal singleton;
-				return singleton;
-			}
 
-			void add( int signal)
-			{
-			   m_signals.push_back( signal);
-			}
+   namespace common
+   {
+      namespace local
+      {
+         namespace
+         {
+            namespace signal
+            {
+               struct Cache
+               {
+                  static Cache& instance()
+                  {
+                     static Cache singleton;
+                     return singleton;
+                  }
 
-			int consume()
-			{
-			   if( !m_signals.empty())
-			   {
-			      int temp = m_signals.front();
-               m_signals.pop_back();
-               return temp;
-			   }
-			   return 0;
-			}
+                  void add( int signal)
+                  {
+                     m_signals.push_back( signal);
+                  }
 
-		private:
-			LastSignal()
-			{
-				//
-				// Register all the signals
-				//
-			   /*
-				signal( casual::common::platform::cSignal_Alarm, casual_common_signal_handler);
+                  int consume()
+                  {
+                     if( !m_signals.empty())
+                     {
+                        int temp = m_signals.front();
+                        m_signals.pop_back();
+                        return temp;
+                     }
+                     return 0;
+                  }
 
-				signal( casual::common::platform::cSignal_Terminate, casual_common_signal_handler);
-				signal( casual::common::platform::cSignal_Kill, casual_common_signal_handler);
-				signal( casual::common::platform::cSignal_Quit, casual_common_signal_handler);
-				signal( casual::common::platform::cSignal_Interupt, casual_common_signal_handler);
+                  void clear()
+                  {
+                     m_signals.clear();
+                  }
 
-				signal( casual::common::platform::cSignal_ChildTerminated, casual_common_signal_handler);
-            */
-			   set( casual::common::platform::cSignal_Alarm);
+               private:
+                  Cache()
+                  {
+                     //
+                     // Register all the signals
+                     //
+                     /*
+                     signal( casual::common::platform::cSignal_Alarm, casual_common_signal_handler);
 
-            set( casual::common::platform::cSignal_Terminate);
-            set( casual::common::platform::cSignal_Quit);
-            set( casual::common::platform::cSignal_Interupt);
+                     signal( casual::common::platform::cSignal_Terminate, casual_common_signal_handler);
+                     signal( casual::common::platform::cSignal_Kill, casual_common_signal_handler);
+                     signal( casual::common::platform::cSignal_Quit, casual_common_signal_handler);
+                     signal( casual::common::platform::cSignal_Interupt, casual_common_signal_handler);
 
-            set( casual::common::platform::cSignal_ChildTerminated, SA_NOCLDSTOP);
-			}
+                     signal( casual::common::platform::cSignal_ChildTerminated, casual_common_signal_handler);
+                     */
+                     set( casual::common::platform::cSignal_Alarm);
 
-			void set( int signal, int flags = 0)
-			{
-			   struct sigaction sa;
+                     set( casual::common::platform::cSignal_Terminate);
+                     set( casual::common::platform::cSignal_Quit);
+                     set( casual::common::platform::cSignal_Interupt);
 
-			   memset(&sa, 0, sizeof(sa));
-			   sa.sa_handler = casual_common_signal_handler;
-			   sa.sa_flags = flags | SA_RESTART;
+                     set( casual::common::platform::cSignal_ChildTerminated, SA_NOCLDSTOP);
+                  }
 
-			   sigaction( signal, &sa, 0);
-			}
+                  void set( int signal, int flags = 0)
+                  {
+                     struct sigaction sa;
 
-			//
-			// TODO: atomic?
-			//
-			std::deque< int> m_signals;
-		};
+                     memset(&sa, 0, sizeof(sa));
+                     sa.sa_handler = casual_common_signal_handler;
+                     sa.sa_flags = flags | SA_RESTART;
 
-		//
-		// We need to instantiate to register the signals
-		//
-		LastSignal& globalCrap = LastSignal::instance();
-	} // <unnamed>
-} // local
+                     sigaction( signal, &sa, 0);
+                  }
+
+                  //
+                  // TODO: atomic?
+                  //
+                  std::deque< int> m_signals;
+               };
+
+
+               //
+               // We need to instantiate to register the signals
+               //
+               Cache& globalCrap = Cache::instance();
+
+            } // signal
+
+
+         } // <unnamed>
+      } // local
+   } // common
+} // casual
 
 
 
 void casual_common_signal_handler( int signal)
 {
-	local::globalCrap.add( signal);
+	casual::common::local::signal::Cache::instance().add( signal);
 }
 
 
@@ -116,7 +135,7 @@ namespace casual
 		{
 			void handle()
 			{
-				const int signal = local::LastSignal::instance().consume();
+				const int signal = local::signal::Cache::instance().consume();
 				switch( signal)
 				{
                case 0:
@@ -145,6 +164,12 @@ namespace casual
                }
 				}
 			}
+
+         void clear()
+         {
+            local::signal::Cache::instance().clear();
+
+         }
 
 			namespace posponed
          {

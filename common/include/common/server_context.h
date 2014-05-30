@@ -261,7 +261,7 @@ namespace casual
                //!
                ~basic_call() noexcept
                {
-                  if( m_active)
+                  if( ! m_moved)
                   {
 
                      trace::internal::Scope trace{ "callee::handle::basic_call::~basic_call"};
@@ -429,7 +429,7 @@ namespace casual
                }
 
                policy_type m_policy;
-               move::Active m_active;
+               move::Moved m_moved;
             };
 
             namespace policy

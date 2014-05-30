@@ -33,6 +33,7 @@ namespace casual
                casual_debug,
                casual_trace,
                casual_transaction,
+               casual_ipc,
 
                //
                // Public logging
@@ -48,19 +49,17 @@ namespace casual
 
          } // category
 
-
-         namespace internal
+         namespace thread
          {
-
-            class Proxy
+            class Safe
             {
             public:
-               Proxy( std::ostream& stream, std::mutex& mutex) : m_stream( stream), m_lock( mutex) {}
-               Proxy( Proxy&&) = default;
+               Safe( std::ostream& stream) : m_stream( stream), m_lock( m_mutext) {}
+               Safe( Safe&&) = default;
 
 
                template< typename T>
-               Proxy& operator << ( T&& value)
+               Safe& operator << ( T&& value)
                {
                   m_stream << std::forward< T>( value);
                   return *this;
@@ -73,7 +72,7 @@ namespace casual
                //! Overload for manip-functions...
                //! @note Why does not the T&& take these?
                //!
-               Proxy& operator << ( omanip_t value)
+               Safe& operator << ( omanip_t value)
                {
                   m_stream << value;
                   return *this;
@@ -82,7 +81,16 @@ namespace casual
             private:
                std::ostream& m_stream;
                std::unique_lock< std::mutex> m_lock;
+
+               static std::mutex m_mutext;
             };
+
+
+         } // thread
+
+
+         namespace internal
+         {
 
             class Stream : public std::ostream
             {
@@ -92,16 +100,12 @@ namespace casual
 
 
                template< typename T>
-               Proxy operator << ( T&& value)
+               thread::Safe operator << ( T&& value)
                {
-                  Proxy proxy{ *this, m_mutext};
+                  thread::Safe proxy{ *this};
                   proxy << std::forward< T>( value);
                   return proxy;
                }
-
-
-            private:
-               std::mutex m_mutext;
             };
          } // internal
 

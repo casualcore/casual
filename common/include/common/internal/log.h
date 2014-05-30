@@ -35,6 +35,12 @@ namespace casual
             extern internal::Stream transaction;
 
 
+            //!
+            //! Log with category 'casual.ipc'
+            //!
+            extern internal::Stream ipc;
+
+
          } // internal
       } // log
    } // common

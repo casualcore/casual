@@ -346,6 +346,13 @@ namespace casual
 
             typedef basic_reader< policy::NoAction> Reader;
 
+            template< typename IPC>
+            internal::basic_reader< policy::Blocking, policy::NoAction, IPC&> reader( IPC& ipc)
+            {
+               return internal::basic_reader< policy::Blocking, policy::NoAction, IPC&>( ipc);
+            }
+
+
 
          } // blocking
 
@@ -361,6 +368,13 @@ namespace casual
             using basic_reader = internal::basic_reader< policy::NonBlocking, P, ipc::receive::Queue&>;
 
             typedef basic_reader< policy::NoAction> Reader;
+
+
+            template< typename IPC>
+            internal::basic_reader< policy::NonBlocking, policy::NoAction, IPC&> reader( IPC& ipc)
+            {
+               return internal::basic_reader< policy::NonBlocking, policy::NoAction, IPC&>( ipc);
+            }
 
 
          } // non_blocking

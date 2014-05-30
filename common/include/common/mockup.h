@@ -12,6 +12,7 @@
 
 #include "common/queue.h"
 #include "common/message.h"
+#include "common/move.h"
 
 
 #include <cassert>
@@ -126,15 +127,7 @@ namespace casual
             }// blocking
          } // queue
 
-         namespace xa_switch
-         {
-            struct State
-            {
 
-
-            };
-
-         }
 
 
       } // mockup

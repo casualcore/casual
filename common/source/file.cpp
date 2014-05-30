@@ -6,6 +6,8 @@
 //!
 
 #include "common/file.h"
+#include "common/log.h"
+#include "common/error.h"
 
 #include <cstdio>
 
@@ -42,17 +44,14 @@ namespace casual
 
          RemoveGuard::~RemoveGuard()
          {
-            if( ! m_released)
+            if( ! m_moved)
             {
                remove( m_path);
             }
          }
 
-         RemoveGuard::RemoveGuard( RemoveGuard&& rhs)
-         {
-            std::swap( m_released, rhs.m_released);
-            std::swap( m_path, rhs.m_path);
-         }
+         RemoveGuard::RemoveGuard( RemoveGuard&&) = default;
+
 
          const std::string& RemoveGuard::path() const
          {
@@ -157,7 +156,7 @@ namespace casual
          {
             auto parent = file::basedir( path);
 
-            if( parent.size() < path.size())
+            if( parent.size() < path.size() && parent != "/")
             {
 
                //
@@ -166,10 +165,24 @@ namespace casual
                create( parent);
             }
 
-            //std::cerr << "create: " << path << std::endl;
-            return mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0 || errno == EEXIST;
+            if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
+            {
+               log::error << "failed to create " << path << " - " << error::stringFromErrno() << std::endl;
+               return false;
+            }
+
+            return true;
          }
 
+         bool remove( const std::string& path)
+         {
+            if( rmdir( path.c_str()) != 0)
+            {
+               log::error << "failed to remove " << path << " - " << error::stringFromErrno() << std::endl;
+               return false;
+            }
+            return true;
+         }
       }
 
    } // common
