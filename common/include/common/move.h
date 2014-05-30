@@ -32,7 +32,7 @@ namespace casual
 
             Moved( Moved&& other) noexcept
             {
-               other.m_moved = false;
+               other.m_moved = true;
             }
 
             Moved& operator = ( Moved&& other) noexcept
