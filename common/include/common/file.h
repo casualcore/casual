@@ -49,7 +49,7 @@ namespace casual
          public:
             using RemoveGuard::RemoveGuard;
 
-            operator const std::string&();
+            operator const std::string&() const;
          };
 
          //!

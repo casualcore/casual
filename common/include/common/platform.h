@@ -141,8 +141,10 @@ namespace casual
 			static const signal_type cSignal_Quit = SIGQUIT;
 			static const signal_type cSignal_Interupt = SIGINT;
 			static const signal_type cSignal_ChildTerminated = SIGCHLD;
+			static const signal_type cSignal_UserDefined = SIGUSR1;
 
-			std::string getSignalDescription( signal_type);
+
+
 
 
 			namespace resource

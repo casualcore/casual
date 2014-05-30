@@ -23,19 +23,14 @@ SetLibraryPaths( ["bin",
 
 
 
-Compile( "build_server/build_server.cpp", "build_server/obj/build_server.o")
 
 LinkExecutable( "casual-build-server",
-   [ "build_server/obj/build_server.o"],
+   [ Compile( "build_server/build_server.cpp", "build_server/obj/build_server.o")],
    [ "casual-common", "casual-sf", "casual-configuration"])
 
 
-
-Compile( "resource_proxy/build_resource_proxy.cpp", "resource_proxy/obj/build_resource_proxy.o")
-
-
 LinkExecutable( "casual-build-resource-proxy",
-   [ "resource_proxy/obj/build_resource_proxy.o"],
+   [ Compile( "resource_proxy/build_resource_proxy.cpp", "resource_proxy/obj/build_resource_proxy.o")],
    [ "casual-common", 
     "casual-sf", 
     "casual-configuration"])

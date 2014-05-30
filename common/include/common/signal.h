@@ -14,6 +14,8 @@
 #include "common/platform.h"
 
 
+#include <thread>
+
 namespace casual
 {
 
@@ -21,6 +23,23 @@ namespace casual
 	{
 		namespace signal
 		{
+		   namespace type
+		   {
+
+		      static const auto alarm = platform::cSignal_Alarm;
+		      static const auto interupt = platform::cSignal_Interupt;
+		      static const auto kill = platform::cSignal_Kill;
+		      static const auto quit = platform::cSignal_Quit;
+		      static const auto child = platform::cSignal_ChildTerminated;
+		      static const auto terminate = platform::cSignal_Terminate;
+		      static const auto user = platform::cSignal_UserDefined;
+
+		      using type = decltype( terminate);
+
+
+		      std::string string( type signal);
+
+         } // type
 
 
 			//!
@@ -57,8 +76,25 @@ namespace casual
 			//!
 			//! Sends the signal to the process
 			//!
-			void send( platform::pid_type pid, platform::signal_type signal);
+			void send( platform::pid_type pid, type::type signal);
 
+			//!
+			//! Blocks a given signal
+			//!
+			void block( type::type signal);
+
+			//!
+         //! Unblock a given signal
+         //!
+			void unblock( type::type signal);
+
+			namespace thread
+         {
+			   //!
+			   //! Send signal to thread
+			   //!
+			   void send( const std::thread& thread, type::type signal);
+         } // thread
 
 
 

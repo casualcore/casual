@@ -73,7 +73,7 @@ unitest_objectfiles = [
     Compile( "unittest/isolated/source/test_manager.cpp", "unittest/isolated/obj/test_manager.o"),
 ];
 
-LinkIsolatedUnittest( "test_transaction_configuration",
+LinkIsolatedUnittest( "test-casual-transaction-isolated",
     unitest_objectfiles,
     [ 
      "manager-archive", 
@@ -93,10 +93,8 @@ InstallExecutable("casual-transaction-manager","$CASUAL_HOME/bin/.")
 #
 # Mockup resource proxy
 #
-Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")
-
 LinkExecutable( "rm-proxy-casual-mockup",
-    [ "obj/resource/template_build_resource_proxy.o"],
+    [ Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")],
     [ "casual-mockup", "casual-resource-proxy-server"])
 
 InstallExecutable("rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")

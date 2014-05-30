@@ -161,7 +161,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::stringFromErrno());
+                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::string());
                      }
                   }
                }
@@ -179,7 +179,7 @@ namespace casual
             {
                if( m_id  == -1)
                {
-                  throw common::exception::QueueFailed( common::error::stringFromErrno());
+                  throw common::exception::QueueFailed( common::error::string());
                }
 
                //
@@ -385,7 +385,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueReceive( common::error::stringFromErrno() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
+                        throw common::exception::QueueReceive( common::error::string() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
                      }
                   }
                }
@@ -486,7 +486,7 @@ namespace casual
          {
             if( msgctl( id, IPC_RMID, nullptr) != 0)
             {
-               throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
+               throw exception::NotReallySureWhatToNameThisException( error::string());
             }
          }
 

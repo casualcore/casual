@@ -223,8 +223,8 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "failed to check state of pid: " << exit.pid << " - " << error::stringFromErrno() << std::endl;
-                     throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
+                     log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
+                     throw exception::NotReallySureWhatToNameThisException( error::string());
                   }
                }
                else if( exit.pid != 0)
@@ -300,32 +300,7 @@ namespace casual
             //return state();
          }
 
-         /*
-         void lifetime::clear()
-         {
-            state().clear();
-            state().shrink_to_fit();
-         }
 
-         void lifetime::update()
-         {
-
-            Exit exit;
-
-            while( local::wait( exit))
-            {
-               state().push_back( exit);
-            }
-         }
-
-
-
-         std::vector< lifetime::Exit>& lifetime::state()
-         {
-            static std::vector< Exit> state;
-            return state;
-         }
-         */
 
       } // process
    } // common

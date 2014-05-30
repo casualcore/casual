@@ -23,9 +23,10 @@ namespace casual
 
          int handler();
 
-         std::string stringFromErrno();
-
-         const std::string& tperrnoStringRepresentation( int error);
+         //!
+         //! @return string representation of errno
+         //!
+         std::string string();
 
 
          namespace xatmi

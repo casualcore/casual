@@ -9,13 +9,16 @@
 
 
 #include "common/queue.h"
-
+#include "common/environment.h"
+#include "common/file.h"
+#include "common/signal.h"
 
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 
 
 #include <thread>
+#include <fstream>
 
 namespace casual
 {
@@ -226,7 +229,7 @@ namespace casual
 
 
                      template< typename M>
-                     void send( M&& message)
+                     void send( M&& message) const
                      {
                         common::queue::blocking::Writer write( m_threadQueueId);
                         write( message);
@@ -256,35 +259,64 @@ namespace casual
                         //
                         common::queue::blocking::Reader reader( receiveQueue);
 
-                        std::vector< message::ToSend> messages;
+                        std::deque< message::ToSend> messages;
+
 
                         while( true)
                         {
-                           auto next = reader.next();
-
-                           switch( next.type())
+                           try
                            {
-                              case message::cMockupDisconnect:
+                              //
+                              // We're not interested in "read-interupt-signal" when we already
+                              // are reading...
+                              //
+                              signal::block( signal::type::user);
+
+                              auto next = reader.next();
+
+                              switch( next.type())
                               {
-                                 log::internal::ipc << "disconnect received - stop" << std::endl;
-                                 return;
-                              }
-                              case message::cMockupStart:
-                              {
-                                 for( auto&& message : messages)
+                                 case message::cMockupDisconnect:
                                  {
-                                    common::queue::blocking::Writer write( message.destination);
-                                    write.send( message.message);
+                                    log::internal::ipc << "disconnect received - stop" << std::endl;
+                                    return;
                                  }
-                                 break;
+                                 case message::cMockupStart:
+                                 {
+
+                                    //
+                                    // We need to be interruptible...
+                                    //
+                                    signal::unblock( signal::type::user);
+
+                                    log::internal::ipc << "start sending messages size: " << messages.size() << std::endl;
+
+
+                                    while( ! messages.empty())
+                                    {
+                                       common::queue::blocking::Writer write( messages.front().destination);
+                                       write.send( messages.front().message);
+                                       messages.pop_front();
+                                    }
+                                    break;
+                                 }
+                                 case message::cMockupMessageToSend:
+                                 {
+                                    message::ToSend message;
+                                    next >> message;
+                                    messages.push_back( std::move( message));
+                                    break;
+                                 }
+                                 default:
+                                 {
+                                    log::error << "unknown message " << next.type() << "- discard" << std::endl;
+                                    break;
+                                 }
                               }
-                              case message::cMockupMessageToSend:
-                              {
-                                 message::ToSend message;
-                                 next >> message;
-                                 messages.push_back( std::move( message));
-                                 break;
-                              }
+                           }
+                           catch( const exception::signal::User&)
+                           {
+                              log::internal::ipc << "signal received - read from input queue" << std::endl;
                            }
                         }
                      }
@@ -358,6 +390,24 @@ namespace casual
             struct Sender::Implementation : public local::basic_implementation< local::Sender>
             {
 
+               void add( queue_id_type destination, common::ipc::message::Complete&& message) const
+               {
+                  //
+                  // Make sure thread is reading from queue
+                  //
+                  signal::thread::send( m_thread, signal::type::user);
+
+                  local::message::ToSend toSend;
+                  toSend.destination = destination;
+                  toSend.message = std::move( message);
+                  send( toSend);
+                  start();
+               }
+
+               void start() const
+               {
+                  send( local::message::Start{});
+               }
             };
 
 
@@ -373,17 +423,7 @@ namespace casual
 
             void Sender::add( queue_id_type destination, common::ipc::message::Complete&& message) const
             {
-               local::message::ToSend toSend;
-               toSend.destination = destination;
-               toSend.message = std::move( message);
-
-               m_implementation->send( toSend);
-            }
-
-            void Sender::start()
-            {
-               m_implementation->send( local::message::Start{});
-
+               m_implementation->add( destination, std::move( message));
             }
 
 
@@ -404,6 +444,9 @@ namespace casual
             Receiver::Receiver() {}
 
             Receiver::~Receiver() {}
+
+            Receiver::Receiver( Receiver&&) = default;
+            Receiver& Receiver::operator = ( Receiver&&) = default;
 
             Receiver::id_type Receiver::id() const
             {
@@ -430,6 +473,47 @@ namespace casual
                m_implementation->fetch( types);
                return m_implementation->ipc()( types, flags);
             }
+
+
+            namespace broker
+            {
+
+               Receiver initializeMockupBrokerQueue()
+               {
+                  static file::ScopedPath path{ common::environment::file::brokerQueue()};
+
+                  Receiver queue;
+
+                  log::debug << "writing mockup broker queue file: " << path.path() << std::endl;
+
+                  std::ofstream brokerQueueFile( path);
+
+                  if( brokerQueueFile)
+                  {
+                     brokerQueueFile << queue.id() << std::endl;
+                     brokerQueueFile.close();
+                  }
+                  else
+                  {
+                     throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path.path());
+                  }
+
+                  return queue;
+               }
+
+
+               Receiver& queue()
+               {
+                  static Receiver singelton = initializeMockupBrokerQueue();
+                  return singelton;
+               }
+
+               id_type id()
+               {
+                  return queue().id();
+               }
+
+            } // broker
 
 
          } // ipc

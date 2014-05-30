@@ -13,6 +13,8 @@
 #include "common/file.h"
 #include "common/internal/log.h"
 
+#include "common/mockup/ipc.h"
+
 
 #include <iostream>
 
@@ -36,6 +38,10 @@ namespace casual
 
                   log::debug << "CASUAL_DOMAIN_HOME set to: " << environment::variable::get( "CASUAL_DOMAIN_HOME") << std::endl;
                   log::debug  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
+
+
+                  // poke mockup broker queue
+                  log::debug << "mockup broker queue id: " << mockup::ipc::broker::queue().id() << std::endl;
 
                }
 

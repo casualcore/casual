@@ -33,7 +33,6 @@ casual_common_objectfiles = [
     Compile( "source/file.cpp", "obj/file.o"),
     Compile( "source/string.cpp", "obj/string.o"),
     Compile( "source/signal.cpp", "obj/signal.o"),
-    Compile( "source/platform.cpp", "obj/platform.o"),
     Compile( "source/log.cpp", "obj/log.o"),
     Compile( "source/error.cpp", "obj/error.o"),
     Compile( "source/chronology.cpp", "obj/chronology.o"),
@@ -72,7 +71,7 @@ LinkLibrary( "casual-mockup-unittest-environment",
     [ 
       Compile( "source/mockup/unittest_envrionment.cpp", "obj/mockup/unittest_envrionment.o"),  
     ],
-    ["casual-common", "gtest"])
+    ["casual-common", "casual-mockup", "gtest"])
 
 
 
@@ -113,8 +112,8 @@ unittest_objectfiles = [
 
 
 
-LinkIsolatedUnittest( "casual-common-isolated", 
-	unittest_objectfiles, #[ "obj/mockup/unittest_envrionment.o"] +,
+LinkIsolatedUnittest( "test-casual-common-isolated", 
+	unittest_objectfiles,
 	[
      "casual-common",
      "casual-mockup",

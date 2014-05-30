@@ -11,6 +11,7 @@
 #include "common/server_context.h"
 
 #include "common/mockup.h"
+#include "common/mockup/ipc.h"
 
 #include "common/buffer_context.h"
 
@@ -172,7 +173,7 @@ namespace casual
             {
                server::Arguments arguments{ { "/test/path"}};
 
-               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::cAuto);
+               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::cNone);
 
                return arguments;
             }
@@ -190,6 +191,50 @@ namespace casual
                return message;
             }
 
+
+            namespace sender
+            {
+               mockup::ipc::Sender& queue()
+               {
+                  static mockup::ipc::Sender singleton;
+                  return singleton;
+               }
+
+            } // sender
+
+            namespace transaction
+            {
+               namespace manager
+               {
+                  mockup::ipc::Receiver& queue()
+                  {
+                     static mockup::ipc::Receiver singleton;
+                     return singleton;
+                  }
+
+               } // manager
+            } // transaction
+
+            namespace broker
+            {
+               void prepare()
+               {
+                  // server connect
+                  {
+                     message::server::connect::Reply reply;
+                     local::sender::queue().add( ipc::receive::id(), reply);
+                  }
+
+                  // transaction client connect
+                  {
+                     message::transaction::client::connect::Reply reply;
+                     reply.domain = "unittest-domain";
+                     reply.transactionManagerQueue = transaction::manager::queue().id();
+                     local::sender::queue().add( ipc::receive::id(), reply);
+                  }
+
+               }
+            } // broker
 
          } // <unnamed>
       } // local
@@ -226,6 +271,7 @@ namespace casual
       {
          local::Policy::reset();
 
+
          auto arguments = local::arguments();
 
          local::Call callHandler( arguments);
@@ -236,6 +282,37 @@ namespace casual
          ASSERT_TRUE( broker( message));
          EXPECT_TRUE( message.server.queue_id == local::Policy::id::instance());
       }
+
+
+      TEST( casual_common_service_context, real_connect)
+      {
+         auto bq = mockup::ipc::broker::id();
+
+         //
+         // Prepare "broker response"
+         //
+         {
+            local::broker::prepare();
+
+            //local::sender::queue().start();
+         }
+
+         auto arguments = local::arguments();
+         callee::handle::Call callHandler( arguments);
+
+         auto reader = queue::blocking::reader( mockup::ipc::broker::queue());
+         message::server::connect::Request message;
+
+         reader( message);
+
+         EXPECT_TRUE( message.server.pid == process::id());
+         EXPECT_TRUE( message.server.queue_id == ipc::receive::id());
+
+         ASSERT_TRUE( message.services.size() == 1);
+         EXPECT_TRUE( message.services.at( 0).name == "test_service");
+      }
+
+
 
 
       TEST( casual_common_service_context, connect_reply)

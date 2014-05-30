@@ -13,6 +13,9 @@
 #include "common/platform.h"
 #include "common/error.h"
 
+#include "common/string.h"
+#include "common/signal.h"
+
 #include <stdexcept>
 #include <string>
 
@@ -97,7 +100,7 @@ namespace casual
                   : Base( description) {}
 
                basic_signal()
-                  : Base( common::platform::getSignalDescription( signal)) {}
+                  : Base( common::signal::type::string( signal)) {}
 
                common::platform::signal_type getSignal() const
                {
@@ -108,6 +111,8 @@ namespace casual
             typedef basic_signal< common::platform::cSignal_Alarm> Timeout;
 
             typedef basic_signal< common::platform::cSignal_Terminate> Terminate;
+
+            typedef basic_signal< common::platform::cSignal_UserDefined> User;
 
 
             namespace child

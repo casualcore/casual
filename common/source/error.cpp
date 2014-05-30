@@ -43,17 +43,17 @@ namespace casual
             }
             catch( const exception::xatmi::severity::Error& exception)
             {
-               log::error << tperrnoStringRepresentation( exception.code()) << " - " << exception.what() << std::endl;
+               log::error << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
             catch( const exception::xatmi::severity::Information& exception)
             {
-               log::information << tperrnoStringRepresentation( exception.code()) << " - " << exception.what() << std::endl;
+               log::information << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
             catch( const exception::xatmi::severity::User& exception)
             {
-               log::debug << tperrnoStringRepresentation( exception.code()) << " - " << exception.what() << std::endl;
+               log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
             /*
@@ -75,12 +75,12 @@ namespace casual
             */
             catch( const std::exception& exception)
             {
-               log::error << tperrnoStringRepresentation( TPESYSTEM) << " - " << exception.what() << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
                return TPESYSTEM;
             }
             catch( ...)
             {
-               log::error << tperrnoStringRepresentation( TPESYSTEM) << " uexpected exception" << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " uexpected exception" << std::endl;
                return TPESYSTEM;
             }
 
@@ -94,47 +94,47 @@ namespace casual
             return strerror( errno);
          }
 
-         const std::string& tperrnoStringRepresentation( int error)
+         std::string string()
          {
-            static const std::map< int, std::string> mapping{
-               { TPEBADDESC, "TPEBADDESC"},
-               { TPEBLOCK, "TPEBLOCK"},
-               { TPEINVAL, "TPEINVAL"},
-               { TPELIMIT, "TPELIMIT"},
-               { TPENOENT, "TPENOENT"},
-               { TPEOS, "TPEOS"},
-               { TPEPROTO, "TPEPROTO"},
-               { TPESVCERR, "TPESVCERR"},
-               { TPESVCFAIL, "TPESVCFAIL"},
-               { TPESYSTEM, "TPESYSTEM"},
-               { TPETIME, "TPETIME"},
-               { TPETRAN, "TPETRAN"},
-               { TPGOTSIG, "TPGOTSIG"},
-               { TPEITYPE, "TPEITYPE"},
-               { TPEOTYPE, "TPEOTYPE"},
-               { TPEEVENT, "TPEEVENT"},
-               { TPEMATCH, "TPEMATCH"},
-            };
-
-
-            auto findIter = mapping.find( error);
-
-            if( findIter != mapping.end())
-            {
-               return findIter->second;
-            }
-            else
-            {
-               static const std::string noEntryFound = "No string representation was found";
-               return noEntryFound;
-            }
+            return strerror( errno);
          }
 
          namespace xatmi
          {
-            std::string error( int error)
+            std::string error( int code)
             {
-               return tperrnoStringRepresentation( error);
+               static const std::map< int, std::string> mapping{
+                  { TPEBADDESC, "TPEBADDESC"},
+                  { TPEBLOCK, "TPEBLOCK"},
+                  { TPEINVAL, "TPEINVAL"},
+                  { TPELIMIT, "TPELIMIT"},
+                  { TPENOENT, "TPENOENT"},
+                  { TPEOS, "TPEOS"},
+                  { TPEPROTO, "TPEPROTO"},
+                  { TPESVCERR, "TPESVCERR"},
+                  { TPESVCFAIL, "TPESVCFAIL"},
+                  { TPESYSTEM, "TPESYSTEM"},
+                  { TPETIME, "TPETIME"},
+                  { TPETRAN, "TPETRAN"},
+                  { TPGOTSIG, "TPGOTSIG"},
+                  { TPEITYPE, "TPEITYPE"},
+                  { TPEOTYPE, "TPEOTYPE"},
+                  { TPEEVENT, "TPEEVENT"},
+                  { TPEMATCH, "TPEMATCH"},
+               };
+
+
+               auto findIter = mapping.find( code);
+
+               if( findIter != mapping.end())
+               {
+                  return findIter->second;
+               }
+               else
+               {
+                  static const std::string noEntryFound = "No string representation was found";
+                  return noEntryFound;
+               }
             }
          } // xatmi
 

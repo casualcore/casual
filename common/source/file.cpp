@@ -59,7 +59,7 @@ namespace casual
          }
 
 
-         ScopedPath::operator const std::string&()
+         ScopedPath::operator const std::string&() const
          {
             return path();
          }
@@ -167,7 +167,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::error << "failed to create " << path << " - " << error::stringFromErrno() << std::endl;
+               log::error << "failed to create " << path << " - " << error::string() << std::endl;
                return false;
             }
 
@@ -178,7 +178,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::error << "failed to remove " << path << " - " << error::stringFromErrno() << std::endl;
+               log::error << "failed to remove " << path << " - " << error::string() << std::endl;
                return false;
             }
             return true;

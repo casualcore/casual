@@ -43,7 +43,6 @@ namespace casual
             request.server = message::server::Id::current();
 
             sender.add( ipc::receive::id(), request);
-            sender.start();
          }
 
          {
@@ -72,7 +71,6 @@ namespace casual
             {
                sender.add( ipc::receive::id(), request);
             }
-            sender.start();
          }
 
          {

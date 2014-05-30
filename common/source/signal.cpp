@@ -11,6 +11,7 @@
 #include "common/log.h"
 #include "common/process.h"
 
+
 #include <signal.h>
 #include <string.h>
 
@@ -78,13 +79,15 @@ namespace casual
 
                      signal( casual::common::platform::cSignal_ChildTerminated, casual_common_signal_handler);
                      */
-                     set( casual::common::platform::cSignal_Alarm);
+                     set( common::signal::type::alarm);
 
-                     set( casual::common::platform::cSignal_Terminate);
-                     set( casual::common::platform::cSignal_Quit);
-                     set( casual::common::platform::cSignal_Interupt);
+                     set( common::signal::type::terminate);
+                     set( common::signal::type::quit);
+                     set( common::signal::type::interupt);
 
-                     set( casual::common::platform::cSignal_ChildTerminated, SA_NOCLDSTOP);
+                     set( common::signal::type::child, SA_NOCLDSTOP);
+
+                     set( common::signal::type::user);
                   }
 
                   void set( int signal, int flags = 0)
@@ -133,6 +136,17 @@ namespace casual
 	{
 		namespace signal
 		{
+
+		   namespace type
+		   {
+
+            std::string string( type signal)
+            {
+               return strsignal( signal);
+            }
+
+         } // type
+
 			void handle()
 			{
 				const int signal = local::signal::Cache::instance().consume();
@@ -151,6 +165,11 @@ namespace casual
                case exception::signal::child::Terminate::value:
                {
                   throw exception::signal::child::Terminate();
+                  break;
+               }
+               case exception::signal::User::value:
+               {
+                  throw exception::signal::User();
                   break;
                }
                default:
@@ -199,13 +218,47 @@ namespace casual
 			}
 
 
-         void send( platform::pid_type pid, platform::signal_type signal)
+         void send( platform::pid_type pid, type::type signal)
          {
             if( kill( pid, signal) == -1)
             {
-               log::error << "failed to send signal (" << platform::getSignalDescription( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::stringFromErrno() << std::endl;
+               log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
             }
          }
+
+         void block( type::type signal)
+         {
+            sigset_t mask = signal;
+            if( sigprocmask( SIG_BLOCK, &mask, nullptr) != 0)
+            {
+               log::error << "failed to block signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
+            }
+         }
+
+
+         void unblock( type::type signal)
+         {
+            sigset_t mask = signal;
+            if( sigprocmask( SIG_UNBLOCK, &mask, nullptr) != 0)
+            {
+               log::error << "failed to unblock signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
+            }
+         }
+
+         namespace thread
+         {
+            //!
+            //! Send signal to thread
+            //!
+            void send( const std::thread& thread, type::type signal)
+            {
+               if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
+               {
+                  log::error << "failed to send signal (" << type::string( signal) << ") to thread: " << thread.get_id() << " - errno: " << errno << " - "<< error::string() << std::endl;
+               }
+
+            }
+         } // thread
 
 
 		} // signal

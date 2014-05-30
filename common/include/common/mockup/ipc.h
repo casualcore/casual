@@ -22,6 +22,7 @@ namespace casual
       {
          namespace ipc
          {
+            using id_type = platform::queue_id_type;
 
             struct Sender
             {
@@ -42,8 +43,6 @@ namespace casual
                   add( destination, common::ipc::message::Complete( type, archive.release()));
                }
 
-               void start();
-
             private:
                class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
@@ -53,6 +52,8 @@ namespace casual
             {
                Receiver();
                ~Receiver();
+               Receiver( Receiver&&);
+               Receiver& operator = ( Receiver&&);
 
                using type_type =  common::ipc::message::Complete::message_type_type;
                using id_type = platform::queue_id_type;
@@ -68,6 +69,18 @@ namespace casual
                move::basic_pimpl< Implementation> m_implementation;
             };
 
+
+            namespace broker
+            {
+
+
+               Receiver& queue();
+
+               id_type id();
+
+
+
+            } // broker
 
          } // ipc
       } // mockup

@@ -29,7 +29,7 @@ LinkArchive( "sftestproxy", ["obj/sf_testproxy.o"])
 
 Compile( "source/template_server.cpp", "obj/template_server.o")
 
-LinkAtmiServerResource( "test",
+LinkAtmiServer( "test",
 	[ "obj/template_server.o"],
 	[ "casual-xatmi", "casual-common", "casual-sf"],
 	"source/template_server.yaml",
@@ -49,21 +49,24 @@ LinkAtmiServerResource( "test",
 #
 # Compile and link VO:n
 #
-Compile( "source/sf_testvo.cpp", "obj/sf_testvo.o")
+
 
 LinkArchive( "sf-test-vo",
-    ["obj/sf_testvo.o"])
+    [
+	   Compile( "source/sf_testvo.cpp", "obj/sf_testvo.o")
+	])
 
 
 #
 # compile and link the sf-template-server
 #
-Compile( "source/template_sf_server.cpp", "obj/template_sf_server.o")
-Compile( "source/template_sf_server_implementation.cpp", "obj/template_sf_server_implementation.o")
+
 
 LinkAtmiServer("sf_test",
-    ["obj/template_sf_server.o",
-    "obj/template_sf_server_implementation.o"],
+    [
+	   Compile( "source/template_sf_server.cpp", "obj/template_sf_server.o"),
+	   Compile( "source/template_sf_server_implementation.cpp", "obj/template_sf_server_implementation.o"),
+    ],
     [
 	"sf-test-vo",
     "casual-xatmi",
@@ -77,46 +80,51 @@ LinkAtmiServer("sf_test",
 
 
 	
-Compile( "source/template_client.cpp", "obj/template_client.o")
+
 
 LinkExecutable( "test_client",
-	["obj/template_client.o"], ["casual-common", "casual-xatmi"])
+	[ 
+		Compile( "source/template_client.cpp", "obj/template_client.o")
+	], 
+    ["casual-common", "casual-xatmi"])
 	
 
 
-
-Compile( "source/test_multicall.cpp", "obj/test_multicall.o")
 
 LinkExecutable( "test_multicall_client",
-	["obj/test_multicall.o"], ["casual-common", "casual-xatmi", "casual-sf"])
+	[
+		Compile( "source/test_multicall.cpp", "obj/test_multicall.o")
+	], ["casual-common", "casual-xatmi", "casual-sf"])
 	
 
-Compile( "source/test_proxycall.cpp", "obj/test_proxycall.o")
-
 LinkExecutable( "test_proxycall_client",
-	["obj/test_proxycall.o"], 
+	[ 
+		Compile( "source/test_proxycall.cpp", "obj/test_proxycall.o")
+    ], 
 	["casual-sf", "sftestproxy", "casual-xatmi"])
 	
 	
 #
 # unittest
 #
-Compile( "unittest/isolated/source/test_yaml_sf_generation.cpp", "unittest/isolated/obj/test_yaml_sf_generation.o")
 
-LinkIsolatedUnittest( "casual-test-isolated",
-    ["unittest/isolated/obj/test_yaml_sf_generation.o"],
+LinkIsolatedUnittest( "test-casual-generation-isolated",
+    [
+	   Compile( "unittest/isolated/source/test_yaml_sf_generation.cpp", "unittest/isolated/obj/test_yaml_sf_generation.o")
+	],
     ["casual-sf", "casual-xatmi", "yaml-cpp"])
 	
 	
 #
 # Compile and link detoct-generated vo and server
 #
-Compile( "source/sf_testserverserver.cpp", "obj/sf_testserverserver.o")
-Compile( "source/sf_testserverimplementation.cpp", "obj/sf_testserverimplementation.o")
+
 
 LinkAtmiServer("sf-detoct-test-server",
-    ["obj/sf_testserverserver.o",
-    "obj/sf_testserverimplementation.o"],
+    [ 
+	   Compile( "source/sf_testserverserver.cpp", "obj/sf_testserverserver.o"),
+	   Compile( "source/sf_testserverimplementation.cpp", "obj/sf_testserverimplementation.o")
+	],
     ["sf-test-vo",
     "casual-sf",
     "casual-xatmi"],
