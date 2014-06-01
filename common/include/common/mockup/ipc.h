@@ -31,10 +31,10 @@ namespace casual
                Sender();
                ~Sender();
 
-               void add( queue_id_type destination, common::ipc::message::Complete&& message) const;
+               void add( queue_id_type destination, const common::ipc::message::Complete& message) const;
 
                template< typename M>
-               void add( queue_id_type destination, M&& message) const
+               void add( queue_id_type destination, M& message) const
                {
                   marshal::output::Binary archive;
                   archive << message;
@@ -74,16 +74,48 @@ namespace casual
             namespace broker
             {
 
-
                Receiver& queue();
 
                id_type id();
 
-
-
             } // broker
 
+            namespace receive
+            {
+               struct Sender
+               {
+                  bool operator () ( const common::ipc::message::Complete& message) const;
+
+                  bool operator () ( const common::ipc::message::Complete& message, const long flags) const;
+
+               private:
+                  mockup::ipc::Sender m_sender;
+               };
+
+               Sender& queue();
+
+               id_type id();
+            }
+
          } // ipc
+
+
+         template< platform::pid_type PID>
+         struct Instance
+         {
+            platform::pid_type pid()
+            {
+               return PID;
+            }
+
+            ipc::Receiver& queue()
+            {
+               static ipc::Receiver singleton;
+               return singleton;
+            }
+
+         };
+
       } // mockup
    } // common
 

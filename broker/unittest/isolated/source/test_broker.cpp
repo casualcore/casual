@@ -14,8 +14,6 @@
 #include "broker/handle.h"
 #include "broker/action.h"
 
-
-#include "common/mockup.h"
 #include "common/mockup/ipc.h"
 
 
@@ -29,27 +27,11 @@ namespace casual
 	   {
 
 
-	      template< platform::pid_type PID>
-	      struct Instance
-	      {
-	         platform::pid_type pid()
-            {
-               return PID;
-            }
+	      static common::mockup::Instance< 10> server10;
 
-            mockup::ipc::Receiver& queue()
-            {
-               static mockup::ipc::Receiver singleton;
-               return singleton;
-            }
+	      static common::mockup::Instance< 20> server20;
 
-	      };
-
-	      static Instance< 10> server10;
-
-	      static Instance< 20> server20;
-
-	      static Instance< 30> server30;
+	      static common::mockup::Instance< 30> server30;
 
 
 	      State initializeState()

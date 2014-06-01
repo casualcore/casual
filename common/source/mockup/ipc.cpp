@@ -462,13 +462,18 @@ namespace casual
             {
                using base_type = local::basic_implementation< local::Sender>;
 
-               void add( queue_id_type destination, common::ipc::message::Complete&& message)
+               void add( queue_id_type destination, const common::ipc::message::Complete& message)
                {
                   //signal::clear();
 
                   local::message::ToSend toSend;
                   toSend.destination = destination;
-                  toSend.message = std::move( message);
+
+                  toSend.message.complete = message.complete;
+                  toSend.message.correlation = message.correlation;
+                  toSend.message.payload = message.payload;
+                  toSend.message.type = message.type;
+
                   send( toSend);
                   //start();
                }
@@ -490,9 +495,9 @@ namespace casual
 
             }
 
-            void Sender::add( queue_id_type destination, common::ipc::message::Complete&& message) const
+            void Sender::add( queue_id_type destination, const common::ipc::message::Complete& message) const
             {
-               m_implementation->add( destination, std::move( message));
+               m_implementation->add( destination, message);
             }
 
 
@@ -597,6 +602,32 @@ namespace casual
             } // broker
 
 
+            namespace receive
+            {
+               bool Sender::operator () ( const common::ipc::message::Complete& message) const
+               {
+                  m_sender.add( common::ipc::receive::id(), message);
+                  return true;
+               }
+
+
+               bool Sender::operator () ( const common::ipc::message::Complete& message, const long flags) const
+               {
+                  m_sender.add( common::ipc::receive::id(), message);
+                  return true;
+               }
+
+               Sender& queue()
+               {
+                  static Sender singelton;
+                  return singelton;
+               }
+
+               id_type id()
+               {
+                  return common::ipc::receive::id();
+               }
+            }
          } // ipc
       } // mockup
    } // common

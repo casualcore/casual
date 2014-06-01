@@ -10,11 +10,7 @@
 
 #include "transaction/manager/state.h"
 
-#include "common/environment.h"
-#include "common/internal/trace.h"
-#include "common/internal/log.h"
 
-#include "sf/log.h"
 
 namespace casual
 {
@@ -23,39 +19,7 @@ namespace casual
       namespace action
       {
 
-         template< typename BQ, typename RQ>
-         void configure( State& state, BQ& brokerWriter, RQ& receiveQueue)
-         {
-            {
-               common::trace::internal::Scope trace( "connect to broker");
-
-               //
-               // Do the initialization dance with the broker
-               //
-               common::message::transaction::Connect connect;
-
-               connect.path = common::process::path();
-               connect.server.queue_id = receiveQueue.ipc().id();
-
-               brokerWriter( connect);
-            }
-
-            {
-               common::trace::internal::Scope trace( "configure");
-
-               //
-               // Wait for configuration
-               //
-               common::message::transaction::Configuration configuration;
-               receiveQueue( configuration);
-
-               //
-               // configure state
-               //
-               state::configure( state, configuration);
-            }
-
-         }
+         void configure( State& state);
 
 
 

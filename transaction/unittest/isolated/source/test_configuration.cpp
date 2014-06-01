@@ -14,7 +14,7 @@
 #include "transaction/manager/action.h"
 
 #include "common/message.h"
-#include "common/mockup.h"
+#include "common/mockup/ipc.h"
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
 
@@ -23,10 +23,18 @@ namespace casual
 
    namespace local
    {
-      namespace id
+      namespace ipc
       {
-         common::platform::queue_id_type broker() { return 10;}
-         common::platform::queue_id_type tm() { return 20;}
+
+         namespace tm
+         {
+            static common::mockup::ipc::Sender sender;
+         } // tm
+
+         void clear()
+         {
+            common::mockup::ipc::broker::queue().clear();
+         }
 
       } // id
 
@@ -54,8 +62,7 @@ namespace casual
          manager.closeinfo = "some close info 2";
          result.resources.push_back( manager);
 
-         common::mockup::queue::blocking::Writer tmWriter( local::id::tm());
-         tmWriter( result);
+         ipc::tm::sender.add( common::ipc::receive::id(), result);
       }
 
 
@@ -65,7 +72,7 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_xa_config__expect_2_resources)
    {
-      common::mockup::queue::clearAllQueues();
+      local::ipc::clear();
 
       // prepare queues
       local::prepareConfigurationResponse();
@@ -74,10 +81,7 @@ namespace casual
       auto path = local::transactionLogPath();
       transaction::State state( path);
 
-      common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
-      common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};
-
-      transaction::action::configure( state, brokerQueue, queueReader);
+      transaction::action::configure( state);
 
       ASSERT_TRUE( state.xaConfig.size() == 2);
       EXPECT_TRUE( state.xaConfig.at( "db2").xa_struct_name == "db2xa_switch_static_std");
@@ -86,7 +90,7 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_resource__expect_2_resources)
    {
-      common::mockup::queue::clearAllQueues();
+      local::ipc::clear();
 
       // prepare queues
       local::prepareConfigurationResponse();
@@ -95,10 +99,7 @@ namespace casual
       auto path = local::transactionLogPath();
       transaction::State state( path);
 
-      common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
-      common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};
-
-      transaction::action::configure( state, brokerQueue, queueReader);
+      transaction::action::configure( state);
 
       ASSERT_TRUE( state.resources.size() == 2);
       EXPECT_TRUE( state.resources.at( 0).id == 1);

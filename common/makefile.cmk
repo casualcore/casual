@@ -51,7 +51,7 @@ LinkLibrary( "casual-common",
 #
 LinkLibrary( "casual-mockup", 
      [
-       Compile( "source/mockup.cpp", "obj/mockup.o"),
+       #Compile( "source/mockup.cpp", "obj/mockup.o"),
        Compile( "source/mockup/ipc.cpp", "obj/mockup/ipc.o"),
      ],
      ["casual-common"])
