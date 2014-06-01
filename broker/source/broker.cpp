@@ -6,7 +6,7 @@
 //!
 
 #include "broker/broker.h"
-#include "broker/broker_implementation.h"
+#include "broker/handle.h"
 #include "broker/action.h"
 
 #include "config/domain.h"

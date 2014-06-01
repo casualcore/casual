@@ -83,7 +83,7 @@ namespace casual
 
          } // ipc
 
-         /*
+
 
          namespace queue
          {
@@ -130,7 +130,7 @@ namespace casual
          } // queue
 
 
-      */
+
 
       } // mockup
    } // common

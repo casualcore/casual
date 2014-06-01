@@ -11,7 +11,8 @@
 #include <gtest/gtest.h>
 
 #include "broker/broker.h"
-#include "broker/broker_implementation.h"
+#include "broker/handle.h"
+#include "broker/action.h"
 
 
 #include "common/mockup.h"
@@ -27,8 +28,6 @@ namespace casual
 	   namespace local
 	   {
 
-	      //typedef mockup::queue::blocking::basic_writer< broker::policy::Broker> writer_queue;
-	      //typedef mockup::queue::non_blocking::basic_reader< broker::policy::Broker> reader_queue;
 
 	      template< platform::pid_type PID>
 	      struct Instance

@@ -38,11 +38,23 @@ SetLibraryPaths( LIBRARY_PATHS)
 #    admin/obj/servervo.o,
 #    ,\
 #    casual-sf ) 
+
+
+
+casual_broker_logic_objectfiles = [
+   Compile( "source/broker.cpp", "obj/broker.o"),
+   Compile( "source/handle.cpp", "obj/handle.o"),
+   Compile( "source/action.cpp", "obj/action.o"),
+   ]
+
+
+LinkArchive( 'casual-broker-logic',
+   casual_broker_logic_objectfiles )
+
+
 	
 casual_broker_objectfiles = [
-    Compile( "source/broker.cpp", "obj/broker.o"),
     Compile( "source/broker_main.cpp", "obj/broker_main.o"),
-    Compile( "source/action.cpp", "obj/action.o"),
     
     Compile( "admin/source/adminserverimplementation.cpp", "obj/adminserverimplementation.o"),
     Compile( "admin/source/adminserver.cpp", "obj/adminserver.o"),
@@ -51,10 +63,11 @@ casual_broker_objectfiles = [
 LinkExecutable( "casual-broker",
 	casual_broker_objectfiles,
 	[
+     "casual-broker-logic",
      "casual-common",
-	"casual-sf",
-    "casual-xatmi",
-    "casual-configuration"]
+     "casual-sf",
+     "casual-xatmi",
+     "casual-configuration"]
    )
    
    #casual-broker-admin-vo )
@@ -82,8 +95,9 @@ test_casual_broker_isolated = [
 
 
 LinkIsolatedUnittest( "test-casual-broker-isolated",
-    ["obj/action.o"] + test_casual_broker_isolated,
+   test_casual_broker_isolated,
     [
+     "casual-broker-logic",
      "casual-common", 
      "casual-sf", 
      "casual-configuration", 
