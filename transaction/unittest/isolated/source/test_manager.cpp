@@ -11,7 +11,7 @@
 #include "transaction/manager/handle.h"
 
 
-#include "common/mockup.h"
+#include "common/mockup/ipc.h"
 #include "common/ipc.h"
 #include "common/message_dispatch.h"
 #include "common/environment.h"
@@ -24,28 +24,32 @@ namespace casual
 
    namespace transaction
    {
-
-
       namespace local
       {
          namespace ipc
          {
-            const common::platform::queue_id_type broker = 1;
-            const common::platform::queue_id_type tm = 10;
+            static common::mockup::Instance< 101> rm1_1;
+            static common::mockup::Instance< 102> rm1_2;
+            static common::mockup::Instance< 103> rm1_3;
 
-            const common::platform::queue_id_type rm1_1 = 101;
-            const common::platform::queue_id_type rm1_2 = 102;
-            const common::platform::queue_id_type rm1_3 = 103;
+            static common::mockup::Instance< 201> rm2_1;
+            static common::mockup::Instance< 202> rm2_2;
+            static common::mockup::Instance< 203> rm2_3;
 
-            const common::platform::queue_id_type rm2_1 = 201;
-            const common::platform::queue_id_type rm2_2 = 202;
-            const common::platform::queue_id_type rm2_3 = 203;
 
+            void clear()
+            {
+               rm1_1.queue().clear();
+               rm1_2.queue().clear();
+               rm1_3.queue().clear();
+               rm2_1.queue().clear();
+               rm2_2.queue().clear();
+               rm2_3.queue().clear();
+
+               common::mockup::ipc::broker::queue().clear();
+            }
 
          } // ipc
-
-
-
 
 
          State state( state::resource::Proxy::Instance::State mode = state::resource::Proxy::Instance::State::idle)
@@ -64,18 +68,18 @@ namespace casual
 
             state::resource::Proxy::Instance instance;
             instance.id = 1;
-            instance.server.queue_id = ipc::rm1_1;
-            instance.server.pid = ipc::rm1_1;
+            instance.server.queue_id = ipc::rm1_1.queue().id();
+            instance.server.pid = ipc::rm1_1.pid();
             instance.state = mode;
 
             proxy.instances.push_back( instance);
 
-            instance.server.queue_id = ipc::rm1_2;
-            instance.server.pid = ipc::rm1_2;
+            instance.server.queue_id = ipc::rm1_2.queue().id();
+            instance.server.pid = ipc::rm1_2.pid();
             proxy.instances.push_back( instance);
 
-            instance.server.queue_id = ipc::rm1_3;
-            instance.server.pid = ipc::rm1_3;
+            instance.server.queue_id = ipc::rm1_3.queue().id();
+            instance.server.pid = ipc::rm1_3.pid();
             proxy.instances.push_back( instance);
 
             state.resources.push_back( proxy);
@@ -86,17 +90,17 @@ namespace casual
             proxy.closeinfo = "some close info 2";
 
             instance.id = 2;
-            instance.server.queue_id = ipc::rm2_1;
-            instance.server.pid = ipc::rm2_1;
+            instance.server.queue_id = ipc::rm2_1.queue().id();
+            instance.server.pid = ipc::rm2_1.pid();
             proxy.instances.push_back( instance);
 
-            instance.server.queue_id = ipc::rm2_2;
-            instance.server.pid = ipc::rm2_2;
+            instance.server.queue_id = ipc::rm2_2.queue().id();
+            instance.server.pid = ipc::rm2_2.pid();
             proxy.instances.push_back( instance);
 
 
-            instance.server.queue_id = ipc::rm2_3;
-            instance.server.pid = ipc::rm2_3;
+            instance.server.queue_id = ipc::rm2_3.queue().id();
+            instance.server.pid = ipc::rm2_3.pid();
             proxy.instances.push_back( instance);
 
             state.resources.push_back( proxy);
@@ -106,34 +110,6 @@ namespace casual
             return state;
          }
 
-         namespace mockup
-         {
-            namespace queue
-            {
-               namespace blocking
-               {
-
-                  using Reader = common::mockup::queue::blocking::basic_reader< policy::Manager>;
-                  using Writer = common::mockup::queue::blocking::basic_writer< policy::Manager>;
-
-               } // blocking
-
-               namespace non_blocking
-               {
-                  using Reader = common::mockup::queue::non_blocking::basic_reader< policy::Manager>;
-                  using Writer = common::mockup::queue::non_blocking::basic_writer< policy::Manager>;
-
-               } // non_blocking
-
-               struct Policy
-               {
-                  using block_writer = blocking::Writer;
-                  using non_block_writer = non_blocking::Writer;
-               };
-
-            } // queue
-
-         } // mockup
 
 
          common::message::dispatch::Handler handler( State& state)
@@ -141,25 +117,30 @@ namespace casual
             common::message::dispatch::Handler handler;
 
             handler.add( handle::Begin{ state});
-            handler.add( handle::basic_commit< mockup::queue::Policy>{ state});
+            handler.add( handle::Commit{ state});
             handler.add( handle::Rollback{ state});
-            handler.add( handle::resource::reply::basic_connect< mockup::queue::Policy>( state, ipc::broker));
+            handler.add( handle::resource::reply::Connect{ state});
             handler.add( handle::resource::reply::Prepare{ state});
             handler.add( handle::resource::reply::Commit{ state});
             handler.add( handle::resource::reply::Rollback{ state});
-            handler.add( handle::domain::basic_prepare< mockup::queue::Policy>{ state});
-            handler.add( handle::domain::basic_commit< mockup::queue::Policy>{ state});
-            handler.add( handle::domain::basic_rollback< mockup::queue::Policy>{ state});
+            handler.add( handle::domain::Prepare{ state});
+            handler.add( handle::domain::Commit{ state});
+            handler.add( handle::domain::Rollback{ state});
 
             return handler;
          }
 
 
-         void readUntilEmpty( State& state)
+         void handleDispatch( State& state)
          {
             auto handler = local::handler( state);
 
-            local::mockup::queue::non_blocking::Reader tmQueue{ local::ipc::tm, state};
+            auto tmQueue = common::queue::non_blocking::reader( common::ipc::receive::queue());
+
+            //
+            // "make sure" mockup-queues has time to do their work...
+            //
+            common::process::sleep( std::chrono::milliseconds( 2));
 
             while( true)
             {
@@ -178,21 +159,23 @@ namespace casual
 
       TEST( casual_transaction_manager, one_resource_connect__expect_no_broker_connect)
       {
-         common::mockup::queue::clearAllQueues();
+         local::ipc::clear();
+
+         common::mockup::ipc::Sender sender;
 
          State state = local::state( state::resource::Proxy::Instance::State::started);
-         local::mockup::queue::non_blocking::Writer writer{ local::ipc::tm, state};
 
          common::message::transaction::resource::connect::Reply reply;
-         reply.id.queue_id = local::ipc::rm1_1;
-         reply.id.pid = local::ipc::rm1_1;
+         reply.id.queue_id = local::ipc::rm1_1.queue().id();
+         reply.id.pid = local::ipc::rm1_1.pid();
          reply.resource = 1;
          reply.state = XA_OK;
-         writer( reply);
 
-         local::readUntilEmpty( state);
+         sender.add( common::ipc::receive::id(), reply);
 
-         common::mockup::queue::non_blocking::Reader brokerReader( local::ipc::broker);
+         local::handleDispatch( state);
+
+         auto brokerReader = common::queue::non_blocking::reader( common::mockup::ipc::broker::queue());
          common::message::transaction::Connected connected;
          EXPECT_FALSE( brokerReader( connected));
       }
@@ -200,33 +183,33 @@ namespace casual
 
       TEST( casual_transaction_manager, two_instance_of_one_resource_connect__expect_no_broker_connect)
       {
-         common::mockup::queue::clearAllQueues();
+         local::ipc::clear();
 
-         common::mockup::queue::non_blocking::Writer writer{ local::ipc::tm};
+         common::mockup::ipc::Sender sender;
 
 
          {
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = local::ipc::rm2_1;
-            reply.id.pid = local::ipc::rm2_1;
+            reply.id.queue_id = local::ipc::rm2_1.queue().id();
+            reply.id.pid = local::ipc::rm2_1.pid();
             reply.resource = 2;
             reply.state = XA_OK;
-            writer( reply);
+            sender.add( common::ipc::receive::id(), reply);
          }
 
          {
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = local::ipc::rm2_2;
-            reply.id.pid = local::ipc::rm2_2;
+            reply.id.queue_id = local::ipc::rm2_2.queue().id();
+            reply.id.pid = local::ipc::rm2_2.pid();
             reply.resource = 2;
             reply.state = XA_OK;
-            writer( reply);
+            sender.add( common::ipc::receive::id(), reply);
          }
 
          State state = local::state( state::resource::Proxy::Instance::State::started);
-         local::readUntilEmpty( state);
+         local::handleDispatch( state);
 
-         common::mockup::queue::non_blocking::Reader brokerReader( local::ipc::broker);
+         auto brokerReader = common::queue::non_blocking::reader( common::mockup::ipc::broker::queue());
          common::message::transaction::Connected connected;
          EXPECT_FALSE( brokerReader( connected));
 
@@ -235,36 +218,37 @@ namespace casual
 
       TEST( casual_transaction_manager, one_instance_of_each_resource_connect__expect_broker_connect)
       {
-         common::mockup::queue::clearAllQueues();
+         local::ipc::clear();
 
-         common::mockup::queue::non_blocking::Writer writer{ local::ipc::tm};
+         common::mockup::ipc::Sender sender;
 
 
          {
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = local::ipc::rm2_1;
-            reply.id.pid = local::ipc::rm2_1;
+            reply.id.queue_id = local::ipc::rm2_1.queue().id();
+            reply.id.pid = local::ipc::rm2_1.pid();
             reply.resource = 2;
             reply.state = XA_OK;
-            writer( reply);
+            sender.add( common::ipc::receive::id(), reply);
          }
 
          {
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = local::ipc::rm1_1;
-            reply.id.pid = local::ipc::rm1_1;
+            reply.id.queue_id = local::ipc::rm1_1.queue().id();
+            reply.id.pid = local::ipc::rm1_1.pid();
             reply.resource = 1;
             reply.state = XA_OK;
-            writer( reply);
+            sender.add( common::ipc::receive::id(), reply);
          }
 
+
          State state = local::state( state::resource::Proxy::Instance::State::started);
-         local::readUntilEmpty( state);
+         local::handleDispatch( state);
 
          // We expect broker reply
-         common::mockup::queue::non_blocking::Reader brokerReader( local::ipc::broker);
+         auto brokerReader = common::queue::blocking::reader( common::mockup::ipc::broker::queue());
          common::message::transaction::Connected connected;
-         ASSERT_TRUE( brokerReader( connected));
+         brokerReader( connected);
          EXPECT_TRUE( connected.success);
 
       }

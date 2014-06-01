@@ -331,6 +331,7 @@ namespace casual
 
 
 
+
          template< typename R, typename C>
          auto sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
          {

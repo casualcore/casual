@@ -72,12 +72,23 @@ namespace casual
 
 		};
 
+		inline std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
+		{
+		   return out << uuid.string();
+		}
+
+
 	} // common
 } // casaul
 
 bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs);
 
 bool operator == ( const casual::common::Uuid::uuid_type& rhs, const casual::common::Uuid& lhs);
+
+
+
+
+
 
 
 

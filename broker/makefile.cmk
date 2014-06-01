@@ -38,26 +38,36 @@ SetLibraryPaths( LIBRARY_PATHS)
 #    admin/obj/servervo.o,
 #    ,\
 #    casual-sf ) 
+
+
+
+casual_broker_logic_objectfiles = [
+   Compile( "source/broker.cpp", "obj/broker.o"),
+   Compile( "source/handle.cpp", "obj/handle.o"),
+   Compile( "source/action.cpp", "obj/action.o"),
+   ]
+
+
+LinkArchive( 'casual-broker-logic',
+   casual_broker_logic_objectfiles )
+
+
 	
-
-Compile( "source/broker.cpp", "obj/broker.o")
-Compile( "source/broker_main.cpp", "obj/broker_main.o")
-Compile( "source/action.cpp", "obj/action.o")
-
-Compile( "admin/source/adminserverimplementation.cpp", "obj/adminserverimplementation.o")
-Compile( "admin/source/adminserver.cpp", "obj/adminserver.o")
-
+casual_broker_objectfiles = [
+    Compile( "source/broker_main.cpp", "obj/broker_main.o"),
+    
+    Compile( "admin/source/adminserverimplementation.cpp", "obj/adminserverimplementation.o"),
+    Compile( "admin/source/adminserver.cpp", "obj/adminserver.o"),
+]
 
 LinkExecutable( "casual-broker",
-	["obj/broker.o",
-	"obj/broker_main.o",
-	"obj/action.o",
-	"obj/adminserverimplementation.o",
-	"obj/adminserver.o"],
-	["casual-common",
-	"casual-sf",
-    "casual-xatmi",
-    "casual-configuration"]
+	casual_broker_objectfiles,
+	[
+     "casual-broker-logic",
+     "casual-common",
+     "casual-sf",
+     "casual-xatmi",
+     "casual-configuration"]
    )
    
    #casual-broker-admin-vo )
@@ -66,10 +76,10 @@ LinkExecutable( "casual-broker",
 #
 # admin-terminal
 #
-Compile( "admin/source/broker_admin.cpp", "obj/broker_admin.o")
+
 
 LinkExecutable( "casual-broker-admin",
-    ["obj/broker_admin.o"],
+    [ Compile( "admin/source/broker_admin.cpp", "obj/broker_admin.o")],
     ["casual-common", "casual-sf", "casual-xatmi"])
 	
 
@@ -77,18 +87,23 @@ LinkExecutable( "casual-broker-admin",
 #
 # unittest
 #
-Compile( "unittest/isolated/source/test_broker.cpp", "unittest/isolated/obj/test_broker.o")
-Compile( "unittest/isolated/source/test_broker_confguration.cpp", "unittest/isolated/obj/test_broker_confguration.o")
-Compile( "unittest/isolated/source/test_broker_transformation.cpp", "unittest/isolated/obj/test_broker_transformation.o")
+test_casual_broker_isolated = [
+    Compile( "unittest/isolated/source/test_broker.cpp", "unittest/isolated/obj/test_broker.o"),
+    Compile( "unittest/isolated/source/test_broker_confguration.cpp", "unittest/isolated/obj/test_broker_confguration.o"),
+    Compile( "unittest/isolated/source/test_broker_transformation.cpp", "unittest/isolated/obj/test_broker_transformation.o"),
+]
 
 
-
-LinkIsolatedUnittest( "casual-broker-isolated",
-    ["obj/action.o",
-	"unittest/isolated/obj/test_broker.o",
-	"unittest/isolated/obj/test_broker_confguration.o",
-	"unittest/isolated/obj/test_broker_transformation.o"],
-    ["casual-common", "casual-sf", "casual-configuration", "casual-mockup"])
+LinkIsolatedUnittest( "test-casual-broker-isolated",
+   test_casual_broker_isolated,
+    [
+     "casual-broker-logic",
+     "casual-common", 
+     "casual-sf", 
+     "casual-configuration", 
+     "casual-mockup-unittest-environment", 
+     "casual-mockup",
+     ])
 
 	
 #

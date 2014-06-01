@@ -35,6 +35,13 @@ namespace casual
       namespace log
       {
 
+
+         namespace thread
+         {
+            std::mutex Safe::m_mutext;
+
+         } // thread
+
          namespace local
          {
             namespace
@@ -160,6 +167,7 @@ namespace casual
                      { log::category::Type::casual_debug, { bufferFactory< log::category::Type::casual_debug>}},
                      { log::category::Type::casual_trace, { bufferFactory< log::category::Type::casual_trace>}},
                      { log::category::Type::casual_transaction, { bufferFactory< log::category::Type::casual_transaction>}},
+                     { log::category::Type::casual_ipc, { bufferFactory< log::category::Type::casual_ipc>}},
 
                      { log::category::Type::debug, { bufferFactory< log::category::Type::debug>}},
                      { log::category::Type::trace, { bufferFactory< log::category::Type::trace>}},
@@ -203,6 +211,7 @@ namespace casual
                   case Type::casual_debug: return "casual.debug"; break;
                   case Type::casual_trace: return "casual.trace"; break;
                   case Type::casual_transaction: return "casual.transaction"; break;
+                  case Type::casual_ipc: return "casual.ipc"; break;
 
                   case Type::debug: return "debug"; break;
                   case Type::trace: return "trace"; break;
@@ -218,11 +227,15 @@ namespace casual
 
          namespace internal
          {
+
             internal::Stream debug{ local::getActiveBuffer( category::Type::casual_debug)};
 
             internal::Stream trace{ local::getActiveBuffer( category::Type::casual_trace)};
 
             internal::Stream transaction{ local::getActiveBuffer( category::Type::casual_transaction)};
+
+            internal::Stream ipc{ local::getActiveBuffer( category::Type::casual_ipc)};
+
 
          } // internal
 
@@ -240,6 +253,8 @@ namespace casual
          // Always on
          //
          internal::Stream error{ local::getBuffer( log::category::Type::error).factory()};
+
+
 
 
          namespace local

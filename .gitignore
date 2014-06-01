@@ -19,6 +19,7 @@ bin/
 #
 *.mk
 
+.unittest_domain_home/
 
 /casual.env
 /casual_build_environment

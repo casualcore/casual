@@ -225,7 +225,7 @@ int tpunadvertise( const char* const svcname)
 
 const char* tperrnostring( int error)
 {
-   return casual::common::error::tperrnoStringRepresentation( error).c_str();
+   return casual::common::error::xatmi::error( error).c_str();
 }
 
 int tpsvrinit( int argc, char **argv)

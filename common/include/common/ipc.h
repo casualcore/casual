@@ -136,8 +136,9 @@ namespace casual
 
                base_queue( base_queue&& rhs)
                {
-                  m_id = rhs.m_id;
-                  rhs.m_id = 0;
+                  std::swap( m_id, rhs.m_id);
+                  // m_id = rhs.m_id;
+                  //rhs.m_id = 0;
                }
 
 
@@ -244,6 +245,11 @@ namespace casual
                //!
                std::vector< message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
 
+               //!
+               //! Clear and discard all messages in queue.
+               //!
+               void clear();
+
             private:
 
                typedef std::deque< message::Complete> cache_type;
@@ -266,7 +272,7 @@ namespace casual
          {
             send::Queue::id_type id();
 
-            send::Queue& queue();
+            //send::Queue& queue();
 
          } // broker
 

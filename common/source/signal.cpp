@@ -11,6 +11,7 @@
 #include "common/log.h"
 #include "common/process.h"
 
+
 #include <signal.h>
 #include <string.h>
 
@@ -22,88 +23,109 @@ extern "C"
 	void casual_common_signal_handler( int signal);
 }
 
-namespace local
+namespace casual
 {
-	namespace
-	{
-		struct LastSignal
-		{
-			static LastSignal& instance()
-			{
-				static LastSignal singleton;
-				return singleton;
-			}
 
-			void add( int signal)
-			{
-			   m_signals.push_back( signal);
-			}
+   namespace common
+   {
+      namespace local
+      {
+         namespace
+         {
+            namespace signal
+            {
+               struct Cache
+               {
+                  static Cache& instance()
+                  {
+                     static Cache singleton;
+                     return singleton;
+                  }
 
-			int consume()
-			{
-			   if( !m_signals.empty())
-			   {
-			      int temp = m_signals.front();
-               m_signals.pop_back();
-               return temp;
-			   }
-			   return 0;
-			}
+                  void add( int signal)
+                  {
+                     m_signals.push_back( signal);
+                  }
 
-		private:
-			LastSignal()
-			{
-				//
-				// Register all the signals
-				//
-			   /*
-				signal( casual::common::platform::cSignal_Alarm, casual_common_signal_handler);
+                  int consume()
+                  {
+                     if( !m_signals.empty())
+                     {
+                        int temp = m_signals.front();
+                        m_signals.pop_back();
+                        return temp;
+                     }
+                     return 0;
+                  }
 
-				signal( casual::common::platform::cSignal_Terminate, casual_common_signal_handler);
-				signal( casual::common::platform::cSignal_Kill, casual_common_signal_handler);
-				signal( casual::common::platform::cSignal_Quit, casual_common_signal_handler);
-				signal( casual::common::platform::cSignal_Interupt, casual_common_signal_handler);
+                  void clear()
+                  {
+                     m_signals.clear();
+                  }
 
-				signal( casual::common::platform::cSignal_ChildTerminated, casual_common_signal_handler);
-            */
-			   set( casual::common::platform::cSignal_Alarm);
+               private:
+                  Cache()
+                  {
+                     //
+                     // Register all the signals
+                     //
+                     /*
+                     signal( casual::common::platform::cSignal_Alarm, casual_common_signal_handler);
 
-            set( casual::common::platform::cSignal_Terminate);
-            set( casual::common::platform::cSignal_Quit);
-            set( casual::common::platform::cSignal_Interupt);
+                     signal( casual::common::platform::cSignal_Terminate, casual_common_signal_handler);
+                     signal( casual::common::platform::cSignal_Kill, casual_common_signal_handler);
+                     signal( casual::common::platform::cSignal_Quit, casual_common_signal_handler);
+                     signal( casual::common::platform::cSignal_Interupt, casual_common_signal_handler);
 
-            set( casual::common::platform::cSignal_ChildTerminated, SA_NOCLDSTOP);
-			}
+                     signal( casual::common::platform::cSignal_ChildTerminated, casual_common_signal_handler);
+                     */
+                     set( common::signal::type::alarm);
 
-			void set( int signal, int flags = 0)
-			{
-			   struct sigaction sa;
+                     set( common::signal::type::terminate);
+                     set( common::signal::type::quit);
+                     set( common::signal::type::interupt);
 
-			   memset(&sa, 0, sizeof(sa));
-			   sa.sa_handler = casual_common_signal_handler;
-			   sa.sa_flags = flags | SA_RESTART;
+                     set( common::signal::type::child, SA_NOCLDSTOP);
 
-			   sigaction( signal, &sa, 0);
-			}
+                     set( common::signal::type::user);
+                  }
 
-			//
-			// TODO: atomic?
-			//
-			std::deque< int> m_signals;
-		};
+                  void set( int signal, int flags = 0)
+                  {
+                     struct sigaction sa;
 
-		//
-		// We need to instantiate to register the signals
-		//
-		LastSignal& globalCrap = LastSignal::instance();
-	} // <unnamed>
-} // local
+                     memset(&sa, 0, sizeof(sa));
+                     sa.sa_handler = casual_common_signal_handler;
+                     sa.sa_flags = flags | SA_RESTART;
+
+                     sigaction( signal, &sa, 0);
+                  }
+
+                  //
+                  // TODO: atomic?
+                  //
+                  std::deque< int> m_signals;
+               };
+
+
+               //
+               // We need to instantiate to register the signals
+               //
+               Cache& globalCrap = Cache::instance();
+
+            } // signal
+
+
+         } // <unnamed>
+      } // local
+   } // common
+} // casual
 
 
 
 void casual_common_signal_handler( int signal)
 {
-	local::globalCrap.add( signal);
+	casual::common::local::signal::Cache::instance().add( signal);
 }
 
 
@@ -114,9 +136,20 @@ namespace casual
 	{
 		namespace signal
 		{
+
+		   namespace type
+		   {
+
+            std::string string( type signal)
+            {
+               return strsignal( signal);
+            }
+
+         } // type
+
 			void handle()
 			{
-				const int signal = local::LastSignal::instance().consume();
+				const int signal = local::signal::Cache::instance().consume();
 				switch( signal)
 				{
                case 0:
@@ -134,6 +167,11 @@ namespace casual
                   throw exception::signal::child::Terminate();
                   break;
                }
+               case exception::signal::User::value:
+               {
+                  throw exception::signal::User();
+                  break;
+               }
                default:
                {
                   //
@@ -145,6 +183,12 @@ namespace casual
                }
 				}
 			}
+
+         void clear()
+         {
+            local::signal::Cache::instance().clear();
+
+         }
 
 			namespace posponed
          {
@@ -174,13 +218,52 @@ namespace casual
 			}
 
 
-         void send( platform::pid_type pid, platform::signal_type signal)
+         void send( platform::pid_type pid, type::type signal)
          {
             if( kill( pid, signal) == -1)
             {
-               log::error << "failed to send signal (" << platform::getSignalDescription( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::stringFromErrno() << std::endl;
+               log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
             }
          }
+
+         void block( type::type signal)
+         {
+            sigset_t mask;
+            sigemptyset( &mask);
+            sigaddset( &mask, signal);
+            if( sigprocmask( SIG_BLOCK, &mask, nullptr) != 0)
+            {
+               log::error << "failed to block signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
+            }
+         }
+
+
+         void unblock( type::type signal)
+         {
+            sigset_t mask;
+            sigemptyset( &mask);
+            sigaddset( &mask, signal);
+            if( sigprocmask( SIG_UNBLOCK, &mask, nullptr) != 0)
+            {
+               log::error << "failed to unblock signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
+            }
+         }
+
+         namespace thread
+         {
+            //!
+            //! Send signal to thread
+            //!
+            void send( std::thread& thread, type::type signal)
+            {
+               //if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
+               if( pthread_kill( thread.native_handle(), signal) != 0)
+               {
+                  log::error << "failed to send signal (" << type::string( signal) << ") to thread: " << thread.get_id() << " - errno: " << errno << " - "<< error::string() << std::endl;
+               }
+
+            }
+         } // thread
 
 
 		} // signal

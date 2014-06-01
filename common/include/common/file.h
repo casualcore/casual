@@ -12,6 +12,8 @@
 
 #include <regex>
 
+#include "common/move.h"
+
 namespace casual
 {
 
@@ -34,12 +36,12 @@ namespace casual
 
             const std::string& path() const;
 
-            void release() { m_released = true; };
+            void release() { m_moved.release();}
 
          private:
 
             std::string m_path;
-            bool m_released = false;
+            move::Moved m_moved;
          };
 
          class ScopedPath: public RemoveGuard
@@ -47,7 +49,7 @@ namespace casual
          public:
             using RemoveGuard::RemoveGuard;
 
-            operator const std::string&();
+            operator const std::string&() const;
          };
 
          //!
@@ -92,6 +94,8 @@ namespace casual
       {
 
          bool create( const std::string& path);
+
+         bool remove( const std::string& path);
 
       }
 

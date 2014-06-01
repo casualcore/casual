@@ -131,7 +131,7 @@ namespace casual
          //!
          //! @{
          template< typename M>
-         void casual_marshal_value( casual::common::transaction::ID& value, M& marshler)
+         void casual_marshal_value( ID& value, M& marshler)
          {
             marshler << value.xid().formatID;
 
@@ -147,7 +147,7 @@ namespace casual
          }
 
          template< typename M>
-         void casual_unmarshal_value( casual::common::transaction::ID& value, M& unmarshler)
+         void casual_unmarshal_value( ID& value, M& unmarshler)
          {
             unmarshler >> value.xid().formatID;
 

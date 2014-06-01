@@ -122,6 +122,7 @@ namespace casual
                      if( transport.m_payload.m_header.m_count > 0)
                      {
                         // TODO: Partially sent message, what to do now?
+                        log::internal::ipc << "TODO: Partially sent message, what to do now?\n";
                      }
                      return false;
                   }
@@ -132,7 +133,7 @@ namespace casual
                   partBegin = partEnd;
                }
 
-               log::internal::debug << "sent message - type: " << message.type << " to " << m_id <<  " size: " << message.payload.size() << std::endl;
+               log::internal::ipc << "sent message - type: " << message.type <<  " size: " << message.payload.size() << " destination: " << m_id << " correlation: " << message.correlation << std::endl;
 
                return true;
             }
@@ -160,7 +161,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::stringFromErrno());
+                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::string());
                      }
                   }
                }
@@ -176,6 +177,11 @@ namespace casual
                : internal::base_queue( msgget( IPC_PRIVATE, IPC_CREAT | 0660)),
                     m_scopedPath( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
             {
+               if( m_id  == -1)
+               {
+                  throw common::exception::QueueFailed( common::error::string());
+               }
+
                //
                // Write queue information
                //
@@ -186,10 +192,7 @@ namespace casual
                      << "path: " << process::path() << std::endl;
 
 
-               if( m_id  == -1)
-               {
-                  throw common::exception::QueueFailed( common::error::stringFromErrno());
-               }
+               log::internal::ipc << "created queue - id: " << m_id << " pid: " <<  process::id() << std::endl;
 
             }
 
@@ -207,7 +210,7 @@ namespace casual
                   // Destroy queue
                   //
                   ipc::remove( m_id);
-                  log::internal::debug << "queue id: " << m_id << " removed" << std::endl;
+                  log::internal::ipc << "queue id: " << m_id << " removed" << std::endl;
                }
                catch( ...)
                {
@@ -282,8 +285,6 @@ namespace casual
             } // local
 
 
-
-
             std::vector< message::Complete> Queue::operator () ( const long flags)
             {
                std::vector< message::Complete> result;
@@ -294,6 +295,8 @@ namespace casual
                {
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "] received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
                }
 
                return result;
@@ -312,6 +315,8 @@ namespace casual
                {
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "] received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
                }
 
                return result;
@@ -330,9 +335,19 @@ namespace casual
                {
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "]Êreceived message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
                }
 
                return result;
+            }
+
+            void Queue::clear()
+            {
+               while( ! operator() ( ipc::receive::Queue::cNoBlocking).empty())
+                  ;
+
+               m_cache.clear();
             }
 
 
@@ -376,7 +391,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueReceive( common::error::stringFromErrno() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
+                        throw common::exception::QueueReceive( common::error::string() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
                      }
                   }
                }
@@ -385,6 +400,8 @@ namespace casual
 
                return result > 0;
             }
+
+
 
             Queue::range_type Queue::cache( message::Transport& message)
             {
@@ -417,7 +434,8 @@ namespace casual
 
                   if( file.fail())
                   {
-                     throw common::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
+                     log::internal::ipc << "Failed to open broker queue configuration file" << std::endl;
+                     throw common::exception::xatmi::SystemError( "Failed to open broker queue configuration file: " + brokerFile);
                   }
 
                   send::Queue::id_type id{ 0};
@@ -431,15 +449,17 @@ namespace casual
 
          namespace broker
          {
-            send::Queue::id_type id()
-            {
-               return queue().id();
-            }
+
 
             send::Queue& queue()
             {
                static send::Queue brokerQueue = local::initializeBrokerQueue();
                return brokerQueue;
+            }
+
+            send::Queue::id_type id()
+            {
+               return queue().id();
             }
 
          } // broker
@@ -452,9 +472,17 @@ namespace casual
                return queue().id();
             }
 
+            receive::Queue create()
+            {
+               receive::Queue queue;
+               log::internal::ipc << "created receive queue - id: " << queue.id() << std::endl;
+               return queue;
+            }
+
+
             receive::Queue& queue()
             {
-               static receive::Queue singleton;
+               static receive::Queue singleton = create();
                return singleton;
             }
 
@@ -474,7 +502,7 @@ namespace casual
          {
             if( msgctl( id, IPC_RMID, nullptr) != 0)
             {
-               throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
+               throw exception::NotReallySureWhatToNameThisException( error::string());
             }
          }
 

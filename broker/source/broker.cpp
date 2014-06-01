@@ -6,7 +6,7 @@
 //!
 
 #include "broker/broker.h"
-#include "broker/broker_implementation.h"
+#include "broker/handle.h"
 #include "broker/action.h"
 
 #include "config/domain.h"
@@ -57,8 +57,13 @@ namespace casual
 				template< typename Q>
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
+
+
 					if( common::file::exists( path))
 					{
+					   //
+                  // TODO: ping to see if there are another broker running
+                  //
 					   common::file::remove( path);
 					}
 
@@ -83,7 +88,6 @@ namespace casual
 
 		Broker::Broker()
 			: m_brokerQueueFile( common::environment::file::brokerQueue())
-		   //: m_brokerQueueFile( "/tmp/crap")
 		{
 
 		}

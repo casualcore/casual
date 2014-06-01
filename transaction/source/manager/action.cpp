@@ -11,6 +11,11 @@
 #include "common/ipc.h"
 #include "common/process.h"
 #include "common/internal/log.h"
+#include "common/environment.h"
+#include "common/internal/trace.h"
+
+
+#include "sf/log.h"
 
 #include <string>
 
@@ -23,6 +28,43 @@ namespace casual
    {
       namespace action
       {
+         void configure( State& state)
+         {
+            {
+               common::trace::internal::Scope trace( "connect to broker");
+
+               //
+               // Do the initialization dance with the broker
+               //
+               common::message::transaction::Connect connect;
+
+               connect.path = common::process::path();
+               connect.server.queue_id = common::ipc::receive::id();
+
+               queue::blocking::Writer broker( common::ipc::broker::id(), state);
+               broker( connect);
+            }
+
+            {
+               common::trace::internal::Scope trace( "configure");
+
+               //
+               // Wait for configuration
+               //
+               common::message::transaction::Configuration configuration;
+
+               queue::blocking::Reader read( common::ipc::receive::queue(), state);
+               read( configuration);
+
+               //
+               // configure state
+               //
+               state::configure( state, configuration);
+            }
+
+         }
+
+
          namespace boot
          {
             void Proxie::operator () ( state::resource::Proxy& proxy)

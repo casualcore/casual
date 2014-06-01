@@ -90,17 +90,13 @@ namespace casual
          common::log::internal::transaction << "transaction manager start\n";
 
 
-         queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
-
 
          //
          // Connect and get configuration from broker
          //
          {
             common::log::internal::transaction << "configure\n";
-
-            queue::blocking::Writer brokerQueue{ ipc::broker::id(), m_state};
-            action::configure( m_state, brokerQueue, queueReader);
+            action::configure( m_state);
          }
 
          //
@@ -128,7 +124,7 @@ namespace casual
          handler.add( handle::Commit{ m_state});
          handler.add( handle::Rollback{ m_state});
          handler.add( handle::resource::Involved{ m_state});
-         handler.add( handle::resource::reply::Connect( m_state, ipc::broker::id()));
+         handler.add( handle::resource::reply::Connect{ m_state});
          handler.add( handle::resource::reply::Prepare{ m_state});
          handler.add( handle::resource::reply::Commit{ m_state});
          handler.add( handle::resource::reply::Rollback{ m_state});
@@ -178,6 +174,8 @@ namespace casual
                << instances << " instances - boot time: "
                << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
+
+         queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
 
          while( true)
          {

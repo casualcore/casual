@@ -41,7 +41,11 @@ namespace casual
 					{
 						throw exception::EnvironmentVariableNotFound( name);
 					}
+				}
 
+				void set( const std::string& name, const std::string& value)
+				{
+				   setenv( name.c_str(), value.c_str(), 1);
 				}
 			}
 
