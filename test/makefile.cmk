@@ -20,18 +20,26 @@ SetLibraryPaths( ["../xatmi/bin",
 
 
 
-Compile( "source/sf_testproxy.cpp", "obj/sf_testproxy.o")
-
-LinkArchive( "sftestproxy", ["obj/sf_testproxy.o"])
 
 
+LinkArchive( "sftestproxy", 
+	[ 
+	   Compile( "source/sf_testproxy.cpp", "obj/sf_testproxy.o")
+	])
 
 
-Compile( "source/template_server.cpp", "obj/template_server.o")
 
-LinkAtmiServer( "test",
-	[ "obj/template_server.o"],
-	[ "casual-xatmi", "casual-common", "casual-sf"],
+
+
+
+LinkServer( "test",
+	[ Compile( "source/template_server.cpp", "obj/template_server.o")],
+	[ 
+		"casual-xatmi", 
+		"casual-common", 
+		"casual-sf",
+		"casual-mockup-rm"
+	],
 	"source/template_server.yaml",
 	["rm-mockup"])
 
@@ -62,7 +70,7 @@ LinkArchive( "sf-test-vo",
 #
 
 
-LinkAtmiServer("sf_test",
+LinkServer("sf_test",
     [
 	   Compile( "source/template_sf_server.cpp", "obj/template_sf_server.o"),
 	   Compile( "source/template_sf_server_implementation.cpp", "obj/template_sf_server_implementation.o"),
@@ -120,7 +128,7 @@ LinkIsolatedUnittest( "test-casual-generation-isolated",
 #
 
 
-LinkAtmiServer("sf-detoct-test-server",
+LinkServer("sf-detoct-test-server",
     [ 
 	   Compile( "source/sf_testserverserver.cpp", "obj/sf_testserverserver.o"),
 	   Compile( "source/sf_testserverimplementation.cpp", "obj/sf_testserverimplementation.o")

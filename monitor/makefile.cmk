@@ -44,7 +44,7 @@ LinkExecutable( "casual-monitor",
 Compile( "source/statisticserver.cpp", "obj/statisticserver.o")
 Compile( "source/statisticimplementation.cpp", "obj/statisticimplementation.o")
 
-LinkAtmiServer("casual-monitor-request-server",
+LinkServer("casual-monitor-request-server",
     ["obj/statisticserver.o",
     "obj/statisticimplementation.o",
     "obj/monitordb.o"],

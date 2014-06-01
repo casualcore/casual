@@ -31,7 +31,14 @@ namespace casual
             {
                void SetUp() override
                {
-                  domainPath = "./.unittest_domain_home" ;
+                  if( environment::variable::exists( "CASUAL_BUILD_HOME"))
+                  {
+                     domainPath =  environment::variable::get( "CASUAL_BUILD_HOME") + "/.unittest_domain_home" ;
+                  }
+                  else
+                  {
+                     domainPath =  environment::directory::temporary() + "/casual_unittest_domain_home" ;
+                  }
                   environment::variable::set( "CASUAL_DOMAIN_HOME", domainPath);
 
                   directory::create( domainPath);

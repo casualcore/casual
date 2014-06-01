@@ -97,7 +97,7 @@ InstallExecutable("casual-transaction-manager","$CASUAL_HOME/bin/.")
 #
 LinkExecutable( "rm-proxy-casual-mockup",
     [ Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")],
-    [ "casual-mockup", "casual-resource-proxy-server"])
+    [ "casual-mockup-rm", "casual-resource-proxy-server"])
 
 InstallExecutable("rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")
 
