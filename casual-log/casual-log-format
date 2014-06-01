@@ -137,18 +137,22 @@ def truncateXID( xid):
 
 
 def truncateThread( pid, thread):
-    #truncateThread.count;
-    result = truncateThread.threads.get( thread);
     
-    if not result:
-        result = truncateThread.threads[ thread] = truncateThread.count;
-        truncateThread.count += 1;
+    process = truncateThread.threads.get( pid);
+    
+    if not process:
+        process = truncateThread.threads[ pid] = dict();
+    
+    threadId = process.get( thread);
+    
+    if not threadId:
+        threadId = process[ thread] = len( process) + 1;
         
-    return str( result);
+    return str( threadId);
     
 
 truncateThread.threads = {};
-truncateThread.count = 0;
+#truncateThread.count = 0;
 
 
 def category( name):
@@ -249,16 +253,21 @@ if __name__ == '__main__':
     
     (options, args) = parser.parse_args()
     
+    try:
 
-    if len( args) > 0:
-        with open( args[ 0]) as infile:
-            format( infile, sys.stdout);
-    
-    elif not sys.stdin.isatty():
-        format( sys.stdin, sys.stdout);
+        if len( args) > 0:
+            with open( args[ 0]) as infile:
+                format( infile, sys.stdout);
         
-    elif os.environ["CASUAL_DOMAIN_HOME"]:
-        with open( os.environ["CASUAL_DOMAIN_HOME"] + '/casual.log') as infile:
-            format( infile, sys.stdout);
+        elif not sys.stdin.isatty():
+            format( sys.stdin, sys.stdout);
+            
+        elif os.environ["CASUAL_DOMAIN_HOME"]:
+            with open( os.environ["CASUAL_DOMAIN_HOME"] + '/casual.log') as infile:
+                format( infile, sys.stdout);
     
+    except IOError as e:
+        if e.errno != errno.EPIPE:
+            raise
+
 
