@@ -10,6 +10,8 @@
 #include "common/mockup/ipc.h"
 #include "common/queue.h"
 #include "common/log.h"
+#include "common/trace.h"
+#include "common/internal/log.h"
 
 #include "common/signal.h"
 
@@ -24,19 +26,18 @@ namespace casual
 
       TEST( casual_common_mockup, handle_replier_startup)
       {
-         signal::clear();
-
-         mockup::ipc::Sender replie1;
-
+         EXPECT_NO_THROW({
+            mockup::ipc::Sender sender;
+         });
       }
 
 
       TEST( casual_common_mockup, handle_sender_one_message)
       {
-         signal::clear();
+
+         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_sender_one_message)"};
 
          mockup::ipc::Sender sender;
-
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
@@ -58,23 +59,30 @@ namespace casual
 
       TEST( casual_common_mockup, handle_sender_200_messages)
       {
-         signal::clear();
+         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_sender_200_messages)"};
 
          mockup::ipc::Sender sender;
+         //
+         // We use a receiver to not reach ipc-limits.
+         mockup::ipc::Receiver receiver;
 
          {
+            common::Trace trace( "sender.add  200");
             message::service::name::lookup::Request request;
             request.requested = "someService";
             request.server = message::server::Id::current();
 
             for( int count = 0; count < 200; ++count)
             {
-               sender.add( ipc::receive::id(), request);
+               sender.add( receiver.id(), request);
             }
          }
 
          {
-            queue::blocking::Reader read( ipc::receive::queue());
+
+            common::Trace trace( "read( ipc::receive::queue())  200");
+
+            auto read = queue::blocking::reader( receiver);
             message::service::name::lookup::Request request;
 
             for( int count = 0; count < 200; ++count)
@@ -88,7 +96,7 @@ namespace casual
 
       TEST( casual_common_mockup, handle_reciver_one_messages)
       {
-         signal::clear();
+         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_reciver_one_messages)"};
 
          mockup::ipc::Receiver receiver;
 
@@ -114,7 +122,7 @@ namespace casual
 
       TEST( casual_common_mockup, handle_reciver_200_messages)
       {
-         signal::clear();
+         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_reciver_200_messages)"};
 
          mockup::ipc::Receiver receiver;
 

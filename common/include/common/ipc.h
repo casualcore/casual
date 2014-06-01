@@ -245,6 +245,11 @@ namespace casual
                //!
                std::vector< message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
 
+               //!
+               //! Clear and discard all messages in queue.
+               //!
+               void clear();
+
             private:
 
                typedef std::deque< message::Complete> cache_type;

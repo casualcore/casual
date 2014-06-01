@@ -60,6 +60,8 @@ namespace casual
 
                id_type id() const;
 
+               void clear();
+
                std::vector< common::ipc::message::Complete> operator () ( const long flags);
                std::vector< common::ipc::message::Complete> operator () ( type_type type, const long flags);
                std::vector< common::ipc::message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
@@ -68,7 +70,6 @@ namespace casual
                class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
-
 
             namespace broker
             {

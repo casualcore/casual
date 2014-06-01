@@ -285,8 +285,6 @@ namespace casual
             } // local
 
 
-
-
             std::vector< message::Complete> Queue::operator () ( const long flags)
             {
                std::vector< message::Complete> result;
@@ -298,7 +296,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
+                  log::internal::ipc << "ipc[" << id() << "] received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
                }
 
                return result;
@@ -318,7 +316,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
+                  log::internal::ipc << "ipc[" << id() << "] received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
                }
 
                return result;
@@ -338,10 +336,18 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
+                  log::internal::ipc << "ipc[" << id() << "]Êreceived message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
                }
 
                return result;
+            }
+
+            void Queue::clear()
+            {
+               while( ! operator() ( ipc::receive::Queue::cNoBlocking).empty())
+                  ;
+
+               m_cache.clear();
             }
 
 
@@ -394,6 +400,8 @@ namespace casual
 
                return result > 0;
             }
+
+
 
             Queue::range_type Queue::cache( message::Transport& message)
             {
@@ -464,9 +472,17 @@ namespace casual
                return queue().id();
             }
 
+            receive::Queue create()
+            {
+               receive::Queue queue;
+               log::internal::ipc << "created receive queue - id: " << queue.id() << std::endl;
+               return queue;
+            }
+
+
             receive::Queue& queue()
             {
-               static receive::Queue singleton;
+               static receive::Queue singleton = create();
                return singleton;
             }
 

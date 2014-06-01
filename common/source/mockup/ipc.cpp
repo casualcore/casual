@@ -18,6 +18,9 @@
 
 
 #include <thread>
+#include <future>
+#include <mutex>
+#include <atomic>
 #include <fstream>
 
 namespace casual
@@ -192,8 +195,6 @@ namespace casual
                   {
                      basic_implementation() : m_thread( m_functor, m_receiveQueue.id())
                      {
-                        common::Trace trace( common::log::internal::ipc, "basic_implementation::basic_implementation()");
-
                         try
                         {
                            common::queue::blocking::Reader reader( m_receiveQueue);
@@ -218,8 +219,6 @@ namespace casual
 
                      ~basic_implementation()
                      {
-                        common::Trace trace( common::log::internal::ipc, "basic_implementation::~basic_implementation()");
-
                         common::queue::non_blocking::Writer write( m_threadQueueId);
                         message::Disconnect disconnect;
                         write( disconnect);
@@ -235,6 +234,13 @@ namespace casual
                         write( message);
                      }
 
+                     template< typename M>
+                     bool try_send( M&& message) const
+                     {
+                        common::queue::non_blocking::Writer write( m_threadQueueId);
+                        return write( message);
+                     }
+
 
                      common::ipc::receive::Queue& ipc() { return m_receiveQueue;}
 
@@ -248,9 +254,91 @@ namespace casual
                   };
 
 
-
                   struct Sender
                   {
+                     struct Send
+                     {
+                        struct Queue
+                        {
+                           Queue()
+                           {
+                              work = true;
+                           }
+                           void push_back( message::ToSend&& message) const
+                           {
+                              std::lock_guard< std::mutex> lock( m_mutext);
+
+                              m_messages.push_back( std::move( message));
+
+                              log::internal::ipc << "Q push_back size: " << m_messages.size() << std::endl;
+                           }
+
+                           std::vector< message::ToSend> pop_front() const
+                           {
+                              std::lock_guard< std::mutex> lock( m_mutext);
+                              std::vector< message::ToSend> result;
+
+                              if( ! m_messages.empty())
+                              {
+                                 result.push_back( std::move( m_messages.front()));
+                                 m_messages.pop_front();
+                              }
+                              log::internal::ipc << "Q pop_front size: " << m_messages.size() << std::endl;
+
+                              return result;
+                           }
+
+                           std::size_t size() const
+                           {
+                              std::lock_guard< std::mutex> lock( m_mutext);
+                              return m_messages.size();
+                           }
+
+                           mutable std::atomic< bool> work;
+
+                        private:
+                           mutable std::deque< message::ToSend> m_messages;
+                           mutable std::mutex m_mutext;
+
+                        };
+
+                        void operator () ( const Queue& queue) const
+                        {
+                           log::internal::ipc << "Send::operator () called" << std::endl;
+
+                           std::size_t numberOfMessages = 0;
+
+                           while( true)
+                           {
+                              auto message = queue.pop_front();
+
+                              Trace trace( log::internal::ipc, "auto message = queue.pop_front();");
+
+                              if( message.empty())
+                              {
+                                 // we're done
+
+                                 if( ! queue.work)
+                                 {
+                                    log::internal::ipc << "Send is done" << std::endl;
+                                    return;
+                                 }
+                                 process::sleep( std::chrono::milliseconds( 1));
+
+                              }
+                              else
+                              {
+                                 common::queue::blocking::Writer write( message.front().destination);
+                                 write.send( message.front().message);
+
+
+                                 log::internal::ipc << "total sent messages: " << ++numberOfMessages << " - queue size: " << queue.size() << std::endl;
+                              }
+                           }
+                        }
+                     };
+
+
                      void operator () ( common::ipc::receive::Queue& receiveQueue)
                      {
 
@@ -259,19 +347,15 @@ namespace casual
                         //
                         common::queue::blocking::Reader reader( receiveQueue);
 
-                        std::deque< message::ToSend> messages;
 
+                        Send send;
+                        Send::Queue queue;
+                        std::thread sender = std::thread{ send, std::ref( queue)};
 
                         while( true)
                         {
                            try
                            {
-                              //
-                              // We're not interested in "read-interupt-signal" when we already
-                              // are reading...
-                              //
-                              signal::block( signal::type::user);
-
                               auto next = reader.next();
 
                               switch( next.type())
@@ -279,32 +363,17 @@ namespace casual
                                  case message::cMockupDisconnect:
                                  {
                                     log::internal::ipc << "disconnect received - stop" << std::endl;
+                                    queue.work = false;
+                                    sender.join();
                                     return;
-                                 }
-                                 case message::cMockupStart:
-                                 {
-
-                                    //
-                                    // We need to be interruptible...
-                                    //
-                                    signal::unblock( signal::type::user);
-
-                                    log::internal::ipc << "start sending messages size: " << messages.size() << std::endl;
-
-
-                                    while( ! messages.empty())
-                                    {
-                                       common::queue::blocking::Writer write( messages.front().destination);
-                                       write.send( messages.front().message);
-                                       messages.pop_front();
-                                    }
-                                    break;
                                  }
                                  case message::cMockupMessageToSend:
                                  {
+                                    Trace trace( log::internal::ipc, "case message::cMockupMessageToSend:");
                                     message::ToSend message;
                                     next >> message;
-                                    messages.push_back( std::move( message));
+
+                                    queue.push_back( std::move( message));
                                     break;
                                  }
                                  default:
@@ -382,6 +451,8 @@ namespace casual
                      }
                   };
 
+
+
                } // <unnamed>
             } // local
 
@@ -389,22 +460,20 @@ namespace casual
 
             struct Sender::Implementation : public local::basic_implementation< local::Sender>
             {
+               using base_type = local::basic_implementation< local::Sender>;
 
-               void add( queue_id_type destination, common::ipc::message::Complete&& message) const
+               void add( queue_id_type destination, common::ipc::message::Complete&& message)
                {
-                  //
-                  // Make sure thread is reading from queue
-                  //
-                  signal::thread::send( m_thread, signal::type::user);
+                  //signal::clear();
 
                   local::message::ToSend toSend;
                   toSend.destination = destination;
                   toSend.message = std::move( message);
                   send( toSend);
-                  start();
+                  //start();
                }
 
-               void start() const
+               void start()
                {
                   send( local::message::Start{});
                }
@@ -438,6 +507,11 @@ namespace casual
                   request.types = std::move( types);
                   send( request);
                }
+
+               void clear()
+               {
+                  m_receiveQueue.clear();
+               }
             };
 
 
@@ -453,6 +527,10 @@ namespace casual
                return m_implementation->m_threadQueueId;
             }
 
+            void Receiver::clear()
+            {
+               m_implementation->clear();
+            }
 
             std::vector< common::ipc::message::Complete> Receiver::operator ()( const long flags)
             {
@@ -473,6 +551,9 @@ namespace casual
                m_implementation->fetch( types);
                return m_implementation->ipc()( types, flags);
             }
+
+
+
 
 
             namespace broker

@@ -228,7 +228,9 @@ namespace casual
 
          void block( type::type signal)
          {
-            sigset_t mask = signal;
+            sigset_t mask;
+            sigemptyset( &mask);
+            sigaddset( &mask, signal);
             if( sigprocmask( SIG_BLOCK, &mask, nullptr) != 0)
             {
                log::error << "failed to block signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
@@ -238,7 +240,9 @@ namespace casual
 
          void unblock( type::type signal)
          {
-            sigset_t mask = signal;
+            sigset_t mask;
+            sigemptyset( &mask);
+            sigaddset( &mask, signal);
             if( sigprocmask( SIG_UNBLOCK, &mask, nullptr) != 0)
             {
                log::error << "failed to unblock signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
@@ -250,9 +254,10 @@ namespace casual
             //!
             //! Send signal to thread
             //!
-            void send( const std::thread& thread, type::type signal)
+            void send( std::thread& thread, type::type signal)
             {
-               if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
+               //if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
+               if( pthread_kill( thread.native_handle(), signal) != 0)
                {
                   log::error << "failed to send signal (" << type::string( signal) << ") to thread: " << thread.get_id() << " - errno: " << errno << " - "<< error::string() << std::endl;
                }

@@ -83,6 +83,7 @@ namespace casual
 
          } // ipc
 
+         /*
 
          namespace queue
          {
@@ -90,6 +91,7 @@ namespace casual
             void clearAllQueues();
 
             typedef platform::message_type_type message_type_type;
+
 
 
 
@@ -128,7 +130,7 @@ namespace casual
          } // queue
 
 
-
+      */
 
       } // mockup
    } // common

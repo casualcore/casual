@@ -83,7 +83,13 @@ test_casual_broker_isolated = [
 
 LinkIsolatedUnittest( "test-casual-broker-isolated",
     ["obj/action.o"] + test_casual_broker_isolated,
-    ["casual-common", "casual-sf", "casual-configuration", "casual-mockup"])
+    [
+     "casual-common", 
+     "casual-sf", 
+     "casual-configuration", 
+     "casual-mockup-unittest-environment", 
+     "casual-mockup",
+     ])
 
 	
 #

@@ -93,7 +93,7 @@ namespace casual
 			   //!
 			   //! Send signal to thread
 			   //!
-			   void send( const std::thread& thread, type::type signal);
+			   void send( std::thread& thread, type::type signal);
          } // thread
 
 
