@@ -312,8 +312,6 @@ namespace casual
                            {
                               auto message = queue.pop_front();
 
-                              Trace trace( log::internal::ipc, "auto message = queue.pop_front();");
-
                               if( message.empty())
                               {
                                  // we're done
