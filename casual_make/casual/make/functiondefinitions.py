@@ -157,11 +157,8 @@ def Compile( sourcefile, objectfile, directive = ''):
 
 
 
-def LinkAtmiServer( name, objectfiles, libraries, serverdefintion, resources=None):
+def LinkServer( name, objectfiles, libraries, serverdefintion, resources=None):
     """
-
-
- LinkAtmiServer(name,objectfiles,libs,services)
 
  Links a XATMI-server
 
