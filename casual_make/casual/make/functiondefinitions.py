@@ -109,10 +109,8 @@ def Parallel():
 
 
 
-#
-# TODO: make this just Compile and remove the other one
-#
-def CompileDirective(sourcefile,objectfile,directive):
+
+def Compile( sourcefile, objectfile, directive = ''):
     """
 
 
@@ -124,7 +122,7 @@ def CompileDirective(sourcefile,objectfile,directive):
     
  param: objectfile    name of the output object file (obj/myfile.o)
 
- param: directive   compile directive for this TU
+ param: directive   optional compile directive for this TU, default ''
 
 
     """
@@ -156,28 +154,10 @@ def CompileDirective(sourcefile,objectfile,directive):
 
     return str( objectfile)
 
-def Compile(sourcefile,objectfile):
-    """
-
-
- Compile(sourcefile,objectfile)
-
- Compiles a source file to an object file
-
- param: sourcefile    name of the sourcefile (src/myfile.cpp)
-    
- param: objectfile    name of the output object file (obj/myfile.o)
-
-
-    """
-
-    return CompileDirective( sourcefile, objectfile, "")
 
 
 
-
-
-def LinkAtmiServer(name,objectfiles,libs,services):
+def LinkAtmiServer( name, objectfiles, libraries, serverdefintion, resources=None):
     """
 
 
@@ -189,47 +169,24 @@ def LinkAtmiServer(name,objectfiles,libs,services):
     
  param: objectfiles    object files that is linked
 
- param: libs        dependent libraries
+ param: libraries        dependent libraries
 
- param: services    a list of public services. I e.  ["service1", "service2"]
-
-
-    """
-
-    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, services, "", objectfiles, libs, "")
-
-
-
-def LinkAtmiServerResource(name,objectfiles,libs,serverdefintion,resources):
-    """
-
-
- LinkAtmiServerResource( name, objectfiles, libs, services, resource)
-
- Links a XATMI-server with one or more resources
-
- param: name        name of the server with out prefix or suffix.
-    
- param: objectfiles    object files that is linked
-
- param: libs        dependent libraries
-
- param: serverdefintion    a list of public services. I e.  ["service1", "service2"]
-
- param: resources   a list of XA resources. I e ["db2-rm"] - the names shall 
-                correspond to those defined in configuration/resources.(yaml|json|...)
+ param: serverdefintion  path to the server definition file that configure the public services, 
+                         and semantics.
+                         Can also be a list of public services. I e.  ["service1", "service2"]
+                    
+ param: resources  optional - a list of XA resources. I e ["db2-rm"] - the names shall 
+                correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
 
 
     """
-    
-        
-    
+
     if not resources:
         resource_directive = "";
     else:
         resource_directive = " -r " + ' '.join( resources)
-        
-    internal_BASE_LinkATMI("$(BUILDSERVER) ", name, serverdefintion, "", objectfiles, libs, resource_directive)
+
+    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, serverdefintion, "", objectfiles, libraries, resource_directive)
 
 
 
