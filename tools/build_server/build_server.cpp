@@ -373,7 +373,7 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::ScopedPath path( "server_" + common::Uuid::make().string() + ".c");
+      common::file::scoped::Path path( "server_" + common::Uuid::make().string() + ".c");
       //std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {

@@ -23,34 +23,35 @@ namespace casual
       {
          void remove( const std::string& path);
 
-         class RemoveGuard
+         namespace scoped
          {
-         public:
-            RemoveGuard( const std::string& path);
-            ~RemoveGuard();
+            class Path
+            {
+            public:
+               Path( const std::string& path);
+               ~Path();
 
-            RemoveGuard( RemoveGuard&&);
+               Path( Path&&);
 
-            RemoveGuard( const RemoveGuard&) = delete;
-            RemoveGuard& operator =( const RemoveGuard&) = delete;
+               Path( const Path&) = delete;
+               Path& operator =( const Path&) = delete;
 
-            const std::string& path() const;
 
-            void release() { m_moved.release();}
+               const std::string& path() const;
 
-         private:
+               operator const std::string&() const;
 
-            std::string m_path;
-            move::Moved m_moved;
-         };
+               void release() { m_moved.release();}
 
-         class ScopedPath: public RemoveGuard
-         {
-         public:
-            using RemoveGuard::RemoveGuard;
+            private:
 
-            operator const std::string&() const;
-         };
+               std::string m_path;
+               move::Moved m_moved;
+            };
+
+
+         } // scoped
+
 
          //!
          //! Find the first file that matches search

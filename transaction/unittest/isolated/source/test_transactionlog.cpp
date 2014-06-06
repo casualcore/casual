@@ -30,9 +30,9 @@ namespace casual
             return result;
          }
 
-         common::file::ScopedPath transactionLogPath()
+         common::file::scoped::Path transactionLogPath()
          {
-            return common::file::ScopedPath{ "unittest_transaction_log.db"};
+            return common::file::scoped::Path{ "unittest_transaction_log.db"};
          }
 
       } // local

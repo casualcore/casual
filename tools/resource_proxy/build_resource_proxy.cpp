@@ -249,7 +249,7 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::ScopedPath path( "xa_switch" + common::Uuid::make().string() + ".c");
+      common::file::scoped::Path path( "xa_switch" + common::Uuid::make().string() + ".c");
 
       {
          trace::Exit log( "generate file:  " + path.path(), settings.verbose);
