@@ -101,12 +101,10 @@ namespace casual
 
             sql::database::Query select( sql::database::Connection& connection)
             {
-               std::vector< sql::database::Row> result;
 
                const std::string sql{ R"( SELECT * FROM trans; )" };
 
                return connection.query( sql);
-
 
             }
 
@@ -188,8 +186,7 @@ namespace casual
          auto query = local::select( m_connection, id);
          auto rows = query.fetch();
 
-         std::transform( std::begin( rows), std::end( rows), std::back_inserter( result), local::transform::Row());
-
+         common::range::transform( rows, result, local::transform::Row());
 
          return result;
       }

@@ -4,25 +4,52 @@ from casual.make.functiondefinitions import *
 SetIncludePaths( [ 
     'include',
     '../common/include', 
+    '../thirdparty/database/include',
+    '$(UNITTEST_INCLUDE_PATH)'
     ]);
 
 
 SetLibraryPaths( [ 
         'bin',
-        '../common/bin'
+        '../common/bin',
     ]);
     
-    
+ 
+
+casual_queue_server_libraries = [
+    'casual-common',
+     'sqlite3',
+  ];
     
 
-casual_queue_server_objs = [
+casual_queue_server_archive_objs = [
    Compile( 'source/server/server.cpp', 'obj/server/server.o'),
-   Compile( 'source/server/main.cpp', 'obj/server/main.o'),
+   Compile( 'source/server/database.cpp', 'obj/server/database.o'),
 ];
 
+casual_queue_server_libraries.append( 
+
+LinkArchive( 'casual-queue-server-archive',
+    casual_queue_server_archive_objs
+    )
+);
+
 LinkExecutable( 'casual-queue-server', 
-    casual_queue_server_objs, 
-    [ 
-     'casual-common',
+    [Compile( 'source/server/main.cpp', 'obj/server/main.o')], 
+    casual_queue_server_libraries);
      
-     ]);
+     
+
+#
+# Unittest
+#
+casual_queue_unittest_objs = [
+  Compile( 'unittest/isolated/source/test_server_database.cpp', 'obj/unittest/test_server_database.o'),
+  ];
+
+LinkIsolatedUnittest( 'test-casual-queue', 
+    casual_queue_unittest_objs,
+    casual_queue_server_libraries  
+);
+
+
