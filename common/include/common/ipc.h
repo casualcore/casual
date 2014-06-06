@@ -262,7 +262,7 @@ namespace casual
 
                range_type cache( message::Transport& message);
 
-               common::file::ScopedPath m_scopedPath;
+               common::file::scoped::Path m_path;
 
                cache_type m_cache;
             };

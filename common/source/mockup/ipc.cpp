@@ -564,7 +564,7 @@ namespace casual
 
                Receiver initializeMockupBrokerQueue()
                {
-                  static file::ScopedPath path{ common::environment::file::brokerQueue()};
+                  static file::scoped::Path path{ common::environment::file::brokerQueue()};
 
                   Receiver queue;
 

@@ -175,7 +175,7 @@ namespace casual
 
             Queue::Queue()
                : internal::base_queue( msgget( IPC_PRIVATE, IPC_CREAT | 0660)),
-                    m_scopedPath( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
+                    m_path( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
             {
                if( m_id  == -1)
                {
@@ -185,7 +185,7 @@ namespace casual
                //
                // Write queue information
                //
-               std::ofstream ipcQueueFile( m_scopedPath.path());
+               std::ofstream ipcQueueFile( m_path.path());
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl

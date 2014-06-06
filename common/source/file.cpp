@@ -29,6 +29,7 @@ namespace casual
    {
       namespace file
       {
+
          void remove( const std::string& path)
          {
             if( !path.empty())
@@ -37,32 +38,36 @@ namespace casual
             }
          }
 
-         RemoveGuard::RemoveGuard( const std::string& path)
-               : m_path( path)
-         {
-         }
 
-         RemoveGuard::~RemoveGuard()
+         namespace scoped
          {
-            if( ! m_moved)
+            Path::Path( const std::string& path)
+                  : m_path( path)
             {
-               remove( m_path);
             }
-         }
 
-         RemoveGuard::RemoveGuard( RemoveGuard&&) = default;
+            Path::~Path()
+            {
+               if( ! m_moved)
+               {
+                  remove( m_path);
+               }
+            }
+
+            Path::Path( Path&&) = default;
+
+            Path::operator const std::string&() const
+            {
+               return path();
+            }
 
 
-         const std::string& RemoveGuard::path() const
-         {
-            return m_path;
-         }
+            const std::string& Path::path() const
+            {
+               return m_path;
+            }
+         } // scoped
 
-
-         ScopedPath::operator const std::string&() const
-         {
-            return path();
-         }
 
          std::string find( const std::string& path, const std::regex& search)
          {
