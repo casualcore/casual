@@ -8,10 +8,14 @@
 #include "common/transaction_context.h"
 #include "common/queue.h"
 #include "common/environment.h"
+#include "common/process.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 #include "common/algorithm.h"
 #include "common/error.h"
+#include "common/exception.h"
+
+#include "xatmi.h"
 
 #include <map>
 #include <algorithm>
@@ -238,7 +242,7 @@ namespace casual
             trace::internal::Scope trace{ "transaction::Context::set"};
 
 
-            using RM = message::resource::Manager;
+            using RM = message::transaction::resource::Manager;
             auto equalKey = [] ( const Resource& r, const RM& rm){ return r.key == rm.key;};
 
             //

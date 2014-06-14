@@ -45,7 +45,7 @@ namespace casual
                {
                   struct Resource
                   {
-                     state::resource::Proxy operator () ( const common::message::resource::Manager& value) const
+                     state::resource::Proxy operator () ( const message::transaction::resource::Manager& value) const
                      {
                         trace::internal::Scope trace{ "transform::Resource"};
 

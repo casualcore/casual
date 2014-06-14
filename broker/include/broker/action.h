@@ -19,6 +19,9 @@
 #include "common/queue.h"
 #include "common/signal.h"
 #include "common/algorithm.h"
+#include "common/exception.h"
+
+#include "common/message/transaction.h"
 
 
 #include "sf/log.h"
@@ -114,9 +117,9 @@ namespace casual
                struct Resource
                {
 
-                  inline common::message::resource::Manager operator () ( const broker::Group::Resource& resource) const
+                  inline common::message::transaction::resource::Manager operator () ( const broker::Group::Resource& resource) const
                   {
-                     common::message::resource::Manager result;
+                     common::message::transaction::resource::Manager result;
 
                      result.instances = resource.instances;
                      result.id = resource.id;
@@ -517,18 +520,14 @@ namespace casual
 
             struct Policy
             {
-               static common::platform::pid_type boot( const std::string& path, const std::vector< std::string>& arguments)
-               {
-                  return common::process::spawn( path, arguments);
-               }
+               static common::platform::pid_type boot( const std::string& path, const std::vector< std::string>& arguments);
 
-               static void shutdown( broker::Server::Instance& instance)
-               {
-                  common::process::terminate( instance.pid);
-               }
+               static void shutdown( broker::Server::Instance& instance);
             };
 
             using Instances = basic_instances< Policy>;
+
+
 
          } // update
 
@@ -568,21 +567,7 @@ namespace casual
          {
 
 
-            inline void instance( State& state, const std::shared_ptr< Server>& server)
-            {
-
-               auto pid = common::process::spawn( server->path, server->arguments);
-
-               auto instance = std::make_shared< Server::Instance>();
-               instance->pid = pid;
-               instance->server = server;
-               instance->alterState( Server::Instance::State::prospect);
-
-               server->instances.push_back( instance);
-
-               state.instances.emplace( pid, instance);
-
-            }
+            void instance( State& state, const std::shared_ptr< broker::Server>& server);
 
             namespace transaction
             {

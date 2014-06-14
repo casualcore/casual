@@ -15,7 +15,7 @@
 #include "common/platform.h"
 
 #include "common/ipc.h"
-#include "common/message.h"
+#include "common/message/server.h"
 #include "common/environment.h"
 
 #include "broker/brokervo.h"

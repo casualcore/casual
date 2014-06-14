@@ -7,9 +7,10 @@
 
 #include "monitor/monitor.h"
 #include "common/queue.h"
-#include "common/message.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
 #include "common/platform.h"
+#include "common/process.h"
+#include "common/error.h"
 #include "common/log.h"
 #include "common/trace.h"
 #include "common/environment.h"

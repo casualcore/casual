@@ -27,6 +27,7 @@ casual_common_objectfiles = [
     Compile( "source/transaction_id.cpp", "obj/transaction_id.o"),
     Compile( "source/ipc.cpp", "obj/ipc.o"),
     Compile( "source/queue.cpp", "obj/queue.o"),
+    Compile( "source/message/type.cpp", "obj/message/type.o"),
     
     Compile( "source/uuid.cpp", "obj/uuid.o"),
     Compile( "source/environment.cpp", "obj/environment.o"),

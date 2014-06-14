@@ -7,10 +7,11 @@
 
 #include "common/server_context.h"
 
-#include "common/message.h"
 #include "common/queue.h"
 #include "common/buffer_context.h"
 #include "common/calling_context.h"
+#include "common/process.h"
+
 #include "common/log.h"
 #include "common/error.h"
 

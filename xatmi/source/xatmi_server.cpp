@@ -13,7 +13,7 @@
 
 
 #include "common/server_context.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
 
 
 #include "common/error.h"

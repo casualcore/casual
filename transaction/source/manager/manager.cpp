@@ -11,11 +11,10 @@
 
 
 #include "common/server_context.h"
-#include "common/message.h"
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/environment.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
 #include "common/log.h"
 
 #include "config/domain.h"

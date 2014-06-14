@@ -11,7 +11,7 @@
 
 #include "transaction/manager/state.h"
 
-#include "common/message.h"
+#include "common/message/transaction.h"
 #include "common/log.h"
 #include "common/exception.h"
 #include "common/process.h"

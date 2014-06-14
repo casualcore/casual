@@ -9,7 +9,7 @@
 
 #include "common/queue.h"
 #include "common/ipc.h"
-#include "common/message.h"
+#include "common/message/server.h"
 #include "common/exception.h"
 #include "common/signal.h"
 

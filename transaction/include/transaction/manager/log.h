@@ -10,7 +10,7 @@
 
 #include "sql/database.h"
 
-#include "common/message.h"
+#include "common/message/transaction.h"
 
 //
 // std

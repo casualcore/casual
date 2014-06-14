@@ -11,6 +11,7 @@
 
 #include "common/queue.h"
 #include "common/platform.h"
+#include "common/message/server.h"
 
 #include <set>
 #include <unordered_map>

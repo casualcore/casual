@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "common/marshal.h"
-#include "common/message.h"
+#include "common/message/server.h"
 
 
 #include "common/transaction_id.h"

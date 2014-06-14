@@ -9,9 +9,11 @@
 
 
 #include "common/queue.h"
+#include "common/process.h"
 #include "common/environment.h"
 #include "common/file.h"
 #include "common/signal.h"
+#include "common/exception.h"
 
 #include "common/internal/log.h"
 #include "common/internal/trace.h"

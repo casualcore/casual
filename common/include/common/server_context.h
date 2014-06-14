@@ -9,7 +9,9 @@
 #define CASUAL_SERVER_CONTEXT_H_
 
 
-#include "common/message.h"
+#include "common/message/server.h"
+#include "common/message/monitor.h"
+
 #include "common/ipc.h"
 #include "common/queue.h"
 #include "common/environment.h"
@@ -19,6 +21,8 @@
 #include "common/platform.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
+#include "common/exception.h"
+
 
 #include "common/move.h"
 
