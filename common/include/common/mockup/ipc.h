@@ -12,7 +12,8 @@
 #include "common/move.h"
 #include "common/platform.h"
 #include "common/marshal.h"
-#include "common/message.h"
+#include "common/message/type.h"
+
 
 namespace casual
 {

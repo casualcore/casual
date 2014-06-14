@@ -13,7 +13,7 @@
 
 #include "common/mockup/ipc.h"
 #include "common/ipc.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
 #include "common/environment.h"
 
 

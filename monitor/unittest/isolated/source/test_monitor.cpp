@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "monitor/monitordb.h"
-#include "common/message.h"
+#include "common/message/monitor.h"
 #include "common/platform.h"
 
 #include <iostream>

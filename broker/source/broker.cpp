@@ -17,7 +17,7 @@
 #include "common/internal/log.h"
 
 #include "common/queue.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
 #include "common/process.h"
 
 #include "sf/archive_maker.h"

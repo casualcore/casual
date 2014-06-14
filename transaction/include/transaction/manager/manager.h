@@ -12,12 +12,6 @@
 
 
 #include "common/ipc.h"
-#include "common/message.h"
-
-#include "config/xa_switch.h"
-
-
-
 
 
 //

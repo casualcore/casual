@@ -14,7 +14,8 @@
 #include "broker/action.h"
 */
 
-#include "common/message.h"
+#include "common/message/server.h"
+#include "common/message/transaction.h"
 #include "common/server_context.h"
 
 

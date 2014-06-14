@@ -13,7 +13,7 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
 
-#include "common/message.h"
+#include "common/message/transaction.h"
 #include "common/mockup/ipc.h"
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
@@ -47,7 +47,7 @@ namespace casual
       {
          common::message::transaction::Configuration result;
 
-         common::message::resource::Manager manager;
+         common::message::transaction::resource::Manager manager;
          manager.id = 1;
          manager.key = "rm-mockup";
          manager.instances = 3;

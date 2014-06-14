@@ -6,7 +6,7 @@
 //!
 
 #include "common/calling_context.h"
-#include "common/message.h"
+
 #include "common/queue.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"

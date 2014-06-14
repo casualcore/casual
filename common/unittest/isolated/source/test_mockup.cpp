@@ -8,6 +8,9 @@
 #include <gtest/gtest.h>
 
 #include "common/mockup/ipc.h"
+
+#include "common/message/server.h"
+
 #include "common/queue.h"
 #include "common/log.h"
 #include "common/trace.h"

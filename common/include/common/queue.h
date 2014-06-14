@@ -9,7 +9,7 @@
 #define CASUAL_QUEUE_H_
 
 #include "common/ipc.h"
-#include "common/message.h"
+#include "common/message/type.h"
 #include "common/marshal.h"
 
 
@@ -384,46 +384,6 @@ namespace casual
          {
 
          };
-
-
-         /*
-         //!
-         //! Wrapper that exposes the queue interface and holds the ipc resource
-         //!
-         template< typename Q, typename I = typename Q::ipc_type>
-         struct ipc_wrapper
-         {
-            typedef Q queue_type;
-            typedef I ipc_type;
-            typedef typename ipc_type::id_type id_type;
-
-
-            template< typename... Args>
-            ipc_wrapper( id_type id, Args&& ...args) : m_ipcQueue{ id}, m_queue{ m_ipcQueue, std::forward< Args>( args)...} {}
-
-
-            ipc_wrapper( ipc_wrapper&&) = default;
-
-
-            //!
-            //! Reads or writes to/from the queue, depending on the type of queue_type
-            //!
-            template< typename T>
-            auto operator () ( T&& value) -> decltype( std::declval<Q>()( std::forward< T>( value)))
-            {
-               return m_queue( std::forward< T>( value));
-            }
-
-            const ipc_type& ipc() const
-            {
-               return m_ipcQueue;
-            }
-
-         private:
-            ipc_type m_ipcQueue;
-            queue_type m_queue;
-         };
-         */
 
 
       } // queue

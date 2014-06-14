@@ -211,8 +211,36 @@ namespace casual
                add::groups( state, update);
             }
 
+            common::platform::pid_type Policy::boot( const std::string& path, const std::vector< std::string>& arguments)
+            {
+               return common::process::spawn( path, arguments);
+            }
+
+            void Policy::shutdown( broker::Server::Instance& instance)
+            {
+               common::process::terminate( instance.pid);
+            }
+
          } // update
 
+         namespace boot
+         {
+
+            void instance( State& state, const std::shared_ptr< broker::Server>& server)
+            {
+
+               auto pid = common::process::spawn( server->path, server->arguments);
+
+               auto instance = std::make_shared< broker::Server::Instance>();
+               instance->pid = pid;
+               instance->server = server;
+               instance->alterState( broker::Server::Instance::State::prospect);
+
+               server->instances.push_back( instance);
+
+               state.instances.emplace( pid, instance);
+            }
+         }
 
       } // action
    } // broker

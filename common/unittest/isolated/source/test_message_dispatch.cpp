@@ -11,8 +11,8 @@
 
 
 
-#include "common/message.h"
-#include "common/message_dispatch.h"
+#include "common/message/server.h"
+#include "common/message/dispatch.h"
 
 
 

@@ -7,12 +7,14 @@
 
 #include "transaction/resource/proxy.h"
 
-#include "common/message.h"
+#include "common/message/transaction.h"
 #include "common/exception.h"
 #include "common/queue.h"
+#include "common/process.h"
 #include "common/trace.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
 #include "common/internal/trace.h"
+
 
 
 

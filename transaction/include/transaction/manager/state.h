@@ -9,7 +9,7 @@
 #define MANAGER_STATE_H_
 
 #include "common/platform.h"
-#include "common/message.h"
+#include "common/message/transaction.h"
 #include "common/algorithm.h"
 #include "common/marshal.h"
 
