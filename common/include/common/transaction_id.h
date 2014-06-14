@@ -13,6 +13,8 @@
 
 #include "common/uuid.h"
 
+#include "common/algorithm.h"
+
 
 #include <string>
 #include <ostream>
@@ -122,6 +124,25 @@ namespace casual
                out << id.stringGlobal() << ":" << id.stringBranch();
             }
             return out;
+         }
+
+
+         template< typename T>
+         inline auto global( T&& id) -> decltype( range::make( id.xid().data))
+         {
+            using range_type = decltype( range::make( id.xid().data));
+
+            return range_type( id.xid().data, id.xid().data + id.xid().gtrid_length);
+         }
+
+         template< typename T>
+         inline auto branch( T&& id) -> decltype( range::make( id.xid().data))
+         {
+            using range_type = decltype( range::make( id.xid().data));
+
+            auto branchBegin = id.xid().data + id.xid().gtrid_length;
+
+            return range_type( branchBegin, branchBegin + id.xid().bqual_length);
          }
 
 

@@ -13,16 +13,19 @@ namespace casual
    namespace queue
    {
 
-
-      Server::Server( Settings settings)
-      {
-      }
-
-
-      void Server::start()
+      namespace server
       {
 
-      }
+         Server::Server( Settings settings) : m_state( std::move( settings))
+         {
+         }
+
+
+         void Server::start()
+         {
+
+         }
+      } // server
 
    } // queue
 

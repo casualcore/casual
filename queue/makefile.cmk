@@ -1,10 +1,12 @@
 from casual.make.functiondefinitions import *
 
 
+
 SetIncludePaths( [ 
     'include',
     '../common/include', 
     '../thirdparty/database/include',
+    '../xatmi/include',
     '$(UNITTEST_INCLUDE_PATH)'
     ]);
 

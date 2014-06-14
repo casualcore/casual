@@ -10,26 +10,39 @@
 
 #include <string>
 
+#include "queue/server/database.h"
+
 
 namespace casual
 {
    namespace queue
    {
-
-      struct Settings
+      namespace server
       {
-         std::string queuebase;
-      };
+         struct Settings
+         {
+            std::string queuebase;
+         };
+
+         struct State
+         {
+            State( Settings settings) : queuebase( std::move( settings.queuebase)) {}
+
+            Database queuebase;
+         };
 
 
-      struct Server
-      {
-         Server( Settings settings);
+         struct Server
+         {
+            Server( Settings settings);
 
 
-         void start();
+            void start();
 
-      };
+         private:
+            State m_state;
+         };
+      } // server
 
    } // queue
 

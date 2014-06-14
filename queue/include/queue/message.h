@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/uuid.h"
+#include "common/transaction_id.h"
 
 namespace casual
 {
@@ -17,6 +18,16 @@ namespace casual
    {
       struct Message
       {
+         enum State
+         {
+            added = 1,
+            enqueued,
+            removed,
+            dequeued
+         };
+
+         //State state = State::added;
+
          common::Uuid correlation;
          std::size_t type;
 

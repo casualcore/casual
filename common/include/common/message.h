@@ -29,22 +29,22 @@ namespace casual
          enum Type
          {
 
-            cServerConnectRequest  = 10, // message type can't be 0!
+            cServerConnectRequest  = 100, // message type can't be 0!
             cServerConnectReply,
             cServerDisconnect,
-            cServiceAdvertise = 20,
+            cServiceAdvertise = 120,
             cServiceUnadvertise,
             cServiceNameLookupRequest,
             cServiceNameLookupReply,
             cServiceCall,
             cServiceReply,
             cServiceAcknowledge,
-            cMonitorConnect = 30,
+            cMonitorConnect = 200,
             cMonitorDisconnect,
             cMonitorNotify,
-            cTransactionClientConnectRequest = 100,
+            cTransactionClientConnectRequest = 300,
             cTransactionClientConnectReply,
-            cTransactionManagerConnect = 120,
+            cTransactionManagerConnect = 320,
             cTransactionManagerConfiguration,
             cTransactionManagerReady,
             cTransactionBeginRequest,
@@ -71,7 +71,6 @@ namespace casual
             cTransactionDomainResourceRollbackRequest,
             cTransactionDomainResourceRollbackReply,
             cTransactionResourceInvolved,
-
          };
 
 

@@ -26,19 +26,19 @@ int main( int argc, char **argv)
    try
    {
 
-      casual::queue::Settings settings;
+      casual::queue::server::Settings settings;
 
       {
          casual::common::Arguments parser;
          parser.add(
-               casual::common::argument::directive( { "-qb", "--queuebase"}, "path to this queue site persistent storage", settings.queuebase)
+               casual::common::argument::directive( { "-qb", "--queuebase"}, "path to this queue server persistent storage", settings.queuebase)
          );
 
          parser.parse( argc, argv);
          casual::common::process::path( parser.processName());
       }
 
-      casual::queue::Server server( std::move( settings));
+      casual::queue::server::Server server( std::move( settings));
       server.start();
 
    }

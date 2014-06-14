@@ -225,6 +225,25 @@ namespace casual
          iterator begin() const { return first;}
          iterator end() const { return last;}
 
+
+         value_type* data()
+         {
+            if( ! empty())
+            {
+               return &( *first);
+            }
+            return nullptr;
+         }
+
+         const value_type* data() const
+         {
+            if( ! empty())
+            {
+               return &( *first);
+            }
+            return nullptr;
+         }
+
          iterator first;
          iterator last;
       };

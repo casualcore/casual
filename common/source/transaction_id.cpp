@@ -45,6 +45,8 @@ namespace casual
          ID::ID()
          {
             m_xid.formatID = Format::cNull;
+            m_xid.gtrid_length = 0;
+            m_xid.bqual_length = 0;
          }
 
          ID::ID( const XID& xid)
