@@ -34,6 +34,7 @@ namespace casual
                casual_trace,
                casual_transaction,
                casual_ipc,
+               casual_queue,
 
                //
                // Public logging

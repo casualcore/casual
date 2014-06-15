@@ -25,89 +25,6 @@ namespace casual
       {
          namespace
          {
-            sql::database::Blob global( const common::transaction::ID& id)
-            {
-               return { id.xid().gtrid_length, id.xid().data};
-            }
-
-            sql::database::Blob branch( const common::transaction::ID& id)
-            {
-               return { id.xid().bqual_length, id.xid().data + id.xid().gtrid_length};
-            }
-
-            void createTables( sql::database::Connection& db)
-            {
-               db.execute(
-                     R"( CREATE TABLE IF NOT EXISTS trans (
-                     gtrid         BLOB,
-                     bqual         BLOB,
-                     format        NUMBER,
-                     pid           NUMBER,
-                     state         NUMBER,
-                     started       NUMBER,
-                     updated       NUMBER,
-                     PRIMARY KEY (gtrid, bqual)); )");
-            }
-
-            void update( sql::database::Connection& connection, const common::transaction::ID& id, long state)
-            {
-               auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
-
-               auto gtrid = local::global( id);
-               auto bqual = local::branch( id);
-
-               const std::string sql{ R"( UPDATE trans SET state = ?, updated = ? WHERE gtrid = ? AND bqual = ?; )" };
-
-               connection.execute( sql, state, updated, gtrid, bqual);
-            }
-
-            void remove( sql::database::Connection& connection, const common::transaction::ID& xid)
-            {
-               auto gtrid = local::global( xid);
-               auto bqual = local::branch( xid);
-
-               const std::string sql{ R"( DELETE FROM trans WHERE gtrid = ? AND bqual = ?; )" };
-
-               connection.execute( sql, gtrid, bqual);
-            }
-
-            template< typename M>
-            void insertBegin( sql::database::Connection& connection, M&& message)
-            {
-               auto started = std::chrono::time_point_cast< std::chrono::microseconds>( message.start).time_since_epoch().count();
-
-               auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
-
-               const std::string sql{ R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" };
-
-               auto gtrid = local::global( message.xid);
-               auto bqual = local::branch( message.xid);
-
-               long state = Log::State::cBegin;
-               connection.execute( sql, gtrid, bqual, message.xid.xid().formatID, message.id.pid, state, started, updated);
-
-            }
-
-            sql::database::Query select( sql::database::Connection& connection, const common::transaction::ID& id)
-            {
-               auto gtrid = local::global( id);
-               auto bqual = local::branch( id);
-
-
-               const std::string sql{ R"( SELECT gtrid, bqual, format, pid, state, started, updated FROM trans WHERE gtrid = ? AND bqual = ?; )" };
-
-               return connection.query( sql, gtrid, bqual);
-            }
-
-            sql::database::Query select( sql::database::Connection& connection)
-            {
-
-               const std::string sql{ R"( SELECT * FROM trans; )" };
-
-               return connection.query( sql);
-
-            }
-
             namespace transform
             {
                struct Row
@@ -152,7 +69,30 @@ namespace casual
       Log::Log( const std::string& database)
             : m_connection( database)
       {
-         local::createTables( m_connection);
+
+         m_connection.execute(
+            R"( CREATE TABLE IF NOT EXISTS trans (
+            gtrid         BLOB,
+            bqual         BLOB,
+            format        NUMBER,
+            pid           NUMBER,
+            state         NUMBER,
+            started       NUMBER,
+            updated       NUMBER,
+            PRIMARY KEY (gtrid, bqual)); )");
+
+         m_connection.execute(
+            "CREATE INDEX IF NOT EXISTS i_xid_trans ON trans ( gtrid, bqual);" );
+
+
+         m_statement.begin = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
+
+         m_statement.update.state = m_connection.precompile( R"( UPDATE trans SET state = :state, updated = :updated WHERE gtrid = :gtrid AND bqual = :bqual; )");
+
+         m_statement.select.all = m_connection.precompile( R"( SELECT * FROM trans; )");
+         m_statement.select.transaction = m_connection.precompile( "SELECT gtrid, bqual, format, pid, state, started, updated FROM trans WHERE gtrid = :gtrid AND bqual = :bqual;");
+
+         m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ? AND bqual = ?; ");
 
       }
 
@@ -160,8 +100,19 @@ namespace casual
       {
          common::log::internal::transaction << "log begin for xid: " << request.xid << "\n";
 
-         local::insertBegin( m_connection, request);
+         auto started = std::chrono::time_point_cast< std::chrono::microseconds>( request.start).time_since_epoch().count();
+         auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
+         long state = Log::State::cBegin;
+
+         m_statement.begin.execute(
+               common::transaction::global( request.xid),
+               common::transaction::branch( request.xid),
+               request.xid.xid().formatID,
+               request.id.pid,
+               state,
+               started,
+               updated);
       }
 
       void Log::commit( const common::message::transaction::commit::Request& request)
@@ -176,37 +127,53 @@ namespace casual
 
       void Log::prepareCommit( const common::transaction::ID& id)
       {
-         local::update( m_connection, id, State::cPreparedCommit);
+         auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
+         long state = State::cPreparedCommit;
+
+         m_statement.update.state.execute(
+               state,
+               updated,
+               common::transaction::global( id),
+               common::transaction::branch( id));
       }
 
       std::vector< Log::Row> Log::select( const common::transaction::ID& id)
       {
          std::vector< Row> result;
 
-         auto query = local::select( m_connection, id);
-         auto rows = query.fetch();
+         auto query = m_statement.select.transaction.query(
+               common::transaction::global( id),
+               common::transaction::branch( id));
 
-         common::range::transform( rows, result, local::transform::Row());
+         sql::database::Row row;
+
+         while( query.fetch( row))
+         {
+            result.push_back( local::transform::Row()( row));
+         }
 
          return result;
       }
 
       void Log::remove( const common::transaction::ID& xid)
       {
-         local::remove( m_connection, xid);
+         m_statement.remove.execute(
+            common::transaction::global( xid),
+            common::transaction::branch( xid));
       }
 
       std::vector< Log::Row> Log::select()
       {
          std::vector< Row> result;
 
-         auto query = local::select( m_connection);
+         auto query = m_statement.select.all.query();
 
-         for( auto rows = query.fetch(); ! rows.empty(); rows = query.fetch())
+         sql::database::Row row;
+
+         while( query.fetch( row))
          {
-            std::transform( std::begin( rows), std::end( rows), std::back_inserter( result), local::transform::Row());
+            result.push_back( local::transform::Row()( row));
          }
-
          return result;
       }
 

@@ -79,6 +79,7 @@ namespace casual
             cQueueEnqueueRequest,
             cQueueDequeueRequest,
             cQueueDequeueReply,
+            cQueueInformation,
          };
 
          template< message::Type type>

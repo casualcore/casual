@@ -168,6 +168,7 @@ namespace casual
                      { log::category::Type::casual_trace, { bufferFactory< log::category::Type::casual_trace>}},
                      { log::category::Type::casual_transaction, { bufferFactory< log::category::Type::casual_transaction>}},
                      { log::category::Type::casual_ipc, { bufferFactory< log::category::Type::casual_ipc>}},
+                     { log::category::Type::casual_queue, { bufferFactory< log::category::Type::casual_queue>}},
 
                      { log::category::Type::debug, { bufferFactory< log::category::Type::debug>}},
                      { log::category::Type::trace, { bufferFactory< log::category::Type::trace>}},
@@ -189,7 +190,6 @@ namespace casual
 
                   if( ! found.empty())
                   {
-                     //std::cerr << std::to_string( process::id()) + " - " + log::category::name( category) << std::endl;
                      return getBuffer( category).factory();
                   }
 
@@ -212,6 +212,7 @@ namespace casual
                   case Type::casual_trace: return "casual.trace"; break;
                   case Type::casual_transaction: return "casual.transaction"; break;
                   case Type::casual_ipc: return "casual.ipc"; break;
+                  case Type::casual_queue: return "casual.queue"; break;
 
                   case Type::debug: return "debug"; break;
                   case Type::trace: return "trace"; break;
@@ -235,6 +236,8 @@ namespace casual
             internal::Stream transaction{ local::getActiveBuffer( category::Type::casual_transaction)};
 
             internal::Stream ipc{ local::getActiveBuffer( category::Type::casual_ipc)};
+
+            internal::Stream queue{ local::getActiveBuffer( category::Type::casual_queue)};
 
 
          } // internal
@@ -267,6 +270,7 @@ namespace casual
                      { category::Type::casual_debug, internal::debug },
                      { category::Type::casual_trace, internal::trace },
                      { category::Type::casual_transaction, internal::transaction },
+                     { category::Type::casual_queue, internal::queue },
                      { category::Type::debug, debug },
                      { category::Type::trace, trace },
                      { category::Type::parameter, parameter },

@@ -111,6 +111,51 @@ namespace casual
                };
 
             } // dequeue
+
+            struct Queue
+            {
+               using id_type = std::size_t;
+
+               id_type id = 0;
+               std::string name;
+               std::size_t retries = 0;
+               id_type error = 0;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & id;
+                  archive & name;
+                  archive & retries;
+                  archive & error;
+               }
+            };
+
+            struct Information : basic_messsage< Type::cQueueInformation>
+            {
+               struct Queue : queue::Queue
+               {
+                  std::size_t messages;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     queue::Queue::marshal( archive);
+
+                     archive & messages;
+                  }
+               };
+
+               std::vector< Queue> queues;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  archive & queues;
+               }
+
+            };
+
          } // queue
       } // message
    } // common

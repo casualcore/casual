@@ -40,6 +40,11 @@ namespace casual
             //!
             extern internal::Stream ipc;
 
+            //!
+            //! Log with category 'casual.queue'
+            //!
+            extern internal::Stream queue;
+
 
          } // internal
       } // log

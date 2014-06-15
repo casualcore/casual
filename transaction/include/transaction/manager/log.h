@@ -73,6 +73,30 @@ namespace casual
       private:
 
          sql::database::Connection m_connection;
+
+         struct statement_t
+         {
+            sql::database::Statement begin;
+
+            struct update_t
+            {
+               sql::database::Statement state;
+
+            } update;
+
+            struct select_t
+            {
+               sql::database::Statement all;
+               sql::database::Statement transaction;
+
+            } select;
+
+
+            sql::database::Statement remove;
+
+
+         } m_statement;
+
       };
 
       namespace scoped

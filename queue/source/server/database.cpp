@@ -10,6 +10,7 @@
 #include "common/algorithm.h"
 
 #include "common/exception.h"
+#include "common/internal/log.h"
 
 
 #include <chrono>
@@ -60,6 +61,9 @@ namespace casual
             } // <unnamed>
          } // local
 
+
+
+
          Database::Database( const std::string& database) : m_connection( database)
          {
 
@@ -109,7 +113,61 @@ namespace casual
             //
             // the global error queue has it self as an error queue.
             //
-            m_connection.execute( " UPDATE queues SET error = ? WHERE rowid = ?;", m_errorQueue, m_errorQueue);
+            m_connection.execute( " UPDATE queues SET error = :qid WHERE rowid = :qid;", m_errorQueue);
+
+
+
+            //
+            // Precompile all other statements
+            //
+            {
+               m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?);");
+
+               m_statement.dequeue = m_connection.precompile( R"( 
+                     SELECT 
+                        correlation, reply, redelivered, type, avalible, timestamp, payload
+                     FROM 
+                        messages 
+                     WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
+
+
+               m_statement.state.xid =  m_connection.precompile( "UPDATE messages SET gtrid = :gtrid, state = 3 WHERE correlation = :correlation");
+               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM messages WHERE correlation = :correlation");
+
+
+               m_statement.commit1 = m_connection.precompile( "UPDATE messages SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
+               m_statement.commit2 = m_connection.precompile( "DELETE FROM messages WHERE gtrid = :gtrid AND state = 3;");
+
+
+               /*
+               m_statement.rollback = m_connection.precompile( R"(
+                 -- delete all enqueued  
+                 DELETE FROM messages WHERE gtrid = :gtrid AND state = 1; 
+                 -- update all dequeued back to enqueued
+                 UPDATE messages SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3;
+                 -- move to error queue
+                 UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE rowid = messages.queue) 
+                     WHERE messages.redelivered > ( SELECT retries FROM queues WHERE rowid = messages.queue);
+                     )");
+
+               */
+
+               m_statement.rollback1 = m_connection.precompile( "DELETE FROM messages WHERE gtrid = :gtrid AND state = 1;");
+               m_statement.rollback2 = m_connection.precompile( "UPDATE messages SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3");
+               m_statement.rollback3 = m_connection.precompile(
+                     "UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE rowid = messages.queue)"
+                     " WHERE messages.redelivered > ( SELECT retries FROM queues WHERE rowid = messages.queue);");
+
+               m_statement.information.queues = m_connection.precompile( R"(
+                  SELECT
+                     q.rowid, q.name, q.retries, q.error, COUNT( m.correlation)
+                  FROM
+                     queues q LEFT JOIN messages m ON q.rowid = m.queue AND m.state = 3
+                     GROUP BY q.rowid 
+                      ;
+                  )");
+
+            }
          }
 
          Queue Database::create( Queue queue)
@@ -119,7 +177,6 @@ namespace casual
             // Create corresponding error queue
             //
             m_connection.execute( "INSERT INTO queues VALUES (?,?,?);", queue.name + "_error", queue.retries, m_errorQueue);
-
             queue.error = m_connection.rowid();
 
             m_connection.execute( "INSERT INTO queues VALUES (?,?,?);", queue.name, queue.retries, queue.error);
@@ -131,35 +188,11 @@ namespace casual
 
 
 
-         /*
-         void Database::enqueue(  Queue::id_type queue, const common::transaction::ID& id, const Message& message)
-         {
-            auto gtrid = common::transaction::global( id);
-
-            long state = id ? queue::Message::State::added : queue::Message::State::enqueued;
-
-            auto avalible = std::chrono::time_point_cast< std::chrono::microseconds>( message.avalible).time_since_epoch().count();
-            auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
-
-            m_connection.execute( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?);",
-                  message.correlation.get(),
-                  queue,
-                  queue,
-                  gtrid,
-                  state,
-                  message.reply,
-                  message.redelivered,
-                  message.type,
-                  avalible,
-                  timestamp,
-                  message.payload);
-         }
-         */
-
 
          void Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
-            static auto statement = m_connection.statement( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?);");
+
+            common::log::internal::queue << "enqueue - qid: " << message.queue << " correlation: " << message.message.correlation << " size: " << message.message.payload.size() << " xid: " << message.xid.xid << std::endl;
 
             auto gtrid = common::transaction::global( message.xid.xid);
 
@@ -168,7 +201,7 @@ namespace casual
             auto avalible = std::chrono::time_point_cast< std::chrono::microseconds>( message.message.avalible).time_since_epoch().count();
             auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
-            statement.execute(
+            m_statement.enqueue.execute(
                   message.message.correlation.get(),
                   message.queue,
                   message.queue,
@@ -187,16 +220,6 @@ namespace casual
 
          common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
-            //
-            // "precompile" statement
-            //
-            static auto deqeueStatement = m_connection.statement( R"( 
-                  SELECT 
-                     correlation, reply, redelivered, type, avalible, timestamp, payload
-                  FROM 
-                     messages 
-                  WHERE queue = ? AND state = 2 AND avalible < ?  ORDER BY timestamp ASC LIMIT 1; )");
-
 
             common::message::queue::dequeue::Reply reply;
 
@@ -204,13 +227,14 @@ namespace casual
                   common::platform::clock_type::now()).time_since_epoch().count();
 
 
-            auto resultset = deqeueStatement.query( message.queue, now);
-
+            auto resultset = m_statement.dequeue.query( message.queue, now);
 
             sql::database::Row row;
 
             if( ! resultset.fetch( row))
             {
+               common::log::internal::queue << "dequeue - qid: " << message.queue << " - no message" << std::endl;
+
                return reply;
             }
 
@@ -222,18 +246,16 @@ namespace casual
             //
             if( message.xid.xid)
             {
-               static auto statement = m_connection.statement( "UPDATE messages SET gtrid = ?, state = 3 WHERE correlation = ?");
-
                auto gtrid = common::transaction::global(  message.xid.xid);
 
-               statement.execute( gtrid, result.correlation.get());
+               m_statement.state.xid.execute( gtrid, result.correlation.get());
             }
             else
             {
-               static auto statement = m_connection.statement( "DELETE FROM messages WHERE correlation = ?");
-
-               statement.execute( result.correlation.get());
+               m_statement.state.nullxid.execute( result.correlation.get());
             }
+
+            common::log::internal::queue << "dequeue - qid: " << message.queue << " correlation: " << result.correlation << " size: " << result.payload.size() << " xid: " << message.xid.xid << std::endl;
 
             reply.message.push_back( std::move( result));
 
@@ -243,77 +265,45 @@ namespace casual
 
          void Database::commit( const common::transaction::ID& id)
          {
-            //
-            // First vi update "added" to enqueued
-            //
-            {
-               const std::string sql{ "UPDATE messages SET state = 2 WHERE gtrid = ? AND state = 1"};
+            common::log::internal::queue << "commit xid: " << id << std::endl;
 
-               auto gtrid = common::transaction::global( id);
+            auto gtrid = common::transaction::global( id);
 
-               m_connection.execute( sql, gtrid);
-
-            }
-
-            //
-            // Then we delete all "removed" messages
-            //
-            {
-               const std::string sql{ "DELETE FROM messages WHERE gtrid = ? AND state = 3"};
-
-               auto gtrid = common::transaction::global( id);
-
-               m_connection.execute( sql, gtrid);
-
-            }
-
+            m_statement.commit1.execute( gtrid);
+            m_statement.commit2.execute( gtrid);
          }
 
 
          void Database::rollback( const common::transaction::ID& id)
          {
-            //
-            // First vi delete "added" messages
-            //
-            {
-               const std::string sql{ "DELETE FROM messages WHERE gtrid = ? AND state = 1"};
+            common::log::internal::queue << "rollback xid: " << id << std::endl;
 
-               auto gtrid = common::transaction::global( id);
+            auto gtrid = common::transaction::global( id);
 
-               m_connection.execute( sql, gtrid);
-
-            }
-
-            //
-            // Then we make all "removed" to enqueued
-            //
-            {
-
-               auto gtrid = common::transaction::global( id);
-
-               m_connection.execute( "UPDATE messages SET state = 2, redelivered = redelivered + 1  WHERE gtrid = ? AND state = 3", gtrid);
-
-               m_connection.execute( "UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE rowid = messages.queue) WHERE messages.redelivered > ( SELECT retries FROM queues WHERE rowid = messages.queue)");
-
-            }
+            m_statement.rollback1.execute( gtrid);
+            m_statement.rollback2.execute( gtrid);
+            m_statement.rollback3.execute();
          }
 
 
-         std::vector< Queue> Database::queues()
+         std::vector< common::message::queue::Information::Queue> Database::queues()
          {
-            std::vector< Queue> result;
+            std::vector< common::message::queue::Information::Queue> result;
 
-            auto query = m_connection.query( "SELECT rowid, name, retries, error FROM queues ORDER BY name;");
+            //auto query = m_connection.query( "SELECT rowid, name, retries, error FROM queues ORDER BY name;");
+            auto query = m_statement.information.queues.query();
 
             sql::database::Row row;
 
             while( query.fetch( row))
             {
-               Queue queue;
+               common::message::queue::Information::Queue queue;
+
                row.get( 0, queue.id);
                row.get( 1, queue.name);
                row.get( 2, queue.retries);
                row.get( 3, queue.error);
+               row.get( 4, queue.messages);
 
                result.push_back( std::move( queue));
             }
@@ -330,6 +320,11 @@ namespace casual
          void Database::persistenceCommit()
          {
             m_connection.commit();
+         }
+
+         std::size_t Database::affected() const
+         {
+            return m_connection.affected();
          }
 
       } // server

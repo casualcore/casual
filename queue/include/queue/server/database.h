@@ -58,7 +58,7 @@ namespace casual
             void rollback( const common::transaction::ID& id);
 
 
-            std::vector< Queue> queues();
+            std::vector< common::message::queue::Information::Queue> queues();
 
             void persistenceBegin();
             void persistenceCommit();
@@ -69,9 +69,44 @@ namespace casual
             //!
             Queue::id_type error() const { return m_errorQueue;}
 
+
+            //!
+            //! @return the number of rows affected by the last statement.
+            //!
+            std::size_t affected() const;
+
+
          private:
             sql::database::Connection m_connection;
             Queue::id_type m_errorQueue;
+
+            struct Statement
+            {
+               sql::database::Statement enqueue;
+               sql::database::Statement dequeue;
+
+               struct state_t
+               {
+                  sql::database::Statement xid;
+                  sql::database::Statement nullxid;
+
+               } state;
+
+
+               sql::database::Statement commit1;
+               sql::database::Statement commit2;
+
+               sql::database::Statement rollback1;
+               sql::database::Statement rollback2;
+               sql::database::Statement rollback3;
+
+               struct info_t
+               {
+                  sql::database::Statement queues;
+               } information;
+
+            } m_statement;
+
          };
 
 

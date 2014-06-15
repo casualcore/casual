@@ -22,9 +22,6 @@
 #include <string>
 #include <memory>
 
-// temp
-#include <iostream>
-
 
 #include <cstring>
 
@@ -162,7 +159,7 @@ namespace sql
       struct Row
       {
          Row() {};
-         Row( sqlite3_stmt* statement) : m_statement{ statement} {}
+         Row( const std::shared_ptr< sqlite3_stmt>& statement) : m_statement{ statement} {}
 
          Row( Row&&) = default;
          Row& operator = ( Row&&) = default;
@@ -171,141 +168,39 @@ namespace sql
          T get( int column)
          {
             T value;
-            column_get( m_statement, column, value);
+            column_get( m_statement.get(), column, value);
             return value;
          }
 
          template< typename T>
          void get( int column, T& value)
          {
-            column_get( m_statement, column, value);
-         }
-
-
-
-      private:
-         sqlite3_stmt* m_statement = nullptr;
-      };
-
-      struct Query
-      {
-         template< typename ...Params>
-         Query( sqlite3* handle, const std::string& statement, Params&&... params) : m_handle( handle)
-         {
-            if( sqlite3_prepare_v2( m_handle, statement.data(), -1, &m_statement, nullptr) != SQLITE_OK)
-            {
-               throw exception::Query{ sqlite3_errmsg( handle)};
-            }
-
-            bind( 1, std::forward< Params>( params)...);
-
-         }
-
-         Query( Query&& rhs)
-         {
-            std::swap( m_statement, rhs.m_statement);
-            std::swap( m_handle, rhs.m_handle);
-         }
-
-         Query( const Query&) = delete;
-         Query& operator = ( const Query&) = delete;
-
-        ~Query()
-        {
-           sqlite3_finalize( m_statement);
-        }
-
-        void execute()
-        {
-           if( sqlite3_step( m_statement) != SQLITE_DONE)
-           {
-              throw exception::Query{ sqlite3_errmsg( m_handle)};
-           }
-        }
-
-         std::vector< Row> fetch() &
-         {
-            std::vector< Row> result;
-            switch( sqlite3_step( m_statement))
-            {
-               case SQLITE_ROW:
-               {
-                  result.emplace_back( m_statement);
-                  break;
-               }
-               case SQLITE_DONE:
-                  break;
-               default:
-                  throw exception::Query{ sqlite3_errmsg( m_handle)};
-            }
-
-            return result;
-         }
-
-
-         bool fetch( Row& row) &
-         {
-            switch( sqlite3_step( m_statement))
-            {
-               case SQLITE_ROW:
-               {
-                  row = Row( m_statement);
-                  return true;
-                  break;
-               }
-               case SQLITE_DONE:
-                  return false;
-               default:
-                  throw exception::Query{ sqlite3_errmsg( m_handle)};
-            }
+            column_get( m_statement.get(), column, value);
          }
 
       private:
-
-         void bind( int index) { /* no op */}
-
-         template< typename T, typename ...Params>
-         void bind( int index, T&&value, Params&&... params)
-         {
-            if( ! parameter_bind( m_statement, index, std::forward< T>( value)))
-            {
-               throw exception::Query{ sqlite3_errmsg( m_handle) + std::string{ " index: "} + std::to_string( index)};
-            }
-            bind( index + 1, std::forward< Params>( params)...);
-         }
-
-
-        sqlite3_stmt* m_statement = nullptr;
-        sqlite3* m_handle = nullptr;
+         std::shared_ptr< sqlite3_stmt> m_statement;
       };
+
 
 
       struct Statement
       {
-         struct Deleter
-         {
-            void operator() ( sqlite3_stmt* statement) const
-            {
-               sqlite3_finalize( statement);
-            }
-         };
-
-         struct Result
+         struct Query
          {
             template< typename ...Params>
-            Result( std::shared_ptr< sqlite3>& handle, std::shared_ptr< sqlite3_stmt>& statement, Params&&... params) : m_handle( handle), m_statement( statement)
+            Query( const std::shared_ptr< sqlite3>& handle, const std::shared_ptr< sqlite3_stmt>& statement, Params&&... params) : m_handle( handle), m_statement( statement)
             {
                bind( 1, std::forward< Params>( params)...);
             }
 
-            Result( Result&& rhs) = default;
+            Query( Query&& rhs) = default;
 
-            Result( const Result&) = delete;
-            Result& operator = ( const Result&) = delete;
+            Query( const Query&) = delete;
+            Query& operator = ( const Query&) = delete;
 
-           ~Result()
+           ~Query()
            {
-              std::cerr << "sqlite3_reset @" << static_cast< void*>( m_statement.get()) << std::endl;
               sqlite3_reset( m_statement.get());
            }
 
@@ -316,7 +211,7 @@ namespace sql
               {
                  case SQLITE_ROW:
                  {
-                    result.emplace_back( m_statement.get());
+                    result.emplace_back( m_statement);
                     break;
                  }
                  case SQLITE_DONE:
@@ -335,7 +230,7 @@ namespace sql
               {
                  case SQLITE_ROW:
                  {
-                    row = Row( m_statement.get());
+                    row = Row( m_statement);
                     return true;
                     break;
                  }
@@ -372,7 +267,9 @@ namespace sql
             std::shared_ptr< sqlite3_stmt> m_statement;
          };
 
-         Statement( std::shared_ptr< sqlite3>& handle, const std::string& statement) : m_handle( handle)
+         Statement() = default;
+
+         Statement( const std::shared_ptr< sqlite3>& handle, const std::string& statement) : m_handle( handle)
          {
             sqlite3_stmt* stmt;
 
@@ -384,15 +281,15 @@ namespace sql
          }
 
          template< typename ...Params>
-         Result query( Params&&... params)
+         Query query( Params&&... params)
          {
-            return Result{ m_handle, m_statement, std::forward< Params>( params)...};
+            return Query{ m_handle, m_statement, std::forward< Params>( params)...};
          }
 
          template< typename ...Params>
          void execute( Params&&... params)
          {
-            Result{ m_handle, m_statement, std::forward< Params>( params)...}.execute();
+            Query{ m_handle, m_statement, std::forward< Params>( params)...}.execute();
          }
 
       private:
@@ -417,23 +314,23 @@ namespace sql
          }
 
 
-         Statement statement( const std::string& statement)
+         Statement precompile( const std::string& statement)
          {
             return Statement{ m_handle, statement};
          }
 
 
          template< typename ...Params>
-         Query query( const std::string& statement, Params&&... params) &
+         Statement::Query query( const std::string& statement, Params&&... params)
          {
-            return Query{ m_handle, statement, std::forward< Params>( params)...};
+            return precompile( statement).query( std::forward< Params>( params)...);
          }
 
 
          template< typename ...Params>
-         void execute( const std::string& statement, Params&&... params) &
+         void execute( const std::string& statement, Params&&... params)
          {
-            Query{ m_handle, statement, std::forward< Params>( params)...}.execute();
+            query( statement, std::forward< Params>( params)...).execute();
          }
 
 
@@ -443,6 +340,11 @@ namespace sql
          auto rowid() const -> decltype( sqlite3_last_insert_rowid( std::declval<sqlite3*>()))
          {
             return sqlite3_last_insert_rowid( m_handle.get());
+         }
+
+         auto affected() const -> decltype( sqlite3_changes( std::declval<sqlite3*>()))
+         {
+            return sqlite3_changes( m_handle.get());
          }
 
          void begin() const { sqlite3_exec( m_handle.get(), "BEGIN", 0, 0, 0); }
