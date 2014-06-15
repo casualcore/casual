@@ -76,6 +76,9 @@ namespace casual
 
             // casual queue
             QUEUE_BASE = 5000,
+            cQueueEnqueueRequest,
+            cQueueDequeueRequest,
+            cQueueDequeueReply,
          };
 
          template< message::Type type>

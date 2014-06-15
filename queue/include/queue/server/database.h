@@ -12,6 +12,8 @@
 
 #include "queue/message.h"
 
+#include "common/message/queue.h"
+
 namespace casual
 {
    namespace queue
@@ -26,8 +28,8 @@ namespace casual
             Queue( std::string name) : name( std::move( name)) {}
             Queue( std::string name, std::size_t retries) : name( std::move( name)), retries( retries) {}
 
-            Queue( Queue&&) = default;
-            Queue& operator = ( Queue&&) = default;
+            //Queue( Queue&&) = default;
+            //Queue& operator = ( Queue&&) = default;
 
             id_type id = 0;
             std::string name;
@@ -42,9 +44,14 @@ namespace casual
 
             Queue create( Queue queue);
 
-            void enqueue( Queue::id_type queue, const common::transaction::ID& id, const Message& message);
+            //void enqueue( Queue::id_type queue, const common::transaction::ID& id, const Message& message);
 
-            Message dequeue( Queue::id_type queue, const common::transaction::ID& id);
+            void enqueue( const common::message::queue::enqueue::Request& message);
+
+
+            //Message dequeue( Queue::id_type queue, const common::transaction::ID& id);
+
+            common::message::queue::dequeue::Reply dequeue( const common::message::queue::dequeue::Request& message);
 
 
             void commit( const common::transaction::ID& id);

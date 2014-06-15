@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef DATABASE_H_
-#define DATABASE_H_
+#ifndef SQL_DATABASE_H_
+#define SQL_DATABASE_H_
 
 
 #include <sqlite3.h>
@@ -20,7 +20,10 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
+#include <memory>
 
+// temp
+#include <iostream>
 
 
 #include <cstring>
@@ -276,29 +279,148 @@ namespace sql
         sqlite3* m_handle = nullptr;
       };
 
+
+      struct Statement
+      {
+         struct Deleter
+         {
+            void operator() ( sqlite3_stmt* statement) const
+            {
+               sqlite3_finalize( statement);
+            }
+         };
+
+         struct Result
+         {
+            template< typename ...Params>
+            Result( std::shared_ptr< sqlite3>& handle, std::shared_ptr< sqlite3_stmt>& statement, Params&&... params) : m_handle( handle), m_statement( statement)
+            {
+               bind( 1, std::forward< Params>( params)...);
+            }
+
+            Result( Result&& rhs) = default;
+
+            Result( const Result&) = delete;
+            Result& operator = ( const Result&) = delete;
+
+           ~Result()
+           {
+              std::cerr << "sqlite3_reset @" << static_cast< void*>( m_statement.get()) << std::endl;
+              sqlite3_reset( m_statement.get());
+           }
+
+           std::vector< Row> fetch()
+           {
+              std::vector< Row> result;
+              switch( sqlite3_step( m_statement.get()))
+              {
+                 case SQLITE_ROW:
+                 {
+                    result.emplace_back( m_statement.get());
+                    break;
+                 }
+                 case SQLITE_DONE:
+                    break;
+                 default:
+                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+              }
+
+              return result;
+           }
+
+
+           bool fetch( Row& row)
+           {
+              switch( sqlite3_step( m_statement.get()))
+              {
+                 case SQLITE_ROW:
+                 {
+                    row = Row( m_statement.get());
+                    return true;
+                    break;
+                 }
+                 case SQLITE_DONE:
+                    return false;
+                 default:
+                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+              }
+           }
+
+            void execute()
+            {
+               if( sqlite3_step( m_statement.get()) != SQLITE_DONE)
+               {
+                  throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+               }
+            }
+
+         private:
+
+           void bind( int index) { /* no op */}
+
+           template< typename T, typename ...Params>
+           void bind( int index, T&&value, Params&&... params)
+           {
+              if( ! parameter_bind( m_statement.get(), index, std::forward< T>( value)))
+              {
+                 throw exception::Query{ sqlite3_errmsg( m_handle.get()) + std::string{ " index: "} + std::to_string( index)};
+              }
+              bind( index + 1, std::forward< Params>( params)...);
+           }
+
+            std::shared_ptr< sqlite3> m_handle;
+            std::shared_ptr< sqlite3_stmt> m_statement;
+         };
+
+         Statement( std::shared_ptr< sqlite3>& handle, const std::string& statement) : m_handle( handle)
+         {
+            sqlite3_stmt* stmt;
+
+            if( sqlite3_prepare_v2( m_handle.get(), statement.data(), -1, &stmt, nullptr) != SQLITE_OK)
+            {
+               throw exception::Query{ sqlite3_errmsg( handle.get())};
+            }
+            m_statement = std::shared_ptr< sqlite3_stmt>( stmt, sqlite3_finalize);
+         }
+
+         template< typename ...Params>
+         Result query( Params&&... params)
+         {
+            return Result{ m_handle, m_statement, std::forward< Params>( params)...};
+         }
+
+         template< typename ...Params>
+         void execute( Params&&... params)
+         {
+            Result{ m_handle, m_statement, std::forward< Params>( params)...}.execute();
+         }
+
+      private:
+         std::shared_ptr< sqlite3> m_handle;
+         std::shared_ptr< sqlite3_stmt> m_statement;
+      };
+
       struct Connection
       {
          Connection( const std::string &filename)
          {
-            if( sqlite3_open( filename.data(), &m_handle) != SQLITE_OK)
+            sqlite3* handle;
+
+            if( sqlite3_open( filename.data(), &handle) != SQLITE_OK)
                //&& sql("PRAGMA foreign_keys = ON;"))
             {
-               throw exception::Connection( sqlite3_errmsg( m_handle));
+               throw exception::Connection( sqlite3_errmsg( handle));
             }
+
+            m_handle = std::shared_ptr< sqlite3>( handle, sqlite3_close);
+
          }
 
-         ~Connection()
+
+         Statement statement( const std::string& statement)
          {
-            sqlite3_close( m_handle);
+            return Statement{ m_handle, statement};
          }
-
-         Connection( Connection&& rhs)
-         {
-            std::swap( m_handle, rhs.m_handle);
-         }
-
-         Connection( const Connection&) = delete;
-         Connection& operator = ( const Connection&) = delete;
 
 
          template< typename ...Params>
@@ -320,16 +442,15 @@ namespace sql
          //!
          auto rowid() const -> decltype( sqlite3_last_insert_rowid( std::declval<sqlite3*>()))
          {
-            return sqlite3_last_insert_rowid( m_handle);
+            return sqlite3_last_insert_rowid( m_handle.get());
          }
 
-         void begin() const { sqlite3_exec( m_handle, "BEGIN", 0, 0, 0); }
-         void rollback() const { sqlite3_exec( m_handle, "ROLLBACK", 0, 0, 0); }
-         void commit() const { sqlite3_exec( m_handle, "COMMIT", 0, 0, 0); }
+         void begin() const { sqlite3_exec( m_handle.get(), "BEGIN", 0, 0, 0); }
+         void rollback() const { sqlite3_exec( m_handle.get(), "ROLLBACK", 0, 0, 0); }
+         void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
 
       private:
-
-         sqlite3* m_handle = nullptr;
+         std::shared_ptr< sqlite3> m_handle;
       };
 
    } // database

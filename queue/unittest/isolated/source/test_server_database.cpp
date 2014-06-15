@@ -15,6 +15,8 @@
 #include "common/exception.h"
 
 
+
+
 namespace casual
 {
    namespace queue
@@ -36,23 +38,36 @@ namespace casual
                return ":memory:";
             }
 
+            static const common::transaction::ID nullId{};
 
-            queue::Message message()
+            common::message::queue::enqueue::Request message( const server::Queue& queue, const common::transaction::ID& xid = nullId)
             {
-               queue::Message message;
+               common::message::queue::enqueue::Request result;
 
-               message.correlation = common::Uuid::make();
-               message.reply = "someQueue";
-               message.type = 42;
-               message.payload.resize( 128);
+               result.queue = queue.id;
+               result.xid.xid = xid;
 
-               message.avalible = common::platform::clock_type::now();
-               message.timestamp = common::platform::clock_type::now();
+               result.message.correlation = common::Uuid::make();
+               result.message.reply = "someQueue";
+               result.message.type = 42;
+               result.message.payload.resize( 128);
 
-               return message;
+               result.message.avalible = common::platform::clock_type::now();
+               //result.message.timestamp = common::platform::clock_type::now();
+
+               return result;
             }
 
-            static const common::transaction::ID nullId{};
+            common::message::queue::dequeue::Request request( const server::Queue& queue, const common::transaction::ID& xid = nullId)
+            {
+               common::message::queue::dequeue::Request result;
+
+               result.queue = queue.id;
+               result.xid.xid = xid;
+
+               return result;
+            }
+
 
          } // <unnamed>
       } // local
@@ -104,10 +119,10 @@ namespace casual
          server::Database database( path);
          auto queue = database.create( server::Queue{ "unittest_queue"});
 
-         Message message = local::message();
+         auto message = local::message( queue);
 
          EXPECT_NO_THROW({
-            database.enqueue( queue.id, local::nullId, message);
+            database.enqueue( message);
          });
       }
 
@@ -118,53 +133,59 @@ namespace casual
          server::Database database( path);
          auto queue = database.create( server::Queue{ "unittest_queue"});
 
-         Message origin = local::message();
-         database.enqueue( queue.id, local::nullId, origin);
+         auto origin = local::message( queue);
+         database.enqueue( origin);
 
-         Message fetched = database.dequeue( queue.id, local::nullId);
+         auto fetched = database.dequeue( local::request( queue));
 
-         EXPECT_TRUE( origin.correlation == fetched.correlation);
-         EXPECT_TRUE( origin.type == fetched.type);
-         EXPECT_TRUE( origin.reply == fetched.reply);
-         EXPECT_TRUE( origin.avalible == fetched.avalible);
-         EXPECT_TRUE( origin.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
+         ASSERT_TRUE( fetched.message.size() == 1);
+         EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+         EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
+         EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+         EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
+         //EXPECT_TRUE( origin.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
 
       }
 
 
       TEST( casual_queue_server_database, dequeue_100_message)
       {
+
          auto path = local::file();
          server::Database database( path);
          auto queue = database.create( server::Queue{ "unittest_queue"});
 
-         std::vector< queue::Message> messages;
+         using message_type = decltype( local::message( queue));
+
+
+         std::vector< message_type > messages;
 
          auto count = 0;
-         while( count++ < 100)
+         while( count++ < 2)
          {
-            auto m = local::message();
-            m.type = count;
+            auto m = local::message( queue);
+            m.message.type = count;
             messages.push_back( std::move( m));
          }
 
          {
             server::scoped::Writer writer{ database};
-            common::range::for_each( messages, [&]( const queue::Message& m){
-               database.enqueue( queue.id, local::nullId, m);});
+            common::range::for_each( messages, [&]( const message_type& m){
+               database.enqueue( m);});
          }
 
          server::scoped::Writer writer{ database};
 
-         common::range::for_each( messages,[&]( const queue::Message& origin){
+         common::range::for_each( messages,[&]( const message_type& origin){
 
-            Message fetched = database.dequeue( queue.id, local::nullId);
+            auto fetched = database.dequeue( local::request( queue));
 
-            EXPECT_TRUE( origin.correlation == fetched.correlation);
-            EXPECT_TRUE( origin.type == fetched.type) << "origin.type: " << origin.type << " fetched.type; " << fetched.type;
-            EXPECT_TRUE( origin.reply == fetched.reply);
-            EXPECT_TRUE( origin.avalible == fetched.avalible);
-            EXPECT_TRUE( origin.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
+            ASSERT_TRUE( fetched.message.size() == 1);
+            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type) << "origin.type: " << origin.message.type << " fetched.type; " << fetched.message.at( 0).type;
+            EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+            EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
+            //EXPECT_TRUE( origin.message.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
          });
 
       }
@@ -177,20 +198,21 @@ namespace casual
          auto queue = database.create( server::Queue{ "unittest_queue"});
 
 
-         Message origin = local::message();
+         common::transaction::ID xid = common::transaction::ID::create();
+         auto origin = local::message( queue, xid);
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            database.enqueue( origin);
 
-            database.enqueue( queue.id, xid, origin);
+            //
+            // Message should not be available.
+            //
+            EXPECT_TRUE( database.dequeue( local::request( queue)).message.empty());
 
-            EXPECT_THROW({
-               database.dequeue( queue.id, local::nullId);
-            }, common::exception::Base);
-
-            EXPECT_THROW({
-               database.dequeue( queue.id, xid);
-            }, common::exception::Base);
+            //
+            // Not even within the same transaction
+            //
+            EXPECT_TRUE( database.dequeue( local::request( queue, xid)).message.empty());
 
             database.commit( xid);
          }
@@ -198,13 +220,13 @@ namespace casual
          {
             common::transaction::ID xid = common::transaction::ID::create();
 
-            Message fetched = database.dequeue( queue.id, xid);
+            auto fetched = database.dequeue( local::request( queue, xid));
 
-            EXPECT_TRUE( origin.correlation == fetched.correlation);
-            EXPECT_TRUE( origin.type == fetched.type);
-            EXPECT_TRUE( origin.reply == fetched.reply);
-            EXPECT_TRUE( origin.avalible == fetched.avalible);
-            EXPECT_TRUE( origin.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
+            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
+            EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+            EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
+            //EXPECT_TRUE( origin.message.timestamp <= fetched.timestamp) << "origin: " << origin.message.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
 
          }
 
@@ -218,27 +240,25 @@ namespace casual
          auto queue = database.create( server::Queue{ "unittest_queue"});
 
 
-         Message origin = local::message();
+         auto origin = local::message( queue);
 
          {
             common::transaction::ID xid = common::transaction::ID::create();
 
-            database.enqueue( queue.id, xid, origin);
+            database.enqueue( origin);
             database.commit( xid);
          }
 
          {
             common::transaction::ID xid = common::transaction::ID::create();
 
-            Message fetched = database.dequeue( queue.id, xid);
+            auto fetched = database.dequeue( local::request( queue, xid));
 
-            EXPECT_TRUE( origin.correlation == fetched.correlation);
+            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
 
             database.rollback( xid);
 
-            EXPECT_THROW({
-               database.dequeue( queue.id, xid);
-            }, common::exception::Base);
+            EXPECT_TRUE( database.dequeue( local::request( queue, xid)).message.empty());
          }
 
          //
@@ -246,9 +266,12 @@ namespace casual
          //
          {
             common::transaction::ID xid = common::transaction::ID::create();
-            Message fetched = database.dequeue( queue.error, xid);
+            auto errorQ = queue;
+            errorQ.id = queue.error;
 
-            EXPECT_TRUE( origin.correlation == fetched.correlation);
+            auto fetched = database.dequeue( local::request( errorQ, xid));
+
+            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
 
             database.rollback( xid);
          }
@@ -258,9 +281,13 @@ namespace casual
          //
          {
             common::transaction::ID xid = common::transaction::ID::create();
-            Message fetched = database.dequeue( database.error(), xid);
 
-            EXPECT_TRUE( origin.correlation == fetched.correlation);
+            auto errorQ = queue;
+            errorQ.id = database.error();
+
+            auto fetched = database.dequeue( local::request( errorQ, xid));
+
+            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
          }
 
       }

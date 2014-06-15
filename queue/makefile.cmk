@@ -27,6 +27,7 @@ casual_queue_server_libraries = [
 casual_queue_server_archive_objs = [
    Compile( 'source/server/server.cpp', 'obj/server/server.o'),
    Compile( 'source/server/database.cpp', 'obj/server/database.o'),
+   Compile( 'source/server/handle.cpp', 'obj/server/handle.o')
 ];
 
 casual_queue_server_libraries.append( 

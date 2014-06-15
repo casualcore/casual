@@ -29,14 +29,14 @@ namespace casual
                namespace transform
                {
 
-                  struct Message
+                  struct Reply
                   {
 
-                     queue::Message operator () ( sql::database::Row& row) const
+                     common::message::queue::dequeue::Reply::Message operator () ( sql::database::Row& row) const
                      {
 
                         // SELECT correlation, reply, redelivered, type, avalible, timestamp, payload
-                        queue::Message result;
+                        common::message::queue::dequeue::Reply::Message result;
 
                         row.get( 0, result.correlation.get());
                         row.get( 1, result.reply);
@@ -131,6 +131,7 @@ namespace casual
 
 
 
+         /*
          void Database::enqueue(  Queue::id_type queue, const common::transaction::ID& id, const Message& message)
          {
             auto gtrid = common::transaction::global( id);
@@ -153,43 +154,90 @@ namespace casual
                   timestamp,
                   message.payload);
          }
+         */
 
-         Message Database::dequeue(  Queue::id_type queue, const common::transaction::ID& id)
+
+         void Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
+            static auto statement = m_connection.statement( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?);");
 
-            auto now = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
+            auto gtrid = common::transaction::global( message.xid.xid);
 
-            const std::string sql{ R"( 
-SELECT correlation, reply, redelivered, type, avalible, timestamp, payload
-FROM messages WHERE queue = ? AND state = 2 AND avalible < ?  ORDER BY timestamp ASC LIMIT 1; )" };
+            long state = message.xid.xid ? queue::Message::State::added : queue::Message::State::enqueued;
+
+            auto avalible = std::chrono::time_point_cast< std::chrono::microseconds>( message.message.avalible).time_since_epoch().count();
+            auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
+
+            statement.execute(
+                  message.message.correlation.get(),
+                  message.queue,
+                  message.queue,
+                  gtrid,
+                  state,
+                  message.message.reply,
+                  0,
+                  message.message.type,
+                  avalible,
+                  timestamp,
+                  message.message.payload);
+         }
 
 
-            auto query = m_connection.query( sql, queue, now);
+
+
+         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
+         {
+            //
+            // "precompile" statement
+            //
+            static auto deqeueStatement = m_connection.statement( R"( 
+                  SELECT 
+                     correlation, reply, redelivered, type, avalible, timestamp, payload
+                  FROM 
+                     messages 
+                  WHERE queue = ? AND state = 2 AND avalible < ?  ORDER BY timestamp ASC LIMIT 1; )");
+
+
+            common::message::queue::dequeue::Reply reply;
+
+            auto now = std::chrono::time_point_cast< std::chrono::microseconds>(
+                  common::platform::clock_type::now()).time_since_epoch().count();
+
+
+            auto resultset = deqeueStatement.query( message.queue, now);
+
 
             sql::database::Row row;
 
-            if( ! query.fetch( row))
+            if( ! resultset.fetch( row))
             {
-               throw common::exception::NotReallySureWhatToNameThisException( "no messages");
+               return reply;
             }
 
-            auto message = local::transform::Message()( row);
+            auto result = local::transform::Reply()( row);
+
 
             //
             // Update state
             //
-            if( id)
+            if( message.xid.xid)
             {
-               auto gtrid = common::transaction::global( id);
-               m_connection.execute( "UPDATE messages SET gtrid = ?, state = 3 WHERE correlation = ?", gtrid, message.correlation.get());
+               static auto statement = m_connection.statement( "UPDATE messages SET gtrid = ?, state = 3 WHERE correlation = ?");
+
+               auto gtrid = common::transaction::global(  message.xid.xid);
+
+               statement.execute( gtrid, result.correlation.get());
             }
             else
             {
-               m_connection.execute( "DELETE FROM messages WHERE correlation = ?", message.correlation.get());
+               static auto statement = m_connection.statement( "DELETE FROM messages WHERE correlation = ?");
+
+               statement.execute( result.correlation.get());
             }
 
+            reply.message.push_back( std::move( result));
 
-            return message;
+            return reply;
          }
 
 
@@ -276,6 +324,8 @@ FROM messages WHERE queue = ? AND state = 2 AND avalible < ?  ORDER BY timestamp
          {
             m_connection.begin();
          }
+
+
 
          void Database::persistenceCommit()
          {
