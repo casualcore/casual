@@ -112,19 +112,12 @@ def Parallel():
 
 def Compile( sourcefile, objectfile, directive = ''):
     """
-
-
- CompileDirective(sourcefile,objectfile,directive)
-
  Compiles a source file to an object file, with excplicit directives
 
- param: sourcefile    name of the sourcefile (src/myfile.cpp)
-    
- param: objectfile    name of the output object file (obj/myfile.o)
-
- param: directive   optional compile directive for this TU, default ''
-
-
+ :param sourcefile:    name of the sourcefile (src/myfile.cpp)
+ :param objectfile:    name of the output object file (obj/myfile.o)
+ :param directive:   optional compile directive for this TU, default ''
+ :return: the objectfile
     """
 
     local_object_path=def_CurrentDirectory + "/" + internal_clean_directory_name( os.path.dirname( objectfile))
@@ -209,19 +202,14 @@ def LinkAtmiClient(name,objectfiles,libs):
 
 
 def LinkLibrary(name,objectfiles,libs):
-    """
-
- 
- LinkLibrary(name,objectfiles,libs)
-
+    """LinkLibrary(name,objectfiles,libs)
  Links a shared library
+ 
+    :param name        name of the binary with out prefix or suffix.
+    :param objectfiles    object files that is linked
+    :param libs        dependent libraries
 
- param: name        name of the binary with out prefix or suffix.
-    
- param: objectfiles    object files that is linked
-
- param: libs        dependent libraries
-
+    :return: library name
     """
     internal_base_link("$(LIBRARY_LINKER)", name, internal_shared_library_name_path( name), objectfiles, libs, " $(LINK_DIRECTIVES_LIB)")
     
@@ -229,19 +217,16 @@ def LinkLibrary(name,objectfiles,libs):
     print "\t@" + def_Deploy + " " + internal_shared_library_name(name) + " lib"
     print 
         
+    return name;
 
 
 def LinkArchive(name,objectfiles):
     """
-
- 
-  LinkArchive(name,objectfiles)
-
  Links an archive
 
- param: name        name of the binary with out prefix or suffix.
-    
- param: objectfiles    object files that is linked
+ :param: name        name of the binary with out prefix or suffix.  
+ :param: objectfiles    object files that is linked
+ :return: archive name
     """
 
     objectfiles = ' '.join(objectfiles)
@@ -275,22 +260,17 @@ def LinkArchive(name,objectfiles):
 
     print internal_target_deploy_name( name) + ":"
 
+    return name;
 
 def LinkExecutable(name,objectfiles,libs):
     """
+  Links an executable
 
- 
- LinkExecutable(name,objectfiles,libs)
-
- Links an executable
-
- param: name        name of the binary with out prefix or suffix.
+ :param name        name of the binary with out prefix or suffix.
     
- param: objectfiles    object files that is linked
+ :param objectfiles    object files that is linked
 
- param: libs        dependent libraries
-
-
+ :param libs        dependent libraries
     """
     internal_base_link("$(EXECUTABLE_LINKER)", name, internal_executable_name_path( name), objectfiles, libs, "$(LINK_DIRECTIVES_EXE)")
     
@@ -301,15 +281,9 @@ def LinkExecutable(name,objectfiles,libs):
 
 def Build(casualMakefile):
     """
-
- 
- Build(casualMakefile)
-
  "builds" another casual-make-file: jumps to the spcific file and execute make
 
- param: casualMakefile    The file to build
-
-
+ :param casualMakefile    The file to build
     """
     
     #
