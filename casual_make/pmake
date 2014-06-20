@@ -216,10 +216,9 @@ if __name__ == '__main__':
             raise
             sys.exit(1)
 
-#
-# Find number of CPU:s to set jobs and load
-#
-
+    #
+    # Find number of CPU:s to set jobs and load
+    #
     CPU_COUNT=numberOfCPUs()
 
 

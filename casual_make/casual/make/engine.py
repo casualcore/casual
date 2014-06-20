@@ -93,6 +93,9 @@ class Engine(object):
         #
         self.makefile.write( "CASUALMAKE_PATH = " + os.path.dirname(os.path.abspath(sys.argv[0])) + u"/..\n")
         
+        self.makefile.write( "USER_CASUAL_MAKE_FILE = " + self.casual_makefile + "\n");
+        
+        
         if 'include' in localVariables:
             for entry in localVariables['include']:
                 self.makefile.write( 'include ' +  entry + '\n')

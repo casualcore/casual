@@ -150,9 +150,8 @@ def Compile( sourcefile, objectfile, directive = ''):
 
 
 
-def LinkServer( name, objectfiles, libraries, serverdefintion, resources=None):
+def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
     """
-
  Links a XATMI-server
 
  param: name        name of the server with out prefix or suffix.
@@ -161,14 +160,12 @@ def LinkServer( name, objectfiles, libraries, serverdefintion, resources=None):
 
  param: libraries        dependent libraries
 
- param: serverdefintion  path to the server definition file that configure the public services, 
+ param: serverdefinition  path to the server definition file that configure the public services, 
                          and semantics.
                          Can also be a list of public services. I e.  ["service1", "service2"]
                     
  param: resources  optional - a list of XA resources. I e ["db2-rm"] - the names shall 
                 correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
-
-
     """
 
     if not resources:
@@ -176,29 +173,21 @@ def LinkServer( name, objectfiles, libraries, serverdefintion, resources=None):
     else:
         resource_directive = " -r " + ' '.join( resources)
 
-    internal_BASE_LinkATMI( "$(BUILDSERVER)", name, serverdefintion, "", objectfiles, libraries, resource_directive)
+    return internal_BASE_LinkATMI( "$(BUILDSERVER)", name, serverdefinition, "", objectfiles, libraries, resource_directive)
 
 
 
 
 def LinkAtmiClient(name,objectfiles,libs):
     """
-
-
- LinkAtmiClient(name,objectfiles,libs)
-
  Links a XATMI client
 
  param: name        name of the binary with out prefix or suffix.
-    
  param: objectfiles    object files that is linked
-
  param: libs        dependent libraries
-
-
     """
 
-    internal_BASE_LinkATMI( "$(BUILDCLIENT)",name, "", objectfiles, libs, "")
+    return internal_BASE_LinkATMI( "$(BUILDCLIENT)",name, "", objectfiles, libs, "")
 
 
 def LinkLibrary(name,objectfiles,libs):

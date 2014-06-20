@@ -352,7 +352,8 @@ def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, obje
         services_directive = ' -s ' + ' '.join( serverdefintion)
     
     
-    local_destination_path=internal_clean_directory_name( os.path.dirname( internal_executable_name_path(name)))
+    local_destination_path = internal_clean_directory_name( os.path.dirname( internal_executable_name_path(name)))
+    
     
     print 
     print "all: " + internal_target_name( atmi_target_name)
@@ -361,7 +362,7 @@ def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, obje
     print 
     print "deploy: $(internal_target_deploy_name $atmi_target_name)"
     print 
-    print internal_target_name(atmi_target_name) + ": " + internal_executable_name_path( name) + " " + USER_CASUAL_MAKE_FILE + " | " + local_destination_path
+    print internal_target_name(atmi_target_name) + ": " + internal_executable_name_path( name) + " $(USER_CASUAL_MAKE_FILE) | " + local_destination_path
     print
     print "objects_" + atmi_target_name + " = " + internal_object_name_list( objectfiles)
     print "libs_" + atmi_target_name + " = $(addprefix -l, " + libs + ")"
@@ -378,6 +379,7 @@ def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, obje
     internal_register_file_for_clean( internal_executable_name_path(name))
     internal_register_path_for_create( local_destination_path)
 
+    return internal_target_name( atmi_target_name);
 
 
 
@@ -452,7 +454,7 @@ def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
     print 
     print "compile: " + "$(objects_" + name + ")"
     print 
-    print filename + ": $(objects_" + name + ") " + DEPENDENT_TARGETS + " " + USER_CASUAL_MAKE_FILE + " | " + local_destination_path
+    print filename + ": $(objects_" + name + ") " + DEPENDENT_TARGETS + " $(USER_CASUAL_MAKE_FILE) | " + local_destination_path
 
     if linker == "ARCHIVER":
         print "\t" + linker + " " + linkdirectives + " " + filename  + " $(objects_" + name + ")"
