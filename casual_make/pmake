@@ -99,7 +99,7 @@ def handleArguments():
     if args and args[0] in ("make"):
         options.FORCE_MAKEMAKE=1
         
-    if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross"):
+    if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross", "make"):
         options.FORCE_PARALLEL=True
     
     return (options, args)
