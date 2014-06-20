@@ -10,7 +10,6 @@
 
 #include "sql/database.h"
 
-#include "queue/message.h"
 
 #include "common/message/queue.h"
 
@@ -37,6 +36,17 @@ namespace casual
             id_type error = 0;
          };
 
+         namespace message
+         {
+            enum State
+            {
+               added = 1,
+               enqueued = 2,
+               removed = 3,
+               dequeued = 4
+            };
+         } // message
+
          class Database
          {
          public:
@@ -44,12 +54,8 @@ namespace casual
 
             Queue create( Queue queue);
 
-            //void enqueue( Queue::id_type queue, const common::transaction::ID& id, const Message& message);
 
             void enqueue( const common::message::queue::enqueue::Request& message);
-
-
-            //Message dequeue( Queue::id_type queue, const common::transaction::ID& id);
 
             common::message::queue::dequeue::Reply dequeue( const common::message::queue::dequeue::Request& message);
 

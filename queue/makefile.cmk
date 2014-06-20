@@ -24,6 +24,7 @@ casual_queue_server_libraries = [
   ];
     
 
+
 casual_queue_server_archive_objs = [
    Compile( 'source/server/server.cpp', 'obj/server/server.o'),
    Compile( 'source/server/database.cpp', 'obj/server/database.o'),
@@ -41,6 +42,27 @@ LinkExecutable( 'casual-queue-server',
     [Compile( 'source/server/main.cpp', 'obj/server/main.o')], 
     casual_queue_server_libraries);
      
+ 
+ 
+ 
+#
+# Broker
+#
+
+casual_queue_broker_archive_objs = [
+   Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
+   Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
+];
+
+LinkArchive( 'casual-queue-broker-archive',
+    casual_queue_broker_archive_objs
+    )
+
+LinkExecutable( 'casual-queue-broker', 
+    [Compile( 'source/broker/main.cpp', 'obj/broker/main.o')], 
+    ["casual-queue-broker-archive"]);
+
+ 
      
 
 #

@@ -196,7 +196,7 @@ namespace casual
 
             auto gtrid = common::transaction::global( message.xid.xid);
 
-            long state = message.xid.xid ? queue::Message::State::added : queue::Message::State::enqueued;
+            long state = message.xid.xid ? message::State::added : message::State::enqueued;
 
             auto avalible = std::chrono::time_point_cast< std::chrono::microseconds>( message.message.avalible).time_since_epoch().count();
             auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();

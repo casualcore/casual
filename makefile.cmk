@@ -18,5 +18,6 @@ Build( "monitor/makefile.cmk")
 
 Build( "transaction/makefile.cmk")
 
+Build( "queue/makefile.cmk")
 
 Build( "test/makefile.cmk")

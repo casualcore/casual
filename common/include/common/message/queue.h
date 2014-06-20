@@ -156,6 +156,36 @@ namespace casual
 
             };
 
+            namespace lookup
+            {
+               struct Request : basic_messsage< Type::cQueueLookupRequest>
+               {
+                  server::Id server;
+                  std::string name;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & server;
+                     archive & name;
+                  }
+               };
+
+               struct Reply : basic_messsage< Type::cQueueLookupReply>
+               {
+                  server::Id server;
+                  std::size_t queue = 0;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & server;
+                     archive & queue;
+                  }
+               };
+
+            } // lookup
+
          } // queue
       } // message
    } // common
