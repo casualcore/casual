@@ -9,6 +9,7 @@
 #define QUEUE_BROKER_BROKER_H_
 
 
+#include "common/message/queue.h"
 
 #include <string>
 #include <unordered_map>
@@ -26,13 +27,13 @@ namespace casual
 
          struct State
          {
-            struct Server
+            struct Queue
             {
 
             };
 
 
-            std::unordered_map< std::string, Server> queues;
+            std::unordered_map< std::string, common::message::queue::lookup::Reply> queues;
          };
       } // broker
 

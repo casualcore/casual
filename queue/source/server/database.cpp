@@ -39,14 +39,15 @@ namespace casual
                         // SELECT correlation, reply, redelivered, type, avalible, timestamp, payload
                         common::message::queue::dequeue::Reply::Message result;
 
-                        row.get( 0, result.correlation.get());
-                        row.get( 1, result.reply);
-                        row.get( 2, result.redelivered);
-                        row.get( 3, result.type);
+                        row.get( 0, result.id.get());
+                        row.get( 1, result.correlation);
+                        row.get( 2, result.reply);
+                        row.get( 3, result.redelivered);
+                        row.get( 4, result.type);
 
-                        result.avalible = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 4)}};
-                        result.timestamp = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 5)}};
-                        row.get( 6, result.payload);
+                        result.avalible = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 5)}};
+                        result.timestamp = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 6)}};
+                        row.get( 7, result.payload);
 
                         return result;
                      }
@@ -79,10 +80,11 @@ namespace casual
 
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS messages 
-              (correlation   BLOB,
+                (id   BLOB,
                   queue         NUMBER,
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
+                  correlation   TEXT,
                   state         NUMBER,
                   reply         TEXT,
                   redelivered   NUMBER,
@@ -90,9 +92,11 @@ namespace casual
                   avalible      NUMBER,
                   timestamp     NUMBER,
                   payload       BLOB,
-                  PRIMARY KEY (correlation),
+                  PRIMARY KEY (id),
                   FOREIGN KEY (queue) REFERENCES queues( rowid)); )");
 
+            m_connection.execute(
+                  "CREATE INDEX IF NOT EXISTS i_id_messages  ON messages ( id);" );
 
             m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_queue_messages  ON messages ( queue);" );
@@ -121,18 +125,18 @@ namespace casual
             // Precompile all other statements
             //
             {
-               m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?);");
+               m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
 
                m_statement.dequeue = m_connection.precompile( R"( 
                      SELECT 
-                        correlation, reply, redelivered, type, avalible, timestamp, payload
+                        id, correlation, reply, redelivered, type, avalible, timestamp, payload
                      FROM 
                         messages 
                      WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
 
 
-               m_statement.state.xid =  m_connection.precompile( "UPDATE messages SET gtrid = :gtrid, state = 3 WHERE correlation = :correlation");
-               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM messages WHERE correlation = :correlation");
+               m_statement.state.xid =  m_connection.precompile( "UPDATE messages SET gtrid = :gtrid, state = 3 WHERE id = :id");
+               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM messages WHERE id = :id");
 
 
                m_statement.commit1 = m_connection.precompile( "UPDATE messages SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
@@ -160,7 +164,7 @@ namespace casual
 
                m_statement.information.queues = m_connection.precompile( R"(
                   SELECT
-                     q.rowid, q.name, q.retries, q.error, COUNT( m.correlation)
+                     q.rowid, q.name, q.retries, q.error, COUNT( m.id)
                   FROM
                      queues q LEFT JOIN messages m ON q.rowid = m.queue AND m.state = 3
                      GROUP BY q.rowid 
@@ -192,7 +196,7 @@ namespace casual
          void Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
 
-            common::log::internal::queue << "enqueue - qid: " << message.queue << " correlation: " << message.message.correlation << " size: " << message.message.payload.size() << " xid: " << message.xid.xid << std::endl;
+            common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << message.message.id << " size: " << message.message.payload.size() << " xid: " << message.xid.xid << std::endl;
 
             auto gtrid = common::transaction::global( message.xid.xid);
 
@@ -202,10 +206,11 @@ namespace casual
             auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
             m_statement.enqueue.execute(
-                  message.message.correlation.get(),
+                  message.message.id.get(),
                   message.queue,
                   message.queue,
                   gtrid,
+                  message.message.correlation,
                   state,
                   message.message.reply,
                   0,
@@ -248,14 +253,14 @@ namespace casual
             {
                auto gtrid = common::transaction::global(  message.xid.xid);
 
-               m_statement.state.xid.execute( gtrid, result.correlation.get());
+               m_statement.state.xid.execute( gtrid, result.id.get());
             }
             else
             {
-               m_statement.state.nullxid.execute( result.correlation.get());
+               m_statement.state.nullxid.execute( result.id.get());
             }
 
-            common::log::internal::queue << "dequeue - qid: " << message.queue << " correlation: " << result.correlation << " size: " << result.payload.size() << " xid: " << message.xid.xid << std::endl;
+            common::log::internal::queue << "dequeue - qid: " << message.queue << " id: " << result.id << " size: " << result.payload.size() << " xid: " << message.xid.xid << std::endl;
 
             reply.message.push_back( std::move( result));
 

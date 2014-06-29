@@ -11,6 +11,7 @@
 #include "common/message/type.h"
 #include "common/platform.h"
 #include "common/uuid.h"
+#include "common/marshal.h"
 
 namespace casual
 {
@@ -23,7 +24,9 @@ namespace casual
 
             struct basic_message
             {
-               common::Uuid correlation;
+               common::Uuid id;
+
+               std::string correlation;
                std::string reply;
 
                common::platform::time_type avalible;
@@ -31,15 +34,14 @@ namespace casual
                std::size_t type;
                common::platform::binary_type payload;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  archive & correlation;
+                  archive & id;
                   archive & reply;
                   archive & avalible;
                   archive & type;
                   archive & payload;
-               }
+               })
             };
 
 
@@ -56,14 +58,13 @@ namespace casual
 
                   Message message;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & server;
                      archive & xid;
                      archive & queue;
                      archive & message;
-                  }
+                  })
                };
             } // enqueue
 
@@ -75,13 +76,12 @@ namespace casual
                   Transaction xid;
                   std::size_t queue;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & server;
                      archive & xid;
                      archive & queue;
-                  }
+                  })
                };
 
                struct Reply : basic_messsage< Type::cQueueDequeueReply>
@@ -91,23 +91,21 @@ namespace casual
                      std::size_t redelivered = 0;
                      common::platform::time_type timestamp;
 
-                     template< typename A>
-                     void marshal( A& archive)
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         basic_message::marshal( archive);
 
                         archive & redelivered;
                         archive & timestamp;
-                     }
+                     })
                   };
 
                   std::vector< Message> message;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & message;
-                  }
+                  })
                };
 
             } // dequeue
@@ -121,14 +119,13 @@ namespace casual
                std::size_t retries = 0;
                id_type error = 0;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & id;
                   archive & name;
                   archive & retries;
                   archive & error;
-               }
+               })
             };
 
             struct Information : basic_messsage< Type::cQueueInformation>
@@ -137,22 +134,19 @@ namespace casual
                {
                   std::size_t messages;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      queue::Queue::marshal( archive);
-
                      archive & messages;
-                  }
+                  })
                };
 
                std::vector< Queue> queues;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & queues;
-               }
+               })
 
             };
 
@@ -163,12 +157,11 @@ namespace casual
                   server::Id server;
                   std::string name;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & server;
                      archive & name;
-                  }
+                  })
                };
 
                struct Reply : basic_messsage< Type::cQueueLookupReply>
@@ -176,12 +169,10 @@ namespace casual
                   server::Id server;
                   std::size_t queue = 0;
 
-                  template< typename A>
-                  void marshal( A& archive)
-                  {
+                  CASUAL_CONST_CORRECT_MARSHAL({
                      archive & server;
                      archive & queue;
-                  }
+                  })
                };
 
             } // lookup

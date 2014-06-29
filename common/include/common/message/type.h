@@ -11,6 +11,8 @@
 #include "common/platform.h"
 #include "common/transaction_id.h"
 
+#include "common/marshal.h"
+
 
 namespace casual
 {
@@ -185,12 +187,19 @@ namespace casual
                queue_id_type queue_id = 0;
                pid_type pid;
 
+               /*
                template< typename A>
                void marshal( A& archive)
                {
                   archive & queue_id;
                   archive & pid;
                }
+               */
+
+               CASUAL_CONST_CORRECT_MARSHAL({
+                  archive & queue_id;
+                  archive & pid;
+               })
             };
             inline std::ostream& operator << ( std::ostream& out, const Id& value)
             {

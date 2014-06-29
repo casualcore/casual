@@ -47,7 +47,7 @@ namespace casual
                result.queue = queue.id;
                result.xid.xid = xid;
 
-               result.message.correlation = common::Uuid::make();
+               result.message.id = common::Uuid::make();
                result.message.reply = "someQueue";
                result.message.type = 42;
                result.message.payload.resize( 128);
@@ -146,7 +146,7 @@ namespace casual
          auto fetched = database.dequeue( local::request( queue));
 
          ASSERT_TRUE( fetched.message.size() == 1);
-         EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+         EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
          EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
          EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
          EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
@@ -188,7 +188,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( queue));
 
             ASSERT_TRUE( fetched.message.size() == 1);
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
             EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type) << "origin.type: " << origin.message.type << " fetched.type; " << fetched.message.at( 0).type;
             EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
             EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
@@ -230,7 +230,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( queue, xid));
 
             ASSERT_TRUE( fetched.message.size() == 1);
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
             EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
             EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
             EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
@@ -258,7 +258,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( queue, xid));
 
             ASSERT_TRUE( fetched.message.size() == 1);
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
 
             database.commit( xid);
          }
@@ -316,7 +316,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( queue, xid));
 
             ASSERT_TRUE( fetched.message.size() == 1);
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
 
             //local::print( database.queues());
 
@@ -342,7 +342,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( errorQ, xid));
 
             ASSERT_TRUE( fetched.message.size() == 1) << "errorQ.id; " << errorQ.id << " queue.id: " << queue.id;
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
 
             database.rollback( xid);
          }
@@ -360,7 +360,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( errorQ, xid));
 
             ASSERT_TRUE( fetched.message.size() == 1);
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
          }
 
       }
@@ -376,13 +376,13 @@ namespace casual
 
 
          std::vector< message_type > messages;
-         messages.reserve( 1000);
+         messages.reserve( 100);
 
          {
             common::transaction::ID xid = common::transaction::ID::create();
 
             auto count = 0;
-            while( count++ < 1000)
+            while( count++ < 100)
             {
                auto m = local::message( queue, xid);
                m.message.type = count;
@@ -401,7 +401,7 @@ namespace casual
             auto fetched = database.dequeue( local::request( queue, xid));
 
             ASSERT_TRUE( fetched.message.size() == 1);
-            EXPECT_TRUE( origin.message.correlation == fetched.message.at( 0).correlation);
+            EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
             EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type) << "origin.type: " << origin.message.type << " fetched.type; " << fetched.message.at( 0).type;
             EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
             EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);

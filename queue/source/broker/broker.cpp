@@ -38,8 +38,6 @@ namespace casual
          common::message::dispatch::Handler handler;
 
          handler.add( broker::handle::lookup::Request{ m_state});
-         handler.add( broker::handle::lookup::Reply{ m_state});
-
 
          broker::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
 

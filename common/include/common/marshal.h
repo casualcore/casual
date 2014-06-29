@@ -25,6 +25,18 @@
 
 
 
+#define CASUAL_CONST_CORRECT_MARSHAL( statement) \
+   template< typename A> \
+   void marshal( A& archive)  \
+   {  \
+         statement \
+   } \
+   template< typename A> \
+   void marshal( A& archive) const \
+   {  \
+         statement \
+   } \
+
 
 
 

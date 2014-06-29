@@ -75,15 +75,6 @@ namespace casual
                   void dispatch( message_type& message);
                };
 
-               struct Reply : Base
-               {
-                  using message_type = common::message::queue::lookup::Reply;
-
-                  using Base::Base;
-
-                  void dispatch( message_type& message);
-               };
-
             } // lookup
 
          } // handle
