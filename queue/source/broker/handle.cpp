@@ -24,9 +24,9 @@ namespace casual
                {
                   queue::blocking::Writer write{ message.server.queue_id, m_state};
 
-                  auto found = m_state.queues.find( message.name);
+                  auto found =  common::range::find( m_state.queues, message.name);
 
-                  if( found != std::end( m_state.queues))
+                  if( found)
                   {
                      write( found->second);
                   }

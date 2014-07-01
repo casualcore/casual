@@ -20,9 +20,11 @@ SetIncludePaths( INCLUDE_PATHS)
 SetLibraryPaths( LIBRARY_PATHS)
 
 casual_configuration_objectfiles = [
+    Compile( "source/file.cpp", "obj/file.o"),
     Compile( "source/domain.cpp", "obj/domain.o"),
     Compile( "source/xa_switch.cpp", "obj/xa_switch.o"),
     Compile( "source/serverdefinition.cpp", "obj/serverdefinition.o"),
+    Compile( "source/queue.cpp", "obj/queue.o")
 ]
 
 LinkLibrary( "casual-configuration",

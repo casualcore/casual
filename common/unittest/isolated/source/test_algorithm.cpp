@@ -108,7 +108,16 @@ namespace casual
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found == 3);
+      }
 
+      TEST( casual_common_algorithm, find_map_value)
+      {
+         std::map< int, std::string> container{ {1, "one"}, {2, "two"}, {3, "three"}, {4, "four"}};
+
+         auto found =  range::find( container, 3);
+
+         ASSERT_TRUE( ! found.empty());
+         EXPECT_TRUE( found->second == "three");
       }
 
       TEST( casual_common_algorithm, find_value_reverse)
@@ -121,6 +130,22 @@ namespace casual
          EXPECT_TRUE( *found == 3);
 
       }
+
+      TEST( casual_common_algorithm, uniform__true)
+      {
+         std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+         EXPECT_TRUE( range::uniform (uniform));
+
+      }
+
+      TEST( casual_common_algorithm, uniform__false)
+      {
+         std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 2, 1};
+
+         EXPECT_FALSE( range::uniform (uniform));
+      }
+
 
       TEST( casual_common_algorithm, sort_patition_find_value)
       {

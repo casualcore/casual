@@ -109,6 +109,7 @@ unittest_objectfiles = [
    Compile( "unittest/isolated/source/test_algorithm.cpp", "unittest/isolated/obj/test_algorithm.o"),
    
    Compile( "unittest/isolated/source/test_mockup.cpp", "unittest/isolated/obj/test_mockup.o"),
+   Compile( "unittest/isolated/source/test_traits.cpp", "unittest/isolated/obj/test_traits.o"),
 ]
 
 

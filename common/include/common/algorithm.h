@@ -9,6 +9,8 @@
 #define ALGORITHM_H_
 
 
+#include "common/traits.h"
+
 #include <algorithm>
 #include <numeric>
 #include <iterator>
@@ -321,6 +323,11 @@ namespace casual
       }
 
 
+      //!
+      //! This is not intended to be a serious attempt at a range-library
+      //! Rather an abstraction that helps our use-cases and to get a feel for
+      //! what a real range-library could offer. It's a work in progress
+      //!
       namespace range
       {
          template< typename Iter>
@@ -522,13 +529,32 @@ namespace casual
             return std::any_of( std::begin( range), std::end( range), predicate);
          }
 
-         template< typename R, typename T>
+
+
+         //!
+         //! associate container specialization
+         //!
+         template< typename R, typename T, typename std::enable_if< traits::is_associative_container< typename std::decay<R>::type>::value>::type* = nullptr>
+         auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
+         {
+            auto resultRange = make( std::forward< R>( range));
+            resultRange.first = range.find( value);
+            return resultRange;
+         }
+
+
+
+         //!
+         //! non associate container specialization
+         //!
+         template< typename R, typename T, typename std::enable_if< ! traits::is_associative_container< typename std::decay< R>::type>::value>::type* = nullptr>
          auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
          {
             auto resultRange = make( std::forward< R>( range));
             resultRange.first = std::find( std::begin( resultRange), std::end( resultRange), std::forward< T>( value));
             return resultRange;
          }
+
 
 
          template< typename R, typename P>

@@ -6,8 +6,9 @@
 //!
 
 #include "config/domain.h"
+#include "config/file.h"
 
-#include "common/environment.h"
+
 #include "common/exception.h"
 
 #include "sf/archive_maker.h"
@@ -112,16 +113,16 @@ namespace casual
 
          Domain get()
          {
-            const std::string configFile = common::environment::file::configuration();
+            const std::string configuration = config::file::domain();
 
-            if( ! configFile.empty())
+            if( ! configuration.empty())
             {
-               return get( configFile);
+               return get( configuration);
             }
             else
             {
                throw common::exception::FileNotExist(
-                     "could not find domain configuration file - should be: " + common::environment::directory::domain() + "/configuration/domain.*");
+                     "could not find domain configuration file - should be: " + config::directory::domain() + "/domain.*");
             }
          }
 
