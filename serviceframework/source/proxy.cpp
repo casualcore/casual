@@ -6,8 +6,8 @@
 //!
 
 #include "sf/proxy.h"
-#include "sf/archive.h"
-#include "sf/archive_binary.h"
+#include "sf/archive/archive.h"
+#include "sf/archive/binary.h"
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 

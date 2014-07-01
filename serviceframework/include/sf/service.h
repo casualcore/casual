@@ -9,7 +9,7 @@
 #define SERVICE_H_
 
 
-#include "sf/archive.h"
+#include "sf/archive/archive.h"
 #include "sf/buffer.h"
 
 #include "xatmi.h"

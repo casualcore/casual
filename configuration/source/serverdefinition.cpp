@@ -8,7 +8,7 @@
 #include "config/serverdefinition.h"
 
 
-#include "sf/archive_maker.h"
+#include "sf/archive/maker.h"
 
 namespace casual
 {

@@ -8,7 +8,7 @@
 #ifndef CASUAL_BASIC_WRITER_H_
 #define CASUAL_BASIC_WRITER_H_
 
-#include "sf/archive.h"
+#include "sf/archive/archive.h"
 
 #include <utility>
 

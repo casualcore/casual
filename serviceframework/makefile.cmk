@@ -20,14 +20,14 @@ SetIncludePaths( INCLUDE_PATHS)
 SetLibraryPaths( LIBRARY_PATHS)
 
 casual_sf_objectfiles = [
-    Compile( "source/archive.cpp", "obj/archive.o"),
-    Compile( "source/archive_maker.cpp", "obj/archive_maker.o"),
+    Compile( "source/archive/archive.cpp", "obj/archive/archive.o"),
+    Compile( "source/archive/maker.cpp", "obj/archive/maker.o"),
+    Compile( "source/archive/log.cpp", "obj/archive/log.o"),
     Compile( "source/buffer.cpp", "obj/buffer.o"),
     Compile( "source/server.cpp", "obj/server.o"),
     Compile( "source/proxy.cpp", "obj/proxy.o"),
     Compile( "source/service.cpp", "obj/service.o"),
     Compile( "source/service_protocol.cpp", "obj/service_protocol.o"),
-    Compile( "source/archive_log.cpp", "obj/archive_log.o"),
     Compile( "source/xatmi_call.cpp", "obj/xatmi_call.o"),
     Compile( "source/platform.cpp", "obj/platform.o"),
     

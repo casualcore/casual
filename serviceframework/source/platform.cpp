@@ -7,7 +7,7 @@
 
 #include "sf/platform.h"
 
-#include "sf/archive.h"
+#include "sf/archive/archive.h"
 
 
 namespace casual

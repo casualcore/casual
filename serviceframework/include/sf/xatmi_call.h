@@ -8,8 +8,8 @@
 #ifndef XATMI_CALL_H_
 #define XATMI_CALL_H_
 
-#include "sf/archive.h"
-#include "sf/archive_binary.h"
+#include "sf/archive/archive.h"
+#include "sf/archive/binary.h"
 #include "sf/buffer.h"
 
 

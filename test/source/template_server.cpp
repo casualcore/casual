@@ -18,7 +18,7 @@
 #include "common/process.h"
 
 #include "sf/log.h"
-#include "sf/archive.h"
+#include "sf/archive/archive.h"
 #include "sf/namevaluepair.h"
 #include "sf/buffer.h"
 

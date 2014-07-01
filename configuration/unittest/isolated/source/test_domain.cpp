@@ -11,7 +11,7 @@
 #include "sf/log.h"
 
 // TODO Temp
-#include "../../../../serviceframework/include/sf/archive_json.h"
+#include "../../../../serviceframework/include/sf/archive/json.h"
 #include <json-c/json.h>
 
 namespace casual

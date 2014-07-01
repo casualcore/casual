@@ -11,7 +11,7 @@
 #include "broker/transformation.h"
 #include "broker/broker.h"
 #include "broker/brokervo.h"
-#include "../../../../serviceframework/include/sf/archive_binary.h"
+#include "../../../../serviceframework/include/sf/archive/binary.h"
 #include "../../../../serviceframework/include/sf/buffer.h"
 #include "../../../admin/include/broker/brokervo.h"
 

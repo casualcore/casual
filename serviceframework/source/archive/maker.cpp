@@ -5,10 +5,9 @@
 //!     Author: Lazan
 //!
 
-#include "sf/archive_maker.h"
-#include "sf/archive_yaml.h"
-
-#include "sf/archive_json.h"
+#include "sf/archive/maker.h"
+#include "sf/archive/yaml.h"
+#include "sf/archive/json.h"
 
 #include "common/file.h"
 

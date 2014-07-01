@@ -8,7 +8,7 @@
 #include "config/queue.h"
 #include "config/file.h"
 
-#include "sf/archive_maker.h"
+#include "sf/archive/maker.h"
 
 
 namespace casual

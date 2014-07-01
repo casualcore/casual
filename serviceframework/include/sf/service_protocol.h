@@ -11,10 +11,10 @@
 #include "sf/service.h"
 
 
-#include "sf/archive_yaml.h"
-#include "sf/archive_binary.h"
-#include "sf/archive_json.h"
-#include "sf/archive_log.h"
+#include "sf/archive/yaml.h"
+#include "sf/archive/binary.h"
+#include "sf/archive/json.h"
+#include "sf/archive/log.h"
 #include "sf/log.h"
 
 namespace casual

@@ -11,7 +11,7 @@
 
 #include "common/exception.h"
 
-#include "sf/archive_maker.h"
+#include "sf/archive/maker.h"
 
 #include <algorithm>
 

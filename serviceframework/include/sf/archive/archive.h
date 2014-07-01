@@ -9,7 +9,7 @@
 #define CASUAL_SF_ARCHIVE_H_
 
 #include "sf/namevaluepair.h"
-#include "sf/archive_traits.h"
+#include "sf/archive/traits.h"
 
 #include "sf/platform.h"
 

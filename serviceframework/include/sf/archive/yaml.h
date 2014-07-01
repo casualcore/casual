@@ -8,7 +8,7 @@
 #ifndef CASUAL_ARCHIVE_YAML_POLICY_H_
 #define CASUAL_ARCHIVE_YAML_POLICY_H_
 
-#include "sf/basic_archive.h"
+#include "sf/archive/basic.h"
 #include "sf/reader_policy.h"
 
 #include <yaml-cpp/yaml.h>

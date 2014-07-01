@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "sf/platform.h"
-#include "sf/archive_yaml.h"
+#include "sf/archive/yaml.h"
 
 
 #include <yaml-cpp/yaml.h>

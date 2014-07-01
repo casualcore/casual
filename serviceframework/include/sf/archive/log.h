@@ -8,7 +8,7 @@
 #ifndef ARCHIVE_LOGGER_H_
 #define ARCHIVE_LOGGER_H_
 
-#include "sf/basic_archive.h"
+#include "sf/archive/basic.h"
 #include "sf/platform.h"
 
 

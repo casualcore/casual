@@ -10,7 +10,7 @@
 
 
 #include "sf/reader_policy.h"
-#include "sf/basic_archive.h"
+#include "sf/archive/basic.h"
 #include "sf/platform.h"
 
 #include "json-c/json.h"

@@ -9,7 +9,7 @@
 #define ARCHIVE_BINARY_H_
 
 
-#include "sf/basic_archive.h"
+#include "sf/archive/basic.h"
 #include "sf/buffer.h"
 
 namespace casual

@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 
-#include "sf/archive_traits.h"
+#include "sf/archive/traits.h"
 
 #include <vector>
 

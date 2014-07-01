@@ -10,8 +10,8 @@
 
 
 #include "sf/namevaluepair.h"
-#include "sf/basic_archive.h"
-#include "sf/archive_binary.h"
+#include "sf/archive/basic.h"
+#include "sf/archive/binary.h"
 
 #include "common/log.h"
 
