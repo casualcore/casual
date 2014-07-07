@@ -12,6 +12,8 @@
 
 #include "queue/server/database.h"
 
+#include "common/platform.h"
+
 
 namespace casual
 {
@@ -22,11 +24,12 @@ namespace casual
          struct Settings
          {
             std::string queuebase;
+            common::platform::queue_id_type broker_queue;
          };
 
          struct State
          {
-            State( Settings settings) : queuebase( std::move( settings.queuebase)) {}
+            State( std::string filename) : queuebase( std::move( filename)) {}
 
             Database queuebase;
          };

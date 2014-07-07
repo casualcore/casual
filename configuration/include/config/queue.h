@@ -38,12 +38,14 @@ namespace casual
          struct Group
          {
             std::string name;
+            std::string queuebase;
             std::vector< Queue> queues;
 
             template< typename A>
             void serialize( A& archive)
             {
                archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( queuebase);
                archive & CASUAL_MAKE_NVP( queues);
             }
 

@@ -10,9 +10,6 @@
 #include "config/domain.h"
 #include "sf/log.h"
 
-// TODO Temp
-#include "../../../../serviceframework/include/sf/archive/json.h"
-#include <json-c/json.h>
 
 namespace casual
 {
@@ -30,15 +27,6 @@ namespace casual
 
 	   auto domain = config::domain::get( GetParam());
 
-	   //
-	   //
-	   /*
-	   json_object* root = nullptr;
-	   sf::archive::json::Writer writer( root);
-	   writer << CASUAL_MAKE_NVP( domain);
-	   std::cerr << json_object_to_json_string( root);
-	   */
-
 	   EXPECT_TRUE( domain.name == "domain1") << "nane: " << domain.name;
 	   EXPECT_TRUE( domain.groups.size() == 5) << "size: " << domain.groups.size();
 	}
@@ -46,9 +34,6 @@ namespace casual
 	TEST_P( casual_configuration_domain, read_defaul)
    {
       auto domain = config::domain::get( GetParam());
-
-      //sf::archive::logger::Writer debug;
-      //debug << CASUAL_MAKE_NVP( domain);
 
       ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
       EXPECT_TRUE( domain.casual_default.server.instances == "2");

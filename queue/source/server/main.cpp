@@ -31,7 +31,8 @@ int main( int argc, char **argv)
       {
          casual::common::Arguments parser;
          parser.add(
-               casual::common::argument::directive( { "-qb", "--queuebase"}, "path to this queue server persistent storage", settings.queuebase)
+               casual::common::argument::directive( { "-qb", "--queuebase"}, "path to this queue server persistent storage", settings.queuebase),
+               casual::common::argument::directive( { "-bq", "--brokerqueue"}, "queue id to queue broker ", settings.broker_queue)
          );
 
          parser.parse( argc, argv);

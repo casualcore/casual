@@ -64,13 +64,13 @@ namespace casual
             {
                auto extension = common::file::extension( filename);
 
-               if( extension == "yaml")
+               if( extension == "yaml" || extension == "yml")
                {
                   typedef basic_holder< yaml::relaxed::Reader, yaml::reader::Buffer > YamlRelaxedHolder;
 
                   return Holder( Holder::base_value_type( new YamlRelaxedHolder( filename)));
                }
-               else if( extension == "json")
+               else if( extension == "json" || extension == "jsn")
                {
                   typedef basic_holder< json::relaxed::Reader, json::reader::Buffer > JsonRelaxedHolder;
 

@@ -8,12 +8,23 @@
 #include "queue/broker/handle.h"
 
 
+#include "common/log.h"
+
 namespace casual
 {
    namespace queue
    {
       namespace broker
       {
+         namespace queue
+         {
+            void Policy::apply()
+            {
+
+            }
+
+         }
+
          namespace handle
          {
 
@@ -38,6 +49,25 @@ namespace casual
                }
 
             } // lookup
+
+            namespace connect
+            {
+
+               void Request::dispatch( message_type& message)
+               {
+
+                  for( auto&& queue : message.queues)
+                  {
+                     if( ! m_state.queues.emplace( queue.name, common::message::queue::lookup::Reply{ message.server, queue.id}).second)
+                     {
+                        common::log::error << "multiple instances of queue: " << queue.name << " - action: keeping the first one" << std::endl;
+                     }
+
+                  }
+
+               }
+
+            } // connect
 
          } // handle
       } // broker

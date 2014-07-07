@@ -625,6 +625,30 @@ namespace casual
          }
 
          //!
+         //! @returns a range from @p source with values not found in @p other
+         //!
+         template< typename R1, typename R2>
+         auto difference( R1&& source, R2&& other) -> decltype( make( source))
+         {
+            auto resultRange = make( std::forward< R1>( source));
+
+            resultRange.first = intersection( resultRange, std::forward< R2>( other)).last;
+            return resultRange;
+         }
+
+         //!
+         //! @returns a range from @p source with values not found in @p other
+         //!
+         template< typename R1, typename R2, typename F>
+         auto difference( R1&& source, R2&& other, F functor) -> decltype( make( source))
+         {
+            auto resultRange = make( std::forward< R1>( source));
+
+            resultRange.first = intersection( resultRange, std::forward< R2>( other), functor).last;
+            return resultRange;
+         }
+
+         //!
          //! @return true if all elements in @p other is found in @p source
          //!
          template< typename R1, typename R2>
@@ -708,6 +732,29 @@ namespace casual
             auto intersection( R1&& source, R2&& other, Output& result, Compare compare) -> decltype( make( result))
             {
                std::set_intersection(
+                     std::begin( source), std::end( source),
+                     std::begin( other), std::end( other),
+                     std::back_inserter( result),
+                     compare);
+
+               return make( result);
+            }
+
+            template< typename R1, typename R2, typename Output>
+            auto difference( R1&& source, R2&& other, Output& result) -> decltype( make( result))
+            {
+               std::set_difference(
+                     std::begin( source), std::end( source),
+                     std::begin( other), std::end( other),
+                     std::back_inserter( result));
+
+               return make( result);
+            }
+
+            template< typename R1, typename R2, typename Output, typename Compare>
+            auto difference( R1&& source, R2&& other, Output& result, Compare compare) -> decltype( make( result))
+            {
+               std::set_difference(
                      std::begin( source), std::end( source),
                      std::begin( other), std::end( other),
                      std::back_inserter( result),

@@ -11,6 +11,8 @@
 
 #include "common/message/queue.h"
 
+#include "config/queue.h"
+
 #include <string>
 #include <unordered_map>
 
@@ -27,11 +29,13 @@ namespace casual
 
          struct State
          {
-            struct Queue
+            struct Server
             {
+               common::message::server::Id id;
 
             };
 
+            std::vector< Server> servers;
 
             std::unordered_map< std::string, common::message::queue::lookup::Reply> queues;
          };
@@ -44,6 +48,7 @@ namespace casual
          void start();
 
       private:
+
          broker::State m_state;
 
       };

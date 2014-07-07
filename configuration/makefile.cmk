@@ -40,6 +40,7 @@ LinkLibrary( "casual-configuration",
 test_configuration_objectfiles = [
     Compile( "unittest/isolated/source/test_domain.cpp", "obj/test_domain.o"),
     Compile( "unittest/isolated/source/test_xa_switch.cpp", "obj/test_xa_switch.o"),
+    Compile( "unittest/isolated/source/test_queue.cpp", "obj/test_queue.o"),
 ]
 
 LinkIsolatedUnittest( "test_configuration",

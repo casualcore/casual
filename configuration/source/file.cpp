@@ -36,7 +36,7 @@ namespace casual
 
          std::string find( const std::string& path, const std::string& basename)
          {
-            return common::file::find( path, std::regex( basename + ".(yaml|yml|json|xml)" ));
+            return common::file::find( path, std::regex( basename + ".(yaml|yml|json|jsn|xml)" ));
          }
 
          std::string domain()

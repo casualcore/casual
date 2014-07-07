@@ -77,6 +77,19 @@ namespace casual
 
             } // lookup
 
+            namespace connect
+            {
+               struct Request : Base
+               {
+                  using message_type = common::message::queue::Information;
+
+                  using Base::Base;
+
+                  void dispatch( message_type& message);
+               };
+
+            } // connect
+
          } // handle
       } // broker
    } // queue

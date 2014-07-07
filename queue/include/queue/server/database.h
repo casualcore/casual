@@ -55,6 +55,9 @@ namespace casual
             Queue create( Queue queue);
 
 
+            //bool remove( const std::string& name);
+
+
             void enqueue( const common::message::queue::enqueue::Request& message);
 
             common::message::queue::dequeue::Reply dequeue( const common::message::queue::dequeue::Request& message);

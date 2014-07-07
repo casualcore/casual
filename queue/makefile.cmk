@@ -4,7 +4,9 @@ from casual.make.functiondefinitions import *
 
 SetIncludePaths( [ 
     'include',
-    '../common/include', 
+    '../common/include',
+    '../configuration/include',
+    '../serviceframework/include', 
     '../thirdparty/database/include',
     '../xatmi/include',
     '$(UNITTEST_INCLUDE_PATH)'
@@ -13,6 +15,7 @@ SetIncludePaths( [
 
 SetLibraryPaths( [ 
         'bin',
+        '../configuration/bin',
         '../common/bin',
     ]);
     

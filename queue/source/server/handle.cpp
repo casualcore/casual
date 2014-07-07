@@ -14,6 +14,15 @@ namespace casual
    {
       namespace server
       {
+         namespace queue
+         {
+            void Policy::apply()
+            {
+
+            }
+
+         }
+
          namespace handle
          {
 
@@ -31,12 +40,9 @@ namespace casual
             {
                void Request::dispatch( message_type& message)
                {
+                  m_state.queuebase.dequeue( message);
                }
 
-               void Reply::dispatch( message_type& message)
-               {
-
-               }
 
             } // dequeue
 

@@ -114,6 +114,9 @@ namespace casual
             {
                using id_type = std::size_t;
 
+               Queue() = default;
+               Queue( std::string name, std::size_t retries) : name( std::move( name)), retries( retries) {}
+
                id_type id = 0;
                std::string name;
                std::size_t retries = 0;
@@ -141,10 +144,12 @@ namespace casual
                   })
                };
 
+               server::Id server;
                std::vector< Queue> queues;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  archive & server;
                   archive & queues;
                })
 
@@ -166,6 +171,9 @@ namespace casual
 
                struct Reply : basic_messsage< Type::cQueueLookupReply>
                {
+                  Reply() = default;
+                  Reply( server::Id id, std::size_t queue) : server( id), queue( queue) {}
+
                   server::Id server;
                   std::size_t queue = 0;
 
@@ -176,6 +184,30 @@ namespace casual
                };
 
             } // lookup
+
+            namespace connect
+            {
+               struct Request : basic_messsage< Type::cQueueConnectRequest>
+               {
+                  server::Id server;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & server;
+                  })
+               };
+
+               struct Reply : basic_messsage< Type::cQueueConnectReply>
+               {
+                  std::string name;
+                  std::vector< Queue> queues;
+
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     archive & name;
+                     archive & queues;
+                  })
+               };
+            } // connect
 
          } // queue
       } // message

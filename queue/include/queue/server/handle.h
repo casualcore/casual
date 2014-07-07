@@ -11,6 +11,7 @@
 #include "queue/server/server.h"
 
 #include "common/message/queue.h"
+#include "common/queue.h"
 
 namespace casual
 {
@@ -29,6 +30,37 @@ namespace casual
                State& m_state;
 
             };
+         }
+
+         namespace queue
+         {
+
+            struct Policy : public handle::Base
+            {
+               using handle::Base::Base;
+
+               void apply();
+            };
+
+
+            namespace blocking
+            {
+               using Reader = common::queue::blocking::basic_reader< Policy>;
+               using Writer = common::queue::blocking::basic_writer< Policy>;
+
+            } // blocking
+
+            namespace non_blocking
+            {
+               using Reader = common::queue::non_blocking::basic_reader< Policy>;
+               using Writer = common::queue::non_blocking::basic_writer< Policy>;
+
+            } // non_blocking
+         } // queue
+
+
+         namespace handle
+         {
 
             namespace enqueue
             {
@@ -54,20 +86,9 @@ namespace casual
                   void dispatch( message_type& message);
                };
 
-               struct Reply : Base
-               {
-                  using message_type = common::message::queue::dequeue::Reply;
-
-                  using Base::Base;
-
-                  void dispatch( message_type& message);
-               };
 
             } // dequeue
-
-
          } // handle
-
       } // server
    } // queue
 

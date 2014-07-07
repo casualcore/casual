@@ -78,6 +78,8 @@ namespace casual
 
             // casual queue
             QUEUE_BASE = 5000,
+            cQueueConnectRequest,
+            cQueueConnectReply,
             cQueueEnqueueRequest,
             cQueueDequeueRequest,
             cQueueDequeueReply,
