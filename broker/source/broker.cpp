@@ -58,7 +58,6 @@ namespace casual
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
 
-
 					if( common::file::exists( path))
 					{
 					   //

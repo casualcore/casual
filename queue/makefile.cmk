@@ -19,14 +19,26 @@ SetLibraryPaths( [
         '../common/bin',
     ]);
     
+
+
+#
+# Common stuff
+#
+casual_queue_common_obj = [
+   Compile( 'source/environment.cpp', 'obj/environment.o'),
+];
+
+
+LinkLibrary( 'casual-queue-common',
+    casual_queue_common_obj,
+    [ 'casual-common', ]
+    );
  
 
-casual_queue_server_libraries = [
-    'casual-common',
-     'sqlite3',
-  ];
-    
 
+#
+# Server
+#
 
 casual_queue_server_archive_objs = [
    Compile( 'source/server/server.cpp', 'obj/server/server.o'),
@@ -34,16 +46,20 @@ casual_queue_server_archive_objs = [
    Compile( 'source/server/handle.cpp', 'obj/server/handle.o')
 ];
 
-casual_queue_server_libraries.append( 
 
 LinkArchive( 'casual-queue-server-archive',
     casual_queue_server_archive_objs
     )
-);
+
 
 LinkExecutable( 'casual-queue-server', 
     [Compile( 'source/server/main.cpp', 'obj/server/main.o')], 
-    casual_queue_server_libraries);
+    [
+     'casual-queue-server-archive',
+     'casual-queue-common',
+     'casual-common',
+     'sqlite3',
+     ]);
      
  
  
@@ -65,8 +81,19 @@ LinkExecutable( 'casual-queue-broker',
     [Compile( 'source/broker/main.cpp', 'obj/broker/main.o')], 
     ["casual-queue-broker-archive"]);
 
- 
-     
+
+
+#
+# rm
+#
+casual_queue_xa_objs = [
+    Compile( 'source/rm/switch.cpp', 'obj/rm/switch.o'),
+];     
+
+LinkLibrary( 'casual-queue-rm',
+    casual_queue_xa_objs,       
+     ['casual-common',
+      ]);
 
 #
 # Unittest
@@ -77,7 +104,11 @@ casual_queue_unittest_objs = [
 
 LinkIsolatedUnittest( 'test-casual-queue', 
     casual_queue_unittest_objs,
-    casual_queue_server_libraries  
+    [
+     'casual-queue-server-archive',
+     'casual-common',
+     'sqlite3',
+     ]  
 );
 
 

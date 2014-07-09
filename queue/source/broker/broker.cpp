@@ -9,13 +9,17 @@
 
 
 #include "queue/broker/handle.h"
-
+#include "queue/environment.h"
 
 #include "common/message/dispatch.h"
 #include "common/algorithm.h"
 #include "common/ipc.h"
 #include "common/process.h"
 #include "common/environment.h"
+#include "common/exception.h"
+
+
+#include <fstream>
 
 namespace casual
 {
@@ -29,11 +33,32 @@ namespace casual
          {
             namespace
             {
-               namespace transform
+
+               template< typename Q>
+               void exportBrokerQueueKey( const Q& queue, const std::string& path)
                {
+                  if( casual::common::file::exists( path))
+                  {
+                     //
+                     // TODO: ping to see if there are another queue broker running
+                     //
+                     common::file::remove( path);
+                  }
 
+                  common::log::debug << "writing queue broker queue file: " << path << std::endl;
 
-               } // transform
+                  std::ofstream brokerQueueFile( path);
+
+                  if( brokerQueueFile)
+                  {
+                     brokerQueueFile << queue.id() << std::endl;
+                     brokerQueueFile.close();
+                  }
+                  else
+                  {
+                     throw common::exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
+                  }
+               }
 
 
                struct Startup : broker::handle::Base
@@ -44,9 +69,9 @@ namespace casual
                   {
                      State::Server server;
 
-                     server.id.pid = common::process::spawn(
-                        common::environment::directory::casual() + "/casual-queue-server",
-                        { "--brokerqueue", std::to_string( common::ipc::receive::id()),
+                     server.id.pid = casual::common::process::spawn(
+                        casual::common::environment::directory::casual() + "/casual-queue-server",
+                        {
                           "--queuebase", group.queuebase
                         });
 
@@ -73,17 +98,21 @@ namespace casual
 
                void startup( State& state, config::queue::Queues config)
                {
-                  common::range::transform( config.groups, state.servers, Startup( state));
+                  casual::common::range::transform( config.groups, state.servers, Startup( state));
                }
 
             } // <unnamed>
          } // local
-
       } // broker
 
 
       Broker::Broker( broker::Settings settings)
+       : m_queueFilePath( environment::broker::queue::path())
       {
+
+         broker::local::exportBrokerQueueKey( casual::common::ipc::receive::queue(), m_queueFilePath);
+
+
          if( ! settings.configuration.empty())
          {
             broker::local::startup( m_state, config::queue::get( settings.configuration));
@@ -98,11 +127,11 @@ namespace casual
       void Broker::start()
       {
 
-         common::message::dispatch::Handler handler;
+         casual::common::message::dispatch::Handler handler;
 
          handler.add( broker::handle::lookup::Request{ m_state});
 
-         broker::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
+         broker::queue::blocking::Reader blockedRead( casual::common::ipc::receive::queue(), m_state);
 
          while( true)
          {
@@ -112,7 +141,5 @@ namespace casual
       }
 
    } // queue
-
-
 
 } // casual

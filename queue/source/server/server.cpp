@@ -8,6 +8,8 @@
 #include "queue/server/server.h"
 #include "queue/server/handle.h"
 
+#include "queue/environment.h"
+
 #include "common/message/dispatch.h"
 
 
@@ -25,7 +27,7 @@ namespace casual
             // Talk to queue-broker to get configuration
             //
 
-            server::queue::blocking::Writer queueBroker{ settings.broker_queue, m_state};
+            server::queue::blocking::Writer queueBroker{ environment::broker::queue::id(), m_state};
 
             {
                common::message::queue::connect::Request request;

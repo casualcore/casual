@@ -1,0 +1,36 @@
+
+
+queues:
+  
+  groups:
+    - name: someGroup
+      queuebase: some-group.qb
+      
+      queues:
+        - name: queue1
+          retries: 3
+          
+        - name: queue2
+          retries: 3
+          
+        - name: queue3
+          retries: 3
+          
+        - name: queue4
+          retries: 3
+    
+    - name: someOtherGroup
+      queuebase: some-other-group.qb
+      
+      queues:
+        - name: queueB1
+          retries: 3
+          
+        - name: queueB2
+          retries: 3
+          
+        - name: queueB3
+          retries: 3
+          
+        - name: queueB4
+          retries: 3

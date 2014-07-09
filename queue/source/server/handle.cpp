@@ -7,6 +7,8 @@
 
 #include "queue/server/handle.h"
 
+#include "queue/environment.h"
+
 namespace casual
 {
 
@@ -40,7 +42,9 @@ namespace casual
             {
                void Request::dispatch( message_type& message)
                {
-                  m_state.queuebase.dequeue( message);
+                  auto reply = m_state.queuebase.dequeue( message);
+                  queue::blocking::Writer write{ environment::broker::queue::id(), m_state};
+                  write( reply);
                }
 
 

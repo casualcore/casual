@@ -24,7 +24,6 @@ namespace casual
          struct Settings
          {
             std::string queuebase;
-            common::platform::queue_id_type broker_queue;
          };
 
          struct State
