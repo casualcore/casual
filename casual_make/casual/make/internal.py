@@ -312,6 +312,15 @@ def internal_set_LD_LIBRARY_PATH():
         #def_LD_LIBRARY_PATH_SET=1
 
 
+
+
+def internal_validate_list( list):
+    
+    if isinstance( list, basestring):
+        raise SyntaxError( 'not a list - content: ' + list);
+        
+
+
 def internal_prepare_old_objectlist(objects):
 
     for o in objects:
@@ -327,6 +336,10 @@ def internal_print_services_file_dependency(name, service_file):
 # Intern hjalpfuntktion for att lanka atmi...
 #
 def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, objectfiles, libs, buildserverdirective):
+    
+    internal_validate_list( objectfiles);
+    internal_validate_list( libs);
+    
     
     objectfiles = ' '.join(objectfiles)
     libs = ' '.join(libs)
@@ -427,6 +440,9 @@ def internal_library_dependencies( libs):
 #
 def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
 
+    internal_validate_list( objectfiles);
+    internal_validate_list( libs);
+    
     objectfiles = ' '.join(objectfiles)
     libs = ' '.join(libs)
 

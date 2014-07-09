@@ -178,7 +178,7 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
 
 
 
-def LinkAtmiClient(name,objectfiles,libs):
+def LinkAtmiClient(name,objectfiles,libs = []):
     """
  Links a XATMI client
 
@@ -190,7 +190,7 @@ def LinkAtmiClient(name,objectfiles,libs):
     return internal_BASE_LinkATMI( "$(BUILDCLIENT)",name, "", objectfiles, libs, "")
 
 
-def LinkLibrary(name,objectfiles,libs):
+def LinkLibrary(name,objectfiles,libs = []):
     """LinkLibrary(name,objectfiles,libs)
  Links a shared library
  
@@ -251,7 +251,7 @@ def LinkArchive(name,objectfiles):
 
     return name;
 
-def LinkExecutable(name,objectfiles,libs):
+def LinkExecutable(name,objectfiles,libs = []):
     """
   Links an executable
 
