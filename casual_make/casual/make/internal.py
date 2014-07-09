@@ -51,12 +51,24 @@ filesToRemove=set()
 pathsToCreate=set()
 messages=set()
 
+targetMapping = dict();
 
 targetSequence=1
 
 USER_CASUAL_MAKE_PATH=""
 USER_CASUAL_MAKE_FILE=""
 
+
+#
+# maps user provided names to the reaal target names
+#
+def internal_map_target( username, targetname):
+    targetMapping[ username] = targetname;
+
+
+def internal_target_name_from_user_name( name):
+    return targetMapping[ name];
+    
 
 #
 # Normalize name 
@@ -389,6 +401,9 @@ def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, obje
     print "$(internal_target_deploy_name $atmi_target_name):"
     print "\t-@$def_Deploy $(internal_executable_name $name) exe"
     print 
+    
+    internal_map_target( name , internal_target_name(atmi_target_name));
+    
     internal_register_file_for_clean( internal_executable_name_path(name))
     internal_register_path_for_create( local_destination_path)
 
@@ -438,7 +453,7 @@ def internal_library_dependencies( libs):
 #
 # Intern hjalpfunktion for att lanka
 #
-def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
+def internal_base_link( linker, name, filename, objectfiles, libs, linkdirectives):
 
     internal_validate_list( objectfiles);
     internal_validate_list( libs);
@@ -477,6 +492,8 @@ def internal_base_link(linker,name,filename,objectfiles,libs,linkdirectives):
     else:
         print "\t" + linker + " -o " + filename + " $(objects_" + name + ") $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + name + ") $(DEFAULT_LIBS) " + linkdirectives
     print
+    
+    internal_map_target( name , internal_target_name(name));
     
     internal_register_file_for_clean( filename)
     internal_register_path_for_create( local_destination_path)

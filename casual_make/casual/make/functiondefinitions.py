@@ -127,6 +127,8 @@ def Compile( sourcefile, objectfile, directive = ''):
     
     local_dependency_file=internal_dependency_file_name( local_object_file)
     local_cross_object_file= internal_cross_object_name( local_object_file)
+    
+    internal_map_target( objectfile , local_object_file);
 
     
     print "#"
@@ -268,6 +270,28 @@ def LinkExecutable(name,objectfiles,libs = []):
     print 
 
 
+def Dependencies( target, dependencies):
+    """
+    Set dependencies to arbitary targets. This is not needed in the
+    general case, since casual-make takes care of most dependencies 
+    automatic.
+    
+    This can be used when one wants to execute binaries in a unittest-scenario.
+    To make sure that the actual binaries that will run is linked before the
+    unittest is linked (and run).
+    
+    :param target: the target that has dependencies
+    :param dependencies: targest dependencies
+    
+    """
+    target_depdendencies = [ internal_target_name_from_user_name( d) for d in dependencies];
+    
+    print '#'
+    print '# explicit dependencies'
+    print internal_target_name_from_user_name( target) + ": " + ' '.join( target_depdendencies)
+    
+
+
 def Build(casualMakefile):
     """
  "builds" another casual-make-file: jumps to the spcific file and execute make
@@ -361,7 +385,7 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
     print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + internal_executable_name_path( name) + " $(ISOLATED_UNITTEST_DIRECTIVES)"
     print 
 
-
+    internal_map_target( name, internal_target_isolatedunittest_name(name));
 
 
 
@@ -383,40 +407,6 @@ def LinkDependentUnittest(name,objectfiles,libs):
     internal_BASE_LinkATMI("$(BUILDCLIENT)", name, "" , objectfiles, libs , "-f $(DEPENDENT_UNITTEST_LIB)")
     
 
-
-
-
-
-#  
-# def DatabasePrepare(database,username,password,filename,bindname):
-#     """
-# ######################################################################
-# ##
-# ## DatabasePrepare(database,username,password,filename,bindname)
-# ##
-# ## TODO
-# ##
-# ######################################################################
-#     """
-#     local_bind_path=os.path.dirname( internal_bind_name_path( bindname))
-#     print
-#     print "prep all: $(internal_bind_name_path $bindname)"
-#     print
-#     print "$(internal_bind_name_path $bindname): $def_CurrentDirectory/src/$filename.cpp"
-#     print
-#     print "$def_CurrentDirectory/src/$filename.cpp: $def_CurrentDirectory/src/$filename.sqc | $local_bind_path"
-# #    print "    $def_Prep "$database" "$username" "$password" $def_CurrentDirectory/src/$filename.sqc $(internal_bind_name_path $bindname) \$(PREXTRA_HOST_PATHS)"
-#     print "    $def_MV $def_CurrentDirectory/src/$filename.c $def_CurrentDirectory/src/$filename.cpp"
-#     print
-# 
-#     internal_register_file_for_clean(internal_bind_name_path(bindname))
-#     internal_register_file_for_clean( def_CurrentDirectory + "/src/" + filename + ".cpp")
-#     
-#     print
-#     print "deploy: $(internal_target_deploy_name $bindname)"
-#     print 
-#     print "$(internal_target_deploy_name $bindname):"
-#     print "    -@$def_Deploy $(internal_bind_name $bindname) bnd"    
 
 
 
