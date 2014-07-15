@@ -59,6 +59,16 @@ USER_CASUAL_MAKE_PATH=""
 USER_CASUAL_MAKE_FILE=""
 
 
+global_targets = [ 
+          'all', 
+          'cross', 
+          'clean', 
+          'compile', 
+          'deploy', 
+          'install', 
+          'print_include_paths' ];
+
+
 #
 # maps user provided names to the reaal target names
 #
@@ -83,32 +93,13 @@ def internal_convert_path_to_target_name(name):
     return "target_" + str.replace( name, "/", "_" )
 
 #
-# Anropas av engine efter det att imake-filen har parsats klart.
-# Denna funktion ar alltsa till for att vi ska ha mojlighet att producera
-# ackumulerad information.
+# colled by engine after casual-make-file has been parsed.
+#
+# Hence, this function can use accumulated information.
 #
 def internal_post_make_rules():
 
  
-    #
-    # Skapa target for att ta reda pa include-paths och library-paths beroenden.
-    # for att nyttjas i andra sammanhang.
-    # vi skriver till filen som miljovariabeln INCLUDE_PATHS_FILE dikterar.
-    # 
-#     print
-#     print "#"
-#     print "# Skriver vilka include-paths som nyttjas till filen som miljovariabeln INCLUDE_PATHS_FILE dikterar."
-#     print "#"
-#     print "   clean_include_paths = $(subst -I,, $(strip $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS)))"
-#     print "print_include_paths:"
-#     print "\t@for inc in $(clean_include_paths); do \\"
-#     print "\t\tif [[ $$inc != \"./inc\" ]] ; then \\"
-#     print "\t\tCURRENT_PATH=`pwd`; if cd $$inc 2>/dev/null; then pwd >> $$INCLUDE_PATHS_FILE; cd $$CURRENT_PATH; else echo \"error: invalid include path: $$inc in $(THIS_MAKEFILE)\" > /dev/stderr; fi\\"
-#     print "\t\tfi ; \\"
-#     print "\tdone "
-#     print
-
-
     if def_PARALLEL_MAKE < 2:
         print
         print "#"
@@ -136,10 +127,14 @@ def internal_post_make_rules():
     
     
     print
-    print "clean:"
+    print "clean: clean_objectfiles clean_dependencyfiles clean_files"
     
+    print "clean_objectfiles:"
     for objectpath in objectPathsForClean:
         print "\t-" + def_RM + " " + objectpath + "/*.o"
+        
+    print "clean_dependencyfiles:"
+    for objectpath in objectPathsForClean:  
         print "\t-" + def_RM + " " + objectpath + "/*.d"
     
     
@@ -147,6 +142,7 @@ def internal_post_make_rules():
     #
     # Remove all other known files.
     #
+    print "clean_files:"
     for filename in filesToRemove:
         print "\t-" + def_RM + " " + filename
     
@@ -330,22 +326,79 @@ def internal_validate_list( list):
     
     if isinstance( list, basestring):
         raise SyntaxError( 'not a list - content: ' + list);
-        
-
-
-def internal_prepare_old_objectlist(objects):
-
-    for o in objects:
-        print "obj/" + o + def_ObjectSuffix
- 
+    
  
 def internal_print_services_file_dependency(name, service_file):
 
     print internal_executable_name_path( name) + ": " + service_file
     print 
+
+
+
+
+def internal_Build( casualMakefile):
+    
+    casualMakefile = os.path.abspath( casualMakefile)
+    
+    USER_CASUAL_MAKE_PATH=os.path.dirname( casualMakefile)
+    USER_CASUAL_MAKE_FILE=os.path.basename( casualMakefile)
+    
+    USER_MAKE_FILE=os.path.splitext(casualMakefile)[0] + ".mk"
+    
+    local_make_target=internal_convert_path_to_target_name(casualMakefile)
+    
+
+    print "#"
+    print "# If " + USER_CASUAL_MAKE_FILE + " is newer than " + USER_MAKE_FILE + " , a new makefile is produced"
+    print "#"
+    print USER_MAKE_FILE + ": " + casualMakefile
+    print "\t@echo generate makefile from " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + casualMakefile
+    print
+    
+    
+    
+    for target in global_targets:
+        internal_make_target_component( target, casualMakefile)
+        print
+    
+#     internal_make_target_component("all", casualMakefile)
+#     print
+#     internal_make_target_component("cross", casualMakefile)
+#     print
+#     internal_make_target_component("specification", casualMakefile)
+#     print
+#     internal_make_target_component("prep", casualMakefile)
+#     print
+#     internal_make_target_component("deploy", casualMakefile)
+#     print
+#     internal_make_target_component("test", casualMakefile)
+#     print
+#     internal_make_target_component("clean", casualMakefile)
+#     print
+#     internal_make_target_component("compile", casualMakefile)
+#     print
+#     internal_make_target_component("print_include_paths", casualMakefile)
+#     print
+#     internal_make_target_component("install", casualMakefile)
+#     print
+   
+   
+    print
+    print "#"
+    print "# Always produce " + USER_MAKE_FILE + " , even if " + USER_CASUAL_MAKE_FILE + " is older."
+    print "#"
+    print "make: " + local_make_target
+    print
+    print local_make_target + ":"
+    print "\t@echo generate makefile from " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ' && ' + def_casual_make + " " + casualMakefile
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ' && $(MAKE) -f ' + USER_MAKE_FILE + " make"
+    print
+
                
 #
-# Intern hjalpfuntktion for att lanka atmi...
+# Intern helper to link XATMI-stuff
 #
 def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, objectfiles, libs, buildserverdirective):
     
@@ -531,7 +584,7 @@ def internal_make_target_component(target,casualMakefile):
     print
     print local_unique_target + ": " + USER_MAKE_FILE
     print "\t@echo " + casualMakefile + " " + target
-    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + "; $(MAKE) -f " + USER_MAKE_FILE + " " + target
+    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + " && $(MAKE) -f " + USER_MAKE_FILE + " " + target
     
 def setParallelMake( value):
     def_PARALLEL_MAKE=value

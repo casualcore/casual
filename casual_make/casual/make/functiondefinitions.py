@@ -134,11 +134,13 @@ def Compile( sourcefile, objectfile, directive = ''):
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
+    print local_dependency_file + ':'
+    print "\t@$(HEADER_DEPENDENCY_COMMAND) -MT '{0} {1}' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) {2} -MF {3}".format(local_cross_object_file, local_object_file, local_source_file, local_dependency_file)
+    print
     print "-include " + local_dependency_file
     print 
-    print local_object_file + ": " + local_source_file + " | " + local_object_path                                                                        
+    print local_object_file + ": " + local_source_file + ' ' + local_dependency_file + " | " + local_object_path                                                                        
     print "\t$(COMPILER) -o {0} {1}  $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(COMPILE_DIRECTIVES) {2}".format(objectfile, local_source_file, directive )
-    print "\t@$(HEADER_DEPENDENCY_COMMAND) -MT '{0} {1}' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) {2} -MF {3}".format(local_cross_object_file, local_object_file, local_source_file, local_dependency_file)
     print 
     print local_cross_object_file + ": " + local_source_file + " | "  + local_object_path                                                                      
     print "\t$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o " + local_cross_object_file + " " + local_source_file + " $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) "
@@ -269,6 +271,8 @@ def LinkExecutable(name,objectfiles,libs = []):
     print "\t-@" + def_Deploy + " " + internal_executable_name(name) + " exe"
     print 
 
+    return name;
+
 
 def Dependencies( target, dependencies):
     """
@@ -304,57 +308,9 @@ def Build(casualMakefile):
     #
     NoParallel()
     
-    casualMakefile = os.path.abspath( casualMakefile)
+    internal_Build( casualMakefile);
     
-    USER_CASUAL_MAKE_PATH=os.path.dirname( casualMakefile)
-    USER_CASUAL_MAKE_FILE=os.path.basename( casualMakefile)
     
-    USER_MAKE_FILE=os.path.splitext(casualMakefile)[0] + ".mk"
-    
-    local_make_target=internal_convert_path_to_target_name(casualMakefile)
-    
-
-    print "#"
-    print "# If " + USER_CASUAL_MAKE_FILE + " is newer than " + USER_MAKE_FILE + " , a new makefile is produced"
-    print "#"
-    print USER_MAKE_FILE + ": " + casualMakefile
-    print "\t@echo generate makefile from " + casualMakefile
-    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + casualMakefile
-    print
-    internal_make_target_component("all", casualMakefile)
-    print
-    internal_make_target_component("cross", casualMakefile)
-    print
-    internal_make_target_component("specification", casualMakefile)
-    print
-    internal_make_target_component("prep", casualMakefile)
-    print
-    internal_make_target_component("deploy", casualMakefile)
-    print
-    internal_make_target_component("test", casualMakefile)
-    print
-    internal_make_target_component("clean", casualMakefile)
-    print
-    internal_make_target_component("compile", casualMakefile)
-    print
-    internal_make_target_component("print_include_paths", casualMakefile)
-    print
-    internal_make_target_component("install", casualMakefile)
-    print
-   
-   
-    print
-    print "#"
-    print "# Always produce " + USER_MAKE_FILE + " , even if " + USER_CASUAL_MAKE_FILE + " is older."
-    print "#"
-    print "make: " + local_make_target
-    print
-    print local_make_target + ":"
-    print "\t@echo generate makefile from " + casualMakefile
-    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" + def_casual_make + " " + casualMakefile
-    print "\t@" + def_CD + " " + USER_CASUAL_MAKE_PATH + ";" +  "$(MAKE) -f " + USER_MAKE_FILE + " make"
-    print
-
 
 def LinkIsolatedUnittest(name,objectfiles,libs):
     """
