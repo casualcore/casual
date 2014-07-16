@@ -100,6 +100,12 @@ def internal_clean_directory_name(name):
 def internal_convert_path_to_target_name(name):
     return "target_" + str.replace( name, "/", "_" )
 
+
+def internal_pre_make_rules():
+    pass
+    
+    
+
 #
 # colled by engine after casual-make-file has been parsed.
 #
