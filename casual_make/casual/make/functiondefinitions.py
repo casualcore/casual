@@ -386,21 +386,27 @@ def Install(source, destination):
     internal_install( local_target_name, source, destination)
 
 def Include( filename):
-    global include
+    #global include
            
-    include.append( filename)
+    #include.append( filename)
     
-def Set( name, value):
+    print '\ninclude ' + filename + '\n'
     
-    global export
-    
-    export[name] = value
+# def Set( name, value):
+#     
+#     global export
+#     
+#     export[name] = value
         
 def SetIncludePaths( value ):
     
-    Set("INCLUDE_PATHS", value)
+    print 'INCLUDE_PATHS = ' + ' '.join( value);
+    
     
 def SetLibraryPaths( value ):
     
-    Set("LIBRARY_PATHS", value)
+    print 'LIBRARY_PATHS = ' + ' '.join( value);
+    
+    
+
         

@@ -53,23 +53,26 @@ class Engine(object):
             
             cmk.write( 'from casual.make.functiondefinitions import *')
             
+            
+            
+            
+            
+            cmk.write( '\n' + 'internal_pre_make_rules()\n');
+            cmk.write( string.join( origin.readlines(), ''));
+            cmk.write( '\n' + 'internal_post_make_rules()\n')
+            
             #
             # add platform specific configuration
             #
             with configuration() as config:
                 for line in config:
                     cmk.write( line);
-            
+        
             #
             # make sure we call, and generate, the platform configuration
             #
             cmk.write( '\n' + 'casual_make_platform_configuration()\n');
             
-            cmk.write( '\n' + 'internal_pre_make_rules()\n');
-            cmk.write( string.join( origin.readlines(), ''));
-            cmk.write( '\n' + 'internal_post_make_rules()\n')
-            
-        
         return cmk
         
         
