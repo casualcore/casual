@@ -1,3 +1,8 @@
+
+def casual_make_platform_configuration():
+
+    print """
+
 ######################################################################
 ## 
 ## "globala" statiska variabler som kan användas av användaren
@@ -93,7 +98,6 @@ PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUX
 QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
 
-
 #
 # Användarens definerade paths läggs först för ha företräde
 # före default.
@@ -134,4 +138,8 @@ HEADER_DEPENDENCY_COMMAND = -/usr/sfw/bin/g++ -MP -MM -DRFV_DLL -isystem $(DB2IN
 ## Det transformerade innehållet i imakefilen följer:
 ##
 ######################################################################
+
+    """;
+    
+    
 

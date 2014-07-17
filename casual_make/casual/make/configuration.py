@@ -9,27 +9,19 @@ Created on 28 apr 2012
 #
 import os
 
-class Configuration(object):
-    '''
-    Responsible for selecting correct configuration depending of platform
-    '''
-    
-    def platform(self):
-        ''' Decide on which platform this runs '''
-        thisPlatform = os.uname()[0].lower()  
-        if thisPlatform == "darwin":
-            thisPlatform = "osx"
-        return thisPlatform
 
-    def __init__(self):
-        '''
-        Constructor
-        '''
-        configfile = open(os.getenv("CASUAL_TOOLS_HOME") + "/casual_make/casual/make/config_" + self.platform() , "r")
-        self.content = configfile.read()
-        configfile.close()
+def configuration():
+    '''
+    returns the corresponding configuration file-object for this platform
+    '''
     
-        
-    def printConfig(self):
-        print self.content
-        
+    # Decide on which platform this runs
+    platform = os.uname()[0].lower()  
+    if platform == "darwin":
+        platform = "osx"
+    
+    return open( os.getenv("CASUAL_TOOLS_HOME") + "/casual_make/casual/make/config_" + platform + '.py' , "r")
+    
+    
+
+

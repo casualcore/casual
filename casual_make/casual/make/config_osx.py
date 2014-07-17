@@ -1,10 +1,14 @@
+
+
+def casual_make_platform_configuration():
+
+    print """
+
 ######################################################################
 ## 
 ## "global" variables that can be used and altered by the user
 ##
 ######################################################################
-
-
 
 
 
@@ -127,4 +131,8 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -
 ## Transformed casual make file follows below
 ##
 ######################################################################
+    """;
+    
+    
+
 

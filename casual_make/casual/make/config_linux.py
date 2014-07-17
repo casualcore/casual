@@ -1,3 +1,8 @@
+
+def casual_make_platform_configuration():
+
+    print """
+
 ######################################################################
 ## 
 ## "globala" statiska variabler som kan anv�ndas av anv�ndaren
@@ -146,4 +151,9 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
 ## Det transformerade inneh�llet i imakefilen f�ljer:
 ##
 ######################################################################
+    """;
+    
+    
+   
+
 
