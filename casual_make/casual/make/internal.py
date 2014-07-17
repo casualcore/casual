@@ -59,14 +59,22 @@ USER_CASUAL_MAKE_PATH=""
 USER_CASUAL_MAKE_FILE=""
 
 
-global_targets = [ 
+global_build_targets = [ 
           'all', 
           'cross', 
-          'clean', 
+          'clean_files',
+          'clean_objectfiles',
+          'clean_dependencyfiles', 
           'compile', 
           'deploy', 
           'install', 
           'print_include_paths' ];
+
+global_targets = [ 
+          'make', 
+          'clean',
+           ] + global_build_targets;
+
 
 
 #
@@ -92,6 +100,12 @@ def internal_clean_directory_name(name):
 def internal_convert_path_to_target_name(name):
     return "target_" + str.replace( name, "/", "_" )
 
+
+def internal_pre_make_rules():
+    pass
+    
+    
+
 #
 # colled by engine after casual-make-file has been parsed.
 #
@@ -99,6 +113,37 @@ def internal_convert_path_to_target_name(name):
 #
 def internal_post_make_rules():
 
+
+    #
+    # Default targets and such
+    #
+    
+    print '#'
+    print '# If no target is given we assume \"all\"'
+    print '#'
+    print '.PHONY all:'
+    
+    print
+    print '#'
+    print '# Dummy targets to make sure they will run, even if there is a corresponding file'
+    print '# with the same name'
+    print '#'
+    print '.PHONY make:'
+    for target in global_targets:
+        print '.PHONY ' + target + ':' 
+    
+    print
+    print '#'
+    print '# Make sure recursive makefiles get the linker'
+    print '#'
+    print 'export EXECUTABLE_LINKER'
+    
+    print
+    print '#'
+    print '# target \'link\' is only to get symmetry with compile'
+    print '#'
+    print 'link: all'
+    print
  
     if def_PARALLEL_MAKE < 2:
         print
@@ -358,7 +403,7 @@ def internal_Build( casualMakefile):
     
     
     
-    for target in global_targets:
+    for target in global_build_targets:
         internal_make_target_component( target, casualMakefile)
         print
     

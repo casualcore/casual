@@ -1,3 +1,8 @@
+
+def casual_make_platform_configuration():
+
+    print """
+
 ######################################################################
 ## 
 ## "globala" statiska variabler som kan användas av användaren
@@ -93,7 +98,6 @@ PURIFY_LINKER = purify purecov $(PURIFYOPTIONS) $(EXECUTABLE_LINKER) -lc -R$(TUX
 QUANTIFY_LINKER = quantify -always-use-cache-dir $(EXECUTABLE_LINKER) -R$(TUXLIB_DIR)
 
 
-
 #
 # Användarens definerade paths läggs först för ha företräde
 # före default.
@@ -126,57 +130,6 @@ HEADER_DEPENDENCY_COMMAND = -/usr/sfw/bin/g++ -MP -MM -DRFV_DLL -isystem $(DB2IN
 
 
 
-#
-# Om inget target anges förutsätter vi att det är "all" som menas...
-#
-.PHONY all:
-
-
-#
-# Dummy targets för de targets som inte alltid finns i alla
-# makefiler.
-#
-.PHONY make:
-.PHONY prep:
-.PHONY cross:
-.PHONY export_begin:
-.PHONY export_headers:
-.PHONY export_libraries:
-.PHONY export_files:
-.PHONY export_end:
-.PHONY install:
-
-
-
-
-
-#
-# Purify och quantify
-# Vi ska länka med just purify/quantify för alla exekverbara...
-# purify/quantify är beroende av att allt byggs...
-#
-pure: EXECUTABLE_LINKER := $(PURIFY_LINKER)
-pure: all
-
-quantify: EXECUTABLE_LINKER := $(QUANTIFY_LINKER)
-quantify: all
-
-#
-# Se till så eventuella sub-make-filer får tillgång till 
-# vad vi har satt EXECUTABLE_LINKER till.
-#
-export EXECUTABLE_LINKER
-
-#
-# Test är beroende av att allt är byggt
-#
-test: all
-
-#
-# link är mest för att få likformighet mot "compile".
-# Vi likställer link med "all"
-#
-link: all
 
 
 
@@ -185,4 +138,8 @@ link: all
 ## Det transformerade innehållet i imakefilen följer:
 ##
 ######################################################################
+
+    """;
+    
+    
 

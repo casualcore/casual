@@ -1,3 +1,8 @@
+
+def casual_make_platform_configuration():
+
+    print """
+
 ######################################################################
 ## 
 ## "globala" statiska variabler som kan anv�ndas av anv�ndaren
@@ -139,60 +144,6 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
 
 
 
-#
-# Om inget target anges f�ruts�tter vi att det �r "all" som menas...
-#
-.PHONY all:
-
-
-#
-# Dummy targets f�r de targets som inte alltid finns i alla
-# makefiler.
-#
-.PHONY make:
-.PHONY prep:
-.PHONY cross:
-.PHONY export_begin:
-.PHONY export_headers:
-.PHONY export_libraries:
-.PHONY export_files:
-.PHONY export_end:
-.PHONY export:
-.PHONY install:
-
-
-
-
-
-
-#
-# Purify och quantify
-# Vi ska l�nka med just purify/quantify f�r alla exekverbara...
-# purify/quantify �r beroende av att allt byggs...
-#
-pure: EXECUTABLE_LINKER := $(PURIFY_LINKER)
-pure: all
-
-quantify: EXECUTABLE_LINKER := $(QUANTIFY_LINKER)
-quantify: all
-
-#
-# Se till s� eventuella sub-make-filer f�r tillg�ng till 
-# vad vi har satt EXECUTABLE_LINKER till.
-#
-export EXECUTABLE_LINKER
-
-#
-# Test �r beroende av att allt �r byggt
-#
-test: all
-
-#
-# link �r mest f�r att f� likformighet mot "compile".
-# Vi likst�ller link med "all"
-#
-link: all
-
 
 
 ######################################################################
@@ -200,4 +151,9 @@ link: all
 ## Det transformerade inneh�llet i imakefilen f�ljer:
 ##
 ######################################################################
+    """;
+    
+    
+   
+
 

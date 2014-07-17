@@ -1,10 +1,14 @@
+
+
+def casual_make_platform_configuration():
+
+    print """
+
 ######################################################################
 ## 
 ## "global" variables that can be used and altered by the user
 ##
 ######################################################################
-
-
 
 
 
@@ -122,45 +126,13 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11 -isystem $(DB2INCLUDE_DIR) -
 
 
 
-#
-# If no target is given we assume "all"
-#
-.PHONY all:
-
-
-#
-# Dummy targets to make sure they will run, even if there is a corresponding file
-# with the same name
-#
-.PHONY make:
-.PHONY prep:
-.PHONY test:
-.PHONY cross:
-.PHONY export_begin:
-.PHONY export_headers:
-.PHONY export_libraries:
-.PHONY export_files:
-.PHONY export_end:
-.PHONY install:
-
-
-
-#
-# 
-#
-export EXECUTABLE_LINKER
-
-
-#
-# target 'link' is only to get symmetry with compile  
-#
-link: all
-
-
-
 ######################################################################
 ## 
 ## Transformed casual make file follows below
 ##
 ######################################################################
+    """;
+    
+    
+
 
