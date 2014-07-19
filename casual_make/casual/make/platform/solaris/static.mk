@@ -1,26 +1,8 @@
 
-def casual_make_platform_configuration():
-
-    print """
-
-######################################################################
-## 
-## "globala" statiska variabler som kan användas av användaren
-##
-######################################################################
-
-
-
-
-
 #
-# Unittest
-UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
-UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
-ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
-#DEPENDENT_UNITTEST_LIB =$(UNITTEST_LIBRARY_PATH)/gtest_main.a $(UNITTEST_LIBRARY_PATH)/libunittestcommon.a $(UNITTEST_LIBRARY_PATH)/libdependentunittest.a
-
-ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=yes
+# Common stuff
+#
+include $(CASUALMAKE_PATH)/casual_make/casual/make/platform/common.mk
 
 #
 # Default libs
@@ -30,19 +12,9 @@ DEFAULT_LIBS :=
 
 ######################################################################
 ## 
-## Användarens variabel-deklarationer. Tas oavkortat från imakefilen:
+## compilation and link configuration
 ##
 ######################################################################
-
-
-######################################################################
-## 
-## Compile/Link konfiguration. Dessa kan vara beroende av vad 
-## användaren har angett för direktiv i sin imake-fil
-##
-######################################################################
-
-THIS_MAKEFILE = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 
 
 
@@ -50,7 +22,7 @@ COMPILER = CC
 CROSSCOMPILER = g++
 
 #
-# Vi är beroende av att vi använder bash
+# We make sure we use bash
 #
 SHELL = bash
 
@@ -139,7 +111,6 @@ HEADER_DEPENDENCY_COMMAND = -/usr/sfw/bin/g++ -MP -MM -DRFV_DLL -isystem $(DB2IN
 ##
 ######################################################################
 
-    """;
-    
+
     
 

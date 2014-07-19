@@ -67,13 +67,22 @@ global_build_targets = [
           'clean_dependencyfiles', 
           'compile', 
           'deploy', 
-          'install', 
+          'install',
+          'test', 
           'print_include_paths' ];
 
 global_targets = [ 
           'make', 
           'clean',
            ] + global_build_targets;
+
+
+
+internal_globalPreMakeStatements = []
+
+def internal_add_pre_make_statement( statement):
+    
+    internal_globalPreMakeStatements.append( statement);
 
 
 
@@ -86,6 +95,9 @@ def internal_map_target( username, targetname):
 
 def internal_target_name_from_user_name( name):
     return targetMapping[ name];
+
+
+    
     
 
 #
@@ -103,6 +115,8 @@ def internal_convert_path_to_target_name(name):
 
 def internal_pre_make_rules():
     pass
+    
+    
     
     
 

@@ -20,7 +20,7 @@ def configuration():
     if platform == "darwin":
         platform = "osx"
     
-    return open( os.getenv("CASUAL_TOOLS_HOME") + "/casual_make/casual/make/config_" + platform + '.py' , "r")
+    return open( os.getenv("CASUAL_TOOLS_HOME") + "/casual_make/casual/make/platform/" + platform + '/dynamic.py' , "r")
     
     
 

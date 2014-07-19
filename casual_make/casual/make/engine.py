@@ -53,25 +53,31 @@ class Engine(object):
             
             cmk.write( 'from casual.make.functiondefinitions import *')
             
-            
-            
-            
-            
             cmk.write( '\n' + 'internal_pre_make_rules()\n');
-            cmk.write( string.join( origin.readlines(), ''));
-            cmk.write( '\n' + 'internal_post_make_rules()\n')
             
+                   
             #
             # add platform specific configuration
             #
             with configuration() as config:
                 for line in config:
                     cmk.write( line);
-        
+            
             #
             # make sure we call, and generate, the platform configuration
             #
-            cmk.write( '\n' + 'casual_make_platform_configuration()\n');
+            cmk.write( '\n' + 'casual_make_platform_dynamic()\n');
+            
+            #
+            # write user casual-make-file
+            #
+            for line in origin:
+                cmk.write( line);    
+            
+            cmk.write( '\n' + 'internal_post_make_rules()\n')
+                        
+        
+            
             
         return cmk
         
@@ -79,10 +85,46 @@ class Engine(object):
     def run(self):
         debug("Engine running...")
                 
+        # 
+        # Keep the output in memory
         #
-        # Create temporary file
+        output = StringIO.StringIO();
+        
+        
+#       debug( self.parser.content)
         #
-        with open( self.makefile + '.tmp', 'w+') as temp:
+        # Turn stdout over to output
+        #
+        sys.stdout = output;
+        
+        
+        globalVariables= {}
+        
+        try:
+            cmk = self.prepareCasualMakeFile()
+            
+            code = compile( cmk.getvalue(), self.casual_makefile, 'exec')
+            cmk.close();
+            
+            exec( code, globalVariables)
+            
+        except (NameError, SyntaxError, TypeError):
+            sys.stderr.write( "Error in " + os.path.realpath(self.casual_makefile) + ".\n")
+            raise
+            
+        #
+        # Reset stdout
+        #
+        sys.stdout = sys.__stdout__
+        output.seek( 0);
+        
+        
+        
+
+        #
+        # Create temporary file, so we can have 'atomic' behavior
+        #
+        with open( self.makefile + '.tmp', 'w+') as temp:    
         
             #
             # Start by writing CASUALMAKE_PATH
@@ -90,30 +132,23 @@ class Engine(object):
             temp.write( "CASUALMAKE_PATH = " + os.path.dirname(os.path.abspath(sys.argv[0])) + u"/..\n")
             temp.write( "USER_CASUAL_MAKE_FILE = " + self.casual_makefile + "\n");
             
-    #       debug( self.parser.content)
             #
-            # Turn stdout over to makefile
+            # Write pre-make-statements. i.e include statements, INCLUDE_PATHS, and such
             #
-            sys.stdout = temp;
+            if 'internal_globalPreMakeStatements' in globalVariables:
+                for statement in globalVariables['internal_globalPreMakeStatements']:
+                    temp.write( statement + '\n')
             
+            #
+            # Write the makefile-output
+            #
+            for line in output:
+                temp.write( line);
             
-            try:
-                cmk = self.prepareCasualMakeFile()
-                
-                code = compile( cmk.getvalue(), self.casual_makefile, 'exec')
-                cmk.close();
-                
-                exec( code)
-                
-            except (NameError, SyntaxError, TypeError):
-                sys.stderr.write( "Error in " + os.path.realpath(self.casual_makefile) + ".\n")
-                raise
-                
-            #
-            # Reset stdout
-            #
-            sys.stdout = sys.__stdout__
         
+            #
+            # "swap" the files
+            #
             os.rename( temp.name, self.makefile);
  
         

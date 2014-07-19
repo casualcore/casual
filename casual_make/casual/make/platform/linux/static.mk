@@ -1,42 +1,18 @@
 
-def casual_make_platform_configuration():
-
-    print """
-
-######################################################################
-## 
-## "globala" statiska variabler som kan anv�ndas av anv�ndaren
-##
-######################################################################
-
-
-
-
-
 #
-# Unittest
-UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
-UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
-ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
-#DEPENDENT_UNITTEST_LIB =$(UNITTEST_LIBRARY_PATH)/gtest_main.a $(UNITTEST_LIBRARY_PATH)/libunittestcommon.a $(UNITTEST_LIBRARY_PATH)/libdependentunittest.a
-
-ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=yes
+# Common stuff
+#
+include $(CASUALMAKE_PATH)/casual_make/casual/make/platform/common.mk
 
 #
 # Default libs
 #
 DEFAULT_LIBS :=  
 
-######################################################################
-## 
-## Anv�ndarens variabel-deklarationer. Tas oavkortat fr�n imakefilen:
-##
-######################################################################
 
 ######################################################################
 ## 
-## Compile/Link konfiguration. Dessa kan vara beroende av vad 
-## anv�ndaren har angett f�r direktiv i sin imake-fil
+## compilation and link configuration
 ##
 ######################################################################
 
@@ -144,15 +120,11 @@ HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
 
 
 
-
-
 ######################################################################
 ## 
 ## Det transformerade inneh�llet i imakefilen f�ljer:
 ##
 ######################################################################
-    """;
-    
     
    
 
