@@ -122,14 +122,15 @@ class Engine(object):
         
 
         #
-        # Create temporary file, so we can have 'atomic' behavior
+        # it's unlikely that the write will fail (if the file exists), hence, we
+        # write directly to the makefile.
         #
-        with open( self.makefile + '.tmp', 'w+') as temp:    
+        with open( self.makefile, 'w+') as temp:    
         
             #
             # Start by writing CASUALMAKE_PATH
             #
-            temp.write( "CASUALMAKE_PATH = " + os.path.dirname(os.path.abspath(sys.argv[0])) + u"/..\n")
+            temp.write( "CASUALMAKE_PATH = " + os.path.dirname(os.path.abspath(sys.argv[0] + u"/..")) + '\n')
             temp.write( "USER_CASUAL_MAKE_FILE = " + self.casual_makefile + "\n");
             
             #
@@ -149,8 +150,14 @@ class Engine(object):
             #
             # "swap" the files
             #
-            os.rename( temp.name, self.makefile);
+            #os.rename( temp.name, self.makefile);
  
         
         debug( "Engine done.")
+
+
+
+
+
+
         

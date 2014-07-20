@@ -341,8 +341,6 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
     print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + internal_executable_name_path( name) + " $(ISOLATED_UNITTEST_DIRECTIVES)"
     print 
 
-    internal_map_target( name, internal_target_isolatedunittest_name(name));
-
 
 
 
