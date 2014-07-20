@@ -1,0 +1,28 @@
+
+
+#
+# Unittest
+UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
+UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
+ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
+
+ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=yes
+
+
+
+
+BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
+BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
+
+
+#
+# Default include/library-paths
+#
+DEFAULT_INCLUDE_PATHS := ./include
+DEFAULT_LIBRARY_PATHS := ./bin 
+
+
+
+
+THIS_MAKEFILE = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+
