@@ -98,17 +98,19 @@ namespace casual
          return buffer;
       }
 
+      bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs)
+      {
+         return uuid_compare( lhs.get(), rhs) == 0;
+      }
+
+      bool operator == ( const Uuid::uuid_type& lhs, const Uuid& rhs)
+      {
+         return uuid_compare( lhs, rhs.get()) == 0;
+      }
+
    } // common
 } // casual
 
-bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs)
-{
-	return uuid_compare( lhs.get(), rhs) == 0;
-}
 
-bool operator == ( const casual::common::Uuid::uuid_type& lhs, const casual::common::Uuid& rhs)
-{
-	return uuid_compare( lhs, rhs.get()) == 0;
-}
 
 

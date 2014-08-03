@@ -8,6 +8,7 @@
 #ifndef MOVE_H_
 #define MOVE_H_
 
+#include <memory>
 
 namespace casual
 {
@@ -121,9 +122,6 @@ namespace casual
             return *this;
          }
       };
-
-
-
 
    } // common
 } // casual

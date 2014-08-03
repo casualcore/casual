@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef CASUAL_QUEUE_COMMON_ENVIRONMENT_H_
-#define CASUAL_QUEUE_COMMON_ENVIRONMENT_H_
+#ifndef CASUAL_QUEUE_ENVIRONMENT_H_
+#define CASUAL_QUEUE_ENVIRONMENT_H_
 
 
 #include "common/platform.h"

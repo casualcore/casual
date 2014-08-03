@@ -338,7 +338,6 @@ namespace casual
 
       }
 
-
    } // algorithm
 
 } // casual

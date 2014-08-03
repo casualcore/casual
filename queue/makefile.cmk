@@ -95,6 +95,20 @@ LinkLibrary( 'casual-queue-rm',
      ['casual-common',
       ]);
 
+
+#
+# Client API
+#
+casual_queue_api_objs = [
+       Compile( 'source/queue.cpp', 'obj/queue.o')
+     ];
+
+LinkLibrary( 'casual-queue', 
+    casual_queue_api_objs,
+    [ 'casual-common' ]
+    )
+
+
 #
 # Unittest
 #
@@ -110,5 +124,16 @@ LinkIsolatedUnittest( 'test-casual-queue',
      'sqlite3',
      ]  
 );
+
+#
+# Make sure the binaries is linked before unittest
+#
+Dependencies( 'test-casual-queue', ['casual-queue-broker', 'casual-queue-server'])
+
+
+
+
+
+
 
 

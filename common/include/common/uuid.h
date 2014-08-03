@@ -67,23 +67,27 @@ namespace casual
 			static std::string toString( const uuid_type uuid);
 
 
+			friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
+         {
+            return out << uuid.string();
+         }
+
+			friend bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs);
+
+			friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
+
 		private:
 			uuid_type m_uuid;
 
 		};
 
-		inline std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
-		{
-		   return out << uuid.string();
-		}
-
-
 	} // common
 } // casaul
 
-bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs);
 
-bool operator == ( const casual::common::Uuid::uuid_type& rhs, const casual::common::Uuid& lhs);
+
+
+
 
 
 

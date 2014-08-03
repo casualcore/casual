@@ -123,7 +123,17 @@ LinkIsolatedUnittest( "test-casual-common-isolated",
     ])		
 
 #
-# Install
+# Install 
 #
 InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
 InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
+
+#
+# mockup stuff, we still need to install it if we use it in test
+#
+InstallLibrary("casual-mockup", "$CASUAL_HOME/lib/.")
+InstallLibrary("casual-mockup-rm", "$CASUAL_HOME/lib/.")
+
+
+
+

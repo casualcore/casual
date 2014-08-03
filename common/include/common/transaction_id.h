@@ -97,19 +97,30 @@ namespace casual
             //! @}
 
 
-            bool operator < ( const ID& rhs) const;
-
-            bool operator == ( const ID& rhs) const;
-
-            bool operator != ( const ID& rhs) const
-            {
-               return ! ( *this == rhs);
-            }
-
 
             std::string stringGlobal() const;
 
             std::string stringBranch() const;
+
+
+            friend std::ostream& operator << ( std::ostream& out, const ID& id)
+            {
+               if( out && id)
+               {
+                  out << id.stringGlobal() << ":" << id.stringBranch();
+               }
+               return out;
+            }
+
+            friend bool operator < ( const ID& lhs, const ID& rhs);
+
+            friend bool operator == ( const ID& lhs, const ID& rhs);
+
+            friend bool operator != ( const ID& lhs, const ID& rhs)
+            {
+               return ! ( lhs == rhs);
+            }
+
 
 
          private:
@@ -117,32 +128,38 @@ namespace casual
             XID m_xid;
          };
 
-         inline std::ostream& operator << ( std::ostream& out, const ID& id)
+         namespace internal
          {
-            if( out && id)
-            {
-               out << id.stringGlobal() << ":" << id.stringBranch();
-            }
-            return out;
+            inline const XID& xid( const XID& value) { return value;}
+
+            inline const XID& xid( const ID& value) { return value.xid();}
+         } // internal
+
+
+         //!
+         //! @return a (binary) range that represent the global part of the xid
+         //!
+         template< typename T>
+         inline auto global( T&& id) -> decltype( range::make( internal::xid( id).data))
+         {
+            auto& xid = internal::xid( id);
+            using range_type = decltype( range::make( xid.data));
+
+            return range_type( xid.data, xid.data + xid.gtrid_length);
          }
 
-
+         //!
+         //! @return a (binary) range that represent the branch part of the xid
+         //!
          template< typename T>
-         inline auto global( T&& id) -> decltype( range::make( id.xid().data))
+         inline auto branch( T&& id) -> decltype( range::make( internal::xid( id).data))
          {
-            using range_type = decltype( range::make( id.xid().data));
+            auto& xid = internal::xid( id);
+            using range_type = decltype( range::make( xid.data));
 
-            return range_type( id.xid().data, id.xid().data + id.xid().gtrid_length);
-         }
+            auto branchBegin = xid.data + xid.gtrid_length;
 
-         template< typename T>
-         inline auto branch( T&& id) -> decltype( range::make( id.xid().data))
-         {
-            using range_type = decltype( range::make( id.xid().data));
-
-            auto branchBegin = id.xid().data + id.xid().gtrid_length;
-
-            return range_type( branchBegin, branchBegin + id.xid().bqual_length);
+            return range_type( branchBegin, branchBegin + xid.bqual_length);
          }
 
 
@@ -186,11 +203,7 @@ namespace casual
          //! @}
 
       } // transaction
-
    } // common
-
-
-
 } // casual
 
 

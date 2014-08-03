@@ -248,45 +248,50 @@ namespace casual
 
          iterator first;
          iterator last;
+
+
+         //template< typename Iter>
+         friend Range< Iter> operator + ( const Range& lhs, const Range& rhs)
+         {
+            Range result( lhs);
+            if( rhs.first < result.first) result.first = rhs.first;
+            if( rhs.last > result.last) result = rhs.last;
+            return result;
+         }
+
+         //template< typename Iter>
+         friend Range< Iter> operator - ( const Range& lhs, const Range& rhs)
+         {
+            Range result{ lhs};
+            if( rhs.last > result.first && rhs.last < result.last) result.first = rhs.last;
+
+            if( rhs.first < result.last && rhs.first > result.first) result.last = rhs.first;
+
+            return result;
+         }
+
+         //template< typename Iter>
+         friend std::ostream& operator << ( std::ostream& out, Range range)
+         {
+            if( out)
+            {
+               out << "[";
+               while( range.first != range.last)
+               {
+                  out << *range.first++;
+                  if( range.first != range.last)
+                     out << ",";
+               }
+               out << "]";
+            }
+            return out;
+         }
       };
 
-      template< typename Iter>
-      Range< Iter> operator + ( const Range< Iter>& lhs, const Range< Iter>& rhs)
-      {
-         Range< Iter> result( lhs);
-         if( rhs.first < result.first) result.first = rhs.first;
-         if( rhs.last > result.last) result = rhs.last;
-         return result;
-      }
-
-      template< typename Iter>
-      Range< Iter> operator - ( const Range< Iter>& lhs, const Range< Iter>& rhs)
-      {
-         Range< Iter> result{ lhs};
-         if( rhs.last > result.first && rhs.last < result.last) result.first = rhs.last;
-
-         if( rhs.first < result.last && rhs.first > result.first) result.last = rhs.first;
-
-         return result;
-      }
 
 
-      template< typename Iter>
-      std::ostream& operator << ( std::ostream& out, Range< Iter> range)
-      {
-         if( out.good())
-         {
-            out << "[";
-            while( range.first != range.last)
-            {
-               out << *range.first++;
-               if( range.first != range.last)
-                  out << ",";
-            }
-            out << "]";
-         }
-         return out;
-      }
+
+
 
 
       template< typename T>
@@ -480,10 +485,7 @@ namespace casual
          template< typename R1, typename R2, typename P>
          bool equal( R1&& lhs, R2&& rhs, P predicate)
          {
-            if( lhs.size() != rhs.size())
-            {
-               return false;
-            }
+            //if( lhs.size() != rhs.size()) { return false;}
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), predicate);
          }
 
@@ -491,10 +493,7 @@ namespace casual
          template< typename R1, typename R2>
          bool equal( R1&& lhs, R2&& rhs)
          {
-            if( lhs.size() != rhs.size())
-            {
-               return false;
-            }
+            //if( lhs.size() != rhs.size()) { return false;}
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs));
          }
 

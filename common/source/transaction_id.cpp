@@ -257,18 +257,18 @@ namespace casual
          }
 
 
-         bool ID::operator < (const ID& rhs) const
+         bool operator < ( const ID& lhs, const ID& rhs)
          {
             return std::lexicographical_compare(
-               std::begin( m_xid.data), std::begin( m_xid.data) + m_xid.gtrid_length + m_xid.bqual_length,
+               std::begin( lhs.m_xid.data), std::begin( lhs.m_xid.data) + lhs.m_xid.gtrid_length + lhs.m_xid.bqual_length,
                std::begin( rhs.m_xid.data), std::begin( rhs.m_xid.data) + rhs.m_xid.gtrid_length + rhs.m_xid.bqual_length);
          }
 
-         bool ID::operator == (const ID& rhs) const
+         bool operator == ( const ID& lhs, const ID& rhs)
          {
-            return m_xid.gtrid_length + m_xid.bqual_length == rhs.m_xid.gtrid_length + rhs.m_xid.bqual_length &&
+            return lhs.m_xid.gtrid_length == rhs.m_xid.gtrid_length && lhs.m_xid.bqual_length == rhs.m_xid.bqual_length &&
                std::equal(
-                 std::begin( m_xid.data), std::begin( m_xid.data) + m_xid.gtrid_length + m_xid.bqual_length,
+                 std::begin( lhs.m_xid.data), std::begin( lhs.m_xid.data) + lhs.m_xid.gtrid_length + lhs.m_xid.bqual_length,
                  std::begin( rhs.m_xid.data));
          }
 

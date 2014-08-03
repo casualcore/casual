@@ -40,8 +40,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, uuid_constructor)
       {
-         const Uuid gtrid = Uuid::make();
-         const Uuid bqual = Uuid::make();
+         auto gtrid = Uuid::make();
+         auto bqual = Uuid::make();
          const transaction::ID id{ gtrid, bqual};
 
          auto size = sizeof( Uuid::uuid_type);
@@ -60,8 +60,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, not_equal)
       {
-         transaction::ID lhs = transaction::ID::create();
-         transaction::ID rhs = transaction::ID::create();
+         auto lhs = transaction::ID::create();
+         auto rhs = transaction::ID::create();
 
          EXPECT_TRUE( lhs != rhs) << "lhs: " << lhs.stringGlobal() << std::endl << "rhs: " << rhs.stringGlobal() << std::endl;
 
@@ -69,7 +69,7 @@ namespace casual
 
       TEST( casual_common_transaction_id, equal)
       {
-         const Uuid gtrid = Uuid::make();
+         auto gtrid = Uuid::make();
          transaction::ID lhs{ gtrid, gtrid};
          transaction::ID rhs{ gtrid, gtrid};
 
@@ -80,8 +80,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, move)
       {
-         transaction::ID id = transaction::ID::create();
-         const std::string gtrid = id.stringGlobal();
+         auto id = transaction::ID::create();
+         auto gtrid = id.stringGlobal();
 
          transaction::ID moved{ std::move( id)};
 
@@ -89,6 +89,33 @@ namespace casual
          EXPECT_FALSE( moved.null());
          EXPECT_TRUE( moved.stringGlobal() == gtrid) << "moved: " << moved.stringGlobal() << std::endl << "gtrid: " << gtrid << std::endl;
 
+      }
+
+      TEST( casual_common_transaction_id, global_id)
+      {
+         auto gtrid = Uuid::make();
+         auto bqual = Uuid::make();
+         const transaction::ID id{ gtrid, bqual};
+
+         char char_gtrid[ sizeof( Uuid::uuid_type)];
+         range::copy( gtrid.get(), std::begin( char_gtrid));
+
+         EXPECT_TRUE( range::equal( char_gtrid, transaction::global( id))) << "global: " << transaction::global( id) << " - char_gtrid: " << range::make( char_gtrid);
+         EXPECT_TRUE( range::equal( char_gtrid, transaction::global( id.xid())));
+
+      }
+
+      TEST( casual_common_transaction_id, branch_id)
+      {
+         auto gtrid = Uuid::make();
+         auto bqual = Uuid::make();
+         const transaction::ID id{ gtrid, bqual};
+
+         char char_bqual[ sizeof( Uuid::uuid_type)];
+         range::copy( bqual.get(), std::begin( char_bqual));
+
+         EXPECT_TRUE( range::equal( char_bqual, transaction::branch( id))) << "branch: " << transaction::branch( id) << " - char_gtrid: " << range::make( char_bqual);
+         EXPECT_TRUE( range::equal( char_bqual, transaction::branch( id.xid())));
       }
 
    } // common
