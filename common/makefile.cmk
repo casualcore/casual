@@ -123,10 +123,16 @@ LinkIsolatedUnittest( "test-casual-common-isolated",
     ])		
 
 #
+# We execute 'simple_process' from test-casual-common-isolated, so
+# we need to meke sure simple_process is built before
+#
+Dependencies('test-casual-common-isolated', [ 'simple_process' ]);
+
+#
 # Install 
 #
 InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
-InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
+#InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
 
 #
 # mockup stuff, we still need to install it if we use it in test
