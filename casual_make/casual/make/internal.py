@@ -563,7 +563,8 @@ def internal_library_dependencies( libs):
 
 
 #
-# Intern hjalpfunktion for att lanka
+# Internal help-function to link
+# returns the make-target-name 
 #
 def internal_base_link( linker, name, filename, objectfiles, libs, linkdirectives):
 
@@ -580,17 +581,18 @@ def internal_base_link( linker, name, filename, objectfiles, libs, linkdirective
 
     DEPENDENT_TARGETS=internal_library_dependencies(libs)
     
+    local_target_name = internal_target_name(name)
 
     local_destination_path=internal_clean_directory_name( os.path.dirname(filename))
     
     print
-    print "all: " + internal_target_name( name)
+    print "all: " + local_target_name
     print
     print "cross: " + internal_cross_dependecies( objectfiles)
     print
     print "deploy: " + internal_target_deploy_name( name)
     print 
-    print internal_target_name(name) + ": " + filename
+    print local_target_name + ": " + filename
     print
     print "   objects_" + name + " = " + internal_object_name_list( objectfiles)
     print "   libs_"+ name + " = $(addprefix -l, " + libs + ")"
@@ -605,10 +607,14 @@ def internal_base_link( linker, name, filename, objectfiles, libs, linkdirective
         print "\t" + linker + " -o " + filename + " $(objects_" + name + ") $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(libs_" + name + ") $(DEFAULT_LIBS) " + linkdirectives
     print
     
-    internal_map_target( name , internal_target_name(name));
+    internal_map_target( name , local_target_name);
     
     internal_register_file_for_clean( filename)
     internal_register_path_for_create( local_destination_path)
+    
+    return local_target_name
+
+
 
 def internal_install(target, source, destination):
     

@@ -134,7 +134,7 @@ def Compile( sourcefile, objectfile, directive = ''):
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
-    print local_dependency_file + ':'
+    print local_dependency_file + ':  | ' + local_object_path
     print "\t@$(HEADER_DEPENDENCY_COMMAND) -MT '{0} {1}' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) {2} -MF {3}".format(local_cross_object_file, local_object_file, local_source_file, local_dependency_file)
     print
     print "-include " + local_dependency_file
@@ -327,7 +327,7 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
 
     """
 
-    internal_base_link( "$(EXECUTABLE_LINKER)", name, internal_executable_name_path(name), objectfiles, libs, "$(ISOLATED_UNITTEST_LIB) $(LINK_DIRECTIVES_EXE)")
+    target_name = internal_base_link( "$(EXECUTABLE_LINKER)", name, internal_executable_name_path(name), objectfiles, libs, "$(ISOLATED_UNITTEST_LIB) $(LINK_DIRECTIVES_EXE)")
 
     print internal_target_deploy_name(name) + ":"
     print "\t@" + def_Deploy + " " + internal_executable_name( name) + " client"
@@ -337,7 +337,7 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
     
     print "test: " + internal_target_isolatedunittest_name( name)    
     print
-    print internal_target_isolatedunittest_name(name) + ": " +  internal_executable_name_path(name)
+    print internal_target_isolatedunittest_name(name) + ": " +  target_name
     print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + internal_executable_name_path( name) + " $(ISOLATED_UNITTEST_DIRECTIVES)"
     print 
 
