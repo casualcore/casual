@@ -8,7 +8,7 @@
 #ifndef QUEUE_SERVER_HANDLE_H_
 #define QUEUE_SERVER_HANDLE_H_
 
-#include "queue/server/server.h"
+#include "queue/group/group.h"
 
 #include "common/message/queue.h"
 #include "common/queue.h"
@@ -18,7 +18,7 @@ namespace casual
 
    namespace queue
    {
-      namespace server
+      namespace group
       {
          namespace handle
          {

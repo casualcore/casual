@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#include "queue/server/server.h"
-#include "queue/server/handle.h"
+#include "queue/group/group.h"
+#include "queue/group/handle.h"
 
 #include "queue/environment.h"
 
@@ -18,7 +18,7 @@ namespace casual
    namespace queue
    {
 
-      namespace server
+      namespace group
       {
 
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase))
@@ -27,7 +27,7 @@ namespace casual
             // Talk to queue-broker to get configuration
             //
 
-            server::queue::blocking::Writer queueBroker{ environment::broker::queue::id(), m_state};
+            group::queue::blocking::Writer queueBroker{ environment::broker::queue::id(), m_state};
 
             {
                common::message::queue::connect::Request request;
@@ -43,7 +43,7 @@ namespace casual
                }
 
 
-               server::queue::blocking::Reader read( common::ipc::receive::queue(), m_state);
+               group::queue::blocking::Reader read( common::ipc::receive::queue(), m_state);
                common::message::queue::connect::Reply reply;
                read( reply);
 
@@ -84,7 +84,7 @@ namespace casual
             handler.add( handle::enqueue::Request{ m_state});
             handler.add( handle::dequeue::Request{ m_state});
 
-            server::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
+            group::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
 
             while( true)
             {

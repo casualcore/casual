@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "queue/server/server.h"
+#include "queue/group/group.h"
 
 
 #include "common/arguments.h"
@@ -26,7 +26,7 @@ int main( int argc, char **argv)
    try
    {
 
-      casual::queue::server::Settings settings;
+      casual::queue::group::Settings settings;
 
       {
          casual::common::Arguments parser;
@@ -38,7 +38,7 @@ int main( int argc, char **argv)
          casual::common::process::path( parser.processName());
       }
 
-      casual::queue::server::Server server( std::move( settings));
+      casual::queue::group::Server server( std::move( settings));
       server.start();
 
    }

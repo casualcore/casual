@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "queue/server/handle.h"
+#include "queue/group/handle.h"
 
 #include "queue/environment.h"
 
@@ -14,7 +14,7 @@ namespace casual
 
    namespace queue
    {
-      namespace server
+      namespace group
       {
          namespace queue
          {

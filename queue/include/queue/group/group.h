@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "queue/server/database.h"
+#include "queue/group/database.h"
 
 #include "common/platform.h"
 
@@ -19,7 +19,7 @@ namespace casual
 {
    namespace queue
    {
-      namespace server
+      namespace group
       {
          struct Settings
          {

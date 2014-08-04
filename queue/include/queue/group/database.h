@@ -17,7 +17,7 @@ namespace casual
 {
    namespace queue
    {
-      namespace server
+      namespace group
       {
          struct Queue
          {

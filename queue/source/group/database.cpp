@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "queue/server/database.h"
+#include "queue/group/database.h"
 
 #include "common/algorithm.h"
 
@@ -19,7 +19,7 @@ namespace casual
 {
    namespace queue
    {
-      namespace server
+      namespace group
       {
 
          namespace local

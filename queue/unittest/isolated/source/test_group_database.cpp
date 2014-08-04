@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 
-#include "queue/server/database.h"
+#include "queue/group/database.h"
 
 
 #include "common/file.h"
@@ -40,7 +40,7 @@ namespace casual
 
             static const common::transaction::ID nullId{};
 
-            common::message::queue::enqueue::Request message( const server::Queue& queue, const common::transaction::ID& xid = nullId)
+            common::message::queue::enqueue::Request message( const group::Queue& queue, const common::transaction::ID& xid = nullId)
             {
                common::message::queue::enqueue::Request result;
 
@@ -58,7 +58,7 @@ namespace casual
                return result;
             }
 
-            common::message::queue::dequeue::Request request( const server::Queue& queue, const common::transaction::ID& xid = nullId)
+            common::message::queue::dequeue::Request request( const group::Queue& queue, const common::transaction::ID& xid = nullId)
             {
                common::message::queue::dequeue::Request result;
 
@@ -79,12 +79,12 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( casual_queue_server_database, create_queue)
+      TEST( casual_queue_group_database, create_queue)
       {
          auto path = local::file();
-         server::Database database( path);
+         group::Database database( path);
 
-         database.create( server::Queue{ "unittest_queue"});
+         database.create( group::Queue{ "unittest_queue"});
 
          auto queues = database.queues();
 
@@ -96,19 +96,19 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, create_100_queues)
+      TEST( casual_queue_group_database, create_100_queues)
       {
          auto path = local::file();
-         server::Database database( path);
+         group::Database database( path);
 
          {
-            server::scoped::Writer writer{ database};
+            group::scoped::Writer writer{ database};
 
             auto count = 0;
 
             while( count++ < 100)
             {
-               database.create( server::Queue{ "unittest_queue" + std::to_string( count)});
+               database.create( group::Queue{ "unittest_queue" + std::to_string( count)});
             }
          }
 
@@ -120,11 +120,11 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, enqueue_one_message)
+      TEST( casual_queue_group_database, enqueue_one_message)
       {
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -134,11 +134,11 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, dequeue_one_message)
+      TEST( casual_queue_group_database, dequeue_one_message)
       {
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -155,12 +155,12 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, dequeue_100_message)
+      TEST( casual_queue_group_database, dequeue_100_message)
       {
 
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
          using message_type = decltype( local::message( queue));
 
@@ -176,12 +176,12 @@ namespace casual
          }
 
          {
-            server::scoped::Writer writer{ database};
+            group::scoped::Writer writer{ database};
             common::range::for_each( messages, [&]( const message_type& m){
                database.enqueue( m);});
          }
 
-         server::scoped::Writer writer{ database};
+         group::scoped::Writer writer{ database};
 
          common::range::for_each( messages,[&]( const message_type& origin){
 
@@ -198,11 +198,11 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, enqueue_one_message_in_transaction)
+      TEST( casual_queue_group_database, enqueue_one_message_in_transaction)
       {
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
          common::transaction::ID xid = common::transaction::ID::create();
@@ -241,11 +241,11 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, dequeue_one_message_in_transaction)
+      TEST( casual_queue_group_database, dequeue_one_message_in_transaction)
       {
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
          //common::transaction::ID xid = common::transaction::ID::create();
@@ -270,11 +270,11 @@ namespace casual
 
       }
 
-      TEST( casual_queue_server_database, enqueue_one_message_in_transaction_rollback)
+      TEST( casual_queue_group_database, enqueue_one_message_in_transaction_rollback)
       {
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
          common::transaction::ID xid = common::transaction::ID::create();
@@ -292,11 +292,11 @@ namespace casual
       }
 
 
-      TEST( casual_queue_server_database, enqueue_dequeu_one_message_in_transaction_rollback)
+      TEST( casual_queue_group_database, enqueue_dequeu_one_message_in_transaction_rollback)
       {
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -365,12 +365,12 @@ namespace casual
 
       }
 
-      TEST( casual_queue_server_database, dequeue_100_message_in_transaction)
+      TEST( casual_queue_group_database, dequeue_100_message_in_transaction)
       {
 
          auto path = local::file();
-         server::Database database( path);
-         auto queue = database.create( server::Queue{ "unittest_queue"});
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
 
          using message_type = decltype( local::message( queue));
 
