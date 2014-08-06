@@ -7,6 +7,8 @@ Created on 13 maj 2012
 import os
 import sys
 
+from casual.make.platform.factory import factory
+
 #
 # Some global defines
 #
@@ -57,6 +59,9 @@ targetSequence=1
 
 USER_CASUAL_MAKE_PATH=""
 USER_CASUAL_MAKE_FILE=""
+
+
+
 
 
 global_build_targets = [ 
@@ -114,7 +119,29 @@ def internal_convert_path_to_target_name(name):
 
 
 def internal_pre_make_rules():
-    pass
+    #
+    # Default targets and such
+    #
+    
+    print
+    print '#'
+    print '# If no target is given we assume \"all\"'
+    print '#'
+    print 'all:'
+    
+    print
+    print '#'
+    print '# Dummy targets to make sure they will run, even if there is a corresponding file'
+    print '# with the same name'
+    print '#'
+    for target in global_targets:
+        print '.PHONY ' + target + ':' 
+    
+    
+    #
+    # Platform specific prolog
+    #
+    factory().prologue();
     
     
     
@@ -127,25 +154,11 @@ def internal_pre_make_rules():
 #
 def internal_post_make_rules():
 
+    #
+    # Platform specific epilogue
+    #
+    factory().epilogue();
 
-    #
-    # Default targets and such
-    #
-    
-    print '#'
-    print '# If no target is given we assume \"all\"'
-    print '#'
-    print '.PHONY all:'
-    
-    print
-    print '#'
-    print '# Dummy targets to make sure they will run, even if there is a corresponding file'
-    print '# with the same name'
-    print '#'
-    print '.PHONY make:'
-    for target in global_targets:
-        print '.PHONY ' + target + ':' 
-    
     print
     print '#'
     print '# Make sure recursive makefiles get the linker'
@@ -158,6 +171,7 @@ def internal_post_make_rules():
     print '#'
     print 'link: all'
     print
+    
  
     if def_PARALLEL_MAKE < 2:
         print
@@ -212,6 +226,8 @@ def internal_post_make_rules():
     if messages :
         sys.stderr.write( os.getcwd() + "/" + USER_CASUAL_MAKE_FILE + ":\n" )
         sys.stderr.write( messages + "\n") 
+
+
 
 
 #
@@ -317,6 +333,12 @@ def internal_archive_target_name(name):
     return "target_archive_" + name
 
 
+def internal_multiline( values):
+    if isinstance( values, basestring):
+        values = values.split()
+
+    return ' \\\n      '.join( values)
+
 #
 # Levererar ett unikt target name varje
 # anrop.
@@ -330,9 +352,18 @@ def internal_unique_target_name(name):
     return tempname
 
 
-def internal_object_name_list(objects):
+def internal_object_name_list( objects):
+    
+    if isinstance( objects, basestring):
+        objects = objects.split()
+    
+    result = list()
+    
+    for obj in objects:
+        result.append( def_CurrentDirectory + '/' + obj ) 
 
-    return "$(addprefix " + def_CurrentDirectory + "/," + objects + ")"
+    return internal_multiline( result)
+
 
 
 def internal_target_deploy_name(name):
@@ -502,7 +533,8 @@ def internal_BASE_LinkATMI(atmibuild, name, serverdefintion, predirectives, obje
     print internal_target_name(atmi_target_name) + ": " + internal_executable_name_path( name) + " $(USER_CASUAL_MAKE_FILE) | " + local_destination_path
     print
     print "objects_" + atmi_target_name + " = " + internal_object_name_list( objectfiles)
-    print "libs_" + atmi_target_name + " = $(addprefix -l, " + libs + ")"
+    print 'libs_'  + atmi_target_name + ' = ' + factory().link_directive( libs)
+    #print "libs_" + atmi_target_name + " = $(addprefix -l, " + libs + ")"
     print
     print "compile: $(objects_" + atmi_target_name + ")"
     
@@ -595,7 +627,8 @@ def internal_base_link( linker, name, filename, objectfiles, libs, linkdirective
     print local_target_name + ": " + filename
     print
     print "   objects_" + name + " = " + internal_object_name_list( objectfiles)
-    print "   libs_"+ name + " = $(addprefix -l, " + libs + ")"
+    print
+    print '   libs_'  + name + ' = ' + internal_multiline( factory().link_directive( libs))
     print 
     print "compile: " + "$(objects_" + name + ")"
     print 

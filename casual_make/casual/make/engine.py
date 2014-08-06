@@ -18,7 +18,7 @@ import StringIO
 #
 # Project
 #
-from casual.make.configuration import configuration
+
 from casual.make.functiondefinitions import *
 from casual.make.internal import debug
 #from _pyio import StringIO
@@ -55,18 +55,6 @@ class Engine(object):
             
             cmk.write( '\n' + 'internal_pre_make_rules()\n');
             
-                   
-            #
-            # add platform specific configuration
-            #
-            with configuration() as config:
-                for line in config:
-                    cmk.write( line);
-            
-            #
-            # make sure we call, and generate, the platform configuration
-            #
-            cmk.write( '\n' + 'casual_make_platform_dynamic()\n');
             
             #
             # write user casual-make-file

@@ -259,11 +259,15 @@ if __name__ == '__main__':
     while( line):
         sys.stdout.write( reformat( line))
         line = process.stdout.readline()
-        
+
+    user_target = ''
+    if( args):
+        user_target = args[0]
+
     if process.returncode == 0:
-        print 'build: ' + bcolors.green( 'SUCCESS')
+        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.green( 'SUCCESS')
     else:
-        print 'build: ' + bcolors.fail( 'FAILED')
+        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.fail( 'FAILED')
     
     #print reformat( process.stdout.readline())
     
