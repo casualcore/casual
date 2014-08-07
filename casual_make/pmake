@@ -136,25 +136,28 @@ def reformat( line):
     link = reformat.link.match( line)
     make1 = reformat.make1.match( line)
     make2 = reformat.make2.match( line)
+    make3 = reformat.make3.match( line)
     rm = reformat.make2.match( line)
     buildserver = reformat.buildserver.match( line)
     rsync = reformat.rsync.match( line)
     rsync_output = reformat.rsync_output.match( line)
     
     if compiling:
-        return bcolors.green( 'Compile (' + compiling.group(1) + '): ' ) + compiling.group(3) + '\n'
+        return bcolors.green( 'compile (' + compiling.group(1) + '): ' ) + compiling.group(3) + '\n'
     elif archive:
-        return bcolors.blue( 'Archive (' + archive.group(1) + '): ' ) + archive.group(2) + '\n'
+        return bcolors.blue( 'archive (' + archive.group(1) + '): ' ) + archive.group(2) + '\n'
     elif link:
-        return bcolors.blue( 'Link (' + link.group(1) + '): ' ) + link.group(4) + '\n'
+        return bcolors.blue( 'link (' + link.group(1) + '): ' ) + link.group(4) + '\n'
     elif make1:
         return bcolors.header( 'makefile: ') + bcolors.blue(  make1.group(2) ) + ' ' + make1.group(1) + '\n'
     elif make2:
-        return bcolors.header( make2.group(1) ) + make2.group(2) + '\n'
+        return ''
+    elif make3:
+        return bcolors.header( make3.group(1) ) + make3.group(2) + '\n'
     elif rm:
         return bcolors.header( 'rm -f' ) + rm.group(1) + '\n'
     elif buildserver:
-        return bcolors.blue( 'Buildserver (' + buildserver.group(1) + '): ' ) + buildserver.group(2) + '\n'
+        return bcolors.blue( 'buildserver (' + buildserver.group(1) + '): ' ) + buildserver.group(2) + '\n'
     elif rsync:
         return bcolors.blue( 'prepare install: ') + rsync.group(1) +  ' --> ' + rsync.group(2) + '\n'
     elif rsync_output:
@@ -166,7 +169,8 @@ reformat.compiling = re.compile(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\
 reformat.archive = re.compile(r'(^ar) \S+ (\S+\.a).*')
 reformat.link = re.compile(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*')
 reformat.make1 = re.compile(r'^(.*[.]cmk )(.*)')
-reformat.make2 = re.compile(r'(^make.*:)(.*)')
+reformat.make2 = re.compile(r'(^make.*)Nothing to be done for')
+reformat.make3 = re.compile(r'(^make.*:)(.*)')
 reformat.rm = re.compile(r'^rm -f (.*)')
 reformat.buildserver = re.compile(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*')
 reformat.rsync = re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)')

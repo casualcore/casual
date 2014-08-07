@@ -65,47 +65,14 @@ def NoDefaultLibraryPaths():
 
 
 
-def NoParallel():
+
+
+def Parallel( value = True):
     """
-
- 
- NoParallel()
-
- Makes sure that noting is executed parallel in this makefile
-
+ Controls whether this casual-make file will be processed in parallel or not 
 
     """
-    if getParallelMake() == 0 :
-        print
-        print "#"
-        print "# Parallelity is overridable"
-        print "# NOTPARALLEL has precedence"
-        print "#"
-        print "ifdef FORCE_NOTPARALLEL"
-        print ".NOTPARALLEL:"
-        print "endif"
-        print "ifndef FORCE_PARALLEL"
-        print ".NOTPARALLEL:"
-        print "endif"
-        print
-        #
-        # Make sure not to printout this again
-        #
-        setParallelMake(2)
-
-
-def Parallel():
-    """
-
- 
- Parallel()
-
- Makes sure that execution is parallel in this makefile
- This statement has to be first in this makefile
-
-
-    """
-    setParallelMake( 1)
+    internal_set_parallel_make( value)
 
 
 
@@ -120,34 +87,39 @@ def Compile( sourcefile, objectfile, directive = ''):
  :return: the objectfile
     """
 
-    local_object_path=def_CurrentDirectory + "/" + internal_clean_directory_name( os.path.dirname( objectfile))
     
-    local_source_file=def_CurrentDirectory + "/" + sourcefile
-    local_object_file=def_CurrentDirectory + "/" + objectfile
+    source_file = internal_normalize_path( sourcefile)
+    object_file = internal_normalize_path( objectfile)
     
-    local_dependency_file=internal_dependency_file_name( local_object_file)
-    local_cross_object_file= internal_cross_object_name( local_object_file)
+    object_directory = os.path.dirname( object_file)
     
-    internal_map_target( objectfile , local_object_file);
-
+    
+    
+    dependency_file = internal_dependency_file_name( object_file)
+    cross_object_file = internal_cross_object_name( object_file)
+    
     
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
-    print local_dependency_file + ':  | ' + local_object_path
-    print "\t@$(HEADER_DEPENDENCY_COMMAND) -MT '{0} {1}' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) {2} -MF {3}".format(local_cross_object_file, local_object_file, local_source_file, local_dependency_file)
+    print dependency_file + ':  | ' + object_directory
+    print '\t' + internal_platform().header_dependency( source_file, [ cross_object_file, object_file], dependency_file)
     print
-    print "-include " + local_dependency_file
+    print "-include " + dependency_file
+    print
+    print 'compile: ' + object_file
+    print
+    print object_file + ": " + source_file + ' ' + dependency_file + " | " + object_directory
+    print '\t' + internal_platform().compile( source_file, object_file, directive)
+    print
+    print 'cross: ' + cross_object_file
     print 
-    print local_object_file + ": " + local_source_file + ' ' + local_dependency_file + " | " + local_object_path                                                                        
-    print "\t$(COMPILER) -o {0} {1}  $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(COMPILE_DIRECTIVES) {2}".format(objectfile, local_source_file, directive )
-    print 
-    print local_cross_object_file + ": " + local_source_file + " | "  + local_object_path                                                                      
-    print "\t$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o " + local_cross_object_file + " " + local_source_file + " $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) "
+    print cross_object_file + ": " + source_file + " | "  + object_directory
+    print '\t' + internal_platform().cross_compile( source_file, cross_object_file, directive)
     print
     
-    internal_register_object_path_for_clean( local_object_path)
-    internal_register_path_for_create( local_object_path)
+    internal_register_object_path_for_clean( object_directory)
+    internal_register_path_for_create( object_directory)
 
     return str( objectfile)
 
@@ -172,15 +144,35 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
                 correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
     """
 
+    executable_path = internal_executable_name_path( name)
+    
+    target_name = internal_target_name( executable_path)
+    
+
+        
+    
+    
+    
     if not resources:
-        resource_directive = "";
+        directive = "";
     else:
-        resource_directive = " -r " + ' '.join( resources)
+        directive = " -r " + ' '.join( resources)
+    
+    if isinstance( serverdefinition, basestring):
+        # We assume it is a path to a server-definition-file
+        directive += ' -p ' + serverdefinition
+        print 
+        print target_name + ': ' + serverdefinition        
+    else:
+        directive += ' -s ' + ' '.join( serverdefinition)
 
-    return internal_BASE_LinkATMI( "$(BUILDSERVER)", name, serverdefinition, "", objectfiles, libraries, resource_directive)
-
-
-
+    
+    internal_link( internal_platform().link_server, name, executable_path, objectfiles, libraries, directive)
+    
+    #target_name = internal_BASE_LinkATMI( "$(BUILDSERVER)", name, serverdefinition, "", objectfiles, libraries, resource_directive)
+    
+    return target_name
+    
 
 def LinkAtmiClient(name,objectfiles,libs = []):
     """
@@ -202,15 +194,16 @@ def LinkLibrary(name,objectfiles,libs = []):
     :param objectfiles    object files that is linked
     :param libs        dependent libraries
 
-    :return: library name
+    :return: target name
     """
-    internal_base_link("$(LIBRARY_LINKER)", name, internal_shared_library_name_path( name), objectfiles, libs, " $(LINK_DIRECTIVES_LIB)")
     
-    print internal_target_deploy_name( name) + ":"
-    print "\t@" + def_Deploy + " " + internal_shared_library_name(name) + " lib"
-    print 
+    library_path = internal_shared_library_name_path( name)
+    
+    target_name = internal_link( internal_platform().link_library, name, library_path, objectfiles, libs)
+    
+    internal_deploy( target_name, library_path, 'lib')
         
-    return name;
+    return target_name;
 
 
 def LinkArchive(name,objectfiles):
@@ -219,41 +212,16 @@ def LinkArchive(name,objectfiles):
 
  :param: name        name of the binary with out prefix or suffix.  
  :param: objectfiles    object files that is linked
- :return: archive name
+ :return: target name
     """
+    
+    archive_path = internal_archive_name_path( name)
+    
+    target_name = internal_link( internal_platform().link_archive, name, archive_path, objectfiles, [])
+    
+    return target_name;
 
-    objectfiles = ' '.join(objectfiles)
-    
-    print "#"
-    print "#    Links "+ name
-    
-    filename=internal_archive_name_path(name)
-    
-    local_destination_path=internal_clean_directory_name( os.path.dirname( filename))
-    
-    print
-    print "all: "+ internal_target_name(name)
-    print
-    print "cross: " + internal_cross_dependecies(objectfiles)
-    print
-    print "deploy: " + internal_target_deploy_name( name)
-    print 
-    print internal_target_name(name) + ": " + filename
-    print
-    print "objects_" + name + " = " + internal_object_name_list( objectfiles)
-    print 
-    print "compile: $(objects_" + name +")"
-    print
-    print filename + ": $(objects_" + name + ") | " + local_destination_path
-    print "\t$(ARCHIVE_LINKER) " + filename + " $(objects_" + name + ")"
-    print
-    
-    internal_register_file_for_clean(filename)
-    internal_register_path_for_create(local_destination_path)
 
-    print internal_target_deploy_name( name) + ":"
-
-    return name;
 
 def LinkExecutable(name,objectfiles,libs = []):
     """
@@ -264,14 +232,16 @@ def LinkExecutable(name,objectfiles,libs = []):
  :param objectfiles    object files that is linked
 
  :param libs        dependent libraries
+ 
+ :return: target name
     """
-    internal_base_link("$(EXECUTABLE_LINKER)", name, internal_executable_name_path( name), objectfiles, libs, "$(LINK_DIRECTIVES_EXE)")
+    executable_path = internal_executable_name_path( name)
     
-    print internal_target_deploy_name(name) + ":"
-    print "\t-@" + def_Deploy + " " + internal_executable_name(name) + " exe"
-    print 
-
-    return name;
+    target_name = internal_link( internal_platform().link_executable, name, executable_path, objectfiles, libs)
+    
+    internal_deploy( target_name, executable_path, 'exe')
+    
+    return target_name;
 
 
 def Dependencies( target, dependencies):
@@ -285,20 +255,19 @@ def Dependencies( target, dependencies):
     unittest is linked (and run).
     
     :param target: the target that has dependencies
-    :param dependencies: targest dependencies
+    :param dependencies: target dependencies
     
     """
-    target_depdendencies = [ internal_target_name_from_user_name( d) for d in dependencies];
     
     print '#'
     print '# explicit dependencies'
-    print internal_target_name_from_user_name( target) + ": " + ' '.join( target_depdendencies)
+    print target + ": " + ' '.join( dependencies)
     
 
 
 def Build(casualMakefile):
     """
- "builds" another casual-make-file: jumps to the spcific file and execute make
+ "builds" another casual-make-file: jumps to the specific file and execute make
 
  :param casualMakefile    The file to build
     """
@@ -306,7 +275,7 @@ def Build(casualMakefile):
     #
     # Make sure we do this sequential 
     #
-    NoParallel()
+    Parallel( False)
     
     internal_Build( casualMakefile);
     
@@ -326,22 +295,22 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
 
 
     """
-
-    target_name = internal_base_link( "$(EXECUTABLE_LINKER)", name, internal_executable_name_path(name), objectfiles, libs, "$(ISOLATED_UNITTEST_LIB) $(LINK_DIRECTIVES_EXE)")
-
-    print internal_target_deploy_name(name) + ":"
-    print "\t@" + def_Deploy + " " + internal_executable_name( name) + " client"
-    print 
     
-    internal_set_LD_LIBRARY_PATH()
+    executable_path = internal_executable_name_path(name)
+
+    target_name = internal_link( internal_platform().link_executable, name, executable_path, objectfiles, libs, '$(ISOLATED_UNITTEST_LIB)')
     
-    print "test: " + internal_target_isolatedunittest_name( name)    
+    internal_deploy( target_name, executable_path, 'client')
+
+    internal_set_ld_path()
+    
+    print "test: " + 'test_' + target_name    
     print
-    print internal_target_isolatedunittest_name(name) + ": " +  target_name
-    print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + internal_executable_name_path( name) + " $(ISOLATED_UNITTEST_DIRECTIVES)"
+    print 'test_' + target_name + ": " +  target_name
+    print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + executable_path + " $(ISOLATED_UNITTEST_DIRECTIVES)"
     print 
 
-
+    return target_name
 
 
 def LinkDependentUnittest(name,objectfiles,libs):
@@ -358,7 +327,7 @@ def LinkDependentUnittest(name,objectfiles,libs):
 
 
     """
-    internal_BASE_LinkATMI("$(BUILDCLIENT)", name, "" , objectfiles, libs , "-f $(DEPENDENT_UNITTEST_LIB)")
+    return internal_BASE_LinkATMI("$(BUILDCLIENT)", name, "" , objectfiles, libs , "-f $(DEPENDENT_UNITTEST_LIB)")
     
 
 
@@ -367,21 +336,23 @@ def LinkDependentUnittest(name,objectfiles,libs):
 
 def InstallLibrary(source, destination):
     
-    local_target_name=internal_unique_target_name(source)
+    source_path = internal_shared_library_name_path( source);
+    target_name = 'install_' + internal_target_name( source_path)
     
-    internal_install( local_target_name, internal_shared_library_name_path(source), destination)
+    internal_install( target_name, source_path, destination)
 
 def InstallExecutable(source, destination):
     
-    local_target_name=internal_unique_target_name(source)
+    source_path = internal_executable_name_path( source);
+    target_name = 'install_' + internal_target_name( source_path)
     
-    internal_install( local_target_name, internal_executable_name_path(source), destination)
+    internal_install( target_name, source_path, destination)
+    
 
 def Install(source, destination):
     
-    local_target_name=internal_unique_target_name(source)
-    
-    internal_install( local_target_name, source, destination)
+    target_name = 'install_' + internal_target_name( source)
+    internal_install( target_name, source, destination)
 
 def Include( filename):
     
