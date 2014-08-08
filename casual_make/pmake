@@ -28,37 +28,97 @@ MAKE_PATH="/usr/bin/make"
 USER_MAKE_FILE=""
 
 class  Bcolors:
-    HEADER = '\033[0;35m'
-    BLUE = '\033[0;34m'
-    GREEN = '\033[0;32m'
-    WARNING = '\033[0;23m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
     
+    __active = True;
     
-    def header( self, string):
-        return self.HEADER + string + self.ENDC
+    def __grey( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[30;1m'
+        else: return '\033[30m'
     
-    def blue( self, string):
-        return self.BLUE + string + self.ENDC
+    def __red( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[31;1m'
+        else: return '\033[31m'
+ 
+    def __green( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[32;1m'
+        else: return '\033[32m'
+    
+    def __yellow( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[33;1m'
+        else: return '\033[33m'
+    
+    def __blue( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[34;1m'
+        else: return '\033[34m'
+        
+    def __magenta( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[35;1m'
+        else: return '\033[35m'
+    
+    def __cyan( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[36;1m'
+        else: return '\033[36m'
+    
+    def __white( self, bold = False):
+        if not self.__active: return ''
+        if bold: return '\033[37;1m'
+        else: return '\033[37m'
+    
+    def __error( self, bold = False):
+        if not self.__active: return ''
+        else: return '\033[0;1;31m'
+    
+    def __end(self):
+       if not self.__active: return ''
+       return '\033[0m'
+    
+    def magenta( self, string, bold = False):
+        return self.__magenta( bold) + string + self.__end()
+    
+    def error( self, string, bold = False):
+        return self.__error( bold) + string + self.__end()
+    
+    def blue( self, string, bold = False):
+        return self.__blue( bold) + string + self.__end()
 
-    def green( self, string):
-        return self.GREEN + string + self.ENDC
+    def green( self, string, bold = False):
+        return self.__green( bold) + string + self.__end()
     
-    def warning( self, string):
-        return self.WARNING + string + self.ENDC
+    def red( self, string, bold = False):
+        return self.__red( bold) + string + self.__end()
     
-    def fail( self, string):
-        return self.FAIL + string + self.ENDC
+    warning = red
     
     
-    def disable(self):
-        self.HEADER = ''
-        self.BLUE = ''
-        self.GREEN = ''
-        self.WARNING = ''
-        self.FAIL = ''
-        self.ENDC = ''
+    def cyan( self, string, bold = False):
+        return self.__cyan( bold) + string + self.__end()
+    
+    header = cyan
+    
+    def yellow( self, info, bold = False):
+        return self.__yellow(bold) + info + self.__end()
+    
+    def white( self, string, bold = False):
+        return self.__white( bold) + string + self.__end()
+    
+    info = white
+    
+    def grey( self, string, bold = False):
+        return self.__grey( bold) + string + self.__end()
+    
+    def none(self, string, bold = False):
+        return string
+    
+    
+    def activate( self, value = True):
+        self.__active = value
 
 bcolors=Bcolors()
 
@@ -128,54 +188,50 @@ def optionsAsString( options):
 
 def reformat( line):
     """ reformat output from make and add som colours"""
-    #
-    # All regex at once. Takes no time...
-    #
-    compiling = reformat.compiling.match( line)
-    archive = reformat.archive.match( line)
-    link = reformat.link.match( line)
-    make1 = reformat.make1.match( line)
-    make2 = reformat.make2.match( line)
-    make3 = reformat.make3.match( line)
-    rm = reformat.make2.match( line)
-    buildserver = reformat.buildserver.match( line)
-    rsync = reformat.rsync.match( line)
-    rsync_output = reformat.rsync_output.match( line)
     
-    if compiling:
-        return bcolors.green( 'compile (' + compiling.group(1) + '): ' ) + compiling.group(3) + '\n'
-    elif archive:
-        return bcolors.blue( 'archive (' + archive.group(1) + '): ' ) + archive.group(2) + '\n'
-    elif link:
-        return bcolors.blue( 'link (' + link.group(1) + '): ' ) + link.group(4) + '\n'
-    elif make1:
-        return bcolors.header( 'makefile: ') + bcolors.blue(  make1.group(2) ) + ' ' + make1.group(1) + '\n'
-    elif make2:
-        return ''
-    elif make3:
-        return bcolors.header( make3.group(1) ) + make3.group(2) + '\n'
-    elif rm:
-        return bcolors.header( 'rm -f' ) + rm.group(1) + '\n'
-    elif buildserver:
-        return bcolors.blue( 'buildserver (' + buildserver.group(1) + '): ' ) + buildserver.group(2) + '\n'
-    elif rsync:
-        return bcolors.blue( 'prepare install: ') + rsync.group(1) +  ' --> ' + rsync.group(2) + '\n'
-    elif rsync_output:
-        return bcolors.green( 'updated: ') + rsync_output.group(2) + ' ' + bcolors.blue( rsync_output.group(1)) + '\n'    
-    else:
-        return line;
+    for regex in reformat.ingore_filters:
+        match = regex.match( line)
+        if match:
+            return ''
+     
+    for regex, filter in reformat.filters:
+        match = regex.match( line)
+               
+        if match:
+            return filter( match)
+        
+    return line;
 
-reformat.compiling = re.compile(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*')
-reformat.archive = re.compile(r'(^ar) \S+ (\S+\.a).*')
-reformat.link = re.compile(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*')
-reformat.make1 = re.compile(r'^(.*[.]cmk )(.*)')
-reformat.make2 = re.compile(r'(^make.*)Nothing to be done for')
-reformat.make3 = re.compile(r'(^make.*:)(.*)')
-reformat.rm = re.compile(r'^rm -f (.*)')
-reformat.buildserver = re.compile(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*')
-reformat.rsync = re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)')
-reformat.rsync_output = re.compile(r'^(>[a-zA-Z+.]+)[\s]+(.*)')  
 
+reformat.ingore_filters = [
+   re.compile(r'(^make.*)Nothing to be done for'),
+]
+
+reformat.filters = [ 
+    [ re.compile(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*'),  
+     lambda match: bcolors.green( 'compile ') + '(' +  match.group(1) + '): ' + bcolors.white( match.group(3)) + '\n' ],
+    [ re.compile(r'(^ar) \S+ (\S+\.a).*'),  
+     lambda match: bcolors.blue( 'archive ') + '(' + match.group(1) + '): ' + bcolors.white( match.group(2)) + '\n' ],
+    [ re.compile(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*'),
+     lambda match: bcolors.blue( 'link ') + '(' + match.group(1) + '): ' + bcolors.white( match.group(4)) + '\n' ],
+    [ re.compile(r'^(.*[.]cmk )(.*)'),  
+     lambda match: bcolors.cyan( 'makefile: ') + bcolors.blue( match.group(2) ) + ' ' + match.group(1) + '\n'],
+    [ re.compile(r'(^make.*:)(.*)'),  
+     lambda match: bcolors.header( match.group(1) ) + match.group(2) + '\n'],
+    [ re.compile(r'^rm -f (.*)'),  
+     lambda match: bcolors.header( 'delete: ' ) + match.group(1) + '\n' ],
+    [ re.compile(r'^mkdir( [-].+)*[ ](.*)'),  
+     lambda match: bcolors.header( 'create: ' ) + match.group( 2) + '\n' ],
+    [ re.compile(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*'),  
+     lambda match: bcolors.blue( 'buildserver (' + match.group(1) + '): ' ) + bcolors.white( match.group(2)) + '\n' ],
+    [ re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)'),  
+     lambda match: bcolors.blue( 'prepare install: ') + bcolors.white( match.group(1)) +  ' --> ' +  match.group(2) + '\n' ],
+    [ re.compile(r'^(>[a-zA-Z+.]+)[\s]+(.*)'),  
+     lambda match: bcolors.green( 'updated: ') + match.group(2) + ' ' + bcolors.blue( match.group(1)) + '\n' ],
+    [ re.compile(r'^generates makefile.*from[ ](.*)'),  
+     lambda match: bcolors.cyan( 'makefile: ') + bcolors.yellow( 'generate ') + bcolors.white( match.group(1)) + '\n' ],
+];
+    
     
 
 
@@ -200,23 +256,23 @@ if __name__ == '__main__':
 
 
     if not options.COLORS:
-        bcolors.disable()
+        bcolors.activate( False)
     
     #
     # Kolla om vi ska generera om
     #
     if FORCE_MAKEMAKE == 1 or not os.path.isfile( USER_MAKE_FILE)  or os.path.getmtime(USER_MAKE_FILE) < os.path.getmtime(CORRESPONDING_CASUAL_MAKE_FILE) :
         if not os.path.isfile( CORRESPONDING_CASUAL_MAKE_FILE ):
-            sys.stderr.write( bcolors.fail( 'error: Could not find the casaul make file ') + CORRESPONDING_CASUAL_MAKE_FILE)
+            sys.stderr.write( bcolors.error( 'error: Could not find the casaul make file ') + CORRESPONDING_CASUAL_MAKE_FILE)
             sys.exit( 1)
 
-        print bcolors.header( 'info: ') + "executes 'casual_make " + CORRESPONDING_CASUAL_MAKE_FILE + "'" 
+        sys.stdout.write( reformat( 'generates makefile from ' + os.path.abspath( CORRESPONDING_CASUAL_MAKE_FILE))) 
     
         try:
             Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
 
         except:
-            sys.stderr.write( bcolors.fail( 'error: ' ) + "Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
+            sys.stderr.write( bcolors.error( 'error: ' ) + "Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
             raise
             sys.exit(1)
 
@@ -239,7 +295,7 @@ if __name__ == '__main__':
     MAX_LOAD=JOB_COUNT
 
 
-    print bcolors.header( "info: executes ") + MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " --no-builtin-rules --no-keep-going " + GMAKE_OPTIONS + " -f " + USER_MAKE_FILE 
+    print bcolors.header( "executes: ") + MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " --no-builtin-rules --no-keep-going " + GMAKE_OPTIONS + " -f " + USER_MAKE_FILE 
 
 
     #
@@ -269,9 +325,9 @@ if __name__ == '__main__':
         user_target = args[0]
 
     if process.returncode == 0:
-        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.green( 'SUCCESS')
+        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.green( 'SUCCESS', True)
     else:
-        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.fail( 'FAILED')
+        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.error( 'FAILED')
     
     #print reformat( process.stdout.readline())
     

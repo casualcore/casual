@@ -31,6 +31,7 @@ filesToRemove=set()
 pathsToCreate=set()
 messages=set()
 
+casual_make_files_to_build = list()
 
 
 def internal_platform():
@@ -103,8 +104,70 @@ def internal_pre_make_rules():
     #
     internal_platform().pre_make();
     
+
+
+def internal_produce_build_targets():
+  
+  if casual_make_files_to_build:
+       
+        casual_build_targets = list()
+        casual_make_targets = list()
+       
+        for casual_make_file in casual_make_files_to_build:
+
+            make_file = os.path.splitext( casual_make_file)[0] + ".mk"
+            casual_make_directory = os.path.dirname( casual_make_file)
+
+            print
+            print "#"
+            print '# targets to handle recursive stuff for ' + casual_make_file
+            print '#'
+            print make_file + ": " + casual_make_file
+            print "\t@echo generates makefile from " + casual_make_file
+            print "\t@" + internal_platform().change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
+        
+            target_name  = internal_unique_target_name( casual_make_file)
+            
+            build_target_name = 'build_' + target_name
+            casual_build_targets.append( build_target_name);
+            
+            print 
+            print build_target_name + ": " + make_file
+            print "\t@echo " + casual_make_file + '  $(MAKECMDGOALS)'
+            print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
     
-     
+            make_target_name = 'make_' + target_name
+            casual_make_targets.append( make_target_name)
+        
+            print
+            print make_target_name + ":"
+            print "\t@echo generates makefile from " + casual_make_file
+            print "\t@" + internal_platform().change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
+            print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+
+
+            print
+        
+        casual_build_targets_name = internal_unique_target_name( 'casual_build_targets')
+        
+        print
+        print '#'
+        print '# set up dependences to build-targets'
+        print '#'
+        print casual_build_targets_name + ' = ' + internal_multiline( casual_build_targets)
+        print 
+        
+        for target in global_build_targets:
+            print target + ': $(' + casual_build_targets_name + ')'
+       
+        casual_make_targets_name = internal_unique_target_name( 'casual_make_targets')
+        
+        print 
+        print casual_make_targets_name + ' = ' + internal_multiline( casual_make_targets)
+        print
+        print 'make: $(' + casual_make_targets_name + ')' 
+        print
+         
 
 #
 # colled by engine after casual-make-file has been parsed.
@@ -155,6 +218,11 @@ def internal_post_make_rules():
         print '.NOTPARALLEL:'
         print 'endif'
         print
+    
+    
+    internal_produce_build_targets()
+       
+    
        
     #
     # Targets for creating directories
@@ -357,58 +425,12 @@ def internal_deploy( targetname, path, directive):
     print
 
 
-def internal_make_target_component( target, casualMakefile):
-
-    user_casual_make_path = os.path.dirname( casualMakefile)
-    user_make_file = os.path.splitext( casualMakefile)[0] + ".mk"
+def internal_build( casualMakefile):
     
-
-    target_name = target + '_' + internal_unique_target_name(casualMakefile)
+    global casual_make_files_to_build
     
-    print target + ": " + target_name
-    print
-    print target_name + ": " + user_make_file
-    print "\t@echo " + casualMakefile + " " + target
-    print "\t@" + internal_platform().change_directory( user_casual_make_path)  + " && $(MAKE) -f " + user_make_file + " " + target
+    casual_make_files_to_build.append( os.path.abspath( casualMakefile))
     
-
-def internal_Build( casualMakefile):
-    
-    casualMakefile = os.path.abspath( casualMakefile)
-    
-    user_casual_make_path=os.path.dirname( casualMakefile)
-    
-    user_make_file = os.path.splitext( casualMakefile)[0] + ".mk"
-
-    print "#"
-    print "# If " + casualMakefile + " is newer than " + user_make_file + " , a new makefile is produced"
-    print "#"
-    print user_make_file + ": " + casualMakefile
-    print "\t@echo generate makefile from " + casualMakefile
-    print "\t@" + internal_platform().change_directory( user_casual_make_path) + ";" + def_casual_make + " " + casualMakefile
-    print
-    
-    
-    
-    for target in global_build_targets:
-        internal_make_target_component( target, casualMakefile)
-        print   
-   
-   
-    target_name = internal_unique_target_name( casualMakefile)
-   
-    print
-    print "#"
-    print "# Always produce " + user_make_file + " , even if " + casualMakefile + " is older."
-    print "#"
-    print "make: " + target_name
-    print
-    print target_name + ":"
-    print "\t@echo generate makefile from " + casualMakefile
-    print "\t@" + internal_platform().change_directory( user_casual_make_path) + ' && ' + def_casual_make + " " + casualMakefile
-    print "\t@" + internal_platform().change_directory( user_casual_make_path) + ' && $(MAKE) -f ' + user_make_file + " make"
-    print
-
 
 def internal_library_targets( libs):
 

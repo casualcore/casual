@@ -277,7 +277,7 @@ def Build(casualMakefile):
     #
     Parallel( False)
     
-    internal_Build( casualMakefile);
+    internal_build( casualMakefile);
     
     
 
