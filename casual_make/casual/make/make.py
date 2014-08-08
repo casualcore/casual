@@ -12,25 +12,20 @@ Created on 28 apr 2012
 import sys
 import os.path
 
-from casual.make.engine import Engine
+from casual.make.engine import engine
 
-class Casual_Make( object):
-    """Responsible for handling of producing makefiles from casual_make-files"""
+        
+def casual_make( casual_makefile):
     
-    def __init__(self, casual_makefile):
-        '''
-        Constructor
-        '''
-        if not os.path.isfile( casual_makefile):
-            sys.stderr.write( casual_makefile + ": No such file\n")
-            sys.exit(1)
-        self.casual_makefile = casual_makefile
+    if not os.path.isfile( casual_makefile):
+        sys.stderr.write( casual_makefile + ": No such file\n")
+        sys.exit(1)
     
-    def run(self):
-        #
-        # Start up the engine
-        #
-        Engine( self.casual_makefile).run()
+    #
+    # Start up the engine
+    #
+    engine().run( casual_makefile)
+    
     
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -38,4 +33,4 @@ if __name__ == '__main__':
     else:
         casual_makefile = sys.argv[1]
         
-    Casual_Make( casual_makefile).run()
+    casual_make( casual_makefile)

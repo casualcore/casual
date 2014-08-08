@@ -15,7 +15,7 @@ SENASTUPPDATERAD="20120715"
 import sys
 import os
 import multiprocessing
-from casual.make.make import Casual_Make
+from casual.make.make import casual_make
 import subprocess
 import re
 
@@ -269,7 +269,7 @@ if __name__ == '__main__':
         sys.stdout.write( reformat( 'generates makefile from ' + os.path.abspath( CORRESPONDING_CASUAL_MAKE_FILE))) 
     
         try:
-            Casual_Make( CORRESPONDING_CASUAL_MAKE_FILE).run()
+            casual_make( CORRESPONDING_CASUAL_MAKE_FILE)
 
         except:
             sys.stderr.write( bcolors.error( 'error: ' ) + "Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')

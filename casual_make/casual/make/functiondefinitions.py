@@ -11,6 +11,7 @@ Contains the basic syntax to produce makefile
 #
 from casual.make.internal import *
 
+
 export=dict()
 include=list()
 
@@ -34,34 +35,24 @@ def NoDefaultLibs():
     print
 
 
-def NoDefaultIncludePaths():
+def DefaultIncludePaths( value = True):
+    """ 
+    If the default include paths is used or not.
+    Default they are used
     """
-
- 
- NoDefaultIncludePaths()
-
- Makes sure that no default include paths are set
- Do not interfere with INCLUDE_PATHS set by users 
+    if not value:
+        print "DEFAULT_INCLUDE_PATHS :=";
+        print
 
 
+def DefaultLibraryPaths( value = True):
     """
-    print "DEFAULT_INCLUDE_PATHS :=";
-    print
-
-
-def NoDefaultLibraryPaths():
+    If the default librarys paths is used or not.
+    Default they are used
     """
-
- 
- NoDefaultLibraryPaths()
-
- Makes sure that no default library paths are set
- Do not interfere with LIBRARY_PATHS set by users 
-
-
-    """
-    print "DEFAULT_LIBRARY_PATHS :="
-    print
+    if not value:
+        print "DEFAULT_LIBRARY_PATHS :="
+        print
 
 
 
@@ -75,7 +66,13 @@ def Parallel( value = True):
     internal_set_parallel_make( value)
 
 
-
+def Scope( inherit = True, name = None):
+    """
+    
+    """
+    return internal_scope( inherit, name)
+    
+    
 
 def Compile( sourcefile, objectfile, directive = ''):
     """
@@ -359,14 +356,14 @@ def Include( filename):
     internal_add_pre_make_statement( 'include ' + filename);
            
         
-def SetIncludePaths( value ):
+def IncludePaths( paths):
     
-    internal_add_pre_make_statement( 'INCLUDE_PATHS = ' + ' '.join( value));
+    internal_add_pre_make_statement( 'INCLUDE_PATHS = ' + ' '.join( paths));
     
     
-def SetLibraryPaths( value ):
+def LibraryPaths( paths):
     
-    internal_add_pre_make_statement( 'LIBRARY_PATHS = ' + ' '.join( value));
+    internal_add_pre_make_statement( 'LIBRARY_PATHS = ' + ' '.join( paths));
 
     
     

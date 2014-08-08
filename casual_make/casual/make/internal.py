@@ -6,8 +6,11 @@ Created on 13 maj 2012
 
 import os
 import sys
+import re
+from contextlib import contextmanager
 
 from casual.make.platform.factory import factory
+from casual.make.engine import engine
 
 #
 # Some global defines
@@ -23,15 +26,7 @@ def_casual_make='casual_make.py'
 def_Deploy='make.deploy.ksh'
 
 
-parallel_make = None
 
-
-objectPathsForClean=set()
-filesToRemove=set()
-pathsToCreate=set()
-messages=set()
-
-casual_make_files_to_build = list()
 
 
 def internal_platform():
@@ -57,14 +52,89 @@ global_targets = [
 
 
 
-internal_globalPreMakeStatements = []
+
+
+ 
+
+internal_global_pre_make_statement_stack = []
+
+
+
+
+class State:
+    
+    def __init__(self, old_state = None):
+        
+        self.parallel_make = None
+        self.object_paths_to_clean = set()
+        self.files_to_Remove=set()
+        self.paths_to_create = set()
+        
+        self.pre_make_statements = list()
+        
+        
+        self.make_files_to_build = list()
+        
+        if old_state:
+            self.pre_make_statements = list( old_state.pre_make_statements) 
+             
+        global internal_global_pre_make_statement_stack
+        
+        internal_global_pre_make_statement_stack.append( self.pre_make_statements)
+        
+        
+        
+    
+
+global_current_state = State()
+
+def state():
+    return global_current_state
+
+
+
+
+@contextmanager
+def internal_scope( inherit, name):
+    global global_current_state
+    
+    if name:
+        name  = internal_normalize_string( name)
+    
+    old_state = global_current_state;
+    
+    current_makefile_state = None
+    
+    if inherit:
+        global_current_state = State( old_state)
+    else:
+        global_current_state = State();
+    
+    try:
+        current_makefile_state = engine().scopeBegin( name);
+        
+        internal_pre_make_rules()
+        yield
+        
+    finally:
+        internal_post_make_rules()
+        
+        engine().scopeEnd();
+        global_current_state = old_state;
+       
+        #
+        # We have to invoke the "scoped makefile"
+        #
+        state().make_files_to_build.append( [ True, current_makefile_state[ 0], current_makefile_state[ 1]])
+        
+        
+
+
 
 def internal_add_pre_make_statement( statement):
     
-    internal_globalPreMakeStatements.append( statement);
-
-       
-    
+    state().pre_make_statements.append( statement)
+     
 
 #
 # Normalize name 
@@ -108,42 +178,61 @@ def internal_pre_make_rules():
 
 def internal_produce_build_targets():
   
-  if casual_make_files_to_build:
+  if state().make_files_to_build:
        
         casual_build_targets = list()
         casual_make_targets = list()
        
-        for casual_make_file in casual_make_files_to_build:
+        for scoped_build, casual_make_file, make_file in state().make_files_to_build:
 
-            make_file = os.path.splitext( casual_make_file)[0] + ".mk"
             casual_make_directory = os.path.dirname( casual_make_file)
-
-            print
-            print "#"
-            print '# targets to handle recursive stuff for ' + casual_make_file
-            print '#'
-            print make_file + ": " + casual_make_file
-            print "\t@echo generates makefile from " + casual_make_file
-            print "\t@" + internal_platform().change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
-        
-            target_name  = internal_unique_target_name( casual_make_file)
+            
+            target_name  = internal_unique_target_name( make_file)
             
             build_target_name = 'build_' + target_name
-            casual_build_targets.append( build_target_name);
             
-            print 
-            print build_target_name + ": " + make_file
-            print "\t@echo " + casual_make_file + '  $(MAKECMDGOALS)'
-            print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
-    
+            
             make_target_name = 'make_' + target_name
-            casual_make_targets.append( make_target_name)
-        
-            print
-            print make_target_name + ":"
-            print "\t@echo generates makefile from " + casual_make_file
-            print "\t@" + internal_platform().change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
-            print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+            
+            
+            if not scoped_build:
+                
+                print
+                print "#"
+                print '# targets to handle recursive stuff for ' + casual_make_file
+                print '#'
+                print make_file + ": " + casual_make_file
+                print "\t@echo generates makefile from " + casual_make_file
+                print "\t@" + internal_platform().change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
+            
+                print 
+                print build_target_name + ": " + make_file
+                print "\t@echo " + casual_make_file + '  $(MAKECMDGOALS)'
+                print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+
+                casual_build_targets.append( build_target_name);
+                        
+                print
+                print make_target_name + ":"
+                print "\t@echo generates makefile from " + casual_make_file
+                print "\t@" + internal_platform().change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
+                print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+
+                casual_make_targets.append( make_target_name)
+                
+            else:
+            
+                print
+                print '#'
+                print '# targets to handle scope build for ' + casual_make_file
+                print '#'
+                print build_target_name + ':' 
+                print '\t@$(MAKE) $(MAKECMDGOALS) -f ' + make_file
+                
+                casual_build_targets.append( build_target_name);
+                casual_make_targets.append( build_target_name);
+                
+                
 
 
             print
@@ -195,7 +284,7 @@ def internal_post_make_rules():
     print
     
  
-    if parallel_make is None or parallel_make:
+    if state().parallel_make is None or state().parallel_make:
         print
         print '#'
         print '# This makefile will run in parallel by default'
@@ -227,7 +316,7 @@ def internal_post_make_rules():
     #
     # Targets for creating directories
     #
-    for path in pathsToCreate:
+    for path in state().paths_to_create:
         print
         print path + ":"        
         print "\t" + internal_platform().make_directory( path)
@@ -243,26 +332,19 @@ def internal_post_make_rules():
     print "clean: clean_objectfiles clean_dependencyfiles clean_files"
     
     print "clean_objectfiles:"
-    for objectpath in objectPathsForClean:
+    for objectpath in state().object_paths_to_clean:
         print "\t-" + internal_platform().remove( objectpath + "/*.o")
         
     print "clean_dependencyfiles:"
-    for objectpath in objectPathsForClean:  
+    for objectpath in state().object_paths_to_clean:  
         print "\t-" + internal_platform().remove( objectpath + "/*.d")
     
     #
     # Remove all other known files.
     #
     print "clean_files:"
-    for filename in filesToRemove:
+    for filename in state().files_to_Remove:
         print "\t-" + internal_platform().remove( filename)
-    
-    #
-    # Prints all messages that we've collected
-    #
-    if messages :
-        sys.stderr.write( '$(USER_CASUAL_MAKE_FILE)' + ":\n" )
-        sys.stderr.write( messages + "\n") 
 
 
 #
@@ -271,36 +353,28 @@ def internal_post_make_rules():
 
 def internal_register_object_path_for_clean( objectpath):
     ''' '''
-    objectPathsForClean.add( objectpath)
+    state().object_paths_to_clean.add( objectpath)
 
 
 def internal_register_file_for_clean( filename):
     ''' '''
-    filesToRemove.add( filename)
+    state().files_to_Remove.add( filename)
 
 
 def internal_register_path_for_create( path):
     ''' '''
-    pathsToCreate.add( path)
+    state().paths_to_create.add( path)
 
 
-
-
-
-
-#
-# Register warnings
-#
-
-def internal_register_message(message):
-
-    messages.add("\E[33m" + message + "\E[m\n")
 
 
 
 #
 # Name and path's helpers
 #
+
+def internal_normalize_string( string):
+    return re.sub( '[^\w/]+', '_', string)
 
 def internal_normalize_path(path, platformSpefic = None):
 
@@ -335,7 +409,7 @@ def internal_bind_name_path( path):
 
 def internal_target_name( name):
 
-    return 'target_' + os.path.basename( name).replace( '.', '_').replace( '-', '_')
+    return 'target_' + internal_normalize_string( os.path.basename( name))
 
 
 
@@ -425,11 +499,11 @@ def internal_deploy( targetname, path, directive):
     print
 
 
-def internal_build( casualMakefile):
+def internal_build( casual_make_file):
     
-    global casual_make_files_to_build
+    casual_make_file = os.path.abspath( casual_make_file)
     
-    casual_make_files_to_build.append( os.path.abspath( casualMakefile))
+    state().make_files_to_build.append( [ False, casual_make_file, os.path.splitext( casual_make_file)[0] + '.mk'])
     
 
 def internal_library_targets( libs):
@@ -530,9 +604,13 @@ def internal_set_parallel_make( value):
     global parallel_make;
     
     # we only do stuff if we haven't set parallel before...
-    if parallel_make is None:        
-        parallel_make = value;
+    if state().parallel_make is None:        
+        state().parallel_make = value;
     
+
+
+
+
 
 def debug( message):
     if os.getenv('PYTHONDEBUG'): sys.stderr.write( message + '\n')

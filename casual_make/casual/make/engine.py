@@ -15,12 +15,14 @@ This is the module running the "process"
 import tempfile
 import string
 import StringIO
+import sys
+import os
 #
 # Project
 #
 
-from casual.make.functiondefinitions import *
-from casual.make.internal import debug
+#from casual.make.functiondefinitions import *
+#from casual.make.internal import debug
 #from _pyio import StringIO
 
 class Engine(object):
@@ -29,13 +31,21 @@ class Engine(object):
     '''
 
     
-    def __init__(self, casual_makefile):
+    def __init__(self):
         '''
         Constructor
-        '''
-
-        self.casual_makefile = casual_makefile        
-        self.makefile = os.path.splitext( casual_makefile)[0] + ".mk";
+        '''        
+        self.test = 0
+        
+        self.output = StringIO.StringIO();
+        sys.stdout = self.output;
+        
+        
+        self.output_stack = []
+        self.output_done = []
+        
+        self.casual_make_file = None
+        self.identifier = 0
         
         
         
@@ -44,10 +54,37 @@ class Engine(object):
                 Destructor
         '''
 
+    def scopeBegin(self, name = None):
         
-    def prepareCasualMakeFile(self):
+        if not name:
+            self.identifier += 1
+            name = 'scope_' + str( self.identifier)
         
-        with open( self.casual_makefile,'r') as origin:
+        output = StringIO.StringIO();
+        sys.stdout = output;
+        
+        scoped_make_file =  os.path.splitext( self.casual_make_file)[ 0] + '_' + name +'.mk';
+        
+        self.output_stack.append( [ output, scoped_make_file]);
+        
+        return self.casual_make_file, scoped_make_file
+        
+    
+    def scopeEnd(self):    
+    
+        self.output_done.append( self.output_stack.pop())
+        
+        if self.output_stack:
+            output = self.output_stack[ -1]
+            sys.stdout = output[ 0];
+        else:
+            sys.stdout = self.output
+            
+        
+    
+    def prepareCasualMakeFile( self, casual_makefile):
+        
+        with open( casual_makefile,'r') as origin:
         
             cmk = StringIO.StringIO();
             
@@ -69,80 +106,89 @@ class Engine(object):
             
         return cmk
         
+    def write(self, stream, filename, pre_make_statements):
         
-    def run(self):
-        debug("Engine running...")
+        stream.seek( 0);
+        
+        with open( filename, 'w+') as makefile:    
+        
+            #
+            # Start by writing CASUALMAKE_PATH
+            #
+            makefile.write( "CASUALMAKE_PATH = " + os.path.dirname( os.path.abspath(sys.argv[0] + u"/..")) + '\n')
+            makefile.write( "USER_CASUAL_MAKE_FILE = " + self.casual_make_file + '\n');
+            
+            #
+            # Write pre-make-statements. i.e include statements, INCLUDE_PATHS, and such
+            #
+            for statement in pre_make_statements:
+                makefile.write( statement + '\n')
+            
+            #
+            # Write the makefile-output
+            #
+            for line in stream:
+                makefile.write( line);
                 
-        # 
-        # Keep the output in memory
-        #
-        output = StringIO.StringIO();
         
+    def run(self, casual_makefile):
         
-#       debug( self.parser.content)
-        #
-        # Turn stdout over to output
-        #
-        sys.stdout = output;
-        
+        self.casual_make_file = os.path.abspath( casual_makefile)
         
         globalVariables= {}
         
         try:
-            cmk = self.prepareCasualMakeFile()
+            cmk = self.prepareCasualMakeFile( casual_makefile)
             
-            code = compile( cmk.getvalue(), self.casual_makefile, 'exec')
+            code = compile( cmk.getvalue(), casual_makefile, 'exec')
             cmk.close();
             
             exec( code, globalVariables)
             
         except (NameError, SyntaxError, TypeError):
-            sys.stderr.write( "Error in " + os.path.realpath(self.casual_makefile) + ".\n")
+            sys.stderr.write( "Error in " + os.path.realpath( casual_makefile) + ".\n")
             raise
             
         #
         # Reset stdout
         #
         sys.stdout = sys.__stdout__
-        output.seek( 0);
         
         
-        
+        makefile = os.path.splitext( self.casual_make_file)[ 0] + ".mk";
 
-        #
-        # it's unlikely that the write will fail (if the file exists), hence, we
-        # write directly to the makefile.
-        #
-        with open( self.makefile, 'w+') as temp:    
+        pre_make_statements = globalVariables[ 'internal_global_pre_make_statement_stack']
+            
+            
+        self.write( self.output, makefile, pre_make_statements[ 0])
         
-            #
-            # Start by writing CASUALMAKE_PATH
-            #
-            temp.write( "CASUALMAKE_PATH = " + os.path.dirname(os.path.abspath(sys.argv[0] + u"/..")) + '\n')
-            temp.write( "USER_CASUAL_MAKE_FILE = " + self.casual_makefile + "\n");
-            
-            #
-            # Write pre-make-statements. i.e include statements, INCLUDE_PATHS, and such
-            #
-            if 'internal_globalPreMakeStatements' in globalVariables:
-                for statement in globalVariables['internal_globalPreMakeStatements']:
-                    temp.write( statement + '\n')
-            
-            #
-            # Write the makefile-output
-            #
-            for line in output:
-                temp.write( line);
-            
-        
-            #
-            # "swap" the files
-            #
-            #os.rename( temp.name, self.makefile);
  
+        #
+        # Take care of scopes (if any)
+        #
+        index = 1
         
-        debug( "Engine done.")
+        for output, filename in self.output_done:
+            
+            self.write( output, filename, pre_make_statements[ index])
+            index += 1
+                        
+            
+        
+        #debug( "Engine done.")
 
+
+
+__global_engine = None
+
+def engine():
+    
+    global __global_engine
+    
+    if not __global_engine:
+        __global_engine = Engine()
+    
+    return __global_engine
 
 
 
