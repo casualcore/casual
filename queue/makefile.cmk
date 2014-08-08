@@ -29,7 +29,7 @@ casual_queue_common_obj = [
 ];
 
 
-LinkLibrary( 'casual-queue-common',
+LinkLibrary( 'bin/casual-queue-common',
     casual_queue_common_obj,
     [ 'casual-common', ]
     );
@@ -47,12 +47,12 @@ casual_queue_server_archive_objs = [
 ];
 
 
-LinkArchive( 'casual-queue-group-archive',
+LinkArchive( 'bin/casual-queue-group-archive',
     casual_queue_server_archive_objs
     )
 
 
-LinkExecutable( 'casual-queue-group', 
+target_casual_queue_group = LinkExecutable( 'bin/casual-queue-group', 
     [Compile( 'source/group/main.cpp', 'obj/group/main.o')], 
     [
      'casual-queue-group-archive',
@@ -73,11 +73,12 @@ casual_queue_broker_archive_objs = [
    Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
 ];
 
-LinkArchive( 'casual-queue-broker-archive',
+LinkArchive( 'bin/casual-queue-broker-archive',
     casual_queue_broker_archive_objs
     )
 
-LinkExecutable( 'casual-queue-broker', 
+
+target_casual_queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
     [Compile( 'source/broker/main.cpp', 'obj/broker/main.o')], 
     ["casual-queue-broker-archive"]);
 
@@ -90,7 +91,7 @@ casual_queue_xa_objs = [
     Compile( 'source/rm/switch.cpp', 'obj/rm/switch.o'),
 ];     
 
-LinkLibrary( 'casual-queue-rm',
+LinkLibrary( 'bin/casual-queue-rm',
     casual_queue_xa_objs,       
      ['casual-common',
       ]);
@@ -103,7 +104,7 @@ casual_queue_api_objs = [
        Compile( 'source/queue.cpp', 'obj/queue.o')
      ];
 
-LinkLibrary( 'casual-queue', 
+LinkLibrary( 'bin/casual-queue', 
     casual_queue_api_objs,
     [ 'casual-common' ]
     )
@@ -116,7 +117,7 @@ casual_queue_unittest_objs = [
   Compile( 'unittest/isolated/source/test_group_database.cpp', 'obj/unittest/test_group_database.o'),
   ];
 
-LinkIsolatedUnittest( 'test-casual-queue', 
+target_test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue', 
     casual_queue_unittest_objs,
     [
      'casual-queue-group-archive',
@@ -128,7 +129,7 @@ LinkIsolatedUnittest( 'test-casual-queue',
 #
 # Make sure the executables is linked before unittest
 #
-Dependencies( 'test-casual-queue', ['casual-queue-broker', 'casual-queue-group'])
+Dependencies( target_test_casual_queue, [ target_casual_queue_broker, target_casual_queue_group])
 
 
 

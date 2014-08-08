@@ -22,7 +22,7 @@ SetLibraryPaths( LIBRARY_PATHS)
 
 Compile( "source/monitorvo.cpp", "obj/monitorvo.o")
 
-LinkLibrary( "casual-monitor-vo",
+LinkLibrary( "bin/casual-monitor-vo",
     ["obj/monitorvo.o"],
     ["casual-common",
     "casual-sf"])
@@ -32,7 +32,7 @@ Compile( "source/monitor.cpp", "obj/monitor.o")
 Compile( "source/monitor_main.cpp", "obj/monitor_main.o")
 Compile( "source/monitordb.cpp", "obj/monitordb.o")
 
-LinkExecutable( "casual-monitor",
+LinkExecutable( "bin/casual-monitor",
 	["obj/monitor.o",
 	"obj/monitor_main.o",
 	"obj/monitordb.o"],
@@ -44,7 +44,7 @@ LinkExecutable( "casual-monitor",
 Compile( "source/statisticserver.cpp", "obj/statisticserver.o")
 Compile( "source/statisticimplementation.cpp", "obj/statisticimplementation.o")
 
-LinkServer("casual-monitor-request-server",
+LinkServer("bin/casual-monitor-request-server",
     ["obj/statisticserver.o",
     "obj/statisticimplementation.o",
     "obj/monitordb.o"],
@@ -64,7 +64,7 @@ LinkServer("casual-monitor-request-server",
 Compile( "unittest/isolated/source/test_monitor.cpp", "unittest/isolated/obj/test_monitor.o")
 
 
-LinkIsolatedUnittest( "casual-monitor-isolated",
+LinkIsolatedUnittest( "bin/test-casual-monitor",
 	["unittest/isolated/obj/test_monitor.o",
 	"obj/monitordb.o"],
 	["casual-monitor-vo",
@@ -74,7 +74,7 @@ LinkIsolatedUnittest( "casual-monitor-isolated",
 #
 # Install
 #
-InstallLibrary("casual-monitor-vo","$CASUAL_HOME/lib/.")
-InstallExecutable("casual-monitor","$CASUAL_HOME/bin/.")
-InstallExecutable("casual-monitor-request-server","$CASUAL_HOME/bin/.")
+InstallLibrary("bin/casual-monitor-vo","$CASUAL_HOME/lib/.")
+InstallExecutable("bin/casual-monitor","$CASUAL_HOME/bin/.")
+InstallExecutable("bin/casual-monitor-request-server","$CASUAL_HOME/bin/.")
 

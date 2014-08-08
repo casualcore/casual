@@ -121,13 +121,13 @@ int tx_info( TXINFO* info)
 {
    try
    {
-      casual::common::transaction::Context::instance().info( *info);
+      return casual::common::transaction::Context::instance().info( *info);
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      casual::common::error::handler();
    }
-   return TX_OK;
+   return 0;
 }
 
 

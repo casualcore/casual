@@ -24,45 +24,73 @@ namespace casual
       namespace transaction
       {
 
-         void unique_xid( XID& xid);
-
+         class Resource;
 
          struct Transaction
          {
 
-            // using state_type = TRANSACTION_STATE;
             typedef TRANSACTION_STATE state_type;
             enum class State : state_type
             {
                active = TX_ACTIVE,
                rollback = TX_ROLLBACK_ONLY,
                timeout = TX_TIMEOUT_ROLLBACK_ONLY,
+               suspended,
                inactive,
             };
 
-            explicit operator bool() const { return ! xid.null() && ! suspended;}
+
+            inline void state( State state)
+            {
+               m_previous = m_state;
+               m_state = state;
+
+            }
+
+            inline State state() const
+            {
+               return m_state;
+            }
+
+            inline State previous() const
+            {
+               return m_previous;
+            }
+
+            explicit operator bool() const { return ! xid.null() && m_state != State::suspended;}
 
             //typedef TRANSACTION_TIMEOUT Seconds;
             //Seconds timeout = 0;
 
             ID xid;
             common::platform::pid_type owner = 0;
-            State state = State::inactive;
-            bool suspended = false;
+
+            //!
+            //! associated rm:s to this transaction
+            //!
+            std::vector< int> associated;
+
+
+            friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
+            {
+               return out << "{xid: " << rhs.xid << ", owner: " << rhs.owner << ", state: " << rhs.m_state << ", previous: " << rhs.m_previous << "}";
+            }
+
+         private:
+            State m_state = State::inactive;
+            State m_previous = State::inactive;
          };
 
-         inline std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
-         {
-            return out << "{xid: " << rhs.xid << ", owner: " << rhs.owner << ", state: " << rhs.state << ", suspended: " << rhs.suspended << "}";
-         }
 
          struct Resource
          {
-            Resource( const char* key, xa_switch_t* xa) : key( key), xaSwitch( xa) {}
+            Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo)
+               : key( std::move( key)), xaSwitch( xa), id( id), openinfo( std::move( openinfo)), closeinfo( std::move( closeinfo)) {}
+
+            Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, 0, std::string(), std::string()) {}
 
 
-            int commmit( const Transaction& transaction, long flags);
-            int rollback( const Transaction& transaction, long flags);
+
 
             int start( const Transaction& transaction, long flags);
             int end( const Transaction& transaction, long flags);
@@ -71,22 +99,20 @@ namespace casual
             int close( long flags);
 
 
-            const std::string key;
+            std::string key;
             xa_switch_t* xaSwitch;
             int id = 0;
 
             std::string openinfo;
             std::string closeinfo;
 
+            bool dynamic() const { return xaSwitch->flags & TMREGISTER;}
+
+            friend std::ostream& operator << ( std::ostream& out, const Resource& resource)
+            {
+               return out << "{key: " << resource.key << ", id: " << resource.id << ", openinfo: " << resource.openinfo << ", closeinfo: " << resource.closeinfo << "}";
+            }
          };
-
-         inline std::ostream& operator << ( std::ostream& out, const Resource& resource)
-         {
-            return out << "{key: " << resource.key << ", id: " << resource.id << ", openinfo: " << resource.openinfo << ", closeinfo: " << resource.closeinfo << "}";
-         }
-
-         class Context;
-
 
 
          class Context
@@ -106,10 +132,12 @@ namespace casual
             int commit();
             int rollback();
 
+
+
             void setCommitReturn( COMMIT_RETURN value);
             void setTransactionControl(TRANSACTION_CONTROL control);
             void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
-            void info( TXINFO& info);
+            int info( TXINFO& info);
             //! @}
 
             //!
@@ -120,6 +148,8 @@ namespace casual
             int resourceUnregistration( int rmid, long flags);
             //! @}
 
+            int suspend();
+            int resume();
 
             //!
             //! Associate ongoing transaction, or start a new one if XID is null
@@ -136,7 +166,7 @@ namespace casual
             //!
             //! @return current transaction. 'null xid' if there are none...
             //!
-            const Transaction& currentTransaction() const;
+            Transaction& currentTransaction();
 
 
             void set( const std::vector< Resource>& resources);
@@ -154,8 +184,24 @@ namespace casual
             Control control = Control::unchained;
 
 
-            std::vector< Resource> m_resources;
+            struct resources_type
+            {
+               std::vector< Resource> all;
+
+               using range_type = typename common::range::traits< std::vector< Resource>>::type;
+               range_type fixed;
+               range_type dynamic;
+
+            } m_resources;
+
+            //std::vector< Resource> m_resources;
             std::stack< Transaction> m_transactions;
+
+            //!
+            //! Resources outside any global transaction
+            //! (this could only be dynamic rm:s)
+            //!
+            std::vector< int> m_outside;
 
             //!
             //! Attributes that is initialized from "manager"
@@ -181,7 +227,7 @@ namespace casual
             int rollback( const Transaction& transaction);
 
 
-            void start( const Transaction& transaction, long flags);
+            void start( Transaction& transaction, long flags);
             void end( const Transaction& transaction, long flags);
 
 

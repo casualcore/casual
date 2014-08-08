@@ -42,7 +42,7 @@ casual_common_objectfiles = [
 ]
 
 
-LinkLibrary( "casual-common", 
+LinkLibrary( "bin/casual-common", 
 	casual_common_objectfiles,
 	[UUIDLIB])
 
@@ -50,7 +50,7 @@ LinkLibrary( "casual-common",
 #
 # Mockup stuff, only for unittest
 #
-LinkLibrary( "casual-mockup", 
+LinkLibrary( "bin/casual-mockup", 
      [
        #Compile( "source/mockup.cpp", "obj/mockup.o"),
        Compile( "source/mockup/ipc.cpp", "obj/mockup/ipc.o"),
@@ -62,13 +62,13 @@ LinkLibrary( "casual-mockup",
 #
 # The mockup-rm, only for testing
 #
-LinkLibrary( "casual-mockup-rm", 
+LinkLibrary( "bin/casual-mockup-rm", 
      [
        Compile( "source/mockup/rm.cpp", "obj/mockup/rm.o")
      ],
      ["casual-common"])
 
-LinkLibrary( "casual-mockup-unittest-environment",
+LinkLibrary( "bin/casual-mockup-unittest-environment",
     [ 
       Compile( "source/mockup/unittest_envrionment.cpp", "obj/mockup/unittest_envrionment.o"),  
     ],
@@ -77,13 +77,14 @@ LinkLibrary( "casual-mockup-unittest-environment",
 
 
 
-LinkExecutable( "simple_process",
+target_simple_process = LinkExecutable( "bin/simple_process",
     [
      Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/simple_process.o")
     ], 
     ["casual-common"]
     )	
 	
+   
 #
 # unittest
 #
@@ -114,7 +115,7 @@ unittest_objectfiles = [
 
 
 
-LinkIsolatedUnittest( "test-casual-common-isolated", 
+target_test_common = LinkIsolatedUnittest( "bin/test-casual-common-isolated", 
 	unittest_objectfiles,
 	[
      "casual-common",
@@ -126,19 +127,19 @@ LinkIsolatedUnittest( "test-casual-common-isolated",
 # We execute 'simple_process' from test-casual-common-isolated, so
 # we need to meke sure simple_process is built before
 #
-Dependencies('test-casual-common-isolated', [ 'simple_process' ]);
+Dependencies( target_test_common, [ target_simple_process ]);
 
 #
 # Install 
 #
-InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-common", "$CASUAL_HOME/lib/.")
 #InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
 
 #
 # mockup stuff, we still need to install it if we use it in test
 #
-InstallLibrary("casual-mockup", "$CASUAL_HOME/lib/.")
-InstallLibrary("casual-mockup-rm", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-mockup", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-mockup-rm", "$CASUAL_HOME/lib/.")
 
 
 

@@ -34,7 +34,7 @@ casual_sf_objectfiles = [
     Compile( "source/trace.cpp", "obj/trace.o"),
 ]
 
-LinkLibrary( "casual-sf",
+LinkLibrary( "bin/casual-sf",
     casual_sf_objectfiles,
     ["casual-common", "casual-xatmi", "yaml-cpp", "json-c"])
 
@@ -56,12 +56,12 @@ casual_sf_isolated_objectfiles = [
     Compile( "unittest/isolated/source/test_vo.cpp", "unittest/isolated/obj/test_vo.o"),
 ]
 
-LinkIsolatedUnittest( "test-casual-sf-isolated",
+LinkIsolatedUnittest( "bin/test-casual-sf",
 	casual_sf_isolated_objectfiles,
 	["casual-sf", "casual-xatmi", "casual-common", "json-c", "yaml-cpp"])
 
 #
 # Install
 #
-InstallLibrary("casual-sf", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-sf", "$CASUAL_HOME/lib/.")
 

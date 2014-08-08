@@ -43,6 +43,7 @@ namespace casual
                }
 
 
+
                group::queue::blocking::Reader read( common::ipc::receive::queue(), m_state);
                common::message::queue::connect::Reply reply;
                read( reply);

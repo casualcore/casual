@@ -19,9 +19,6 @@
 #include <sys/stat.h>
 
 
-// TODO: temp
-//#include <iostream>
-
 namespace casual
 {
 

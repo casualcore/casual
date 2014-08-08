@@ -18,7 +18,7 @@ casual_xatmi_objectfile = [
 	Compile( "source/tx.cpp", "obj/tx.o"),
 ]
 
-LinkLibrary( "casual-xatmi",
+LinkLibrary( "bin/casual-xatmi",
 	casual_xatmi_objectfile,
 	["casual-common"])
 
@@ -28,7 +28,7 @@ LinkLibrary( "casual-xatmi",
 #
 
 
-LinkIsolatedUnittest( "test-casual-xatmi-isolated",
+LinkIsolatedUnittest( "bin/test-casual-xatmi",
     [
        Compile( "unittest/isolated/source/test_buffer.cpp", "unittest/isolated/obj/test_buffer.o"),
     ],
@@ -37,4 +37,4 @@ LinkIsolatedUnittest( "test-casual-xatmi-isolated",
 #
 # Install
 #    
-InstallLibrary("casual-xatmi", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-xatmi", "$CASUAL_HOME/lib/.")

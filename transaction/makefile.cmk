@@ -33,12 +33,12 @@ manager_objecfiles = [
     Compile( "source/manager/admin/vo/transaction.cpp", "obj/manager/admin/vo/transaction.o"),
 ];
 
-LinkArchive( "manager-archive",
+LinkArchive( "bin/manager-archive",
      manager_objecfiles)
  
 
 
-LinkExecutable( "casual-transaction-manager",
+LinkExecutable( "bin/casual-transaction-manager",
     [
      Compile( "source/manager/main.cpp", "obj/manager/main.o")
     ],
@@ -57,7 +57,7 @@ LinkExecutable( "casual-transaction-manager",
 # Compile and link resurce-proxy-server lib
 #
 
-LinkLibrary( "casual-resource-proxy-server",
+LinkLibrary( "bin/casual-resource-proxy-server",
    [
     Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o"),
     Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o"),
@@ -74,7 +74,7 @@ unitest_objectfiles = [
     Compile( "unittest/isolated/source/test_manager.cpp", "unittest/isolated/obj/test_manager.o"),
 ];
 
-LinkIsolatedUnittest( "test-casual-transaction-isolated",
+LinkIsolatedUnittest( "bin/test-casual-transaction",
     unitest_objectfiles,
     [ 
      "manager-archive", 
@@ -88,17 +88,17 @@ LinkIsolatedUnittest( "test-casual-transaction-isolated",
      ])
 
 
-InstallLibrary("casual-resource-proxy-server","$CASUAL_HOME/lib/.")
-InstallExecutable("casual-transaction-manager","$CASUAL_HOME/bin/.")
+InstallLibrary("bin/casual-resource-proxy-server","$CASUAL_HOME/lib/.")
+InstallExecutable("bin/casual-transaction-manager","$CASUAL_HOME/bin/.")
 
 
 #
 # Mockup resource proxy
 #
-LinkExecutable( "rm-proxy-casual-mockup",
+LinkExecutable( "bin/rm-proxy-casual-mockup",
     [ Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")],
     [ "casual-mockup-rm", "casual-resource-proxy-server"])
 
-InstallExecutable("rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")
+InstallExecutable("bin/rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")
 
 

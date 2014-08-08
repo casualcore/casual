@@ -27,7 +27,7 @@ casual_configuration_objectfiles = [
     Compile( "source/queue.cpp", "obj/queue.o")
 ]
 
-LinkLibrary( "casual-configuration",
+LinkLibrary( "bin/casual-configuration",
     casual_configuration_objectfiles,
     ["casual-common",
     "casual-sf"])
@@ -43,14 +43,14 @@ test_configuration_objectfiles = [
     Compile( "unittest/isolated/source/test_queue.cpp", "obj/test_queue.o"),
 ]
 
-LinkIsolatedUnittest( "test_configuration",
+LinkIsolatedUnittest( "bin/test-casual-configuration",
    test_configuration_objectfiles,
    ["casual-configuration", "casual-sf"])  
    
 #
 # Install
 #
-InstallLibrary("casual-configuration", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-configuration", "$CASUAL_HOME/lib/.")
 Install( "resources.yaml", "$CASUAL_HOME/configuration/.")
 
 

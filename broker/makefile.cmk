@@ -48,7 +48,7 @@ casual_broker_logic_objectfiles = [
    ]
 
 
-LinkArchive( 'casual-broker-logic',
+LinkArchive( 'bin/casual-broker-logic',
    casual_broker_logic_objectfiles )
 
 
@@ -60,7 +60,7 @@ casual_broker_objectfiles = [
     Compile( "admin/source/adminserver.cpp", "obj/adminserver.o"),
 ]
 
-LinkExecutable( "casual-broker",
+LinkExecutable( "bin/casual-broker",
 	casual_broker_objectfiles,
 	[
      "casual-broker-logic",
@@ -78,7 +78,7 @@ LinkExecutable( "casual-broker",
 #
 
 
-LinkExecutable( "casual-broker-admin",
+LinkExecutable( "bin/casual-broker-admin",
     [ Compile( "admin/source/broker_admin.cpp", "obj/broker_admin.o")],
     ["casual-common", "casual-sf", "casual-xatmi"])
 	
@@ -94,7 +94,7 @@ test_casual_broker_isolated = [
 ]
 
 
-LinkIsolatedUnittest( "test-casual-broker-isolated",
+LinkIsolatedUnittest( "bin/test-casual-broker-isolated",
    test_casual_broker_isolated,
     [
      "casual-broker-logic",
@@ -109,6 +109,6 @@ LinkIsolatedUnittest( "test-casual-broker-isolated",
 #
 # Install
 #
-InstallExecutable("casual-broker","$CASUAL_HOME/bin/.")
-InstallExecutable("casual-broker-admin","$CASUAL_HOME/bin/.")
+InstallExecutable("bin/casual-broker","$CASUAL_HOME/bin/.")
+InstallExecutable("bin/casual-broker-admin","$CASUAL_HOME/bin/.")
 

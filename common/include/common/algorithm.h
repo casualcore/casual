@@ -360,6 +360,12 @@ namespace casual
             return range;
          }
 
+         template< typename C>
+         struct traits
+         {
+            using type = decltype( make( C().begin(), C().end()));
+         };
+
 
 
 
@@ -533,7 +539,7 @@ namespace casual
          //!
          //! associate container specialization
          //!
-         template< typename R, typename T, typename std::enable_if< traits::is_associative_container< typename std::decay<R>::type>::value>::type* = nullptr>
+         template< typename R, typename T, typename std::enable_if< common::traits::is_associative_container< typename std::decay<R>::type>::value>::type* = nullptr>
          auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
          {
             auto resultRange = make( std::forward< R>( range));
@@ -546,7 +552,7 @@ namespace casual
          //!
          //! non associate container specialization
          //!
-         template< typename R, typename T, typename std::enable_if< ! traits::is_associative_container< typename std::decay< R>::type>::value>::type* = nullptr>
+         template< typename R, typename T, typename std::enable_if< ! common::traits::is_associative_container< typename std::decay< R>::type>::value>::type* = nullptr>
          auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
          {
             auto resultRange = make( std::forward< R>( range));

@@ -23,7 +23,7 @@ Compile( "source/octet.cpp", "obj/octet.o")
 Compile( "source/order.cpp", "obj/order.o")
 Compile( "source/field.cpp", "obj/field.o")
 
-LinkLibrary( "casual-buffer",
+LinkLibrary( "bin/casual-buffer",
     [
      "obj/string.o",
      "obj/octet.o",
@@ -44,7 +44,7 @@ Compile( "unittest/isolated/source/test_octet_buffer.cpp", "unittest/isolated/ob
 Compile( "unittest/isolated/source/test_order_buffer.cpp", "unittest/isolated/obj/test_order_buffer.o")
 Compile( "unittest/isolated/source/test_string_buffer.cpp", "unittest/isolated/obj/test_string_buffer.o")
 
-LinkIsolatedUnittest( "test-buffer",
+LinkIsolatedUnittest( "bin/test-buffer",
    [
     "unittest/isolated/obj/test_octet_buffer.o",
     "unittest/isolated/obj/test_order_buffer.o",
@@ -56,7 +56,7 @@ LinkIsolatedUnittest( "test-buffer",
 #
 # Install
 #
-InstallLibrary("casual-buffer", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-buffer", "$CASUAL_HOME/lib/.")
 
 
 

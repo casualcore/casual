@@ -97,7 +97,7 @@ extern "C"
 {
    struct xa_switch_t casual_queue_xa_switch_dynamic{
       "casual-queue-rm-dynamic",
-      TMNOMIGRATE,
+      TMNOMIGRATE | TMREGISTER,
       0,
       &casual::queue::xa::xa_open_entry,
       &casual::queue::xa::xa_close_entry,

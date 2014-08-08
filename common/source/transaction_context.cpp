@@ -69,18 +69,6 @@ namespace casual
          }
 
 
-         void unique_xid( XID& xid)
-         {
-            auto gtrid = Uuid::make();
-            auto bqual = Uuid::make();
-
-            std::copy( std::begin( gtrid.get()), std::end( gtrid.get()), std::begin( xid.data));
-            xid.gtrid_length = std::distance(std::begin( gtrid.get()), std::end( gtrid.get()));
-
-            std::copy( std::begin( bqual.get()), std::end( bqual.get()), std::begin( xid.data) + xid.gtrid_length);
-            xid.bqual_length = xid.gtrid_length;
-         }
-
          namespace local
          {
             namespace
@@ -93,31 +81,6 @@ namespace casual
             } // <unnamed>
          } // local
 
-         int Resource::commmit( const Transaction& transaction, long flags)
-         {
-            log::internal::transaction << "commit resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
-
-            auto result = xaSwitch->xa_commit_entry( local::non_const_xid( transaction), id, flags);
-
-            if( result != XA_OK)
-            {
-               log::error << error::xa::error( result) << " failed to commit resource - " << *this << '\n';
-            }
-            return result;
-         }
-
-         int Resource::rollback( const Transaction& transaction, long flags)
-         {
-            log::internal::transaction << "rollback resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
-
-            auto result = xaSwitch->xa_rollback_entry( local::non_const_xid( transaction), id, flags);
-
-            if( result != XA_OK)
-            {
-               log::error << error::xa::error( result) << " failed to rollback resource - " << *this << '\n';
-            }
-            return result;
-         }
 
          int Resource::start( const Transaction& transaction, long flags)
          {
@@ -182,6 +145,10 @@ namespace casual
 
          Context::Context()
          {
+            //
+            // Vi always have a null-xid to represent outside-global-transaction
+            //
+            m_transactions.push( Transaction());
 
          }
 
@@ -223,17 +190,11 @@ namespace casual
             return Manager::instance();
          }
 
-         const Transaction& Context::currentTransaction() const
+         Transaction& Context::currentTransaction()
          {
-            if( ! m_transactions.empty() && ! m_transactions.top().suspended)
-            {
-               return m_transactions.top();
-            }
-            else
-            {
-               static Transaction nullXid;
-               return nullXid;
-            }
+            assert( ! m_transactions.empty());
+
+            return m_transactions.top();
          }
 
 
@@ -245,38 +206,40 @@ namespace casual
             using RM = message::transaction::resource::Manager;
             auto equalKey = [] ( const Resource& r, const RM& rm){ return r.key == rm.key;};
 
+            auto configuration = std::move( manager().resources);
+
             //
             // Sanity check
             //
-            if( ! range::uniform( resources, manager().resources, equalKey))
+            if( ! range::uniform( resources, configuration, equalKey))
             {
-               throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
+               throw exception::NotReallySureWhatToNameThisException( "mismatch between registered/linked RM:s and configured resources");
             }
 
-            for( auto&& rm : manager().resources)
+            for( auto&& rm : configuration)
             {
                auto found = range::find_if( resources, [&]( const Resource& r){ return r.key == rm.key;});
 
                if( found)
                {
-                  Resource resource{ *found};
-                  resource.openinfo = rm.openinfo;
-                  resource.closeinfo = rm.closeinfo;
-                  resource.id = rm.id;
-
-                  m_resources.push_back( std::move( resource));
+                  m_resources.all.emplace_back(
+                        found->key,
+                        found->xaSwitch,
+                        rm.id,
+                        std::move( rm.openinfo),
+                        std::move( rm.closeinfo));
                }
                else
                {
-                  throw exception::NotReallySureWhatToNameThisException( "missmatch between registrated/linked RM:s and configured resources");
+                  throw exception::NotReallySureWhatToNameThisException( "mismatch between registered/linked RM:s and configured resources");
                }
             }
 
             //
-            // We don't need the manager config any more
+            // create the views
             //
-            //decltype( manager().resources) empty;
-            //empty.swap( manager().resources);
+            m_resources.dynamic = range::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
+            m_resources.fixed = range::make( m_resources.all) - m_resources.dynamic;
 
          }
 
@@ -308,7 +271,7 @@ namespace casual
 
                if( reply.state == XA_OK)
                {
-                  trans.state = Transaction::State::active;
+                  trans.state( Transaction::State::active);
                   trans.owner = process::id();
                   trans.xid = std::move( reply.xid);
                }
@@ -332,7 +295,7 @@ namespace casual
             {
                trans.owner = transaction.creator;
                trans.xid = transaction.xid;
-               trans.state = Transaction::State::active;
+               trans.state( Transaction::State::active);
 
                //auto code = local::startTransaction( writer, reader, trans);
             }
@@ -348,9 +311,7 @@ namespace casual
                }
             }
 
-            //
-            // TODO: dynamic registration
-            if( ! m_resources.empty())
+            if( m_resources.fixed)
             {
                queue::blocking::Writer writer{ manager().queue};
 
@@ -359,8 +320,8 @@ namespace casual
 
                start( trans, TMNOFLAGS);
 
-               auto ids = std::bind( &Resource::id, std::placeholders::_1);
-               range::transform( m_resources, message.resources, ids);
+               auto ids = std::mem_fn( &Resource::id);
+               range::transform( m_resources.fixed, message.resources, ids);
 
                writer( message);
             }
@@ -405,30 +366,70 @@ namespace casual
 
          int Context::resourceRegistration( int rmid, XID* xid, long flags)
          {
-            // TODO: implement
-            return TM_OK;
+            common::trace::internal::Scope trace{ "transaction::Context::resourceRegistration"};
+
+            auto&& current = currentTransaction();
+
+            if( common::range::find( current.associated, rmid))
+            {
+               return TMER_PROTO;
+            }
+
+            current.associated.push_back( rmid);
+
+            *xid = current.xid.xid();
+
+            switch( current.previous())
+            {
+               case Transaction::State::suspended:
+               {
+                  return TM_RESUME;
+               }
+               default:
+               {
+                  return TM_OK;
+               }
+            }
          }
 
          int Context::resourceUnregistration( int rmid, long flags)
          {
-            // TODO: implement
-            return TM_OK;
+            common::trace::internal::Scope trace{ "transaction::Context::resourceUnregistration"};
+
+            auto&& current = currentTransaction();
+
+            //
+            // RM:s can only unregister if we're outside global
+            // transactions
+            //
+            if( ! current.xid)
+            {
+               auto found = common::range::find( current.associated, rmid);
+
+               if( found)
+               {
+                  current.associated.erase( found.begin());
+                  return TM_OK;
+               }
+            }
+            return TMER_PROTO;
          }
-
-
-
 
 
          int Context::begin()
          {
             common::trace::internal::Scope trace{ "transaction::Context::begin"};
 
-            if( ! m_transactions.empty())
+            auto&& current = currentTransaction();
+
+            if( ! current.associated.empty())
             {
-               if( m_transactions.top().state != Transaction::State::inactive)
-               {
-                  return TX_PROTOCOL_ERROR;
-               }
+               return TX_OUTSIDE;
+            }
+
+            if( current.state() != Transaction::State::inactive)
+            {
+               return TX_PROTOCOL_ERROR;
             }
 
             queue::blocking::Writer writer( manager().queue);
@@ -442,7 +443,6 @@ namespace casual
                m_transactions.push( std::move( trans));
 
                start( trans, TMNOFLAGS);
-
             }
 
             return code;
@@ -456,7 +456,7 @@ namespace casual
 
             auto open = std::bind( &Resource::open, std::placeholders::_1, TMNOFLAGS);
 
-            range::transform( m_resources, result, open);
+            range::transform( m_resources.all, result, open);
 
             // TODO: TX_FAIL
             if( std::all_of( std::begin( result), std::end( result), []( int value) { return value != XA_OK;}))
@@ -473,7 +473,7 @@ namespace casual
 
             auto close = std::bind( &Resource::close, std::placeholders::_1, TMNOFLAGS);
 
-            range::transform( m_resources, result, close);
+            range::transform( m_resources.all, result, close);
 
             // TODO:
             // TX_PROTOCOL_ERROR
@@ -647,22 +647,29 @@ namespace casual
 
          }
 
-         void Context::info( TXINFO& info)
+         int Context::info( TXINFO& info)
          {
-            //return TX_OK;
+            auto&& current = currentTransaction();
+
+            info.xid = current.xid.xid();
+
+
+            return current ? 1 : 0;
          }
 
-         void Context::start( const Transaction& transaction, long flags)
+         void Context::start( Transaction& transaction, long flags)
          {
             auto start = std::bind( &Resource::start, std::placeholders::_1, transaction, flags);
-            range::for_each( m_resources, start);
+            range::for_each( m_resources.fixed, start);
+
+
 
          }
 
          void Context::end( const Transaction& transaction, long flags)
          {
             auto end = std::bind( &Resource::end, std::placeholders::_1, transaction, flags);
-            range::for_each( m_resources, end);
+            range::for_each( m_resources.all, end);
          }
 
       } // transaction
