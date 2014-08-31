@@ -162,6 +162,9 @@ def handleArguments():
     if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross", "make"):
         options.FORCE_PARALLEL=True
     
+    if args and args[0] in ("test") and not options.FORCE_PARALLEL:
+        options.FORCE_NOTPARALLEL=1
+    
     return (options, args)
 
 def optionsAsString( options):
@@ -327,7 +330,7 @@ if __name__ == '__main__':
     if process.returncode == 0:
         print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.green( 'SUCCESS', True)
     else:
-        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.error( 'FAILED')
+        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.error( 'FAILED', True)
     
     #print reformat( process.stdout.readline())
     

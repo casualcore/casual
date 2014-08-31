@@ -12,6 +12,25 @@ class CommonUNIX( Platform):
             
         return ' -l' + ' -l'.join( libs);
     
+    def include_paths(self, paths):
+        if not paths:
+            return ''
+        
+        if isinstance( paths, basestring):
+            paths = paths.split( ' ');
+        
+        return ' -I' + ' -I'.join( paths)
+    
+    def library_paths(self, paths):
+        if not paths:
+            return ''
+        
+        if isinstance( paths, basestring):
+            paths = paths.split( ' ');
+        
+        return ' -L' + ' -L'.join( paths)
+    
+    
     
     def library_name(self, baseFilename):
         return 'lib' + baseFilename + '.so'

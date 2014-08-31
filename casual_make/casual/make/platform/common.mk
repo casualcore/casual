@@ -18,8 +18,8 @@ BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
 #
 # Default include/library-paths
 #
-DEFAULT_INCLUDE_PATHS := ./include
-DEFAULT_LIBRARY_PATHS := ./bin 
+DEFAULT_INCLUDE_PATHS = -I./include
+DEFAULT_LIBRARY_PATHS = -L./bin 
 
 
 

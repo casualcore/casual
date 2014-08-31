@@ -36,9 +36,9 @@ def internal_platform():
 global_build_targets = [ 
           'link',
           'cross', 
-          'clean_files',
-          'clean_objectfiles',
-          'clean_dependencyfiles', 
+          'clean_exe',
+          'clean_object',
+          'clean_dependency', 
           'compile', 
           'deploy', 
           'install',
@@ -329,20 +329,20 @@ def internal_post_make_rules():
     
     
     print
-    print "clean: clean_objectfiles clean_dependencyfiles clean_files"
+    print "clean: clean_object clean_dependency clean_exe"
     
-    print "clean_objectfiles:"
+    print "clean_object:"
     for objectpath in state().object_paths_to_clean:
         print "\t-" + internal_platform().remove( objectpath + "/*.o")
         
-    print "clean_dependencyfiles:"
+    print "clean_dependency:"
     for objectpath in state().object_paths_to_clean:  
         print "\t-" + internal_platform().remove( objectpath + "/*.d")
     
     #
     # Remove all other known files.
     #
-    print "clean_files:"
+    print "clean_exe:"
     for filename in state().files_to_Remove:
         print "\t-" + internal_platform().remove( filename)
 
@@ -487,15 +487,15 @@ def internal_validate_list( list):
 
 
 
-def internal_deploy( targetname, path, directive):
+def internal_deploy( target, directive):
     
-    targetname = 'deploy_' + targetname
+    targetname = 'deploy_' + target.name
     
     print
     print 'deploy: ' + targetname
     print
-    print targetname + ":"
-    print "\t-@" + def_Deploy + " " + path + ' ' + directive
+    print targetname + ": " + target.name
+    print "\t-@" + def_Deploy + " " + target.file + ' ' + directive
     print
 
 
@@ -544,56 +544,78 @@ def internal_library_targets( libs):
 
 
 
-def internal_link( platform, name, filename, objectfiles, libs, linkdirectives = '', prefix = ''):
+def internal_link( platform, target, objectfiles, libs, linkdirectives = '', prefix = ''):
 
     internal_validate_list( objectfiles);
     internal_validate_list( libs);
 
     print "#"
-    print "# Links: " + os.path.basename( filename)
+    print "# Links: " + os.path.basename( target.file)
     
     dependent_targets = internal_library_targets( libs)
-    
-    target_name = internal_target_name( filename)
 
-    destination_path = os.path.dirname(filename)
+
+    destination_path = os.path.dirname( target.file)
     
     print
-    print "link: " + target_name
+    print "link: " + target.name
     print 
-    print target_name + ': ' + filename
+    print target.name + ': ' + target.file
     print
-    print '   objects_' + target_name + ' = ' + internal_multiline( internal_object_name_list( objectfiles))
+    print '   objects_' + target.name + ' = ' + internal_multiline( internal_object_name_list( objectfiles))
     print
-    print '   libs_'  + target_name + ' = ' + internal_multiline( factory().link_directive( libs))
+    print '   libs_'  + target.name + ' = ' + internal_multiline( factory().link_directive( libs))
     print
     print '   #'
     print '   # possible dependencies to other targets (in this makefile)'
-    print '   depenency_' + target_name + ' = ' + internal_multiline( dependent_targets)
+    print '   depenency_' + target.name + ' = ' + internal_multiline( dependent_targets)
     print 
-    print filename + ': $(objects_' + target_name + ') $(depenency_' + target_name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + prefix + platform( filename, '$(objects_' + target_name + ')', '$(libs_' + target_name + ')', linkdirectives)
+    print target.file + ': $(objects_' + target.name + ') $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
+    print '\t' + prefix + platform( target.file, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives)
     print
     
     
-    internal_register_file_for_clean( filename)
+    internal_register_file_for_clean( target.file)
     internal_register_path_for_create( destination_path)
     
-    return target_name
+    return target
 
+
+def internal_link_resource( target, resource, libraries, directive):
+    
+    internal_validate_list( libraries);
+    
+    dependent_targets = internal_library_targets( libraries)
+    
+    destination_path = os.path.dirname( target.file)
+    
+    build_resource_proxy = internal_platform().executable_name( 'casual-build-resource-proxy')
+    
+    directive += ' ' + factory().link_directive( libraries)
+    
+    
+     
+    
+    print
+    print "link: " + target.name
+    print 
+    print target.name + ': ' + target.file
+    print
+    print target.file + ': $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
+    print '\t' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' --link-directives "' + directive + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(COMPILE_DIRECTIVES) $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
+    
+    internal_register_file_for_clean( target.file)
+    internal_register_path_for_create( destination_path)
+
+    return target
 
 def internal_install(target, source, destination):
     
-    #
-    # Add an extra $ in case of referenced environment variable.
-    #
-    if destination.startswith('$'):
-        destination = '$' + destination
+    internal_register_path_for_create( destination);
         
     print "install: " + target
     print
-    print target + ": " + source
-    print "\t@" + internal_platform().make_directory( os.path.dirname( destination))
+    print target + ": " + source + ' | ' + destination
     print "\t" + internal_platform().install( source, destination)
     print
 

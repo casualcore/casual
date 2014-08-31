@@ -20,6 +20,16 @@ include=list()
 #
 
 
+class Target:
+    
+    def __init__(self, filename):
+        self.file = filename
+        self.name = internal_target_name( filename)
+
+
+
+
+
 def NoDefaultLibs():
     """
 
@@ -68,6 +78,28 @@ def Parallel( value = True):
 
 def Scope( inherit = True, name = None):
     """
+    Creates a new scope, with new context. Think of it as a nested
+    casual-make-file.
+    
+    Shall be used in a 'with statement", example:
+    
+    with Scope():
+        Parallel()
+        
+        Build( someother-casual-make-file)
+        
+    User can use as many scopes as he or she wants. The scopes can be nested in
+    arbitrary depth
+    
+    
+    Under the hood the scope is generated in a isolated makefile, and
+    invoked from the parent scope.
+    
+    :param inherit: If true, state is copied from the parent scope. Normally
+        this correlates to IncludePaths and such.
+        
+    :param name: If set the scope is named to the value. It only effects the
+        name of the isolated makefile   
     
     """
     return internal_scope( inherit, name)
@@ -99,14 +131,14 @@ def Compile( sourcefile, objectfile, directive = ''):
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
-    print dependency_file + ':  | ' + object_directory
+    print dependency_file + ': ' + source_file + ' | ' + object_directory
     print '\t' + internal_platform().header_dependency( source_file, [ cross_object_file, object_file], dependency_file)
     print
     print "-include " + dependency_file
     print
     print 'compile: ' + object_file
     print
-    print object_file + ": " + source_file + ' ' + dependency_file + " | " + object_directory
+    print object_file + ": " + source_file + ' | ' + object_directory + ' ' + dependency_file
     print '\t' + internal_platform().compile( source_file, object_file, directive)
     print
     print 'cross: ' + cross_object_file
@@ -141,15 +173,9 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
                 correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
     """
 
-    executable_path = internal_executable_name_path( name)
-    
-    target_name = internal_target_name( executable_path)
+    target = Target( internal_executable_name_path( name))
     
 
-        
-    
-    
-    
     if not resources:
         directive = "";
     else:
@@ -159,19 +185,15 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
         # We assume it is a path to a server-definition-file
         directive += ' -p ' + serverdefinition
         print 
-        print target_name + ': ' + serverdefinition        
+        print target.name + ': ' + serverdefinition        
     else:
         directive += ' -s ' + ' '.join( serverdefinition)
 
     
-    internal_link( internal_platform().link_server, name, executable_path, objectfiles, libraries, directive)
-    
-    #target_name = internal_BASE_LinkATMI( "$(BUILDSERVER)", name, serverdefinition, "", objectfiles, libraries, resource_directive)
-    
-    return target_name
+    return internal_link( internal_platform().link_server, target, objectfiles, libraries, directive)
     
 
-def LinkAtmiClient(name,objectfiles,libs = []):
+def LinkClient( name, objectfiles, libraries, resources=None):
     """
  Links a XATMI client
 
@@ -179,8 +201,15 @@ def LinkAtmiClient(name,objectfiles,libs = []):
  param: objectfiles    object files that is linked
  param: libs        dependent libraries
     """
+    
+    target = Target( internal_executable_name_path( name))    
 
-    return internal_BASE_LinkATMI( "$(BUILDCLIENT)",name, "", objectfiles, libs, "")
+    if not resources:
+        directive = "";
+    else:
+        directive = " -r " + ' '.join( resources)
+        
+    internal_link( internal_platform().link_client, target, objectfiles, libraries, directive)
 
 
 def LinkLibrary(name,objectfiles,libs = []):
@@ -194,13 +223,13 @@ def LinkLibrary(name,objectfiles,libs = []):
     :return: target name
     """
     
-    library_path = internal_shared_library_name_path( name)
+    target = Target( internal_shared_library_name_path( name))   
     
-    target_name = internal_link( internal_platform().link_library, name, library_path, objectfiles, libs)
+    internal_link( internal_platform().link_library, target, objectfiles, libs)
     
-    internal_deploy( target_name, library_path, 'lib')
+    internal_deploy( target, 'lib')
         
-    return target_name;
+    return target;
 
 
 def LinkArchive(name,objectfiles):
@@ -212,15 +241,14 @@ def LinkArchive(name,objectfiles):
  :return: target name
     """
     
-    archive_path = internal_archive_name_path( name)
+    target = Target( internal_archive_name_path( name))
     
-    target_name = internal_link( internal_platform().link_archive, name, archive_path, objectfiles, [])
+    return internal_link( internal_platform().link_archive, target, objectfiles, [])
     
-    return target_name;
 
 
 
-def LinkExecutable(name,objectfiles,libs = []):
+def LinkExecutable( name, objectfiles, libraries = []):
     """
   Links an executable
 
@@ -232,13 +260,23 @@ def LinkExecutable(name,objectfiles,libs = []):
  
  :return: target name
     """
-    executable_path = internal_executable_name_path( name)
     
-    target_name = internal_link( internal_platform().link_executable, name, executable_path, objectfiles, libs)
+    target = Target( internal_executable_name_path( name))
     
-    internal_deploy( target_name, executable_path, 'exe')
     
-    return target_name;
+    target_name = internal_link( internal_platform().link_executable, target, objectfiles, libraries)
+    
+    internal_deploy( target, 'exe')
+    
+    return target;
+
+
+def LinkResource( name, resource, libraries = [], directive = ''):
+    
+    target = Target( internal_executable_name_path( name))
+    
+    return internal_link_resource( target, resource, libraries, directive)
+    
 
 
 def Dependencies( target, dependencies):
@@ -255,10 +293,14 @@ def Dependencies( target, dependencies):
     :param dependencies: target dependencies
     
     """
+    dependant = list()
+    for dependency in dependencies:
+        dependant.append( dependency.file)
+    
     
     print '#'
     print '# explicit dependencies'
-    print target + ": " + ' '.join( dependencies)
+    print target.name + ": " + ' '.join( dependant)
     
 
 
@@ -278,7 +320,7 @@ def Build(casualMakefile):
     
     
 
-def LinkIsolatedUnittest(name,objectfiles,libs):
+def LinkIsolatedUnittest(name,objectfiles,libraries):
     """
 
 
@@ -293,24 +335,25 @@ def LinkIsolatedUnittest(name,objectfiles,libs):
 
     """
     
-    executable_path = internal_executable_name_path(name)
-
-    target_name = internal_link( internal_platform().link_executable, name, executable_path, objectfiles, libs, '$(ISOLATED_UNITTEST_LIB)')
+    target = Target( internal_executable_name_path( name))
     
-    internal_deploy( target_name, executable_path, 'client')
+
+    internal_link( internal_platform().link_executable, target, objectfiles, libraries, '$(ISOLATED_UNITTEST_LIB)')
+    
+    internal_deploy( target, 'client')
 
     internal_set_ld_path()
     
-    print "test: " + 'test_' + target_name    
+    print "test: " + 'test_' + target.name    
     print
-    print 'test_' + target_name + ": " +  target_name
-    print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + executable_path + " $(ISOLATED_UNITTEST_DIRECTIVES)"
+    print 'test_' + target.name + ": " +  target.name
+    print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + target.file + " $(ISOLATED_UNITTEST_DIRECTIVES)"
     print 
 
-    return target_name
+    return target
 
 
-def LinkDependentUnittest(name,objectfiles,libs):
+def LinkDependentUnittest( name, objectfiles, libraries, resources = None):
     """
 
 
@@ -324,14 +367,27 @@ def LinkDependentUnittest(name,objectfiles,libs):
 
 
     """
-    return internal_BASE_LinkATMI("$(BUILDCLIENT)", name, "" , objectfiles, libs , "-f $(DEPENDENT_UNITTEST_LIB)")
     
+    target = Target( internal_executable_name_path( name))    
 
+    if not resources:
+        directive = "";
+    else:
+        directive = " -r " + ' '.join( resources)
+        
+    libraries.append( "$(DEPENDENT_UNITTEST_LIB)")
+        
+    internal_link( internal_platform().link_client, target, objectfiles, libraries, directive)
+    
+    return target;
 
 
 
 
 def InstallLibrary(source, destination):
+    """
+    deprecated
+    """
     
     source_path = internal_shared_library_name_path( source);
     target_name = 'install_' + internal_target_name( source_path)
@@ -340,16 +396,28 @@ def InstallLibrary(source, destination):
 
 def InstallExecutable(source, destination):
     
+    """
+    deprecated
+    """
+    
     source_path = internal_executable_name_path( source);
     target_name = 'install_' + internal_target_name( source_path)
     
     internal_install( target_name, source_path, destination)
     
 
-def Install(source, destination):
+def Install( target, destination):
     
-    target_name = 'install_' + internal_target_name( source)
-    internal_install( target_name, source, destination)
+    if isinstance( target, Target):
+        internal_install( 'install_' + target.name, target.file, destination)
+    
+    elif isinstance( target, list):
+        for t in target:
+            Install( t, destination)
+        
+    else:
+        target_name = 'install_' + internal_target_name( target)
+        internal_install( target_name, target, destination)
 
 def Include( filename):
     
@@ -358,12 +426,12 @@ def Include( filename):
         
 def IncludePaths( paths):
     
-    internal_add_pre_make_statement( 'INCLUDE_PATHS = ' + ' '.join( paths));
+    internal_add_pre_make_statement( 'INCLUDE_PATHS = ' + internal_platform().include_paths( paths));
     
     
 def LibraryPaths( paths):
     
-    internal_add_pre_make_statement( 'LIBRARY_PATHS = ' + ' '.join( paths));
+    internal_add_pre_make_statement( 'LIBRARY_PATHS = ' + internal_platform().library_paths( paths));
 
     
     

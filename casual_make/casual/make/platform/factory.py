@@ -13,6 +13,8 @@ class Platform:
     
     
     def link_directive(self, libs): pass
+    def include_paths(self, paths): pass
+    def library_paths(self, paths): pass
     
     def library_name(self, baseFilename): pass
     def archive_name(self, baseFilename): pass
