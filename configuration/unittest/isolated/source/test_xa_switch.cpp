@@ -24,7 +24,7 @@ namespace casual
 	{
 	   auto xa_switch = config::xa::switches::get( GetParam());
 
-	   EXPECT_TRUE( xa_switch.size() == 2);
+	   EXPECT_TRUE( xa_switch.size() >= 2);
 
 	}
 
@@ -32,7 +32,7 @@ namespace casual
    {
       auto xa_switch = config::xa::switches::get( GetParam());
 
-      ASSERT_TRUE( xa_switch.size() == 2);
+      ASSERT_TRUE( xa_switch.size() >= 2);
       EXPECT_TRUE( xa_switch.at( 0).key == "db2");
       EXPECT_TRUE( xa_switch.at( 1).key == "rm-mockup");
 
@@ -42,7 +42,7 @@ namespace casual
    {
       auto xa_switch = config::xa::switches::get( GetParam());
 
-      ASSERT_TRUE( xa_switch.size() == 2);
+      ASSERT_TRUE( xa_switch.size() >= 2);
       EXPECT_TRUE( xa_switch.at( 0).xa_struct_name == "db2xa_switch_static_std");
       EXPECT_TRUE( xa_switch.at( 1).xa_struct_name == "casual_mockup_xa_switch_static");
 

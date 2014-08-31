@@ -37,10 +37,11 @@ casual_sf_objectfiles = [
     Compile( "source/trace.cpp", "obj/trace.o"),
 ]
 
-LinkLibrary( "bin/casual-sf",
+target = LinkLibrary( "bin/casual-sf",
     casual_sf_objectfiles,
     ["casual-common", "casual-xatmi", "yaml-cpp", "json-c"])
 
+install_lib.append( target)
 
 #
 # unittest

@@ -40,7 +40,7 @@ void generate( std::ostream& out, const config::xa::Switch& xa_switch)
 *
 */
 
-#include "transaction/resource_proxy_server.h"
+#include "transaction/resource/proxy_server.h"
 #include <xa.h>
 
 #ifdef __cplusplus
@@ -107,7 +107,7 @@ struct Settings
 
    std::string linkDirectives;
 
-   std::string compiler = "gcc";
+   std::string compiler = "g++";
    bool verbose = false;
    bool keepSource = false;
 
@@ -118,7 +118,7 @@ struct Settings
       archive & CASUAL_MAKE_NVP( output);
       archive & CASUAL_MAKE_NVP( resourceKey);
       archive & CASUAL_MAKE_NVP( linkDirectives);
-      archive & CASUAL_MAKE_NVP( verbose);
+      archive & CASUAL_MAKE_NVP( compiler);
       archive & CASUAL_MAKE_NVP( verbose);
       archive & CASUAL_MAKE_NVP( keepSource);
 
@@ -162,7 +162,7 @@ int build( const std::string& c_file, const config::xa::Switch& xa_switch, const
    // Compile and link
    //
 
-   std::vector< std::string> arguments{ c_file, "-o", xa_switch.server};
+   std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
    for( auto& lib : xa_switch.libraries)
    {
@@ -234,6 +234,7 @@ int main( int argc, char **argv)
             return 1;
          }
 
+
          if( settings.verbose)
          {
             std::cout << std::endl << CASUAL_MAKE_NVP( settings);
@@ -246,10 +247,15 @@ int main( int argc, char **argv)
 
       auto xa_switch = configuration( settings);
 
+      if( settings.output.empty())
+      {
+         settings.output = xa_switch.server;
+      }
+
       //
       // Generate file
       //
-      common::file::scoped::Path path( "xa_switch" + common::Uuid::make().string() + ".c");
+      common::file::scoped::Path path( "xa_switch_" + common::Uuid::make().string() + ".c");
 
       {
          trace::Exit log( "generate file:  " + path.path(), settings.verbose);

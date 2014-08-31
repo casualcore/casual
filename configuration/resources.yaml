@@ -22,5 +22,7 @@ resources:
     libraries:
       - casual-mockup
 
-      
+  - key: casual-queue-rm
+    server: casual-queue-resource-proxy
+    xa_struct_name: casual_queue_xa_switch_dynamic
   

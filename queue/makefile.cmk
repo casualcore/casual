@@ -9,6 +9,7 @@ IncludePaths( [
     '../serviceframework/include', 
     '../thirdparty/database/include',
     '../xatmi/include',
+    '../transaction/include',
     '$(UNITTEST_INCLUDE_PATH)'
     ]);
 
@@ -93,6 +94,10 @@ target = LinkLibrary( 'bin/casual-queue-rm',
 
 install_lib.append( target);
 
+target = LinkResource( 'bin/casual-queue-resource-proxy', 'casual-queue-rm')
+
+install_bin.append( target);
+
 #
 # Client API
 #
@@ -125,6 +130,11 @@ target_test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue
 # Make sure the executables is linked before unittest
 #
 Dependencies( target_test_casual_queue, [ target_casual_queue_broker, target_casual_queue_group])
+
+
+
+
+
 
 
 Install( install_lib, '$(CASUAL_HOME)/lib')
