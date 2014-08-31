@@ -194,17 +194,19 @@ namespace casual
          //
 
 
-         message::dispatch::Handler handler;
+         message::dispatch::Handler handler{
+            handle::Connect{ m_state},
+            handle::Disconnect{ m_state},
+            handle::Advertise{ m_state},
+            handle::Unadvertise{ m_state},
+            handle::ServiceLookup{ m_state},
+            handle::ACK{ m_state},
+            handle::MonitorConnect{ m_state},
+            handle::MonitorDisconnect{ m_state},
+            handle::transaction::client::Connect{ m_state},
+         };
 
-         handler.add( handle::Connect{ m_state});
-         handler.add( handle::Disconnect{ m_state});
-         handler.add( handle::Advertise{ m_state});
-         handler.add( handle::Unadvertise{ m_state});
-         handler.add( handle::ServiceLookup{ m_state});
-         handler.add( handle::ACK{ m_state});
-         handler.add( handle::MonitorConnect{ m_state});
-         handler.add( handle::MonitorDisconnect{ m_state});
-         handler.add( handle::transaction::client::Connect{ m_state});
+
 
          //
          // Prepare the xatmi-services

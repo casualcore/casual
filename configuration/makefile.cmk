@@ -2,22 +2,25 @@ from casual.make.functiondefinitions import *
 
 Include( "$(CASUAL_BUILD_ENVIRONMENT)")
 
-INCLUDE_PATHS= ["include",
+IncludePaths([
+   "include",
    "../common/include",
    "../xatmi/include",
    "../serviceframework/include",
    "$(JSON_INCLUDE_PATH)",
-   "$(UNITTEST_INCLUDE_PATH)"]
+   "$(UNITTEST_INCLUDE_PATH)",
+   ])
 
 
-LIBRARY_PATHS = ["bin",
+LibraryPaths([
+    "bin",
     "../common/bin",
     "../xatmi/bin",
     "../serviceframework/bin",
-    "$(JSON_LIBRARY_PATH)"]
+    "$(JSON_LIBRARY_PATH)",
+    ])
 
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
+intall_libs = []
 
 casual_configuration_objectfiles = [
     Compile( "source/file.cpp", "obj/file.o"),
@@ -27,11 +30,13 @@ casual_configuration_objectfiles = [
     Compile( "source/queue.cpp", "obj/queue.o")
 ]
 
+intall_libs.append( 
+
 LinkLibrary( "bin/casual-configuration",
     casual_configuration_objectfiles,
     ["casual-common",
     "casual-sf"])
-
+)
 
 
 #
@@ -50,7 +55,7 @@ LinkIsolatedUnittest( "bin/test-casual-configuration",
 #
 # Install
 #
-InstallLibrary("bin/casual-configuration", "$CASUAL_HOME/lib/.")
-Install( "resources.yaml", "$CASUAL_HOME/configuration/.")
+Install( intall_libs, '$(CASUAL_HOME)/lib')
+Install( 'resources.yaml', '$(CASUAL_HOME)/configuration')
 
 

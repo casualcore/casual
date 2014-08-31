@@ -2,7 +2,7 @@ from casual.make.functiondefinitions import *
 
 
 
-SetIncludePaths( [ 
+IncludePaths( [ 
     'include',
     '../common/include',
     '../configuration/include',
@@ -13,7 +13,7 @@ SetIncludePaths( [
     ]);
 
 
-SetLibraryPaths( [ 
+LibraryPaths( [ 
         'bin',
         '../configuration/bin',
         '../common/bin',
@@ -21,35 +21,32 @@ SetLibraryPaths( [
     
 
 
+
+install_lib = []
+install_bin = []
+
 #
 # Common stuff
 #
-casual_queue_common_obj = [
-   Compile( 'source/environment.cpp', 'obj/environment.o'),
-];
 
-
-LinkLibrary( 'bin/casual-queue-common',
-    casual_queue_common_obj,
-    [ 'casual-common', ]
-    );
+target = LinkLibrary( 'bin/casual-queue-common',
+   [
+    Compile( 'source/environment.cpp', 'obj/environment.o'),
+   ],
+   [ 'casual-common', ]);
  
-
+install_lib.append( target);
 
 #
 # Group
 #
 
-casual_queue_server_archive_objs = [
+LinkArchive( 'bin/casual-queue-group-archive',
+    [
    Compile( 'source/group/group.cpp', 'obj/group/group.o'),
    Compile( 'source/group/database.cpp', 'obj/group/database.o'),
    Compile( 'source/group/handle.cpp', 'obj/group/handle.o')
-];
-
-
-LinkArchive( 'bin/casual-queue-group-archive',
-    casual_queue_server_archive_objs
-    )
+])
 
 
 target_casual_queue_group = LinkExecutable( 'bin/casual-queue-group', 
@@ -62,20 +59,17 @@ target_casual_queue_group = LinkExecutable( 'bin/casual-queue-group',
      ]);
      
  
- 
+install_bin.append( target_casual_queue_group);
  
 #
 # Broker
 #
 
-casual_queue_broker_archive_objs = [
-   Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
-   Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
-];
-
 LinkArchive( 'bin/casual-queue-broker-archive',
-    casual_queue_broker_archive_objs
-    )
+   [
+     Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
+     Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
+   ])
 
 
 target_casual_queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
@@ -83,42 +77,42 @@ target_casual_queue_broker = LinkExecutable( 'bin/casual-queue-broker',
     ["casual-queue-broker-archive"]);
 
 
+install_bin.append( target_casual_queue_broker);
 
 #
 # rm
-#
-casual_queue_xa_objs = [
-    Compile( 'source/rm/switch.cpp', 'obj/rm/switch.o'),
-];     
-
-LinkLibrary( 'bin/casual-queue-rm',
-    casual_queue_xa_objs,       
-     ['casual-common',
+#  
+target = LinkLibrary( 'bin/casual-queue-rm',
+    [
+     Compile( 'source/rm/switch.cpp', 'obj/rm/switch.o'),
+    ],       
+     [ 'casual-queue-common',
+      'casual-common',
       ]);
 
+
+install_lib.append( target);
 
 #
 # Client API
 #
-casual_queue_api_objs = [
+
+target = LinkLibrary( 'bin/casual-queue', 
+   [
        Compile( 'source/queue.cpp', 'obj/queue.o')
-     ];
+   ],
+   [ 'casual-common' ])
 
-LinkLibrary( 'bin/casual-queue', 
-    casual_queue_api_objs,
-    [ 'casual-common' ]
-    )
-
+install_lib.append( target);
 
 #
 # Unittest
 #
-casual_queue_unittest_objs = [
-  Compile( 'unittest/isolated/source/test_group_database.cpp', 'obj/unittest/test_group_database.o'),
-  ];
 
 target_test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue', 
-    casual_queue_unittest_objs,
+    [
+     Compile( 'unittest/isolated/source/test_group_database.cpp', 'obj/unittest/test_group_database.o'),
+    ],
     [
      'casual-queue-group-archive',
      'casual-common',
@@ -126,15 +120,15 @@ target_test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue
      ]  
 );
 
+
 #
 # Make sure the executables is linked before unittest
 #
 Dependencies( target_test_casual_queue, [ target_casual_queue_broker, target_casual_queue_group])
 
 
-
-
-
+Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_bin, '$(CASUAL_HOME)/bin')
 
 
 

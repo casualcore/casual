@@ -11,6 +11,7 @@
 #include "queue/broker/broker.h"
 
 #include "common/message/queue.h"
+#include "common/message/transaction.h"
 #include "common/queue.h"
 
 namespace casual
@@ -64,6 +65,8 @@ namespace casual
          {
 
 
+
+
             namespace lookup
             {
                struct Request : Base
@@ -89,6 +92,85 @@ namespace casual
                };
 
             } // connect
+
+            namespace group
+            {
+               struct Involved : Base
+               {
+                  using message_type = common::message::queue::group::Involved;
+
+                  using Base::Base;
+
+                  void dispatch( message_type& message);
+               };
+
+
+            }
+
+            namespace transaction
+            {
+               namespace commit
+               {
+                  //!
+                  //! Invoked from the casual-queue-rm
+                  //!
+                  struct Request : Base
+                  {
+                     using message_type = common::message::transaction::resource::commit::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+
+                  };
+
+                  //!
+                  //! Invoked from 1..* groups
+                  //!
+                  struct Reply : Base
+                  {
+                     using message_type = common::message::transaction::resource::commit::Reply;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+
+                  };
+
+               } // commit
+
+               namespace rollback
+               {
+                  //!
+                  //! Invoked from the casual-queue-rm
+                  //!
+                  struct Request : Base
+                  {
+                     using message_type = common::message::transaction::resource::rollback::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+
+                  };
+
+                  //!
+                  //! Invoked from 1..* groups
+                  //!
+                  struct Reply : Base
+                  {
+                     using message_type = common::message::transaction::resource::rollback::Reply;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+
+                  };
+
+               } // rollback
+
+
+            } // transaction
 
          } // handle
       } // broker

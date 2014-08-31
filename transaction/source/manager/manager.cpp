@@ -115,22 +115,28 @@ namespace casual
          // prepare message dispatch handlers...
          //
 
-         message::dispatch::Handler handler;
+         message::dispatch::Handler handler{
+            handle::Begin{ m_state},
+            handle::Commit{ m_state},
+            handle::Rollback{ m_state},
+            handle::resource::Involved{ m_state},
+            handle::resource::reply::Connect{ m_state},
+            handle::resource::reply::Prepare{ m_state},
+            handle::resource::reply::Commit{ m_state},
+            handle::resource::reply::Rollback{ m_state},
+            handle::domain::Prepare{ m_state},
+            handle::domain::Commit{ m_state},
+            handle::domain::Rollback{ m_state},
+            handle::domain::resource::reply::Prepare{ m_state},
+            handle::domain::resource::reply::Commit{ m_state},
+            handle::domain::resource::reply::Rollback{ m_state},
 
-         handler.add( handle::Begin{ m_state});
-         handler.add( handle::Commit{ m_state});
-         handler.add( handle::Rollback{ m_state});
-         handler.add( handle::resource::Involved{ m_state});
-         handler.add( handle::resource::reply::Connect{ m_state});
-         handler.add( handle::resource::reply::Prepare{ m_state});
-         handler.add( handle::resource::reply::Commit{ m_state});
-         handler.add( handle::resource::reply::Rollback{ m_state});
-         handler.add( handle::domain::Prepare{ m_state});
-         handler.add( handle::domain::Commit{ m_state});
-         handler.add( handle::domain::Rollback{ m_state});
-         handler.add( handle::domain::resource::reply::Prepare{ m_state});
-         handler.add( handle::domain::resource::reply::Commit{ m_state});
-         handler.add( handle::domain::resource::reply::Rollback{ m_state});
+            //
+            // We discard the connect reply message
+            //
+            common::message::dispatch::Discard< common::message::server::connect::Reply>{},
+         };
+
 
          //
          // Prepare the xatmi-services
@@ -141,12 +147,6 @@ namespace casual
             arguments.services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
 
             handler.add( handle::admin::Call{ arguments, m_state});
-
-            //
-            // We discard the connect reply message
-            //
-            handler.add( common::message::dispatch::Discard< common::message::server::connect::Reply>{});
-
          }
 
 

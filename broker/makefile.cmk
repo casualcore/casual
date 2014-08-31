@@ -4,31 +4,32 @@ from casual.make.functiondefinitions import *
 Include( "$(CASUAL_BUILD_ENVIRONMENT)")
 
 
-INCLUDE_PATHS= ["include",
+IncludePaths( [
+    "include",
     "admin/include",
 	"../common/include",
 	"../configuration/include",
 	"../xatmi/include",
 	"../serviceframework/include",
 	"$(UNITTEST_INCLUDE_PATH)",
-	"$(YAML_INCLUDE_PATH)"]
+    "$(YAML_INCLUDE_PATH)" ])
 
-LIBRARY_PATHS = ["../common/bin",
+LibraryPaths( [
+    "../common/bin",
     "../serviceframework/bin",
 	"../xatmi/bin",
 	"../buffer/bin",
 	"../configuration/bin",
 	"$(YAML_LIBRARY_PATH)",
-	"$(JSON_LIBRARY_PATH)"]
-
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
-
+	"$(JSON_LIBRARY_PATH)"])
 
 
 #
 # VO
 #
+
+
+install_bins = []
 
 #Compile( admin/source/servicevo.cpp, admin/obj/servicevo.o)
 #Compile( admin/source/servervo.cpp, admin/obj/servervo.o)
@@ -60,7 +61,7 @@ casual_broker_objectfiles = [
     Compile( "admin/source/adminserver.cpp", "obj/adminserver.o"),
 ]
 
-LinkExecutable( "bin/casual-broker",
+target = LinkExecutable( "bin/casual-broker",
 	casual_broker_objectfiles,
 	[
      "casual-broker-logic",
@@ -71,6 +72,8 @@ LinkExecutable( "bin/casual-broker",
    )
    
    #casual-broker-admin-vo )
+
+install_bins.append( target)
 	
 	
 #
@@ -78,10 +81,12 @@ LinkExecutable( "bin/casual-broker",
 #
 
 
-LinkExecutable( "bin/casual-broker-admin",
+target = LinkExecutable( "bin/casual-broker-admin",
     [ Compile( "admin/source/broker_admin.cpp", "obj/broker_admin.o")],
     ["casual-common", "casual-sf", "casual-xatmi"])
 	
+
+install_bins.append( target)
 
 
 #
@@ -109,6 +114,5 @@ LinkIsolatedUnittest( "bin/test-casual-broker-isolated",
 #
 # Install
 #
-InstallExecutable("bin/casual-broker","$CASUAL_HOME/bin/.")
-InstallExecutable("bin/casual-broker-admin","$CASUAL_HOME/bin/.")
+Install( install_bins,'$(CASUAL_HOME)/bin')
 

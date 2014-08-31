@@ -209,6 +209,23 @@ namespace casual
                };
             } // connect
 
+            namespace group
+            {
+               struct Involved : basic_messsage< Type::cQueueGroupInvolved>
+               {
+                  server::Id server;
+                  Transaction xid;
+
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     archive & server;
+                     archive & xid;
+                  })
+
+               };
+
+            } // group
+
+
          } // queue
       } // message
    } // common

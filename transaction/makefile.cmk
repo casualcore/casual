@@ -1,7 +1,7 @@
 from casual.make.functiondefinitions import *
 import sys; 
     
-SetIncludePaths( ["include",
+IncludePaths( ["include",
     "../common/include",
     "../xatmi/include",
     "../configuration/include",
@@ -9,7 +9,7 @@ SetIncludePaths( ["include",
     "../thirdparty/database/include",
     "$(UNITTEST_INCLUDE_PATH)"])
 
-SetLibraryPaths( ["bin",
+LibraryPaths( ["bin",
     "../common/bin",
     "../buffer/bin",
     "../configuration/bin",
@@ -17,6 +17,10 @@ SetLibraryPaths( ["bin",
     "../xatmi/bin"])
 
 #    $(IBM_DB_LIB)
+
+
+install_lib = []
+install_bin = []
 
 #
 # Compile and link the transaction manager
@@ -38,7 +42,7 @@ LinkArchive( "bin/manager-archive",
  
 
 
-LinkExecutable( "bin/casual-transaction-manager",
+target = LinkExecutable( "bin/casual-transaction-manager",
     [
      Compile( "source/manager/main.cpp", "obj/manager/main.o")
     ],
@@ -51,19 +55,21 @@ LinkExecutable( "bin/casual-transaction-manager",
      "casual-xatmi",
      ])
 
+install_bin.append( target)
 
 
 #
 # Compile and link resurce-proxy-server lib
 #
 
-LinkLibrary( "bin/casual-resource-proxy-server",
+target = LinkLibrary( "bin/casual-resource-proxy-server",
    [
     Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o"),
     Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o"),
    ],
    ["casual-common", "casual-sf"])
 
+install_lib.append( target)
 
 #
 # unittest
@@ -88,17 +94,17 @@ LinkIsolatedUnittest( "bin/test-casual-transaction",
      ])
 
 
-InstallLibrary("bin/casual-resource-proxy-server","$CASUAL_HOME/lib/.")
-InstallExecutable("bin/casual-transaction-manager","$CASUAL_HOME/bin/.")
-
-
 #
 # Mockup resource proxy
 #
-LinkExecutable( "bin/rm-proxy-casual-mockup",
+target = LinkExecutable( "bin/rm-proxy-casual-mockup",
     [ Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")],
     [ "casual-mockup-rm", "casual-resource-proxy-server"])
 
-InstallExecutable("bin/rm-proxy-casual-mockup","$CASUAL_HOME/bin/.")
+
+install_bin.append( target)
+
+Install( install_bin,'$(CASUAL_HOME)/bin')
+Install( install_lib,'$(CASUAL_HOME)/lib')
 
 

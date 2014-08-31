@@ -4,20 +4,23 @@ from casual.make.functiondefinitions import *
 Include( "$(CASUAL_BUILD_ENVIRONMENT)")
 
 
-INCLUDE_PATHS = ["include",
+IncludePaths([
+    "include",
     "../common/include",
     "../xatmi/include",
     "$(YAML_INCLUDE_PATH)",
     "$(JSON_INCLUDE_PATH)",
-	"$(UNITTEST_INCLUDE_PATH)"]
+	"$(UNITTEST_INCLUDE_PATH)",
+    ])
 	
-LIBRARY_PATHS = ["../common/bin",
+LibraryPaths([
+    "../common/bin",
     "../xatmi/bin",
     "$(YAML_LIBRARY_PATH)",
-    "$(JSON_LIBRARY_PATH)"]
+    "$(JSON_LIBRARY_PATH)",
+    ])
 
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
+install_lib = []
 
 casual_sf_objectfiles = [
     Compile( "source/archive/archive.cpp", "obj/archive/archive.o"),
@@ -63,5 +66,5 @@ LinkIsolatedUnittest( "bin/test-casual-sf",
 #
 # Install
 #
-InstallLibrary("bin/casual-sf", "$CASUAL_HOME/lib/.")
+Install( install_lib, '$(CASUAL_HOME)/lib')
 

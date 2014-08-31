@@ -65,15 +65,13 @@ namespace casual
                {
                   using broker::handle::Base::Base;
 
-                  State::Server operator () ( const config::queue::Group& group)
+                  State::Group operator () ( const config::queue::Group& group)
                   {
-                     State::Server server;
+                     State::Group queueGroup;
 
-                     server.id.pid = casual::common::process::spawn(
-                        casual::common::environment::directory::casual() + "/casual-queue-server",
-                        {
-                          "--queuebase", group.queuebase
-                        });
+                     queueGroup.id.pid = casual::common::process::spawn(
+                        casual::common::environment::directory::casual() + "/casual-queue-group",
+                        { "--queuebase", group.queuebase });
 
 
                      broker::queue::blocking::Reader read{ common::ipc::receive::queue(), m_state};
@@ -91,14 +89,14 @@ namespace casual
                      broker::queue::blocking::Writer write{ request.server.queue_id, m_state};
                      write( reply);
 
-                     return server;
+                     return queueGroup;
                   }
 
                };
 
                void startup( State& state, config::queue::Queues config)
                {
-                  casual::common::range::transform( config.groups, state.servers, Startup( state));
+                  casual::common::range::transform( config.groups, state.groups, Startup( state));
                }
 
             } // <unnamed>
@@ -127,9 +125,14 @@ namespace casual
       void Broker::start()
       {
 
-         casual::common::message::dispatch::Handler handler;
-
-         handler.add( broker::handle::lookup::Request{ m_state});
+         casual::common::message::dispatch::Handler handler{
+            broker::handle::lookup::Request{ m_state},
+            broker::handle::group::Involved{ m_state},
+            broker::handle::transaction::commit::Request{ m_state},
+            broker::handle::transaction::commit::Reply{ m_state},
+            broker::handle::transaction::rollback::Request{ m_state},
+            broker::handle::transaction::rollback::Reply{ m_state},
+         };
 
          broker::queue::blocking::Reader blockedRead( casual::common::ipc::receive::queue(), m_state);
 

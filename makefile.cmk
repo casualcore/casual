@@ -1,24 +1,21 @@
 from casual.make.functiondefinitions import *
 
 
+Parallel( False)
+
 Build( "common/makefile.cmk")
 Build( "xatmi/makefile.cmk")
-
 Build( "buffer/makefile.cmk")
-
 Build( "serviceframework/makefile.cmk")
-
-
-
 Build( "configuration/makefile.cmk")
 
-Build( "tools/makefile.cmk")
-
-Build( "broker/makefile.cmk")
-Build( "monitor/makefile.cmk")
-
-Build( "transaction/makefile.cmk")
-
-Build( "queue/makefile.cmk")
+with Scope():
+    Parallel( True)
+    
+    Build( "tools/makefile.cmk")
+    Build( "broker/makefile.cmk")
+    Build( "monitor/makefile.cmk")
+    Build( "transaction/makefile.cmk")
+    Build( "queue/makefile.cmk")
 
 Build( "test/makefile.cmk")

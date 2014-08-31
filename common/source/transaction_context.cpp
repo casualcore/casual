@@ -145,10 +145,6 @@ namespace casual
 
          Context::Context()
          {
-            //
-            // Vi always have a null-xid to represent outside-global-transaction
-            //
-            m_transactions.push( Transaction());
 
          }
 
@@ -192,7 +188,11 @@ namespace casual
 
          Transaction& Context::currentTransaction()
          {
-            assert( ! m_transactions.empty());
+            if( m_transactions.empty())
+            {
+               static Transaction singleton;
+               return singleton;
+            }
 
             return m_transactions.top();
          }

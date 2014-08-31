@@ -11,6 +11,7 @@
 #include "queue/group/group.h"
 
 #include "common/message/queue.h"
+#include "common/message/transaction.h"
 #include "common/queue.h"
 
 namespace casual
@@ -86,10 +87,46 @@ namespace casual
                   void dispatch( message_type& message);
                };
 
-
             } // dequeue
+
+
+            namespace transaction
+            {
+               namespace commit
+               {
+                  //!
+                  //! Invoked from the casual-queue-broker
+                  //!
+                  struct Request : Base
+                  {
+                     using message_type = common::message::transaction::resource::commit::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+
+                  };
+               }
+
+               namespace rollback
+               {
+                  //!
+                  //! Invoked from the casual-queue-broker
+                  //!
+                  struct Request : Base
+                  {
+                     using message_type = common::message::transaction::resource::rollback::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+
+                  };
+               }
+            }
+
          } // handle
-      } // server
+      } // group
    } // queue
 
 

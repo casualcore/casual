@@ -1,14 +1,16 @@
 from casual.make.functiondefinitions import *
 
-INCLUDE_PATHS = [ "include",
+IncludePaths([ 
 	"../common/include", 
-	"$(UNITTEST_INCLUDE_PATH)"]
+	"$(UNITTEST_INCLUDE_PATH)",
+	])
 
-LIBRARY_PATHS = ["bin",
-    "../common/bin"]
+LibraryPaths([ 
+    "../common/bin",
+    ])
 
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
+
+install_lib = []
 
 casual_xatmi_objectfile = [
 	Compile( "source/xatmi.cpp", "obj/xatmi.o"),
@@ -18,11 +20,12 @@ casual_xatmi_objectfile = [
 	Compile( "source/tx.cpp", "obj/tx.o"),
 ]
 
-LinkLibrary( "bin/casual-xatmi",
+target = LinkLibrary( "bin/casual-xatmi",
 	casual_xatmi_objectfile,
 	["casual-common"])
 
-	
+install_lib.append( target)
+
 #
 # unittest
 #
@@ -37,4 +40,6 @@ LinkIsolatedUnittest( "bin/test-casual-xatmi",
 #
 # Install
 #    
-InstallLibrary("bin/casual-xatmi", "$CASUAL_HOME/lib/.")
+Install( install_lib, '$(CASUAL_HOME)/lib')
+
+

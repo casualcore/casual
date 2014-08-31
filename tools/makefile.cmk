@@ -4,7 +4,7 @@ from casual.make.functiondefinitions import *
 Include( "$(CASUAL_BUILD_ENVIRONMENT)")
 
 
-SetIncludePaths( ["include",
+IncludePaths( ["include",
     "../common/include",
     "../xatmi/include",
     "../configuration/include",
@@ -12,7 +12,7 @@ SetIncludePaths( ["include",
     "$(YAML_INCLUDE_PATH)",
     "$(UNITTEST_INCLUDE_PATH)"])
 
-SetLibraryPaths( ["bin",
+LibraryPaths( ["bin",
     "../buffer/bin",
     "../common/bin",
     "../xatmi/bin",
@@ -22,21 +22,24 @@ SetLibraryPaths( ["bin",
     "$(JSON_LIBRARY_PATH)"])
 
 
+install_bin = []
 
 
-LinkExecutable( "bin/casual-build-server",
+target = LinkExecutable( "bin/casual-build-server",
    [ Compile( "build_server/build_server.cpp", "build_server/obj/build_server.o")],
    [ "casual-common", "casual-sf", "casual-configuration"])
 
+install_bin.append( target)
 
-LinkExecutable( "bin/casual-build-resource-proxy",
+target = LinkExecutable( "bin/casual-build-resource-proxy",
    [ Compile( "resource_proxy/build_resource_proxy.cpp", "resource_proxy/obj/build_resource_proxy.o")],
    [ "casual-common", 
     "casual-sf", 
     "casual-configuration"])
 
+install_bin.append( target)
 
-InstallExecutable("bin/casual-build-resource-proxy","$CASUAL_HOME/bin/.")
-InstallExecutable("bin/casual-build-server","$CASUAL_HOME/bin/.")
+
+Install( install_bin, '$(CASUAL_HOME)/bin')
 
 

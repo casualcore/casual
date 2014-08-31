@@ -49,7 +49,7 @@ namespace casual
 
          EXPECT_TRUE( handler.size() == 0);
 
-         handler.add< local::TestHandler>();
+         handler.add( local::TestHandler());
 
          EXPECT_TRUE( handler.size() == 1);
       }
@@ -67,7 +67,7 @@ namespace casual
             {
                message::dispatch::Handler handler;
 
-               handler.add< local::TestHandler>();
+               handler.add( local::TestHandler());
 
                marshal::output::Binary output;
                local::TestHandler::message_type message;
@@ -84,7 +84,7 @@ namespace casual
             {
                message::dispatch::Handler handler;
 
-               handler.add< local::TestHandler>();
+               handler.add( local::TestHandler());
 
                marshal::output::Binary output;
                message::service::ACK message;

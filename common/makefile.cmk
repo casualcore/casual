@@ -7,7 +7,7 @@ else:
 
 
 
-SetIncludePaths( [ 
+IncludePaths( [ 
     'include',
     '../xatmi/include',
     '../buffers/include',
@@ -17,7 +17,11 @@ SetIncludePaths( [
     '$(UNITTEST_INCLUDE_PATH)'
     ])
 
-SetLibraryPaths( [ '$(UNITTEST_LIBRARY_PATH)'])
+LibraryPaths( [ '$(UNITTEST_LIBRARY_PATH)'])
+
+
+install_libs = []
+
 
 casual_common_objectfiles = [
     Compile( "source/server_context.cpp", "obj/server_context.o"),
@@ -42,39 +46,42 @@ casual_common_objectfiles = [
 ]
 
 
-LinkLibrary( "bin/casual-common", 
+target = LinkLibrary( "bin/casual-common", 
 	casual_common_objectfiles,
 	[UUIDLIB])
 
+install_libs.append( target)
 
 #
 # Mockup stuff, only for unittest
 #
-LinkLibrary( "bin/casual-mockup", 
+target = LinkLibrary( "bin/casual-mockup", 
      [
        #Compile( "source/mockup.cpp", "obj/mockup.o"),
        Compile( "source/mockup/ipc.cpp", "obj/mockup/ipc.o"),
      ],
      ["casual-common"])
 
-
+install_libs.append( target)
 
 #
 # The mockup-rm, only for testing
 #
-LinkLibrary( "bin/casual-mockup-rm", 
+target = LinkLibrary( "bin/casual-mockup-rm", 
      [
        Compile( "source/mockup/rm.cpp", "obj/mockup/rm.o")
      ],
      ["casual-common"])
 
-LinkLibrary( "bin/casual-mockup-unittest-environment",
+install_libs.append( target)
+
+target = LinkLibrary( "bin/casual-mockup-unittest-environment",
     [ 
       Compile( "source/mockup/unittest_envrionment.cpp", "obj/mockup/unittest_envrionment.o"),  
     ],
     ["casual-common", "casual-mockup", "gtest"])
 
-
+install_libs.append( target)
 
 
 target_simple_process = LinkExecutable( "bin/simple_process",
@@ -132,14 +139,8 @@ Dependencies( target_test_common, [ target_simple_process ]);
 #
 # Install 
 #
-InstallLibrary("bin/casual-common", "$CASUAL_HOME/lib/.")
-#InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
+Install( install_libs, '$(CASUAL_HOME)/lib')
 
-#
-# mockup stuff, we still need to install it if we use it in test
-#
-InstallLibrary("bin/casual-mockup", "$CASUAL_HOME/lib/.")
-InstallLibrary("bin/casual-mockup-rm", "$CASUAL_HOME/lib/.")
 
 
 

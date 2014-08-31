@@ -4,19 +4,19 @@ from casual.make.functiondefinitions import *
 
 Include( "$(CASUAL_BUILD_ENVIRONMENT)")
 
-INCLUDE_PATHS= ["include",
+IncludePaths( [
    "../common/include",
    "../xatmi/include",
-   "$(UNITTEST_INCLUDE_PATH)"]
+   "$(UNITTEST_INCLUDE_PATH)",
+   ])
 
 
-LIBRARY_PATHS = ["bin",
+LibraryPaths([
     "../common/bin",
     "../xatmi/bin",
-    "$(JSON_LIBRARY_PATH)"]
+    "$(JSON_LIBRARY_PATH)",
+    ])
 
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
 
 Compile( "source/string.cpp", "obj/string.o")
 Compile( "source/octet.cpp", "obj/octet.o")
@@ -56,7 +56,7 @@ LinkIsolatedUnittest( "bin/test-buffer",
 #
 # Install
 #
-InstallLibrary("bin/casual-buffer", "$CASUAL_HOME/lib/.")
+InstallLibrary("bin/casual-buffer", "$(CASUAL_HOME)/lib/.")
 
 
 

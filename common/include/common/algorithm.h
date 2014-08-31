@@ -653,6 +653,17 @@ namespace casual
             return resultRange;
          }
 
+
+         template< typename R, typename F>
+         auto max( R&& range, F functor) -> decltype( make( range))
+         {
+            auto result = make( std::forward< R>( range));
+
+            result.first = std::max_element( std::begin( result), std::end( result), functor);
+
+            return result;
+         }
+
          //!
          //! @return true if all elements in @p other is found in @p source
          //!
@@ -716,6 +727,7 @@ namespace casual
                   //&& includes( std::forward< R2>( range2), std::forward< R1>( range1), comp);
                  && includes( std::forward< R2>( range2), std::forward< R1>( range1), compare::inverse( comp));
          }
+
 
 
 

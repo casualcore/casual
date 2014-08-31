@@ -29,24 +29,19 @@ namespace casual
             {
             public:
 
-               template< typename H, typename... Arguments>
-               void add( Arguments&& ...arguments)
-               {
-                  // TODO: change to std::make_unique
-                  handlers_type::mapped_type handler(
-                        new handle_holder< H>{ std::forward< Arguments>( arguments)...});
+               Handler()  = default;
 
-                  m_handlers[ H::message_type::message_type] = std::move( handler);
+               template< typename... Args>
+               Handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
+               {
+
                }
 
-               template< typename H>
-               void add( H&& handler)
-               {
-                  // TODO: change to std::make_unique
-                  handlers_type::mapped_type holder(
-                        new handle_holder< H>{ std::forward< H>( handler)});
 
-                  m_handlers[ H::message_type::message_type] = std::move( holder);
+               template< typename... Args>
+               void add( Args&& ...handlers)
+               {
+                  assign( m_handlers, std::forward< Args>( handlers)...);
                }
 
                template< typename B>
@@ -132,6 +127,39 @@ namespace casual
                }
 
                typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
+
+               template< typename H>
+               static std::unique_ptr< base_handler> assign_helper( H&& handler)
+               {
+                  // TODO: change to std::make_unique
+                  return std::unique_ptr< base_handler>(
+                        new handle_holder< H>{ std::forward< H>( handler)});
+
+               }
+
+               template< typename H>
+               static void assign( handlers_type& result, H&& handler)
+               {
+                  result.emplace( H::message_type::message_type, assign_helper( std::forward< H>( handler)));
+               }
+
+               template< typename H, typename... Args>
+               static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
+               {
+                  result.emplace( H::message_type::message_type, assign_helper( std::forward< H>( handler)));
+                  assign( result, std::forward< Args>( handlers)...);
+               }
+
+               template< typename... Args>
+               static handlers_type assign( Args&& ...handlers)
+               {
+                  handlers_type result;
+
+                  assign( result, std::forward< Args>( handlers)...);
+
+                  return result;
+               }
+
 
                handlers_type m_handlers;
             };

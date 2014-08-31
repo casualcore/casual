@@ -86,6 +86,7 @@ namespace casual
             cQueueInformation,
             cQueueLookupRequest,
             cQueueLookupReply,
+            cQueueGroupInvolved,
          };
 
          template< message::Type type>

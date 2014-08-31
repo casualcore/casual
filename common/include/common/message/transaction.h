@@ -204,6 +204,7 @@ namespace casual
                {
                   typedef basic_transaction< type> base_type;
 
+                  platform::resource::id_type resource = 0;
                   int flags = 0;
 
                   template< typename A>

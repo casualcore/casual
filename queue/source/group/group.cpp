@@ -80,10 +80,13 @@ namespace casual
 
          void Server::start()
          {
-            common::message::dispatch::Handler handler;
+            common::message::dispatch::Handler handler{
+               handle::enqueue::Request{ m_state},
+               handle::dequeue::Request{ m_state},
+               handle::transaction::commit::Request{ m_state},
+               handle::transaction::rollback::Request{ m_state},
+            };
 
-            handler.add( handle::enqueue::Request{ m_state});
-            handler.add( handle::dequeue::Request{ m_state});
 
             group::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
 
