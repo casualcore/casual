@@ -18,12 +18,14 @@ LibraryPaths([
     ])
 
 
+install_lib = []
+
 Compile( "source/string.cpp", "obj/string.o")
 Compile( "source/octet.cpp", "obj/octet.o")
 Compile( "source/order.cpp", "obj/order.o")
 Compile( "source/field.cpp", "obj/field.o")
 
-LinkLibrary( "bin/casual-buffer",
+target = LinkLibrary( "bin/casual-buffer",
     [
      "obj/string.o",
      "obj/octet.o",
@@ -34,7 +36,7 @@ LinkLibrary( "bin/casual-buffer",
      "casual-common",
     ])
 
-
+install_lib.append( target)
 
 #
 # Unittest
@@ -56,7 +58,7 @@ LinkIsolatedUnittest( "bin/test-buffer",
 #
 # Install
 #
-InstallLibrary("bin/casual-buffer", "$(CASUAL_HOME)/lib/.")
+Install( install_lib, '$(CASUAL_HOME)/lib')
 
 
 
