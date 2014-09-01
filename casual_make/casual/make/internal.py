@@ -12,10 +12,24 @@ from contextlib import contextmanager
 from casual.make.platform.factory import factory
 from casual.make.engine import engine
 
+
+
+#
+# Defines the return from "all" functions, that can be used
+# in other function, as Install or whatnot...
+# 
+class Target:
+    
+    def __init__(self, filename, source = ''):
+        self.file = filename
+        self.name = internal_target_name( filename)
+        self.source = source
+
+
+
 #
 # Some global defines
 #
-
 
 
 #
@@ -24,6 +38,10 @@ from casual.make.engine import engine
 def_casual_make='casual_make.py'
 
 def_Deploy='make.deploy.ksh'
+
+
+
+
 
 
 
@@ -544,10 +562,28 @@ def internal_library_targets( libs):
 
 
 
+
 def internal_link( platform, target, objectfiles, libs, linkdirectives = '', prefix = ''):
 
     internal_validate_list( objectfiles);
     internal_validate_list( libs);
+    
+    #
+    # Decide if objektifile is a list of Target
+    # 
+    def targets( objects):
+        objs = []
+        for object in objects:
+            if isinstance( object, Target):
+                objs.append( object.file)
+            else:
+                objs.append( object)
+        
+        return objs;
+                
+    objectfiles = targets( objectfiles)
+            
+    
 
     print "#"
     print "# Links: " + os.path.basename( target.file)
@@ -609,16 +645,26 @@ def internal_link_resource( target, resource, libraries, directive):
 
     return target
 
-def internal_install(target, source, destination):
+def internal_install(target, destination):
     
-    internal_register_path_for_create( destination);
+    if isinstance( target, list):
+        for t in target:
+            internal_install( t, destination)
+    
+    else:
+        target.name = 'install_' + target.name
         
-    print "install: " + target
-    print
-    print target + ": " + source + ' | ' + destination
-    print "\t" + internal_platform().install( source, destination)
-    print
+        internal_register_path_for_create( destination);
+        
+        print 'install: '+ target.name
+        print
+        print target.name + ": " + target.file + ' | ' + destination
+        print "\t" + internal_platform().install( target.file, destination)
+        print
+        
+        return target;
 
+    
 
 
 

@@ -20,13 +20,6 @@ include=list()
 #
 
 
-class Target:
-    
-    def __init__(self, filename):
-        self.file = filename
-        self.name = internal_target_name( filename)
-
-
 
 
 
@@ -113,44 +106,43 @@ def Compile( sourcefile, objectfile, directive = ''):
  :param sourcefile:    name of the sourcefile (src/myfile.cpp)
  :param objectfile:    name of the output object file (obj/myfile.o)
  :param directive:   optional compile directive for this TU, default ''
- :return: the objectfile
+ :return: the target (which contains 
     """
 
+    target = Target( internal_normalize_path( objectfile))
+    target.source = internal_normalize_path( sourcefile);
     
-    source_file = internal_normalize_path( sourcefile)
-    object_file = internal_normalize_path( objectfile)
+    object_directory = os.path.dirname( target.file)
     
-    object_directory = os.path.dirname( object_file)
-    
-    
-    
-    dependency_file = internal_dependency_file_name( object_file)
-    cross_object_file = internal_cross_object_name( object_file)
+    dependency_file = internal_dependency_file_name( target.file)
+    cross_object_file = internal_cross_object_name( target.file)
     
     
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
     print
-    print dependency_file + ': ' + source_file + ' | ' + object_directory
-    print '\t' + internal_platform().header_dependency( source_file, [ cross_object_file, object_file], dependency_file)
+    print dependency_file + ': ' + target.source + ' | ' + object_directory
+    print '\t' + internal_platform().header_dependency( target.source, [ cross_object_file, target.file], dependency_file)
     print
     print "-include " + dependency_file
     print
-    print 'compile: ' + object_file
+    print 'compile: ' + target.name
     print
-    print object_file + ": " + source_file + ' | ' + object_directory + ' ' + dependency_file
-    print '\t' + internal_platform().compile( source_file, object_file, directive)
+    print target.name + ': ' + target.file
+    print
+    print target.file + ": " + target.source + ' | ' + object_directory + ' ' + dependency_file
+    print '\t' + internal_platform().compile( target.source, target.file, directive)
     print
     print 'cross: ' + cross_object_file
     print 
-    print cross_object_file + ": " + source_file + " | "  + object_directory
-    print '\t' + internal_platform().cross_compile( source_file, cross_object_file, directive)
+    print cross_object_file + ": " + target.source + " | "  + object_directory
+    print '\t' + internal_platform().cross_compile( target.source, cross_object_file, directive)
     print
     
     internal_register_object_path_for_clean( object_directory)
     internal_register_path_for_create( object_directory)
 
-    return str( objectfile)
+    return target
 
 
 
@@ -173,7 +165,7 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
                 correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
     """
 
-    target = Target( internal_executable_name_path( name))
+    target = Target( internal_executable_name_path( name), name)
     
 
     if not resources:
@@ -202,7 +194,7 @@ def LinkClient( name, objectfiles, libraries, resources=None):
  param: libs        dependent libraries
     """
     
-    target = Target( internal_executable_name_path( name))    
+    target = Target( internal_executable_name_path( name), name)    
 
     if not resources:
         directive = "";
@@ -223,7 +215,7 @@ def LinkLibrary(name,objectfiles,libs = []):
     :return: target name
     """
     
-    target = Target( internal_shared_library_name_path( name))   
+    target = Target( internal_shared_library_name_path( name), name)   
     
     internal_link( internal_platform().link_library, target, objectfiles, libs)
     
@@ -241,7 +233,7 @@ def LinkArchive(name,objectfiles):
  :return: target name
     """
     
-    target = Target( internal_archive_name_path( name))
+    target = Target( internal_archive_name_path( name), name)
     
     return internal_link( internal_platform().link_archive, target, objectfiles, [])
     
@@ -261,7 +253,7 @@ def LinkExecutable( name, objectfiles, libraries = []):
  :return: target name
     """
     
-    target = Target( internal_executable_name_path( name))
+    target = Target( internal_executable_name_path( name), name)
     
     
     target_name = internal_link( internal_platform().link_executable, target, objectfiles, libraries)
@@ -273,7 +265,7 @@ def LinkExecutable( name, objectfiles, libraries = []):
 
 def LinkResource( name, resource, libraries = [], directive = ''):
     
-    target = Target( internal_executable_name_path( name))
+    target = Target( internal_executable_name_path( name), name)
     
     return internal_link_resource( target, resource, libraries, directive)
     
@@ -382,42 +374,15 @@ def LinkDependentUnittest( name, objectfiles, libraries, resources = None):
     return target;
 
 
-
-
-def InstallLibrary(source, destination):
-    """
-    deprecated
-    """
-    
-    source_path = internal_shared_library_name_path( source);
-    target_name = 'install_' + internal_target_name( source_path)
-    
-    internal_install( target_name, source_path, destination)
-
-def InstallExecutable(source, destination):
-    
-    """
-    deprecated
-    """
-    
-    source_path = internal_executable_name_path( source);
-    target_name = 'install_' + internal_target_name( source_path)
-    
-    internal_install( target_name, source_path, destination)
     
 
 def Install( target, destination):
     
-    if isinstance( target, Target):
-        internal_install( 'install_' + target.name, target.file, destination)
-    
-    elif isinstance( target, list):
-        for t in target:
-            Install( t, destination)
-        
+    if isinstance( target, basestring):
+        internal_install( Target( target), destination)
     else:
-        target_name = 'install_' + internal_target_name( target)
-        internal_install( target_name, target, destination)
+        internal_install( target, destination)
+    
 
 def Include( filename):
     
@@ -426,12 +391,12 @@ def Include( filename):
         
 def IncludePaths( paths):
     
-    internal_add_pre_make_statement( 'INCLUDE_PATHS = ' + internal_platform().include_paths( paths));
+    internal_add_pre_make_statement( 'INCLUDE_PATHS = ' + ' '.join( paths));
     
     
 def LibraryPaths( paths):
     
-    internal_add_pre_make_statement( 'LIBRARY_PATHS = ' + internal_platform().library_paths( paths));
+    internal_add_pre_make_statement( 'LIBRARY_PATHS = ' + ' '.join( paths));
 
     
     

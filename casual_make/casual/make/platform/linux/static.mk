@@ -107,6 +107,13 @@ BASE_DEFAULT_LIBRARY_PATHS := ./bin
 # S�tt inledande v�xel f�r kompilatorn och l�nkaren.
 # 
 LIBRARY_PATH_DIRECTIVE=-Wl,-rpath-link=
+#
+# S�tt inledande v�xel f�r kompilatorn och l�nkaren.
+# 
+INCLUDE_PATHS := $(addprefix -I, $(INCLUDE_PATHS) )
+LIBRARY_PATHS := $(addprefix -L, $(BASE_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_LIBRARY_PATHS) )
+DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
+DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(BASE_DEFAULT_LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_DIRECTIVE), $(BASE_DEFAULT_LIBRARY_PATHS) )
 
 
 HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
