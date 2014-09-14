@@ -14,3 +14,8 @@ server:
       transaction: none
 
 
+    
+    - binding: casual-test3
+      service_function: casual_test3
+      message_function: casual_test3
+      transaction: none

@@ -7,7 +7,7 @@
 
 #include "broker/broker.h"
 #include "broker/handle.h"
-#include "broker/action.h"
+#include "broker/transform.h"
 
 #include "config/domain.h"
 
@@ -20,7 +20,7 @@
 #include "common/message/dispatch.h"
 #include "common/process.h"
 
-//#include "sf/archive/maker.h"
+
 #include "sf/log.h"
 
 
@@ -29,10 +29,6 @@
 #include <fstream>
 #include <algorithm>
 
-
-
-//temp
-//#include <iostream>
 
 
 
@@ -80,8 +76,14 @@ namespace casual
 					   throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
 					}
 				}
+
+
+
+
+
 			}
 		}
+
 
 
 
@@ -138,7 +140,7 @@ namespace casual
          broker::QueueBlockingReader blockingReader( m_receiveQueue, m_state);
 
          //
-         // Initialize configuration and such
+         // Configure
          //
          {
             common::trace::internal::Scope trace{ "broker configuration"};
@@ -157,7 +159,7 @@ namespace casual
             }
             catch( const exception::FileNotExist& exception)
             {
-               common::log::information << "failed to open '" << arguments.configurationfile << "' - starting anyway..." << std::endl;
+               common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
             }
 
             //
@@ -167,25 +169,21 @@ namespace casual
 
             common::log::internal::debug << CASUAL_MAKE_NVP( domain);
 
-            {
-               common::trace::internal::Scope trace( "start processes");
-
-
-
-               //
-               // Start the servers...
-               //
-               handle::transaction::ManagerConnect tmConnect( m_state);
-
-               message::dispatch::Handler handler;
-               handler.add( handle::Connect{ m_state});
-               handler.add(  handle::transaction::client::Connect{ m_state});
-
-               action::boot::domain( m_state, domain, blockingReader, tmConnect, handler);
-
-            }
+            m_state = transform::configuration::Domain{}( domain);
 
          }
+
+         {
+            common::trace::internal::Scope trace( "boot domain");
+
+            //
+            // boot the domain...
+            //
+            //action::boot::domain( m_state, domain);
+         }
+
+
+
 
 
          common::log::internal::debug << "prepare message-pump handlers\n";
@@ -219,7 +217,6 @@ namespace casual
             arguments.services.emplace_back( "_broker_updateInstances", &_broker_updateInstances, 10, common::server::Service::cNone);
 
             handler.add( handle::Call{ arguments, m_state});
-            //handler.add< handle::Call>( arguments, m_state);
          }
 
 
@@ -240,18 +237,15 @@ namespace casual
 
          auto updateInstances = [&]( const admin::update::InstancesVO& value)
                {
-                  auto findIter = m_state.servers.find( value.alias);
-                  if( findIter != std::end( m_state.servers))
+                  for( auto&& server : m_state.servers)
                   {
-                     action::update::Instances{ m_state}( findIter->second, value.instances);
+                     if( server.second.alias == value.alias)
+                     {
+                        m_state.instance( server.second, value.instances);
+                     }
                   }
                };
-
-         std::for_each(
-            std::begin( instances),
-            std::end( instances),
-            updateInstances);
-
+         common::range::for_each( instances, updateInstances);
       }
 
 	} // broker

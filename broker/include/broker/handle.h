@@ -9,10 +9,8 @@
 #define CASUAL_BROKER_TRANSFORM_H_
 
 
+#include "broker/state.h"
 #include "broker/broker.h"
-/*
-#include "broker/action.h"
-*/
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
@@ -28,39 +26,9 @@ namespace casual
 	namespace broker
 	{
 
-		namespace handle
-		{
-		   struct Base
-		   {
-		      Base( State& state);
-
-		   protected:
-		      State& m_state;
-		   };
-		}
-
-
-      namespace policy
-      {
-         struct Broker : handle::Base
-         {
-            using handle::Base::Base;
-
-            void apply();
-         private:
-
-            void clean( platform::pid_type pid);
-         };
-      } // policy
-
-      using QueueBlockingReader = queue::blocking::basic_reader< policy::Broker>;
-
-      using QueueBlockingWriter = queue::blocking::basic_writer< policy::Broker>;
-      using QueueNonBlockingWriter = queue::non_blocking::basic_writer< policy::Broker>;
-
-
       namespace handle
       {
+         using state::Base;
 
 
          //!
@@ -174,9 +142,6 @@ namespace casual
          };
 
 
-
-
-
 		   //!
          //! Looks up a service-name
          //!
@@ -189,9 +154,6 @@ namespace casual
             void dispatch( message_type& message);
 
          };
-
-
-
 
          //!
          //! Handles ACK from services.

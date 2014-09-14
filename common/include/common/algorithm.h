@@ -129,6 +129,17 @@ namespace casual
 
       namespace extract
       {
+         struct Get
+         {
+            template< typename T>
+            auto operator () ( T&& value) const -> decltype( value.get())
+            {
+               return value.get();
+            }
+
+         };
+
+
          struct Second
          {
             template< typename T>
@@ -258,6 +269,14 @@ namespace casual
             if( rhs.last > result.last) result = rhs.last;
             return result;
          }
+
+         /*
+         friend Range< Iter>& operator -= ( Range& lhs, const Range& rhs)
+         {
+
+
+         }
+         */
 
          //template< typename Iter>
          friend Range< Iter> operator - ( const Range& lhs, const Range& rhs)
@@ -542,7 +561,7 @@ namespace casual
          template< typename R, typename T, typename std::enable_if< common::traits::is_associative_container< typename std::decay<R>::type>::value>::type* = nullptr>
          auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
          {
-            auto resultRange = make( std::forward< R>( range));
+            auto resultRange = make( range);
             resultRange.first = range.find( value);
             return resultRange;
          }
@@ -734,6 +753,13 @@ namespace casual
 
          namespace sorted
          {
+
+            template< typename R, typename T>
+            bool search( R&& range, T&& value)
+            {
+               return std::binary_search( std::begin( range), std::end( range), std::forward< T>( value));
+            }
+
             template< typename R1, typename R2, typename Output>
             auto intersection( R1&& source, R2&& other, Output& result) -> decltype( make( result))
             {

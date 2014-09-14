@@ -6,7 +6,8 @@
 //!
 
 #include "broker/handle.h"
-#include "broker/action.h"
+#include "broker/transform.h"
+#include "broker/filter.h"
 
 #include "common/queue.h"
 #include "common/internal/log.h"
@@ -27,69 +28,8 @@ namespace casual
    namespace broker
    {
 
-      namespace policy
-      {
-
-         void Broker::apply()
-         {
-            try
-            {
-               throw;
-            }
-            catch( const exception::signal::child::Terminate& exception)
-            {
-               auto terminated = process::lifetime::ended();
-               for( auto& death : terminated)
-               {
-
-                  switch( death.why)
-                  {
-                     case process::lifetime::Exit::Why::core:
-                        log::error << "process crashed " << death.string() << std::endl;
-
-                        break;
-                     default:
-                        log::information << "proccess died: " << death.string() << std::endl;
-                        break;
-                  }
-
-                  action::remove::instance( death.pid, m_state);
-               }
-            }
-         }
-
-
-
-         void Broker::clean( platform::pid_type pid)
-         {
-            auto findIter = m_state.instances.find( pid);
-
-            if( findIter != std::end( m_state.instances))
-            {
-               trace::Exit remove
-               { "remove ipc" };
-               ipc::remove( findIter->second->queue_id);
-
-            }
-
-         }
-
-
-
-      } // policy
-
-      using QueueBlockingReader = queue::blocking::basic_reader< policy::Broker>;
-
-      using QueueBlockingWriter = queue::blocking::basic_writer< policy::Broker>;
-      using QueueNonBlockingWriter = queue::non_blocking::basic_writer< policy::Broker>;
-
-
       namespace handle
       {
-
-
-         Base::Base( State& state) : m_state( state) {}
-
 
          void MonitorConnect::dispatch( message_type& message)
          {
@@ -110,12 +50,13 @@ namespace casual
             {
                m_state.transactionManagerQueue = message.server.queue_id;
 
-               action::connect( m_state.transactionManager->instances.at( 0), message);
+               auto& instance = m_state.getInstance( message.server.pid);
+               instance.alterState( state::Server::Instance::State::idle);
 
                //
                // Send configuration to TM
                //
-               auto configuration = action::transform::transaction::configuration( m_state.groups);
+               auto configuration = transform::transaction::configuration( m_state);
 
                QueueBlockingWriter tmQueue{ message.server.queue_id, m_state};
                tmQueue( configuration);
@@ -126,7 +67,6 @@ namespace casual
             namespace client
             {
 
-
                void Connect::dispatch( message_type& message)
                {
 
@@ -134,58 +74,48 @@ namespace casual
 
                   common::log::internal::debug << "connect request: " << message.server << std::endl;
 
-                  //
-                  // If the instance was started by the broker, we expect to find it
-                  //
-                  auto foundIter =  m_state.instances.find( message.server.pid);
-
-                  decltype( foundIter->second) instance;
-
-                  if( foundIter != std::end( m_state.instances))
+                  try
                   {
-                     common::log::internal::debug << "instance found: " << message.server << std::endl;
-                     instance = foundIter->second;
+                     auto& instance = m_state.getInstance( message.server.pid);
+
+                     //
+                     // Instance is started for the first time.
+                     // Send some configuration
+                     //
+                     message::transaction::client::connect::Reply reply =
+                           transform::transaction::client::reply( m_state, instance);
+
+                     QueueBlockingWriter write( message.server.queue_id, m_state);
+                     write( reply);
                   }
-
-                  //
-                  // Instance is started for the first time.
-                  // Send some configuration
-                  //
-                  message::transaction::client::connect::Reply reply =
-                        action::transform::transaction::client::reply( instance, m_state);
-
-                  QueueBlockingWriter write( message.server.queue_id, m_state);
-                  write( reply);
-
+                  catch( const state::exception::Missing& exception)
+                  {
+                     // What to do? Add the instance?
+                     log::error << "could not find instance - " << exception.what() << std::endl;
+                  }
                }
-
             } // client
-
          } // transaction
 
 
          void Advertise::dispatch( message_type& message)
          {
-            //
-            // Find the instance
-            //
-            auto findInstance = m_state.instances.find( message.server.pid);
 
-            if( findInstance != std::end( m_state.instances))
-            {
+            std::vector< state::Service> services;
 
-               //
-               // Add all the services, with this corresponding server
-               //
-               common::range::for_each(
-                  common::range::make( message.services),
-                  action::add::Service( m_state, findInstance->second));
-            }
-            else
-            {
-               log::error << "server (pid: " << message.server.pid << ") has not connected before advertising services" << std::endl;
+            common::range::transform( message.services, services, transform::Service{});
 
-            }
+            m_state.addServices( message.server.pid, std::move( services));
+
+         }
+
+         void Unadvertise::dispatch( message_type& message)
+         {
+            std::vector< state::Service> services;
+
+            common::range::transform( message.services, services, transform::Service{});
+
+            m_state.removeServices( message.server.pid, std::move( services));
          }
 
          void Disconnect::dispatch( message_type& message)
@@ -193,7 +123,7 @@ namespace casual
             //
             // Remove the instance
             //
-            action::remove::instance( message.server.pid, m_state);
+            m_state.removeInstance( message.server.pid);
          }
 
          template< typename M>
@@ -202,7 +132,7 @@ namespace casual
             //
             // Remove the instance
             //
-            action::remove::instance( message.server.pid, m_state);
+            m_state.removeInstance( message.server.pid);
 
             // TODO: We have to check if this affect pending...
          }
@@ -214,111 +144,92 @@ namespace casual
 
             common::log::internal::debug << "connect request: " << message.server << std::endl;
 
-            //
-            // If the instance was started by the broker, we expect to find it
-            //
-            auto instance =  m_state.instances.find( message.server.pid);
+            try
+            {
 
-            if( instance == std::end( m_state.instances))
+               auto& instance = m_state.getInstance( message.server.pid);
+
+               //
+               // Instance is started for the first time.
+               // Send some configuration
+               //
+               message::server::connect::Reply reply;
+
+               common::log::internal::debug << "connect reply: " << message.server << std::endl;
+
+               QueueBlockingWriter writer( message.server.queue_id, m_state);
+               writer( reply);
+
+
+               //
+               // Add services
+               //
+               {
+                  std::vector< state::Service> services;
+
+                  common::range::transform( message.services, services, transform::Service{});
+
+                  m_state.addServices( message.server.pid, std::move( services));
+               }
+
+               //
+               // Set the instance to idle state
+               //
+               instance.alterState( state::Server::Instance::State::idle);
+
+            }
+            catch( const state::exception::Missing& exception)
             {
                //
                // The instance was started outside the broker. This is totally in order, though
                // there will be no 'instances' semantics, hence limited administration possibilities.
                // We add it...
                //
+               m_state.instances.emplace(
+                     message.server.pid, broker::transform::Instance()( message));
 
-               instance = m_state.instances.emplace(
-                     message.server.pid, action::transform::Instance()( message)).first;
-
+               dispatch( message);
             }
-
-            //
-            // Instance is started for the first time.
-            // Send some configuration
-            //
-            message::server::connect::Reply reply; //=
-                  //action::transform::configuration( instance->second, m_state);
-
-            common::log::internal::debug << "connect reply: " << message.server << std::endl;
-
-            QueueBlockingWriter writer( message.server.queue_id, m_state);
-            writer( reply);
-
-            //
-            // Add services
-            //
-            common::range::for_each(
-               message.services,
-               action::add::Service( m_state, instance->second));
-
-            //
-            // Set the instance in 'ready' mode
-            //
-            action::connect( instance->second, message);
          }
 
 
          //typedef basic_connect< broker::QueueBlockingWriter> Connect;
 
 
-         void Unadvertise::dispatch( message_type& message)
-         {
-            //
-            // Find the instance
-            //
-            auto findInstance = m_state.instances.find( message.server.pid);
 
-            if( findInstance != std::end( m_state.instances))
-            {
-
-               //
-               // Remove services, with this corresponding server
-               //
-               common::range::for_each(
-                  common::range::make( message.services),
-                  action::remove::Service( m_state, findInstance->second));
-
-            }
-            else
-            {
-               log::error << "server (pid: " << message.server.pid << ") has not connected before unadverties services" << std::endl;
-
-            }
-         }
 
 
          void ServiceLookup::dispatch( message_type& message)
          {
-            auto serviceFound = m_state.services.find( message.requested);
 
-            if( serviceFound != std::end( m_state.services) && ! serviceFound->second->instances.empty())
+            try
             {
-               auto& instances = serviceFound->second->instances;
+               auto& service = m_state.getService( message.requested);
 
                //
                // Try to find an idle instance.
                //
-               auto idleFound = common::range::find_if(
-                     common::range::make( instances),
-                     action::find::idle::Instance());
+               auto idle = common::range::find_if(
+                     service.instances,
+                     filter::instance::Idle{});
 
-               if( ! idleFound.empty())
+
+               if( idle)
                {
                   //
                   // flag it as busy.
                   //
-                  (*idleFound.first)->alterState( Server::Instance::State::busy);
+                  idle->get().alterState( state::Server::Instance::State::busy);
 
                   message::service::name::lookup::Reply reply;
-                  reply.service = serviceFound->second->information;
+                  reply.service = service.information;
                   reply.service.monitor_queue = m_state.monitorQueue;
-                  reply.server.push_back( action::transform::Instance()( *idleFound.first));
+                  reply.server.push_back( transform::Instance()( *idle));
 
                   QueueBlockingWriter writer( message.server.queue_id, m_state);
                   writer( reply);
 
-                  serviceFound->second->lookedup++;
-                  log::internal::debug << "serviceFound->second->lookedup: " << serviceFound->second->lookedup << std::endl;
+                  service.lookedup++;
                }
                else
                {
@@ -327,8 +238,9 @@ namespace casual
                   //
                   m_state.pending.push_back( std::move( message));
                }
+
             }
-            else
+            catch( state::exception::Missing& exception)
             {
                //
                // TODO: We will send the request to the gateway.
@@ -341,57 +253,50 @@ namespace casual
 
                QueueBlockingWriter writer( message.server.queue_id, m_state);
                writer( reply);
-
             }
-
          }
 
 
          void ACK::dispatch( message_type& message)
          {
-            //
-            // find instance and flag it as idle
-            //
-            auto instance = m_state.instances.find( message.server.pid);
-
-            if( instance != std::end( m_state.instances))
+            try
             {
-               instance->second->alterState( Server::Instance::State::idle);
-               instance->second->invoked++;
+               auto& instance = m_state.getInstance( message.server.pid);
 
-               if( ! m_state.pending.empty())
+               instance.alterState( state::Server::Instance::State::idle);
+               ++instance.invoked;
+
+               //
+               // Check if there are pending request for services that this
+               // instance has.
+               //
                {
-                  //
-                  // There are pending requests, check if there is one that is
-                  // waiting for a service that this, now idle, instance has advertised.
-                  //
-                  auto pendingFound = common::range::find_if(
+                  auto pending = common::range::find_if(
                      common::range::make( m_state.pending),
-                     action::find::Pending( instance->second));
+                     filter::Pending( instance));
 
-                  if( ! pendingFound.empty())
+                  if( pending)
                   {
+
                      //
                      // We now know that there are one idle server that has advertised the
                      // requested service (we've just marked it as idle...).
                      // We can use the normal request to get the response
                      //
-                     ServiceLookup serviceLookup( m_state);
-                     serviceLookup.dispatch( *pendingFound.first);
+                     ServiceLookup lookup( m_state);
+                     lookup.dispatch( *pending);
 
                      //
                      // Remove pending
                      //
-                     m_state.pending.erase( pendingFound.first);
+                     m_state.pending.erase( pending.first);
                   }
+
                }
             }
-            else
+            catch( state::exception::Missing& exception)
             {
-               // TODO: log this? This can only happen if there are some logic error or
-               // the system is in a inconsistent state.
-               common::log::error << "failed to find instance on ACK - indicate inconsistency" << std::endl;
-
+               common::log::error << "failed to find instance on ACK - indicate inconsistency " << exception.what() <<std::endl;
             }
          }
 
@@ -405,19 +310,20 @@ namespace casual
             //
             // We add the server
             //
-            auto instance = m_state.instances.emplace(
-                  message.server.pid, action::transform::Instance()( message)).first;
+            auto& instance = m_state.addInstance( transform::Instance()( message));
+
             //
             // Add services
             //
-            common::range::for_each(
-               message.services,
-               action::add::Service( m_state, instance->second));
+            {
+               std::vector< state::Service> services;
 
-            //
-            // Set our instance in 'ready' mode
-            //
-            action::connect( instance->second, message);
+               common::range::transform( message.services, services, transform::Service{});
+
+               m_state.addServices( message.server.pid, std::move( services));
+            }
+
+            instance.alterState( state::Server::Instance::State::idle);
 
          }
 
@@ -447,12 +353,12 @@ namespace casual
 
          void Policy::transaction( const message::service::callee::Call&, const server::Service&)
          {
-
+            // broker doesn't bother with transactions...
          }
 
          void Policy::transaction( const message::service::Reply& message)
          {
-
+            // broker doesn't bother with transactions...
          }
 
          void Policy::statistics( platform::queue_id_type id, message::monitor::Notify& message)

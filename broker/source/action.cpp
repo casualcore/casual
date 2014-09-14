@@ -39,6 +39,7 @@ namespace casual
          */
 
 
+         /*
          namespace local
          {
             struct Dependency
@@ -65,18 +66,16 @@ namespace casual
                group_iterator end;
             };
          } // local
+         */
 
-         std::vector< std::vector< std::shared_ptr< broker::Group>>> bootOrder( State& state)
+         /*
+         std::vector< std::vector< broker::Group::id_type>> bootOrder( State& state)
          {
-            std::vector< std::vector< std::shared_ptr< broker::Group> > > result;
+            std::vector< std::vector< broker::Group::id_type>> result;
 
-            std::vector< std::shared_ptr< broker::Group> > groups;
+            std::vector< broker::Group> groups = state.groups;
 
-            for( auto& g : state.groups)
-            {
-               groups.push_back( g.second);
-            }
-
+            common::range::sort( groups);
 
             //
             // First round we try to find 'root' groups, i.e. without any dependencies...
@@ -87,7 +86,8 @@ namespace casual
             while( start != std::end( groups))
             {
                //
-               // partition groups that has all dependencies resolved, that is, we have already process them [begin, parents_end)
+               // partition groups that has all dependencies resolved,
+               // that is, we have already process them [begin, parents_end)
                //
                auto end = std::stable_partition(
                      start,
@@ -107,29 +107,51 @@ namespace casual
 
             return result;
          }
+         */
 
+         namespace transform
+         {
+
+            broker::Group Group::operator() ( const config::domain::Group& group) const
+            {
+               broker::Group result;
+
+               result.name = group.name;
+               result.note = group.note;
+
+               if( ! group.resource.key.empty())
+               {
+                 broker::Group::Resource resource;
+                 resource.instances = std::stoul( group.resource.instances);
+                 resource.key = group.resource.key;
+                 resource.openinfo = group.resource.openinfo;
+                 resource.closeinfo = group.resource.closeinfo;
+                 result.resource.emplace_back( std::move( resource));
+               }
+
+               return result;
+            }
+
+         } // transform
 
          namespace remove
          {
             void group( State& state, const std::string& name)
             {
-               auto group = state.groups.find( name);
+               auto group = common::range::find_if( state.groups, find::group::Name( name));
 
-               if( group != std::end( state.groups))
+               if( group)
                {
-                  state.groups.erase( group);
-
                   for( auto& server : state.servers)
                   {
-                     auto found = std::find(
-                           std::begin( server.second->memberships),
-                           std::end( server.second->memberships),
-                           group->second);
-                     if( found != std::end( server.second->memberships))
+                     auto found = common::range::find( server.second->memberships, group->id);
+
+                     if( found)
                      {
-                        server.second->memberships.erase( found);
+                        server.second->memberships.erase( found.first);
                      }
                   }
+                  state.groups.erase( group.first);
                }
                else
                {
@@ -149,56 +171,41 @@ namespace casual
 
          namespace add
          {
-            namespace prepare
+            namespace resolve
             {
-               std::shared_ptr< broker::Group> group( State& state, const config::domain::Group& group)
+               struct Dependencies : Base
                {
-                  auto findGroup = state.groups.find( group.name);
+                  using Base::Base;
 
-                  if( findGroup == std::end( state.groups))
+                  void operator () ( const config::domain::Group& group) const
                   {
-                     auto groupToAdd = std::make_shared< broker::Group>();
-                     groupToAdd->name = group.name;
-                     groupToAdd->note = group.note;
+                     auto found = common::range::find_if( m_state.groups, find::group::Name{ group.name});
 
-                     if( ! group.resource.key.empty())
+                     if( found)
                      {
-                       Group::Resource resource;
-                       resource.instances = std::stoul( group.resource.instances);
-                       resource.key = group.resource.key;
-                       resource.openinfo = group.resource.openinfo;
-                       resource.closeinfo = group.resource.closeinfo;
-                       groupToAdd->resource.emplace_back( std::move( resource));
+                        for( auto&& dependency : group.dependencies)
+                        {
+                           auto name = common::range::find_if( m_state.groups, find::group::Name{ dependency});
+
+                           if( name)
+                           {
+                              found->dependencies.push_back( name->id);
+
+                           }
+                        }
                      }
-
-                     findGroup = state.groups.emplace( groupToAdd->name, std::move( groupToAdd)).first;
                   }
-                  return findGroup->second;
-               }
 
-            } // local
+               };
+            } // resolve
 
-            void group( State& state, const config::domain::Group& group)
-            {
-               auto groupToAdd = prepare::group( state, group);
 
-               for( auto& dependency : group.dependencies)
-               {
-                  groupToAdd->dependencies.push_back( state.groups.at( dependency));
-               }
-            }
 
             void groups( State& state, const std::vector< config::domain::Group>& groups)
             {
-               for( auto& group : groups)
-               {
-                  add::prepare::group( state, group);
-               }
+               common::range::transform( groups, state.groups, transform::Group{});
 
-               for( auto& group : groups)
-               {
-                  add::group( state, group);
-               }
+               common::range::for_each( groups, resolve::Dependencies{ state});
             }
 
          } // add
@@ -211,15 +218,7 @@ namespace casual
                add::groups( state, update);
             }
 
-            common::platform::pid_type Policy::boot( const std::string& path, const std::vector< std::string>& arguments)
-            {
-               return common::process::spawn( path, arguments);
-            }
 
-            void Policy::shutdown( broker::Server::Instance& instance)
-            {
-               common::process::terminate( instance.pid);
-            }
 
          } // update
 

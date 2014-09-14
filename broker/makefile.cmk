@@ -45,7 +45,9 @@ install_bins = []
 casual_broker_logic_objectfiles = [
    Compile( "source/broker.cpp", "obj/broker.o"),
    Compile( "source/handle.cpp", "obj/handle.o"),
-   Compile( "source/action.cpp", "obj/action.o"),
+#   Compile( "source/action.cpp", "obj/action.o"),
+   Compile( "source/state.cpp", "obj/state.o"),
+   Compile( "source/transform.cpp", "obj/transform.o"),
    ]
 
 
@@ -92,23 +94,23 @@ install_bins.append( target)
 #
 # unittest
 #
-test_casual_broker_isolated = [
-    Compile( "unittest/isolated/source/test_broker.cpp", "unittest/isolated/obj/test_broker.o"),
-    Compile( "unittest/isolated/source/test_broker_confguration.cpp", "unittest/isolated/obj/test_broker_confguration.o"),
-    Compile( "unittest/isolated/source/test_broker_transformation.cpp", "unittest/isolated/obj/test_broker_transformation.o"),
-]
-
-
-LinkIsolatedUnittest( "bin/test-casual-broker-isolated",
-   test_casual_broker_isolated,
-    [
-     "casual-broker-logic",
-     "casual-common", 
-     "casual-sf", 
-     "casual-configuration", 
-     "casual-mockup-unittest-environment", 
-     "casual-mockup",
-     ])
+# test_casual_broker_isolated = [
+#     Compile( "unittest/isolated/source/test_broker.cpp", "unittest/isolated/obj/test_broker.o"),
+#     Compile( "unittest/isolated/source/test_broker_confguration.cpp", "unittest/isolated/obj/test_broker_confguration.o"),
+#     Compile( "unittest/isolated/source/test_broker_transformation.cpp", "unittest/isolated/obj/test_broker_transformation.o"),
+# ]
+# 
+# 
+# LinkIsolatedUnittest( "bin/test-casual-broker-isolated",
+#    test_casual_broker_isolated,
+#     [
+#      "casual-broker-logic",
+#      "casual-common", 
+#      "casual-sf", 
+#      "casual-configuration", 
+#      "casual-mockup-unittest-environment", 
+#      "casual-mockup",
+#      ])
 
 	
 #

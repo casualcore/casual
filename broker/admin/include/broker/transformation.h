@@ -24,31 +24,27 @@ namespace casual
 
             struct Server
             {
-               admin::InstanceVO operator () ( const std::shared_ptr< broker::Server::Instance>& value) const
+               admin::InstanceVO operator () ( const state::Server::Instance& value) const
                {
                   admin::InstanceVO result;
 
-                  result.pid = value->pid;
-                  result.queueId = value->queue_id;
-                  result.state = static_cast< long>( value->state);
-                  result.invoked = value->invoked;
-                  result.last = value->last;
+                  result.pid = value.pid;
+                  result.queueId = value.queue_id;
+                  result.state = static_cast< long>( value.state);
+                  result.invoked = value.invoked;
+                  result.last = value.last;
 
                   return result;
                }
 
-               admin::ServerVO operator () ( const std::shared_ptr< broker::Server>& value) const
+               admin::ServerVO operator () ( const state::Server& value) const
                {
                   admin::ServerVO result;
 
-                  result.alias = value->alias;
-                  result.path = value->path;
+                  result.alias = value.alias;
+                  result.path = value.path;
 
-                  std::transform(
-                     std::begin( value->instances),
-                     std::end( value->instances),
-                     std::back_inserter( result.instances),
-                     transform::Server{});
+                  //common::range::transform( value.instances, result.instances, transform::Server{});
 
                   return result;
                }
@@ -56,27 +52,24 @@ namespace casual
 
             struct Pid
             {
-               broker::Server::pid_type operator () ( const std::shared_ptr< broker::Server::Instance>& value) const
+               state::Server::pid_type operator () ( const state::Server::Instance& value) const
                {
-                  return value->pid;
+                  return value.pid;
                }
             };
 
             struct Service
             {
-               admin::ServiceVO operator () ( const std::shared_ptr< broker::Service>& value) const
+               admin::ServiceVO operator () ( const state::Service& value) const
                {
                   admin::ServiceVO result;
 
-                  result.name = value->information.name;
-                  result.timeout = value->information.timeout;
-                  result.lookedup = value->lookedup;
+                  result.name = value.information.name;
+                  result.timeout = value.information.timeout;
+                  result.lookedup = value.lookedup;
 
-                  std::transform(
-                     std::begin( value->instances),
-                     std::end( value->instances),
-                     std::back_inserter( result.instances),
-                     Pid{}) ;
+                  common::range::transform( value.instances, result.instances,
+                        common::chain::Nested::link( Pid{}, common::extract::Get{}));
 
                   return result;
                }

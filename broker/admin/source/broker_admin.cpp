@@ -39,13 +39,13 @@ namespace casual
                   std::setw( 10) << value.pid <<
                   std::setw( 12) << value.queueId << std::setw( 8);
 
-            switch( static_cast< Server::Instance::State>( value.state))
+            switch( static_cast< state::Server::Instance::State>( value.state))
             {
-               case Server::Instance::State::absent: std::cout << "absent"; break;
-               case Server::Instance::State::prospect: std::cout << "prospect"; break;
-               case Server::Instance::State::idle: std::cout << "idle"; break;
-               case Server::Instance::State::busy: std::cout << "busy"; break;
-               case Server::Instance::State::shutdown: std::cout << "shutdown"; break;
+               case state::Server::Instance::State::absent: std::cout << "absent"; break;
+               case state::Server::Instance::State::prospect: std::cout << "prospect"; break;
+               case state::Server::Instance::State::idle: std::cout << "idle"; break;
+               case state::Server::Instance::State::busy: std::cout << "busy"; break;
+               case state::Server::Instance::State::shutdown: std::cout << "shutdown"; break;
             }
 
 
