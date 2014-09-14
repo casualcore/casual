@@ -31,6 +31,9 @@ namespace casual
          using state::Base;
 
 
+         void boot( State& state);
+
+
          //!
          //! Monitor Connect
          //!
@@ -58,17 +61,34 @@ namespace casual
          namespace transaction
          {
 
-            //!
-            //! Transaction Manager Connect
-            //!
-            struct ManagerConnect : public Base
+            namespace manager
             {
-               using message_type = message::transaction::Connect;
 
-               using Base::Base;
+               //!
+               //! Transaction Manager Connect
+               //!
+               struct Connect : public Base
+               {
+                  using message_type = message::transaction::manager::Connect;
 
-               void dispatch( message_type& message);
-            };
+                  using Base::Base;
+
+                  void dispatch( message_type& message);
+               };
+
+               //!
+               //! Transaction Manager Ready
+               //!
+               struct Ready : public Base
+               {
+                  using message_type = message::transaction::manager::Ready;
+
+                  using Base::Base;
+
+                  void dispatch( message_type& message);
+               };
+
+            } // manager
 
 
             namespace client

@@ -8,8 +8,11 @@
 #ifndef CASUAL_BROKER_FILTER_H_
 #define CASUAL_BROKER_FILTER_H_
 
+
 #include "broker/state.h"
 
+
+#include "common/algorithm.h"
 #include "common/message/server.h"
 
 namespace casual
@@ -75,6 +78,11 @@ namespace casual
                   return group.id == id;
                }
 
+               bool operator () ( const state::Executable& value) const
+               {
+                  return ! common::range::find( value.memberships, id).empty();
+               }
+
             private:
                state::Group::id_type id;
 
@@ -82,6 +90,27 @@ namespace casual
 
          } // group
 
+         struct Booted : state::Base
+         {
+            using state::Base::Base;
+
+            bool operator () ( const state::Server::Instance& instance) const
+            {
+               return instance.state != state::Server::Instance::State::prospect;
+            }
+
+            bool operator () ( const state::Server& server) const
+            {
+               for( auto&& pid : server.instances)
+               {
+                  if( ! operator()( m_state.getInstance( pid)))
+                  {
+                     return false;
+                  }
+               }
+               return true;
+            }
+         };
 
       } // filter
    } // broker

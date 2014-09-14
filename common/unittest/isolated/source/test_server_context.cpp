@@ -176,8 +176,7 @@ namespace casual
             local::broker::prepare();
          }
 
-         auto arguments = local::arguments();
-         callee::handle::Call callHandler( arguments);
+         callee::handle::Call callHandler( local::arguments());
 
          auto reader = queue::blocking::reader( mockup::ipc::broker::queue());
          message::server::connect::Request message;
@@ -199,8 +198,7 @@ namespace casual
       {
          {
             local::broker::prepare();
-            auto arguments = local::arguments();
-            callee::handle::Call callHandler( arguments);
+            callee::handle::Call callHandler( local::arguments());
          }
 
          auto broker = queue::blocking::reader( mockup::ipc::broker::queue());
@@ -220,8 +218,7 @@ namespace casual
 
          {
             local::broker::prepare();
-            auto arguments = local::arguments();
-            callee::handle::Call callHandler( arguments);
+            callee::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( receiver.id());
             callHandler.dispatch( message);
@@ -243,8 +240,7 @@ namespace casual
          mockup::ipc::Receiver receiver;
          {
             local::broker::prepare();
-            auto arguments = local::arguments();
-            callee::handle::Call callHandler( arguments);
+            callee::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( receiver.id());
             callHandler.dispatch( message);
@@ -267,8 +263,7 @@ namespace casual
          mockup::ipc::Receiver receiver;
 
          local::broker::prepare();
-         auto arguments = local::arguments();
-         callee::handle::Call callHandler( arguments);
+         callee::handle::Call callHandler( local::arguments());
 
          auto message = local::callMessage( receiver.id());
          message.service.name = "non_existing";
@@ -291,8 +286,7 @@ namespace casual
          {
             local::broker::prepare();
 
-            auto arguments = local::arguments();
-            callee::handle::Call callHandler( arguments);
+            callee::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( receiver.id());
             message.service.monitor_queue = monitor.id();

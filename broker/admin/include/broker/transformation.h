@@ -21,12 +21,23 @@ namespace casual
       {
          namespace transform
          {
-
-            struct Server
+            struct Base
             {
-               admin::InstanceVO operator () ( const state::Server::Instance& value) const
+               Base( const broker::State& state) : m_state( state) {}
+
+            protected:
+               const broker::State& m_state;
+            };
+
+            struct Server : Base
+            {
+               using Base::Base;
+
+               admin::InstanceVO operator () ( state::Server::pid_type pid) const
                {
                   admin::InstanceVO result;
+
+                  auto& value = m_state.getInstance( pid);
 
                   result.pid = value.pid;
                   result.queueId = value.queue_id;
@@ -44,7 +55,7 @@ namespace casual
                   result.alias = value.alias;
                   result.path = value.path;
 
-                  //common::range::transform( value.instances, result.instances, transform::Server{});
+                  common::range::transform( value.instances, result.instances, *this);
 
                   return result;
                }
@@ -68,8 +79,7 @@ namespace casual
                   result.timeout = value.information.timeout;
                   result.lookedup = value.lookedup;
 
-                  common::range::transform( value.instances, result.instances,
-                        common::chain::Nested::link( Pid{}, common::extract::Get{}));
+                  common::range::transform( value.instances, result.instances, Pid{});
 
                   return result;
                }

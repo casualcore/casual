@@ -74,17 +74,11 @@ int casual_start_server( casual_server_argument* serverArgument)
 {
    try
    {
+      common::process::path( serverArgument->argv[ 0]);
 
-
-      common::message::dispatch::Handler handler;
-
-      {
-         auto arguments = local::transform::ServerArguments()( *serverArgument);
-
-         common::process::path( serverArgument->argv[ 0]);
-
-         handler.add< common::callee::handle::Call>( arguments);
-      }
+      common::message::dispatch::Handler handler{
+         common::callee::handle::Call{ local::transform::ServerArguments()( *serverArgument)},
+      };
 
       //
       // Start the message-pump
@@ -92,6 +86,10 @@ int casual_start_server( casual_server_argument* serverArgument)
       common::queue::blocking::Reader receiveQueue( common::ipc::receive::queue());
       common::message::dispatch::pump( handler, receiveQueue);
 	}
+   catch( const common::exception::signal::Terminate&)
+   {
+      return 1;
+   }
 	catch( ...)
 	{
 	   return casual::common::error::handler();

@@ -176,8 +176,8 @@ namespace casual
          local::handleDispatch( state);
 
          auto brokerReader = common::queue::non_blocking::reader( common::mockup::ipc::broker::queue());
-         common::message::transaction::Connected connected;
-         EXPECT_FALSE( brokerReader( connected));
+         common::message::transaction::manager::Ready ready;
+         EXPECT_FALSE( brokerReader( ready));
       }
 
 
@@ -210,8 +210,8 @@ namespace casual
          local::handleDispatch( state);
 
          auto brokerReader = common::queue::non_blocking::reader( common::mockup::ipc::broker::queue());
-         common::message::transaction::Connected connected;
-         EXPECT_FALSE( brokerReader( connected));
+         common::message::transaction::manager::Ready ready;
+         EXPECT_FALSE( brokerReader( ready));
 
       }
 
@@ -247,9 +247,9 @@ namespace casual
 
          // We expect broker reply
          auto brokerReader = common::queue::blocking::reader( common::mockup::ipc::broker::queue());
-         common::message::transaction::Connected connected;
-         brokerReader( connected);
-         EXPECT_TRUE( connected.success);
+         common::message::transaction::manager::Ready ready;
+         brokerReader( ready);
+         EXPECT_TRUE( ready.success);
 
       }
 

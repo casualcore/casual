@@ -24,22 +24,7 @@ namespace casual
       namespace domain
       {
 
-         namespace transaction
-         {
-            struct Manager
-            {
-               std::string path;
-               std::string database = "transaction-manager.db";
 
-               template< typename A>
-               void serialize( A& archive)
-               {
-                  archive & CASUAL_MAKE_NVP( path);
-                  archive & CASUAL_MAKE_NVP( database);
-               }
-            };
-
-         } // transaction
 
          struct Executable
          {
@@ -61,6 +46,23 @@ namespace casual
                archive & CASUAL_MAKE_NVP( memberships);
             }
          };
+
+         namespace transaction
+         {
+            struct Manager
+            {
+               std::string path;
+               std::string database = "transaction-manager.db";
+
+               template< typename A>
+               void serialize( A& archive)
+               {
+                  archive & CASUAL_MAKE_NVP( path);
+                  archive & CASUAL_MAKE_NVP( database);
+               }
+            };
+
+         } // transaction
 
 
          struct Server : public Executable

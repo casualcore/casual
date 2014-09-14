@@ -434,7 +434,8 @@ namespace casual
 
                      queue::blocking::Writer brokerQueue{ common::ipc::broker::id(), m_state};
 
-                     common::message::transaction::Connected running;
+                     common::message::transaction::manager::Ready running;
+                     running.id = common::message::server::Id::current();
                      brokerQueue( running);
 
                      m_connected = true;

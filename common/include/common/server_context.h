@@ -87,6 +87,7 @@ namespace casual
          {
             //Arguments() = default;
             Arguments( Arguments&&) = default;
+            Arguments& operator = (Arguments&&) = default;
 
             Arguments( int argc, char** argv) : argc( argc), argv( argv)
             {
@@ -226,7 +227,7 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( server::Arguments& arguments, Args&&... arg) : m_policy( std::forward< Args>( arg)...)
+               basic_call( server::Arguments arguments, Args&&... arg) : m_policy( std::forward< Args>( arg)...)
                {
                   trace::internal::Scope trace{ "callee::handle::basic_call::basic_call"};
 

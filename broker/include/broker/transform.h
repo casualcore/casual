@@ -62,10 +62,21 @@ namespace casual
                state::Group operator () ( const config::domain::Group& group) const;
             };
 
+
             struct Domain
             {
                broker::State operator () ( const config::domain::Domain& domain) const;
             };
+
+            namespace transaction
+            {
+               struct Manager
+               {
+                  state::Server operator () ( const config::domain::transaction::Manager& manager) const;
+               };
+
+            } // transaction
+
          } // configuration
 
 
@@ -89,7 +100,7 @@ namespace casual
                inline common::message::transaction::resource::Manager operator () ( const state::Group::Resource& resource) const;
             };
 
-            common::message::transaction::Configuration configuration( const broker::State& state);
+            common::message::transaction::manager::Configuration configuration( const broker::State& state);
 
             namespace client
             {

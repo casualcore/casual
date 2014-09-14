@@ -50,13 +50,13 @@ std::vector< admin::ServerVO> AdminServerImplementation::_broker_listServers( )
 {
    //## service implementation protected section begin [2000]
 
-   Broker& broker = Broker::instance();
+   auto& state = Broker::instance().state();
 
    std::vector< admin::ServerVO> result;
 
-   common::range::transform( broker.state().servers, result,
+   common::range::transform( state.servers, result,
       common::chain::Nested::link(
-         admin::transform::Server(),
+         admin::transform::Server( state),
          common::extract::Second()));
 
    return result;
@@ -69,7 +69,7 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
 {
    //## service implementation protected section begin [2010]
 
-   const broker::State& state = Broker::instance().state();
+   auto& state = Broker::instance().state();
 
    std::vector< admin::ServiceVO> result;
 

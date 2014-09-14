@@ -127,14 +127,28 @@ namespace casual
             {
                namespace
                {
-                  inline std::vector< state::Group> groups( const std::vector< config::domain::Group>& groups)
+                  namespace add
+                  {
+                     struct Groupdendency
+                     {
+                        Groupdendency( state::Group::id_type id) : m_id( id) {}
+
+                        void operator () ( state::Group& group) const
+                        {
+                           group.dependencies.push_back( m_id);
+                        }
+                        state::Group::id_type m_id;
+                     };
+                  } // add
+
+                  inline std::vector< state::Group> groups( const std::vector< config::domain::Group>& groups, state::Group casual_group)
                   {
                      std::vector< state::Group> result;
 
                      common::range::transform( groups, result, Group{});
 
                      //
-                     // Now we got to resolve dependencies
+                     // Resolve dependencies
                      //
                      for( auto& group : groups)
                      {
@@ -150,6 +164,17 @@ namespace casual
                         }
                      }
 
+                     //
+                     // Transform and add master casual group
+                     //
+                     {
+                        common::range::for_each( result, add::Groupdendency{ casual_group.id});
+
+                        result.push_back( std::move( casual_group));
+                     }
+
+                     common::range::sort( result);
+
                      return result;
                   }
 
@@ -162,15 +187,36 @@ namespace casual
             {
                broker::State result;
 
-               result.groups = local::groups( domain.groups);
+               //
+               // Handle groups
+               //
+               {
+                  state::Group casual_group;
+                  casual_group.name = "casual-group";
+                  casual_group.note = "group for casual stuff";
+
+                  result.casual_group_id = casual_group.id;
+
+                  result.groups = local::groups( domain.groups, std::move( casual_group));
+               }
+
+               //
+               // Handle TM
+               //
+               {
+                  auto tm = transaction::Manager{}( domain.transactionmanager);
+                  tm.memberships.push_back( result.casual_group_id);
+
+                  result.add( std::move( tm));
+               }
+
 
                //
                // Servers
                //
                for( auto& s : domain.servers)
                {
-                  auto server = Server{ result.groups}( s);
-                  result.servers.emplace( server.id, std::move( server));
+                  result.add( Server{ result.groups}( s));
                }
 
                //
@@ -178,8 +224,7 @@ namespace casual
                //
                for( auto& e : domain.executables)
                {
-                  auto executable = Executable{ result.groups}( e);
-                  result.executables.emplace( executable.id, std::move( executable));
+                  result.add( Executable{ result.groups}( e));
                }
 
                //
@@ -187,14 +232,33 @@ namespace casual
                //
                for( auto& s : domain.services)
                {
-                  auto service = Service{}( s);
-                  result.services.emplace( service.information.name, std::move( service));
+                  result.add( Service{}( s));
                }
 
                result.standard.service = Service{}( domain.casual_default.service);
 
                return result;
             }
+
+
+
+            namespace transaction
+            {
+               state::Server Manager::operator () ( const config::domain::transaction::Manager& manager) const
+               {
+                  state::Server result;
+
+                  result.alias = "casual-transaction-manager";
+                  result.path = manager.path;
+                  result.configuredInstances = 1;
+                  result.arguments = { "--database", manager.database};
+                  result.note = "the one and only transaction manager in this domain";
+
+
+                  return result;
+               }
+
+            } // transaction
 
          } // configuration
 
@@ -249,9 +313,9 @@ namespace casual
             }
 
 
-            common::message::transaction::Configuration configuration( const broker::State& state)
+            common::message::transaction::manager::Configuration configuration( const broker::State& state)
             {
-               common::message::transaction::Configuration result;
+               common::message::transaction::manager::Configuration result;
 
                result.domain = common::environment::domain::name();
 

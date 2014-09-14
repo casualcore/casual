@@ -510,7 +510,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::transaction::Configuration& configuration);
+         void configure( State& state, const common::message::transaction::manager::Configuration& configuration);
 
          namespace remove
          {

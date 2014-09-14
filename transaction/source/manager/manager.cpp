@@ -146,7 +146,7 @@ namespace casual
 
             arguments.services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
 
-            handler.add( handle::admin::Call{ arguments, m_state});
+            handler.add( handle::admin::Call{ std::move( arguments), m_state});
          }
 
 

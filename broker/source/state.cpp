@@ -6,6 +6,7 @@
 //!
 
 #include "broker/state.h"
+#include "broker/filter.h"
 
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
@@ -22,51 +23,84 @@ namespace casual
       using namespace common;
 
 
-      void state::Server::Instance::remove( const state::Service& service)
+      namespace local
       {
-         auto found = range::find( services, service);
-
-         if( found)
+         namespace
          {
-            services.erase( found.first);
-         }
-      }
+            template< typename M, typename ID>
+            auto get( M& map, ID&& id) -> decltype( map.at( id))
+            {
+               auto found = common::range::find( map, id);
 
-      void state::Service::remove( const Server::Instance& instance)
+               if( ! found)
+               {
+                  throw state::exception::Missing{ "id: " + std::to_string( id) + " is not known"};
+               }
+               return found->second;
+            }
+
+
+            void add( state::Executable& executable, const std::vector< state::Server::pid_type>& pids)
+            {
+               executable.instances.insert( std::end( executable.instances), std::begin( pids), std::end( pids));
+
+               executable.instances = range::to_vector( range::unique( range::sort( executable.instances)));
+            }
+
+         } // <unnamed>
+      } // local
+
+
+      namespace state
       {
-         auto found = range::find( instances, instance);
 
-         if( found)
+         void Server::Instance::remove( const state::Service& service)
          {
-            instances.erase( found.first);
-         }
+            auto found = range::find( services, service);
 
-      }
-
-
-      bool operator == ( const state::Group& lhs, const state::Group& rhs) { return lhs.id == rhs.id;}
-
-      bool operator < ( const state::Group& lhs, const state::Group& rhs)
-      {
-         if( lhs.dependencies.empty() && ! lhs.dependencies.empty()) { return true;}
-         if( ! lhs.dependencies.empty() && lhs.dependencies.empty()) { return false;}
-
-         if( common::range::find( lhs.dependencies, rhs.id)) { return true;}
-
-         return false;
-      }
-
-
-      void state::Executable::remove( pid_type instance)
-      {
-         auto found = range::find( instances, instance);
-
-         if( found)
-         {
-            instances.erase( found.first);
+            if( found)
+            {
+               services.erase( found.first);
+            }
          }
 
-      }
+         void Service::remove( const Server::Instance& instance)
+         {
+            auto found = range::find( instances, instance);
+
+            if( found)
+            {
+               instances.erase( found.first);
+            }
+
+         }
+
+
+         bool operator == ( const Group& lhs, const Group& rhs) { return lhs.id == rhs.id;}
+
+         bool operator < ( const Group& lhs, const Group& rhs)
+         {
+            if( lhs.dependencies.empty() && ! lhs.dependencies.empty()) { return true;}
+            if( ! lhs.dependencies.empty() && lhs.dependencies.empty()) { return false;}
+
+            if( common::range::find( rhs.dependencies, lhs.id)) { return true;}
+
+            return false;
+         }
+
+
+         void Executable::remove( pid_type instance)
+         {
+            auto found = range::find( instances, instance);
+
+            if( found)
+            {
+               instances.erase( found.first);
+            }
+
+         }
+
+      } // state
 
 
       state::Group& State::getGroup( state::Group::id_type id)
@@ -127,17 +161,15 @@ namespace casual
 
       state::Server::Instance& State::getInstance( state::Server::pid_type pid)
       {
-         auto found = common::range::find( instances, pid);
-
-         if( ! found)
-         {
-            throw state::exception::Missing{ "instance with pid: " + std::to_string( pid) + " is not known"};
-         }
-
-         return found->second;
+         return local::get( instances, pid);
       }
 
-      state::Server::Instance& State::addInstance( state::Server::Instance instance)
+      const state::Server::Instance& State::getInstance( state::Server::pid_type pid) const
+      {
+         return local::get( instances, pid);
+      }
+
+      state::Server::Instance& State::add( state::Server::Instance instance)
       {
          return instances.emplace( instance.pid, std::move( instance)).first->second;
       }
@@ -159,24 +191,115 @@ namespace casual
 
                service.remove( instance);
             }
-         }
 
-         instances.erase( found.first);
+            instances.erase( found.first);
+         }
       }
 
+
+      void State::addInstances( state::Executable::id_type id, const std::vector< state::Server::pid_type>& pids)
+      {
+         try
+         {
+            auto& server = local::get( servers, id);
+
+            for( auto&& pid : pids)
+            {
+               state::Server::Instance instance;
+               instance.pid = pid;
+               instance.server = server.id;
+               instance.alterState( state::Server::Instance::State::prospect);
+
+               instances.emplace( pid, std::move( instance));
+            }
+
+            local::add( server, pids);
+
+         }
+         catch( const state::exception::Missing&)
+         {
+            //
+            // We try the regular executables
+            //
+            auto& executable = local::get( executables, id);
+
+            local::add( executable, pids);
+
+         }
+      }
+
+      state::Service& State::add( state::Service service)
+      {
+         return services.emplace( service.information.name, std::move( service)).first->second;
+      }
+
+      state::Server& State::add( state::Server server)
+      {
+         return servers.emplace( server.id, std::move( server)).first->second;
+      }
+
+      state::Executable& State::add( state::Executable executable)
+      {
+         return executables.emplace( executable.id, std::move( executable)).first->second;
+      }
 
       state::Server& State::getServer( state::Server::id_type id)
       {
-         auto found = common::range::find( servers, id);
-
-         if( ! found)
-         {
-            throw state::exception::Missing{ "server  id: " + std::to_string( id) + " is not known"};
-         }
-         return found->second;
+         return local::get( servers, id);
       }
 
+      state::Executable& State::getExecutable( state::Executable::id_type id)
+      {
+         return local::get( executables, id);
+      }
 
+      std::vector< State::Batch> State::bootOrder()
+      {
+         std::vector< State::Batch> result;
+
+         State::Batch normalized;
+
+         for( auto& s : servers)
+         {
+            normalized.servers.emplace_back( s.second);
+         }
+
+         for( auto& e : executables)
+         {
+            normalized.executables.emplace_back( e.second);
+         }
+
+
+         range::stable_sort( groups);
+
+         auto serverSet = range::make( normalized.servers);
+         auto executableSet = range::make( normalized.executables);
+
+         for( auto&& group : groups)
+         {
+            auto serverBatch = range::stable_partition( serverSet, filter::group::Id{ group.id});
+            auto executableBatch = range::stable_partition( executableSet, filter::group::Id{ group.id});
+
+            if( serverBatch || executableBatch)
+            {
+               result.push_back( { group.name, range::to_vector( serverBatch), range::to_vector( executableBatch)});
+               serverSet = serverSet - serverBatch;
+               executableSet = executableSet - executableBatch;
+            }
+         }
+
+         if( serverSet || executableSet)
+         {
+            result.push_back( { "<no group>", range::to_vector( serverSet), range::to_vector( executableSet)});
+         }
+
+         return result;
+      }
+
+      std::size_t State::size() const
+      {
+         return instances.size();
+      }
 
       void State::instance( state::Server& server, std::size_t instances)
       {
@@ -258,9 +381,12 @@ namespace casual
                      case process::lifetime::Exit::Why::core:
                         log::error << "process crashed " << death.string() << std::endl;
 
+                        m_state.removeInstance( death.pid);
+
                         break;
                      default:
-                        log::information << "proccess died: " << death.string() << std::endl;
+                        m_state.removeInstance( death.pid);
+                        //log::information << "proccess died: " << death.string() << std::endl;
                         break;
                   }
 

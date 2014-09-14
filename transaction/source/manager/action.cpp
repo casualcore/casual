@@ -36,7 +36,7 @@ namespace casual
                //
                // Do the initialization dance with the broker
                //
-               common::message::transaction::Connect connect;
+               common::message::transaction::manager::Connect connect;
 
                connect.path = common::process::path();
                connect.server.queue_id = common::ipc::receive::id();
@@ -51,7 +51,7 @@ namespace casual
                //
                // Wait for configuration
                //
-               common::message::transaction::Configuration configuration;
+               common::message::transaction::manager::Configuration configuration;
 
                queue::blocking::Reader read( common::ipc::receive::queue(), state);
                read( configuration);

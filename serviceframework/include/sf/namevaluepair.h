@@ -119,6 +119,20 @@ namespace casual
 #define CASUAL_MAKE_NVP( member) \
    casual::sf::makeNameValuePair( #member, member)
 
+
+#define CASUAL_CONST_CORRECT_SERIALIZE( statement) \
+   template< typename A>  \
+   void serialize( A& archive) \
+   {  \
+      statement  \
+   } \
+   template< typename A>  \
+   void serialize( A& archive) const\
+   {  \
+      statement  \
+   } \
+
+
 //#define CASUAL_READ_WRITE( )
 
 

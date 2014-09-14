@@ -101,7 +101,6 @@ namespace casual
 
 		Broker::~Broker()
 		{
-
 		   try
 		   {
 		      common::trace::Exit temp( "terminate child processes");
@@ -129,6 +128,7 @@ namespace casual
 		   {
 		      common::error::handler();
 		   }
+
 		}
 
       void Broker::start( const Settings& arguments)
@@ -179,7 +179,7 @@ namespace casual
             //
             // boot the domain...
             //
-            //action::boot::domain( m_state, domain);
+            handle::boot( m_state);
          }
 
 
@@ -216,7 +216,7 @@ namespace casual
             arguments.services.emplace_back( "_broker_listServices", &_broker_listServices, 10, common::server::Service::cNone);
             arguments.services.emplace_back( "_broker_updateInstances", &_broker_updateInstances, 10, common::server::Service::cNone);
 
-            handler.add( handle::Call{ arguments, m_state});
+            handler.add( handle::Call{ std::move( arguments), m_state});
          }
 
 
@@ -225,10 +225,53 @@ namespace casual
          common::log::information << "domain: \'" << common::environment::domain::name() << "\' up and running - " << m_state.instances.size() << " processes - boot time: "
                << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
-         common::log::internal::debug << "start message pump\n";
 
-         message::dispatch::pump( handler, blockingReader);
 
+         try
+         {
+            common::log::internal::debug << "start message pump\n";
+
+            message::dispatch::pump( handler, blockingReader);
+         }
+         catch( const common::exception::signal::Terminate&)
+         {
+            auto start = common::platform::clock_type::now();
+
+            common::log::information << "shutting down domain " << common::environment::domain::name() << std::endl;
+
+            //
+            // We will shut down the domain. We start by removing this broker
+            //
+            m_state.removeInstance( common::process::id());
+
+            try
+            {
+
+               common::signal::alarm::Scoped timeout{ 10};
+
+               broker::QueueNonBlockingReader nonblocking( m_receiveQueue, m_state);
+
+               while( m_state.size() )
+               {
+                  //
+                  // conusume until empty
+                  //
+                  while( handler.dispatch( nonblocking.next()));
+
+                  common::process::sleep( std::chrono::milliseconds( 2));
+               }
+
+               auto end = common::platform::clock_type::now();
+               common::log::information << "shut down domain '" << common::environment::domain::name() << "' - done - time: "
+                     << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
+
+            }
+            catch( const common::exception::signal::Timeout& exception)
+            {
+               common::log::error << "failed to get response for terminated servers (# " + std::to_string( m_state.size()) << ") - action: abort" << std::endl;
+               throw common::exception::signal::Terminate{};
+            }
+         }
 		}
 
       void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)

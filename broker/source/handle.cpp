@@ -14,6 +14,7 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/process.h"
+#include "common/message/dispatch.h"
 
 
 //
@@ -30,6 +31,78 @@ namespace casual
 
       namespace handle
       {
+         namespace local
+         {
+            namespace
+            {
+               struct Boot : state::Base
+               {
+                  using state::Base::Base;
+
+
+                  void operator () ( const state::Executable& server)
+                  {
+                     if( server.configuredInstances > server.instances.size())
+                     {
+                        decltype( server.instances) pids;
+
+                        auto count = server.configuredInstances - server.instances.size();
+
+                        while( count-- > 0)
+                        {
+                           pids.push_back( common::process::spawn( server.path, server.arguments));
+                        }
+
+                        m_state.addInstances( server.id, std::move( pids));
+                     }
+                  }
+
+
+                  void operator () ( State::Batch& batch)
+                  {
+                     common::log::information << "boot group '" << batch.group << "'\n";
+
+                     common::range::for_each( batch.servers, *this);
+                     common::range::for_each( batch.executables, *this);
+
+
+                     broker::QueueBlockingReader queueReader{ common::ipc::receive::queue(), m_state};
+
+                     common::message::dispatch::Handler handler{
+                        handle::transaction::manager::Connect{ m_state},
+                        handle::transaction::manager::Ready{ m_state},
+                        handle::Connect{ m_state},
+                        handle::transaction::client::Connect{ m_state},
+                     };
+
+
+                     while( ! common::range::all_of( batch.servers, filter::Booted{ m_state}))
+                     {
+                        try
+                        {
+                           common::signal::alarm::Scoped timeout{ 10};
+
+                           auto marshal = queueReader.next();
+                           handler.dispatch( marshal);
+                        }
+                        catch( const common::exception::signal::Timeout& exception)
+                        {
+                           common::log::error << "failed to get response from spawned instances in a timely manner - action: abort" << std::endl;
+                           throw common::exception::signal::Terminate{};
+                        }
+                     }
+                  }
+               };
+
+            } // <unnamed>
+         } // local
+
+         void boot( State& state)
+         {
+            auto bootOrder = state.bootOrder();
+
+            common::range::for_each( bootOrder, local::Boot{ state});
+         }
 
          void MonitorConnect::dispatch( message_type& message)
          {
@@ -45,22 +118,39 @@ namespace casual
 
          namespace transaction
          {
-
-            void ManagerConnect::dispatch( message_type& message)
+            namespace manager
             {
-               m_state.transactionManagerQueue = message.server.queue_id;
 
-               auto& instance = m_state.getInstance( message.server.pid);
-               instance.alterState( state::Server::Instance::State::idle);
+               void Connect::dispatch( message_type& message)
+               {
+                  m_state.transactionManagerQueue = message.server.queue_id;
 
-               //
-               // Send configuration to TM
-               //
-               auto configuration = transform::transaction::configuration( m_state);
+                  //
+                  // Send configuration to TM
+                  //
+                  auto configuration = transform::transaction::configuration( m_state);
 
-               QueueBlockingWriter tmQueue{ message.server.queue_id, m_state};
-               tmQueue( configuration);
+                  QueueBlockingWriter tmQueue{ message.server.queue_id, m_state};
+                  tmQueue( configuration);
 
+               }
+
+               void Ready::dispatch( message_type& message)
+               {
+                  if( message.success)
+                  {
+
+                     //
+                     // TM is up and running
+                     //
+                     auto& instance = m_state.getInstance( message.id.pid);
+                     instance.alterState( state::Server::Instance::State::idle);
+                  }
+                  else
+                  {
+                     throw common::exception::signal::Terminate{ "transaction manager failed"};
+                  }
+               }
             }
 
 
@@ -148,6 +238,7 @@ namespace casual
             {
 
                auto& instance = m_state.getInstance( message.server.pid);
+               instance.queue_id = message.server.queue_id;
 
                //
                // Instance is started for the first time.
@@ -185,18 +276,14 @@ namespace casual
                // there will be no 'instances' semantics, hence limited administration possibilities.
                // We add it...
                //
+               // TODO: create a server for the instance, or try to join one based on path
+               //
                m_state.instances.emplace(
                      message.server.pid, broker::transform::Instance()( message));
 
                dispatch( message);
             }
          }
-
-
-         //typedef basic_connect< broker::QueueBlockingWriter> Connect;
-
-
-
 
 
          void ServiceLookup::dispatch( message_type& message)
@@ -309,8 +396,26 @@ namespace casual
 
             //
             // We add the server
-            //
-            auto& instance = m_state.addInstance( transform::Instance()( message));
+            // TODO:
+            auto& server = [&]() -> state::Server& {
+               state::Server server;
+               server.alias = "casual-broker";
+               server.configuredInstances = 1;
+               server.path = common::process::path();
+               server.instances.push_back( common::process::id());
+               return m_state.add( std::move( server));
+            }();
+
+
+            {
+               state::Server::Instance instance;
+               instance.queue_id = ipc::receive::id();
+               instance.pid = common::process::id();
+               instance.server = server.id;
+               instance.alterState( state::Server::Instance::State::idle);
+
+               m_state.add( std::move( instance));
+            }
 
             //
             // Add services
@@ -320,11 +425,8 @@ namespace casual
 
                common::range::transform( message.services, services, transform::Service{});
 
-               m_state.addServices( message.server.pid, std::move( services));
+               m_state.addServices( common::process::id(), std::move( services));
             }
-
-            instance.alterState( state::Server::Instance::State::idle);
-
          }
 
          void Policy::disconnect()

@@ -15,6 +15,8 @@
 
 #include "common/exception.h"
 
+#include "sf/log.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -39,8 +41,8 @@ namespace casual
          private:
             inline static id_type nextId()
             {
-               static id_type id = 0;
-               return ++id;
+               static id_type id = 10;
+               return id++;
             }
          };
 
@@ -61,6 +63,9 @@ namespace casual
 
          struct Group : internal::Id< Group>
          {
+            Group() = default;
+            Group( std::string name, std::string note = "") : name( std::move( name)), note( std::move( note)) {}
+
             struct Resource : internal::Id< Resource>
             {
                Resource() = default;
@@ -75,6 +80,12 @@ namespace casual
                std::string openinfo;
                std::string closeinfo;
 
+               CASUAL_CONST_CORRECT_SERIALIZE({
+                  archive & CASUAL_MAKE_NVP( instances);
+                  archive & CASUAL_MAKE_NVP( key);
+                  archive & CASUAL_MAKE_NVP( openinfo);
+                  archive & CASUAL_MAKE_NVP( closeinfo);
+               })
             };
 
 
@@ -83,6 +94,14 @@ namespace casual
 
             std::vector< Resource> resource;
             std::vector< id_type> dependencies;
+
+            CASUAL_CONST_CORRECT_SERIALIZE({
+               archive & CASUAL_MAKE_NVP( id);
+               archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( note);
+               archive & CASUAL_MAKE_NVP( resource);
+               archive & CASUAL_MAKE_NVP( dependencies);
+            })
 
             friend bool operator == ( const Group& lhs, const Group& rhs);
             friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
@@ -203,6 +222,8 @@ namespace casual
          executable_mapping_type executables;
          std::vector< state::Group> groups;
 
+         state::Group::id_type  casual_group_id = 0;
+
 
          pending_requests_type pending;
 
@@ -228,12 +249,34 @@ namespace casual
          void removeServices( state::Server::pid_type pid, std::vector< state::Service> services);
 
          state::Server::Instance& getInstance( state::Server::pid_type pid);
-         state::Server::Instance& addInstance( state::Server::Instance instance);
+         const state::Server::Instance& getInstance( state::Server::pid_type pid) const;
+
          void removeInstance( state::Server::pid_type pid);
 
 
+         void addInstances( state::Executable::id_type id, const std::vector< state::Server::pid_type>& pids);
+
+         state::Server::Instance& add( state::Server::Instance instance);
+         state::Service& add( state::Service service);
+         state::Server& add( state::Server server);
+         state::Executable& add( state::Executable executable);
+
          state::Server& getServer( state::Server::id_type id);
 
+         state::Executable& getExecutable( state::Executable::id_type id);
+
+
+         struct Batch
+         {
+            std::string group;
+            std::vector< std::reference_wrapper< state::Server>> servers;
+            std::vector< std::reference_wrapper< state::Executable>> executables;
+         };
+
+         std::vector< Batch> bootOrder();
+
+
+         std::size_t size() const;
 
          void instance( state::Server::id_type id, std::size_t instance);
          void instance( state::Server& server, std::size_t instance);
@@ -272,6 +315,7 @@ namespace casual
       } // policy
 
       using QueueBlockingReader = common::queue::blocking::basic_reader< policy::Broker>;
+      using QueueNonBlockingReader = common::queue::non_blocking::basic_reader< policy::Broker>;
 
       using QueueBlockingWriter = common::queue::blocking::basic_writer< policy::Broker>;
       using QueueNonBlockingWriter = common::queue::non_blocking::basic_writer< policy::Broker>;

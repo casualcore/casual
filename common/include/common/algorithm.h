@@ -387,6 +387,17 @@ namespace casual
 
 
 
+         template< typename R>
+         auto to_vector( R&& range) -> std::vector< typename std::decay< decltype( *std::begin( range))>::type>
+         {
+            std::vector< typename std::decay< decltype( *std::begin( range))>::type> result;
+
+            std::copy( std::begin( range), std::end( range), std::back_inserter( result));
+
+            return result;
+         }
+
+
 
          template< typename R, typename C>
          auto sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))

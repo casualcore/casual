@@ -73,36 +73,41 @@ namespace casual
 
             } // client
 
-            //!
-            //! Used to connect the transaction manager to broker
-            //!
-            typedef server::basic_connect< cTransactionManagerConnect> Connect;
-
-
-            struct Configuration : message::basic_messsage< cTransactionManagerConfiguration>
+            namespace manager
             {
-               std::string domain;
-               std::vector< resource::Manager> resources;
+               //!
+               //! Used to connect the transaction manager to broker
+               //!
+               typedef server::basic_connect< cTransactionManagerConnect> Connect;
 
-               template< typename A>
-               void marshal( A& archive)
+
+               struct Configuration : message::basic_messsage< cTransactionManagerConfiguration>
                {
-                  archive & domain;
-                  archive & resources;
-               }
-            };
+                  std::string domain;
+                  std::vector< resource::Manager> resources;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & domain;
+                     archive & resources;
+                  }
+               };
 
 
-            struct Connected : message::basic_messsage< cTransactionManagerReady>
-            {
-               bool success = true;
-
-               template< typename A>
-               void marshal( A& archive)
+               struct Ready : message::basic_messsage< cTransactionManagerReady>
                {
-                  archive & success;
-               }
-            };
+                  server::Id id;
+                  bool success = true;
+
+                  template< typename A>
+                  void marshal( A& archive)
+                  {
+                     archive & id;
+                     archive & success;
+                  }
+               };
+            } // manager
 
 
             template< message::Type type>

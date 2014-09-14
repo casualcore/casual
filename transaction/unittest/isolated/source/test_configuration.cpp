@@ -45,7 +45,7 @@ namespace casual
 
       void prepareConfigurationResponse()
       {
-         common::message::transaction::Configuration result;
+         common::message::transaction::manager::Configuration result;
 
          common::message::transaction::resource::Manager manager;
          manager.id = 1;

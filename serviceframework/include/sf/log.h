@@ -36,6 +36,17 @@ namespace casual
 
 
       template <typename T, typename R>
+      std::ostream& operator << ( std::ostream& out, const NameValuePair< T, R>& value)
+      {
+         if( out.good())
+         {
+            sf::archive::log::Writer writer( out);
+            writer << value;
+         }
+         return out;
+      }
+
+      template <typename T, typename R>
       std::ostream& operator << ( std::ostream& out, NameValuePair< T, R>&& value)
       {
          if( out.good())
@@ -45,6 +56,8 @@ namespace casual
          }
          return out;
       }
+
+
 
    } // sf
 
