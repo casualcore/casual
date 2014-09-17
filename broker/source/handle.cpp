@@ -123,6 +123,10 @@ namespace casual
 
                void Connect::dispatch( message_type& message)
                {
+                  common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Connect::dispatch"};
+
+                  common::log::internal::debug << "connect request: " << message.server << std::endl;
+
                   m_state.transactionManagerQueue = message.server.queue_id;
 
                   //
@@ -137,6 +141,10 @@ namespace casual
 
                void Ready::dispatch( message_type& message)
                {
+                  common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Ready::dispatch"};
+
+                  common::log::internal::debug << "connect request: " << message.id << std::endl;
+
                   if( message.success)
                   {
 
@@ -159,7 +167,6 @@ namespace casual
 
                void Connect::dispatch( message_type& message)
                {
-
                   common::trace::internal::Scope trace{ "broker::handle::transaction::client::Connect::dispatch"};
 
                   common::log::internal::debug << "connect request: " << message.server << std::endl;
@@ -167,6 +174,7 @@ namespace casual
                   try
                   {
                      auto& instance = m_state.getInstance( message.server.pid);
+
 
                      //
                      // Instance is started for the first time.
@@ -181,7 +189,15 @@ namespace casual
                   catch( const state::exception::Missing& exception)
                   {
                      // What to do? Add the instance?
-                     log::error << "could not find instance - " << exception.what() << std::endl;
+                     ///log::error << "could not find instance - " << exception.what() << std::endl;
+
+                     message::transaction::client::connect::Reply reply;
+                     reply.domain = common::environment::domain::name();
+                     reply.transactionManagerQueue = m_state.transactionManagerQueue;
+
+                     QueueBlockingWriter write( message.server.queue_id, m_state);
+                     write( reply);
+
                   }
                }
             } // client

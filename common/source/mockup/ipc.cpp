@@ -161,7 +161,7 @@ namespace casual
                   {
                      void operator () ( common::ipc::receive::Queue::id_type id)
                      {
-                        common::Trace trace( common::log::internal::ipc, "basic_thread_queue::operator ()");
+                        common::trace::Scope trace( "basic_thread_queue::operator ()", common::log::internal::ipc);
 
                         log::internal::ipc << "started with queue id " << id << " from main thread" << std::endl;
 
@@ -369,7 +369,7 @@ namespace casual
                                  }
                                  case message::cMockupMessageToSend:
                                  {
-                                    Trace trace( log::internal::ipc, "case message::cMockupMessageToSend:");
+                                    trace::Scope trace( "case message::cMockupMessageToSend:", log::internal::ipc);
                                     message::ToSend message;
                                     next >> message;
 

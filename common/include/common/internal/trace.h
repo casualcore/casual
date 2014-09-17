@@ -19,12 +19,10 @@ namespace casual
       {
          namespace internal
          {
-
-            class Scope : base_trace
+            class Scope : basic
             {
             public:
-               template< typename T>
-               Scope( T&& info) : base_trace( log::internal::trace, std::forward< T>( info)) {}
+               Scope( std::string information) : basic( std::move( information), log::internal::trace) {}
             };
 
 

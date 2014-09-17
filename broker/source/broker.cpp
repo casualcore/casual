@@ -103,7 +103,7 @@ namespace casual
 		{
 		   try
 		   {
-		      common::trace::Exit temp( "terminate child processes");
+		      common::trace::Outcome trace( "terminate child processes");
 
 		      //
 		      // We need to terminate all children
@@ -237,7 +237,7 @@ namespace casual
          {
             auto start = common::platform::clock_type::now();
 
-            common::log::information << "shutting down domain " << common::environment::domain::name() << std::endl;
+            common::log::information << "shutting down domain '" << common::environment::domain::name() << "'\n";
 
             //
             // We will shut down the domain. We start by removing this broker

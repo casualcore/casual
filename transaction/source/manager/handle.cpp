@@ -34,7 +34,7 @@ namespace casual
                         common::log::error << "process crashed: TODO: maybe restart? " << death.string() << std::endl;
                         break;
                      default:
-                        common::log::information << "proccess died: " << death.string() << std::endl;
+                        //common::log::information << "proccess died: " << death.string() << std::endl;
                         break;
                   }
 

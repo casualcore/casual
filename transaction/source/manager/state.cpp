@@ -222,6 +222,16 @@ namespace casual
          return result;
       }
 
+      std::size_t State::instances() const
+      {
+         std::size_t result = 0;
+
+         for( auto& resource : resources)
+         {
+            result += resource.instances.size();
+         }
+         return result;
+      }
 
 
    } // transaction

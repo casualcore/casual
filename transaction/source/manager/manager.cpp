@@ -51,7 +51,7 @@ namespace casual
       {
          try
          {
-            common::trace::Exit temp( "terminate child processes");
+            common::trace::Outcome temp( "terminate child processes", common::log::internal::transaction);
 
             //
             // We need to terminate all children
@@ -174,11 +174,10 @@ namespace casual
 
          queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
 
-         while( true)
+         try
          {
-            try
+            while( true)
             {
-               try
                {
                   scoped::Writer batchWrite( m_state.log);
 
@@ -201,11 +200,6 @@ namespace casual
                      ;
                   }
                }
-               catch( ...)
-               {
-                  throw;
-               }
-
 
                //
                // Send persistent replies to clients
@@ -238,12 +232,33 @@ namespace casual
                   m_state.persistentRequests.clear();
 
                }
+            }
+
+         }
+         catch( const common::exception::signal::Terminate&)
+         {
+            try
+            {
+
+               common::signal::alarm::Scoped timeout{ 10};
+
+               queue::non_blocking::Reader nonblocking( m_receiveQueue, m_state);
+
+               while( m_state.instances() > 0)
+               {
+                  //
+                  // conusume until empty
+                  //
+                  while( handler.dispatch( nonblocking.next()));
+
+                  common::process::sleep( std::chrono::milliseconds( 2));
+               }
 
             }
-            catch( ...)
+            catch( const common::exception::signal::Timeout& exception)
             {
-               //error::handler();
-               throw;
+               common::log::error << "failed to get response for terminated resource proxies (# " + std::to_string( m_state.instances()) << ") - action: abort" << std::endl;
+               throw common::exception::signal::Terminate{};
             }
 
          }

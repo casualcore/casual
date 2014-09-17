@@ -403,8 +403,7 @@ namespace casual
 
             if( findIter != std::end( m_state.instances))
             {
-               trace::Exit remove
-               { "remove ipc" };
+               trace::Outcome remove{ "remove ipc"};
                ipc::remove( findIter->second.queue_id);
 
             }

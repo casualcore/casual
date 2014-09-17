@@ -10,7 +10,7 @@
 #include "broker/transformation.h"
 
 
-#include "common/trace.h"
+#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 
@@ -85,7 +85,7 @@ std::vector< admin::ServiceVO> AdminServerImplementation::_broker_listServices( 
 
 void AdminServerImplementation::_broker_updateInstances( const std::vector<admin::update::InstancesVO>& instances)
 {
-   common::Trace trace( "AdminServerImplementation::_broker_updateInstances");
+   common::trace::internal::Scope trace( "AdminServerImplementation::_broker_updateInstances");
 
    Broker::instance().serverInstances( instances);
 }

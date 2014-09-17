@@ -38,7 +38,7 @@ namespace casual
       TEST( casual_common_mockup, handle_sender_one_message)
       {
 
-         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_sender_one_message)"};
+         trace::Scope trace{ "TEST( casual_common_mockup, handle_sender_one_message)", log::internal::ipc};
 
          mockup::ipc::Sender sender;
          {
@@ -62,7 +62,7 @@ namespace casual
 
       TEST( casual_common_mockup, handle_sender_200_messages)
       {
-         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_sender_200_messages)"};
+         trace::Scope trace{ "TEST( casual_common_mockup, handle_sender_200_messages)",  log::internal::ipc};
 
          mockup::ipc::Sender sender;
          //
@@ -70,7 +70,7 @@ namespace casual
          mockup::ipc::Receiver receiver;
 
          {
-            common::Trace trace( "sender.add  200");
+            trace::Scope trace( "sender.add  200");
             message::service::name::lookup::Request request;
             request.requested = "someService";
             request.server = message::server::Id::current();
@@ -83,7 +83,7 @@ namespace casual
 
          {
 
-            common::Trace trace( "read( ipc::receive::queue())  200");
+            trace::Scope trace( "read( ipc::receive::queue())  200");
 
             auto read = queue::blocking::reader( receiver);
             message::service::name::lookup::Request request;
@@ -99,7 +99,7 @@ namespace casual
 
       TEST( casual_common_mockup, handle_reciver_one_messages)
       {
-         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_reciver_one_messages)"};
+         trace::Scope trace{ "TEST( casual_common_mockup, handle_reciver_one_messages)", log::internal::ipc};
 
          mockup::ipc::Receiver receiver;
 
@@ -125,7 +125,7 @@ namespace casual
 
       TEST( casual_common_mockup, handle_reciver_200_messages)
       {
-         Trace trace{ log::internal::ipc, "TEST( casual_common_mockup, handle_reciver_200_messages)"};
+         trace::Scope trace{ "TEST( casual_common_mockup, handle_reciver_200_messages)", log::internal::ipc};
 
          mockup::ipc::Receiver receiver;
 

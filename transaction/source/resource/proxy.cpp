@@ -58,7 +58,7 @@ namespace casual
                   reply.state = m_state.xaSwitches->xaSwitch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
 
 
-                  common::trace::Exit logConnect{ "resource connect to transaction monitor"};
+                  common::trace::Outcome logConnect{ "resource connect to transaction monitor", common::log::internal::transaction};
 
                   tm_queue_type m_tmQueue{ m_state.tm_queue};
                   m_tmQueue( reply);

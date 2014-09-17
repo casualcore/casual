@@ -397,6 +397,12 @@ namespace casual
 
          transaction::Log log;
 
+
+         //!
+         //! @return number of total instances
+         //!
+         std::size_t instances() const;
+
       };
 
       namespace state

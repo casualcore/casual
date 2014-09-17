@@ -176,6 +176,8 @@ namespace casual
 
             posix_spawnattr_t attributes;
 
+            posix_spawnattr_init( &attributes);
+
 
 
             platform::pid_type pid;
@@ -184,7 +186,7 @@ namespace casual
                   &pid,
                   path.c_str(),
                   nullptr,
-                  nullptr, //&attributes,
+                  &attributes,
                   const_cast< char* const*>( c_arguments.data()),
                   *_NSGetEnviron()// environ //const_cast< char* const*>( c_environment.data())
                   ) != 0)
