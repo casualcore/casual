@@ -303,6 +303,17 @@ namespace casual
          ipc::receive::queue().clear();
       }
 
+      TEST( casual_common_service_context, state_descriptor)
+      {
+         calling::State state;
+
+         auto first = state.pending.reserve();
+         auto second = state.pending.reserve();
+
+         EXPECT_TRUE( first < second);
+
+      }
+
    } // common
 } // casual
 

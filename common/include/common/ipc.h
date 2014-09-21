@@ -42,8 +42,8 @@ namespace casual
 
                struct Header
                {
-                  correalation_type m_correlation;
-                  long m_count;
+                  correalation_type correlation;
+                  long count;
 
                };
 
@@ -60,22 +60,22 @@ namespace casual
                Transport() : m_size( message_max_size)
                {
                   //static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
-                  memset( &m_payload, 0, sizeof( Payload));
+                  memset( &payload, 0, sizeof( Payload));
                }
 
                struct Payload
                {
 
-                  message_type_type m_type;
+                  message_type_type type;
 
-                  Header m_header;
+                  Header header;
 
-                  payload_type m_payload;
+                  payload_type payload;
 
-               } m_payload;
+               } payload;
 
 
-               void* raw() { return &m_payload;}
+               void* raw() { return &payload;}
 
                std::size_t size() { return m_size; }
 
@@ -277,12 +277,6 @@ namespace casual
          } // broker
 
 
-         //!
-         //! @deprecated use broker::queue(), or probably easier: ipc::broker::id();
-         //!
-         //send::Queue& getBrokerQueue();
-
-
          namespace receive
          {
             receive::Queue::id_type id();
@@ -291,11 +285,6 @@ namespace casual
 
          } // receive
 
-
-         //!
-         //! @deprecated use receive::queue()
-         //!
-         //receive::Queue& getReceiveQueue();
 
 
          //!

@@ -30,34 +30,68 @@ namespace casual
 
       namespace calling
       {
-         namespace internal
-         {
-            struct Pending
-            {
-               Pending() : callDescriptor( 0), called( 0), timeout( 0) {}
-               typedef common::platform::seconds_type seconds_type;
-
-               int callDescriptor;
-               seconds_type called;
-               seconds_type timeout;
-
-
-            };
-         }
-
 
          struct State
          {
-            typedef std::vector< int> pending_calls_type;
+            using descriptor_type = int;
+
+            struct Pending
+            {
+               struct Descriptor
+               {
+                  Descriptor( descriptor_type descriptor, bool active = true)
+                    : descriptor( descriptor), active( active) {}
+
+                  descriptor_type descriptor;
+                  bool active;
+
+                  friend bool operator == ( descriptor_type cd, const Descriptor& d) { return cd == d.descriptor;}
+                  friend bool operator == ( const Descriptor& d, descriptor_type cd) { return cd == d.descriptor;}
+               };
+
+               int reserve();
+
+               void unreserve( descriptor_type descriptor);
+
+               bool active( descriptor_type descriptor) const;
+
+            private:
+               typedef std::vector< Descriptor> descriptors_type;
+               descriptors_type m_descriptors;
+
+            } pending;
+
+
+            struct Reply
+            {
+               struct Cache
+               {
+                  typedef std::deque< message::service::Reply> cache_type;
+                  using cache_range = decltype( range::make( cache_type::iterator(), cache_type::iterator()));
+
+
+                  cache_range add( message::service::Reply&& value);
+
+                  cache_range search( descriptor_type descriptor);
+
+                  void erase( cache_range range);
+
+
+               private:
+
+                  cache_type m_cache;
+
+               } cache;
+            } reply;
+
+
             typedef std::deque< message::service::Reply> reply_cache_type;
             using cache_range = decltype( range::make( reply_cache_type().begin(), reply_cache_type().end()));
 
-            pending_calls_type pendingCalls;
+
             reply_cache_type replyCache;
 
             common::Uuid callId = common::Uuid::make();
-
-            int currentCallingDescriptor;
 
             std::string currentService;
          };
@@ -84,7 +118,6 @@ namespace casual
 
          private:
 
-            State::pending_calls_type::iterator reserveDescriptor();
 
             typedef State::reply_cache_type reply_cache_type;
 
@@ -93,11 +126,8 @@ namespace casual
 
             Context();
 
-            cache_range find( int callDescriptor);
 
-            cache_range fetch( int callDescriptor);
-
-            cache_range add( message::service::Reply&& reply);
+            cache_range fetch( int descriptor, long flags);
 
             void consume();
 

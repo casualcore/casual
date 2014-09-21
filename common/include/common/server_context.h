@@ -120,6 +120,18 @@ namespace casual
 
          struct State
          {
+            struct jump_t
+            {
+               struct state_t
+               {
+                  int value = 0;
+                  long code = 0;
+                  platform::raw_buffer_type data = nullptr;
+                  long len = 0;
+               } state;
+            } jump;
+
+
             State() = default;
 
             State( const State&) = delete;
@@ -130,7 +142,6 @@ namespace casual
             service_mapping_type services;
             common::platform::long_jump_buffer_type long_jump_buffer;
 
-            message::service::Reply reply;
             message::monitor::Notify monitor;
 
             std::function<void()> server_done;
@@ -342,7 +353,7 @@ namespace casual
                      //
                      // set the call-correlation
                      //
-                     state.reply.callDescriptor = message.callDescriptor;
+                     //state.reply.callDescriptor = message.callDescriptor;
 
                      auto findIter = state.services.find( message.service.name);
 
@@ -379,19 +390,24 @@ namespace casual
                   }
                   else
                   {
+                     //
+                     // Prepare reply
+                     //
+                     message::service::Reply reply = transform.reply( state.jump.state, message.callDescriptor);
+
 
                      //
                      // Do transaction stuff...
                      // - commit/rollback transaction if service has "auto-transaction"
                      //
-                     m_policy.transaction( state.reply);
+                     m_policy.transaction( reply);
 
                      //
                      // User has called tpreturn.
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     m_policy.reply( message.reply.queue_id, state.reply);
+                     m_policy.reply( message.reply.queue_id, reply);
 
                      //
                      // Send ACK to broker
@@ -421,6 +437,39 @@ namespace casual
                }
             private:
 
+               using descriptor_type = int;
+
+               struct transform_t
+               {
+                  message::service::Reply reply( server::State::jump_t::state_t& state, descriptor_type descriptor)
+                  {
+                     message::service::Reply result;
+
+                     result.returnValue = state.value;
+                     result.userReturnCode = state.code;
+                     result.callDescriptor = descriptor;
+
+                     if( state.data != nullptr)
+                     {
+                        try
+                        {
+                           result.buffer = buffer::pool::Holder::instance().extract( state.data);
+                        }
+                        catch( ...)
+                        {
+                           result.returnValue = TPESVCERR;
+                        }
+                     }
+                     else
+                     {
+                        result.buffer = buffer::Payload{ nullptr};
+                     }
+
+                     return result;
+                  }
+
+               } transform;
+
                TPSVCINFO transformServiceInformation( message::service::callee::Call& message) const
                {
                   TPSVCINFO result;
@@ -428,6 +477,7 @@ namespace casual
                   //
                   // Before we call the user function we have to add the buffer to the "buffer-pool"
                   //
+                  //range::copy_max( message.service.name, )
                   strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
                   result.len = message.buffer.memory.size();
                   result.cd = message.callDescriptor;

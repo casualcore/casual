@@ -53,7 +53,7 @@ namespace casual
          {
 
             Complete::Complete( Transport& transport)
-               : type( transport.m_payload.m_type), correlation( transport.m_payload.m_header.m_correlation)
+               : type( transport.payload.type), correlation( transport.payload.header.correlation)
             {
                add( transport);
             }
@@ -62,10 +62,10 @@ namespace casual
             {
                payload.insert(
                   std::end( payload),
-                  std::begin( transport.m_payload.m_payload),
-                  std::begin( transport.m_payload.m_payload) + transport.paylodSize());
+                  std::begin( transport.payload.payload),
+                  std::begin( transport.payload.payload) + transport.paylodSize());
 
-               complete = transport.m_payload.m_header.m_count == 0;
+               complete = transport.payload.header.count == 0;
 
             }
          }// message
@@ -85,8 +85,8 @@ namespace casual
                //
 
                ipc::message::Transport transport;
-               transport.m_payload.m_type = message.type;
-               message.correlation.copy( transport.m_payload.m_header.m_correlation);
+               transport.payload.type = message.type;
+               message.correlation.copy( transport.payload.header.correlation);
 
                //
                // This crap got to do a lot better...
@@ -94,11 +94,11 @@ namespace casual
                auto size = message.payload.size();
                if( size % message::Transport::payload_max_size == 0 && size > 0)
                {
-                  transport.m_payload.m_header.m_count = size / message::Transport::payload_max_size - 1;
+                  transport.payload.header.count = size / message::Transport::payload_max_size - 1;
                }
                else
                {
-                  transport.m_payload.m_header.m_count = size / message::Transport::payload_max_size;
+                  transport.payload.header.count = size / message::Transport::payload_max_size;
                }
 
 
@@ -110,7 +110,7 @@ namespace casual
                   auto partEnd = partBegin + message::Transport::payload_max_size > std::end( message.payload) ?
                         std::end( message.payload) : partBegin + message::Transport::payload_max_size;
 
-                  std::copy( partBegin, partEnd, std::begin( transport.m_payload.m_payload));
+                  std::copy( partBegin, partEnd, std::begin( transport.payload.payload));
 
                   transport.paylodSize( partEnd - partBegin);
 
@@ -119,7 +119,7 @@ namespace casual
                   //
                   if( ! send( transport, flags))
                   {
-                     if( transport.m_payload.m_header.m_count > 0)
+                     if( transport.payload.header.count > 0)
                      {
                         // TODO: Partially sent message, what to do now?
                         log::internal::ipc << "TODO: Partially sent message, what to do now?\n";
@@ -127,7 +127,7 @@ namespace casual
                      return false;
                   }
 
-                  --transport.m_payload.m_header.m_count;
+                  --transport.payload.header.count;
 
 
                   partBegin = partEnd;
@@ -199,6 +199,7 @@ namespace casual
 
             Queue::~Queue()
             {
+
                if( ! m_cache.empty())
                {
                   log::error << "queue: " << m_id << " has unconsumed messages in cache";
@@ -210,7 +211,7 @@ namespace casual
                   // Destroy queue
                   //
                   ipc::remove( m_id);
-                  log::internal::ipc << "queue id: " << m_id << " removed" << std::endl;
+                  log::internal::ipc << "queue id: " << m_id << " removed - cache capacity: " << m_cache.capacity() << std::endl;
                }
                catch( ...)
                {
@@ -406,7 +407,7 @@ namespace casual
             Queue::range_type Queue::cache( message::Transport& message)
             {
                auto found = range::find_if( m_cache,
-                     local::find::Correlation( message.m_payload.m_header.m_correlation));
+                     local::find::Correlation( message.payload.header.correlation));
 
                if( found)
                {
@@ -487,16 +488,6 @@ namespace casual
             }
 
          } // receive
-
-         send::Queue& getBrokerQueue()
-         {
-            return broker::queue();
-         }
-
-         receive::Queue& getReceiveQueue()
-         {
-            return receive::queue();
-         }
 
          void remove( platform::queue_id_type id)
          {

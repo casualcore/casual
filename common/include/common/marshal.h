@@ -256,15 +256,15 @@ namespace casual
 
                void add( transport_type& message)
                {
-                  m_messageType = message.m_payload.m_type;
+                  m_messageType = message.payload.type;
                   auto size = message.paylodSize();
                   auto bufferSize = m_buffer.size();
 
                   m_buffer.resize( m_buffer.size() + size);
 
                   std::copy(
-                     std::begin( message.m_payload.m_payload),
-                     std::begin( message.m_payload.m_payload) + size,
+                     std::begin( message.payload.payload),
+                     std::begin( message.payload.payload) + size,
                      std::begin( m_buffer) + bufferSize);
                }
 

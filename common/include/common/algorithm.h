@@ -398,6 +398,31 @@ namespace casual
          }
 
 
+         template< typename R>
+         auto front( R&& range) -> decltype( make( std::forward< R>( range)))
+         {
+            auto result = make( std::forward< R>( range));
+            if( result)
+            {
+               result.last = result.front + 1;
+            }
+            return result;
+         }
+
+         template< typename R>
+         auto back( R&& range) -> decltype( make( std::forward< R>( range)))
+         {
+            auto result = make( std::forward< R>( range));
+            if( result)
+            {
+               result.first = result.last - 1;
+            }
+            return result;
+         }
+
+
+
+
 
          template< typename R, typename C>
          auto sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))

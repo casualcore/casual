@@ -62,30 +62,37 @@ void casual_test1( TPSVCINFO *serviceContext)
 
 void casual_test2( TPSVCINFO *serviceContext)
 {
-   casual::sf::buffer::binary::Stream stream{ casual::sf::buffer::raw( serviceContext)};
-
-   std::string argumentString;
-   stream >> argumentString;
+   {
 
 
+      std::string argumentString;
 
-   auto args = casual::common::string::split( argumentString);
+      {
+         casual::sf::buffer::binary::Stream stream{ casual::sf::buffer::raw( serviceContext)};
+         stream >> argumentString;
+         stream.release();
+      }
 
-   casual::sf::log::debug << CASUAL_MAKE_NVP( args);
 
-   casual::common::Arguments parser;
 
-   std::size_t millesconds = 0;
+      auto args = casual::common::string::split( argumentString);
 
-   parser.add(
-         casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", millesconds)
-   );
+      casual::sf::log::debug << CASUAL_MAKE_NVP( args);
 
-   parser.parse( casual::common::process::path(), args);
+      casual::common::Arguments parser;
 
-   casual::sf::log::debug << "casual_test2 called - sleep for  " << millesconds << "ms"<< std::endl;
+      std::size_t millesconds = 0;
 
-   casual::common::process::sleep(  std::chrono::milliseconds( millesconds));
+      parser.add(
+            casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", millesconds)
+      );
+
+      parser.parse( casual::common::process::path(), args);
+
+      casual::sf::log::debug << "casual_test2 called - sleep for  " << millesconds << "ms"<< std::endl;
+
+      casual::common::process::sleep(  std::chrono::milliseconds( millesconds));
+   }
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
 }

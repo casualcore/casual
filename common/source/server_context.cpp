@@ -53,9 +53,10 @@ namespace casual
             // via longjump...
             //
 
-            m_state.reply.returnValue = rval;
-            m_state.reply.userReturnCode = rcode;
-            m_state.reply.buffer = buffer::pool::Holder::instance().extract( data);
+            m_state.jump.state.value = rval;
+            m_state.jump.state.code = rcode;
+            m_state.jump.state.data = data;
+            m_state.jump.state.len = len;
 
             longjmp( m_state.long_jump_buffer, 1);
          }

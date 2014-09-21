@@ -37,28 +37,6 @@ namespace casual
       {
          namespace local
          {
-            struct UnusedCallingDescriptor
-            {
-               UnusedCallingDescriptor()
-                     : unused( 10)
-               {
-               }
-
-               bool operator()( const internal::Pending& value)
-               {
-                  if( value.callDescriptor - unused > 1)
-                  {
-                     ++unused;
-                     return true;
-                  }
-
-                  unused = value.callDescriptor + 1;
-                  return false;
-               }
-
-               int unused;
-            };
-
 
             class Timeout
             {
@@ -271,6 +249,77 @@ namespace casual
          } // local
 
 
+         int State::Pending::reserve()
+         {
+            int current = 0;
+
+            auto found = range::find_if( m_descriptors, [&]( const Descriptor& d){
+               current = d.descriptor;
+               return ! d.active;
+            });
+
+            if( ! found)
+            {
+               m_descriptors.emplace_back( current + 1, true);
+               found = range::back( m_descriptors);
+            }
+
+            found->active = true;
+            return found->descriptor;
+         }
+
+         void State::Pending::unreserve( descriptor_type descriptor)
+         {
+            auto found = range::find( m_descriptors, descriptor);
+
+            if( found)
+            {
+               found->active = false;
+            }
+            else
+            {
+               throw exception::NotReallySureWhatToNameThisException{ "wrong call descriptor"};
+            }
+
+         }
+
+         bool State::Pending::active( descriptor_type descriptor) const
+         {
+            auto found = range::find( m_descriptors, descriptor);
+
+            if( found)
+            {
+               return found->active;
+            }
+            return false;
+         }
+
+
+         State::Reply::Cache::cache_range State::Reply::Cache::add( message::service::Reply&& value)
+         {
+            m_cache.push_back( std::move( value));
+            return range::back( m_cache);
+         }
+
+         State::Reply::Cache::cache_range State::Reply::Cache::search( descriptor_type descriptor)
+         {
+            return range::find_if( m_cache, [=]( const cache_type::value_type& r){
+               return r.callDescriptor == descriptor;
+            });
+
+         }
+
+         void State::Reply::Cache::erase( cache_range range)
+         {
+            if( range)
+            {
+               m_cache.erase( range.first);
+            }
+         }
+
+
+
+
          Context& Context::instance()
          {
             static Context singleton;
@@ -306,43 +355,13 @@ namespace casual
             return m_state.currentService;
          }
 
-         State::pending_calls_type::iterator Context::reserveDescriptor()
-         {
 
-            int currentDescriptor = 1;
-
-            auto found = std::find_if(
-                  std::begin( m_state.pendingCalls), std::end( m_state.pendingCalls),
-                  [&]( int cd)
-                  {
-                     if( cd > currentDescriptor) return true;
-                     if( cd == currentDescriptor) ++currentDescriptor;
-                     return false;
-                  });
-
-
-            if( found == std::end( m_state.pendingCalls))
-            {
-               if( currentDescriptor < 0)
-               {
-                  throw common::exception::xatmi::LimitReached( "No free call descriptors");
-               }
-               m_state.pendingCalls.push_back( currentDescriptor);
-               return std::end( m_state.pendingCalls) - 1;
-            }
-            else
-            {
-               return found;
-            }
-         }
 
          int Context::asyncCall( const std::string& service, char* idata, long ilen, long flags)
          {
             trace::internal::Scope trace( "calling::Context::asyncCall");
 
-
             // TODO validate
-
 
             local::service::lookup::request( service);
 
@@ -350,17 +369,16 @@ namespace casual
             // We do as much as possible while we wait for the broker reply
             //
 
+            const auto descriptor = m_state.pending.reserve();
 
-            const auto descriptor = reserveDescriptor();
-
-            log::internal::debug << "cd: " << *descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+            log::internal::debug << "cd: " << descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
 
             const common::platform::seconds_type time = common::environment::getTime();
 
 
             message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
-            message.callDescriptor = *descriptor;
+            message.callDescriptor = descriptor;
             message.reply.queue_id = ipc::receive::id();
             message.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
             message.transaction.xid = transaction::Context::instance().currentTransaction().xid;
@@ -382,7 +400,7 @@ namespace casual
             // Keep track of (ev.) coming timeouts
             //
             local::PendingTimeout::instance().add(
-                  local::Timeout( *descriptor, lookup.service.timeout, time));
+                  local::Timeout( descriptor, lookup.service.timeout, time));
 
 
             //
@@ -393,10 +411,10 @@ namespace casual
 
             queue::blocking::Writer callWriter( lookup.server.front().queue_id);
 
-            local::timeoutWrapper( callWriter, message, *descriptor);
+            local::timeoutWrapper( callWriter, message, descriptor);
 
 
-            return *descriptor;
+            return descriptor;
          }
 
 
@@ -410,7 +428,7 @@ namespace casual
             //
             // TODO: validate input...
 
-            decltype( range::make( m_state.pendingCalls)) pending;
+            //decltype( range::make( m_state.pendingCalls)) pending;
 
 
             if( common::flag< TPGETANY>( flags))
@@ -419,42 +437,27 @@ namespace casual
             }
             else
             {
-               pending = range::find( m_state.pendingCalls, *idPtr);
-               if( ! pending)
+               if( ! m_state.pending.active( *idPtr))
                {
                   throw common::exception::xatmi::service::InvalidDescriptor();
                }
             }
 
 
-            //
-            // Vi fetch all on the queue.
-            //
-            consume();
 
             //
-            // First we treat the call as a NOBLOCK call. Later we block if requested
+            // We fetch from cache, and if TPNOBLOCK is not set, we block
             //
-
-            auto found = find( *idPtr);
+            auto found = fetch( *idPtr, flags);
 
             if( ! found)
             {
-               if( ! common::flag< TPNOBLOCK>( flags))
-               {
-                  //
-                  // We block
-                  //
-                  found = fetch( *idPtr);
-               }
-               else
-               {
-                  throw common::exception::xatmi::NoMessage();
-               }
+               throw common::exception::xatmi::NoMessage();
             }
 
             message::service::Reply reply = std::move( *found);
-            // TODO: remove it
+            m_state.reply.cache.erase( found);
+
 
             //
             // Check buffer types
@@ -490,19 +493,10 @@ namespace casual
 
 
             //
-            // We remove our representation
+            // We remove pending
             //
-            if( ! pending)
-            {
-               pending = range::find( m_state.pendingCalls, *idPtr);
-               if( ! pending)
-               {
-                  throw common::exception::xatmi::service::InvalidDescriptor();
-               }
-            }
+            m_state.pending.unreserve( *idPtr);
 
-            m_state.pendingCalls.erase( pending.first);
-            m_state.replyCache.erase( found.first);
 
             //
             // Check if there has been an timeout
@@ -534,54 +528,35 @@ namespace casual
          }
 
 
-         Context::cache_range Context::find( int callDescriptor)
+
+         Context::cache_range Context::fetch( State::descriptor_type descriptor, long flags)
          {
-            if( callDescriptor == 0)
-            {
-               return range::make( m_state.replyCache.begin(), m_state.replyCache.end());
-            }
-            return range::find_if( m_state.replyCache,
-                  [=]( const message::service::Reply& message)
-                  {
-                     return message.callDescriptor == callDescriptor;
-                  });
-         }
+            //
+            // Vi fetch all on the queue.
+            //
+            consume();
 
+            auto found = m_state.reply.cache.search( descriptor);
 
-
-         Context::cache_range Context::fetch( int callDescriptor)
-         {
-            auto found = find( callDescriptor);
-
-            if( ! found)
+            while( ! found && ! common::flag< TPNOBLOCK>( flags))
             {
                queue::blocking::Reader reader( ipc::receive::queue());
 
-               do
+               message::service::Reply reply;
+
+               local::timeoutWrapper( reader, reply, descriptor);
+
+               auto cached = m_state.reply.cache.add( std::move( reply));
+
+               if( cached->callDescriptor == descriptor)
                {
-
-                  message::service::Reply reply;
-
-                  local::timeoutWrapper( reader, reply, callDescriptor);
-
-                  found = add( std::move( reply));
-
-               } while( found->callDescriptor != callDescriptor);
+                  return cached;
+               }
             }
-
             return found;
          }
 
-         Context::cache_range Context::add( message::service::Reply&& reply)
-         {
-            // TODO: Check if the received message is pending
 
-            // TODO: Check if the calling descriptor is already received...
-
-            m_state.replyCache.push_back( std::move( reply));
-
-            return range::make( m_state.replyCache.end() -1, m_state.replyCache.end());
-         }
 
 
          void Context::consume()
@@ -601,7 +576,7 @@ namespace casual
                   break;
                }
 
-               add( std::move( reply));
+               m_state.reply.cache.add( std::move( reply));
             }
 
          }

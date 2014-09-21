@@ -19,10 +19,11 @@ namespace casual
       {
          namespace internal
          {
-            class Scope : basic
+            class Scope : trace::Scope
             {
             public:
-               Scope( std::string information) : basic( std::move( information), log::internal::trace) {}
+               Scope( std::string information, std::ostream& log = log::internal::trace)
+                  : trace::Scope( std::move( information), log) {}
             };
 
 
