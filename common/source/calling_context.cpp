@@ -11,6 +11,7 @@
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 
+#include "common/buffer/pool.h"
 
 #include "common/environment.h"
 #include "common/flag.h"
@@ -358,7 +359,7 @@ namespace casual
             const common::platform::seconds_type time = common::environment::getTime();
 
 
-            message::service::caller::Call message( buffer::Context::instance().get( idata));
+            message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
             message.callDescriptor = *descriptor;
             message.reply.queue_id = ipc::receive::id();
             message.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
@@ -425,11 +426,6 @@ namespace casual
                }
             }
 
-            //
-            // TODO: Should we care if odata is a valid buffer? As of now, we pretty much
-            // have no use for the users buffer.
-            //
-
 
             //
             // Vi fetch all on the queue.
@@ -458,21 +454,30 @@ namespace casual
             }
 
             message::service::Reply reply = std::move( *found);
+            // TODO: remove it
 
             //
-            // Get the user allocated buffer
+            // Check buffer types
             //
-            buffer::Buffer userBuffer = buffer::Context::instance().extract( *odata);
+            if( *odata != nullptr && common::flag< TPNOCHANGE>( flags))
+            {
+               auto& output = buffer::pool::Holder::instance().get( *odata);
 
-            // TODO: Check if the user accept different buffer-types, and compare types
-            // i.e. reply.buffer == userBuffer
+               if( output.type != reply.buffer.type)
+               {
+                  throw exception::xatmi::buffer::TypeNotExpected{};
+               }
+
+               buffer::pool::Holder::instance().deallocate( *odata);
+               *odata = nullptr;
+            }
 
             //
             // We deliver the message
             //
             *idPtr = reply.callDescriptor;
-            *odata = platform::public_buffer( reply.buffer.raw());
-            olen = reply.buffer.size();
+            *odata = reply.buffer.memory.data();
+            olen = reply.buffer.memory.size();
 
 
             // TOOD: Temp
@@ -481,7 +486,7 @@ namespace casual
             //
             // Add the buffer to the pool
             //
-            buffer::Context::instance().add( std::move( reply.buffer));
+            buffer::pool::Holder::instance().insert( std::move( reply.buffer));
 
 
             //

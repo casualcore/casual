@@ -16,6 +16,8 @@
 #include "common/queue.h"
 #include "common/environment.h"
 
+#include "common/buffer/pool.h"
+
 #include "common/calling_context.h"
 #include "common/transaction_context.h"
 #include "common/platform.h"
@@ -73,15 +75,13 @@ namespace casual
             TransactionType transaction = TransactionType::cAuto;
             bool active = true;
 
+            friend std::ostream& operator << ( std::ostream& out, const Service& service)
+            {
+               return out << "{name: " << service.name << " type: " << service.type << " transaction: " << service.transaction
+                     << " active: " << service.active << "};";
+            }
 
          };
-
-         inline std::ostream& operator << ( std::ostream& out, const Service& service)
-         {
-            return out << "{name: " << service.name << " type: " << service.type << " transaction: " << service.transaction
-                  << " active: " << service.active << "};";
-         }
-
 
          struct Arguments
          {
@@ -203,7 +203,8 @@ namespace casual
             //! - destruction
             //! -- send disconnect to broker - disconnect server - unadvertise services
             //!
-            //! @note it's a template only to be able to unittest it
+            //! @note it's a template so we can use the same implementation in casual-broker and
+            //!    others that need's another policy (otherwise it would send messages to it self, and so on)
             //!
             template< typename P>
             struct basic_call
@@ -362,12 +363,11 @@ namespace casual
 
                      calling::Context::instance().currentService( message.service.name);
 
+                     //
+                     // Also takes care of buffer to pool
+                     //
                      TPSVCINFO serviceInformation = transformServiceInformation( message);
 
-                     //
-                     // Before we call the user function we have to add the buffer to the "buffer-pool"
-                     //
-                     buffer::Context::instance().add( std::move( message.buffer));
 
                      service.call( &serviceInformation);
 
@@ -398,10 +398,6 @@ namespace casual
                      //
                      m_policy.ack( message);
 
-                     //
-                     // Do some cleanup...
-                     //
-                     server::Context::instance().finalize();
 
                      //
                      // Take end time
@@ -415,7 +411,12 @@ namespace casual
 
                         m_policy.statistics( message.service.monitor_queue, state.monitor);
                      }
-                     calling::Context::instance().currentService( "");
+
+                     //
+                     // Do some cleanup...
+                     //
+                     server::Context::instance().finalize();
+
                   }
                }
             private:
@@ -424,11 +425,15 @@ namespace casual
                {
                   TPSVCINFO result;
 
-                  strncpy( result.name, message.service.name.data(), sizeof( result.name) );
-                  result.data = platform::public_buffer( message.buffer.raw());
-                  result.len = message.buffer.size();
+                  //
+                  // Before we call the user function we have to add the buffer to the "buffer-pool"
+                  //
+                  strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
+                  result.len = message.buffer.memory.size();
                   result.cd = message.callDescriptor;
                   result.flags = 0;
+
+                  result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));
 
                   return result;
                }

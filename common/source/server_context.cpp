@@ -8,7 +8,7 @@
 #include "common/server_context.h"
 
 #include "common/queue.h"
-#include "common/buffer_context.h"
+#include "common/buffer/pool.h"
 #include "common/calling_context.h"
 #include "common/process.h"
 
@@ -55,7 +55,7 @@ namespace casual
 
             m_state.reply.returnValue = rval;
             m_state.reply.userReturnCode = rcode;
-            m_state.reply.buffer = buffer::Context::instance().extract( data);
+            m_state.reply.buffer = buffer::pool::Holder::instance().extract( data);
 
             longjmp( m_state.long_jump_buffer, 1);
          }
@@ -76,15 +76,15 @@ namespace casual
                log::warning << "service name '" << name << "' truncated to '" << localName << "'";
             }
 
-            auto findIter = m_state.services.find( localName);
+            auto found = range::find( m_state.services, localName);
 
-            if( findIter != std::end( m_state.services))
+            if( found)
             {
                //
                // service name is already advertised
                // No error if it's the same function
                //
-               if( findIter->second.function != function)
+               if( found->second.function != function)
                {
                   throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + localName);
                }
@@ -92,6 +92,8 @@ namespace casual
             }
             else
             {
+               // TODO: find the function and get information from it (transaction semantics and such)
+
                message::service::Advertise message;
 
                message.server.queue_id = ipc::receive::id();
@@ -132,7 +134,8 @@ namespace casual
 
          void Context::finalize()
          {
-            buffer::Context::instance().clear();
+            buffer::pool::Holder::instance().clear();
+            calling::Context::instance().currentService( "");
          }
 
 

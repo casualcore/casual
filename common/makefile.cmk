@@ -26,7 +26,9 @@ install_libs = []
 casual_common_objectfiles = [
     Compile( "source/server_context.cpp", "obj/server_context.o"),
     Compile( "source/calling_context.cpp", "obj/calling_context.o"),
-    Compile( "source/buffer_context.cpp", "obj/buffer_context.o"),
+    #Compile( "source/buffer_context.cpp", "obj/buffer_context.o"),
+    Compile( "source/buffer/x_octet.cpp", "obj/buffer/x_octet.o"),
+    Compile( "source/buffer/pool.cpp", "obj/buffer/pool.o"),
     Compile( "source/transaction_context.cpp", "obj/transaction_context.o"),
     Compile( "source/transaction_id.cpp", "obj/transaction_id.o"),
     Compile( "source/ipc.cpp", "obj/ipc.o"),

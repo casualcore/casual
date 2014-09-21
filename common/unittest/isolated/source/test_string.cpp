@@ -61,6 +61,15 @@ namespace casual
          EXPECT_TRUE( from_string< long>( "42") == 42);
       }
 
+      TEST( casual_common_string, trim)
+      {
+         auto trimmed = string::trim( "  1 2 3 4 5   ");
+
+         EXPECT_TRUE( trimmed.size() == 9);
+         EXPECT_TRUE( trimmed.at( 0) == '1');
+         EXPECT_TRUE( trimmed.at( 8) == '5');
+      }
+
    }
 }
 

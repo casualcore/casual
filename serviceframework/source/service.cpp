@@ -124,9 +124,9 @@ namespace casual
          {
             common::trace::internal::Scope trace( "sf::service::Factory::Factory");
 
-            registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
+            registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "yaml"));
             registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));
-            registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "JSON"));
+            registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "json"));
          }
 
 

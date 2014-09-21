@@ -252,8 +252,8 @@ namespace casual
 
             private:
 
-               typedef std::deque< message::Complete> cache_type;
-               using range_type = decltype( range::make( cache_type().begin(), cache_type().end()));
+               typedef std::vector< message::Complete> cache_type;
+               using range_type = decltype( range::make( cache_type::iterator(), cache_type::iterator()));
 
                template< typename P>
                range_type find( P predicate, const long flags);

@@ -45,6 +45,11 @@ namespace casual
             //!
             extern internal::Stream queue;
 
+            //!
+            //! Log with category 'casual.buffer'
+            //!
+            extern internal::Stream buffer;
+
 
          } // internal
       } // log

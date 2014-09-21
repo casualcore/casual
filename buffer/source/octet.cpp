@@ -7,7 +7,7 @@
 
 #include "buffer/octet.h"
 
-#include "common/buffer_context.h"
+#include "common/buffer/pool.h"
 
 namespace casual
 {
@@ -16,22 +16,31 @@ namespace casual
       namespace implementation
       {
 
-         class Octet : public common::buffer::implementation::Base
+         class Octet : public common::buffer::pool::default_pool
          {
-            //
-            // We rely on default implementation
-            //
+         public:
 
-            static const bool initialized;
+            using types_type = common::buffer::pool::default_pool::types_type;
+
+            static const types_type& types()
+            {
+               static const types_type result{ { CASUAL_OCTET, ""}};
+               return result;
+            }
+
+            //
+            // We rely on x_octet implementation
+            //
          };
 
 
 
-
-         const bool Octet::initialized = common::buffer::implementation::registrate< Octet>( {{ CASUAL_OCTET, ""}});
-
-
-
       } // implementation
+
+
    } // buffer
+
+   template class common::buffer::pool::Registration< buffer::implementation::Octet>;
+
 } // casual
+

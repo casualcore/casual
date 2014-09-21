@@ -8,7 +8,8 @@
 #include "buffer/field.h"
 
 #include "common/network_byteorder.h"
-#include "common/buffer_context.h"
+#include "common/buffer/pool.h"
+#include "common/log.h"
 
 //#include "sf/namevaluepair.h"
 
@@ -823,28 +824,57 @@ namespace casual
       namespace implementation
       {
 
-         class Field : public common::buffer::implementation::Base
+         struct FieldBuffer : public common::buffer::Buffer
          {
-            void doCreate( common::buffer::Buffer& buffer, std::size_t size) override
+            // has to have the two ctors like common::buffer::Buffer
+            using common::buffer::Buffer::Buffer;
+
+            // TODO: some offset stuff...
+         };
+
+         // TODO: Doesn't have to inherit from anything, but has to implement a set of functions (like pool::basic)
+         class Field : public common::buffer::pool::basic_pool< FieldBuffer>
+         {
+         public:
+
+            using types_type = common::buffer::pool::default_pool::types_type;
+
+
+            static const types_type& types()
             {
+               // Could be several types this pool can manage
+               static const types_type result{ { CASUAL_FIELD, ""}};
+               return result;
+            }
+
+            common::platform::raw_buffer_type allocate( const common::buffer::Type& type, std::size_t size)
+            {
+               // TODO: this should not be needed if we're using custom buffer-type in the generic pool
+
+
                constexpr auto bytes = local::header::size();
 
                if( size < bytes)
                {
-                  // throw if this is an error
+                  // throw if this is an error...
                   size = bytes;
                }
 
-               buffer.memory().resize( size);
+               FieldBuffer buffer( type, size);
 
-               local::header::update::reserved( buffer.raw(), size);
-               local::header::update::inserter( buffer.raw(), bytes);
+               local::header::update::reserved( buffer.payload.memory.data(), size);
+               local::header::update::inserter( buffer.payload.memory.data(), bytes);
+
+               m_pool.push_back( std::move( buffer));
+               return m_pool.back().payload.memory.data();
 
             }
 
-            void doReallocate( common::buffer::Buffer& buffer, std::size_t size) override
+            common::platform::raw_buffer_type reallocate( common::platform::const_raw_buffer_type handle, std::size_t size)
             {
-               const auto inserter = local::header::select::inserter( buffer.raw());
+               // TODO: this should not be needed if we're using custom buffer-type in the generic pool
+
+               const std::size_t inserter = local::header::select::inserter( handle);
 
                if( size < inserter)
                {
@@ -852,21 +882,65 @@ namespace casual
                   size = inserter;
                }
 
-               buffer.memory().resize( size);
+               auto buffer = find( handle);
 
-               local::header::update::reserved( buffer.raw(), size);
+               if( buffer != std::end( m_pool))
+               {
+                  buffer->payload.memory.resize( size);
+                  local::header::update::reserved( buffer->payload.memory.data(), size);
+                  return buffer->payload.memory.data();
+               }
+
+               return nullptr;
             }
-
-            static const bool initialized;
          };
-
-
-         const bool Field::initialized = common::buffer::implementation::registrate< Field>( {{ CASUAL_FIELD, ""}});
 
 
 
       } // implementation
    } // buffer
+
+   //
+   // Registrate and define the type that can be used to get the custom pool
+   //
+
+   template class common::buffer::pool::Registration< buffer::implementation::Field>;
+
+   namespace buffer
+   {
+      namespace field
+      {
+         using pool_type = common::buffer::pool::Registration< implementation::Field>;
+
+         //
+         // Ex:
+         //
+         int some_C_function( char* handle)
+         {
+            try
+            {
+               //
+               // get the buffer for this handle
+               //
+               implementation::FieldBuffer& buffer = pool_type::pool.get( handle);
+
+               //
+               // Do stuff with custom buffer
+               //
+               common::log::debug << buffer.payload.type.subtype << std::endl;
+
+               return 0;
+            }
+            catch( ...)
+            {
+               // sets tperror and write to log it there are severe errors,
+               return common::error::handler();
+            }
+         }
+
+      } // field
+   } // buffer
+
 } // casual
 
 

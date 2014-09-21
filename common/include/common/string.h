@@ -99,7 +99,15 @@ namespace casual
 			   return result;
 			}
 
+			inline std::string trim( const std::string& value)
+			{
+			   auto ws = []( typename std::string::value_type c){ return c == ' ';};
 
+			   auto first = std::find_if_not( std::begin( value), std::end( value), ws);
+			   auto last = std::find_if_not( value.rbegin(), value.rend(), ws);
+
+			   return std::string( first, last.base());
+			}
 
 		} // string
 

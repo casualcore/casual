@@ -37,7 +37,7 @@ namespace casual
 
             writer << CASUAL_MAKE_NVP( value);
 
-            sf::buffer::X_Octet buffer( "YAML");
+            sf::buffer::X_Octet buffer( "yaml");
 
             buffer.str( emitter.c_str());
 

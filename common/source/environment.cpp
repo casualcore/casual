@@ -43,6 +43,15 @@ namespace casual
 					}
 				}
 
+            std::string get( const std::string& name, const std::string& alternative)
+            {
+               if( exists( name))
+               {
+                  return get( name);
+               }
+               return alternative;
+            }
+
 				void set( const std::string& name, const std::string& value)
 				{
 				   setenv( name.c_str(), value.c_str(), 1);

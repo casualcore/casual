@@ -11,7 +11,7 @@
 
 #include "common/message/type.h"
 
-#include "common/buffer_context.h"
+#include "common/buffer/type.h"
 
 namespace casual
 {
@@ -185,7 +185,7 @@ namespace casual
                   Call( const Call&) = delete;
                   Call& operator = ( const Call&) = delete;
 
-                  buffer::Buffer buffer;
+                  buffer::Payload buffer;
 
                   template< typename A>
                   void marshal( A& archive)
@@ -203,8 +203,8 @@ namespace casual
                struct Call: public base_call
                {
 
-                  Call( buffer::Buffer& buffer_)
-                        : buffer( buffer_)
+                  Call( buffer::Payload& buffer)
+                        : buffer( buffer)
                   {
                   }
 
@@ -214,7 +214,7 @@ namespace casual
                   Call( const Call&) = delete;
                   Call& operator = ( const Call&) = delete;
 
-                  buffer::Buffer& buffer;
+                  buffer::Payload& buffer;
 
                   template< typename A>
                   void marshal( A& archive)
@@ -243,7 +243,7 @@ namespace casual
                int callDescriptor = 0;
                int returnValue = 0;
                long userReturnCode = 0;
-               buffer::Buffer buffer;
+               buffer::Payload buffer;
 
                template< typename A>
                void marshal( A& archive)
