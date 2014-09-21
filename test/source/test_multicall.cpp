@@ -47,6 +47,7 @@ int main( int argc, char** argv)
    long calls = 0;
    std::string argument;
    bool transaction = false;
+   long iterations = 1;
 
    casual::common::Arguments parser;
 
@@ -55,6 +56,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( { "-n", "--number"}, "number of async calls to service", calls),
          casual::common::argument::directive( { "-a", "--argument"}, "argument to the service", argument),
          casual::common::argument::directive( { "-t", "--transaction"}, "call within a transaction", transaction),
+         casual::common::argument::directive( { "-i", "--iterations"}, "number of iterations of batch-calls", iterations),
          casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
    );
 
@@ -69,93 +71,71 @@ int main( int argc, char** argv)
 
    std::cout << "argument: " << argument << std::endl;
 
-   std::vector< Timeoint> timepoints;
 
-   timepoints.emplace_back( casual::common::platform::clock_type::now(), "start");
+   auto start = casual::common::platform::clock_type::now();
 
-
-
-   if( transaction)
+   for( long iteration = 1; iteration <= iterations; ++iteration)
    {
-      tx_begin();
-      timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_begin");
-   }
+      std::vector< Timeoint> timepoints;
 
-   using Async = casual::sf::xatmi::service::binary::Async;
-   Async caller{ service};
+      timepoints.emplace_back( casual::common::platform::clock_type::now(), "start");
 
-   std::vector< Async::receive_type> receivers;
-
-   for( long index = 0; index < calls; ++index )
-   {
-      caller << CASUAL_MAKE_NVP( argument);
-      receivers.push_back( caller());
-   }
-
-   timepoints.emplace_back( casual::common::platform::clock_type::now(), "call");
-
-
-   for( auto&& recive : receivers)
-   {
-      auto result = recive();
-   }
-
-   timepoints.emplace_back( casual::common::platform::clock_type::now(), "receive");
-
-   if( transaction)
-   {
-      tx_commit();
-      timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_commit");
-   }
-
-   //timepoints.emplace_back( casual::common::platform::clock_type::now(), "end");
-
-   typedef std::chrono::microseconds us;
-
-
-   std::cout << "time spent (us):\n";
-
-   auto current = timepoints.begin();
-   auto next = current + 1;
-
-   for( ; next !=  std::end( timepoints); ++current, ++next)
-   {
-      std::cout << std::left << std::setw(10) << std::setfill( '.') << next->info << ": " <<
-            std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( next->time - current->time).count() << "\n";
-   }
-
-   std::cout << std::left << std::setw(10) << std::setfill( '.') << "total" << ": " <<
-      std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( timepoints.back().time - timepoints.front().time).count() << "\n";
-
-
-
-/*
-         << "   total......: " << std::setw(7) << std::chrono::duration_cast< us>( timepoints.back().time - timepoints.front().time).count() << "\n"
-         << "   tx_begin...: " << std::setw(7) << std::chrono::duration_cast< us>( efter_tx_begin - start).count() << "\n"
-         << "   send.......: " << std::setw(7) << std::chrono::duration_cast< us>( efter_call - efter_tx_begin).count() << "\n"
-         << "   receive....: " << std::setw(7) << std::chrono::duration_cast< us>( efter_receive - efter_call).count() << "\n"
-         << "   tx_commit..: " << std::setw(7) << std::chrono::duration_cast< us>( end - efter_receive).count() << std::endl;
-*/
-
-
-   /*
-
-   for( auto cd : callDescriptors)
-   {
-      long size = 0;
-      if( tpgetrply( &cd, &buffer, &size, 0) != -1)
+      if( transaction)
       {
-         //std::cout << std::endl << "cd: "<< cd << ": " << buffer << std::endl;
-      }
-      else
-      {
-         std::cerr << "tpgetrply returned -1" << std::endl;
+         tx_begin();
+         timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_begin");
       }
 
+      using Async = casual::sf::xatmi::service::binary::Async;
+      Async caller{ service};
+
+      std::vector< Async::receive_type> receivers;
+
+      for( long index = 0; index < calls; ++index )
+      {
+         caller << CASUAL_MAKE_NVP( argument);
+         receivers.push_back( caller());
+      }
+
+      timepoints.emplace_back( casual::common::platform::clock_type::now(), "call");
+
+
+      for( auto&& recive : receivers)
+      {
+         auto result = recive();
+      }
+
+      timepoints.emplace_back( casual::common::platform::clock_type::now(), "receive");
+
+      if( transaction)
+      {
+         tx_commit();
+         timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_commit");
+      }
+
+
+      //timepoints.emplace_back( casual::common::platform::clock_type::now(), "end");
+
+      typedef std::chrono::microseconds us;
+
+
+      std::cout << "time spent (us) for iteration # " << iteration << ":\n";
+
+      auto current = timepoints.begin();
+      auto next = current + 1;
+
+      for( ; next !=  std::end( timepoints); ++current, ++next)
+      {
+         std::cout << std::left << std::setw(10) << std::setfill( '.') << next->info << ": " <<
+               std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( next->time - current->time).count() << "\n";
+      }
+
+      std::cout << std::left << std::setw(10) << std::setfill( '.') << "total" << ": " <<
+         std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( timepoints.back().time - timepoints.front().time).count() << "\n";
    }
 
+   auto end = casual::common::platform::clock_type::now();
 
-   tpfree( buffer);
 
-   */
+
 }

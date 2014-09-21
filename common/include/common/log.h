@@ -35,10 +35,11 @@ namespace casual
                casual_transaction,
                casual_ipc,
                casual_queue,
+               casual_buffer,
 
                //
                // Public logging
-               debug = 10,
+               debug = 100,
                trace,
                parameter,
                information,
@@ -163,6 +164,7 @@ namespace casual
          void write( category::Type category, const char* message);
 
          void write( category::Type category, const std::string& message);
+
 
 
       } // log

@@ -62,7 +62,7 @@ namespace casual
 					   common::file::remove( path);
 					}
 
-					log::debug << "writing broker queue file: " << path << std::endl;
+					log::internal::debug << "writing broker queue file: " << path << std::endl;
 
 					std::ofstream brokerQueueFile( path);
 

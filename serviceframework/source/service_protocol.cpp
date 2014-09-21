@@ -94,7 +94,7 @@ namespace casual
 
             reply::State Yaml::doFinalize()
             {
-               buffer::X_Octet buffer{ "YAML", m_outputstream.size() };
+               buffer::X_Octet buffer{ "yaml", m_outputstream.size() };
 
                buffer.str( m_outputstream.c_str());
 
@@ -118,7 +118,7 @@ namespace casual
                common::trace::internal::Scope trace{ "Json::doFinalize"};
                const std::string json{ json_object_to_json_string( m_root) };
 
-               buffer::X_Octet buffer{ "JSON", json.size() };
+               buffer::X_Octet buffer{ "json", json.size() };
                buffer.str( json);
 
                auto raw = buffer.release();

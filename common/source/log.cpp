@@ -169,6 +169,7 @@ namespace casual
                      { log::category::Type::casual_transaction, { bufferFactory< log::category::Type::casual_transaction>}},
                      { log::category::Type::casual_ipc, { bufferFactory< log::category::Type::casual_ipc>}},
                      { log::category::Type::casual_queue, { bufferFactory< log::category::Type::casual_queue>}},
+                     { log::category::Type::casual_buffer, { bufferFactory< log::category::Type::casual_buffer>}},
 
                      { log::category::Type::debug, { bufferFactory< log::category::Type::debug>}},
                      { log::category::Type::trace, { bufferFactory< log::category::Type::trace>}},
@@ -184,9 +185,15 @@ namespace casual
 
                logger_buffer* getActiveBuffer( log::category::Type category)
                {
-                  auto environment = common::string::split( common::environment::variable::get( "CASUAL_LOG"), ',');
+                  std::vector< std::string> environment;
 
-                  auto found = range::find( range::make( environment), log::category::name( category));
+                  range::transform(
+                        common::string::split( common::environment::variable::get( "CASUAL_LOG", ""), ','),
+                        environment,
+                        string::trim);
+
+
+                  auto found = range::find( environment, log::category::name( category));
 
                   if( ! found.empty())
                   {
@@ -213,6 +220,7 @@ namespace casual
                   case Type::casual_transaction: return "casual.transaction"; break;
                   case Type::casual_ipc: return "casual.ipc"; break;
                   case Type::casual_queue: return "casual.queue"; break;
+                  case Type::casual_buffer: return "casual.buffer"; break;
 
                   case Type::debug: return "debug"; break;
                   case Type::trace: return "trace"; break;
@@ -238,6 +246,8 @@ namespace casual
             internal::Stream ipc{ local::getActiveBuffer( category::Type::casual_ipc)};
 
             internal::Stream queue{ local::getActiveBuffer( category::Type::casual_queue)};
+
+            internal::Stream buffer{ local::getActiveBuffer( category::Type::casual_buffer)};
 
 
          } // internal
@@ -271,6 +281,7 @@ namespace casual
                      { category::Type::casual_trace, internal::trace },
                      { category::Type::casual_transaction, internal::transaction },
                      { category::Type::casual_queue, internal::queue },
+                     { category::Type::casual_buffer, internal::buffer },
                      { category::Type::debug, debug },
                      { category::Type::trace, trace },
                      { category::Type::parameter, parameter },

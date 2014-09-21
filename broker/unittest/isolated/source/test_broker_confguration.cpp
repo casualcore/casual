@@ -34,15 +34,13 @@ namespace casual
 
          auto state = transform::configuration::Domain{}( domain);
 
-         EXPECT_TRUE( state.groups.size() == 5) << CASUAL_MAKE_NVP( state.groups);
+         ASSERT_TRUE( state.groups.size() == 6) << CASUAL_MAKE_NVP( state.groups);
 
 
-         EXPECT_TRUE( state.groups.at( 0).dependencies.size() == 1) << "size: " << state.groups.at( 0).dependencies.size();
+         EXPECT_TRUE( state.groups.at( 1).dependencies.size() == 1) << CASUAL_MAKE_NVP(state.groups.at( 1));
 
-         ASSERT_TRUE( state.groups.at( 1).dependencies.size() == 2);
-         EXPECT_TRUE( state.groups.at( 1).dependencies.at( 0) == 10);
-         EXPECT_TRUE( state.groups.at( 1).dependencies.at( 1) == 11);
-
+         ASSERT_TRUE( state.groups.at( 2).dependencies.size() == 1) << CASUAL_MAKE_NVP(state.groups.at( 2));
+         EXPECT_TRUE( state.groups.at( 2).dependencies.at( 0) == 10) << CASUAL_MAKE_NVP(state.groups.at( 2));
 
       }
 

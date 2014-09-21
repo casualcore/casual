@@ -455,6 +455,19 @@ namespace casual
             std::copy( std::begin( range), std::end( range), output);
          }
 
+         template< typename R, typename Size, typename Iter>
+         void copy_max( R&& range, Size size, Iter output)
+         {
+            if( range.size() >= size)
+            {
+               copy( std::forward< R>(range), output);
+            }
+            else
+            {
+               std::copy_n( std::begin( range), size, output);
+            }
+         }
+
          template< typename R, typename C>
          auto move( R&& range, C& container) -> decltype( make( container))
          {
@@ -466,7 +479,7 @@ namespace casual
          template< typename R, typename C, typename T>
          auto transform( R&& range, C& container, T transform) -> decltype( make( container))
          {
-            auto inputRange = make( std::forward< R>( range));
+            auto inputRange = make( range);
             std::transform( std::begin( inputRange), std::end( inputRange), std::back_inserter( container), transform);
             return make( container);
          }

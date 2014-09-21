@@ -7,8 +7,10 @@
 
 #include "buffer/order.h"
 
-#include "common/buffer_context.h"
+#include "common/buffer/pool.h"
 #include "common/network_byteorder.h"
+
+#include "common/log.h"
 
 #include <cstring>
 
@@ -146,7 +148,7 @@ namespace local
             const auto reserved = header::select::reserved( buffer);
             const auto inserter = header::select::inserter( buffer);
 
-            const auto length = std::strlen( value) + 1;
+            const long length = std::strlen( value) + 1;
 
             if( (reserved - inserter) < length)
             {
@@ -219,7 +221,7 @@ namespace local
 
             value = buffer + selector;
 
-            const auto length = std::strlen( value) + 1;
+            const long length = std::strlen( value) + 1;
 
             if( (inserter - selector) < length)
             {
@@ -450,10 +452,32 @@ namespace casual
       namespace implementation
       {
 
-         class Order : public common::buffer::implementation::Base
+         struct OrderBuffer : public common::buffer::Buffer
          {
-            void doCreate( common::buffer::Buffer& buffer, std::size_t size) override
+            // has to have the two ctors like common::buffer::Buffer
+            using common::buffer::Buffer::Buffer;
+
+            // TODO: some offset stuff...
+         };
+
+
+         class Order : public common::buffer::pool::basic_pool< OrderBuffer>
+         {
+         public:
+
+            using types_type = common::buffer::pool::default_pool::types_type;
+
+            static const types_type& types()
             {
+               static const types_type result{ { CASUAL_ORDER, ""}};
+               return result;
+            }
+
+            common::platform::raw_buffer_type allocate( const common::buffer::Type& type, std::size_t size)
+            {
+               // TODO: this should not be needed if we're using custom buffer-type in the generic pool
+
+
                constexpr auto bytes = local::header::size();
 
                if( size < bytes)
@@ -462,36 +486,78 @@ namespace casual
                   size = bytes;
                }
 
-               buffer.memory().resize( size);
+               OrderBuffer buffer( type, size);
 
-               local::header::update::reserved( buffer.raw(), size);
-               local::header::update::inserter( buffer.raw(), bytes);
-               local::header::update::selector( buffer.raw(), bytes);
+               local::header::update::reserved( buffer.payload.memory.data(), size);
+               local::header::update::inserter( buffer.payload.memory.data(), bytes);
+               local::header::update::selector( buffer.payload.memory.data(), bytes);
+
+               m_pool.push_back( std::move( buffer));
+               return m_pool.back().payload.memory.data();
+
             }
 
-            void doReallocate( common::buffer::Buffer& buffer, std::size_t size) override
+            common::platform::raw_buffer_type reallocate( common::platform::const_raw_buffer_type handle, std::size_t size)
             {
+               // TODO: this should not be needed if we're using custom buffer-type in the generic pool
 
-               const auto inserter = local::header::select::inserter( buffer.raw());
+               auto buffer = find( handle);
 
-               if( size < inserter)
+               if( buffer != std::end( m_pool))
                {
-                  // throw if this is an error...
-                  size = inserter;
+                  buffer->payload.memory.resize( size);
+                  local::header::update::reserved( buffer->payload.memory.data(), size);
+                  return buffer->payload.memory.data();
                }
 
-               buffer.memory().resize( size);
-
-               local::header::update::reserved( buffer.raw(), size);
+               return nullptr;
             }
-
-
-            static const bool initialized;
          };
 
-         const bool Order::initialized = common::buffer::implementation::registrate< Order>( {{ CASUAL_ORDER, ""}});
-
       } // implementation
+
+
+   } // buffer
+
+   //
+   // Registrate and define the type that can be used to get the custom pool
+   //
+
+   template class common::buffer::pool::Registration< buffer::implementation::Order>;
+
+   namespace buffer
+   {
+      namespace order
+      {
+         using pool_type = common::buffer::pool::Registration< implementation::Order>;
+
+         //
+         // Ex:
+         //
+         int some_C_function( char* handle)
+         {
+            try
+            {
+               //
+               // get the buffer for this handle
+               //
+               implementation::OrderBuffer& buffer = pool_type::pool.get( handle);
+
+               //
+               // Do stuff with custom buffer
+               //
+               common::log::debug << buffer.payload.type.subtype << std::endl;
+
+               return 0;
+            }
+            catch( ...)
+            {
+               // sets tperror and write to log it there are severe errors,
+               return common::error::handler();
+            }
+         }
+
+      } // order
    } // buffer
 } // casual
 

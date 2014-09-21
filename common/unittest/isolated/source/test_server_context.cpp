@@ -12,7 +12,7 @@
 #include "common/process.h"
 
 #include "common/mockup/ipc.h"
-#include "common/buffer_context.h"
+#include "common/buffer/pool.h"
 
 
 // we need some values
@@ -57,7 +57,7 @@ namespace casual
             void test_service( TPSVCINFO *serviceInfo)
             {
 
-               auto buffer = buffer::Context::instance().allocate( {"X_OCTET", ""}, 1024);
+               auto buffer = buffer::pool::Holder::instance().allocate( {"X_OCTET", "binary"}, 1024);
 
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
@@ -79,7 +79,7 @@ namespace casual
             {
                message::service::callee::Call message;
 
-               message.buffer = { { "X_OCTET", ""}, 1024};
+               message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
                message.callDescriptor = 10;
                message.service.name = "test_service";
                message.reply.queue_id = id;
@@ -229,7 +229,7 @@ namespace casual
          message::service::Reply message;
 
          reader( message);
-         EXPECT_TRUE( message.buffer.raw() == local::replyMessage());
+         EXPECT_TRUE( message.buffer.memory.data() == local::replyMessage());
 
          mockup::ipc::broker::queue().clear();
          ipc::receive::queue().clear();

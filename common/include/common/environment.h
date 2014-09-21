@@ -23,7 +23,17 @@ namespace casual
 			{
 				bool exists( const std::string& name);
 
+				//!
+				//! @return value of invironment variable with @p name
+				//! @throws exception::EnvironmentVariableNotFound if not found
+				//!
 				std::string get( const std::string& name);
+
+            //!
+            //! @return value of environment variable with @p name or value of alternative if
+            //!   variable isn't found
+            //!
+            std::string get( const std::string& name, const std::string& alternative);
 
 				template< typename T>
 				T get( const std::string& name)
@@ -33,6 +43,7 @@ namespace casual
 					converter >> result;
 					return result;
 				}
+
 
 				void set( const std::string& name, const std::string& value);
 

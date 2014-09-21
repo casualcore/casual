@@ -7,7 +7,7 @@
 
 #include "xatmi.h"
 
-#include "common/buffer_context.h"
+#include "common/buffer/pool.h"
 #include "common/calling_context.h"
 #include "common/server_context.h"
 #include "common/platform.h"
@@ -31,10 +31,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 {
    try
    {
-      auto result = casual::common::buffer::Context::instance().allocate( { type, subtype}, size);
-
-      return casual::common::platform::public_buffer( result);
-
+      return casual::common::buffer::pool::Holder::instance().allocate( { type, subtype}, size);
    }
    catch( ...)
    {
@@ -48,8 +45,7 @@ char* tprealloc( const char* ptr, long size)
 
    try
    {
-      auto&& buffer = casual::common::buffer::Context::instance().reallocate( ptr, size);
-      return casual::common::platform::public_buffer( buffer);
+      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size);
    }
    catch( ...)
    {
@@ -80,16 +76,16 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
    try
    {
-      const auto& buffer = casual::common::buffer::Context::instance().get( ptr);
+      auto& buffer = casual::common::buffer::pool::Holder::instance().get( ptr);
 
       //
       // type is optional
       //
       if( type)
       {
-         const int type_size = { 8 };
-         memset( type, '\0', type_size);
-         local::copy_max( buffer.type().type.begin(), buffer.type().type.end(), type_size, type);
+         const std::size_t size{ 8 };
+         memset( type, '\0', size);
+         casual::common::range::copy_max( buffer.type.type, size, type);
       }
 
       //
@@ -97,12 +93,12 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       //
       if( subtype)
       {
-         const int subtype_size = { 16 };
-         memset( subtype, '\0', subtype_size);
-         local::copy_max( buffer.type().subtype.begin(), buffer.type().subtype.end(), subtype_size, subtype);
+         const std::size_t size{ 16 };
+         memset( subtype, '\0', size);
+         casual::common::range::copy_max( buffer.type.subtype, size, subtype);
       }
 
-      return buffer.size();
+      return buffer.memory.size();
 
    }
    catch( ...)
@@ -115,7 +111,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
 
 void tpfree( const char* const ptr)
 {
-   casual::common::buffer::Context::instance().deallocate( ptr);
+   casual::common::buffer::pool::Holder::instance().deallocate( ptr);
 }
 
 void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
