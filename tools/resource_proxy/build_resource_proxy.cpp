@@ -201,7 +201,7 @@ config::xa::Switch configuration( const Settings& settings)
 
    if( findKey == std::end( swithces))
    {
-      throw common::exception::NotReallySureWhatToNameThisException( "resource-key: " + settings.resourceKey + " not found");
+      throw common::exception::invalid::Argument( "resource-key: " + settings.resourceKey + " not found");
    }
    return *findKey;
 }
@@ -215,8 +215,6 @@ int main( int argc, char **argv)
       Settings settings;
 
       {
-         trace::Exit log( "parse arguments", true);
-
          using namespace casual::common;
 
          Arguments handler;
@@ -275,8 +273,14 @@ int main( int argc, char **argv)
 
 
    }
+   catch( const common::exception::invalid::Base& exception)
+   {
+      std::cerr << "error: " << exception << std::endl;
+      return 1;
+   }
    catch( ...)
    {
+      std::cerr << "error: details is found in casual.log\n";
       return common::error::handler();
    }
 

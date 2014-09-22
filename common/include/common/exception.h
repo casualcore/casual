@@ -18,6 +18,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <ostream>
 
 #include <xatmi.h>
 #include <tx.h>
@@ -33,6 +34,11 @@ namespace casual
          {
             Base( const std::string& description)
                : std::runtime_error( description) {}
+
+            friend std::ostream& operator << ( std::ostream& out, const Base& exception)
+            {
+               return out << exception.what();
+            }
          };
 
 
@@ -63,7 +69,20 @@ namespace casual
                : Base( "environment variable not found: " + description) {}
          };
 
+         namespace invalid
+         {
+            struct Base : common::exception::Base
+            {
+               using common::exception::Base::Base;
 
+            };
+
+            struct Argument : Base
+            {
+               using Base::Base;
+            };
+
+         }
 
          struct QueueFailed : public Base
          {

@@ -94,6 +94,8 @@ target = LinkLibrary( 'bin/casual-queue-rm',
 
 install_lib.append( target);
 
+Environment( 'CASUAL_LOG', '')
+
 target = LinkResource( 'bin/casual-queue-resource-proxy', 'casual-queue-rm')
 
 install_bin.append( target);
