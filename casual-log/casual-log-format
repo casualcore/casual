@@ -13,95 +13,74 @@ import optparse
 import re
 import signal
 
+from functools import partial
+
 
 class  Color:
     
-    __grey = '\033[30m'
+    __grey = '\033[30'
     
-    __red = '\033[31m'
-    __bred = '\033[31;1m'
+    __red = '\033[31'
     
-    __green = '\033[32m'
-    __bgreen = '\033[32;1m'
+    __green = '\033[32'
+
+    __yellow = '\033[33'
     
-    __yellow = '\033[33m'
-    __byellow = '\033[33;1m'
+    __blue = '\033[34'
+    __magenta = '\033[35'
     
-    __blue = '\033[34m'
-    __bblue = '\033[34;1m'
-    
-    __magenta = '\033[35m'
-    __bmagenta = '\033[35;1m'
-    
-    __cyan = '\033[36m'
-    __bcyan = '\033[36;1m'
-    
-    __white = '\033[37m'
-    __bwhite = '\033[37;1m'
-    
-    __error = '\033[91m'
-    
-    
-    
+    __cyan = '\033[36'
+    __white = '\033[37'
+    __error = '\033[91'
     
     __WARNING = '\033[0;23m'
     
     __ENDC = '\033[0m'
     
     
-    def __bold(self, string):
-        return string + ';1m'
+    def __bold(self, string, bold = False):
+        if bold:
+            return string + ';1m'
+        else:
+            return string + 'm';
     
-    def grey( self, string):
-        return self.__grey + string + self.__ENDC
+    def grey( self, string, bold = False):
+        return self.__bold( self.__grey, bold) + string + self.__ENDC
     
     def header( self, string):
         return self.__magenta + string + self.__ENDC
     
-    def red( self, string):
-        return self.__red + string + self.__ENDC
+    def red( self, string, bold = False):
+        return self.__bold( self.__red, bold) + string + self.__ENDC
     
-    def bold_red( self, string):
-        return self.__bred + string + self.__ENDC
-    
-    def blue( self, string):
-        return self.__blue + string + self.__ENDC
-    
-    def bold_blue( self, string):
-        return self.__bblue + string + self.__ENDC
+    def blue( self, string, bold = False):
+        return self.__bold( self.__blue, bold) + string + self.__ENDC
 
-    def green( self, string):
-        return self.__green + string + self.__ENDC
-    
-    def bold_green( self, string):
-        return self.__bgreen + string + self.__ENDC
-    
-    def cyan( self, string):
-        return self.__cyan + string + self.__ENDC
-    
-    def bold_cyan( self, string):
-        return self.__bcyan + string + self.__ENDC
-    
-    def warning( self, string):
-        return self.__WARNING + string + self.__ENDC
+    def green( self, string, bold = False):
+        return self.__bold( self.__green, bold) + string + self.__ENDC
+
+    def cyan( self, string, bold = False):
+        return self.__bold( self.__cyan, bold) + string + self.__ENDC
     
     def error( self, string):
         return self.__error + string + self.__ENDC
     
-    def yellow( self, string):
-        return self.__yellow + string + self.__ENDC
+    def yellow( self, string, bold = False):
+        return self.__bold( self.__yellow, bold) + string + self.__ENDC
     
-    def bold_yellow( self, string):
-        return self.__byellow + string + self.__ENDC
+    def white( self, string, bold = False):
+        return self.__bold( self.__white, bold) + string + self.__ENDC
     
-    def bold_white( self, string):
-        return self.__bwhite + string + self.__ENDC
+    warning = yellow;
     
-    def white( self, string):
-        return self.__white + string + self.__ENDC
+    def default(self, string, bold = False):
+        return string
 
 color=Color()
 
+
+def time( time):
+    return time[0: 11] + color.white( time[11:]);
 
 def domain( name):
     
@@ -114,8 +93,8 @@ domain.size = 0;
 
 
 def normalizePID( id):
-    
-    return id.rjust( 8);
+    return id;
+    #return id.rjust( 8);
     
 
 
@@ -133,7 +112,7 @@ def truncateXID( xid):
     if xid:
         return xid[24: 24 + 21];
     else:
-        return '                     ';
+        return '' #'                     ';
 
 
 def truncateThread( pid, thread):
@@ -164,11 +143,11 @@ def category( name):
     return name;
 
 category.switch = [
-    [ re.compile( '^err'), color.bold_red],
-    [ re.compile( '^war'), color.warning],
-    [ re.compile( '^inf'), color.white],
+    [ re.compile( '^err'), partial( color.red, bold = True)],
+    [ re.compile( '^war'), partial( color.warning, bold = True)],
+    [ re.compile( '^inf'), partial( color.white, bold = True)],
     [ re.compile( '^deb'), color.green],
-    [ re.compile( '^tra'), color.bold_green],
+    [ re.compile( '^tra'), partial( color.green, bold = True)],
     #[ re.compile( '^casual[.]trace'), color.bold_blue], 
     [ re.compile( '^casu'), color.blue],                
 ]
@@ -188,25 +167,30 @@ def format( input, output):
             pid = rows[ 4];
             thread = truncateThread( pid, rows[ 5]);
             
-            output.write( rows[ 0]);
+            output.write( time( rows[ 0]));
             output.write( '|');
-            output.write( color.cyan( domain( rows[ 1])));
+            output.write( color.default( domain( rows[ 1])));
             output.write( '|');
             output.write( color.yellow( truncateUUID( rows[ 2])));
             output.write( '|');
-            output.write( color.yellow( truncateXID( rows[ 3])));
+            output.write( color.default( truncateXID( rows[ 3])));
             output.write( '|');
             output.write( color.white( normalizePID( pid)));
             output.write( '|');
             output.write( thread);
             output.write( '|');
-            output.write( color.white( rows[ 6]));
+            #output.write( color.white( rows[ 6]));
+            output.write( rows[ 6]);
             output.write( '|');
             output.write( category( rows[ 7]));
             output.write( '|');
             output.write( color.yellow( rows[ 8]));
             output.write( '|');
-            output.write( rows[ 9]);
+
+            if rows[ 7] in [ "information", 'error']:
+                output.write( color.white( rows[ 9]));
+            else:
+                output.write( rows[ 9])
             #sys.stdout.write( '\n');
         else:
             output.write( line)

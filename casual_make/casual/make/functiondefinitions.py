@@ -117,12 +117,8 @@ def Compile( sourcefile, objectfile, directive = ''):
     dependency_file = internal_dependency_file_name( target.file)
     cross_object_file = internal_cross_object_name( target.file)
     
-    
     print "#"
     print "# compiling {0} to {1}".format( sourcefile, objectfile)
-    print
-    print dependency_file + ': ' + target.source + ' | ' + object_directory
-    print '\t' + internal_platform().header_dependency( target.source, [ cross_object_file, target.file], dependency_file)
     print
     print "-include " + dependency_file
     print
@@ -130,13 +126,15 @@ def Compile( sourcefile, objectfile, directive = ''):
     print
     print target.name + ': ' + target.file
     print
-    print target.file + ": " + target.source + ' | ' + object_directory + ' ' + dependency_file
+    print target.file + ": " + target.source + ' | ' + object_directory
     print '\t' + internal_platform().compile( target.source, target.file, directive)
+    print '\t' + internal_platform().header_dependency( target.source, [ cross_object_file, target.file], dependency_file)
     print
     print 'cross: ' + cross_object_file
     print 
-    print cross_object_file + ": " + target.source + " | "  + object_directory
+    print cross_object_file + ": " + target.source + ' | ' + object_directory
     print '\t' + internal_platform().cross_compile( target.source, cross_object_file, directive)
+    print '\t' + internal_platform().header_dependency( target.source, [ cross_object_file, target.file], dependency_file)
     print
     
     internal_register_object_path_for_clean( object_directory)
