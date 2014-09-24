@@ -20,10 +20,15 @@ from casual.make.engine import engine
 # 
 class Target:
     
-    def __init__(self, filename, source = ''):
+    def __init__(self, filename, source = '', name = None):
         self.file = filename
-        self.name = internal_target_name( filename)
+        if name:
+            self.name = name
+        else:
+            self.name = internal_target_name( filename)
         self.source = source
+        self.base = os.path.basename( source);
+        
 
 
 
@@ -392,7 +397,7 @@ def internal_register_path_for_create( path):
 #
 
 def internal_normalize_string( string):
-    return re.sub( '[^\w/]+', '_', string)
+    return re.sub( '[^\w]+', '_', string)
 
 def internal_normalize_path(path, platformSpefic = None):
 
@@ -428,7 +433,6 @@ def internal_bind_name_path( path):
 def internal_target_name( name):
 
     return 'target_' + internal_normalize_string( os.path.basename( name))
-
 
 
 def internal_unique_target_name(name):
@@ -527,6 +531,7 @@ def internal_build( casual_make_file):
 def internal_library_targets( libs):
 
     targets = []
+    dummy_targets = []
     
     if not libs:
         return targets
@@ -542,54 +547,80 @@ def internal_library_targets( libs):
     
     
     for lib in libs:
-        targets.append( internal_target_name( platform.library_name( lib)))
-        targets.append( internal_target_name( platform.archive_name( lib)))
+        if not isinstance( lib, Target):
+            library = internal_target_name( platform.library_name( lib))
+            archive = internal_target_name( platform.archive_name( lib))
+            
+            targets.append( library)
+            targets.append( archive)
+            
+            dummy_targets.append( library)
+            dummy_targets.append( archive)
+                      
+        else:
+            targets.append( lib.name)
 
-    print
-    print "#";
-    print "# dummy targets, that will be used if the real target is absent";
-    print "# so that we can have (dummy) dependencies even if the target is not produces in this makefile";
+
+    print "#"
+    print "# This is the only way I've got it to work. We got to have a INTERMEDIATE target"
+    print "# even if the target exist and have dependency to a file that is older. Don't really get make..." 
     print "#";
     for target in targets:    
         print ".INTERMEDIATE: " + target
     print
-    for target in targets:    
+    print "#";
+    print "# dummy targets, that will be used if the real target is absent";
+    for target in dummy_targets:    
         print target + ":"
     
     return targets
 
 
+def internal_target_files( values):
+    names = []
+    for value in values:
+        if isinstance( value, Target):
+            names.append( value.file)
+        else:
+            names.append( value)
+    
+    return names;
+
+def internal_target_base( values):
+    names = []
+    for value in values:
+        if isinstance( value, Target):
+            names.append( value.base)
+        else:
+            names.append( value)
+    
+    return names;
 
 
 
-
-def internal_link( platform, target, objectfiles, libs, linkdirectives = '', prefix = ''):
+def internal_link( platform, target, objectfiles, libraries, linkdirectives = '', prefix = ''):
 
     internal_validate_list( objectfiles);
-    internal_validate_list( libs);
+    internal_validate_list( libraries);
     
-    #
-    # Decide if objektifile is a list of Target
-    # 
-    def targets( objects):
-        objs = []
-        for object in objects:
-            if isinstance( object, Target):
-                objs.append( object.file)
-            else:
-                objs.append( object)
-        
-        return objs;
-                
-    objectfiles = targets( objectfiles)
-            
     
-
+    
     print "#"
     print "# Links: " + os.path.basename( target.file)
     
-    dependent_targets = internal_library_targets( libs)
+    
+    #
+    # extract file if some is targets
+    # 
+    objectfiles = internal_target_files( objectfiles)
+    
+             
+    dependent_targets = internal_library_targets( libraries)
 
+    #
+    # Convert library targets to names/files, 
+    #
+    libraries = internal_target_base( libraries)
 
     destination_path = os.path.dirname( target.file)
     
@@ -600,7 +631,7 @@ def internal_link( platform, target, objectfiles, libs, linkdirectives = '', pre
     print
     print '   objects_' + target.name + ' = ' + internal_multiline( internal_object_name_list( objectfiles))
     print
-    print '   libs_'  + target.name + ' = ' + internal_multiline( factory().link_directive( libs))
+    print '   libs_'  + target.name + ' = ' + internal_multiline( factory().link_directive( libraries))
     print
     print '   #'
     print '   # possible dependencies to other targets (in this makefile)'
@@ -617,11 +648,16 @@ def internal_link( platform, target, objectfiles, libs, linkdirectives = '', pre
     return target
 
 
-def internal_link_resource( target, resource, libraries, directive):
+def internal_link_resource_proxy( target, resource, libraries, directive):
     
     internal_validate_list( libraries);
     
     dependent_targets = internal_library_targets( libraries)
+    
+    #
+    # Convert library targets to names/files, 
+    #
+    libraries = internal_target_base( libraries)
     
     destination_path = os.path.dirname( target.file)
     
@@ -637,8 +673,12 @@ def internal_link_resource( target, resource, libraries, directive):
     print 
     print target.name + ': ' + target.file
     print
+    print '   #'
+    print '   # possible dependencies to other targets (in this makefile)'
+    print '   depenency_' + target.name + ' = ' + internal_multiline( dependent_targets)
+    print
     print target.file + ': $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' --link-directives "' + directive + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(COMPILE_DIRECTIVES) $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
+    print '\t' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' --link-directives "' + directive + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
     
     internal_register_file_for_clean( target.file)
     internal_register_path_for_create( destination_path)

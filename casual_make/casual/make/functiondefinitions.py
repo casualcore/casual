@@ -97,6 +97,21 @@ def Scope( inherit = True, name = None):
     """
     return internal_scope( inherit, name)
     
+
+def Environment( name, value = '', export = True):
+    """
+    Sets an environment variable
+    :param name: the name of the variable
+    :param value: the value to be set
+    :param export: if the variable shuld be exportet to sub-makefiles and shells
+    
+    """
+    
+    if( export):
+        print 'export ' + name + ' = ' + value
+    else:
+        print name + ' = ' + value
+    
     
 
 def Compile( sourcefile, objectfile, directive = ''):
@@ -109,7 +124,7 @@ def Compile( sourcefile, objectfile, directive = ''):
  :return: the target (which contains 
     """
 
-    target = Target( internal_normalize_path( objectfile))
+    target = Target( internal_normalize_path( objectfile), objectfile, 'target_' + internal_normalize_string( objectfile))
     target.source = internal_normalize_path( sourcefile);
     
     object_directory = os.path.dirname( target.file)
@@ -261,11 +276,11 @@ def LinkExecutable( name, objectfiles, libraries = []):
     return target;
 
 
-def LinkResource( name, resource, libraries = [], directive = ''):
+def LinkResourceProxy( name, resource, libraries = [], directive = ''):
     
     target = Target( internal_executable_name_path( name), name)
     
-    return internal_link_resource( target, resource, libraries, directive)
+    return internal_link_resource_proxy( target, resource, libraries, directive)
     
 
 

@@ -75,6 +75,11 @@ class  Bcolors:
         if not self.__active: return ''
         else: return '\033[0;1;31m'
     
+    def __pink(self, bold = False):
+        if not self.__active: return ''
+        else: return '\033[0;1;35m'
+    
+    
     def __end(self):
        if not self.__active: return ''
        return '\033[0m'
@@ -85,6 +90,9 @@ class  Bcolors:
     def error( self, string, bold = False):
         return self.__error( bold) + string + self.__end()
     
+    def warning(self, string, bold = False):
+        return self.__pink( bold) + string + self.__end()
+    
     def blue( self, string, bold = False):
         return self.__blue( bold) + string + self.__end()
 
@@ -93,8 +101,6 @@ class  Bcolors:
     
     def red( self, string, bold = False):
         return self.__red( bold) + string + self.__end()
-    
-    warning = red
     
     
     def cyan( self, string, bold = False):
@@ -233,6 +239,8 @@ reformat.filters = [
      lambda match: bcolors.green( 'updated: ') + match.group(2) + ' ' + bcolors.blue( match.group(1)) + '\n' ],
     [ re.compile(r'^generates makefile.*from[ ](.*)'),  
      lambda match: bcolors.cyan( 'makefile: ') + bcolors.yellow( 'generate ') + bcolors.white( match.group(1)) + '\n' ],
+    [ re.compile(r'^casual-build-resource-proxy.*--output[ ]+([^ ]+)'),  
+     lambda match: bcolors.blue( 'build-rm-proxy: ') + bcolors.white( match.group(1)) +'\n' ],
 ];
     
     

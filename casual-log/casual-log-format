@@ -29,6 +29,8 @@ class  Color:
     __blue = '\033[34'
     __magenta = '\033[35'
     
+    __pink = '\033[0;1;35m'
+    
     __cyan = '\033[36'
     __white = '\033[37'
     __error = '\033[91'
@@ -71,7 +73,8 @@ class  Color:
     def white( self, string, bold = False):
         return self.__bold( self.__white, bold) + string + self.__ENDC
     
-    warning = yellow;
+    def warning(self, string, bold = False):
+        return self.__pink + string + self.__ENDC
     
     def default(self, string, bold = False):
         return string

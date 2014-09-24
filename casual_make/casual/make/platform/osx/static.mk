@@ -58,9 +58,9 @@ ifdef DEBUG
    
 else
    COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -std=c++11
-   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC 
-   LINK_DIRECTIVES_EXE =  -O3 -fPIC 
-   LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC 
+   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC -Wall -pedantic -std=c++11
+   LINK_DIRECTIVES_EXE =  -O3 -fPIC -Wall -pedantic -std=c++11
+   LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC -Wall -pedantic -std=c++11
 endif
 
 CROSS_COMPILE_DIRECTIVES = -g -Wall --analyze -pedantic -fcolor-diagnostics -DNOWHAT -std=c++11 -stdlib=libc++ -U__STRICT_ANSI__ -DGTEST_USE_OWN_TR1_TUPLE=1
