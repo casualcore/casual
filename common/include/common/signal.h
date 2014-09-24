@@ -76,7 +76,9 @@ namespace casual
 			//!
 			//! Sends the signal to the process
 			//!
-			void send( platform::pid_type pid, type::type signal);
+			//! @return true if the signal was sent
+			//!
+			bool send( platform::pid_type pid, type::type signal);
 
 			//!
 			//! Blocks a given signal

@@ -17,6 +17,7 @@
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/exception.h"
+#include "common/internal/log.h"
 
 
 #include <fstream>
@@ -45,7 +46,7 @@ namespace casual
                      common::file::remove( path);
                   }
 
-                  common::log::debug << "writing queue broker queue file: " << path << std::endl;
+                  common::log::internal::queue << "writing queue broker queue file: " << path << std::endl;
 
                   std::ofstream brokerQueueFile( path);
 
@@ -101,7 +102,73 @@ namespace casual
 
             } // <unnamed>
          } // local
+
+
+         std::vector< common::platform::pid_type> State::processes() const
+         {
+            std::vector< common::platform::pid_type> result;
+
+            for( auto& group : groups)
+            {
+               result.push_back( group.id.pid);
+            }
+
+            return result;
+         }
+
+         void State::removeProcess( common::platform::pid_type pid)
+         {
+            {
+               auto found = common::range::find_if( groups, [=]( const Group& g){
+                  return g.id.pid == pid;
+               });
+
+               if( found)
+               {
+                  groups.erase( found.first);
+               }
+               else
+               {
+                  // error?
+               }
+            }
+
+            //
+            // Remove all queues for the group
+            //
+            {
+               auto current = std::begin( queues);
+
+               for( ; current != std::end( queues); ++current)
+               {
+                  if( current->second.server.pid == pid)
+                  {
+                     current = queues.erase( current);
+                  }
+               }
+            }
+            //
+            // Invalidate xa-requests
+            //
+            {
+               for( auto& corr : correlation)
+               {
+                  for( auto& reqeust : corr.second.requests)
+                  {
+                     if( reqeust.group.id.pid == pid && reqeust.state <= Correlation::State::pending)
+                     {
+                        reqeust.state = Correlation::State::error;
+                     }
+                  }
+               }
+            }
+         }
+
+
       } // broker
+
+
+
 
 
       Broker::Broker( broker::Settings settings)
@@ -119,6 +186,28 @@ namespace casual
          {
             broker::local::startup( m_state, config::queue::get());
          }
+
+      }
+
+      Broker::~Broker()
+      {
+         try
+         {
+            common::process::children::terminate( m_state);
+
+            common::log::information << "casual-queue-broker is off-line" << std::endl;
+
+         }
+         catch( const common::exception::signal::Timeout& exception)
+         {
+            auto pids = m_state.processes();
+            common::log::error << "failed to terminate groups - pids: " << common::range::make( pids) << std::endl;
+         }
+         catch( ...)
+         {
+            common::error::handler();
+         }
+
       }
 
 
@@ -135,6 +224,9 @@ namespace casual
          };
 
          broker::queue::blocking::Reader blockedRead( casual::common::ipc::receive::queue(), m_state);
+
+         common::log::information << "casual-queue-broker is on-line" << std::endl;
+
 
          while( true)
          {

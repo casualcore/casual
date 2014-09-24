@@ -215,14 +215,14 @@ namespace casual
             //
             common::log::internal::transaction << "prepare message dispatch handlers\n";
 
-            message::dispatch::Handler handler;
-
-            handler.add( handle::Prepare{ m_state});
-            handler.add( handle::Commit{ m_state});
-            handler.add( handle::Rollback{ m_state});
-            handler.add( handle::domain::Prepare{ m_state});
-            handler.add( handle::domain::Commit{ m_state});
-            handler.add( handle::domain::Rollback{ m_state});
+            message::dispatch::Handler handler{
+               handle::Prepare{ m_state},
+               handle::Commit{ m_state},
+               handle::Rollback{ m_state},
+               handle::domain::Prepare{ m_state},
+               handle::domain::Commit{ m_state},
+               handle::domain::Rollback{ m_state},
+            };
 
 
             common::log::internal::transaction << "start message pump\n";

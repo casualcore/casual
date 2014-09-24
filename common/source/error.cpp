@@ -10,6 +10,7 @@
 #include "common/log.h"
 #include "common/exception.h"
 #include "common/transaction_context.h"
+#include "common/process.h"
 
 
 #include <string.h>
@@ -40,6 +41,11 @@ namespace casual
             try
             {
                throw;
+            }
+            catch( const exception::signal::Terminate&)
+            {
+               log::information << file::basename( process::path()) << " is off-line" << std::endl;
+               return 0;
             }
             catch( const exception::xatmi::severity::Error& exception)
             {
@@ -73,6 +79,11 @@ namespace casual
                return exception.code();
             }
             */
+            catch( const exception::Base& exception)
+            {
+               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
+               return TPESYSTEM;
+            }
             catch( const std::exception& exception)
             {
                log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
@@ -89,14 +100,14 @@ namespace casual
          }
 
 
-         std::string stringFromErrno()
-         {
-            return strerror( errno);
-         }
-
          std::string string()
          {
-            return strerror( errno);
+            return string( errno);
+         }
+
+         std::string string( int code)
+         {
+            return strerror( code);
          }
 
          namespace xatmi

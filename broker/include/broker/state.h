@@ -127,7 +127,7 @@ namespace casual
             std::size_t configuredInstances = 0;
             bool restart = false;
 
-            void remove( pid_type instance);
+            bool remove( pid_type instance);
 
          };
 
@@ -251,7 +251,8 @@ namespace casual
          state::Server::Instance& getInstance( state::Server::pid_type pid);
          const state::Server::Instance& getInstance( state::Server::pid_type pid) const;
 
-         void removeInstance( state::Server::pid_type pid);
+
+         void removeProcess( state::Server::pid_type pid);
 
 
          void addInstances( state::Executable::id_type id, const std::vector< state::Server::pid_type>& pids);
@@ -278,6 +279,8 @@ namespace casual
 
          std::size_t size() const;
 
+         std::vector< common::platform::pid_type> processes() const;
+
          void instance( state::Server::id_type id, std::size_t instance);
          void instance( state::Server& server, std::size_t instance);
 
@@ -301,26 +304,23 @@ namespace casual
       } // state
 
 
-      namespace policy
+      namespace queue
       {
-         struct Broker : state::Base
+         namespace blocking
          {
-            using state::Base::Base;
+            using Reader = common::queue::blocking::remove::basic_reader< State>;
+            using Writer = common::queue::blocking::remove::basic_writer< State>;
 
-            void apply();
-         private:
+         } // blocking
 
-            void clean( common::platform::pid_type pid);
-         };
-      } // policy
+         namespace non_blocking
+         {
+            using Reader = common::queue::non_blocking::remove::basic_reader< State>;
+            using Writer = common::queue::non_blocking::remove::basic_writer< State>;
 
-      using QueueBlockingReader = common::queue::blocking::basic_reader< policy::Broker>;
-      using QueueNonBlockingReader = common::queue::non_blocking::basic_reader< policy::Broker>;
+         } // non_blocking
 
-      using QueueBlockingWriter = common::queue::blocking::basic_writer< policy::Broker>;
-      using QueueNonBlockingWriter = common::queue::non_blocking::basic_writer< policy::Broker>;
-
-
+      } // queue
    } // broker
 
 

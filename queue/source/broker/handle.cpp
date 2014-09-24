@@ -10,7 +10,8 @@
 #include "common/log.h"
 #include "common/internal/log.h"
 #include "common/error.h"
-
+#include "common/exception.h"
+#include "common/process.h"
 
 
 
@@ -21,14 +22,6 @@ namespace casual
    {
       namespace broker
       {
-         namespace queue
-         {
-            void Policy::apply()
-            {
-
-            }
-
-         }
 
          namespace handle
          {
@@ -81,7 +74,7 @@ namespace casual
                   }
                   else
                   {
-                     static const common::message::queue::lookup::Reply reply;
+                     static common::message::queue::lookup::Reply reply;
                      write( reply);
                   }
                }

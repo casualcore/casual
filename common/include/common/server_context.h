@@ -280,9 +280,6 @@ namespace casual
                {
                   if( ! m_moved)
                   {
-
-                     trace::internal::Scope trace{ "callee::handle::basic_call::~basic_call"};
-
                      try
                      {
                         auto& state = server::Context::instance().state();

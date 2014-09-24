@@ -15,35 +15,6 @@ namespace casual
    {
 
 
-      namespace policy
-      {
-         void Manager::apply()
-         {
-            try
-            {
-               throw;
-            }
-            catch( const common::exception::signal::child::Terminate& exception)
-            {
-               auto terminated = common::process::lifetime::ended();
-               for( auto& death : terminated)
-               {
-                  switch( death.why)
-                  {
-                     case common::process::lifetime::Exit::Why::core:
-                        common::log::error << "process crashed: TODO: maybe restart? " << death.string() << std::endl;
-                        break;
-                     default:
-                        //common::log::information << "proccess died: " << death.string() << std::endl;
-                        break;
-                  }
-
-                  state::remove::instance( death.pid, m_state);
-               }
-            }
-         }
-      } // policy
-
 
       namespace handle
       {

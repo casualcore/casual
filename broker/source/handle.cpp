@@ -66,7 +66,7 @@ namespace casual
                      common::range::for_each( batch.executables, *this);
 
 
-                     broker::QueueBlockingReader queueReader{ common::ipc::receive::queue(), m_state};
+                     queue::blocking::Reader queueReader{ common::ipc::receive::queue(), m_state};
 
                      common::message::dispatch::Handler handler{
                         handle::transaction::manager::Connect{ m_state},
@@ -134,7 +134,7 @@ namespace casual
                   //
                   auto configuration = transform::transaction::configuration( m_state);
 
-                  QueueBlockingWriter tmQueue{ message.server.queue_id, m_state};
+                  queue::blocking::Writer tmQueue{ message.server.queue_id, m_state};
                   tmQueue( configuration);
 
                }
@@ -183,7 +183,7 @@ namespace casual
                      message::transaction::client::connect::Reply reply =
                            transform::transaction::client::reply( m_state, instance);
 
-                     QueueBlockingWriter write( message.server.queue_id, m_state);
+                     queue::blocking::Writer write( message.server.queue_id, m_state);
                      write( reply);
                   }
                   catch( const state::exception::Missing& exception)
@@ -195,7 +195,7 @@ namespace casual
                      reply.domain = common::environment::domain::name();
                      reply.transactionManagerQueue = m_state.transactionManagerQueue;
 
-                     QueueBlockingWriter write( message.server.queue_id, m_state);
+                     queue::blocking::Writer write( message.server.queue_id, m_state);
                      write( reply);
 
                   }
@@ -229,7 +229,7 @@ namespace casual
             //
             // Remove the instance
             //
-            m_state.removeInstance( message.server.pid);
+            m_state.removeProcess( message.server.pid);
          }
 
          template< typename M>
@@ -238,7 +238,7 @@ namespace casual
             //
             // Remove the instance
             //
-            m_state.removeInstance( message.server.pid);
+            m_state.removeProcess( message.server.pid);
 
             // TODO: We have to check if this affect pending...
          }
@@ -264,7 +264,7 @@ namespace casual
 
                common::log::internal::debug << "connect reply: " << message.server << std::endl;
 
-               QueueBlockingWriter writer( message.server.queue_id, m_state);
+               queue::blocking::Writer writer( message.server.queue_id, m_state);
                writer( reply);
 
 
@@ -329,7 +329,7 @@ namespace casual
                   reply.service.monitor_queue = m_state.monitorQueue;
                   reply.server.push_back( transform::Instance()( *idle));
 
-                  QueueBlockingWriter writer( message.server.queue_id, m_state);
+                  queue::blocking::Writer writer( message.server.queue_id, m_state);
                   writer( reply);
 
                   service.lookedup++;
@@ -354,7 +354,7 @@ namespace casual
                message::service::name::lookup::Reply reply;
                reply.service.name = message.requested;
 
-               QueueBlockingWriter writer( message.server.queue_id, m_state);
+               queue::blocking::Writer writer( message.server.queue_id, m_state);
                writer( reply);
             }
          }
@@ -455,7 +455,7 @@ namespace casual
 
          void Policy::reply( platform::queue_id_type id, message::service::Reply& message)
          {
-            QueueBlockingWriter writer( id, m_state);
+            queue::blocking::Writer writer( id, m_state);
             writer( message);
          }
 

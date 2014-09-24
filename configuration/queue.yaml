@@ -1,6 +1,19 @@
 
 
-queues:
+domain:
+
+  name: some-queue-domain-name
+  note: some information
+  
+  default:
+    path: /some/path
+   
+    queue:
+      retries: 3
+     
+    
+  
+  
   
   groups:
     - name: someGroup

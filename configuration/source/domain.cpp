@@ -10,6 +10,7 @@
 
 
 #include "common/exception.h"
+#include "common/file.h"
 
 #include "sf/archive/maker.h"
 
@@ -38,7 +39,7 @@ namespace casual
                      void operator ()( domain::Server& server) const
                      {
                         assign_if_empty( server.instances, m_casual_default.server.instances);
-                        assign_if_empty( server.alias, nextAlias());
+                        assign_if_empty( server.alias, nextAlias( server.path));
                      }
 
                      void operator ()( domain::Service& service) const
@@ -62,10 +63,10 @@ namespace casual
                            value = def;
                      }
 
-                     static std::string nextAlias()
+                     static std::string nextAlias( const std::string& path)
                      {
                         static long index = 1;
-                        return std::to_string( index++);
+                        return common::file::basename( path) + "_" + std::to_string( index++);
                      }
                      domain::Default m_casual_default;
                   };

@@ -182,20 +182,21 @@ namespace casual
 
             platform::pid_type pid;
 
-            if( posix_spawnp(
+            auto status =  posix_spawnp(
                   &pid,
                   path.c_str(),
                   nullptr,
                   &attributes,
                   const_cast< char* const*>( c_arguments.data()),
                   *_NSGetEnviron()// environ //const_cast< char* const*>( c_environment.data())
-                  ) != 0)
+                  );
+            switch( status)
             {
-               throw exception::NotReallySureWhatToNameThisException();
+               case 0:
+                  break;
+               default:
+                  throw exception::invalid::Argument( "spawn failed for: " + path + " - " + error::string( status));
             }
-
-            log::internal::debug << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ") << std::endl;
-
             return pid;
          }
 
@@ -233,25 +234,25 @@ namespace casual
                {
                   if( WIFEXITED( exit.status))
                   {
-                     exit.why = lifetime::Exit::Why::exited;
+                     exit.reason = lifetime::Exit::Reason::exited;
                      exit.status = WEXITSTATUS( exit.status);
                   }
                   else if( WIFSIGNALED( exit.status))
                   {
                      if( WCOREDUMP( exit.status))
                      {
-                        exit.why = lifetime::Exit::Why::core;
+                        exit.reason = lifetime::Exit::Reason::core;
                         exit.status = 0;
                      }
                      else
                      {
-                        exit.why = lifetime::Exit::Why::signaled;
+                        exit.reason = lifetime::Exit::Reason::signaled;
                         exit.status = WTERMSIG( exit.status);
                      }
                   }
                   else if( WIFSTOPPED( exit.status))
                   {
-                     exit.why = lifetime::Exit::Why::stopped;
+                     exit.reason = lifetime::Exit::Reason::stopped;
                      exit.status = WSTOPSIG( exit.status);
                   }
                   return true;
@@ -272,35 +273,57 @@ namespace casual
 
 
 
-         void terminate( const std::vector< platform::pid_type>& pids)
+         std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids)
          {
+            std::vector< platform::pid_type> result;
             for( auto pid : pids)
             {
-               terminate( pid);
+               if( ! terminate( pid))
+               {
+                  result.push_back( pid);
+               }
             }
-         }
-
-
-
-         void terminate( platform::pid_type pid)
-         {
-            signal::send( pid, platform::cSignal_Terminate);
-         }
-
-         std::vector< lifetime::Exit> lifetime::ended()
-         {
-            std::vector< lifetime::Exit> result;
-
-            Exit exit;
-
-            while( local::wait( exit, -1))
-            {
-               result.push_back( exit);
-            }
-
             return result;
-            //return state();
          }
+
+
+
+         bool terminate( platform::pid_type pid)
+         {
+            return signal::send( pid, platform::cSignal_Terminate);
+         }
+
+         namespace lifetime
+         {
+
+            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
+            {
+               out << "{pid: " << terminated.pid << " terminated - reason: ";
+               switch( terminated.reason)
+               {
+                  case Exit::Reason::unknown: out << "unknown"; break;
+                  case Exit::Reason::exited: out << "exited"; break;
+                  case Exit::Reason::stopped: out << "stopped"; break;
+                  case Exit::Reason::signaled: out <<  "signaled"; break;
+                  case Exit::Reason::core: out <<  "core"; break;
+               }
+               return out << '}';
+            }
+
+            std::vector< lifetime::Exit> ended()
+            {
+               std::vector< lifetime::Exit> result;
+
+               Exit exit;
+
+               while( local::wait( exit, -1))
+               {
+                  result.push_back( exit);
+               }
+
+               return result;
+            }
+         } // lifetime
 
 
 

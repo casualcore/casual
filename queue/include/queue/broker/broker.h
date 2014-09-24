@@ -40,6 +40,7 @@ namespace casual
                Group( id_type id) : id( std::move( id)) {}
 
                id_type id;
+
             };
 
             std::vector< Group> groups;
@@ -47,6 +48,10 @@ namespace casual
             std::unordered_map< std::string, common::message::queue::lookup::Reply> queues;
 
             std::map< common::transaction::ID, std::vector< Group>> involved;
+
+            std::vector< common::platform::pid_type> processes() const;
+
+            void removeProcess( common::platform::pid_type);
 
 
             struct Correlation
@@ -123,6 +128,7 @@ namespace casual
       struct Broker
       {
          Broker( broker::Settings settings);
+         ~Broker();
 
          void start();
 

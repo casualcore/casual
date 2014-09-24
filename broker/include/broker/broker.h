@@ -61,6 +61,8 @@ namespace casual
 		private:
 			Broker();
 
+			void terminate();
+
 
 
 			common::file::scoped::Path m_brokerQueueFile;

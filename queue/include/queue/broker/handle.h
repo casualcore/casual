@@ -47,15 +47,15 @@ namespace casual
 
             namespace blocking
             {
-               using Reader = common::queue::blocking::basic_reader< Policy>;
-               using Writer = common::queue::blocking::basic_writer< Policy>;
+               using Reader = common::queue::blocking::remove::basic_reader< State>;
+               using Writer = common::queue::blocking::remove::basic_writer< State>;
 
             } // blocking
 
             namespace non_blocking
             {
-               using Reader = common::queue::non_blocking::basic_reader< Policy>;
-               using Writer = common::queue::non_blocking::basic_writer< Policy>;
+               using Reader = common::queue::non_blocking::remove::basic_reader< State>;
+               using Writer = common::queue::non_blocking::remove::basic_writer< State>;
 
             } // non_blocking
          } // queue

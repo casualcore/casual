@@ -69,6 +69,8 @@ namespace casual
          {
             void Proxie::operator () ( state::resource::Proxy& proxy)
             {
+               trace::internal::Scope trace( "boot::Proxie::operator()", common::log::internal::transaction);
+
                for( auto index = proxy.concurency; index > 0; --index)
                {
                   auto& info = m_state.xaConfig.at( proxy.key);

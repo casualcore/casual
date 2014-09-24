@@ -75,7 +75,7 @@ namespace casual
             common::environment::domain::name( configuration.domain);
 
             {
-               trace::internal::Scope trace( "transaction manager xa-switch configuration");
+               trace::internal::Scope trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
                auto resources = config::xa::switches::get();
 
@@ -92,7 +92,7 @@ namespace casual
             // configure resources
             //
             {
-               trace::internal::Scope trace( "transaction manager resource configuration");
+               trace::internal::Scope trace( "transaction manager resource configuration", log::internal::transaction);
 
                std::transform(
                      std::begin( configuration.resources),
@@ -115,28 +115,6 @@ namespace casual
          } // filter
 
 
-         namespace remove
-         {
-            void instance( common::platform::pid_type pid, State& state)
-            {
-
-               for( auto& resource : state.resources)
-               {
-                  auto found = common::range::find_if(
-                     common::range::make( resource.instances),
-                     filter::Instance{ pid});
-
-                  if( ! found.empty())
-                  {
-                     resource.instances.erase( found.first);
-                     log::internal::debug << "remove instance: " << pid << std::endl;
-                     return;
-                  }
-               }
-
-               log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
-            }
-         } // remove
       } // state
 
       Transaction::Resource::Result Transaction::Resource::convert( int value)
@@ -232,6 +210,55 @@ namespace casual
          }
          return result;
       }
+
+      std::vector< common::platform::pid_type> State::processes() const
+      {
+         std::vector< common::platform::pid_type> result;
+
+         for( auto& resource : resources)
+         {
+            for( auto& instance : resource.instances)
+            {
+               result.push_back( instance.server.pid);
+            }
+         }
+         return result;
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace remove
+            {
+               void instance( common::platform::pid_type pid, State& state)
+               {
+
+               }
+            } // remove
+         } // <unnamed>
+      } // local
+
+      void State::removeProcess( common::platform::pid_type pid)
+      {
+
+         for( auto& resource : resources)
+         {
+            auto found = common::range::find_if(
+               resource.instances,
+               state::filter::Instance{ pid});
+
+            if( found)
+            {
+               resource.instances.erase( found.first);
+               log::internal::transaction << "remove instance: " << pid << std::endl;
+               return;
+            }
+         }
+
+         log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
+      }
+
 
 
    } // transaction

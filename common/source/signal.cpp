@@ -218,12 +218,21 @@ namespace casual
 			}
 
 
-         void send( platform::pid_type pid, type::type signal)
+         bool send( platform::pid_type pid, type::type signal)
          {
-            if( kill( pid, signal) == -1)
+            if( ::kill( pid, signal) == -1)
             {
-               log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+               switch( errno)
+               {
+                  case ESRCH:
+                     break;
+                  default:
+                     log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                     break;
+               }
+               return false;
             }
+            return true;
          }
 
          void block( type::type signal)

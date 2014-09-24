@@ -37,7 +37,7 @@ manager_objecfiles = [
     Compile( "source/manager/admin/vo/transaction.cpp", "obj/manager/admin/vo/transaction.o"),
 ];
 
-LinkArchive( "bin/manager-archive",
+manager_archive = LinkArchive( "bin/manager-archive",
      manager_objecfiles)
  
 
@@ -47,7 +47,7 @@ target = LinkExecutable( "bin/casual-transaction-manager",
      Compile( "source/manager/main.cpp", "obj/manager/main.o")
     ],
     [ 
-     "manager-archive", 
+      manager_archive, 
      "casual-sf", 
      "casual-common", 
      "casual-configuration", 
@@ -83,7 +83,7 @@ unitest_objectfiles = [
 LinkIsolatedUnittest( "bin/test-casual-transaction",
     unitest_objectfiles,
     [ 
-     "manager-archive", 
+     manager_archive, 
      "casual-common", 
      "casual-sf", 
      "casual-configuration", 

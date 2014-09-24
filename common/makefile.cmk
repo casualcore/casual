@@ -49,23 +49,23 @@ casual_common_objectfiles = [
 ]
 
 
-target = LinkLibrary( "bin/casual-common", 
+common = LinkLibrary( "bin/casual-common", 
 	casual_common_objectfiles,
 	[UUIDLIB])
 
-install_libs.append( target)
+install_libs.append( common)
 
 #
 # Mockup stuff, only for unittest
 #
-target = LinkLibrary( "bin/casual-mockup", 
+mockup = LinkLibrary( "bin/casual-mockup", 
      [
        #Compile( "source/mockup.cpp", "obj/mockup.o"),
        Compile( "source/mockup/ipc.cpp", "obj/mockup/ipc.o"),
      ],
-     ["casual-common"])
+     [ common])
 
-install_libs.append( target)
+install_libs.append( mockup)
 
 #
 # The mockup-rm, only for testing
@@ -74,24 +74,24 @@ target = LinkLibrary( "bin/casual-mockup-rm",
      [
        Compile( "source/mockup/rm.cpp", "obj/mockup/rm.o")
      ],
-     ["casual-common"])
+     [ common])
 
 install_libs.append( target)
 
-target = LinkLibrary( "bin/casual-mockup-unittest-environment",
+mockup_unittest = LinkLibrary( "bin/casual-mockup-unittest-environment",
     [ 
       Compile( "source/mockup/unittest_envrionment.cpp", "obj/mockup/unittest_envrionment.o"),  
     ],
-    ["casual-common", "casual-mockup", "gtest"])
+    [ common, mockup, "gtest"])
 
-install_libs.append( target)
+install_libs.append( mockup_unittest)
 
 
 target_simple_process = LinkExecutable( "bin/simple_process",
     [
      Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/simple_process.o")
     ], 
-    ["casual-common"]
+    [ common]
     )	
 	
    
@@ -128,9 +128,9 @@ unittest_objectfiles = [
 target_test_common = LinkIsolatedUnittest( "bin/test-casual-common-isolated", 
 	unittest_objectfiles,
 	[
-     "casual-common",
-     "casual-mockup",
-     "casual-mockup-unittest-environment"
+     common,
+     mockup,
+     mockup_unittest,
     ])		
 
 #

@@ -35,6 +35,9 @@ namespace casual
             Base( const std::string& description)
                : std::runtime_error( description) {}
 
+            Base( const std::string& description, decltype( __FILE__) file, decltype( __LINE__) line)
+               : std::runtime_error( description + " - " + file + ":" + std::to_string( line)) {}
+
             friend std::ostream& operator << ( std::ostream& out, const Base& exception)
             {
                return out << exception.what();
@@ -157,6 +160,9 @@ namespace casual
             {
                basic_exeption( const std::string& description)
                   : base_type( description) {}
+
+               basic_exeption( const std::string& description, decltype( __FILE__) file, decltype( __LINE__) line)
+                  : base_type( description, file, line) {}
 
                basic_exeption()
                   : base_type( "No additional information") {}

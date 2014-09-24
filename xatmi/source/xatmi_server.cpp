@@ -86,10 +86,6 @@ int casual_start_server( casual_server_argument* serverArgument)
       common::queue::blocking::Reader receiveQueue( common::ipc::receive::queue());
       common::message::dispatch::pump( handler, receiveQueue);
 	}
-   catch( const common::exception::signal::Terminate&)
-   {
-      return 1;
-   }
 	catch( ...)
 	{
 	   return casual::common::error::handler();

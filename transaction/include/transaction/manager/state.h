@@ -275,6 +275,12 @@ namespace casual
                   id_type m_id;
                };
             };
+
+
+            friend bool operator < ( const Resource& lhs, const Resource& rhs) { return lhs.id < rhs.id; }
+            friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
+            friend std::ostream& operator << ( std::ostream& out, const Resource& value) { return out << value.id; }
+
          };
 
 
@@ -308,15 +314,15 @@ namespace casual
          //! @return the most severe result from the resources
          //!
          Resource::Result results() const;
+
+         friend std::ostream& operator << ( std::ostream& out, const Transaction& value)
+         {
+            return out << "{xid: " << value.xid << " owner: " << value.owner << " resources: " << common::range::make( value.resources) << "}";
+         }
       };
 
-      inline bool operator < ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id < rhs.id; }
-      inline bool operator == ( const Transaction::Resource& lhs, const Transaction::Resource& rhs) { return lhs.id == rhs.id; }
-      inline std::ostream& operator << ( std::ostream& out, const Transaction::Resource& value) { return out << value.id; }
-      inline std::ostream& operator << ( std::ostream& out, const Transaction& value)
-      {
-         return out << "{xid: " << value.xid << " owner: " << value.owner << " resources: " << common::range::make( value.resources) << "}";
-      }
+
+
 
       namespace find
       {
@@ -402,6 +408,10 @@ namespace casual
          //! @return number of total instances
          //!
          std::size_t instances() const;
+
+         std::vector< common::platform::pid_type> processes() const;
+
+         void removeProcess(  common::platform::pid_type pid);
 
       };
 
@@ -518,10 +528,6 @@ namespace casual
 
          void configure( State& state, const common::message::transaction::manager::Configuration& configuration);
 
-         namespace remove
-         {
-            void instance( common::platform::pid_type pid, State& state);
-         } // remove
 
 
       } // state

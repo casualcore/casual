@@ -12,8 +12,12 @@
 
 
 
+
 #include <string>
 #include <ostream>
+
+// nullptr_t
+#include <cstddef>
 
 namespace casual
 {
@@ -66,7 +70,7 @@ namespace casual
          {
             Payload() = default;
 
-            Payload( nullptr_t) : type{ "NULL", ""} {}
+            Payload( std::nullptr_t) : type{ "NULL", ""} {}
 
             Payload( Type type, platform::binary_type buffer)
              : type( std::move( type)), memory( std::move( buffer)) {}

@@ -188,12 +188,12 @@ namespace casual
 
                void Default::disconnect()
                {
-                  message::server::Disconnect message;
+                  //message::server::Disconnect message;
                   //
                   // we can't block here...
                   //
-                  non_blocking_broker_writer brokerWriter;
-                  brokerWriter( message);
+                  //non_blocking_broker_writer brokerWriter;
+                  //brokerWriter( message);
                }
 
                void Default::statistics( platform::queue_id_type id, message::monitor::Notify& message)

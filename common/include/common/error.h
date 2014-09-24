@@ -28,6 +28,8 @@ namespace casual
          //!
          std::string string();
 
+         std::string string( int code);
+
 
          namespace xatmi
          {

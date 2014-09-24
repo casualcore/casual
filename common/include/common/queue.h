@@ -11,6 +11,7 @@
 #include "common/ipc.h"
 #include "common/message/type.h"
 #include "common/marshal.h"
+#include "common/process.h"
 
 
 #include <list>
@@ -34,6 +35,43 @@ namespace casual
                {
                   throw;
                }
+            };
+
+            template< typename S>
+            struct RemoveOnTerminate
+            {
+               using state_type = S;
+
+               RemoveOnTerminate( state_type& state) : m_state( state) {}
+
+               void apply()
+               {
+                  try
+                  {
+                     throw;
+                  }
+                  catch( const exception::signal::child::Terminate& exception)
+                  {
+                     auto terminated = process::lifetime::ended();
+                     for( auto& death : terminated)
+                     {
+                        switch( death.reason)
+                        {
+                           case process::lifetime::Exit::Reason::core:
+                              log::error << death << std::endl;
+                              break;
+                           default:
+                              log::internal::debug << death << std::endl;
+                              break;
+                        }
+
+                        m_state.removeProcess( death.pid);
+                     }
+                  }
+               }
+
+            protected:
+               state_type& m_state;
             };
 
 
@@ -352,7 +390,14 @@ namespace casual
                return internal::basic_reader< policy::Blocking, policy::NoAction, IPC&>( ipc);
             }
 
+            namespace remove
+            {
+               template< typename S>
+               using basic_writer = basic_writer< policy::RemoveOnTerminate< S>>;
 
+               template< typename S>
+               using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
+            }
 
          } // blocking
 
@@ -374,6 +419,15 @@ namespace casual
             internal::basic_reader< policy::NonBlocking, policy::NoAction, IPC&> reader( IPC& ipc)
             {
                return internal::basic_reader< policy::NonBlocking, policy::NoAction, IPC&>( ipc);
+            }
+
+            namespace remove
+            {
+               template< typename S>
+               using basic_writer = basic_writer< policy::RemoveOnTerminate< S>>;
+
+               template< typename S>
+               using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
             }
 
 

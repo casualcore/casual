@@ -89,15 +89,16 @@ namespace casual
          }
 
 
-         void Executable::remove( pid_type instance)
+         bool Executable::remove( pid_type instance)
          {
             auto found = range::find( instances, instance);
 
             if( found)
             {
                instances.erase( found.first);
+               return true;
             }
-
+            return false;
          }
 
       } // state
@@ -175,10 +176,8 @@ namespace casual
       }
 
 
-
-      void State::removeInstance( state::Server::pid_type pid)
+      void State::removeProcess( state::Server::pid_type pid)
       {
-
          auto found = common::range::find( instances, pid);
 
          if( found)
@@ -192,7 +191,21 @@ namespace casual
                service.remove( instance);
             }
 
+            auto& server = getServer( instance.server);
+
+            server.remove( pid);
+
             instances.erase( found.first);
+         }
+         else
+         {
+            for( auto& executable : executables)
+            {
+               if( executable.second.remove( pid))
+               {
+                  return;
+               }
+            }
          }
       }
 
@@ -301,6 +314,21 @@ namespace casual
          return instances.size();
       }
 
+
+      std::vector< common::platform::pid_type> State::processes() const
+      {
+         std::vector< common::platform::pid_type> result;
+         for( auto& exe : executables)
+         {
+            range::copy( exe.second.instances, std::back_inserter( result));
+         }
+         for( auto& server : servers)
+         {
+            range::copy( server.second.instances, std::back_inserter( result));
+         }
+         return result;
+      }
+
       void State::instance( state::Server& server, std::size_t instances)
       {
          if( instances > server.instances.size())
@@ -361,55 +389,7 @@ namespace casual
          }
       }
 
-      namespace policy
-      {
 
-         void Broker::apply()
-         {
-            try
-            {
-               throw;
-            }
-            catch( const exception::signal::child::Terminate& exception)
-            {
-               auto terminated = process::lifetime::ended();
-               for( auto& death : terminated)
-               {
-
-                  switch( death.why)
-                  {
-                     case process::lifetime::Exit::Why::core:
-                        log::error << "process crashed " << death.string() << std::endl;
-
-                        m_state.removeInstance( death.pid);
-
-                        break;
-                     default:
-                        m_state.removeInstance( death.pid);
-                        //log::information << "proccess died: " << death.string() << std::endl;
-                        break;
-                  }
-
-                  //action::remove::instance( death.pid, m_state);
-               }
-            }
-         }
-
-
-
-         void Broker::clean( platform::pid_type pid)
-         {
-            auto findIter = m_state.instances.find( pid);
-
-            if( findIter != std::end( m_state.instances))
-            {
-               trace::Outcome remove{ "remove ipc"};
-               ipc::remove( findIter->second.queue_id);
-
-            }
-
-         }
-      } // policy
    } // broker
 
 } // casual

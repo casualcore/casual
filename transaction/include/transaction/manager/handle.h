@@ -28,30 +28,21 @@ namespace casual
    namespace transaction
    {
 
-      namespace policy
-      {
-         struct Manager : public state::Base
-         {
-            using state::Base::Base;
-
-            void apply();
-         };
-      } // policy
-
 
       namespace queue
       {
+
          namespace blocking
          {
-            using Reader = common::queue::blocking::basic_reader< policy::Manager>;
-            using Writer = common::queue::blocking::basic_writer< policy::Manager>;
+            using Reader = common::queue::blocking::remove::basic_reader< State>;
+            using Writer = common::queue::blocking::remove::basic_writer< State>;
 
          } // blocking
 
          namespace non_blocking
          {
-            using Reader = common::queue::non_blocking::basic_reader< policy::Manager>;
-            using Writer = common::queue::non_blocking::basic_writer< policy::Manager>;
+            using Reader = common::queue::non_blocking::remove::basic_reader< State>;
+            using Writer = common::queue::non_blocking::remove::basic_writer< State>;
 
          } // non_blocking
       } // queue

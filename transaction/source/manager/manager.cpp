@@ -51,27 +51,16 @@ namespace casual
       {
          try
          {
-            common::trace::Outcome temp( "terminate child processes", common::log::internal::transaction);
 
-            //
-            // We need to terminate all children
-            //
-            /*
-            for( auto& resource : m_state.resources)
-            {
-               for( auto& instances : resource.servers)
-               {
-                  log::information << "terminate: " << instances.id.pid;
-                  process::terminate( instances.id.pid);
-               }
-            }
-             */
+            common::process::children::terminate( m_state);
 
-            for( auto death : process::lifetime::ended())
-            {
-               log::information << "shutdown: " << death.string();
-            }
+            common::log::information << "casual-transaction-manager is off-line\n";
 
+         }
+         catch( const common::exception::signal::Timeout& exception)
+         {
+            auto pids  = m_state.processes();
+            common::log::error << "failed to get response for terminated resource proxies pids: " << range::make( pids) << " - action: abort" << std::endl;
          }
          catch( ...)
          {
@@ -82,100 +71,101 @@ namespace casual
 
       void Manager::start()
       {
-         auto start = common::platform::clock_type::now();
-
-         common::log::internal::transaction << "transaction manager start\n";
-
-
-
-         //
-         // Connect and get configuration from broker
-         //
-         {
-            common::log::internal::transaction << "configure\n";
-            action::configure( m_state);
-         }
-
-         //
-         // Start resource-proxies
-         //
-         {
-            common::log::internal::transaction << "start rm-proxy-servers\n";
-
-            common::range::for_each(
-               common::range::make( m_state.resources),
-               action::boot::Proxie( m_state));
-
-         }
-
-
-         common::log::internal::transaction << "prepare message dispatch handlers\n";
-
-         //
-         // prepare message dispatch handlers...
-         //
-
-         message::dispatch::Handler handler{
-            handle::Begin{ m_state},
-            handle::Commit{ m_state},
-            handle::Rollback{ m_state},
-            handle::resource::Involved{ m_state},
-            handle::resource::reply::Connect{ m_state},
-            handle::resource::reply::Prepare{ m_state},
-            handle::resource::reply::Commit{ m_state},
-            handle::resource::reply::Rollback{ m_state},
-            handle::domain::Prepare{ m_state},
-            handle::domain::Commit{ m_state},
-            handle::domain::Rollback{ m_state},
-            handle::domain::resource::reply::Prepare{ m_state},
-            handle::domain::resource::reply::Commit{ m_state},
-            handle::domain::resource::reply::Rollback{ m_state},
-
-            //
-            // We discard the connect reply message
-            //
-            common::message::dispatch::Discard< common::message::server::connect::Reply>{},
-         };
-
-
-         //
-         // Prepare the xatmi-services
-         //
-         {
-            common::server::Arguments arguments{ { common::process::path()}};
-
-            arguments.services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
-
-            handler.add( handle::admin::Call{ std::move( arguments), m_state});
-         }
-
-
-
-         common::log::internal::transaction << "start message pump\n";
-
-
-
-         auto instances = common::range::accumulate(
-               m_state.resources, 0,
-               []( std::size_t count, const state::resource::Proxy& p)
-               {
-                  return count + p.instances.size();
-               }
-               );
-
-         auto end = common::platform::clock_type::now();
-
-
-         common::log::information << "transaction manager up and running - "
-               << m_state.resources.size() << " resources - "
-               << instances << " instances - boot time: "
-               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
-
-
-         queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
-
          try
          {
+            auto start = common::platform::clock_type::now();
+
+            common::log::internal::transaction << "transaction manager start\n";
+
+
+
+            //
+            // Connect and get configuration from broker
+            //
+            {
+               trace::internal::Scope trace( "configure", common::log::internal::transaction);
+               action::configure( m_state);
+            }
+
+            //
+            // Start resource-proxies
+            //
+            {
+               trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
+
+               common::range::for_each(
+                  common::range::make( m_state.resources),
+                  action::boot::Proxie( m_state));
+
+            }
+
+
+            common::log::internal::transaction << "prepare message dispatch handlers\n";
+
+            //
+            // prepare message dispatch handlers...
+            //
+
+            message::dispatch::Handler handler{
+               handle::Begin{ m_state},
+               handle::Commit{ m_state},
+               handle::Rollback{ m_state},
+               handle::resource::Involved{ m_state},
+               handle::resource::reply::Connect{ m_state},
+               handle::resource::reply::Prepare{ m_state},
+               handle::resource::reply::Commit{ m_state},
+               handle::resource::reply::Rollback{ m_state},
+               handle::domain::Prepare{ m_state},
+               handle::domain::Commit{ m_state},
+               handle::domain::Rollback{ m_state},
+               handle::domain::resource::reply::Prepare{ m_state},
+               handle::domain::resource::reply::Commit{ m_state},
+               handle::domain::resource::reply::Rollback{ m_state},
+
+               //
+               // We discard the connect reply message
+               //
+               common::message::dispatch::Discard< common::message::server::connect::Reply>{},
+            };
+
+
+            //
+            // Prepare the xatmi-services
+            //
+            {
+               common::server::Arguments arguments{ { common::process::path()}};
+
+               arguments.services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
+
+               handler.add( handle::admin::Call{ std::move( arguments), m_state});
+            }
+
+
+
+            common::log::internal::transaction << "start message pump\n";
+
+
+
+            auto instances = common::range::accumulate(
+                  m_state.resources, 0,
+                  []( std::size_t count, const state::resource::Proxy& p)
+                  {
+                     return count + p.instances.size();
+                  }
+                  );
+
+            auto end = common::platform::clock_type::now();
+
+
+            common::log::information << "transaction manager is on-line - "
+                  << m_state.resources.size() << " resources - "
+                  << instances << " instances - boot time: "
+                  << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
+
+
+            queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
+
+
             while( true)
             {
                {
@@ -237,30 +227,11 @@ namespace casual
          }
          catch( const common::exception::signal::Terminate&)
          {
-            try
-            {
-
-               common::signal::alarm::Scoped timeout{ 10};
-
-               queue::non_blocking::Reader nonblocking( m_receiveQueue, m_state);
-
-               while( m_state.instances() > 0)
-               {
-                  //
-                  // conusume until empty
-                  //
-                  while( handler.dispatch( nonblocking.next()));
-
-                  common::process::sleep( std::chrono::milliseconds( 2));
-               }
-
-            }
-            catch( const common::exception::signal::Timeout& exception)
-            {
-               common::log::error << "failed to get response for terminated resource proxies (# " + std::to_string( m_state.instances()) << ") - action: abort" << std::endl;
-               throw common::exception::signal::Terminate{};
-            }
-
+            // we do nothing, and let the dtor take care of business
+         }
+         catch( ...)
+         {
+            common::error::handler();
          }
       }
 
