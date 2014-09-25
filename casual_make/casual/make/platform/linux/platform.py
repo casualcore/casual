@@ -7,7 +7,7 @@ class Linux( CommonUNIX):
     def pre_make(self):
         print
         print '# include static platform specific'
-        print "include $(CASUALMAKE_PATH)/casual_make/casual/make/platform/osx/static.mk"
+        print "include $(CASUALMAKE_PATH)/casual_make/casual/make/platform/linux/static.mk"
         print
     
         
