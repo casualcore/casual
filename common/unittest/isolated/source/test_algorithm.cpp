@@ -338,6 +338,41 @@ namespace casual
 
       }
 
+      TEST( casual_common_algorithm, copy_max__source_shorter_than_target)
+      {
+         const std::string source = "1234";
+         std::string target;
+
+         range::copy_max( source, 50, std::back_inserter( target));
+
+         EXPECT_TRUE( target == "1234") << target;
+
+      }
+
+      TEST( casual_common_algorithm, copy_max__source_equal_to_target)
+      {
+         const std::string source = "1234567";
+         std::string target;
+
+         range::copy_max( source, source.size(), std::back_inserter( target));
+
+         EXPECT_TRUE( source == target) << target;
+
+      }
+
+      TEST( casual_common_algorithm, copy_max__source_longer_than_target)
+      {
+         const std::string source = "1234567";
+         std::string target;
+
+         range::copy_max( source, 4, std::back_inserter( target));
+
+         EXPECT_TRUE( target == "1234") << target;
+
+      }
+
+
+
    } // algorithm
 
 } // casual

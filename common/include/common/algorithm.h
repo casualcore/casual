@@ -483,13 +483,15 @@ namespace casual
          template< typename R, typename Size, typename Iter>
          void copy_max( R&& range, Size size, Iter output)
          {
-            if( range.size() >= size)
+            auto inputRange = make( range);
+
+            if( inputRange.size() <= size)
             {
-               copy( std::forward< R>(range), output);
+               copy( inputRange, output);
             }
             else
             {
-               std::copy_n( std::begin( range), size, output);
+               std::copy_n( std::begin( inputRange), size, output);
             }
          }
 
