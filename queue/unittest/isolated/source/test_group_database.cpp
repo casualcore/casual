@@ -52,7 +52,7 @@ namespace casual
                result.message.type = 42;
                result.message.payload.resize( 128);
 
-               result.message.avalible = common::platform::clock_type::now();
+               result.message.avalible = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now());
                //result.message.timestamp = common::platform::clock_type::now();
 
                return result;
@@ -144,6 +144,7 @@ namespace casual
          database.enqueue( origin);
 
          auto fetched = database.dequeue( local::request( queue));
+
 
          ASSERT_TRUE( fetched.message.size() == 1);
          EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
