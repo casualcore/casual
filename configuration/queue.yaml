@@ -10,10 +10,7 @@ domain:
    
     queue:
       retries: 3
-     
     
-  
-  
   
   groups:
     - name: someGroup
@@ -47,3 +44,6 @@ domain:
           
         - name: queueB4
           retries: 3
+          
+          
+   

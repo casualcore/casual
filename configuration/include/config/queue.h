@@ -51,7 +51,7 @@ namespace casual
 
          };
 
-         struct Queues
+         struct Domain
          {
             std::vector< Group> groups;
 
@@ -63,9 +63,9 @@ namespace casual
          };
 
 
-         Queues get( const std::string& file);
+         Domain get( const std::string& file);
 
-         Queues get();
+         Domain get();
 
       } // queue
 

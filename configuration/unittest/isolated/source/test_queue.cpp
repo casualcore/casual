@@ -7,7 +7,11 @@
 
 #include <gtest/gtest.h>
 
+
 #include "config/queue.h"
+
+
+#include "sf/log.h"
 
 
 namespace casual
@@ -19,7 +23,7 @@ namespace casual
       {
          auto queues = config::queue::get( "queue.yaml");
 
-         EXPECT_TRUE( queues.groups.size() == 2);
+         EXPECT_TRUE( queues.groups.size() == 2) << CASUAL_MAKE_NVP( queues);
 
       }
 
@@ -30,7 +34,7 @@ namespace casual
 
          EXPECT_TRUE( queues.groups.at( 0).name == "someGroup");
          EXPECT_TRUE( queues.groups.at( 0).queuebase == "some-group.qb");
-         EXPECT_TRUE( queues.groups.at( 0).queues.size() == 4);
+         EXPECT_TRUE( queues.groups.at( 0).queues.size() == 4) << CASUAL_MAKE_NVP( queues);
 
       }
 

@@ -95,7 +95,7 @@ namespace casual
 
                };
 
-               void startup( State& state, config::queue::Queues config)
+               void startup( State& state, config::queue::Domain config)
                {
                   casual::common::range::transform( config.groups, state.groups, Startup( state));
                }

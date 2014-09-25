@@ -18,16 +18,16 @@ namespace casual
       namespace queue
       {
 
-         Queues get( const std::string& file)
+         Domain get( const std::string& file)
          {
-            Queues queues;
+            queue::Domain domain;
 
             //
             // Create the reader and deserialize configuration
             //
             auto reader = sf::archive::reader::makeFromFile( file);
 
-            reader >> CASUAL_MAKE_NVP( queues);
+            reader >> CASUAL_MAKE_NVP( domain);
 
             //
             // Complement with default values
@@ -39,11 +39,11 @@ namespace casual
             //
             //local::validate( domain);
 
-            return queues;
+            return domain;
 
          }
 
-         Queues get()
+         Domain get()
          {
             return get( config::file::queue());
 
