@@ -10,9 +10,10 @@ bin/
 # Build files
 #
 *.mk
-
+*.a
 *.pyc
 
 
 .pydevproject
+
 
