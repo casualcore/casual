@@ -54,6 +54,11 @@ namespace casual
 
 
          //!
+         //! @return a unique file-name, with post- and pre-fix, if provided
+         //!
+         std::string unique( const std::string& prefix = "", const std::string& postfix = "");
+
+         //!
          //! Find the first file that matches search
          //!
          //! @param path The path to search

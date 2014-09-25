@@ -61,16 +61,16 @@ namespace casual
                // Try to remove queues
                // TODO:
                //
-               auto removed = common::range::difference( existing, added);
+               //auto removed = common::range::difference( existing, added);
 
 
                //
                // Send all our queues to queue-broker
                //
-               common::message::queue::Information information;
-               information.queues = m_state.queuebase.queues();
+               //common::message::queue::Information information;
+               //information.queues = m_state.queuebase.queues();
 
-               queueBroker( information);
+               //queueBroker( information);
 
             }
 

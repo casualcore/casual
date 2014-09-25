@@ -31,14 +31,23 @@ namespace sql
    {
       namespace exception
       {
-         struct Connection : public std::runtime_error
+         struct Base : public std::runtime_error
          {
-            Connection( const std::string& information) : std::runtime_error( information) {}
+            //Base( const std::string& information) : std::runtime_error( information) {}
+            Base( const std::string& information, decltype( __FILE__) file, decltype( __LINE__) line)
+               : std::runtime_error( information + " - " + file + ":" + std::to_string( line) ) {}
+
+
          };
 
-         struct Query : public std::runtime_error
+         struct Connection : Base
          {
-            Query( const std::string& information) : std::runtime_error( information) {}
+            using Base::Base;
+         };
+
+         struct Query : public Base
+         {
+            using Base::Base;
          };
       }
 
@@ -217,7 +226,7 @@ namespace sql
                  case SQLITE_DONE:
                     break;
                  default:
-                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+                    throw exception::Query{ sqlite3_errmsg( m_handle.get()), __FILE__, __LINE__};
               }
 
               return result;
@@ -237,7 +246,7 @@ namespace sql
                  case SQLITE_DONE:
                     return false;
                  default:
-                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+                    throw exception::Query{ sqlite3_errmsg( m_handle.get()), __FILE__, __LINE__};
               }
            }
 
@@ -245,7 +254,7 @@ namespace sql
             {
                if( sqlite3_step( m_statement.get()) != SQLITE_DONE)
                {
-                  throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+                  throw exception::Query{ sqlite3_errmsg( m_handle.get()), __FILE__, __LINE__};
                }
             }
 
@@ -258,7 +267,7 @@ namespace sql
            {
               if( ! parameter_bind( m_statement.get(), index, std::forward< T>( value)))
               {
-                 throw exception::Query{ sqlite3_errmsg( m_handle.get()) + std::string{ " index: "} + std::to_string( index)};
+                 throw exception::Query{ sqlite3_errmsg( m_handle.get()) + std::string{ " index: "} + std::to_string( index), __FILE__, __LINE__};
               }
               bind( index + 1, std::forward< Params>( params)...);
            }
@@ -275,7 +284,7 @@ namespace sql
 
             if( sqlite3_prepare_v2( m_handle.get(), statement.data(), -1, &stmt, nullptr) != SQLITE_OK)
             {
-               throw exception::Query{ sqlite3_errmsg( handle.get())};
+               throw exception::Query{ sqlite3_errmsg( handle.get()), __FILE__, __LINE__};
             }
             m_statement = std::shared_ptr< sqlite3_stmt>( stmt, sqlite3_finalize);
          }
@@ -306,7 +315,7 @@ namespace sql
             if( sqlite3_open( filename.data(), &handle) != SQLITE_OK)
                //&& sql("PRAGMA foreign_keys = ON;"))
             {
-               throw exception::Connection( sqlite3_errmsg( handle));
+               throw exception::Connection( sqlite3_errmsg( handle), __FILE__, __LINE__);
             }
 
             m_handle = std::shared_ptr< sqlite3>( handle, sqlite3_close);

@@ -23,7 +23,7 @@ namespace casual
          {
             void Policy::apply()
             {
-
+               common::queue::policy::NoAction{}.apply();
             }
 
          }

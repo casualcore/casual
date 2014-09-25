@@ -61,6 +61,24 @@ namespace casual
                   }
                }
 
+               namespace transform
+               {
+                  struct Queue
+                  {
+                     common::message::queue::Queue operator() ( const config::queue::Queue& value) const
+                     {
+                        common::message::queue::Queue result;
+
+                        result.name = value.name;
+                        if( ! value.retries.empty())
+                        {
+                           result.name = std::stoul( value.retries);
+                        }
+                        return result;
+                     }
+                  };
+               } // transform
+
 
                struct Startup : broker::handle::Base
                {
@@ -71,7 +89,7 @@ namespace casual
                      State::Group queueGroup;
 
                      queueGroup.id.pid = casual::common::process::spawn(
-                        casual::common::environment::directory::casual() + "/casual-queue-group",
+                        casual::common::environment::directory::casual() + "/bin/casual-queue-group",
                         { "--queuebase", group.queuebase });
 
 
@@ -82,10 +100,8 @@ namespace casual
                      common::message::queue::connect::Reply reply;
                      reply.name = group.name;
 
-                     for( auto&& queue : group.queues)
-                     {
-                        reply.queues.emplace_back( queue.name, queue.retries);
-                     }
+                     common::range::transform( group.queues, reply.queues, transform::Queue{});
+
 
                      broker::queue::blocking::Writer write{ request.server.queue_id, m_state};
                      write( reply);

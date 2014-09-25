@@ -13,6 +13,7 @@
 
 #include "common/file.h"
 #include "common/exception.h"
+#include "common/environment.h"
 
 
 
@@ -93,6 +94,72 @@ namespace casual
          EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
          EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
          EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
+      }
+
+
+      TEST( casual_queue_group_database, create_queue_on_disc_and_open_again)
+      {
+         common::file::scoped::Path path{
+            common::file::unique(
+               common::environment::directory::temporary() + "/",
+               "unittest_queue_server_database.db")
+            };
+
+         {
+            group::Database database( path);
+
+            database.create( group::Queue{ "unittest_queue"});
+         }
+
+         {
+            //
+            // open again
+            //
+            group::Database database( path);
+
+            auto queues = database.queues();
+
+            // there is always a error-queue, and a global error-queue
+            ASSERT_TRUE( queues.size() == 3);
+            EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+            EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
+            EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
+         }
+
+      }
+
+      TEST( casual_queue_group_database, create_5_queue_on_disc_and_open_again)
+      {
+         common::file::scoped::Path path{
+            common::file::unique(
+               common::environment::directory::temporary() + "/",
+               "unittest_queue_server_database.db")
+            };
+
+         {
+            group::Database database( path);
+
+            for( int index = 1; index <= 5; ++index)
+            {
+               database.create( group::Queue{ "unittest_queue_" + std::to_string( index)});
+            }
+         }
+
+         {
+            //
+            // open again
+            //
+            group::Database database( path);
+
+            auto queues = database.queues();
+
+            // there is always a error-queue, and a global error-queue
+            ASSERT_TRUE( queues.size() == 5 * 2 + 1);
+            EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+            EXPECT_TRUE( queues.at( 1).name == "unittest_queue_1_error") << queues.at( 1).name;
+            EXPECT_TRUE( queues.at( 2).name == "unittest_queue_1") << queues.at( 2).name;
+         }
+
       }
 
 

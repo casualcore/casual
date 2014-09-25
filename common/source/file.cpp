@@ -8,6 +8,7 @@
 #include "common/file.h"
 #include "common/log.h"
 #include "common/error.h"
+#include "common/uuid.h"
 
 #include <cstdio>
 
@@ -65,6 +66,10 @@ namespace casual
             }
          } // scoped
 
+         std::string unique( const std::string& prefix, const std::string& postfix)
+         {
+            return prefix + Uuid::make().string() + postfix;
+         }
 
          std::string find( const std::string& path, const std::regex& search)
          {

@@ -7,7 +7,9 @@
 
 #include "config/queue.h"
 #include "config/file.h"
+#include "common/internal/log.h"
 
+#include "sf/log.h"
 #include "sf/archive/maker.h"
 
 
@@ -38,6 +40,9 @@ namespace casual
             // Make sure we've got valid configuration
             //
             //local::validate( domain);
+
+
+            common::log::internal::debug << CASUAL_MAKE_NVP( domain);
 
             return domain;
 

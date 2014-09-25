@@ -25,7 +25,7 @@ namespace casual
          struct Queue
          {
             std::string name;
-            std::size_t retries = 0;
+            std::string retries;
 
             template< typename A>
             void serialize( A& archive)

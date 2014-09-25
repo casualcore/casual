@@ -68,6 +68,10 @@ namespace casual
          Database::Database( const std::string& database) : m_connection( database)
          {
 
+            //
+            // Make sure we got FK
+            //
+            m_connection.execute( "PRAGMA foreign_keys = ON;");
 
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS queues 
@@ -111,13 +115,13 @@ namespace casual
             //
             // Global error queue
             //
-            m_connection.execute( R"( INSERT INTO queues VALUES ( "casual-error-queue", 0, 0); )");
+            m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( "casual-error-queue", 0, 0); )");
             m_errorQueue = m_connection.rowid();
 
             //
             // the global error queue has it self as an error queue.
             //
-            m_connection.execute( " UPDATE queues SET error = :qid WHERE rowid = :qid;", m_errorQueue);
+            m_connection.execute( " UPDATE OR IGNORE queues SET error = :qid WHERE rowid = :qid;", m_errorQueue);
 
 
 
