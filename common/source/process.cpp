@@ -33,7 +33,12 @@
 #include <spawn.h>
 
 
-#include <crt_externs.h>
+#ifdef __APPLE__
+   #include <crt_externs.h>
+#else
+   #include <unistd.h>
+#endif
+
 
 
 namespace casual
@@ -61,6 +66,16 @@ namespace casual
                   static std::string path = getProcessPath();
                   return path;
                }
+
+               char* const * environment()
+               {
+                  #ifdef __APPLE__
+                      return *::_NSGetEnviron();
+                  #else
+                     return ::environ;
+                  #endif
+               }
+
 
             } // <unnamed>
          } // local
@@ -188,7 +203,7 @@ namespace casual
                   nullptr,
                   &attributes,
                   const_cast< char* const*>( c_arguments.data()),
-                  *_NSGetEnviron()// environ //const_cast< char* const*>( c_environment.data())
+                  local::environment()// environ //const_cast< char* const*>( c_environment.data())
                   );
             switch( status)
             {
