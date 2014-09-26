@@ -21,6 +21,17 @@ namespace casual
       {
          namespace server
          {
+            namespace ping
+            {
+               struct Request : basic_id< cServerPingRequest>
+               {
+               };
+
+               struct Reply : basic_id< cServerPingReply>
+               {
+               };
+
+            } // ping
 
             namespace connect
             {

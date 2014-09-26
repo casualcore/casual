@@ -15,6 +15,7 @@
 #include "common/queue.h"
 #include "common/environment.h"
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
 #include "common/log.h"
 
 #include "config/domain.h"
@@ -125,7 +126,7 @@ namespace casual
                //
                // We discard the connect reply message
                //
-               common::message::dispatch::Discard< common::message::server::connect::Reply>{},
+               common::message::handle::Discard< common::message::server::connect::Reply>{},
             };
 
 

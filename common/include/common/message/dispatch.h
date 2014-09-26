@@ -174,24 +174,6 @@ namespace casual
                    handler.dispatch( marshal);
                }
             }
-
-
-            //!
-            //! Handles and discard a given message type
-            //!
-            template< typename M>
-            struct Discard
-            {
-               Discard() = default;
-
-               using message_type = M;
-
-               void dispatch( message_type& message)
-               {
-                  // no op
-               }
-            };
-
          } // dispatch
       } // message
    } // common

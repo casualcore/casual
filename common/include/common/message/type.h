@@ -28,6 +28,8 @@ namespace casual
             cServerConnectRequest,
             cServerConnectReply,
             cServerDisconnect,
+            cServerPingRequest,
+            cServerPingReply,
 
             // Service
             SERVICE_BASE = 2000,
@@ -103,7 +105,7 @@ namespace casual
          //! Deduce witch type of message it is.
          //!
          template< typename M>
-         platform::message_type_type type( const M&)
+         constexpr platform::message_type_type type( const M&)
          {
             return M::message_type;
          }
@@ -190,42 +192,47 @@ namespace casual
                queue_id_type queue_id = 0;
                pid_type pid;
 
-               /*
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & queue_id;
-                  archive & pid;
-               }
-               */
-
                CASUAL_CONST_CORRECT_MARSHAL({
                   archive & queue_id;
                   archive & pid;
                })
-            };
-            inline std::ostream& operator << ( std::ostream& out, const Id& value)
-            {
-               return out << "{pid: " << value.pid << " queue: " << value.queue_id << "}";
-            }
 
+               friend std::ostream& operator << ( std::ostream& out, const Id& value)
+               {
+                  return out << "{pid: " << value.pid << " queue: " << value.queue_id << "}";
+               }
+
+            };
 
             template< message::Type type>
-            struct basic_connect : basic_messsage< type>
+            struct basic_id : basic_messsage< type>
             {
                server::Id server;
-               std::string path;
 
                template< typename A>
                void marshal( A& archive)
                {
                   archive & server;
+               }
+            };
+
+
+            template< message::Type type>
+            struct basic_connect : basic_id< type>
+            {
+
+               std::string path;
+
+               template< typename A>
+               void marshal( A& archive)
+               {
+                  basic_id< type>::marshal( archive);
                   archive & path;
                }
             };
 
             template< message::Type type>
-            struct basic_disconnect : basic_messsage< type>
+            struct basic_disconnect : basic_id< type>
             {
                server::Id server;
 
