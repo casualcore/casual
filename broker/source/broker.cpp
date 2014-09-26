@@ -9,6 +9,8 @@
 #include "broker/handle.h"
 #include "broker/transform.h"
 
+#include "broker/admin/server.h"
+
 #include "config/domain.h"
 
 #include "common/environment.h"
@@ -87,22 +89,58 @@ namespace casual
 
 
 
-		Broker::Broker()
+		Broker::Broker( const Settings& arguments)
 			: m_brokerQueueFile( common::environment::file::brokerQueue())
 		{
+         //
+         // Configure
+         //
+         {
+            common::trace::internal::Scope trace{ "broker configuration"};
 
-		}
+            //
+            // Make the key public for others...
+            //
+            local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
 
-		Broker& Broker::instance()
-		{
-		   static Broker singleton;
-		   return singleton;
+
+            config::domain::Domain domain;
+
+            try
+            {
+               domain = config::domain::get( arguments.configurationfile);
+            }
+            catch( const exception::FileNotExist& exception)
+            {
+               common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
+            }
+
+            //
+            // Set domain name
+            //
+            environment::domain::name( domain.name);
+
+            common::log::internal::debug << CASUAL_MAKE_NVP( domain);
+
+            m_state = transform::configuration::Domain{}( domain);
+
+         }
+
 		}
 
 		Broker::~Broker()
 		{
-
-
+		   try
+		   {
+            //
+            // Terminate
+            //
+            terminate();
+		   }
+         catch( ...)
+         {
+            common::error::handler();
+         }
 		}
 
 		void Broker::terminate()
@@ -140,49 +178,13 @@ namespace casual
 
 		}
 
-      void Broker::start( const Settings& arguments)
+      void Broker::start()
       {
          try
          {
 
             auto start = common::platform::clock_type::now();
 
-
-            queue::blocking::Reader blockingReader( m_receiveQueue, m_state);
-
-            //
-            // Configure
-            //
-            {
-               common::trace::internal::Scope trace{ "broker configuration"};
-
-               //
-               // Make the key public for others...
-               //
-               local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
-
-
-               config::domain::Domain domain;
-
-               try
-               {
-                  domain = config::domain::get( arguments.configurationfile);
-               }
-               catch( const exception::FileNotExist& exception)
-               {
-                  common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
-               }
-
-               //
-               // Set domain name
-               //
-               environment::domain::name( domain.name);
-
-               common::log::internal::debug << CASUAL_MAKE_NVP( domain);
-
-               m_state = transform::configuration::Domain{}( domain);
-
-            }
 
             {
                common::trace::internal::Scope trace( "boot domain");
@@ -210,22 +212,9 @@ namespace casual
                handle::MonitorConnect{ m_state},
                handle::MonitorDisconnect{ m_state},
                handle::transaction::client::Connect{ m_state},
+               handle::Call{ admin::Server::services( *this), m_state}
             };
 
-
-
-            //
-            // Prepare the xatmi-services
-            //
-            {
-               common::server::Arguments arguments{ { common::process::path()}};
-
-               arguments.services.emplace_back( "_broker_listServers", &_broker_listServers, 10, common::server::Service::cNone);
-               arguments.services.emplace_back( "_broker_listServices", &_broker_listServices, 10, common::server::Service::cNone);
-               arguments.services.emplace_back( "_broker_updateInstances", &_broker_updateInstances, 10, common::server::Service::cNone);
-
-               handler.add( handle::Call{ std::move( arguments), m_state});
-            }
 
 
             auto end = common::platform::clock_type::now();
@@ -236,6 +225,8 @@ namespace casual
 
 
             common::log::internal::debug << "start message pump\n";
+
+            queue::blocking::Reader blockingReader( m_receiveQueue, m_state);
 
             message::dispatch::pump( handler, blockingReader);
 
@@ -250,11 +241,6 @@ namespace casual
          {
             common::error::handler();
          }
-
-         //
-         // Terminate
-         //
-         terminate();
 		}
 
       void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)

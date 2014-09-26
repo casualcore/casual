@@ -61,23 +61,25 @@ namespace casual
             longjmp( m_state.long_jump_buffer, 1);
          }
 
-         void Context::advertiseService( const std::string& name, tpservice function)
+         void Context::advertiseService( const std::string& name, void (*adress)( TPSVCINFO *))
          {
             trace::internal::Scope trace{ "server::Context advertise service " + name};
+
+            Service prospect{ name, adress};
+
 
             //
             // validate
             //
 
-            std::string localName = name;
 
-            if( localName.size() >= XATMI_SERVICE_NAME_LENGTH)
+            if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
-               localName.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::warning << "service name '" << name << "' truncated to '" << localName << "'";
+               prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
+               log::warning << "service name '" << name << "' truncated to '" << prospect.name << "'";
             }
 
-            auto found = range::find( m_state.services, localName);
+            auto found = range::find( m_state.services, prospect.name);
 
             if( found)
             {
@@ -85,9 +87,9 @@ namespace casual
                // service name is already advertised
                // No error if it's the same function
                //
-               if( found->second.function != function)
+               if( found->second != prospect)
                {
-                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + localName);
+                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + prospect.name);
                }
 
             }
@@ -99,13 +101,13 @@ namespace casual
 
                message.server.queue_id = ipc::receive::id();
                message.serverPath = process::path();
-               message.services.emplace_back( localName);
+               message.services.emplace_back( prospect.name);
 
                // TODO: make it consistence safe...
                queue::blocking::Writer writer( ipc::broker::id());
                writer( message);
 
-               m_state.services.emplace( localName, Service( localName, function, 0, Service::cJoin));
+               m_state.services.emplace( prospect.name, std::move( prospect));
             }
          }
 

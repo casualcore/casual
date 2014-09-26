@@ -19,7 +19,7 @@
 #include "common/message/server.h"
 #include "common/environment.h"
 
-#include "broker/brokervo.h"
+#include "broker/admin/brokervo.h"
 
 
 
@@ -42,10 +42,10 @@ namespace casual
 		{
 		public:
 
-		   static Broker& instance();
+		   Broker( const Settings& arguments);
 			~Broker();
 
-			void start( const Settings& arguments);
+			void start();
 
 
 			//void addServers( const std::vector< action::server::>)
@@ -59,7 +59,7 @@ namespace casual
 
 
 		private:
-			Broker();
+
 
 			void terminate();
 

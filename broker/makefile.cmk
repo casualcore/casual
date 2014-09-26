@@ -56,10 +56,8 @@ logic_archive = LinkArchive( 'bin/casual-broker-logic',
 
 	
 casual_broker_objectfiles = [
-    Compile( "source/broker_main.cpp", "obj/broker_main.o"),
-    
-    Compile( "admin/source/adminserverimplementation.cpp", "obj/adminserverimplementation.o"),
-    Compile( "admin/source/adminserver.cpp", "obj/adminserver.o"),
+    Compile( "source/main.cpp", "obj/main.o"),
+    Compile( "source/admin/server.cpp", "obj/admin/server.o"),
 ]
 
 target = LinkExecutable( "bin/casual-broker",
@@ -83,7 +81,7 @@ install_bins.append( target)
 
 
 target = LinkExecutable( "bin/casual-broker-admin",
-    [ Compile( "admin/source/broker_admin.cpp", "obj/broker_admin.o")],
+    [ Compile( 'source/admin/client.cpp', 'obj/admin/client.o')],
     ["casual-common", "casual-sf", "casual-xatmi"])
 	
 

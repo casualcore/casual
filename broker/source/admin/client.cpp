@@ -8,7 +8,7 @@
 
 #include "sf/xatmi_call.h"
 
-#include "broker/brokervo.h"
+#include "broker/admin/brokervo.h"
 
 #include "common/file.h"
 #include "common/arguments.h"

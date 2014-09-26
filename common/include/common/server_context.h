@@ -56,9 +56,15 @@ namespace casual
                cNone = 3
             };
 
+            using function_type = std::function< void( TPSVCINFO *)>;
+            using adress_type = void(*)( TPSVCINFO *);
 
-            Service( const std::string& name, tpservice function, long type, TransactionType transaction)
-            : name( name), function( function), type( type), transaction( transaction) {}
+
+            Service( std::string name, function_type function, long type, TransactionType transaction)
+               : name( std::move( name)), function( function), type( type), transaction( transaction), m_adress( *function.target< adress_type>()) {}
+
+            Service( std::string name, function_type function)
+               : Service( std::move( name), std::move( function), 0, TransactionType::cAuto) {}
 
 
             Service( Service&&) = default;
@@ -66,11 +72,12 @@ namespace casual
 
             void call( TPSVCINFO* serviceInformation)
             {
-               (*function)( serviceInformation);
+               function( serviceInformation);
             }
 
             std::string name;
-            tpservice function;
+            function_type function;
+
             long type = 0;
             TransactionType transaction = TransactionType::cAuto;
             bool active = true;
@@ -80,6 +87,13 @@ namespace casual
                return out << "{name: " << service.name << " type: " << service.type << " transaction: " << service.transaction
                      << " active: " << service.active << "};";
             }
+
+            friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.m_adress == rhs.m_adress;}
+            friend bool operator != ( const Service& lhs, const Service& rhs) { return lhs.m_adress != rhs.m_adress;}
+
+         private:
+            adress_type m_adress;
+
 
          };
 
@@ -166,7 +180,7 @@ namespace casual
             //!
             //! Being called from tpadvertise
             //!
-            void advertiseService( const std::string& name, tpservice function);
+            void advertiseService( const std::string& name, void (*adress)( TPSVCINFO *));
 
             //!
             //! Being called from tpunadvertise

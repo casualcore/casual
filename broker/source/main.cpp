@@ -36,7 +36,8 @@ int main( int argc, char** argv)
 	      common::process::path( parser.processName());
 	   }
 
-		casual::broker::Broker::instance().start( settings);
+		casual::broker::Broker broker( settings);
+		broker.start();
 
 	}
 	catch( ...)
