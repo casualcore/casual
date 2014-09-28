@@ -75,17 +75,18 @@ namespace casual
 
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS queues 
-              (
-                  name         TEXT,
+                (
+                  id           INTEGER  PRIMARY KEY,
+                  name         TEXT     UNIQUE,
                   retries      NUMBER,
-                  error        NUMBER,
-                  PRIMARY KEY (name)); )");
+                  error        NUMBER ); )"
+              );
 
 
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS messages 
-                (id   BLOB,
-                  queue         NUMBER,
+                ( id            BLOB PRIMARY KEY,
+                  queue         INTEGER,
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
                   correlation   TEXT,
@@ -96,8 +97,7 @@ namespace casual
                   avalible      NUMBER,
                   timestamp     NUMBER,
                   payload       BLOB,
-                  PRIMARY KEY (id),
-                  FOREIGN KEY (queue) REFERENCES queues( rowid)); )");
+                  FOREIGN KEY (queue) REFERENCES queues( id)); )");
 
             m_connection.execute(
                   "CREATE INDEX IF NOT EXISTS i_id_messages  ON messages ( id);" );
@@ -115,13 +115,13 @@ namespace casual
             //
             // Global error queue
             //
-            m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( "casual-error-queue", 0, 0); )");
+            m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( 1, "casual-error-queue", 0, 1); )");
             m_errorQueue = m_connection.rowid();
 
             //
             // the global error queue has it self as an error queue.
             //
-            m_connection.execute( " UPDATE OR IGNORE queues SET error = :qid WHERE rowid = :qid;", m_errorQueue);
+            //m_connection.execute( " UPDATE OR IGNORE queues SET error = :qid WHERE rowid = :qid;", m_errorQueue);
 
 
 
@@ -163,15 +163,15 @@ namespace casual
                m_statement.rollback1 = m_connection.precompile( "DELETE FROM messages WHERE gtrid = :gtrid AND state = 1;");
                m_statement.rollback2 = m_connection.precompile( "UPDATE messages SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3");
                m_statement.rollback3 = m_connection.precompile(
-                     "UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE rowid = messages.queue)"
-                     " WHERE messages.redelivered > ( SELECT retries FROM queues WHERE rowid = messages.queue);");
+                     "UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE id = messages.queue)"
+                     " WHERE messages.redelivered > ( SELECT retries FROM queues WHERE id = messages.queue);");
 
                m_statement.information.queues = m_connection.precompile( R"(
                   SELECT
-                     q.rowid, q.name, q.retries, q.error, COUNT( m.id)
+                     q.id, q.name, q.retries, q.error, COUNT( m.id)
                   FROM
-                     queues q LEFT JOIN messages m ON q.rowid = m.queue AND m.state = 3
-                     GROUP BY q.rowid 
+                     queues q LEFT JOIN messages m ON q.id = m.queue AND m.state = 3
+                     GROUP BY q.id 
                       ;
                   )");
 
@@ -184,10 +184,10 @@ namespace casual
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queues VALUES (?,?,?);", queue.name + "_error", queue.retries, m_errorQueue);
+            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?);", queue.name + "_error", queue.retries, m_errorQueue);
             queue.error = m_connection.rowid();
 
-            m_connection.execute( "INSERT INTO queues VALUES (?,?,?);", queue.name, queue.retries, queue.error);
+            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?);", queue.name, queue.retries, queue.error);
             queue.id = m_connection.rowid();
 
             return queue;
