@@ -78,6 +78,7 @@ namespace casual
 
             }
 
+
             bool Queue::send( const message::Complete& message, const long flags) const
             {
                //
@@ -133,7 +134,8 @@ namespace casual
                   partBegin = partEnd;
                }
 
-               log::internal::ipc << "sent message - type: " << message.type <<  " size: " << message.payload.size() << " destination: " << m_id << " correlation: " << message.correlation << std::endl;
+               log::internal::ipc << "ipc[" << id() << "] sent message - " << message << std::endl;
+
 
                return true;
             }
@@ -144,6 +146,7 @@ namespace casual
                // We have to check and process (throw) pending signals before we might block
                //
                common::signal::handle();
+
                auto result = msgsnd( m_id, message.raw(), message.size(), flags);
 
                if( result == -1)
@@ -153,6 +156,7 @@ namespace casual
                      case EINTR:
                      {
                         common::signal::handle();
+
                         return false;
                      }
                      case EAGAIN:
@@ -172,14 +176,14 @@ namespace casual
 
          namespace receive
          {
-
             Queue::Queue()
                : internal::base_queue( msgget( IPC_PRIVATE, IPC_CREAT | 0660)),
-                    m_path( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
+                    m_path( file::unique( environment::directory::temporary() + "/ipc_queue_"))
             {
                if( m_id  == -1)
                {
-                  throw common::exception::QueueFailed( common::error::string());
+
+                  throw exception::invalid::Argument( "ipc queue create failed - " + common::error::string(), __FILE__, __LINE__);
                }
 
                //
@@ -199,19 +203,23 @@ namespace casual
 
             Queue::~Queue()
             {
-
-               if( ! m_cache.empty())
-               {
-                  log::error << "queue: " << m_id << " has unconsumed messages in cache";
-               }
-
                try
                {
-                  //
-                  // Destroy queue
-                  //
-                  ipc::remove( m_id);
-                  log::internal::ipc << "queue id: " << m_id << " removed - cache capacity: " << m_cache.capacity() << std::endl;
+
+                  if( ! m_cache.empty())
+                  {
+                     log::error << "queue: " << m_id << " has unconsumed messages in cache";
+                  }
+
+                  if( m_id != -1)
+                  {
+                     //
+                     // Destroy queue
+                     //
+                     ipc::remove( m_id);
+                     log::internal::ipc << "queue id: " << m_id << " removed - cache capacity: " << m_cache.capacity() << std::endl;
+                  }
+
                }
                catch( ...)
                {
@@ -297,7 +305,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "] received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -317,7 +325,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "] received message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -337,7 +345,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "]Êreceived message - type: " << result.back().type << " size: " << result.back().payload.size() << " correlation: " <<  result.back().correlation << std::endl;
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -375,6 +383,7 @@ namespace casual
                // We have to check and process (throw) pending signals before we might block
                //
                common::signal::handle();
+
                auto result = msgrcv( m_id, message.raw(), message.size(), 0, flags);
 
                if( result == -1)
@@ -384,6 +393,7 @@ namespace casual
                      case EINTR:
                      {
                         common::signal::handle();
+
                         return false;
                      }
                      case ENOMSG:
@@ -392,7 +402,10 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueReceive( common::error::string() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
+                        std::ostringstream msg;
+                        msg << "ipc[" << id() << "] receive failed - message: " << message << " - " << common::error::string();
+                        log::internal::ipc << msg.str() << std::endl;
+                        throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
                      }
                   }
                }
@@ -476,7 +489,6 @@ namespace casual
             receive::Queue create()
             {
                receive::Queue queue;
-               log::internal::ipc << "created receive queue - id: " << queue.id() << std::endl;
                return queue;
             }
 
@@ -491,9 +503,10 @@ namespace casual
 
          void remove( platform::queue_id_type id)
          {
+
             if( msgctl( id, IPC_RMID, nullptr) != 0)
             {
-               throw exception::NotReallySureWhatToNameThisException( error::string());
+               throw exception::invalid::Argument( "failed to rmove ipc-queue id: " + std::to_string( id ) + " - " + error::string(), __FILE__, __LINE__);
             }
          }
 

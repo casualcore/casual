@@ -23,27 +23,13 @@ namespace casual
 
    namespace local
    {
-      namespace ipc
-      {
-
-         namespace tm
-         {
-            static common::mockup::ipc::Sender sender;
-         } // tm
-
-         void clear()
-         {
-            common::mockup::ipc::broker::queue().clear();
-         }
-
-      } // id
 
       common::file::scoped::Path transactionLogPath()
       {
          return common::file::scoped::Path{ "unittest_transaction_log.db"};
       }
 
-      void prepareConfigurationResponse()
+      void prepareConfigurationResponse( common::platform::queue_id_type id)
       {
          common::message::transaction::manager::Configuration result;
 
@@ -62,7 +48,10 @@ namespace casual
          manager.closeinfo = "some close info 2";
          result.resources.push_back( manager);
 
-         ipc::tm::sender.add( common::ipc::receive::id(), result);
+
+         common::queue::blocking::Writer send( id);
+         send( result);
+
       }
 
 
@@ -72,10 +61,13 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_xa_config__expect_2_resources)
    {
-      local::ipc::clear();
+      common::mockup::ipc::clear();
+
+      // just a cache to keep queue writable
+      common::mockup::ipc::Router router{ common::ipc::receive::id()};
 
       // prepare queues
-      local::prepareConfigurationResponse();
+      local::prepareConfigurationResponse( router.id());
 
 
       auto path = local::transactionLogPath();
@@ -90,10 +82,13 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_resource__expect_2_resources)
    {
-      local::ipc::clear();
+      common::mockup::ipc::clear();
+
+      // just a cache to keep queue writable
+      common::mockup::ipc::Router router{ common::ipc::receive::id()};
 
       // prepare queues
-      local::prepareConfigurationResponse();
+      local::prepareConfigurationResponse( router.id());
 
 
       auto path = local::transactionLogPath();

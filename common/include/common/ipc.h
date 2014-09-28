@@ -77,7 +77,7 @@ namespace casual
 
                void* raw() { return &payload;}
 
-               std::size_t size() { return m_size; }
+               std::size_t size() const { return m_size; }
 
                void size( std::size_t size)
                {
@@ -86,6 +86,13 @@ namespace casual
 
                std::size_t paylodSize() { return m_size - sizeof( Header);}
                void paylodSize( std::size_t size) { m_size = size +  sizeof( Header);}
+
+               friend std::ostream& operator << ( std::ostream& out, const Transport& value)
+               {
+                  return out << "{type: " << value.payload.type << " header: {correlation: " << common::uuid::string( value.payload.header.correlation)
+                        << " count:" << value.payload.header.count << "} size: " << value.size() << "}";
+               }
+
 
             private:
 
@@ -116,6 +123,11 @@ namespace casual
                payload_type payload;
                bool complete = false;
 
+               friend std::ostream& operator << ( std::ostream& out, const Complete& value)
+               {
+                  return out << "{ type: " << value.type << " correlation: " << value.correlation << " size: "
+                        << value.payload.size() << " complete: " << value.complete << '}';
+               }
             };
 
          } // message
@@ -126,10 +138,22 @@ namespace casual
 
          namespace internal
          {
+
+            enum
+            {
+               cInvalid = -1
+            };
+
             class base_queue
             {
             public:
                typedef platform::queue_id_type id_type;
+
+               base_queue( const base_queue&) = delete;
+
+               id_type id() const;
+
+            protected:
 
                base_queue() = default;
                base_queue( id_type id) : m_id( id) {}
@@ -137,17 +161,9 @@ namespace casual
                base_queue( base_queue&& rhs)
                {
                   std::swap( m_id, rhs.m_id);
-                  // m_id = rhs.m_id;
-                  //rhs.m_id = 0;
                }
 
-
-               base_queue( const base_queue&) = delete;
-
-               id_type id() const;
-
-            protected:
-               id_type m_id = 0;
+               id_type m_id = cInvalid;
             };
 
          }
@@ -215,7 +231,12 @@ namespace casual
 
                using type_type = message::Complete::message_type_type;
 
+               //!
+               //! Creates and manage an ipc-queue
+               //!
                Queue();
+
+
                ~Queue();
 
                Queue( Queue&&) = default;
@@ -288,7 +309,7 @@ namespace casual
 
 
          //!
-         //! Removes an ipc-queue resource
+         //! Removes an ipc-queue resource.
          //!
          void remove( platform::queue_id_type id);
 

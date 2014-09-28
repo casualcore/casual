@@ -374,6 +374,7 @@ namespace casual
          State( const std::string& database);
 
 
+
          //typedef instances_type;
 
          std::map< std::string, config::xa::Switch> xaConfig;

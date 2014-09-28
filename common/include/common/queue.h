@@ -83,37 +83,18 @@ namespace casual
                };
 
 
-               template< typename M, typename IPC>
-               static void send( M&& message, IPC&& ipc)
+               template< typename M>
+               static void send( M&& message, ipc::send::Queue& ipc)
                {
                   ipc( std::forward< M>( message), flags);
                }
 
+               static marshal::input::Binary next( ipc::receive::Queue& ipc);
 
-               template< typename IPC>
-               static marshal::input::Binary next( IPC&& ipc)
-               {
-                  auto message = ipc( flags);
+               static marshal::input::Binary next( ipc::receive::Queue& ipc, const std::vector< platform::message_type_type>& types);
 
-                  assert( ! message.empty());
-
-                  return marshal::input::Binary( std::move( message.front()));
-               }
-
-               template< typename IPC>
-               static marshal::input::Binary next( IPC&& ipc, const std::vector< platform::message_type_type>& types)
-               {
-                  std::vector< marshal::input::Binary> result;
-
-                  auto message = ipc( types, flags);
-
-                  assert( ! message.empty());
-
-                  return marshal::input::Binary( std::move( message.front()));
-               }
-
-               template< typename IPC, typename M>
-               static void fetch( IPC&& ipc, M& message)
+               template< typename M>
+               static void fetch( ipc::receive::Queue& ipc, M& message)
                {
                   auto type = message::type( message);
 
@@ -134,46 +115,19 @@ namespace casual
                   flags = ipc::receive::Queue::cNoBlocking
                };
 
-               template< typename M, typename IPC>
-               static bool send( M&& message, IPC& ipc)
+               template< typename M>
+               static bool send( M&& message, ipc::send::Queue& ipc)
                {
                   return ipc( std::forward< M>( message), flags);
                }
 
+               static std::vector< marshal::input::Binary> next( ipc::receive::Queue& ipc);
 
-               template< typename IPC>
-               static std::vector< marshal::input::Binary> next( IPC&& ipc)
-               {
-                  std::vector< marshal::input::Binary> result;
-
-                  auto message = ipc( flags);
-
-                  if( ! message.empty())
-                  {
-                     result.emplace_back( std::move( message.front()));
-                  }
-
-                  return result;
-               }
-
-               template< typename IPC>
-               static std::vector< marshal::input::Binary> next( IPC&& ipc, const std::vector< platform::message_type_type>& types)
-               {
-                  std::vector< marshal::input::Binary> result;
-
-                  auto message = ipc( types, flags);
-
-                  if( ! message.empty())
-                  {
-                     result.emplace_back( std::move( message.front()));
-                  }
-
-                  return result;
-               }
+               static std::vector< marshal::input::Binary> next( ipc::receive::Queue& ipc, const std::vector< platform::message_type_type>& types);
 
 
-               template< typename IPC, typename M>
-               static bool fetch( IPC&& ipc, M& message)
+               template< typename M>
+               static bool fetch( ipc::receive::Queue& ipc, M& message)
                {
                   auto type = message::type( message);
 
@@ -198,18 +152,17 @@ namespace casual
          {
 
 
-            template< typename BP, typename P, typename IPC>
+            template< typename BP, typename P>
             struct basic_writer
             {
             public:
                typedef BP block_policy;
                typedef P policy_type;
-               typedef IPC ipc_value_type;
-               using ipc_type = typename std::decay< ipc_value_type>::type;
 
-               template< typename ipc_id, typename... Args>
-               basic_writer( ipc_id&& ipc, Args&&... args)
-                  : m_ipc( std::forward< ipc_id>( ipc)), m_policy( std::forward< Args>( args)...) {}
+
+               template< typename... Args>
+               basic_writer( platform::queue_id_type id, Args&&... args)
+                  : m_ipc( id), m_policy( std::forward< Args>( args)...) {}
 
 
                //!
@@ -220,14 +173,14 @@ namespace casual
                //! @return true if the whole message is sent. false otherwise
                //!
                template< typename M>
-               auto operator () ( M&& message) -> decltype( block_policy::send( std::declval< ipc::message::Complete>(), std::declval< ipc_value_type&>()))
+               auto operator () ( M&& message) -> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
                {
                   auto transport = prepare( std::forward< M>( message));
 
                   return send( transport);
                }
 
-               const ipc_value_type ipc() const
+               const ipc::send::Queue& ipc() const
                {
                   return m_ipc;
                }
@@ -239,7 +192,7 @@ namespace casual
                //!
                //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
                //!
-               auto send( const ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc_value_type&>()))
+               auto send( const ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc::send::Queue&>()))
                {
                   while( true)
                   {
@@ -269,33 +222,33 @@ namespace casual
                   return ipc::message::Complete( type, archive.release());
                }
 
-               ipc_value_type m_ipc;
+               ipc::send::Queue m_ipc;
                policy_type m_policy;
 
             };
 
 
 
-            template< typename BP, typename P, typename IPC>
+            template< typename BP, typename P>
             class basic_reader
             {
             public:
 
                typedef BP block_policy;
                typedef P policy_type;
-               typedef IPC ipc_value_type;
-               using ipc_type = typename std::decay< ipc_value_type>::type;
+               //typedef IPC ipc_value_type;
+               //using ipc_type = typename std::decay< ipc_value_type>::type;
                using type_type = platform::message_type_type;
 
                template< typename... Args>
-               basic_reader( ipc_value_type ipc, Args&&... args)
+               basic_reader( ipc::receive::Queue& ipc, Args&&... args)
                   : m_ipc( ipc), m_policy( std::forward< Args>( args)...) {}
 
                //!
                //! Gets the next binary-message from queue.
                //! @return binary-marshal that can be used to deserialize an actual message.
                //!
-               auto next() -> decltype( block_policy::next( std::declval< ipc_value_type>()))
+               auto next() -> decltype( block_policy::next( std::declval< ipc::receive::Queue&>()))
                {
                   while( true)
                   {
@@ -315,7 +268,7 @@ namespace casual
                //! Gets the next binary-message from queue that is any of @p types
                //! @return binary-marshal that can be used to deserialize an actual message.
                //!
-               auto next( const std::vector< type_type>& types) -> decltype( block_policy::next( std::declval< ipc_value_type>(), { type_type()}))
+               auto next( const std::vector< type_type>& types) -> decltype( block_policy::next( std::declval< ipc::receive::Queue&>(), { type_type()}))
                {
                   while( true)
                   {
@@ -339,7 +292,7 @@ namespace casual
                //! @attention Will block until the specific message-type can be read from the queue
                //!
                template< typename M>
-               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc_value_type>(), message))
+               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc::receive::Queue&>(), message))
                {
                   while( true)
                   {
@@ -354,14 +307,14 @@ namespace casual
                   }
                }
 
-               const ipc_value_type ipc() const
+               const ipc::receive::Queue& ipc() const
                {
                   return m_ipc;
                }
 
             private:
 
-               ipc_value_type m_ipc;
+               ipc::receive::Queue& m_ipc;
                policy_type m_policy;
             };
 
@@ -374,20 +327,19 @@ namespace casual
          {
 
             template< typename P>
-            using basic_writer = internal::basic_writer< policy::Blocking, P, ipc::send::Queue>;
+            using basic_writer = internal::basic_writer< policy::Blocking, P>;
 
             typedef basic_writer< policy::NoAction> Writer;
 
 
             template< typename P>
-            using basic_reader = internal::basic_reader< policy::Blocking, P, ipc::receive::Queue&>;
+            using basic_reader = internal::basic_reader< policy::Blocking, P>;
 
             typedef basic_reader< policy::NoAction> Reader;
 
-            template< typename IPC>
-            internal::basic_reader< policy::Blocking, policy::NoAction, IPC&> reader( IPC& ipc)
+            inline Reader reader( ipc::receive::Queue& ipc)
             {
-               return internal::basic_reader< policy::Blocking, policy::NoAction, IPC&>( ipc);
+               return Reader( ipc);
             }
 
             namespace remove
@@ -405,20 +357,19 @@ namespace casual
          {
 
             template< typename P>
-            using basic_writer = internal::basic_writer< policy::NonBlocking, P, ipc::send::Queue>;
+            using basic_writer = internal::basic_writer< policy::NonBlocking, P>;
 
             typedef basic_writer< policy::NoAction> Writer;
 
             template< typename P>
-            using basic_reader = internal::basic_reader< policy::NonBlocking, P, ipc::receive::Queue&>;
+            using basic_reader = internal::basic_reader< policy::NonBlocking, P>;
 
             typedef basic_reader< policy::NoAction> Reader;
 
 
-            template< typename IPC>
-            internal::basic_reader< policy::NonBlocking, policy::NoAction, IPC&> reader( IPC& ipc)
+            inline Reader reader( ipc::receive::Queue& ipc)
             {
-               return internal::basic_reader< policy::NonBlocking, policy::NoAction, IPC&>( ipc);
+               return Reader( ipc);
             }
 
             namespace remove

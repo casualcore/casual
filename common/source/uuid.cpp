@@ -17,6 +17,15 @@ namespace casual
 	namespace common
 	{
 
+      namespace uuid
+      {
+         std::string string( const platform::uuid_type& uuid)
+         {
+            return Uuid::toString( uuid);
+         }
+      } // uuid
+
+
 	   const Uuid& Uuid::empty()
 	   {
 	      static const Uuid empty;

@@ -27,30 +27,35 @@ namespace casual
    namespace common
    {
 
-      TEST( casual_common_mockup, handle_replier_startup)
+      TEST( casual_common_mockup, ipc_Instance_startup)
       {
          EXPECT_NO_THROW({
-            mockup::ipc::Sender sender;
+            mockup::ipc::Instance instance;
          });
       }
 
 
-      TEST( casual_common_mockup, handle_sender_one_message)
+      TEST( casual_common_mockup, ipc_Instance_one_message)
       {
+         trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_one_message)", log::internal::ipc};
 
-         trace::Scope trace{ "TEST( casual_common_mockup, handle_sender_one_message)", log::internal::ipc};
+         // so we don't hang for ever, if something is wrong...
+         common::signal::alarm::Scoped timout( 5);
 
-         mockup::ipc::Sender sender;
+         mockup::ipc::Instance instance;
+
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
             request.server = message::server::Id::current();
 
-            sender.add( ipc::receive::id(), request);
+            queue::blocking::Writer write( instance.id());
+
+            write( request);
          }
 
          {
-            queue::blocking::Reader read( ipc::receive::queue());
+            queue::blocking::Reader read( instance.receive());
             message::service::name::lookup::Request request;
             read( request);
 
@@ -60,14 +65,15 @@ namespace casual
          }
       }
 
-      TEST( casual_common_mockup, handle_sender_200_messages)
+      TEST( casual_common_mockup, ipc_Instance_200_messages)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, handle_sender_200_messages)",  log::internal::ipc};
+         trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_200_messages)",  log::internal::ipc};
 
-         mockup::ipc::Sender sender;
-         //
-         // We use a receiver to not reach ipc-limits.
-         mockup::ipc::Receiver receiver;
+         // so we don't hang for ever, if something is wrong...
+         common::signal::alarm::Scoped timout( 5);
+
+         mockup::ipc::Instance instance;
+
 
          {
             trace::Scope trace( "sender.add  200");
@@ -75,45 +81,57 @@ namespace casual
             request.requested = "someService";
             request.server = message::server::Id::current();
 
+            queue::blocking::Writer write( instance.id());
+
+            const std::string temp = "service_";
+
             for( int count = 0; count < 200; ++count)
             {
-               sender.add( receiver.id(), request);
+               request.requested = temp + std::to_string( count);
+               write( request);
             }
          }
 
          {
-
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
-            auto read = queue::blocking::reader( receiver);
+            queue::blocking::Reader read( instance.receive());
             message::service::name::lookup::Request request;
+
+            const std::string temp = "service_";
 
             for( int count = 0; count < 200; ++count)
             {
                read( request);
-               EXPECT_TRUE( request.requested == "someService");
+               EXPECT_TRUE( request.requested == temp + std::to_string( count));
                EXPECT_TRUE( request.server.queue_id == ipc::receive::id());
             }
          }
       }
 
-      TEST( casual_common_mockup, handle_reciver_one_messages)
+      TEST( casual_common_mockup, ipc_router_one_messages)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, handle_reciver_one_messages)", log::internal::ipc};
+         trace::Scope trace{ "TEST( casual_common_mockup, handle_router_one_messages)", log::internal::ipc};
 
-         mockup::ipc::Receiver receiver;
+         // so we don't hang for ever, if something is wrong...
+         common::signal::alarm::Scoped timout( 5);
+
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         //ipc::receive::queue().clear();
 
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
             request.server = message::server::Id::current();
 
-            queue::blocking::Writer write( receiver.id());
+            queue::blocking::Writer write( router.id());
             write( request);
          }
 
          {
-            auto read = queue::blocking::reader( receiver);
+
+            queue::blocking::Reader read( ipc::receive::queue());
             message::service::name::lookup::Request request;
 
             read( request);
@@ -123,42 +141,52 @@ namespace casual
          }
       }
 
-      TEST( casual_common_mockup, handle_reciver_200_messages)
-      {
-         trace::Scope trace{ "TEST( casual_common_mockup, handle_reciver_200_messages)", log::internal::ipc};
 
-         mockup::ipc::Receiver receiver;
+      TEST( casual_common_mockup, ipc_router_200_messages)
+      {
+         trace::Scope trace{ "TEST( casual_common_mockup, handle_router_200_messages)", log::internal::ipc};
+
+         // so we don't hang for ever, if something is wrong...
+         common::signal::alarm::Scoped timout( 5);
+
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         //ipc::receive::queue().clear();
 
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
             request.server = message::server::Id::current();
 
-            queue::blocking::Writer write( receiver.id());
-
-            for( auto count = 0; count < 200; ++count)
-               write( request);
-
-            common::log::debug << "wrote 200 messages to " << receiver.id() << std::endl;
-
-         }
-
-         {
-            auto read = queue::blocking::reader( receiver);
-            message::service::name::lookup::Request request;
+            queue::blocking::Writer write( router.id());
 
             for( auto count = 0; count < 200; ++count)
             {
+               write( request);
+            }
+
+
+            common::log::debug << "wrote 200 messages to " << router.id() << std::endl;
+         }
+
+         {
+            auto read = queue::blocking::reader( ipc::receive::queue());
+            message::service::name::lookup::Request request;
+
+
+            for( auto count = 0; count < 200; ++count)
+            {
+
                read( request);
                //EXPECT_TRUE( read( request)) << "count: " << count;
                EXPECT_TRUE( request.requested == "someService");
                EXPECT_TRUE( request.server.queue_id == ipc::receive::id());
             }
-
             common::log::debug << "environment::directory::domain(): " << environment::directory::domain() << std::endl;
 
          }
       }
+
 
 
 

@@ -44,12 +44,16 @@ namespace casual
 
                   void add( int signal)
                   {
+                     std::unique_lock< std::mutex> lock( m_mutex);
+
                      m_signals.push_back( signal);
                   }
 
                   int consume()
                   {
-                     if( !m_signals.empty())
+                     std::unique_lock< std::mutex> lock( m_mutex);
+
+                     if( ! m_signals.empty())
                      {
                         int temp = m_signals.front();
                         m_signals.pop_back();
@@ -60,6 +64,8 @@ namespace casual
 
                   void clear()
                   {
+                     std::unique_lock< std::mutex> lock( m_mutex);
+
                      m_signals.clear();
                   }
 
@@ -101,10 +107,9 @@ namespace casual
                      sigaction( signal, &sa, 0);
                   }
 
-                  //
-                  // TODO: atomic?
-                  //
+
                   std::deque< int> m_signals;
+                  std::mutex m_mutex;
                };
 
 
@@ -178,7 +183,7 @@ namespace casual
                   // the rest we throw on, so the rest of the application
                   // can use RAII and other paradigms to do cleaning
                   //
-                  throw exception::signal::Terminate( strsignal( signal));
+                  throw exception::signal::Terminate( type::string( signal));
                   break;
                }
 				}
@@ -272,6 +277,31 @@ namespace casual
                }
 
             }
+
+            set_type block()
+            {
+               sigset_t set;
+               sigfillset(&set);
+               sigset_t result;
+               pthread_sigmask(SIG_SETMASK, &set, &result);
+               return result;
+            }
+
+            namespace scope
+            {
+
+               Block::Block() : m_set( block())
+               {
+
+
+               }
+               Block::~Block()
+               {
+                  pthread_sigmask(SIG_SETMASK, &m_set, NULL);
+               }
+
+            } // scope
+
          } // thread
 
 

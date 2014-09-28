@@ -29,6 +29,7 @@ namespace casual
             {
             public:
                Path( const std::string& path);
+               //Path();
                ~Path();
 
                Path( Path&&);

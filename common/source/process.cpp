@@ -99,7 +99,7 @@ namespace casual
 
          void sleep( std::chrono::microseconds time)
          {
-            usleep( time.count());
+            std::this_thread::sleep_for( time);
          }
 
 

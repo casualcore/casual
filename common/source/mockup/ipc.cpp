@@ -25,6 +25,10 @@
 #include <atomic>
 #include <fstream>
 
+// TODO:
+#include <iostream>
+
+
 namespace casual
 {
 
@@ -74,12 +78,8 @@ namespace casual
                      enum Type
                      {
 
-                        cMockupConnectReply  = 10000, // avoid conflict with real messages
-                        cMockupDisconnect,
-                        cMockupStart,
-                        cMockupMessageToSend,
-                        cMockupFetchRequest,
-                        cMockupFetchReply,
+                        cMockupDisconnect  = 100000, // avoid conflict with real messages
+                        cMockupClear,
 
                      };
 
@@ -92,506 +92,276 @@ namespace casual
                         };
                      };
 
-                     template< message::Type type>
-                     struct basic_queue_id : basic_messsage< type>
-                     {
-                        typedef platform::queue_id_type queue_id_type;
-
-                        queue_id_type queue_id = 0;
-
-                        template< typename A>
-                        void marshal( A& archive)
-                        {
-                           archive & queue_id;
-                        }
-                     };
-
-                     using ConnectReply = basic_queue_id< cMockupConnectReply>;
-
                      using Disconnect =  basic_messsage< cMockupDisconnect>;
+                     using Clear =  basic_messsage< cMockupClear>;
+                  }
+               }
+            }
 
 
-                     using Start =  basic_messsage< cMockupStart>;
+            class Router::Implementation
+            {
+               struct Worker
+               {
+                  using cache_type = std::vector< common::ipc::message::Complete>;
 
-                     struct ToSend : basic_messsage< cMockupMessageToSend>
-                     {
-                        typedef platform::queue_id_type queue_id_type;
-
-                        queue_id_type destination;
-                        common::ipc::message::Complete message;
-
-                        template< typename A>
-                        void marshal( A& archive)
-                        {
-                           archive & destination;
-                           archive & message;
-                        }
-
-                     };
-
-
-                     namespace fetch
-                     {
-                        struct Request : basic_messsage< cMockupFetchRequest>
-                        {
-                           typedef platform::queue_id_type queue_id_type;
-                           typedef common::ipc::receive::Queue::type_type type_type;
-
-                           queue_id_type destination = 0;
-                           std::vector< type_type> types;
-
-                           template< typename A>
-                           void marshal( A& archive)
-                           {
-                              archive & destination;
-                              archive & types;
-                           }
-                        };
-
-
-                     } // fetch
-
-
-
-                  } // message
-
-
-                  template< typename P>
-                  struct basic_thread_queue
+                  struct State
                   {
-                     void operator () ( common::ipc::receive::Queue::id_type id)
-                     {
-                        common::trace::Scope trace( "basic_thread_queue::operator ()", common::log::internal::ipc);
 
-                        log::internal::ipc << "started with queue id " << id << " from main thread" << std::endl;
+                     State( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
+                        : source( std::move( source)), destination( destination) {}
 
-                        common::ipc::receive::Queue receiveQueue;
+                     common::ipc::receive::Queue source;
+                     common::ipc::send::Queue destination;
 
-
-                        log::internal::ipc << "created ipc queue " << receiveQueue.id() << std::endl;
-
-                        //
-                        // Write this threads queue id to main-thread, so we
-                        // establish communications
-                        //
-                        {
-                           message::ConnectReply reply;
-                           reply.queue_id = receiveQueue.id();
-
-                           common::queue::blocking::Writer write( id);
-                           write( reply);
-
-                           log::internal::ipc << "written queue id " << receiveQueue.id() << " to main thread" << std::endl;
-                        }
-
-                        //
-                        // Let the implementation do it's thing...
-                        //
-                        P()( receiveQueue);
-                     }
+                     cache_type cache;
                   };
 
-
-                  template< typename P>
-                  struct basic_implementation
+                  void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
                   {
-                     basic_implementation() : m_thread( m_functor, m_receiveQueue.id())
+                     //!
+                     //! Block all signals
+                     //!
+                     common::signal::thread::block();
+
+                     State state( std::move( source), destination);
+
+                     try
                      {
-                        try
-                        {
-                           common::queue::blocking::Reader reader( m_receiveQueue);
-
-                           //
-                           // Wait for thread to write it's queue id
-                           //
-                           message::ConnectReply reply;
-                           reader( reply);
-
-                           m_threadQueueId = reply.queue_id;
-                           log::internal::ipc << "received queue id " << m_threadQueueId << " from thread" << std::endl;
-
-                        }
-                        catch( std::exception& exception)
-                        {
-                           log::debug << "exception: " << exception.what() << std::endl;
-                           throw;
-                        }
-
-                     }
-
-                     ~basic_implementation()
-                     {
-                        common::queue::non_blocking::Writer write( m_threadQueueId);
-                        message::Disconnect disconnect;
-                        write( disconnect);
-
-                        m_thread.join();
-                     }
-
-
-                     template< typename M>
-                     void send( M&& message) const
-                     {
-                        common::queue::blocking::Writer write( m_threadQueueId);
-                        write( message);
-                     }
-
-                     template< typename M>
-                     bool try_send( M&& message) const
-                     {
-                        common::queue::non_blocking::Writer write( m_threadQueueId);
-                        return write( message);
-                     }
-
-
-                     common::ipc::receive::Queue& ipc() { return m_receiveQueue;}
-
-                     typedef platform::queue_id_type queue_id_type;
-
-                     common::ipc::receive::Queue m_receiveQueue;
-                     basic_thread_queue< P> m_functor;
-                     std::thread m_thread;
-                     queue_id_type m_threadQueueId;
-
-                  };
-
-
-                  struct Sender
-                  {
-                     struct Send
-                     {
-                        struct Queue
-                        {
-                           Queue()
-                           {
-                              work = true;
-                           }
-                           void push_back( message::ToSend&& message) const
-                           {
-                              std::lock_guard< std::mutex> lock( m_mutext);
-
-                              m_messages.push_back( std::move( message));
-
-                              log::internal::ipc << "Q push_back size: " << m_messages.size() << std::endl;
-                           }
-
-                           std::vector< message::ToSend> pop_front() const
-                           {
-                              std::lock_guard< std::mutex> lock( m_mutext);
-                              std::vector< message::ToSend> result;
-
-                              if( ! m_messages.empty())
-                              {
-                                 result.push_back( std::move( m_messages.front()));
-                                 m_messages.pop_front();
-                              }
-                              log::internal::ipc << "Q pop_front size: " << m_messages.size() << std::endl;
-
-                              return result;
-                           }
-
-                           std::size_t size() const
-                           {
-                              std::lock_guard< std::mutex> lock( m_mutext);
-                              return m_messages.size();
-                           }
-
-                           mutable std::atomic< bool> work;
-
-                        private:
-                           mutable std::deque< message::ToSend> m_messages;
-                           mutable std::mutex m_mutext;
-
-                        };
-
-                        void operator () ( const Queue& queue) const
-                        {
-                           log::internal::ipc << "Send::operator () called" << std::endl;
-
-                           std::size_t numberOfMessages = 0;
-
-                           while( true)
-                           {
-                              auto message = queue.pop_front();
-
-                              if( message.empty())
-                              {
-                                 // we're done
-
-                                 if( ! queue.work)
-                                 {
-                                    log::internal::ipc << "Send is done" << std::endl;
-                                    return;
-                                 }
-                                 process::sleep( std::chrono::milliseconds( 1));
-
-                              }
-                              else
-                              {
-                                 common::queue::blocking::Writer write( message.front().destination);
-                                 write.send( message.front().message);
-
-
-                                 log::internal::ipc << "total sent messages: " << ++numberOfMessages << " - queue size: " << queue.size() << std::endl;
-                              }
-                           }
-                        }
-                     };
-
-
-                     void operator () ( common::ipc::receive::Queue& receiveQueue)
-                     {
-
-                        //
-                        // Start the message pump
-                        //
-                        common::queue::blocking::Reader reader( receiveQueue);
-
-
-                        Send send;
-                        Send::Queue queue;
-                        std::thread sender = std::thread{ send, std::ref( queue)};
 
                         while( true)
                         {
-                           try
-                           {
-                              auto next = reader.next();
-
-                              switch( next.type())
-                              {
-                                 case message::cMockupDisconnect:
-                                 {
-                                    log::internal::ipc << "disconnect received - stop" << std::endl;
-                                    queue.work = false;
-                                    sender.join();
-                                    return;
-                                 }
-                                 case message::cMockupMessageToSend:
-                                 {
-                                    trace::Scope trace( "case message::cMockupMessageToSend:", log::internal::ipc);
-                                    message::ToSend message;
-                                    next >> message;
-
-                                    queue.push_back( std::move( message));
-                                    break;
-                                 }
-                                 default:
-                                 {
-                                    log::error << "unknown message " << next.type() << "- discard" << std::endl;
-                                    break;
-                                 }
-                              }
-                           }
-                           catch( const exception::signal::User&)
-                           {
-                              log::internal::ipc << "signal received - read from input queue" << std::endl;
-                           }
+                           read( state);
+                           process::sleep( std::chrono::microseconds( 10));
+                           write( state);
+                           process::sleep( std::chrono::microseconds( 10));
                         }
                      }
-                  };
-
-
-                  struct Receiver
-                  {
-                     void operator () ( common::ipc::receive::Queue& receiveQueue)
+                     catch( const Disconnect&)
                      {
-
-                        //
-                        // Start the message pump
-                        //
-                        common::queue::blocking::Reader reader( receiveQueue);
-
-                        std::vector< common::ipc::message::Complete> messages;
-
-                        while( true)
-                        {
-                           auto next = reader.next();
-
-                           switch( next.type())
-                           {
-                              case message::cMockupDisconnect:
-                              {
-                                 log::internal::ipc << "disconnect received - stop" << std::endl;
-                                 return;
-                              }
-                              case message::fetch::Request::message_type:
-                              {
-                                 message::fetch::Request message;
-                                 next >> message;
-
-                                 auto found = range::find_if(
-                                       messages, [&](const common::ipc::message::Complete& m)
-                                       {
-                                          if( message.types.empty()) { return true;}
-
-                                          return ! range::find( message.types, m.type).empty();
-                                       }
-                                       );
-
-                                 if( found)
-                                 {
-                                    common::queue::non_blocking::Writer write( message.destination);
-                                    write.send( *found);
-                                    messages.erase( found.first);
-                                 }
-                                 else
-                                 {
-                                    log::error << "failed to retreive message - types: " <<  range::make( message.types) << std::endl;
-                                 }
-                                 break;
-                              }
-                              default:
-                              {
-                                 messages.push_back( next.release());
-                                 break;
-                              }
-                           }
-                        }
+                        log::internal::ipc << "thread " << std::this_thread::get_id() << " disconnects - source: "
+                              <<  state.source.id() << " destination: " << state.destination.id() << std::endl;
                      }
+                     catch( ...)
+                     {
+                        // todo: Temp
+                        std::cerr << "thread " << std::this_thread::get_id() << " got exception" << std::endl;
+                        common::error::handler();
+                     }
+                  }
+
+               private:
+
+
+                  struct Disconnect : common::exception::Base
+                  {
+                     using common::exception::Base::Base;
                   };
 
+                  void read( State& state)
+                  {
 
+                     // We block if the queue is empty
+                     const long flags = state.cache.empty() ? 0 : common::ipc::receive::Queue::cNoBlocking;
 
-               } // <unnamed>
-            } // local
+                     auto message = state.source( flags);
 
+                     if( message.empty())
+                        return;
 
+                     if( check( state, message.front()))
+                     {
+                        state.cache.push_back( std::move( message.front()));
+                     }
 
-            struct Sender::Implementation : public local::basic_implementation< local::Sender>
-            {
-               using base_type = local::basic_implementation< local::Sender>;
+                  }
 
-               void add( queue_id_type destination, const common::ipc::message::Complete& message)
+                  void write( State& state)
+                  {
+                     if( ! state.cache.empty())
+                     {
+                        if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
+                        {
+                           state.cache.erase( std::begin( state.cache));
+
+                           return;
+                        }
+                     }
+                  }
+
+                  bool check( State& state, const common::ipc::message::Complete& message)
+                  {
+                     switch( message.type)
+                     {
+                        case local::message::Disconnect::message_type:
+                        {
+                           throw Disconnect( "disconnect", __FILE__, __LINE__);
+                        }
+                        case local::message::Clear::message_type:
+                        {
+                           decltype( state.cache) empty;
+                           std::swap( state.cache, empty);
+
+                           do
+                           {
+                              process::sleep( std::chrono::microseconds( 10));
+                           }
+                           while( ! state.source( common::ipc::receive::Queue::cNoBlocking).empty());
+
+                           return false;
+                        }
+                     }
+                     return true;
+                  }
+               };
+            public:
+
+               Implementation( id_type destination) : destination( destination)
                {
-                  //signal::clear();
+                  //
+                  // We use an ipc-queue that does not check signals
+                  //
+                  common::ipc::receive::Queue ipc;
+                  id = ipc.id();
 
-                  local::message::ToSend toSend;
-                  toSend.destination = destination;
-
-                  toSend.message.complete = message.complete;
-                  toSend.message.correlation = message.correlation;
-                  toSend.message.payload = message.payload;
-                  toSend.message.type = message.type;
-
-                  send( toSend);
-                  //start();
+                  m_thread = std::thread{ Worker{}, std::move( ipc), destination};
                }
 
-               void start()
+               ~Implementation()
                {
-                  send( local::message::Start{});
+                  try
+                  {
+                     common::queue::blocking::Writer send{ id};
+                     local::message::Disconnect message;
+                     send( message);
+                  }
+                  catch( const std::exception& exception)
+                  {
+                     log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                  }
+
+                  try
+                  {
+                     m_thread.join();
+                  }
+                  catch( const std::exception& exception)
+                  {
+                     log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                  }
                }
+
+               id_type id;
+               id_type destination;
+               std::thread m_thread;
+
             };
 
+            Router::Router( id_type destination) : m_implementation( destination) {}
+            Router::~Router() {}
 
-            Sender::Sender()
+
+            id_type Router::id() const { return m_implementation->id;}
+
+            id_type Router::destination() const { return m_implementation->destination;}
+
+
+            struct Instance::Implementation
             {
-
-            }
-
-            Sender::~Sender()
-            {
-
-            }
-
-            void Sender::add( queue_id_type destination, const common::ipc::message::Complete& message) const
-            {
-               m_implementation->add( destination, message);
-            }
-
-
-
-
-            struct Receiver::Implementation : public local::basic_implementation< local::Receiver>
-            {
-               void fetch( std::vector< type_type> types)
+               Implementation( platform::pid_type pid) : pid( pid), router( receive.id())
                {
-                  local::message::fetch::Request request;
-                  request.destination = ipc().id();
-                  request.types = std::move( types);
-                  send( request);
                }
 
-               void clear()
-               {
-                  m_receiveQueue.clear();
-               }
+               platform::pid_type pid;
+               common::ipc::receive::Queue receive;
+               Router router;
             };
 
-
-            Receiver::Receiver() {}
-
-            Receiver::~Receiver() {}
-
-            Receiver::Receiver( Receiver&&) = default;
-            Receiver& Receiver::operator = ( Receiver&&) = default;
-
-            Receiver::id_type Receiver::id() const
+            Instance::Instance( platform::pid_type pid) : m_implementation( pid)
             {
-               return m_implementation->m_threadQueueId;
+
             }
 
-            void Receiver::clear()
+            Instance::Instance() : m_implementation( process::id()) {}
+
+            Instance::~Instance() {}
+
+            Instance::Instance( Instance&&) noexcept = default;
+            Instance& Instance::operator = ( Instance&&) noexcept = default;
+
+            platform::pid_type Instance::pid()
             {
-               m_implementation->clear();
+               return m_implementation->pid;
             }
 
-            std::vector< common::ipc::message::Complete> Receiver::operator ()( const long flags)
+            id_type Instance::id()
             {
-               m_implementation->fetch( {});
-               return m_implementation->ipc()( flags);
+               return m_implementation->router.id();
             }
 
-            std::vector< common::ipc::message::Complete> Receiver::operator ()( type_type type, const long flags)
+            common::ipc::receive::Queue& Instance::receive()
             {
-               m_implementation->fetch( { type});
-               return m_implementation->ipc()( type, flags);
+               return m_implementation->receive;
             }
 
-
-
-            std::vector< common::ipc::message::Complete> Receiver::operator ()( const std::vector< type_type>& types, const long flags)
+            void Instance::clear()
             {
-               m_implementation->fetch( types);
-               return m_implementation->ipc()( types, flags);
+               common::queue::blocking::Writer send{ id()};
+               local::message::Clear message;
+               send( message);
+
+               std::size_t count = 0;
+
+               do
+               {
+                  ++count;
+                  process::sleep( std::chrono::milliseconds( 10));
+               }
+               while( ! m_implementation->receive( common::ipc::receive::Queue::cNoBlocking).empty());
+
+
+               log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;
             }
-
-
-
-
 
             namespace broker
             {
-
-               Receiver initializeMockupBrokerQueue()
+               namespace local
                {
-                  static file::scoped::Path path{ common::environment::file::brokerQueue()};
-
-                  Receiver queue;
-
-                  log::debug << "writing mockup broker queue file: " << path.path() << std::endl;
-
-                  std::ofstream brokerQueueFile( path);
-
-                  if( brokerQueueFile)
+                  namespace
                   {
-                     brokerQueueFile << queue.id() << std::endl;
-                     brokerQueueFile.close();
-                  }
-                  else
-                  {
-                     throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path.path());
-                  }
+                     struct Instance : ipc::Instance
+                     {
+                        Instance() : ipc::Instance( 6666), m_path( common::environment::file::brokerQueue())
+                        {
+                           log::debug << "writing mockup broker queue file: " << m_path.path() << std::endl;
 
-                  return queue;
+                           std::ofstream brokerQueueFile( m_path);
+
+                           if( brokerQueueFile)
+                           {
+                              brokerQueueFile << id() << std::endl;
+                              brokerQueueFile.close();
+                           }
+                           else
+                           {
+                              throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + m_path.path());
+                           }
+                        }
+
+                        file::scoped::Path m_path;
+                     };
+                  } // <unnamed>
+               } // local
+
+
+               platform::pid_type pid()
+               {
+                  return queue().pid();
                }
 
-
-               Receiver& queue()
+               ipc::Instance& queue()
                {
-                  static Receiver singelton = initializeMockupBrokerQueue();
-                  return singelton;
+                  static local::Instance singleton;
+                  return singleton;
                }
 
                id_type id()
@@ -601,33 +371,36 @@ namespace casual
 
             } // broker
 
-
-            namespace receive
+            namespace transaction
             {
-               bool Sender::operator () ( const common::ipc::message::Complete& message) const
+               namespace manager
                {
-                  m_sender.add( common::ipc::receive::id(), message);
-                  return true;
-               }
+                  platform::pid_type pid()
+                  {
+                     return queue().pid();
+                  }
 
+                  ipc::Instance& queue()
+                  {
+                     static Instance singleton( 7777);
+                     return singleton;
+                  }
 
-               bool Sender::operator () ( const common::ipc::message::Complete& message, const long flags) const
-               {
-                  m_sender.add( common::ipc::receive::id(), message);
-                  return true;
-               }
+                  id_type id()
+                  {
+                     return queue().id();
+                  }
 
-               Sender& queue()
-               {
-                  static Sender singelton;
-                  return singelton;
-               }
+               } // manager
 
-               id_type id()
-               {
-                  return common::ipc::receive::id();
-               }
+            } // transaction
+
+            void clear()
+            {
+               broker::queue().clear();
+               transaction::manager::queue().clear();
             }
+
          } // ipc
       } // mockup
    } // common

@@ -31,6 +31,8 @@ namespace casual
             {
                void SetUp() override
                {
+                  std::string domainPath;
+
                   if( environment::variable::exists( "CASUAL_BUILD_HOME"))
                   {
                      domainPath =  environment::variable::get( "CASUAL_BUILD_HOME") + "/.unittest_domain_home" ;
@@ -47,8 +49,11 @@ namespace casual
                   log::debug  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
 
 
-                  // poke mockup broker queue
+                  // poke all global queues
+                  mockup::ipc::clear();
+
                   log::debug << "mockup broker queue id: " << mockup::ipc::broker::queue().id() << std::endl;
+                  log::debug << "mockup TM queue id: " << mockup::ipc::transaction::manager::queue().id() << std::endl;
 
                }
 
@@ -56,8 +61,6 @@ namespace casual
                {
 
                }
-
-               std::string domainPath;
 
             };
 

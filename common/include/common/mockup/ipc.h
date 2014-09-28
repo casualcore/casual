@@ -25,47 +25,60 @@ namespace casual
          {
             using id_type = platform::queue_id_type;
 
-            struct Sender
+
+
+            //!
+            //! Routes messages from it's own ipc-queue to another
+            //! and caches messages if the target is full
+            //!
+            //!
+            struct Router
             {
-               typedef platform::queue_id_type queue_id_type;
+               Router( id_type destination);
+               ~Router();
 
-               Sender();
-               ~Sender();
-
-               void add( queue_id_type destination, const common::ipc::message::Complete& message) const;
-
-               template< typename M>
-               void add( queue_id_type destination, M& message) const
-               {
-                  marshal::output::Binary archive;
-                  archive << message;
-
-                  auto type = message::type( message);
-                  add( destination, common::ipc::message::Complete( type, archive.release()));
-               }
+               id_type id() const;
+               id_type destination() const;
 
             private:
                class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
 
-            struct Receiver
+
+            //!
+            //! Acts as an instance.
+            //!
+            //! In a separate thread:
+            //!  - consumes from ipc-queue denoted by @p id()
+            //!  - writes to ipc-queue denoted by @p receive()
+            //!
+            //! The source queue @p id() will always be writable
+            //!
+            //! messages can be read from @p receive()
+            //!
+            struct Instance
             {
-               Receiver();
-               ~Receiver();
-               Receiver( Receiver&&);
-               Receiver& operator = ( Receiver&&);
+               Instance( platform::pid_type pid);
 
-               using type_type =  common::ipc::message::Complete::message_type_type;
-               using id_type = platform::queue_id_type;
+               //!
+               //! sets current process pid
+               //!
+               Instance();
+               ~Instance();
 
-               id_type id() const;
+               Instance( Instance&&) noexcept;
+               Instance& operator = ( Instance&&) noexcept;
 
+               platform::pid_type pid();
+
+               id_type id();
+               common::ipc::receive::Queue& receive();
+
+               //!
+               //! consumes and discard all messages on @p receive()
+               //!
                void clear();
-
-               std::vector< common::ipc::message::Complete> operator () ( const long flags);
-               std::vector< common::ipc::message::Complete> operator () ( type_type type, const long flags);
-               std::vector< common::ipc::message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
 
             private:
                class Implementation;
@@ -74,48 +87,34 @@ namespace casual
 
             namespace broker
             {
+               platform::pid_type pid();
 
-               Receiver& queue();
+               ipc::Instance& queue();
 
                id_type id();
 
             } // broker
 
-            namespace receive
+            namespace transaction
             {
-               struct Sender
+               namespace manager
                {
-                  bool operator () ( const common::ipc::message::Complete& message) const;
+                  platform::pid_type pid();
 
-                  bool operator () ( const common::ipc::message::Complete& message, const long flags) const;
+                  ipc::Instance& queue();
 
-               private:
-                  mockup::ipc::Sender m_sender;
-               };
+                  id_type id();
+               } // manager
 
-               Sender& queue();
+            } // transaction
 
-               id_type id();
-            }
+
+            //!
+            //! Clears all global mockup-ipc-queues
+            //!
+            void clear();
 
          } // ipc
-
-
-         template< platform::pid_type PID>
-         struct Instance
-         {
-            platform::pid_type pid()
-            {
-               return PID;
-            }
-
-            ipc::Receiver& queue()
-            {
-               static ipc::Receiver singleton;
-               return singleton;
-            }
-
-         };
 
       } // mockup
    } // common

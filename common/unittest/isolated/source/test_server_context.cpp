@@ -48,6 +48,7 @@ namespace casual
          namespace
          {
 
+
             const std::string& replyMessage()
             {
                static const std::string reply( "reply messsage");
@@ -88,45 +89,24 @@ namespace casual
             }
 
 
-            namespace sender
-            {
-               mockup::ipc::Sender& queue()
-               {
-                  static mockup::ipc::Sender singleton;
-                  return singleton;
-               }
-
-            } // sender
-
-            namespace transaction
-            {
-               namespace manager
-               {
-                  mockup::ipc::Receiver& queue()
-                  {
-                     static mockup::ipc::Receiver singleton;
-                     return singleton;
-                  }
-
-               } // manager
-            } // transaction
 
             namespace broker
             {
-               void prepare()
+               void prepare( platform::queue_id_type id)
                {
+                  common::queue::blocking::Writer send( id);
                   // server connect
                   {
                      message::server::connect::Reply reply;
-                     local::sender::queue().add( ipc::receive::id(), reply);
+                     send( reply);
                   }
 
                   // transaction client connect
                   {
                      message::transaction::client::connect::Reply reply;
                      reply.domain = "unittest-domain";
-                     reply.transactionManagerQueue = transaction::manager::queue().id();
-                     local::sender::queue().add( ipc::receive::id(), reply);
+                     reply.transactionManagerQueue = mockup::ipc::transaction::manager::queue().id();
+                     send( reply);
                   }
 
                }
@@ -167,21 +147,23 @@ namespace casual
 
       TEST( casual_common_service_context, connect)
       {
-         auto bq = mockup::ipc::broker::id();
+         mockup::ipc::clear();
+
+         mockup::ipc::Router router{ ipc::receive::id()};
 
          //
          // Prepare "broker response"
          //
          {
-            local::broker::prepare();
+            local::broker::prepare( router.id());
          }
 
          callee::handle::Call callHandler( local::arguments());
 
-         auto reader = queue::blocking::reader( mockup::ipc::broker::queue());
          message::server::connect::Request message;
 
-         reader( message);
+         queue::blocking::Reader read( mockup::ipc::broker::queue().receive());
+         read( message);
 
          EXPECT_TRUE( message.server.pid == process::id());
          EXPECT_TRUE( message.server.queue_id == ipc::receive::id());
@@ -189,111 +171,136 @@ namespace casual
          ASSERT_TRUE( message.services.size() == 1);
          EXPECT_TRUE( message.services.at( 0).name == "test_service");
 
-
-         mockup::ipc::broker::queue().clear();
-         ipc::receive::queue().clear();
       }
+
 
       TEST( casual_common_service_context, disconnect)
       {
+         trace::internal::Scope trace( "casual_common_service_context, disconnect");
+
+         mockup::ipc::clear();
+
+         mockup::ipc::Router router{ ipc::receive::id()};
+
          {
-            local::broker::prepare();
+            local::broker::prepare( router.id());
             callee::handle::Call callHandler( local::arguments());
          }
 
-         auto broker = queue::blocking::reader( mockup::ipc::broker::queue());
+         auto reader = queue::blocking::reader( mockup::ipc::broker::queue().receive());
          message::server::Disconnect message;
-         broker( message);
+         reader( message);
 
          EXPECT_TRUE( message.server.pid == process::id());
 
-         mockup::ipc::broker::queue().clear();
-         ipc::receive::queue().clear();
 
       }
 
+
+
+
       TEST( casual_common_service_context, call_service__gives_reply)
       {
-         mockup::ipc::Receiver receiver;
+         mockup::ipc::clear();
+
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
 
          {
-            local::broker::prepare();
+            local::broker::prepare( router.id());
             callee::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage( receiver.id());
+            auto message = local::callMessage( caller.id());
             callHandler.dispatch( message);
          }
 
 
-         auto reader = queue::blocking::reader( receiver);
+         queue::blocking::Reader reader( caller.receive());
          message::service::Reply message;
 
          reader( message);
          EXPECT_TRUE( message.buffer.memory.data() == local::replyMessage());
 
-         mockup::ipc::broker::queue().clear();
-         ipc::receive::queue().clear();
       }
+
 
       TEST( casual_common_service_context, call_service__gives_broker_ack)
       {
-         mockup::ipc::Receiver receiver;
+         mockup::ipc::clear();
+
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
+
          {
-            local::broker::prepare();
+            local::broker::prepare( router.id());
             callee::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage( receiver.id());
+            auto message = local::callMessage( caller.id());
             callHandler.dispatch( message);
          }
 
-         auto broker = queue::blocking::reader( mockup::ipc::broker::queue());
+         queue::blocking::Reader broker( mockup::ipc::broker::queue().receive());
          message::service::ACK message;
 
          broker( message);
          EXPECT_TRUE( message.service == "test_service");
          EXPECT_TRUE( message.server.queue_id == ipc::receive::id());
-
-         mockup::ipc::broker::queue().clear();
-         ipc::receive::queue().clear();
-
       }
+
 
       TEST( casual_common_service_context, call_non_existing_service__throws)
       {
-         mockup::ipc::Receiver receiver;
+         mockup::ipc::clear();
 
-         local::broker::prepare();
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
+
+         local::broker::prepare( router.id());
          callee::handle::Call callHandler( local::arguments());
 
-         auto message = local::callMessage( receiver.id());
+         auto message = local::callMessage( caller.id());
          message.service.name = "non_existing";
 
 
          EXPECT_THROW( {
             callHandler.dispatch( message);
          }, exception::xatmi::SystemError);
-
-         mockup::ipc::broker::queue().clear();
-         ipc::receive::queue().clear();
       }
+
 
 
       TEST( casual_common_service_context, call_service__gives_monitor_notify)
       {
-         mockup::ipc::Receiver receiver;
-         mockup::ipc::Receiver monitor;
+         mockup::ipc::clear();
+
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
+
+         mockup::ipc::Instance monitor( 42);
 
          {
-            local::broker::prepare();
+            local::broker::prepare( router.id());
 
             callee::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage( receiver.id());
+            auto message = local::callMessage( caller.id());
             message.service.monitor_queue = monitor.id();
             callHandler.dispatch( message);
          }
 
-         auto reader = queue::blocking::reader( monitor);
+         queue::blocking::Reader reader( monitor.receive());
 
          message::monitor::Notify message;
          reader( message);
@@ -303,7 +310,7 @@ namespace casual
          ipc::receive::queue().clear();
       }
 
-      TEST( casual_common_service_context, state_descriptor)
+      TEST( casual_common_service_context, state_call_descriptor_reserver)
       {
          calling::State state;
 
@@ -311,7 +318,6 @@ namespace casual
          auto second = state.pending.reserve();
 
          EXPECT_TRUE( first < second);
-
       }
 
    } // common

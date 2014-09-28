@@ -23,6 +23,8 @@ namespace casual
 	{
 		namespace signal
 		{
+		   using set_type = sigset_t;
+
 		   namespace type
 		   {
 
@@ -96,6 +98,29 @@ namespace casual
 			   //! Send signal to thread
 			   //!
 			   void send( std::thread& thread, type::type signal);
+
+			   //!
+			   //! Blocks all signals to current thread
+			   //!
+			   set_type block();
+
+			   namespace scope
+            {
+			      //!
+			      //! Blocks all signals on construction, and
+			      //! resets original on destruction
+			      //!
+               struct Block
+               {
+                  Block();
+                  ~Block();
+
+               private:
+                  set_type m_set;
+               };
+            } // scope
+
+
          } // thread
 
 

@@ -44,9 +44,16 @@ namespace casual
             {
             }
 
+            /*
+            Path::Path() : m_path( std::string{})
+            {
+
+            }
+            */
+
             Path::~Path()
             {
-               if( ! m_moved)
+               if( ! m_moved && ! m_path.empty())
                {
                   remove( m_path);
                }

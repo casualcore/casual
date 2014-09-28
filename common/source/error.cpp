@@ -91,7 +91,7 @@ namespace casual
             }
             catch( ...)
             {
-               log::error << xatmi::error( TPESYSTEM) << " uexpected exception" << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " unexpected exception" << std::endl;
                return TPESYSTEM;
             }
 
@@ -107,7 +107,7 @@ namespace casual
 
          std::string string( int code)
          {
-            return strerror( code);
+            return std::string( strerror( code)) + " (" + std::to_string( code) + ")";
          }
 
          namespace xatmi

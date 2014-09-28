@@ -213,7 +213,7 @@ namespace casual
             //
             if( ! range::uniform( resources, configuration, equalKey))
             {
-               throw exception::NotReallySureWhatToNameThisException( "mismatch between registered/linked RM:s and configured resources");
+               throw exception::invalid::Argument( "mismatch between registered/linked RM:s and configured resources", __FILE__, __LINE__);
             }
 
             for( auto&& rm : configuration)
@@ -231,7 +231,7 @@ namespace casual
                }
                else
                {
-                  throw exception::NotReallySureWhatToNameThisException( "mismatch between registered/linked RM:s and configured resources");
+                  throw exception::invalid::Argument( "mismatch between registered/linked RM:s and configured resources", __FILE__, __LINE__);
                }
             }
 

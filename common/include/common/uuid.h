@@ -18,6 +18,10 @@ namespace casual
 {
 	namespace common
 	{
+	   namespace uuid
+      {
+         std::string string( const platform::uuid_type& uuid);
+      } // uuid
 
 		struct Uuid
 		{

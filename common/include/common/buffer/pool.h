@@ -21,7 +21,7 @@
 #include <map>
 
 // TODO: temp
-#include <iostream>
+#include <sstream>
 
 namespace casual
 {
@@ -155,7 +155,11 @@ namespace casual
                         continue;
                      }
 
-                     throw "foo";
+                     {
+                        std::ostringstream message{ "buffer type already registered: "};
+                        message << type;
+                        throw exception::invalid::Argument{ message.str()};
+                     }
 
                   }
 

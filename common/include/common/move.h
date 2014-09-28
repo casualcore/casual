@@ -67,8 +67,8 @@ namespace casual
             //!
             //! @note change to std::make_uniqeu
             //!
-            //template< typename ...Args>
-            //basic_pimpl( Args&&... args) : m_holder( new implementation_type{ std::forward< Args>( args)...}) {}
+            template< typename ...Args>
+            basic_pimpl( Args&&... args) : m_holder( new implementation_type{ std::forward< Args>( args)...}) {}
 
             basic_pimpl() : m_holder( new implementation_type{}) {}
 
@@ -88,7 +88,7 @@ namespace casual
 
          protected:
 
-            basic_pimpl( const basic_pimpl& other) : m_holder( new implementation_type( *other)) {}
+            //basic_pimpl( const basic_pimpl& other) : m_holder( new implementation_type( *other)) {}
 
             std::unique_ptr< implementation_type> m_holder;
 
@@ -110,7 +110,10 @@ namespace casual
          //! Make a deep copy
          //! @note change to std::make_uniqeu
          //!
-         basic_pimpl( const basic_pimpl& other) : base_type( other) {}
+         basic_pimpl( const basic_pimpl& other)
+         {
+            m_holder( new implementation_type( *other));
+         }
 
          //!
          //! Make a deep copy
