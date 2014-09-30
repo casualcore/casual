@@ -49,8 +49,10 @@ namespace casual
          void handlePending();
 
 
+         common::file::scoped::Path m_queueFilePath;
          common::ipc::receive::Queue& m_receiveQueue;
          State m_state;
+
 
       };
 

@@ -39,27 +39,25 @@ namespace casual
 
          namespace scoped
          {
-            Path::Path( const std::string& path)
-                  : m_path( path)
+            Path::Path( std::string path)
+                  : m_path( std::move( path))
             {
             }
 
-            /*
-            Path::Path() : m_path( std::string{})
-            {
+            Path::Path() = default;
 
-            }
-            */
 
             Path::~Path()
             {
-               if( ! m_moved && ! m_path.empty())
+               if( ! m_path.empty())
                {
                   remove( m_path);
                }
             }
 
-            Path::Path( Path&&) = default;
+            Path::Path( Path&&) noexcept = default;
+
+            Path& Path::operator = ( Path&&) noexcept = default;
 
             Path::operator const std::string&() const
             {
@@ -71,6 +69,17 @@ namespace casual
             {
                return m_path;
             }
+
+            std::string Path::release()
+            {
+               return std::move( m_path);
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Path& value)
+            {
+               return out << value.path();
+            }
+
          } // scoped
 
          std::string unique( const std::string& prefix, const std::string& postfix)

@@ -10,6 +10,7 @@
 
 
 #include "common/message/server.h"
+#include "common/queue.h"
 
 namespace casual
 {
@@ -35,37 +36,42 @@ namespace casual
                }
             };
 
-            /*
-            template< typename Q>
+            template< typename P>
             struct Ping
             {
-               using queue_writer = Q;
+               using queue_policy = P;
 
-               using message_type = server::ping::Request::message_type;
+               using queue_type = queue::blocking::basic_writer< queue_policy>;
 
-               Ping( queue_writer& queue)
+               using message_type = server::ping::Request;
+
+               template< typename... Args>
+               Ping( Args&&... args)
+                  :  m_send( std::forward< Args>( args)...) {}
 
                void dispatch( message_type& message)
                {
                   server::ping::Reply reply;
 
+                  reply.server = server::Id::current();
 
-                  queue_writer writer
-                  reply.server = message.server;
-
-                  m_writer( reply);
+                  m_send( reply, message.server.queue_id);
                }
+
+            private:
+               queue_type m_send;
             };
 
-            template< typename Q>
-            Ping< Q> ping( Q& queue)
+            template< typename S>
+            auto ping( S& state) -> Ping< queue::policy::RemoveOnTerminate< S>>
             {
-               return Ping< Q>{};
+               return Ping< queue::policy::RemoveOnTerminate< S>>{ state};
             }
-            */
 
 
          } // handle
+
+
       } // message
    } // common
 

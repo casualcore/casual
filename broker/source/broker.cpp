@@ -20,6 +20,7 @@
 
 #include "common/queue.h"
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
 #include "common/process.h"
 
 
@@ -32,14 +33,6 @@
 #include <algorithm>
 
 
-
-
-extern "C"
-{
-   extern void _broker_listServers( TPSVCINFO *serviceInfo);
-   extern void _broker_listServices( TPSVCINFO *serviceInfo);
-   extern void _broker_updateInstances( TPSVCINFO *serviceInfo);
-}
 
 
 namespace casual
@@ -58,6 +51,43 @@ namespace casual
 
 					if( common::file::exists( path))
 					{
+					   std::ifstream file( path);
+
+					   if( file)
+					   {
+					      try
+					      {
+
+					         common::signal::alarm::Scoped alarm{ 5};
+
+                        decltype( queue.id()) id;
+                        file >> id;
+
+                        common::queue::blocking::Writer send( id);
+                        common::message::server::ping::Request request;
+                        request.server = common::message::server::Id::current();
+                        send( request);
+
+
+                        common::message::server::ping::Request reply;
+
+                        common::queue::blocking::Reader receive( common::ipc::receive::queue());
+                        receive( reply);
+
+                        //
+                        // There are another running broker for this domain - abort
+                        //
+                        common::log::error << "Other running broker - action: terminate" << std::endl;
+                        throw common::exception::signal::Terminate( "other running broker", __FILE__, __LINE__);
+
+					      }
+					      catch( const common::exception::signal::Timeout&)
+					      {
+					         common::log::error << "failed to get ping response from potentially running broker - to risky to start - action: terminate" << std::endl;
+					         throw common::exception::signal::Terminate( "other running broker", __FILE__, __LINE__);
+					      }
+					   }
+
 					   //
                   // TODO: ping to see if there are another broker running
                   //
@@ -90,18 +120,13 @@ namespace casual
 
 
 		Broker::Broker( const Settings& arguments)
-			: m_brokerQueueFile( common::environment::file::brokerQueue())
+		  : m_brokerQueueFile( common::process::singleton( common::environment::file::brokerQueue()))
 		{
          //
          // Configure
          //
          {
             common::trace::internal::Scope trace{ "broker configuration"};
-
-            //
-            // Make the key public for others...
-            //
-            local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
 
 
             config::domain::Domain domain;
@@ -123,10 +148,10 @@ namespace casual
             common::log::internal::debug << CASUAL_MAKE_NVP( domain);
 
             m_state = transform::configuration::Domain{}( domain);
-
          }
-
 		}
+
+
 
 		Broker::~Broker()
 		{
@@ -212,7 +237,8 @@ namespace casual
                handle::MonitorConnect{ m_state},
                handle::MonitorDisconnect{ m_state},
                handle::transaction::client::Connect{ m_state},
-               handle::Call{ admin::Server::services( *this), m_state}
+               handle::Call{ admin::Server::services( *this), m_state},
+               common::message::handle::ping( m_state),
             };
 
 

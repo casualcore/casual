@@ -164,20 +164,42 @@ namespace casual
                basic_writer( platform::queue_id_type id, Args&&... args)
                   : m_ipc( id), m_policy( std::forward< Args>( args)...) {}
 
+               template< typename... Args>
+               basic_writer( Args&&... args)
+                  : m_ipc( -1), m_policy( std::forward< Args>( args)...) {}
+
 
                //!
                //! Sends/Writes a message to the queue. which can result in several
                //! actual ipc-messages.
                //!
-               //! @note non-blocking
-               //! @return true if the whole message is sent. false otherwise
+               //! @note depening on policy, it's either blocking och non-blockin
+               //! @return non-blocking: true if the whole message is sent. false otherwise - void on blocking
+               //!
+               template< typename M>
+               auto operator () ( M&& message, platform::queue_id_type target) -> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
+               {
+                  auto transport = prepare( std::forward< M>( message));
+
+                  ipc::send::Queue ipc( target);
+
+                  return send( transport, ipc);
+               }
+
+
+               //!
+               //! Sends/Writes a message to the queue. which can result in several
+               //! actual ipc-messages.
+               //!
+               //! @note depening on policy, it's either blocking och non-blockin
+               //! @return non-blocking: true if the whole message is sent. false otherwise - void on blocking
                //!
                template< typename M>
                auto operator () ( M&& message) -> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
                {
                   auto transport = prepare( std::forward< M>( message));
 
-                  return send( transport);
+                  return send( transport, m_ipc);
                }
 
                const ipc::send::Queue& ipc() const
@@ -194,11 +216,18 @@ namespace casual
                //!
                auto send( const ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc::send::Queue&>()))
                {
+                  return send( transport, m_ipc);
+               }
+
+            private:
+
+               auto send( const ipc::message::Complete& transport, ipc::send::Queue& ipc) -> decltype( block_policy::send( transport, ipc))
+               {
                   while( true)
                   {
                      try
                      {
-                        return block_policy::send( transport, m_ipc);
+                        return block_policy::send( transport, ipc);
                      }
                      catch( ...)
                      {
@@ -207,7 +236,6 @@ namespace casual
                   }
                }
 
-            private:
 
                template< typename M>
                static ipc::message::Complete prepare( M&& message)

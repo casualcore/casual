@@ -110,6 +110,12 @@ namespace casual
 
 			   void name( const std::string& value);
 
+			   namespace singleton
+            {
+			      const std::string& path();
+
+            } // singleton
+
          } // domain
 
 

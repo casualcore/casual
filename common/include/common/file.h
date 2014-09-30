@@ -28,11 +28,13 @@ namespace casual
             class Path
             {
             public:
-               Path( const std::string& path);
-               //Path();
+               Path( std::string path);
+
+               Path();
                ~Path();
 
-               Path( Path&&);
+               Path( Path&&) noexcept;
+               Path& operator = ( Path&&) noexcept;
 
                Path( const Path&) = delete;
                Path& operator =( const Path&) = delete;
@@ -42,12 +44,12 @@ namespace casual
 
                operator const std::string&() const;
 
-               void release() { m_moved.release();}
+               std::string release();
+
+               friend std::ostream& operator << ( std::ostream& out, const Path& value);
 
             private:
-
                std::string m_path;
-               move::Moved m_moved;
             };
 
 

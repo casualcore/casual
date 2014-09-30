@@ -188,7 +188,7 @@ namespace casual
 
 
       Broker::Broker( broker::Settings settings)
-       : m_queueFilePath( environment::broker::queue::path())
+       : m_queueFilePath( common::process::singleton( environment::broker::queue::path()))
       {
 
          broker::local::exportBrokerQueueKey( casual::common::ipc::receive::queue(), m_queueFilePath);

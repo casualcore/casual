@@ -16,11 +16,15 @@
 #include "common/environment.h"
 
 
+#include "common/message/server.h"
+#include "common/queue.h"
+
 //
 // std
 //
 #include <algorithm>
 #include <functional>
+#include <fstream>
 
 // TODO: temp
 #include <iostream>
@@ -306,6 +310,66 @@ namespace casual
          bool terminate( platform::pid_type pid)
          {
             return signal::send( pid, platform::cSignal_Terminate);
+         }
+
+         file::scoped::Path singleton( std::string path)
+         {
+            std::ifstream file( path);
+
+            if( file)
+            {
+               try
+               {
+
+                  common::signal::alarm::Scoped alarm{ 5};
+
+                  {
+                     decltype( common::ipc::receive::id()) id;
+                     file >> id;
+
+                     common::queue::blocking::Writer send( id);
+                     common::message::server::ping::Request request;
+                     request.server = common::message::server::Id::current();
+                     send( request);
+                  }
+
+
+                  {
+                     common::message::server::ping::Reply reply;
+
+                     common::queue::blocking::Reader receive( common::ipc::receive::queue());
+                     receive( reply);
+
+
+                     //
+                     // There are another running broker for this domain - abort
+                     //
+                     throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
+                  }
+
+               }
+               catch( const common::exception::signal::Timeout&)
+               {
+                  common::log::error << "failed to get ping response from potentially running process - to risky to start - action: terminate" << std::endl;
+                  throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
+               }
+            }
+
+            file::scoped::Path result( path);
+
+
+            std::ofstream output( result);
+
+            if( output)
+            {
+               output << common::ipc::receive::id() << std::endl;
+            }
+            else
+            {
+               throw common::exception::invalid::File( "failed to write process singleton queue file: " + path);
+            }
+
+            return result;
          }
 
          namespace lifetime

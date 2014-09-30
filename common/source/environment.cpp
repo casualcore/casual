@@ -84,31 +84,9 @@ namespace casual
 			namespace file
          {
 
-			   namespace local
-			   {
-               namespace
-               {
-                  std::string& executablePath()
-                  {
-                     static std::string path;
-                     return path;
-                  }
-               }
-            }
-
-            void executable( const std::string& path)
-            {
-               local::executablePath() = path;
-            }
-
-            const std::string& executable()
-            {
-               return local::executablePath();
-            }
-
             std::string brokerQueue()
             {
-               return directory::domain() + "/.casual_broker_queue";
+               return domain::singleton::path() + "/.casual_broker_queue";
             }
 
             std::string configuration()
@@ -152,6 +130,30 @@ namespace casual
             {
                local::domainName() = value;
             }
+
+            namespace singleton
+            {
+               namespace local
+               {
+                  namespace
+                  {
+                     std::string path( std::string path)
+                     {
+                        common::directory::create( path);
+                        return path;
+                     }
+
+                  } // <unnamed>
+               } // local
+
+               const std::string& path()
+               {
+                  static const std::string path = local::path( directory::domain() + "/.singleton");
+                  return path;
+               }
+
+            } // singleton
+
          } // domain
 
 

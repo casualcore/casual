@@ -85,6 +85,16 @@ namespace casual
                using Base::Base;
             };
 
+            struct Process : Base
+            {
+               using Base::Base;
+            };
+
+            struct File : Base
+            {
+               using Base::Base;
+            };
+
          }
 
          struct QueueFailed : public Base
@@ -123,6 +133,9 @@ namespace casual
 
                basic_signal()
                   : Base( common::signal::type::string( signal)) {}
+
+               basic_signal( const std::string& description, const char* file, decltype( __LINE__) line)
+                  : Base( description, file, line) {}
 
                common::platform::signal_type getSignal() const
                {

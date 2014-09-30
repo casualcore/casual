@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/exception.h"
+#include "common/file.h"
 
 #include "common/internal/log.h"
 #include "common/algorithm.h"
@@ -115,6 +116,11 @@ namespace casual
          //! Tries to terminate pid
          //!
          bool terminate( platform::pid_type pid);
+
+         //!
+         //!
+         //!
+         file::scoped::Path singleton( std::string queue_id_file);
 
 
          namespace lifetime

@@ -42,10 +42,14 @@ namespace casual
             {
                throw;
             }
-            catch( const exception::signal::Terminate&)
+            catch( const exception::signal::Terminate& exception)
             {
-               log::information << file::basename( process::path()) << " is off-line" << std::endl;
+               log::information << file::basename( process::path()) << " is off-line - " <<  exception << std::endl;
                return 0;
+            }
+            catch( const exception::invalid::Process& exception)
+            {
+               log::error << exception << std::endl;
             }
             catch( const exception::xatmi::severity::Error& exception)
             {
