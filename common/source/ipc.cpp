@@ -165,7 +165,7 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::string());
+                        throw common::exception::invalid::Argument( "id: " + std::to_string( m_id) + " - " + common::error::string());
                      }
                   }
                }

@@ -26,6 +26,8 @@ namespace casual
 {
    namespace common
    {
+      class Uuid;
+
       namespace process
       {
 
@@ -43,6 +45,12 @@ namespace casual
          //! @return process id (pid) for current process.
          //!
          platform::pid_type id();
+
+         //!
+         //! @return the uuid for this process.
+         //! used as a unique id over time
+         //!
+         const Uuid& uuid();
 
          //!
          //! Sleep for a while

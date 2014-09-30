@@ -80,6 +80,7 @@ namespace casual
 
 			friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
 
+
 		private:
 			uuid_type m_uuid;
 

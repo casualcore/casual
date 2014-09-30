@@ -11,6 +11,7 @@
 
 #include "common/exception.h"
 #include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 
 #include <chrono>
@@ -68,6 +69,8 @@ namespace casual
          Database::Database( const std::string& database) : m_connection( database)
          {
 
+            common::trace::internal::Scope trace{ "Database::Database", common::log::internal::queue};
+
             //
             // Make sure we got FK
             //
@@ -116,7 +119,7 @@ namespace casual
             // Global error queue
             //
             m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( 1, "casual-error-queue", 0, 1); )");
-            m_errorQueue = m_connection.rowid();
+            m_errorQueue = 1;
 
             //
             // the global error queue has it self as an error queue.
@@ -181,6 +184,8 @@ namespace casual
          Queue Database::create( Queue queue)
          {
 
+            common::trace::internal::Scope trace{ "queue::Database::create", common::log::internal::queue};
+
             //
             // Create corresponding error queue
             //
@@ -199,6 +204,7 @@ namespace casual
 
          void Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
+            common::trace::internal::Scope trace{ "queue::Database::enqueue", common::log::internal::queue};
 
             common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << message.message.id << " size: " << message.message.payload.size() << " xid: " << message.xid.xid << std::endl;
 
@@ -229,6 +235,7 @@ namespace casual
 
          common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
+            common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
 
             common::message::queue::dequeue::Reply reply;
 
@@ -274,6 +281,8 @@ namespace casual
 
          void Database::commit( const common::transaction::ID& id)
          {
+            common::trace::internal::Scope trace{ "queue::Database::commit", common::log::internal::queue};
+
             common::log::internal::queue << "commit xid: " << id << std::endl;
 
             auto gtrid = common::transaction::global( id);
@@ -285,6 +294,8 @@ namespace casual
 
          void Database::rollback( const common::transaction::ID& id)
          {
+            common::trace::internal::Scope trace{ "queue::Database::rollback", common::log::internal::queue};
+
             common::log::internal::queue << "rollback xid: " << id << std::endl;
 
             auto gtrid = common::transaction::global( id);
@@ -297,6 +308,8 @@ namespace casual
 
          std::vector< common::message::queue::Information::Queue> Database::queues()
          {
+            common::trace::internal::Scope trace{ "queue::Database::queues", common::log::internal::queue};
+
             std::vector< common::message::queue::Information::Queue> result;
 
             //auto query = m_connection.query( "SELECT rowid, name, retries, error FROM queues ORDER BY name;");

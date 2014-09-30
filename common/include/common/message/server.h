@@ -12,6 +12,7 @@
 #include "common/message/type.h"
 
 #include "common/buffer/type.h"
+#include "common/uuid.h"
 
 namespace casual
 {
@@ -23,12 +24,24 @@ namespace casual
          {
             namespace ping
             {
+
                struct Request : basic_id< cServerPingRequest>
                {
+
                };
 
                struct Reply : basic_id< cServerPingReply>
                {
+                  using base_type = basic_id< cServerPingReply>;
+
+                  Uuid uuid;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & uuid;
+                  })
+
                };
 
             } // ping
@@ -41,13 +54,11 @@ namespace casual
 
                   std::vector< Service> services;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     base_type::marshal( archive);
-                     archive & services;
-                  }
-
+                        base_type::marshal( archive);
+                        archive & services;
+                  })
                };
 
 
@@ -83,13 +94,12 @@ namespace casual
                server::Id server;
                std::vector< Service> services;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & serverPath;
                   archive & server;
                   archive & services;
-               }
+               })
             };
 
             struct Unadvertise : basic_messsage< cServiceUnadvertise>
@@ -97,12 +107,11 @@ namespace casual
                server::Id server;
                std::vector< Service> services;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & server;
                   archive & services;
-               }
+               })
             };
 
             namespace name
@@ -121,12 +130,11 @@ namespace casual
                      std::string requested;
                      server::Id server;
 
-                     template< typename A>
-                     void marshal( A& archive)
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & requested;
                         archive & server;
-                     }
+                     })
                   };
 
                   //!
@@ -139,12 +147,11 @@ namespace casual
 
                      std::vector< server::Id> server;
 
-                     template< typename A>
-                     void marshal( A& archive)
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & service;
                         archive & server;
-                     }
+                     })
                   };
                } // lookup
             } // name
@@ -167,8 +174,7 @@ namespace casual
                std::string callee;
                Transaction transaction;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & callDescriptor;
                   archive & service;
@@ -176,7 +182,7 @@ namespace casual
                   archive & callId;
                   archive & callee;
                   archive & transaction;
-               }
+               })
             };
 
             namespace callee
@@ -198,13 +204,14 @@ namespace casual
 
                   buffer::Payload buffer;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_call::marshal( archive);
                      archive & buffer;
-                  }
-               };}
+                  })
+               };
+
+            } // callee
 
             namespace caller
             {
@@ -227,12 +234,11 @@ namespace casual
 
                   buffer::Payload& buffer;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_call::marshal( archive);
                      archive & buffer;
-                  }
+                  })
                };
 
             }
@@ -256,14 +262,13 @@ namespace casual
                long userReturnCode = 0;
                buffer::Payload buffer;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & callDescriptor;
                   archive & returnValue;
                   archive & userReturnCode;
                   archive & buffer;
-               }
+               })
 
             };
 
@@ -277,12 +282,11 @@ namespace casual
                std::string service;
                server::Id server;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & service;
                   archive & server;
-               }
+               })
             };
          } // service
       } // message

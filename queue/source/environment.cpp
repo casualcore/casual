@@ -50,7 +50,7 @@ namespace casual
                }
                std::string path()
                {
-                  return casual::common::environment::domain::singleton::path() + "/.casual_queue_broker_queue";
+                  return casual::common::environment::domain::singleton::path() + "/.casual-queue-broker-queue";
                }
 
 

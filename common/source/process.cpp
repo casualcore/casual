@@ -14,7 +14,7 @@
 #include "common/signal.h"
 #include "common/string.h"
 #include "common/environment.h"
-
+#include "common/uuid.h"
 
 #include "common/message/server.h"
 #include "common/queue.h"
@@ -101,55 +101,19 @@ namespace casual
             return pid;
          }
 
+         const Uuid& uuid()
+         {
+            static const Uuid singleton = Uuid::make();
+            return singleton;
+         }
+
          void sleep( std::chrono::microseconds time)
          {
             std::this_thread::sleep_for( time);
          }
 
 
-         namespace local
-         {
-            namespace
-            {
-               std::string readFromPipe( int filedescripor)
-               {
-                  std::string result;
 
-                  auto stream = fdopen( filedescripor, "r");
-
-                  if( stream)
-                  {
-                     char c = 0;
-                     while( ( c = fgetc( stream)) != EOF)
-                     {
-                        result.push_back( c);
-                     }
-
-                     fclose( stream);
-                  }
-                  else
-                  {
-                     result = "failed to open read stream for " + std::to_string( filedescripor);
-                  }
-
-                  return result;
-               }
-
-               void writeToPipe( int filedescripor, const std::string& message)
-               {
-                  auto stream = fdopen( filedescripor, "w");
-                  if( stream)
-                  {
-                     fprintf( stream, message.c_str());
-                     fclose( stream);
-                  }
-                  else
-                  {
-                     std::cerr << "failed to open write stream for " + std::to_string( filedescripor) << std::endl;
-                  }
-               }
-            } //
-         } // local
 
          platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments)
          {
@@ -178,26 +142,9 @@ namespace casual
 
 
 
-            //std::vector< const char*> c_arguments;
-
-            /*
-            int pipeDesriptor[2];
-            if( pipe( pipeDesriptor) == -1)
-            {
-               throw exception::NotReallySureWhatToNameThisException( "failed to create pipe");
-            }
-            */
-
-            // TODO: temp
-            //local::writeToPipe( pipeDesriptor[ 1], "hej");
-            //std::cerr << "local::readFromPipe: " << local::readFromPipe( pipeDesriptor[ 0]) << std::endl;
-
-
             posix_spawnattr_t attributes;
 
             posix_spawnattr_init( &attributes);
-
-
 
             platform::pid_type pid;
 
@@ -218,10 +165,6 @@ namespace casual
             }
             return pid;
          }
-
-
-
-
 
 
 
@@ -323,10 +266,12 @@ namespace casual
 
                   common::signal::alarm::Scoped alarm{ 5};
 
-                  {
-                     decltype( common::ipc::receive::id()) id;
-                     file >> id;
+                  decltype( common::ipc::receive::id()) id;
+                  std::string uuid;
+                  file >> id;
+                  file >> uuid;
 
+                  {
                      common::queue::blocking::Writer send( id);
                      common::message::server::ping::Request request;
                      request.server = common::message::server::Id::current();
@@ -340,11 +285,16 @@ namespace casual
                      common::queue::blocking::Reader receive( common::ipc::receive::queue());
                      receive( reply);
 
+                     if( reply.uuid == Uuid( uuid))
+                     {
 
-                     //
-                     // There are another running broker for this domain - abort
-                     //
-                     throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
+                        //
+                        // There are another process for this domain - abort
+                        //
+                        throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
+                     }
+
+                     common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
                   }
 
                }
@@ -353,9 +303,13 @@ namespace casual
                   common::log::error << "failed to get ping response from potentially running process - to risky to start - action: terminate" << std::endl;
                   throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
                }
+               catch( const common::exception::invalid::Argument&)
+               {
+                  common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
+               }
             }
 
-            file::scoped::Path result( path);
+            file::scoped::Path result( std::move( path));
 
 
             std::ofstream output( result);
@@ -363,6 +317,7 @@ namespace casual
             if( output)
             {
                output << common::ipc::receive::id() << std::endl;
+               output << uuid() << std::endl;
             }
             else
             {

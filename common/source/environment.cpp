@@ -86,7 +86,7 @@ namespace casual
 
             std::string brokerQueue()
             {
-               return domain::singleton::path() + "/.casual_broker_queue";
+               return domain::singleton::path() + "/.casual-broker-queue";
             }
 
             std::string configuration()

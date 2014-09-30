@@ -11,6 +11,7 @@
 
 #include "common/message/server.h"
 #include "common/queue.h"
+#include "common/process.h"
 
 namespace casual
 {
@@ -54,6 +55,7 @@ namespace casual
                   server::ping::Reply reply;
 
                   reply.server = server::Id::current();
+                  reply.uuid = process::uuid();
 
                   m_send( reply, message.server.queue_id);
                }
