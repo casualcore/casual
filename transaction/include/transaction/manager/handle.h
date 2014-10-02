@@ -260,40 +260,6 @@ namespace casual
 
          } // domain
 
-
-         namespace admin
-         {
-            struct Policy : public state::Base
-            {
-               using state::Base::Base;
-
-               void connect( common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources);
-
-               void disconnect();
-
-               void reply( common::platform::queue_id_type id, common::message::service::Reply& message);
-
-               void ack( const common::message::service::callee::Call& message);
-
-               void transaction( const common::message::service::callee::Call&, const common::server::Service&)
-               {
-                  // No-op
-               }
-
-               void transaction( const common::message::service::Reply& message)
-               {
-                  // No-op
-               }
-
-               void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message)
-               {
-                  // No-op
-               }
-            };
-
-            typedef common::callee::handle::basic_call< Policy> Call;
-         } // admin
-
       } // handle
    } // transaction
 } // casual

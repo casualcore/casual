@@ -18,7 +18,9 @@ LibraryPaths( [
         'bin',
         '../transaction/bin',
         '../configuration/bin',
+        '../serviceframework/bin',
         '../common/bin',
+        '../xatmi/bin',
     ]);
     
 
@@ -71,15 +73,23 @@ broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
    [
      Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
      Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
+    
    ])
 
 
 queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
-    [Compile( 'source/broker/main.cpp', 'obj/broker/main.o')], 
-    [ broker_archive, common, 'casual-common', 'casual-configuration']);
+    [
+      Compile( 'source/broker/main.cpp', 'obj/broker/main.o'),
+      Compile( 'source/broker/admin/server.cpp', 'obj/broker/admin/server.o'),
+    ], 
+    [ broker_archive, common, 'casual-common', 'casual-configuration', 'casual-sf', 'casual-xatmi']);
 
 
 install_bin.append( queue_broker);
+
+
+
+
 
 #
 # rm

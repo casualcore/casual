@@ -26,19 +26,16 @@ install_bin = []
 # Compile and link the transaction manager
 #
 
-manager_objecfiles = [
+manager_archive = LinkArchive( "bin/manager-archive",
+     [
     Compile( "source/manager/manager.cpp", 'obj/manager/manager.o'),
     Compile( "source/manager/state.cpp", "obj/manager/state.o"),
     Compile( "source/manager/action.cpp", "obj/manager/action.o"),
     Compile( "source/manager/log.cpp", "obj/manager/log.o"),
     Compile( "source/manager/handle.cpp", "obj/manager/handle.o"),
-    Compile( "source/manager/admin/admin.cpp", "obj/manager/admin/admin.o"),
-    Compile( "source/manager/admin/adminimplementation.cpp", "obj/manager/admin/adminimplementation.o"),
+    Compile( "source/manager/admin/server.cpp", "obj/manager/admin/server.o"),
     Compile( "source/manager/admin/vo/transaction.cpp", "obj/manager/admin/vo/transaction.o"),
-];
-
-manager_archive = LinkArchive( "bin/manager-archive",
-     manager_objecfiles)
+    ])
  
 
 

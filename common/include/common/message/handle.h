@@ -42,7 +42,7 @@ namespace casual
             {
                using queue_policy = P;
 
-               using queue_type = queue::blocking::basic_writer< queue_policy>;
+               using queue_type = common::queue::blocking::basic_writer< queue_policy>;
 
                using message_type = server::ping::Request;
 
@@ -65,9 +65,9 @@ namespace casual
             };
 
             template< typename S>
-            auto ping( S& state) -> Ping< queue::policy::RemoveOnTerminate< S>>
+            auto ping( S& state) -> Ping< common::queue::policy::RemoveOnTerminate< S>>
             {
-               return Ping< queue::policy::RemoveOnTerminate< S>>{ state};
+               return Ping< common::queue::policy::RemoveOnTerminate< S>>{ state};
             }
 
 

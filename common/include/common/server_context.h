@@ -542,6 +542,74 @@ namespace casual
                };
 
 
+               template< typename S, typename P = common::queue::policy::RemoveOnTerminate< S> >
+               struct Admin
+               {
+                  using state_type = S;
+                  using policy_type = P;
+
+
+                  using queue_writer = common::queue::blocking::basic_writer< policy_type>;
+                  using queue_reader = common::queue::blocking::basic_reader< policy_type>;
+
+
+                  Admin( state_type& state) : m_state( state) {}
+
+
+                  void connect( message::server::connect::Request& message, const std::vector< transaction::Resource>& resources)
+                  {
+                     message.server = message::server::Id::current();
+                     message.path = common::process::path();
+                     queue_writer brokerWriter( ipc::broker::id(), m_state);
+                     brokerWriter( message);
+                     //
+                     // Wait for configuration reply
+                     //
+                     queue_reader reader( ipc::receive::queue(), m_state);
+                     message::server::connect::Reply reply;
+                     reader( reply);
+
+                  }
+
+                  void reply( platform::queue_id_type id, message::service::Reply& message)
+                  {
+                     queue_writer writer{ id, m_state};
+                     writer( message);
+
+                  }
+
+                  void ack( const message::service::callee::Call& message)
+                  {
+                     message::service::ACK ack;
+                     ack.server.queue_id = ipc::receive::id();
+                     ack.service = message.service.name;
+                     queue_writer brokerWriter( ipc::broker::id(), m_state);
+                     brokerWriter( ack);
+                  }
+
+                  void disconnect()
+                  {
+                     // no-op
+                  }
+
+                  void statistics( platform::queue_id_type id, message::monitor::Notify& message)
+                  {
+                     // no-op
+                  }
+
+                  void transaction( const message::service::callee::Call& message, const server::Service& service)
+                  {
+                     // no-op
+                  }
+                  void transaction( message::service::Reply& message)
+                  {
+                     // no-op
+                  }
+
+
+                  state_type& m_state;
+               };
+
 
             } // policy
 
@@ -550,6 +618,9 @@ namespace casual
             //! the register XATMI functions.
             //!
             typedef basic_call< policy::Default> Call;
+
+            template< typename S>
+            using basic_admin_call = basic_call< policy::Admin< S>>;
 
 
 

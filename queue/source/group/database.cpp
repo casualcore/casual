@@ -55,6 +55,23 @@ namespace casual
 
                   };
 
+                  struct Queue
+                  {
+                     group::Queue operator () ( sql::database::Row& row) const
+                     {
+                        group::Queue result;
+
+                        row.get( 0, result.id);
+                        row.get( 1, result.name);
+                        row.get( 2, result.retries);
+                        row.get( 3, result.error);
+                        row.get( 4, result.type);
+
+                        return result;
+                     }
+
+                  };
+
 
 
                } // transform
@@ -82,7 +99,8 @@ namespace casual
                   id           INTEGER  PRIMARY KEY,
                   name         TEXT     UNIQUE,
                   retries      NUMBER,
-                  error        NUMBER ); )"
+                  error        NUMBER,
+                  type         NUMBER ); )"
               );
 
 
@@ -118,7 +136,7 @@ namespace casual
             //
             // Global error queue
             //
-            m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( 1, "casual-error-queue", 0, 1); )");
+            m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( 1, "casual-error-queue", 0, 1, 1); )");
             m_errorQueue = 1;
 
             //
@@ -189,14 +207,73 @@ namespace casual
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?);", queue.name + "_error", queue.retries, m_errorQueue);
+            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name + "_error", queue.retries, m_errorQueue, Queue::cErrorQueue);
             queue.error = m_connection.rowid();
 
-            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?);", queue.name, queue.retries, queue.error);
+            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name, queue.retries, queue.error, Queue::cQueue);
             queue.id = m_connection.rowid();
 
             return queue;
+         }
 
+         void Database::updateQueue( const Queue& queue)
+         {
+            common::trace::internal::Scope trace{ "queue::Database::updateQueue", common::log::internal::queue};
+
+            auto existing = Database::queue( queue.id);
+
+            if( ! existing.empty())
+            {
+               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id);
+               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name + "_error", queue.retries, existing.front().error);
+
+            }
+         }
+         void Database::removeQueue( Queue::id_type id)
+         {
+            common::trace::internal::Scope trace{ "queue::Database::removeQueue", common::log::internal::queue};
+
+            auto existing = Database::queue( id);
+
+            if( ! existing.empty())
+            {
+               m_connection.execute( "DELETE FROM queues WHERE id = :id;", existing.front().error);
+               m_connection.execute( "DELETE FROM queues WHERE id = :id;", existing.front().id);
+            }
+         }
+
+         std::vector< Queue> Database::queue( Queue::id_type id)
+         {
+            std::vector< Queue> result;
+
+            auto query = m_connection.query( "SELECT q.id, q.name, q.retries, q.error FROM queues q WHERE q.id = :id AND q.type = :type", id, Queue::cQueue);
+
+            auto row = query.fetch();
+
+            if( ! row.empty())
+            {
+               result.push_back( local::transform::Queue()( row.front()));
+            }
+
+            return result;
+         }
+
+         std::vector< Queue> Database::update( std::vector< Queue> update, const std::vector< Queue::id_type>& remove)
+         {
+            std::vector< Queue> result;
+
+            auto create = common::range::partition( update, []( const Queue& q){ return q.id == 0;});
+
+            common::range::transform( create, result, std::bind( &Database::create, this, std::placeholders::_1));
+
+            auto toUpdate = common::range::make( update) - create;
+
+            common::range::for_each( toUpdate, std::bind( &Database::updateQueue, this, std::placeholders::_1));
+
+            common::range::for_each( remove, std::bind( &Database::removeQueue, this, std::placeholders::_1));
+
+
+            return result;
          }
 
 
@@ -312,7 +389,7 @@ namespace casual
 
             std::vector< common::message::queue::Information::Queue> result;
 
-            //auto query = m_connection.query( "SELECT rowid, name, retries, error FROM queues ORDER BY name;");
+            //auto query = m_connection.query( "SELECT id, name, retries, error FROM queues ORDER BY name;");
             auto query = m_statement.information.queues.query();
 
             sql::database::Row row;

@@ -85,7 +85,7 @@ namespace casual
          auto path = local::file();
          group::Database database( path);
 
-         database.create( group::Queue{ "unittest_queue"});
+         database.update( { group::Queue{ "unittest_queue"}}, {});
 
          auto queues = database.queues();
 
@@ -94,6 +94,37 @@ namespace casual
          EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
          EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
          EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
+      }
+
+      TEST( casual_queue_group_database, remove_queue)
+      {
+         auto path = local::file();
+         group::Database database( path);
+
+         auto queue = database.update( {group::Queue{ "unittest_queue"}}, {});
+
+         database.update( {}, { queue.at( 0).id});
+
+         EXPECT_TRUE( database.queues().size() == 1) << database.queues().size();
+      }
+
+      TEST( casual_queue_group_database, update_queue)
+      {
+         auto path = local::file();
+         group::Database database( path);
+
+         auto queue = database.update( { group::Queue{ "unittest_queue"}}, {});
+
+         queue.at( 0).name = "foo-bar";
+
+         database.update( { queue.at( 0)}, {});
+
+         auto queues = database.queues();
+
+         ASSERT_TRUE( queues.size() == 3) << queues.size();
+         EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+         EXPECT_TRUE( queues.at( 1).name == "foo-bar_error");
+         EXPECT_TRUE( queues.at( 2).name == "foo-bar");
       }
 
 

@@ -997,48 +997,6 @@ namespace casual
          } // domain
 
 
-         namespace admin
-         {
-            void Policy::connect( common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
-            {
-               //
-               // Let the broker know about us, and our services...
-               //
-               message.server = common::message::server::Id::current();
-               message.path = common::process::path();
-
-               //
-               // We delay the message
-               //
-               m_state.persistentReplies.emplace_back( common::ipc::broker::id(), std::move( message));
-
-            }
-
-            void Policy::disconnect()
-            {
-               //common::message::server::Disconnect message;
-               // TODO
-            }
-
-            void Policy::reply( common::platform::queue_id_type id, common::message::service::Reply& message)
-            {
-               queue::blocking::Writer write( id, m_state);
-               write( message);
-            }
-
-            void Policy::ack( const common::message::service::callee::Call& message)
-            {
-
-               common::message::service::ACK ack;
-               ack.server.queue_id = common::ipc::receive::id();
-               ack.service = message.service.name;
-
-               queue::blocking::Writer brokerWriter{ common::ipc::broker::id(), m_state};
-               brokerWriter( ack);
-            }
-
-         } // admin
-
 
          namespace resource
          {

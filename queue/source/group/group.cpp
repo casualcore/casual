@@ -52,8 +52,13 @@ namespace casual
 
                for( auto&& queue : reply.queues)
                {
-                  m_state.queuebase.create( Queue{ queue.name, queue.retries});
-                  added.push_back( queue.name);
+                  auto exists = common::range::find( existing, queue.name);
+
+                  if( ! exists)
+                  {
+                     m_state.queuebase.create( Queue{ queue.name, queue.retries});
+                     added.push_back( queue.name);
+                  }
                }
 
 

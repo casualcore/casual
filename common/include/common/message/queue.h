@@ -112,15 +112,26 @@ namespace casual
 
             struct Queue
             {
+               enum Type
+               {
+                  cGroupErrorQueue = 1,
+                  cErrorQueue,
+                  cQueue,
+               };
+
                using id_type = std::size_t;
 
                Queue() = default;
                Queue( std::string name, std::size_t retries) : name( std::move( name)), retries( retries) {}
+               Queue( std::string name) : Queue( std::move( name), 0) {};
 
                id_type id = 0;
                std::string name;
                std::size_t retries = 0;
                id_type error = 0;
+               int type;
+
+
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -128,6 +139,7 @@ namespace casual
                   archive & name;
                   archive & retries;
                   archive & error;
+                  archive & type;
                })
             };
 

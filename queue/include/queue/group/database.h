@@ -19,22 +19,8 @@ namespace casual
    {
       namespace group
       {
-         struct Queue
-         {
-            using id_type = std::size_t;
+         using Queue = common::message::queue::Queue;
 
-            Queue() = default;
-            Queue( std::string name) : name( std::move( name)) {}
-            Queue( std::string name, std::size_t retries) : name( std::move( name)), retries( retries) {}
-
-            //Queue( Queue&&) = default;
-            //Queue& operator = ( Queue&&) = default;
-
-            id_type id = 0;
-            std::string name;
-            std::size_t retries = 0;
-            id_type error = 0;
-         };
 
          namespace message
          {
@@ -53,6 +39,11 @@ namespace casual
             Database( const std::string& database);
 
             Queue create( Queue queue);
+
+            //!
+            //! @return the created queues
+            //!
+            std::vector< Queue> update( std::vector< Queue> update, const std::vector< Queue::id_type>& remove);
 
 
             //bool remove( const std::string& name);
@@ -86,6 +77,12 @@ namespace casual
 
 
          private:
+
+            void updateQueue( const Queue& queue);
+            void removeQueue( Queue::id_type id);
+
+            std::vector< Queue> queue( Queue::id_type id);
+
             sql::database::Connection m_connection;
             Queue::id_type m_errorQueue;
 

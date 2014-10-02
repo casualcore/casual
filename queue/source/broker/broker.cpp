@@ -10,8 +10,10 @@
 
 #include "queue/broker/handle.h"
 #include "queue/environment.h"
+#include "queue/broker/admin/server.h"
 
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
 #include "common/algorithm.h"
 #include "common/ipc.h"
 #include "common/process.h"
@@ -229,6 +231,7 @@ namespace casual
 
       void Broker::start()
       {
+         common::log::internal::queue << "qeueue broker start" << std::endl;
 
          casual::common::message::dispatch::Handler handler{
             broker::handle::lookup::Request{ m_state},
@@ -237,6 +240,8 @@ namespace casual
             broker::handle::transaction::commit::Reply{ m_state},
             broker::handle::transaction::rollback::Request{ m_state},
             broker::handle::transaction::rollback::Reply{ m_state},
+            common::callee::handle::basic_admin_call< broker::State>{ broker::admin::Server::services( *this), m_state},
+            common::message::handle::ping( m_state),
          };
 
          broker::queue::blocking::Reader blockedRead( casual::common::ipc::receive::queue(), m_state);

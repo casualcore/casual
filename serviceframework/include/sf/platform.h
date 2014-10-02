@@ -30,6 +30,8 @@ namespace casual
 
          typedef common::platform::time_type time_type;
 
+         using pid_type = common::platform::pid_type;
+
       } // platform
 
       namespace archive

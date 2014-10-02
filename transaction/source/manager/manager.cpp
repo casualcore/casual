@@ -8,6 +8,7 @@
 #include "transaction/manager/manager.h"
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
+#include "transaction/manager/admin/server.h"
 
 
 #include "common/server_context.h"
@@ -123,24 +124,13 @@ namespace casual
                handle::domain::resource::reply::Prepare{ m_state},
                handle::domain::resource::reply::Commit{ m_state},
                handle::domain::resource::reply::Rollback{ m_state},
+               common::callee::handle::basic_admin_call< State>{ admin::Server::services( *this), m_state},
 
                //
                // We discard the connect reply message
                //
                common::message::handle::Discard< common::message::server::connect::Reply>{},
             };
-
-
-            //
-            // Prepare the xatmi-services
-            //
-            {
-               common::server::Arguments arguments{ { common::process::path()}};
-
-               arguments.services.emplace_back( "casual-listTransactions", &casual_listTransactions, 10, common::server::Service::cNone);
-
-               handler.add( handle::admin::Call{ std::move( arguments), m_state});
-            }
 
 
 
