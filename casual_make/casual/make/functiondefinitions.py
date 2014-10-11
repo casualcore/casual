@@ -180,22 +180,27 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
 
     target = Target( internal_executable_name_path( name), name)
     
+    directive = "";
 
-    if not resources:
-        directive = "";
-    else:
-        directive = " -r " + ' '.join( resources)
+    if resources:
+        directive += " -r " + ' '.join( resources)
     
     if isinstance( serverdefinition, basestring):
         # We assume it is a path to a server-definition-file
         directive += ' -p ' + serverdefinition
-        print 
-        print target.name + ': ' + serverdefinition        
+        
+        print '# dependency to server definition file'
+        print target.file + ': ' + serverdefinition
+        print
+        
+        server_defintion_file = serverdefinition;
     else:
         directive += ' -s ' + ' '.join( serverdefinition)
 
     
     return internal_link( internal_platform().link_server, target, objectfiles, libraries, directive)
+    
+    
     
 
 def LinkClient( name, objectfiles, libraries, resources=None):

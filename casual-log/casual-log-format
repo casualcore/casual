@@ -151,6 +151,7 @@ category.switch = [
     [ re.compile( '^inf'), partial( color.white, bold = True)],
     [ re.compile( '^deb'), color.green],
     [ re.compile( '^tra'), partial( color.green, bold = True)],
+    [ re.compile( '^parameter$'), color.green],
     #[ re.compile( '^casual[.]trace'), color.bold_blue], 
     [ re.compile( '^casu'), color.blue],                
 ]
