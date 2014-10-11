@@ -149,7 +149,7 @@ namespace casual
 
 			namespace resource
          {
-            typedef std::size_t id_type;
+            typedef int id_type;
 
          } // resource
 

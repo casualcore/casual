@@ -32,6 +32,8 @@ namespace casual
 
          using pid_type = common::platform::pid_type;
 
+         using queue_id_type = common::platform::queue_id_type;
+
       } // platform
 
       namespace archive

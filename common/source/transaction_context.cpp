@@ -150,7 +150,7 @@ namespace casual
 
          Context::Manager::Manager()
          {
-            trace::internal::Scope trace{ "transaction::Context::Manager::Manager"};
+            common::trace::Scope trace{ "transaction::Context::Manager::Manager", common::log::internal::transaction};
 
             message::transaction::client::connect::Request request;
             request.server = message::server::Id::current();
@@ -200,7 +200,7 @@ namespace casual
 
          void Context::set( const std::vector< Resource>& resources)
          {
-            trace::internal::Scope trace{ "transaction::Context::set"};
+            common::trace::Scope trace{ "transaction::Context::set", common::log::internal::transaction};
 
 
             using RM = message::transaction::resource::Manager;
@@ -280,13 +280,37 @@ namespace casual
             }
 
 
+            namespace resource
+            {
+
+               void involved( transaction::ID& xid, const std::vector< int>& ids)
+               {
+
+               }
+
+            } // resource
 
 
          } // local
 
+         void Context::involved( transaction::ID& id, std::vector< int> resources)
+         {
+            common::trace::Scope trace{ "transaction::Context::involved", common::log::internal::transaction};
+
+            common::log::internal::transaction << "resources involved: " << common::range::make( resources) << std::endl;
+
+            queue::blocking::Writer writer{ manager().queue};
+
+            message::transaction::resource::Involved message;
+            message.xid = id;
+            message.resources = std::move( resources);
+
+            writer( message);
+         }
+
          void Context::joinOrStart( const message::Transaction& transaction)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::joinOrStart"};
+            common::trace::Scope trace{ "transaction::Context::joinOrStart", common::log::internal::transaction};
 
             Transaction trans;
 
@@ -313,17 +337,15 @@ namespace casual
 
             if( m_resources.fixed)
             {
-               queue::blocking::Writer writer{ manager().queue};
-
-               message::transaction::resource::Involved message;
-               message.xid = trans.xid;
-
                start( trans, TMNOFLAGS);
 
-               auto ids = std::mem_fn( &Resource::id);
-               range::transform( m_resources.fixed, message.resources, ids);
+               std::vector< int> resources;
 
-               writer( message);
+               auto ids = std::mem_fn( &Resource::id);
+               range::transform( m_resources.fixed, resources, ids);
+
+               involved( trans.xid, std::move( resources));
+
             }
 
             m_transactions.push( std::move( trans));
@@ -331,7 +353,7 @@ namespace casual
 
          void Context::finalize( message::service::Reply& message)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::finalize"};
+            common::trace::Scope trace{ "transaction::Context::finalize", common::log::internal::transaction};
 
             while( ! m_transactions.empty())
             {
@@ -366,13 +388,24 @@ namespace casual
 
          int Context::resourceRegistration( int rmid, XID* xid, long flags)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::resourceRegistration"};
+            common::trace::Scope trace{ "transaction::Context::resourceRegistration", common::log::internal::transaction};
 
             auto&& current = currentTransaction();
 
+            //
+            // XA-spec - RM can't reg when it's already regged... Why?
+            //
             if( common::range::find( current.associated, rmid))
             {
                return TMER_PROTO;
+            }
+
+            if( current.xid)
+            {
+               //
+               // Notify TM that this RM is involved
+               //
+               involved( current.xid, { rmid});
             }
 
             current.associated.push_back( rmid);
@@ -387,6 +420,8 @@ namespace casual
                }
                default:
                {
+
+
                   return TM_OK;
                }
             }
@@ -394,7 +429,7 @@ namespace casual
 
          int Context::resourceUnregistration( int rmid, long flags)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::resourceUnregistration"};
+            common::trace::Scope trace{ "transaction::Context::resourceUnregistration", common::log::internal::transaction};
 
             auto&& current = currentTransaction();
 
@@ -418,7 +453,7 @@ namespace casual
 
          int Context::begin()
          {
-            common::trace::internal::Scope trace{ "transaction::Context::begin"};
+            common::trace::Scope trace{ "transaction::Context::begin", common::log::internal::transaction};
 
             auto&& current = currentTransaction();
 
@@ -450,7 +485,7 @@ namespace casual
 
          void Context::open()
          {
-            common::trace::internal::Scope trace{ "transaction::Context::open"};
+            common::trace::Scope trace{ "transaction::Context::open", common::log::internal::transaction};
 
             std::vector< int> result;
 
@@ -467,7 +502,7 @@ namespace casual
 
          void Context::close()
          {
-            common::trace::internal::Scope trace{ "transaction::Context::close"};
+            common::trace::Scope trace{ "transaction::Context::close", common::log::internal::transaction};
 
             std::vector< int> result;
 
@@ -490,7 +525,7 @@ namespace casual
 
          int Context::commit( const Transaction& transaction)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::commit"};
+            common::trace::Scope trace{ "transaction::Context::commit", common::log::internal::transaction};
 
             if( transaction.xid)
             {
@@ -581,7 +616,7 @@ namespace casual
 
          int Context::rollback( const Transaction& transaction)
          {
-            common::trace::internal::Scope trace{ "transaction::Context::rollback"};
+            common::trace::Scope trace{ "transaction::Context::rollback", common::log::internal::transaction};
 
             if( transaction.xid)
             {
@@ -659,15 +694,23 @@ namespace casual
 
          void Context::start( Transaction& transaction, long flags)
          {
+            common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
+
+            //
+            // We call start only on static resources
+            //
+
             auto start = std::bind( &Resource::start, std::placeholders::_1, transaction, flags);
             range::for_each( m_resources.fixed, start);
-
-
-
          }
 
          void Context::end( const Transaction& transaction, long flags)
          {
+            common::trace::Scope trace{ "transaction::Context::end", common::log::internal::transaction};
+
+            //
+            // We call end on all resources
+            //
             auto end = std::bind( &Resource::end, std::placeholders::_1, transaction, flags);
             range::for_each( m_resources.all, end);
          }

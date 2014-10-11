@@ -17,7 +17,7 @@ namespace casual
 {
    namespace queue
    {
-      class Broker;
+      struct Broker;
 
       namespace broker
       {
@@ -38,6 +38,9 @@ namespace casual
                //! @return a list of all servers
                //!
                std::vector< admin::GroupVO> listGroups();
+
+
+               std::vector< admin::verbose::GroupVO> listQueues( std::vector< std::string> groups);
 
 
 

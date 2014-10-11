@@ -189,12 +189,22 @@ namespace casual
 
                m_statement.information.queues = m_connection.precompile( R"(
                   SELECT
-                     q.id, q.name, q.retries, q.error, COUNT( m.id)
+                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id)
                   FROM
-                     queues q LEFT JOIN messages m ON q.id = m.queue AND m.state = 3
-                     GROUP BY q.id 
+                     queues q LEFT JOIN messages m ON q.id = m.queue AND m.state = 2
+                  GROUP BY q.id 
+                  ORDER BY q.id  
                       ;
                   )");
+
+               m_statement.information.messages = m_connection.precompile( R"(
+                  SELECT
+                     m.id, m.type, m.state
+                  FROM
+                     messages m
+                  WHERE
+                     m.queue = ?
+                )");
 
             }
          }
@@ -383,29 +393,52 @@ namespace casual
          }
 
 
-         std::vector< common::message::queue::Information::Queue> Database::queues()
+         std::vector< common::message::queue::information::Queue> Database::queues()
          {
             common::trace::internal::Scope trace{ "queue::Database::queues", common::log::internal::queue};
 
-            std::vector< common::message::queue::Information::Queue> result;
+            std::vector< common::message::queue::information::Queue> result;
 
-            //auto query = m_connection.query( "SELECT id, name, retries, error FROM queues ORDER BY name;");
             auto query = m_statement.information.queues.query();
 
             sql::database::Row row;
 
             while( query.fetch( row))
             {
-               common::message::queue::Information::Queue queue;
+               common::message::queue::information::Queue queue;
+
 
                row.get( 0, queue.id);
                row.get( 1, queue.name);
                row.get( 2, queue.retries);
                row.get( 3, queue.error);
-               row.get( 4, queue.messages);
+               row.get( 4, queue.type);
+               row.get( 5, queue.messages);
 
                result.push_back( std::move( queue));
             }
+            return result;
+         }
+
+         std::vector< common::message::queue::information::Message> Database::messages( Queue::id_type id)
+         {
+            std::vector< common::message::queue::information::Message> result;
+
+            auto query = m_statement.information.messages.query( id);
+
+            sql::database::Row row;
+
+            while( query.fetch( row))
+            {
+               common::message::queue::information::Message message;
+
+               row.get( 0, message.id.get());
+               row.get( 1, message.type);
+               row.get( 2, message.state);
+
+               result.push_back( std::move( message));
+            }
+
             return result;
          }
 

@@ -15,6 +15,46 @@ namespace casual
    namespace common
    {
 
+      TEST( casual_common_algorithm, equal_to__member_function)
+      {
+
+         std::string test{ "0123456789"};
+
+
+         auto pred = compare::equal_to( std::mem_fn( &std::string::size), bind::value( 10));
+
+         EXPECT_TRUE( pred( test));
+         EXPECT_FALSE( compare::equal_to( std::mem_fn( &std::string::size), bind::value( 11))( test));
+         EXPECT_FALSE( compare::equal_to( std::mem_fn( &std::string::size), bind::value( 9))( test));
+
+      }
+
+      namespace local
+      {
+
+         struct TestType
+         {
+            std::string someString;
+            std::size_t someSize;
+         };
+
+      } // local
+
+
+      TEST( casual_common_algorithm, equal_to__member_attribute)
+      {
+
+         local::TestType test{ "bla bla bla", 42};
+
+
+         auto pred = compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 42));
+
+         EXPECT_TRUE( pred( test));
+         EXPECT_FALSE( compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 41))( test));
+         EXPECT_FALSE( compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 43))( test));
+      }
+
+
       namespace local
       {
          std::vector< int> unsorted() { return { 5,6,3,4,1,8,9,4,3,2};}

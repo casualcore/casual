@@ -65,7 +65,7 @@ namespace casual
                //!
                //! Sent from the broker with "start-up-information" for a server
                //!
-               struct Reply : basic_messsage< cServerConnectReply>
+               struct Reply : basic_message< cServerConnectReply>
                {
 
                   Reply() = default;
@@ -87,7 +87,7 @@ namespace casual
          namespace service
          {
 
-            struct Advertise : basic_messsage< cServiceAdvertise>
+            struct Advertise : basic_message< cServiceAdvertise>
             {
 
                std::string serverPath;
@@ -102,7 +102,7 @@ namespace casual
                })
             };
 
-            struct Unadvertise : basic_messsage< cServiceUnadvertise>
+            struct Unadvertise : basic_message< cServiceUnadvertise>
             {
                server::Id server;
                std::vector< Service> services;
@@ -121,7 +121,7 @@ namespace casual
                   //!
                   //! Represent "service-name-lookup" request.
                   //!
-                  struct Request : basic_messsage< cServiceNameLookupRequest>
+                  struct Request : basic_message< cServiceNameLookupRequest>
                   {
                      Request() = default;
                      Request( Request&&) = default;
@@ -140,7 +140,7 @@ namespace casual
                   //!
                   //! Represent "service-name-lookup" response.
                   //!
-                  struct Reply : basic_messsage< cServiceNameLookupReply>
+                  struct Reply : basic_message< cServiceNameLookupReply>
                   {
 
                      Service service;
@@ -156,7 +156,7 @@ namespace casual
                } // lookup
             } // name
 
-            struct base_call : basic_messsage< cServiceCall>
+            struct base_call : basic_message< cServiceCall>
             {
 
                base_call() = default;
@@ -246,7 +246,7 @@ namespace casual
             //!
             //! Represent service reply.
             //!
-            struct Reply :  basic_messsage< cServiceReply>
+            struct Reply :  basic_message< cServiceReply>
             {
 
                Reply() = default;
@@ -276,7 +276,7 @@ namespace casual
             //! Represent the reply to the broker when a server is done handling
             //! a service-call and is ready for new calls
             //!
-            struct ACK : basic_messsage< cServiceAcknowledge>
+            struct ACK : basic_message< cServiceAcknowledge>
             {
 
                std::string service;

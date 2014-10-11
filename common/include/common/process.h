@@ -26,7 +26,7 @@ namespace casual
 {
    namespace common
    {
-      class Uuid;
+      struct Uuid;
 
       namespace process
       {

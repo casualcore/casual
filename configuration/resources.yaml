@@ -20,9 +20,11 @@ resources:
     server: rm-proxy-casual-mockup
     xa_struct_name: casual_mockup_xa_switch_static
     libraries:
-      - casual-mockup
+      - casual-mockup-rm
 
   - key: casual-queue-rm
     server: casual-queue-resource-proxy
     xa_struct_name: casual_queue_xa_switch_dynamic
+    libraries:
+      - casual-queue-rm
   

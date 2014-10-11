@@ -21,6 +21,32 @@ namespace casual
 {
    namespace queue
    {
+      namespace rm
+      {
+         namespace local
+         {
+            namespace
+            {
+               int& id()
+               {
+                  static int singleton = 0;
+                  return singleton;
+               }
+            } // <unnamed>
+         } // local
+
+         int id()
+         {
+            return local::id();
+         }
+
+         void id( int id)
+         {
+            local::id() = id;
+         }
+
+      } // rm
+
       namespace xa
       {
          namespace local
@@ -60,6 +86,9 @@ namespace casual
          int xa_open_entry( const char* openinfo, int rmid, long flags)
          {
             common::log::internal::transaction << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
+
+            rm::id( rmid);
+
             return XA_OK;
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
@@ -138,6 +167,7 @@ namespace casual
       } // xa
    } // queue
 } // casual
+
 
 
 extern "C"

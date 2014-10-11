@@ -180,7 +180,92 @@ namespace casual
          private:
             T m_functor;
          };
+
+         namespace detail
+         {
+            template< typename F1, typename F2>
+            struct equal_to
+            {
+               equal_to( F1&& functor1, F2&& functor2)
+                  : m_functor1( std::forward< F1>( functor1)),
+                    m_functor2( std::forward< F2>( functor2)){}
+
+               template< typename T>
+               bool operator () ( T&& value)
+               {
+                  return m_functor1( value) == m_functor2();
+               }
+
+               template< typename T>
+               bool operator () ( T&& value) const
+               {
+                  return m_functor1( value) == m_functor2();
+               }
+
+               template< typename T1, typename T2>
+               bool operator () ( T1&& value1, T2&& value2)
+               {
+                  return m_functor1( value1) == m_functor2( value2);
+               }
+
+               template< typename T1, typename T2>
+               bool operator () ( T1&& value1, T2&& value2) const
+               {
+                  return m_functor1( value1) == m_functor2( value2);
+               }
+
+               F1 m_functor1;
+               F2 m_functor2;
+            };
+         }
+
+         template< typename F1, typename F2>
+         auto equal_to( F1&& functor1, F2&& functor2) -> detail::equal_to< F1, F2>
+         {
+            return detail::equal_to< F1, F2>{ std::forward< F1>( functor1), std::forward< F2>( functor2)};
+         }
+
+         struct value
+         {
+            template< typename V>
+            auto operator () ( V&& value) const -> decltype( std::forward< V>( value))
+            {
+               return std::forward< V>( value);
+            }
+         };
+
       } // compare
+
+
+
+
+
+      namespace bind
+      {
+         namespace detail
+         {
+            template< typename T>
+            struct value
+            {
+               template< typename V>
+               value( V&& value) : m_value( std::forward< V>( value)) {}
+
+               T operator () () const { return m_value;}
+
+            private:
+               T m_value;
+            };
+         } // detail
+
+         template< typename T>
+         auto value( T&& value) -> detail::value< T>
+         {
+            return detail::value< T>( std::forward< T>( value));
+         }
+
+      } // bind
+
+
 
 
       template< typename Enum>
@@ -557,6 +642,16 @@ namespace casual
             return make( container);
          }
 
+         template< typename R, typename P>
+         auto remove_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
+         {
+            auto result = make( std::forward< R>( range));
+
+            result.last = std::remove_if( std::begin( result), std::end( result), predicate);
+
+            return result;
+         }
+
 
          template< typename R1, typename R2, typename P>
          bool equal( R1&& lhs, R2&& rhs, P predicate)
@@ -694,7 +789,7 @@ namespace casual
             using range_type = decltype( make( std::forward< R1>( source)));
             using value_type = typename range_type::value_type;
 
-            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( other), std::bind( functor, std::placeholders::_1, value));};
+            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( other), std::bind( functor, value, std::placeholders::_1));};
             return partition( resultRange, lambda);
 
          }
@@ -769,17 +864,11 @@ namespace casual
          template< typename R>
          bool uniform( R&& range)
          {
-            auto localRange = make( std::forward< R>( range));
-            if( localRange.size() < 2)
-            {
-               return true;
-            }
+            auto first = std::begin( range);
 
-            auto current = localRange.first;
-
-            while( current != localRange.last && current + 1 != localRange.last)
+            for( auto&& value : range)
             {
-               if( *current != *++current)
+               if( value != *first)
                {
                   return false;
                }

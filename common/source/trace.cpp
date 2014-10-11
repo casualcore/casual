@@ -28,7 +28,14 @@ namespace casual
          {
             if( m_log)
             {
-               log::thread::Safe{ m_log} << m_information << " - in\n";
+               if( std::uncaught_exception())
+               {
+                  log::thread::Safe{ m_log} << m_information << " - in*\n";
+               }
+               else
+               {
+                  log::thread::Safe{ m_log} << m_information << " - in\n";
+               }
             }
          }
 

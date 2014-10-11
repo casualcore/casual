@@ -72,10 +72,11 @@ namespace casual
                //
                // Send all our queues to queue-broker
                //
-               //common::message::queue::Information information;
-               //information.queues = m_state.queuebase.queues();
+               common::message::queue::Information information;
+               information.server = common::message::server::Id::current();
+               information.queues = m_state.queuebase.queues();
 
-               //queueBroker( information);
+               queueBroker( information);
 
             }
 
@@ -90,6 +91,7 @@ namespace casual
                handle::dequeue::Request{ m_state},
                handle::transaction::commit::Request{ m_state},
                handle::transaction::rollback::Request{ m_state},
+               handle::information::queues::Request{ m_state},
             };
 
 

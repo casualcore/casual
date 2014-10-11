@@ -80,6 +80,7 @@ namespace casual
          } // configuration
 
 
+
          struct Service
          {
             state::Service operator () ( const common::message::Service& value) const;

@@ -22,7 +22,7 @@ namespace casual
          namespace queue
          {
 
-            struct basic_message
+            struct base_message
             {
                common::Uuid id;
 
@@ -48,9 +48,9 @@ namespace casual
 
             namespace enqueue
             {
-               struct Request : basic_messsage< Type::cQueueEnqueueRequest>
+               struct Request : basic_message< Type::cQueueEnqueueRequest>
                {
-                  using Message = basic_message;
+                  using Message = base_message;
 
                   server::Id server;
                   Transaction xid;
@@ -70,7 +70,7 @@ namespace casual
 
             namespace dequeue
             {
-               struct Request : basic_messsage< Type::cQueueDequeueRequest>
+               struct Request : basic_message< Type::cQueueDequeueRequest>
                {
                   server::Id server;
                   Transaction xid;
@@ -84,16 +84,16 @@ namespace casual
                   })
                };
 
-               struct Reply : basic_messsage< Type::cQueueDequeueReply>
+               struct Reply : basic_message< Type::cQueueDequeueReply>
                {
-                  struct Message : basic_message
+                  struct Message : base_message
                   {
                      std::size_t redelivered = 0;
                      common::platform::time_type timestamp;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        basic_message::marshal( archive);
+                        base_message::marshal( archive);
 
                         archive & redelivered;
                         archive & timestamp;
@@ -143,33 +143,106 @@ namespace casual
                })
             };
 
-            struct Information : basic_messsage< Type::cQueueInformation>
+
+
+
+
+
+            namespace information
             {
-               struct Queue : queue::Queue
+
+               struct Queue : message::queue::Queue
                {
                   std::size_t messages;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     queue::Queue::marshal( archive);
+                     message::queue::Queue::marshal( archive);
                      archive & messages;
                   })
                };
 
-               server::Id server;
-               std::vector< Queue> queues;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
+               template< message::Type type>
+               struct basic_information : basic_message< type>
                {
-                  archive & server;
-                  archive & queues;
-               })
 
-            };
+                  server::Id server;
+                  std::vector< Queue> queues;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & server;
+                     archive & queues;
+                  })
+
+               };
+
+               struct Message
+               {
+                  common::Uuid id;
+                  std::size_t type;
+                  std::size_t state;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & id;
+                     archive & type;
+                     archive & state;
+                  })
+               };
+
+
+               namespace queues
+               {
+
+                  using Request = server::basic_id< Type::cQueueQueuesInformationRequest>;
+
+                  using Reply = basic_information< Type::cQueueQueuesInformationReply>;
+
+               } // queues
+
+               namespace queue
+               {
+                  struct Request : server::basic_id< Type::cQueueQueueInformationRequest>
+                  {
+                     using base_type = server::basic_id< Type::cQueueQueueInformationRequest>;
+
+                     std::string qname;
+                     Queue::id_type qid = 0;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & qname;
+                        archive & qid;
+                     })
+
+                  };
+
+                  struct Reply : common::message::server::basic_id< Type::cQueueQueueInformationReply>
+                  {
+                     using base_type = common::message::server::basic_id< Type::cQueueQueueInformationReply>;
+
+                     std::vector< Message> messages;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & messages;
+                     })
+
+                  };
+
+               } // queue
+
+            } // information
+
+            using Information = information::basic_information< Type::cQueueInformation>;
+
 
             namespace lookup
             {
-               struct Request : basic_messsage< Type::cQueueLookupRequest>
+               struct Request : basic_message< Type::cQueueLookupRequest>
                {
                   server::Id server;
                   std::string name;
@@ -181,7 +254,7 @@ namespace casual
                   })
                };
 
-               struct Reply : basic_messsage< Type::cQueueLookupReply>
+               struct Reply : basic_message< Type::cQueueLookupReply>
                {
                   Reply() = default;
                   Reply( server::Id id, std::size_t queue) : server( id), queue( queue) {}
@@ -199,7 +272,7 @@ namespace casual
 
             namespace connect
             {
-               struct Request : basic_messsage< Type::cQueueConnectRequest>
+               struct Request : basic_message< Type::cQueueConnectRequest>
                {
                   server::Id server;
 
@@ -209,7 +282,7 @@ namespace casual
                   })
                };
 
-               struct Reply : basic_messsage< Type::cQueueConnectReply>
+               struct Reply : basic_message< Type::cQueueConnectReply>
                {
                   std::string name;
                   std::vector< Queue> queues;
@@ -223,7 +296,7 @@ namespace casual
 
             namespace group
             {
-               struct Involved : basic_messsage< Type::cQueueGroupInvolved>
+               struct Involved : basic_message< Type::cQueueGroupInvolved>
                {
                   server::Id server;
                   Transaction xid;

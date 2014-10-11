@@ -39,6 +39,7 @@ namespace casual
                Group() = default;
                Group( id_type id) : id( std::move( id)) {}
 
+               std::string name;
                id_type id;
 
             };
@@ -122,6 +123,13 @@ namespace casual
          };
 
 
+         struct Queues
+         {
+            common::platform::pid_type groupId() const { return group.id.pid;}
+
+            broker::State::Group group;
+            std::vector< common::message::queue::Queue> queues;
+         };
 
       } // broker
 
@@ -132,7 +140,14 @@ namespace casual
 
          void start();
 
+         const broker::State& state() const;
+
+         std::vector< broker::Queues> queues( std::vector< std::string> groups);
+
       private:
+
+         template< typename R>
+         std::vector< broker::Queues> getQueues( R&& range);
 
          casual::common::file::scoped::Path m_queueFilePath;
          broker::State m_state;

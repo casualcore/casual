@@ -52,7 +52,7 @@ namespace casual
                   //!
                   //! Sent from the broker with "transaction-information" for a server/client
                   //!
-                  struct Reply : basic_messsage< cTransactionClientConnectReply>
+                  struct Reply : basic_message< cTransactionClientConnectReply>
                   {
 
                      typedef platform::queue_id_type queue_id_type;
@@ -81,7 +81,7 @@ namespace casual
                typedef server::basic_connect< cTransactionManagerConnect> Connect;
 
 
-               struct Configuration : message::basic_messsage< cTransactionManagerConfiguration>
+               struct Configuration : message::basic_message< cTransactionManagerConfiguration>
                {
                   std::string domain;
                   std::vector< resource::Manager> resources;
@@ -95,7 +95,7 @@ namespace casual
                };
 
 
-               struct Ready : message::basic_messsage< cTransactionManagerReady>
+               struct Ready : message::basic_message< cTransactionManagerReady>
                {
                   server::Id id;
                   bool success = true;
@@ -111,7 +111,7 @@ namespace casual
 
 
             template< message::Type type>
-            struct basic_transaction : basic_messsage< type>
+            struct basic_transaction : basic_message< type>
             {
                typedef basic_transaction< type> base_type;
 
@@ -226,7 +226,7 @@ namespace casual
                   //!
                   //! Used to notify the TM that a resource proxy is up and running, or not...
                   //!
-                  struct Reply : basic_messsage< cTransactionResurceConnectReply>
+                  struct Reply : basic_message< cTransactionResurceConnectReply>
                   {
                      server::Id id;
                      platform::resource::id_type resource = 0;

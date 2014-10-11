@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef CASUAL_QUEUE_H_
-#define CASUAL_QUEUE_H_
+#ifndef CASUAL_COMMON_QUEUE_H_
+#define CASUAL_COMMON_QUEUE_H_
 
 #include "common/ipc.h"
 #include "common/message/type.h"

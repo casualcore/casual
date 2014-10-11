@@ -172,6 +172,9 @@ namespace casual
                State state = State::absent;
             };
 
+            using Executable::Executable;
+
+
             //!
             //! if not empty, only these services are allowed to be publish
             //!
@@ -265,7 +268,6 @@ namespace casual
          state::Server& getServer( state::Server::id_type id);
 
          state::Executable& getExecutable( state::Executable::id_type id);
-
 
          struct Batch
          {

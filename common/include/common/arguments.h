@@ -472,7 +472,7 @@ namespace casual
 
          protected:
 
-            friend class option::Holder;
+            friend struct option::Holder;
 
             bool option( const std::string& option) const
             {

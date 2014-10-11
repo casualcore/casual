@@ -33,7 +33,7 @@ namespace casual
             //!
             //! Notify monitorserver with statistics
             //!
-            struct Notify : basic_messsage< cMonitorNotify>
+            struct Notify : basic_message< cMonitorNotify>
             {
 
                std::string parentService;

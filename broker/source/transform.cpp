@@ -263,6 +263,7 @@ namespace casual
          } // configuration
 
 
+
          state::Service Service::operator () ( const common::message::Service& value) const
          {
             state::Service result;
