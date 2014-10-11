@@ -266,6 +266,7 @@ namespace casual
          return local::get( executables, id);
       }
 
+
       std::vector< State::Batch> State::bootOrder()
       {
          std::vector< State::Batch> result;

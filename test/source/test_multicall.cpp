@@ -48,6 +48,7 @@ int main( int argc, char** argv)
    std::string argument;
    bool transaction = false;
    long iterations = 1;
+   bool rollback = false;
 
    casual::common::Arguments parser;
 
@@ -56,6 +57,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( { "-n", "--number"}, "number of async calls to service", calls),
          casual::common::argument::directive( { "-a", "--argument"}, "argument to the service", argument),
          casual::common::argument::directive( { "-t", "--transaction"}, "call within a transaction", transaction),
+         casual::common::argument::directive( { "-r", "--rollback"}, "call within a transaction", rollback),
          casual::common::argument::directive( { "-i", "--iterations"}, "number of iterations of batch-calls", iterations),
          casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
    );
@@ -109,8 +111,17 @@ int main( int argc, char** argv)
 
       if( transaction)
       {
-         tx_commit();
-         timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_commit");
+         if( rollback)
+         {
+            tx_rollback();
+            timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_rollback");
+
+         }
+         else
+         {
+            tx_commit();
+            timepoints.emplace_back( casual::common::platform::clock_type::now(), "tx_commit");
+         }
       }
 
 

@@ -24,7 +24,7 @@ namespace casual
       namespace transaction
       {
 
-         class Resource;
+         struct Resource;
 
          struct Transaction
          {
@@ -217,6 +217,8 @@ namespace casual
             };
 
             const Manager& manager();
+
+            void involved( transaction::ID& xid, std::vector< int> resources);
 
             void apply( const message::transaction::client::connect::Reply& configuration);
 

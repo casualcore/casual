@@ -86,13 +86,17 @@ namespace casual
             cQueueDequeueRequest,
             cQueueDequeueReply,
             cQueueInformation,
+            cQueueQueuesInformationRequest,
+            cQueueQueuesInformationReply,
+            cQueueQueueInformationRequest,
+            cQueueQueueInformationReply,
             cQueueLookupRequest,
             cQueueLookupReply,
             cQueueGroupInvolved,
          };
 
          template< message::Type type>
-         struct basic_messsage
+         struct basic_message
          {
             enum
             {
@@ -190,7 +194,7 @@ namespace casual
 
 
                queue_id_type queue_id = 0;
-               pid_type pid;
+               pid_type pid = 0;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   archive & queue_id;
@@ -205,8 +209,9 @@ namespace casual
             };
 
             template< message::Type type>
-            struct basic_id : basic_messsage< type>
+            struct basic_id : basic_message< type>
             {
+
                server::Id server;
 
                template< typename A>

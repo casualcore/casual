@@ -59,6 +59,37 @@ namespace casual
                } // <unnamed>
             } // local
 
+
+            namespace peek
+            {
+               namespace queue
+               {
+                  void Request::dispatch( message_type& message)
+                  {
+                     auto found =  common::range::find( m_state.queues, message.qname);
+
+                     if( found)
+                     {
+                        //
+                        // Forward to group
+                        //
+                        message.qid = found->second.queue;
+                        broker::queue::blocking::Writer write{ found->second.server.queue_id, m_state};
+                        write( found->second);
+                     }
+                     else
+                     {
+                        // TODO: error?
+
+                        common::message::queue::information::queue::Reply reply;
+                        broker::queue::blocking::Writer write{ message.server.queue_id, m_state};
+                        write( reply);
+                     }
+                  }
+               } // queue
+
+            } // peek
+
             namespace lookup
             {
 
@@ -120,9 +151,18 @@ namespace casual
             {
 
                template< typename message_type>
-               void request( State& state, message_type&& message)
+               void request( State& state, message_type& message)
                {
                   auto found = common::range::find( state.involved, message.xid);
+
+                  auto sendError = [&](){
+                     common::message::transaction::resource::commit::Reply reply;
+                     reply.state = XAER_RMFAIL;
+                     reply.xid = message.xid;
+                     reply.id = common::message::server::Id::current();
+                     queue::blocking::Writer send{ message.id.queue_id, state};
+                     send( message);
+                  };
 
                   if( found)
                   {
@@ -136,31 +176,29 @@ namespace casual
                         local::send( state, found->second, request);
 
 
+                        //
+                        // Make sure we correlate the coming replies.
+                        //
+                        common::log::internal::queue << "forward request to groups - correlate response to: " << message.id << "\n";
+
+                        state.correlation.emplace(
+                              std::piecewise_construct,
+                              std::forward_as_tuple( std::move( found->first)),
+                              std::forward_as_tuple( message.id, std::move( found->second)));
+
+                        state.involved.erase( found.first);
+
                      }
                      catch( ...)
                      {
                         common::error::handler();
-                        common::message::transaction::resource::commit::Reply reply;
-                        reply.state = XAER_RMFAIL;
-                        reply.xid = message.xid;
-                        reply.id = common::message::server::Id::current();
-                        queue::blocking::Writer send{ message.id.queue_id, state};
-                        send( message);
+                        sendError();
                      }
-
-                     //
-                     // Make sure we correlate the coming replies.
-                     //
-                     auto removed = state.involved.erase( found.first);
-
-                     state.correlation.emplace(
-                           std::piecewise_construct,
-                           std::forward_as_tuple( std::move( removed->first)),
-                           std::forward_as_tuple( message.id, std::move( removed->second)));
                   }
                   else
                   {
-                     common::log::internal::transaction << "request - xid: " << message.xid << " could not be found - action: discard" << std::endl;
+                     common::log::internal::queue << "request - xid: " << message.xid << " could not be found - action: XAER_RMFAIL" << std::endl;
+                     sendError();
                   }
 
                }
@@ -170,16 +208,19 @@ namespace casual
                {
                   auto found = common::range::find( state.correlation, message.xid);
 
-                  if( found)
+                  if( ! found)
                   {
-                     if( message.state == XA_OK)
-                     {
-                        found->second.state( message.id, State::Correlation::State::replied);
-                     }
-                     else
-                     {
-                        found->second.state( message.id, State::Correlation::State::error);
-                     }
+                     common::log::error << "failed to correlate reply - xid: " << message.xid << " process: " << message.id << " - action: discard\n";
+                     return;
+                  }
+
+                  if( message.state == XA_OK)
+                  {
+                     found->second.state( message.id, State::Correlation::State::replied);
+                  }
+                  else
+                  {
+                     found->second.state( message.id, State::Correlation::State::error);
                   }
 
                   auto groupState = found->second.state();
@@ -187,11 +228,13 @@ namespace casual
                   if( groupState >= State::Correlation::State::replied )
                   {
                      //
-                     // All groups has responded, reply to RM-proxyn
+                     // All groups has responded, reply to RM-proxy
                      //
                      message_type reply( message);
                      reply.id = common::message::server::Id::current();
                      reply.state = groupState == State::Correlation::State::replied ? XA_OK : XAER_RMFAIL;
+
+                     common::log::internal::queue << "all groups has responded - send reply to RM: " << found->second.caller << std::endl;
 
                      queue::blocking::Writer send{ found->second.caller.queue_id, state};
                      send( reply);
@@ -203,6 +246,7 @@ namespace casual
                {
                   void Request::dispatch( message_type& message)
                   {
+
                      request( m_state, message);
 
                   }

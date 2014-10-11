@@ -32,6 +32,7 @@ namespace casual
 
          struct Base : public std::runtime_error
          {
+
             Base( const std::string& description)
                : std::runtime_error( description) {}
 

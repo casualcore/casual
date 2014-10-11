@@ -50,6 +50,42 @@ namespace casual
                } // <unnamed>
             } // local
 
+            namespace information
+            {
+
+               namespace queues
+               {
+
+                  void Request::dispatch( message_type& message)
+                  {
+                     common::message::queue::information::queues::Reply reply;
+                     reply.server = common::message::server::Id::current();
+                     reply.queues = m_state.queuebase.queues();
+
+                     queue::blocking::Writer send{ message.server.queue_id, m_state};
+                     send( reply);
+                  }
+               } // queues
+
+               namespace messages
+               {
+
+                  void Request::dispatch( message_type& message)
+                  {
+                     common::message::queue::information::queue::Reply reply;
+                     reply.server = common::message::server::Id::current();
+                     reply.messages = m_state.queuebase.messages( message.qid);
+
+                     queue::blocking::Writer send{ message.server.queue_id, m_state};
+                     send( reply);
+                  }
+
+               } // messages
+
+            } // information
+
+
+
             namespace enqueue
             {
                void Request::dispatch( message_type& message)

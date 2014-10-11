@@ -64,6 +64,20 @@ namespace casual
          namespace handle
          {
 
+            namespace peek
+            {
+               namespace queue
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::information::queue::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+                  };
+               }
+            }
 
 
 

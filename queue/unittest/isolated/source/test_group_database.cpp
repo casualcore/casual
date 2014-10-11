@@ -69,7 +69,7 @@ namespace casual
                return result;
             }
 
-            void print( const std::vector< common::message::queue::Information::Queue>& queues)
+            void print( const std::vector< common::message::queue::information::Queue>& queues)
             {
                for( auto& q : queues)
                {
@@ -229,6 +229,44 @@ namespace casual
          EXPECT_NO_THROW({
             database.enqueue( message);
          });
+      }
+
+      TEST( casual_queue_group_database, enqueue_one_message__get_queue_info)
+      {
+         auto path = local::file();
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto message = local::message( queue);
+
+         EXPECT_NO_THROW({
+            database.enqueue( message);
+         });
+
+         auto queues = database.queues();
+
+         ASSERT_TRUE( queues.size() == 3);
+         EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
+         EXPECT_TRUE( queues.at( 2).messages == 1) << " queues.at( 2).messages: " <<  queues.at( 2).messages;
+
+      }
+
+      TEST( casual_queue_group_database, enqueue_one_message__get_message_info)
+      {
+         auto path = local::file();
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto message = local::message( queue);
+
+         EXPECT_NO_THROW({
+            database.enqueue( message);
+         });
+
+         auto messages = database.messages( queue.id);
+
+         ASSERT_TRUE( messages.size() == 1);
+         EXPECT_TRUE( messages.at( 0).id  == message.message.id);
       }
 
 

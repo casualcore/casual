@@ -63,6 +63,40 @@ namespace casual
          namespace handle
          {
 
+            namespace information
+            {
+
+               namespace queues
+               {
+
+                  struct Request : Base
+                  {
+
+                     using message_type = common::message::queue::information::queues::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+                  };
+
+               } // queues
+
+               namespace messages
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::information::queue::Request;
+
+                     using Base::Base;
+
+                     void dispatch( message_type& message);
+                  };
+
+               } // messages
+
+
+            } // information
+
             namespace enqueue
             {
                struct Request : Base

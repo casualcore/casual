@@ -288,16 +288,15 @@ namespace casual
             catch( const state::exception::Missing& exception)
             {
                //
-               // The instance was started outside the broker. This is totally in order, though
-               // there will be no 'instances' semantics, hence limited administration possibilities.
-               // We add it...
+               // The instance was started outside the broker. We dont't allow
+               // a server to connect on their own. casual-broker has to start
+               // the instances. I think we're better of to keep it simple and
+               // strict.
                //
-               // TODO: create a server for the instance, or try to join one based on path
-               //
-               m_state.instances.emplace(
-                     message.server.pid, broker::transform::Instance()( message));
 
-               dispatch( message);
+               common::log::error << "process " << message.server << " tried to join the domain on it's own - acion: don't allow and send terminate signal" << std::endl;
+
+               common::process::terminate( message.server.pid);
             }
          }
 

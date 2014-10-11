@@ -58,7 +58,10 @@ namespace casual
             void rollback( const common::transaction::ID& id);
 
 
-            std::vector< common::message::queue::Information::Queue> queues();
+            std::vector< common::message::queue::information::Queue> queues();
+
+            std::vector< common::message::queue::information::Message> messages( Queue::id_type id);
+
 
             void persistenceBegin();
             void persistenceCommit();
@@ -109,6 +112,8 @@ namespace casual
                struct info_t
                {
                   sql::database::Statement queues;
+                  sql::database::Statement messages;
+
                } information;
 
             } m_statement;

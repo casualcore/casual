@@ -25,7 +25,7 @@ namespace casual
 namespace broker
 {
    class Broker;
-   class State;
+   struct State;
 
    namespace admin
    {

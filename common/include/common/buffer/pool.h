@@ -70,6 +70,10 @@ namespace casual
                   using pool_type = P;
 
                   Concrete( pool_type pool) : m_pool( std::move( pool)) {}
+                  ~Concrete() = default;
+
+                  Concrete( const Concrete&) = delete;
+                  Concrete& operator = ( const Concrete&) = delete;
 
                   pool_type& pool()
                   {
@@ -312,8 +316,9 @@ namespace casual
 
 
             template< typename P>
-            struct Registration
+            class Registration
             {
+            public:
                static P& pool;
             };
 

@@ -8,6 +8,7 @@
 #include "queue/broker/admin/server.h"
 
 #include "queue/broker/broker.h"
+#include "queue/transform.h"
 
 
 #include "sf/server.h"
@@ -28,8 +29,6 @@ namespace casual
 {
    namespace queue
    {
-      class Broker;
-
       extern "C"
       {
          int tpsvrinit( int argc, char **argv)
@@ -97,6 +96,38 @@ namespace casual
                      reply.size,
                      reply.flags);
                }
+
+               void listQueues_( TPSVCINFO *serviceInfo)
+               {
+                  casual::sf::service::reply::State reply;
+
+                  try
+                  {
+                     auto service_io = local::server->createService( serviceInfo);
+
+                     std::vector< std::string> groups;
+                     service_io >> CASUAL_MAKE_NVP( groups);
+
+                     auto serviceReturn = service_io.call(
+                        *local::implementation,
+                        &Server::listQueues, groups);
+
+                     service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+                     reply = service_io.finalize();
+                  }
+                  catch( ...)
+                  {
+                     local::server->handleException( serviceInfo, reply);
+                  }
+
+                  tpreturn(
+                     reply.value,
+                     reply.code,
+                     reply.data,
+                     reply.size,
+                     reply.flags);
+               }
             }
 
 
@@ -107,6 +138,7 @@ namespace casual
                common::server::Arguments result{ { common::process::path()}};
 
                result.services.emplace_back( ".casual.queue.list.groups", &listGroups_, 10, common::server::Service::cNone);
+               result.services.emplace_back( ".casual.queue.list.queues", &listQueues_, 10, common::server::Service::cNone);
 
                return result;
             }
@@ -119,8 +151,14 @@ namespace casual
 
             std::vector< admin::GroupVO> Server::listGroups()
             {
-               std::vector< admin::GroupVO> result;
+               return transform::groups( m_broker->state());
+            }
 
+            std::vector< admin::verbose::GroupVO> Server::listQueues( std::vector< std::string> groups)
+            {
+               std::vector< admin::verbose::GroupVO> result;
+
+               common::range::transform( m_broker->queues( groups), result, transform::Group{});
 
                return result;
             }

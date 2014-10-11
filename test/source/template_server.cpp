@@ -16,11 +16,15 @@
 #include "common/arguments.h"
 #include "common/string.h"
 #include "common/process.h"
+#include "common/trace.h"
 
 #include "sf/log.h"
 #include "sf/archive/archive.h"
 #include "sf/namevaluepair.h"
 #include "sf/buffer.h"
+
+
+#include "queue/queue.h"
 
 
 
@@ -30,9 +34,13 @@
 
 
 #include "xatmi.h"
+#include "tx.h"
 
 extern "C"
 {
+
+
+
 
 
 void casual_test1( TPSVCINFO *serviceContext)
@@ -73,25 +81,23 @@ void casual_test2( TPSVCINFO *serviceContext)
          stream.release();
       }
 
+      struct Task
+      {
+         std::size_t sleep = 0;
 
-
-      auto args = casual::common::string::split( argumentString);
-
-      casual::sf::log::debug << CASUAL_MAKE_NVP( args);
+      } task;
 
       casual::common::Arguments parser;
 
-      std::size_t millesconds = 0;
-
       parser.add(
-            casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", millesconds)
+            casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", task.sleep)
       );
 
-      parser.parse( casual::common::process::path(), args);
+      parser.parse( casual::common::process::path(), casual::common::string::split( argumentString));
 
-      casual::sf::log::debug << "casual_test2 called - sleep for  " << millesconds << "ms"<< std::endl;
+      casual::sf::log::debug << "casual_test2 called - sleep for  " << task.sleep << "ms"<< std::endl;
 
-      casual::common::process::sleep(  std::chrono::milliseconds( millesconds));
+      casual::common::process::sleep(  std::chrono::milliseconds( task.sleep));
    }
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
@@ -101,19 +107,97 @@ void casual_test2( TPSVCINFO *serviceContext)
 void casual_test3( TPSVCINFO *serviceContext)
 {
 
-   casual::common::log::debug << "casual_test3 called" << std::endl;
+   auto outcome = TPSUCCESS;
+   try
+   {
+      casual::common::trace::Scope trace{ "casual_test3 called"};
 
-   tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
+
+      std::string argumentString;
+
+      {
+         casual::sf::buffer::binary::Stream stream{ casual::sf::buffer::raw( serviceContext)};
+         stream >> argumentString;
+         stream.release();
+      }
+
+      struct Task
+      {
+         std::string message;
+
+         std::string enqueue;
+         std::string dequeue;
+
+         bool rollback = false;
+
+      } task;
+
+      casual::common::Arguments parser;
+
+      parser.add(
+            casual::common::argument::directive( { "-m"}, "message", task.message),
+            casual::common::argument::directive( { "-e", "--enqueue"}, "queue", task.enqueue),
+            casual::common::argument::directive( { "-d", "--dequeue"}, "queue", task.dequeue),
+            casual::common::argument::directive( { "-rb", "--rollback"}, "queue", task.rollback)
+      );
+
+      parser.parse( casual::common::process::path(), casual::common::string::split( argumentString));
+
+      if( ! task.enqueue.empty())
+      {
+
+         casual::queue::Message message;
+
+         message.attribues.reply = task.enqueue;
+         message.payload.type = 42;
+         casual::common::range::copy( task.message, std::back_inserter( message.payload.data));
+
+         auto id = casual::queue::enqueue( task.enqueue, message);
+
+         casual::sf::log::debug << CASUAL_MAKE_NVP( id);
+      }
+      else if( ! task.dequeue.empty())
+      {
+         auto dequeued = casual::queue::dequeue( task.dequeue);
+
+         if( ! dequeued.empty())
+         {
+            auto& message = dequeued.front();
+
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attribues.available);
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attribues.properties);
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attribues.reply);
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.payload.type);
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.payload.data.size());
+
+            std::string data;
+            casual::common::range::copy( message.payload.data, std::back_inserter( data));
+
+            casual::sf::log::debug << CASUAL_MAKE_NVP( data);
+
+         }
+      }
+
+      if( task.rollback)
+      {
+         outcome = TPFAIL;
+      }
+
+   }
+   catch( ...)
+   {
+      casual::common::error::handler();
+      outcome = TPFAIL;
+   }
+   tpreturn( outcome, 0, serviceContext->data, serviceContext->len, 0);
 }
-
-
 
 
 int tpsvrinit(int argc, char **argv)
 {
    casual::common::log::debug << "USER tpsvrinit called" << std::endl;
 
-   return 0;
+   return tx_open();
 }
 
 }

@@ -50,9 +50,13 @@ namespace casual
 
             enum TransactionType
             {
+               //! if there is a transaction join it, if not, start a new one
                cAuto = 0,
+               //! if there is a transaction join it, if not, execute outside transaction
                cJoin = 1,
+               //! Regardless - start a new transaction
                cAtomic = 2,
+               //! Regardless - execute outside transaction
                cNone = 3
             };
 

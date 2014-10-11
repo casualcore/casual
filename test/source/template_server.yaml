@@ -11,10 +11,10 @@ server:
     
     - name: casual-test3
       function: casual_test3
-      transaction: none
-
+      transaction: join
 
     
+  
 #    - binding: casual-test3
 #      service_function: casual_test3
 #      message_function: casual_test3
