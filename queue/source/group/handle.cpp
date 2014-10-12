@@ -130,8 +130,7 @@ namespace casual
                         reply.state = XAER_RMFAIL;
                      }
 
-                     queue::blocking::Writer send{ message.id.queue_id, m_state};
-                     send( reply);
+                     m_state.persist( std::move( reply), message.id.queue_id);
                   }
                }
 
@@ -155,8 +154,7 @@ namespace casual
                         reply.state = XAER_RMFAIL;
                      }
 
-                     queue::blocking::Writer send{ message.id.queue_id, m_state};
-                     send( reply);
+                     m_state.persist( std::move( reply), message.id.queue_id);
                   }
                }
             }

@@ -42,7 +42,7 @@ namespace casual
             {
                using queue_policy = P;
 
-               using queue_type = common::queue::blocking::basic_writer< queue_policy>;
+               using queue_type = common::queue::blocking::basic_send< queue_policy>;
 
                using message_type = server::ping::Request;
 
@@ -57,7 +57,7 @@ namespace casual
                   reply.server = server::Id::current();
                   reply.uuid = process::uuid();
 
-                  m_send( reply, message.server.queue_id);
+                  m_send( message.server.queue_id, reply);
                }
 
             private:

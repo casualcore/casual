@@ -78,6 +78,11 @@ namespace casual
             //!
             std::size_t affected() const;
 
+            void begin();
+            void commit();
+            void rollback();
+
+
 
          private:
 

@@ -99,7 +99,37 @@ namespace casual
 
             while( true)
             {
-               handler.dispatch( blockedRead.next());
+               {
+                  auto persistent = sql::database::scoped::write( m_state.queuebase);
+
+
+                  handler.dispatch( blockedRead.next());
+
+                  //
+                  // Consume until the queue is empty or we've got pending replies equal to transaction_batch
+                  //
+
+                  group::queue::non_blocking::Reader nonBlocking( common::ipc::receive::queue(), m_state);
+
+                  while( handler.dispatch( nonBlocking.next()) &&
+                        m_state.persistent.size() < common::platform::transaction_batch)
+                  {
+                     ;
+                  }
+               }
+
+               //
+               // queuebase is persistent - send pending persistent replies
+               //
+               group::queue::non_blocking::Send send{ m_state};
+
+               auto remain = common::range::remove_if(
+                  m_state.persistent,
+                  common::message::pending::sender( send));
+
+               m_state.persistent.erase( remain.last, std::end( m_state.persistent));
+
+
             }
 
          }
