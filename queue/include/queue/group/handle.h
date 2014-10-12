@@ -49,12 +49,18 @@ namespace casual
                using Reader = common::queue::blocking::basic_reader< Policy>;
                using Writer = common::queue::blocking::basic_writer< Policy>;
 
+
+
+
+
             } // blocking
 
             namespace non_blocking
             {
                using Reader = common::queue::non_blocking::basic_reader< Policy>;
                using Writer = common::queue::non_blocking::basic_writer< Policy>;
+
+               using Send = common::queue::non_blocking::basic_send< Policy>;
 
             } // non_blocking
          } // queue

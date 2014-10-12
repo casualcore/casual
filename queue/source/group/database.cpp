@@ -459,6 +459,10 @@ namespace casual
             return m_connection.affected();
          }
 
+         void Database::begin() { m_connection.begin();}
+         void Database::commit() { m_connection.commit();}
+         void Database::rollback() { m_connection.rollback();}
+
       } // server
    } // queue
 

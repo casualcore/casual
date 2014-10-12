@@ -364,6 +364,41 @@ namespace sql
          std::shared_ptr< sqlite3> m_handle;
       };
 
+      namespace scoped
+      {
+         template< typename C>
+         struct basic_write
+         {
+            using connection_type = C;
+
+            basic_write( connection_type& connection) : m_connection( connection)
+            {
+               m_connection.begin();
+            }
+
+            ~basic_write()
+            {
+               m_connection.commit();
+
+               // TODO: rollback if there is exception in flight?
+            }
+
+
+            connection_type& m_connection;
+         };
+
+         using Write = basic_write< Connection>;
+
+         template< typename C>
+         basic_write< C> write( C& connection)
+         {
+            return basic_write< C>( connection);
+         }
+
+
+
+      } // scoped
+
    } // database
 } // sql
 
