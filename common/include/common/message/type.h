@@ -23,6 +23,9 @@ namespace casual
          enum Type
          {
 
+            UTILITY_BASE = 500,
+            cTerminate,
+
             // Server
             SERVER_BASE = 1000, // message type can't be 0!
             cServerConnectRequest,
@@ -115,6 +118,12 @@ namespace casual
          }
 
 
+         //!
+         //! Message to "force" exit/termination.
+         //! useful in unittest, to force exit on blocking read
+         //!
+         using Terminate = basic_message< cTerminate>;
+
 
          //
          // Below, some basic message related types that is used by others
@@ -205,6 +214,9 @@ namespace casual
                {
                   return out << "{pid: " << value.pid << " queue: " << value.queue_id << "}";
                }
+
+               friend bool operator == ( const Id& lhs, const Id& rhs) { return lhs.pid == rhs.pid && lhs.queue_id == rhs.queue_id;}
+
 
             };
 

@@ -39,19 +39,22 @@ namespace casual
                      //
                      // Try to send it first with no blocking.
                      //
+
+                     queue::non_blocking::Send send{ state};
+
                      auto busy = common::range::partition( groups, [&]( group_type& g)
                            {
-                              queue::non_blocking::Writer send{ g.id.queue_id, state};
-                              return ! send( message);
+                              return ! send( g.queue_id, message);
                            });
 
                      //
                      // Block for the busy ones, if any
                      //
+                     queue::blocking::Send blocking_send{ state};
+
                      for( auto&& group : busy)
                      {
-                        queue::blocking::Writer send{ group.id.queue_id, state};
-                        send( message);
+                        blocking_send( group.queue_id, message);
                      }
 
                   }
@@ -136,8 +139,7 @@ namespace casual
                   //
                   // Check if we got the involvement of the group already.
                   //
-                  auto found = common::range::find_if( involved,
-                        [&]( const State::Group& g){ return g.id.pid == message.server.pid;});
+                  auto found = common::range::find( involved, message.server);
 
                   if( ! found)
                   {
@@ -159,6 +161,7 @@ namespace casual
                      common::message::transaction::resource::commit::Reply reply;
                      reply.state = XAER_RMFAIL;
                      reply.xid = message.xid;
+                     reply.resource = message.resource;
                      reply.id = common::message::server::Id::current();
                      queue::blocking::Writer send{ message.id.queue_id, state};
                      send( message);
@@ -171,7 +174,7 @@ namespace casual
                         //
                         // There are involved groups, send commit request to them...
                         //
-                        message_type request( message);
+                        auto request = message;
                         request.id = common::message::server::Id::current();
                         local::send( state, found->second, request);
 

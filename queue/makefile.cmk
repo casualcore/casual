@@ -72,7 +72,7 @@ install_bin.append( queue_group);
 
 broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
    [
-     Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
+     
      Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
     
    ])
@@ -80,6 +80,7 @@ broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
 
 queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
     [
+      Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
       Compile( 'source/broker/main.cpp', 'obj/broker/main.o'),
       Compile( 'source/broker/admin/server.cpp', 'obj/broker/admin/server.o'),
     ], 
@@ -145,13 +146,19 @@ test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue',
     [
      Compile( 'unittest/isolated/source/test_group_database.cpp', 'obj/unittest/test_group_database.o'),
      Compile( 'unittest/isolated/source/test_transform.cpp', 'obj/unittest/test_transform.o'),
+     Compile( 'unittest/isolated/source/test_broker_handle.cpp', 'obj/unittest/isolated/source/test_broker_handle.o'),
     ],
     [
      group_archive,
+     broker_archive,
      common,
+     'casual-mockup',
+     'casual-mockup-unittest-environment',
      'casual-common',
      'casual-sf',
+     'casual-configuration',
      'sqlite3',
+     'casual-xatmi'
      ]  
 );
 
@@ -160,10 +167,6 @@ test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue',
 # Make sure the executables is linked before unittest
 #
 Dependencies( test_casual_queue, [ queue_broker, queue_group])
-
-
-
-
 
 
 

@@ -71,6 +71,14 @@ namespace casual
             }
 
 
+            struct Terminate
+            {
+               using message_type = message::Terminate;
+
+               void dispatch( message_type& message);
+            };
+
+
          } // handle
 
 

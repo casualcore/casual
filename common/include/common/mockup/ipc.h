@@ -70,9 +70,12 @@ namespace casual
                Instance( Instance&&) noexcept;
                Instance& operator = ( Instance&&) noexcept;
 
-               platform::pid_type pid();
+               platform::pid_type pid() const;
 
-               id_type id();
+               id_type id() const;
+
+               common::message::server::Id server() const;
+
                common::ipc::receive::Queue& receive();
 
                //!

@@ -50,12 +50,16 @@ namespace casual
                using Reader = common::queue::blocking::remove::basic_reader< State>;
                using Writer = common::queue::blocking::remove::basic_writer< State>;
 
+               using Send = common::queue::blocking::remove::basic_send< State>;
+
             } // blocking
 
             namespace non_blocking
             {
                using Reader = common::queue::non_blocking::remove::basic_reader< State>;
                using Writer = common::queue::non_blocking::remove::basic_writer< State>;
+
+               using Send = common::queue::non_blocking::remove::basic_send< State>;
 
             } // non_blocking
          } // queue

@@ -121,9 +121,7 @@ namespace casual
                      return false;
                   }
 
-                  doDispatch( binary.front());
-
-                  return true;
+                  return doDispatch( binary.front());
                }
 
                typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
