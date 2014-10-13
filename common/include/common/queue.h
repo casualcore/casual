@@ -388,10 +388,14 @@ namespace casual
             template< typename P>
             using basic_send = internal::basic_send< policy::Blocking, P>;
 
+            //! @deprecated
             template< typename P>
             using basic_writer = internal::basic_writer< policy::Blocking, P>;
 
-            typedef basic_writer< policy::NoAction> Writer;
+            //! @deprecated
+            using Writer = basic_writer< policy::NoAction>;
+
+            using Send = basic_send< policy::NoAction>;
 
 
             template< typename P>
@@ -409,6 +413,7 @@ namespace casual
                template< typename S>
                using basic_send = basic_send< policy::RemoveOnTerminate< S>>;
 
+               //! @deprecated
                template< typename S>
                using basic_writer = basic_writer< policy::RemoveOnTerminate< S>>;
 

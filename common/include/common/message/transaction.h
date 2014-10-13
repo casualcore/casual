@@ -216,6 +216,7 @@ namespace casual
                   void marshal( A& archive)
                   {
                      base_type::marshal( archive);
+                     archive & resource;
                      archive & flags;
                   }
 

@@ -37,7 +37,7 @@ namespace casual
                using id_type = common::message::server::Id;
 
                Group() = default;
-               Group( id_type id) : id( std::move( id)) {}
+               Group( std::string name, id_type id) : name( std::move( name)), id( std::move( id)) {}
 
                std::string name;
                id_type id;
@@ -48,7 +48,7 @@ namespace casual
 
             std::unordered_map< std::string, common::message::queue::lookup::Reply> queues;
 
-            std::map< common::transaction::ID, std::vector< Group>> involved;
+            std::map< common::transaction::ID, std::vector< Group::id_type>> involved;
 
             std::vector< common::platform::pid_type> processes() const;
 
@@ -59,7 +59,7 @@ namespace casual
             {
                using id_type = common::message::server::Id;
 
-               Correlation( id_type caller, std::vector< Group> groups)
+               Correlation( id_type caller, std::vector< Group::id_type> groups)
                   : caller( std::move( caller))
                {
                   std::move( std::begin( groups), std::end( groups), std::back_inserter( requests));
@@ -76,9 +76,9 @@ namespace casual
                struct Request
                {
                   Request() = default;
-                  Request( Group group) : group( std::move( group)) {}
+                  Request( Group::id_type group) : group( std::move( group)) {}
 
-                  Group group;
+                  Group::id_type group;
                   State state = State::pending;
                };
 
@@ -104,7 +104,7 @@ namespace casual
 
                void state( const id_type& id, State state)
                {
-                  auto found = common::range::find_if( requests, [&]( const Request& r){ return r.group.id.pid == id.pid;});
+                  auto found = common::range::find_if( requests, [&]( const Request& r){ return r.group.pid == id.pid;});
 
                   if( found)
                   {

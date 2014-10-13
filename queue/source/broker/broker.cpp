@@ -183,7 +183,7 @@ namespace casual
                {
                   for( auto& reqeust : corr.second.requests)
                   {
-                     if( reqeust.group.id.pid == pid && reqeust.state <= Correlation::State::pending)
+                     if( reqeust.group.pid == pid && reqeust.state <= Correlation::State::pending)
                      {
                         reqeust.state = Correlation::State::error;
                      }

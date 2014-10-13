@@ -288,14 +288,20 @@ namespace casual
             Instance::Instance( Instance&&) noexcept = default;
             Instance& Instance::operator = ( Instance&&) noexcept = default;
 
-            platform::pid_type Instance::pid()
+            platform::pid_type Instance::pid() const
             {
                return m_implementation->pid;
             }
 
-            id_type Instance::id()
+            id_type Instance::id() const
             {
                return m_implementation->router.id();
+            }
+
+            common::message::server::Id Instance::server() const
+            {
+               return { id(), pid()};
+
             }
 
             common::ipc::receive::Queue& Instance::receive()

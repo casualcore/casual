@@ -125,6 +125,7 @@ namespace casual
                handle::domain::resource::reply::Commit{ m_state},
                handle::domain::resource::reply::Rollback{ m_state},
                common::callee::handle::basic_admin_call< State>{ admin::Server::services( *this), m_state},
+               common::message::handle::ping( m_state),
 
                //
                // We discard the connect reply message
