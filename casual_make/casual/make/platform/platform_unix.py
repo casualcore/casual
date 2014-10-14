@@ -44,6 +44,9 @@ class CommonUNIX( Platform):
     def bind_name(self, baseFilename):
         return baseFilename + '.bnd'
     
+    def default_object_name(self, sourcefile):
+        return 'obj/' + os.path.splitext( sourcefile)[0] + '.o'
+    
     
     def header_dependency(self, sourcefile, objectfiles, dependencyfile):
         return '@$(HEADER_DEPENDENCY_COMMAND) -MT ' + ' -MT '.join( objectfiles) + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) ' + sourcefile + ' -MF ' +  dependencyfile 

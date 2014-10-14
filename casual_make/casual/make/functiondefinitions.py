@@ -114,7 +114,7 @@ def Environment( name, value = '', export = True):
     
     
 
-def Compile( sourcefile, objectfile, directive = ''):
+def Compile( sourcefile, objectfile = None, directive = ''):
     """
  Compiles a source file to an object file, with excplicit directives
 
@@ -123,6 +123,10 @@ def Compile( sourcefile, objectfile, directive = ''):
  :param directive:   optional compile directive for this TU, default ''
  :return: the target (which contains 
     """
+
+    if not objectfile:
+        objectfile = internal_platform().default_object_name( sourcefile)
+        
 
     target = Target( internal_normalize_path( objectfile), objectfile, 'target_' + internal_normalize_string( objectfile))
     target.source = internal_normalize_path( sourcefile);
