@@ -35,8 +35,8 @@ install_bin = []
 
 common = LinkLibrary( 'bin/casual-queue-common',
    [
-    Compile( 'source/environment.cpp', 'obj/environment.o'),
-    Compile( 'source/transform.cpp', 'obj/transform.o'),
+    Compile( 'source/environment.cpp'),
+    Compile( 'source/transform.cpp'),
    ],
    [ 'casual-common', ]);
  
@@ -48,14 +48,14 @@ install_lib.append( common);
 
 group_archive = LinkArchive( 'bin/casual-queue-group-archive',
     [
-   Compile( 'source/group/group.cpp', 'obj/group/group.o'),
-   Compile( 'source/group/database.cpp', 'obj/group/database.o'),
-   Compile( 'source/group/handle.cpp', 'obj/group/handle.o')
+   Compile( 'source/group/group.cpp'),
+   Compile( 'source/group/database.cpp'),
+   Compile( 'source/group/handle.cpp')
 ])
 
 
 queue_group = LinkExecutable( 'bin/casual-queue-group', 
-    [Compile( 'source/group/main.cpp', 'obj/group/main.o')], 
+    [Compile( 'source/group/main.cpp')], 
     [
      group_archive,
      common,
@@ -72,19 +72,24 @@ install_bin.append( queue_group);
 
 broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
    [
-     
-     Compile( 'source/broker/handle.cpp', 'obj/broker/handle.o'),
-    
+     Compile( 'source/broker/handle.cpp'),
+     Compile( 'source/broker/broker.cpp'),
+     Compile( 'source/broker/admin/server.cpp'),
    ])
 
 
 queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
     [
-      Compile( 'source/broker/broker.cpp', 'obj/broker/broker.o'),
-      Compile( 'source/broker/main.cpp', 'obj/broker/main.o'),
-      Compile( 'source/broker/admin/server.cpp', 'obj/broker/admin/server.o'),
+      Compile( 'source/broker/main.cpp'),
     ], 
-    [ broker_archive, common, 'casual-common', 'casual-configuration', 'casual-sf', 'casual-xatmi']);
+    [ 
+     broker_archive,
+     common,
+     'casual-common', 
+     'casual-configuration', 
+     'casual-sf', 
+     'casual-xatmi',
+     ]);
 
 
 install_bin.append( queue_broker);
@@ -94,7 +99,7 @@ install_bin.append( queue_broker);
 #  
 rm = LinkLibrary( 'bin/casual-queue-rm',
     [
-     Compile( 'source/rm/switch.cpp', 'obj/rm/switch.o'),
+     Compile( 'source/rm/switch.cpp'),
     ],       
      [ common,
       'casual-common',
@@ -109,9 +114,14 @@ install_lib.append( rm);
 
 queue_api = LinkLibrary( 'bin/casual-queue', 
    [
-       Compile( 'source/queue.cpp', 'obj/queue.o')
+       Compile( 'source/queue.cpp')
    ],
-   [ common, rm, 'casual-common', 'casual-xatmi'])
+   [ 
+    common, 
+    rm, 
+    'casual-common', 
+    'casual-xatmi'
+    ])
 
 install_lib.append( queue_api);
 
@@ -121,7 +131,7 @@ install_lib.append( queue_api);
 #
 queue_client = LinkExecutable( 'bin/casual-queue-admin', 
     [
-        Compile( 'source/broker/admin/client.cpp', 'obj/broker/admin/client.o'),
+        Compile( 'source/broker/admin/client.cpp'),
      ], 
    [common, queue_api, 'casual-common', 'casual-sf'])
 
@@ -144,9 +154,9 @@ install_bin.append( resource_proxy);
 
 test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue', 
     [
-     Compile( 'unittest/isolated/source/test_group_database.cpp', 'obj/unittest/test_group_database.o'),
-     Compile( 'unittest/isolated/source/test_transform.cpp', 'obj/unittest/test_transform.o'),
-     Compile( 'unittest/isolated/source/test_broker_handle.cpp', 'obj/unittest/isolated/source/test_broker_handle.o'),
+     Compile( 'unittest/isolated/source/test_group_database.cpp'),
+     Compile( 'unittest/isolated/source/test_transform.cpp'),
+     Compile( 'unittest/isolated/source/test_broker_handle.cpp'),
     ],
     [
      group_archive,
