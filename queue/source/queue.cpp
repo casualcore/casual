@@ -106,7 +106,7 @@ namespace casual
                   casual::common::queue::blocking::Writer send( queue::environment::broker::queue::id());
 
                   common::message::queue::lookup::Request request;
-                  request.server = common::message::server::Id::current();
+                  request.process = common::process::handle();
                   request.name = queue;
 
                   send( request);
@@ -128,9 +128,9 @@ namespace casual
             {
                struct AX_reg
                {
-                  AX_reg( common::transaction::ID& xid) : m_id( xid)
+                  AX_reg( common::transaction::ID& trid) : m_id( trid)
                   {
-                     ax_reg( queue::rm::id(), &m_id.xid(), TMNOFLAGS);
+                     ax_reg( queue::rm::id(), &m_id.xid, TMNOFLAGS);
                   }
 
                   ~AX_reg()
@@ -158,9 +158,9 @@ namespace casual
          local::Lookup lookup( queue);
 
          common::message::queue::enqueue::Request request;
-         local::scoped::AX_reg ax_reg( request.xid.xid);
+         local::scoped::AX_reg ax_reg( request.trid);
 
-         request.server = common::message::server::Id::current();
+         request.process = common::process::handle();
 
          request.message.payload = message.payload.data;
          request.message.type = message.payload.type;
@@ -176,10 +176,10 @@ namespace casual
             throw common::exception::invalid::Argument{ "failed to look up queue: " + queue};
          }
 
-         common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.server << std::endl;
+         common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
 
 
-         casual::common::queue::blocking::Writer send( group.server.queue_id);
+         casual::common::queue::blocking::Writer send( group.process.queue);
          request.queue = group.queue;
 
          send( request);
@@ -197,17 +197,17 @@ namespace casual
          local::Lookup lookup( queue);
 
          common::message::queue::dequeue::Request request;
-         local::scoped::AX_reg ax_reg( request.xid.xid);
+         local::scoped::AX_reg ax_reg( request.trid);
 
          {
 
-            request.server = common::message::server::Id::current();
+            request.process = common::process::handle();
 
             auto group = lookup();
-            casual::common::queue::blocking::Writer send( group.server.queue_id);
+            casual::common::queue::blocking::Writer send( group.process.queue);
             request.queue = group.queue;
 
-            common::log::internal::queue << "dequeues - queue: " << queue << " group: " << group.queue << " process: " << group.server << std::endl;
+            common::log::internal::queue << "dequeues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
 
             send( request);
          }
@@ -259,7 +259,7 @@ namespace casual
                casual::common::queue::blocking::Writer send( queue::environment::broker::queue::id());
 
                common::message::queue::information::queue::Request request;
-               request.server = common::message::server::Id::current();
+               request.process = common::process::handle();
                request.qname = queue;
 
                send( request);

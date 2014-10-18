@@ -298,9 +298,9 @@ namespace casual
                return m_implementation->router.id();
             }
 
-            common::message::server::Id Instance::server() const
+            common::process::Handle Instance::server() const
             {
-               return { id(), pid()};
+               return { pid(), id()};
 
             }
 

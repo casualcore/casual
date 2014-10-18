@@ -12,6 +12,7 @@
 
 #include "common/ipc.h"
 #include "common/uuid.h"
+#include "common/algorithm.h"
 
 
 
@@ -133,6 +134,13 @@ namespace casual
                      first,
                      last,
                      std::begin( m_buffer) + oldSize);
+               }
+
+               template< typename C>
+               void append( C&& range)
+               {
+                  const auto offset = expand( range.size());
+                  range::copy( std::forward< C>( range), std::begin( m_buffer) + offset);
                }
 
             private:

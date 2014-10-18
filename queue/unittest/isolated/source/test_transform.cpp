@@ -25,12 +25,12 @@ namespace casual
 
             {
                broker::State::Group group;
-               group.id.pid = 1;
-               group.id.queue_id = 1;
+               group.process.pid = 1;
+               group.process.queue = 1;
                group.name = "group1";
 
 
-               common::message::queue::lookup::Reply reply{ group.id, 3};
+               common::message::queue::lookup::Reply reply{ group.process, 3};
 
                result.queues.emplace( "q11", reply);
                result.queues.emplace( "q12", reply);
@@ -42,11 +42,11 @@ namespace casual
 
             {
                broker::State::Group group;
-               group.id.pid = 2;
-               group.id.queue_id = 2;
+               group.process.pid = 2;
+               group.process.queue = 2;
                group.name = "group2";
 
-               common::message::queue::lookup::Reply reply{ group.id, 2};
+               common::message::queue::lookup::Reply reply{ group.process, 2};
 
                result.queues.emplace( "q21", reply);
                result.queues.emplace( "q22", reply);

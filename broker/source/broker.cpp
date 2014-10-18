@@ -65,7 +65,7 @@ namespace casual
 
                         common::queue::blocking::Writer send( id);
                         common::message::server::ping::Request request;
-                        request.server = common::message::server::Id::current();
+                        request.process = common::process::handle();
                         send( request);
 
 

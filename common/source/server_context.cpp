@@ -99,7 +99,7 @@ namespace casual
 
                message::service::Advertise message;
 
-               message.server.queue_id = ipc::receive::id();
+               message.process = process::handle();
                message.serverPath = process::path();
                message.services.emplace_back( prospect.name);
 
@@ -121,7 +121,7 @@ namespace casual
             }
 
             message::service::Unadvertise message;
-            message.server.queue_id = ipc::receive::id();
+            message.process = process::handle();
             message.services.push_back( message::Service( name));
 
             queue::blocking::Writer writer( ipc::broker::id());
@@ -157,7 +157,7 @@ namespace casual
                   //
                   // Let the broker know about us, and our services...
                   //
-                  message.server = message::server::Id::current();
+                  message.process = process::handle();
                   message.path = common::process::path();
                   blocking_broker_writer brokerWriter;
                   brokerWriter( message);
@@ -181,7 +181,7 @@ namespace casual
                void Default::ack( const message::service::callee::Call& message)
                {
                   message::service::ACK ack;
-                  ack.server.queue_id = ipc::receive::id();
+                  ack.process = process::handle();
                   ack.service = message.service.name;
                   blocking_broker_writer brokerWriter;
                   brokerWriter( ack);
@@ -193,6 +193,7 @@ namespace casual
                   // TODO: we shall get rid of disconnect messages, and rely on terminate-signal
 
                   message::server::Disconnect message;
+                  message.process = process::handle();
                   //
                   // we can't block here...
                   //
@@ -214,26 +215,22 @@ namespace casual
                   {
                      case server::Service::cAuto:
                      {
-                        transaction::Context::instance().joinOrStart( message.transaction);
+                        transaction::Context::instance().joinOrStart( message.trid);
 
                         break;
                      }
                      case server::Service::cJoin:
                      {
-                        if( message.transaction.xid)
+                        if( message.trid)
                         {
-                           transaction::Context::instance().joinOrStart( message.transaction);
+                           transaction::Context::instance().joinOrStart( message.trid);
                         }
 
                         break;
                      }
                      case server::Service::cAtomic:
                      {
-
-                        message::Transaction newTransaction;
-                        newTransaction.creator = process::id();
-
-                        transaction::Context::instance().joinOrStart( newTransaction);
+                        transaction::Context::instance().joinOrStart( common::transaction::ID::create());
                         break;
                      }
                      default:

@@ -38,7 +38,7 @@ namespace casual
 
          struct Row
          {
-            common::transaction::ID xid;
+            common::transaction::ID trid;
             common::platform::pid_type pid = 0;
             common::platform::time_type started;
             common::platform::time_type updated;

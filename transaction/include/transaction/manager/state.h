@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef MANAGER_STATE_H_
-#define MANAGER_STATE_H_
+#ifndef CASUAL_TRANSACTION_MANAGER_STATE_H_
+#define CASUAL_TRANSACTION_MANAGER_STATE_H_
 
 #include "common/platform.h"
 #include "common/message/transaction.h"
@@ -50,7 +50,7 @@ namespace casual
                   };
 
                   id_type id;
-                  common::message::server::Id server;
+                  common::process::Handle server;
                   State state = State::absent;
 
                };
@@ -284,18 +284,14 @@ namespace casual
          };
 
 
-         typedef common::message::server::Id id_type;
-
-
          Transaction() = default;
          Transaction( Transaction&&) = default;
          Transaction& operator = ( Transaction&&) = default;
 
-         Transaction( id_type owner, common::transaction::ID xid) : owner( owner), xid( xid) {}
+         Transaction( common::transaction::ID trid) : trid( std::move( trid)) {}
 
 
-         id_type owner;
-         common::transaction::ID xid;
+         common::transaction::ID trid;
          std::vector< Resource> resources;
 
          Resource::State state() const
@@ -317,7 +313,7 @@ namespace casual
 
          friend std::ostream& operator << ( std::ostream& out, const Transaction& value)
          {
-            return out << "{xid: " << value.xid << " owner: " << value.owner << " resources: " << common::range::make( value.resources) << "}";
+            return out << "{trid: " << value.trid << " resources: " << common::range::make( value.resources) << "}";
          }
       };
 
@@ -328,10 +324,10 @@ namespace casual
       {
          struct Transaction
          {
-            Transaction( const common::transaction::ID& xid) : m_xid( xid) {}
+            Transaction( const common::transaction::ID& trid) : m_trid( trid) {}
             bool operator () ( const transaction::Transaction& value) const
             {
-               return value.xid == m_xid;
+               return value.trid == m_trid;
             }
 
             struct Resource
@@ -348,7 +344,7 @@ namespace casual
             };
 
          private:
-            const common::transaction::ID& m_xid;
+            const common::transaction::ID& m_trid;
          };
 
       } // find
@@ -489,7 +485,7 @@ namespace casual
 
                return common::range::find_if(
                      resourceRange->instances,
-                     filter::Instance{ message.id.pid});
+                     filter::Instance{ message.process.pid});
             }
 
             namespace idle

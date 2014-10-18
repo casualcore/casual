@@ -52,16 +52,16 @@ namespace casual
                {
                   using Message = base_message;
 
-                  server::Id server;
-                  Transaction xid;
+                  process::Handle process;
+                  common::transaction::ID trid;
                   std::size_t queue;
 
                   Message message;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & server;
-                     archive & xid;
+                     archive & process;
+                     archive & trid;
                      archive & queue;
                      archive & message;
                   })
@@ -72,14 +72,14 @@ namespace casual
             {
                struct Request : basic_message< Type::cQueueDequeueRequest>
                {
-                  server::Id server;
-                  Transaction xid;
+                  process::Handle process;
+                  common::transaction::ID trid;
                   std::size_t queue;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & server;
-                     archive & xid;
+                     archive & process;
+                     archive & trid;
                      archive & queue;
                   })
                };
@@ -166,12 +166,12 @@ namespace casual
                struct basic_information : basic_message< type>
                {
 
-                  server::Id server;
+                  process::Handle process;
                   std::vector< Queue> queues;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & server;
+                     archive & process;
                      archive & queues;
                   })
 
@@ -244,12 +244,12 @@ namespace casual
             {
                struct Request : basic_message< Type::cQueueLookupRequest>
                {
-                  server::Id server;
+                  process::Handle process;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & server;
+                     archive & process;
                      archive & name;
                   })
                };
@@ -257,13 +257,13 @@ namespace casual
                struct Reply : basic_message< Type::cQueueLookupReply>
                {
                   Reply() = default;
-                  Reply( server::Id id, std::size_t queue) : server( id), queue( queue) {}
+                  Reply( process::Handle process, std::size_t queue) : process( process), queue( queue) {}
 
-                  server::Id server;
+                  process::Handle process;
                   std::size_t queue = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
-                     archive & server;
+                     archive & process;
                      archive & queue;
                   })
                };
@@ -274,11 +274,11 @@ namespace casual
             {
                struct Request : basic_message< Type::cQueueConnectRequest>
                {
-                  server::Id server;
+                  process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & server;
+                     archive & process;
                   })
                };
 
@@ -298,12 +298,12 @@ namespace casual
             {
                struct Involved : basic_message< Type::cQueueGroupInvolved>
                {
-                  server::Id server;
-                  Transaction xid;
+                  process::Handle process;
+                  common::transaction::ID trid;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
-                     archive & server;
-                     archive & xid;
+                     archive & process;
+                     archive & trid;
                   })
 
                };

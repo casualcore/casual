@@ -13,7 +13,7 @@
 #include "common/exception.h"
 #include "common/chronology.h"
 #include "common/server_context.h"
-#include "common/transaction_context.h"
+#include "common/transaction/context.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 
@@ -65,7 +65,7 @@ namespace casual
                      m_output << chronology::local()
                         << '|' << environment::domain::name()
                         << '|' << calling::Context::instance().callId().string()
-                        << '|' << transaction::Context::instance().currentTransaction().xid
+                        << '|' << transaction::Context::instance().currentTransaction().trid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename

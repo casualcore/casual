@@ -172,7 +172,7 @@ namespace casual
 
       state::Server::Instance& State::add( state::Server::Instance instance)
       {
-         return instances.emplace( instance.pid, std::move( instance)).first->second;
+         return instances.emplace( instance.process.pid, std::move( instance)).first->second;
       }
 
 
@@ -219,7 +219,7 @@ namespace casual
             for( auto&& pid : pids)
             {
                state::Server::Instance instance;
-               instance.pid = pid;
+               instance.process.pid = pid;
                instance.server = server.id;
                instance.alterState( state::Server::Instance::State::prospect);
 
@@ -360,7 +360,7 @@ namespace casual
             auto pid = common::process::spawn( server.path, server.arguments);
 
             state::Server::Instance instance;
-            instance.pid = pid;
+            instance.process.pid = pid;
             instance.server = server.id;
             instance.alterState( state::Server::Instance::State::prospect);
 
@@ -384,7 +384,7 @@ namespace casual
          for( auto& pid : range)
          {
             auto&& instance = this->instances.at( pid);
-            common::process::terminate( instance.pid);
+            common::process::terminate( instance.process.pid);
 
             instance.alterState( state::Server::Instance::State::shutdown);
          }

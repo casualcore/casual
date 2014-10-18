@@ -83,7 +83,7 @@ namespace casual
                message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
                message.callDescriptor = 10;
                message.service.name = "test_service";
-               message.reply.queue_id = id;
+               message.reply.queue = id;
 
                return message;
             }
@@ -165,8 +165,7 @@ namespace casual
          queue::blocking::Reader read( mockup::ipc::broker::queue().receive());
          read( message);
 
-         EXPECT_TRUE( message.server.pid == process::id());
-         EXPECT_TRUE( message.server.queue_id == ipc::receive::id());
+         EXPECT_TRUE( message.process == process::handle());
 
          ASSERT_TRUE( message.services.size() == 1);
          EXPECT_TRUE( message.services.at( 0).name == "test_service");
@@ -191,7 +190,7 @@ namespace casual
          message::server::Disconnect message;
          reader( message);
 
-         EXPECT_TRUE( message.server.pid == process::id());
+         EXPECT_TRUE( message.process.pid == process::id());
 
 
       }
@@ -250,7 +249,7 @@ namespace casual
 
          broker( message);
          EXPECT_TRUE( message.service == "test_service");
-         EXPECT_TRUE( message.server.queue_id == ipc::receive::id());
+         EXPECT_TRUE( message.process.queue == ipc::receive::id());
       }
 
 

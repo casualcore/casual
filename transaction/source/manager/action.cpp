@@ -39,7 +39,7 @@ namespace casual
                common::message::transaction::manager::Connect connect;
 
                connect.path = common::process::path();
-               connect.server.queue_id = common::ipc::receive::id();
+               connect.process = common::process::handle();
 
                queue::blocking::Writer broker( common::ipc::broker::id(), state);
                broker( connect);
@@ -125,7 +125,7 @@ namespace casual
 
                   if( found)
                   {
-                     queue::non_blocking::Writer write{ found->server.queue_id, m_state};
+                     queue::non_blocking::Writer write{ found->server.queue, m_state};
 
                      if( ! write.send( message.message))
                      {

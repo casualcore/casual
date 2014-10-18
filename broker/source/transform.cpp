@@ -281,21 +281,15 @@ namespace casual
             state::Server::Instance result;
 
             //result->path = message.path;
-            result.pid = message.server.pid;
-            result.queue_id = message.server.queue_id;
+            result.process = message.process;
 
             return result;
          }
 
 
-         common::message::server::Id Instance::operator () ( const state::Server::Instance& value) const
+         common::process::Handle Instance::operator () ( const state::Server::Instance& value) const
          {
-            casual::common::message::server::Id result;
-
-            result.pid = value.pid;
-            result.queue_id = value.queue_id;
-
-            return result;
+            return value.process;
          }
 
          namespace transaction

@@ -18,14 +18,6 @@ namespace casual
 
          namespace log
          {
-            namespace
-            {
-               namespace local
-               {
-                  const std::size_t indent = 3;
-
-               }
-            }
 
             Implementation::Implementation( std::ostream& out) : m_output( out)
             {

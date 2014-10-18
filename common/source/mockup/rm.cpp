@@ -6,7 +6,7 @@
 //!
 
 #include "common/mockup/rm.h"
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 #include "common/internal/log.h"
 
 #include "xa.h"

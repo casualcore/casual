@@ -91,7 +91,7 @@ namespace casual
                      State::Group queueGroup;
                      queueGroup.name = group.name;
 
-                     queueGroup.id.pid = casual::common::process::spawn(
+                     queueGroup.process.pid = casual::common::process::spawn(
                         casual::common::environment::directory::casual() + "/bin/casual-queue-group",
                         { "--queuebase", group.queuebase });
 
@@ -99,7 +99,7 @@ namespace casual
                      broker::queue::blocking::Reader read{ common::ipc::receive::queue(), m_state};
                      common::message::queue::connect::Request request;
                      read( request);
-                     queueGroup.id.queue_id = request.server.queue_id;
+                     queueGroup.process.queue = request.process.queue;
 
                      common::message::queue::connect::Reply reply;
                      reply.name = group.name;
@@ -107,7 +107,7 @@ namespace casual
                      common::range::transform( group.queues, reply.queues, transform::Queue{});
 
 
-                     broker::queue::blocking::Writer write{ request.server.queue_id, m_state};
+                     broker::queue::blocking::Writer write{ request.process.queue, m_state};
                      write( reply);
 
                      return queueGroup;
@@ -130,7 +130,7 @@ namespace casual
 
             for( auto& group : groups)
             {
-               result.push_back( group.id.pid);
+               result.push_back( group.process.pid);
             }
 
             return result;
@@ -140,7 +140,7 @@ namespace casual
          {
             {
                auto found = common::range::find_if( groups, [=]( const Group& g){
-                  return g.id.pid == pid;
+                  return g.process.pid == pid;
                });
 
                if( found)
@@ -159,7 +159,7 @@ namespace casual
             {
 
                auto predicate = [=]( decltype( *queues.begin())& value){
-                  return value.second.server.pid == pid;
+                  return value.second.process.pid == pid;
                };
 
                auto range = common::range::make( queues);
@@ -300,12 +300,12 @@ namespace casual
 
          for( auto&& group : range)
          {
-            common::log::internal::queue << "request to: " << group.id << std::endl;
+            common::log::internal::queue << "request to: " << group.process << std::endl;
 
-            broker::queue::blocking::Writer blockedWrite( group.id.queue_id, m_state);
+            broker::queue::blocking::Writer blockedWrite( group.process.queue, m_state);
 
             common::message::queue::information::queues::Request request;
-            request.server = common::message::server::Id::current();
+            request.process = common::process::handle();
 
             blockedWrite( request);
 
@@ -322,7 +322,7 @@ namespace casual
             blockedRead( reply);
 
             auto found = common::range::find_if( result,
-                  common::compare::equal_to( std::mem_fn( &broker::Queues::groupId), common::bind::value( reply.server.pid)));
+                  common::compare::equal_to( std::mem_fn( &broker::Queues::groupId), common::bind::value( reply.process.pid)));
 
             if( found)
             {

@@ -19,7 +19,7 @@
 #include "common/exception.h"
 #include "common/signal.h"
 
-#include "common/transaction_context.h"
+#include "common/transaction/context.h"
 
 #include "xatmi.h"
 
@@ -227,7 +227,7 @@ namespace casual
                   {
                      message::service::name::lookup::Request serviceLookup;
                      serviceLookup.requested = service;
-                     serviceLookup.server.queue_id = ipc::receive::id();
+                     serviceLookup.process = process::handle();
 
                      queue::blocking::Writer broker( ipc::broker::id());
                      local::timeoutWrapper( broker, serviceLookup);
@@ -379,9 +379,8 @@ namespace casual
 
             message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
             message.callDescriptor = descriptor;
-            message.reply.queue_id = ipc::receive::id();
-            message.transaction.creator =  transaction::Context::instance().currentTransaction().owner;
-            message.transaction.xid = transaction::Context::instance().currentTransaction().xid;
+            message.reply = process::handle();
+            message.trid = transaction::Context::instance().currentTransaction().trid;
             message.callId = m_state.callId;
             message.callee = m_state.currentService;
 
@@ -409,7 +408,7 @@ namespace casual
 
             message.service = lookup.service;
 
-            queue::blocking::Writer callWriter( lookup.server.front().queue_id);
+            queue::blocking::Writer callWriter( lookup.server.front().queue);
 
             local::timeoutWrapper( callWriter, message, descriptor);
 

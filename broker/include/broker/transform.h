@@ -90,7 +90,7 @@ namespace casual
          {
             state::Server::Instance operator () ( const common::message::server::connect::Request& message) const;
 
-            common::message::server::Id operator () ( const state::Server::Instance& value) const;
+            common::process::Handle operator () ( const state::Server::Instance& value) const;
 
          };
 

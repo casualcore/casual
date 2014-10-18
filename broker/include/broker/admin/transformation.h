@@ -39,8 +39,8 @@ namespace casual
 
                   auto& value = m_state.getInstance( pid);
 
-                  result.pid = value.pid;
-                  result.queueId = value.queue_id;
+                  result.pid = value.process.pid;
+                  result.queueId = value.process.queue;
                   result.state = static_cast< long>( value.state);
                   result.invoked = value.invoked;
                   result.last = value.last;
@@ -65,7 +65,7 @@ namespace casual
             {
                state::Server::pid_type operator () ( const state::Server::Instance& value) const
                {
-                  return value.pid;
+                  return value.process.pid;
                }
             };
 

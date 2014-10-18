@@ -101,7 +101,7 @@ namespace casual
             // Send reqeust
             //
             common::message::queue::lookup::Request request;
-            request.server = requester.server();
+            request.process = requester.server();
             request.name = "queue1";
             send( broker.id(), request);
 
@@ -118,7 +118,7 @@ namespace casual
             read( reply);
 
             EXPECT_TRUE( reply.queue == 1);
-            EXPECT_TRUE( reply.server == state.group10.server());
+            EXPECT_TRUE( reply.process == state.group10.server());
 
          }
       }
@@ -137,7 +137,7 @@ namespace casual
             // Send reqeust
             //
             common::message::queue::lookup::Request request;
-            request.server = requester.server();
+            request.process = requester.server();
             request.name = "absent_qeueue";
             send( broker.id(), request);
 
@@ -154,7 +154,7 @@ namespace casual
             read( reply);
 
             EXPECT_TRUE( reply.queue == 0);
-            EXPECT_TRUE( reply.server == common::message::server::Id{});
+            EXPECT_TRUE( reply.process == common::process::Handle{}) << "reply.process: " << reply.process;
          }
       }
 
@@ -166,15 +166,15 @@ namespace casual
 
          common::queue::blocking::Send send;
 
-         auto xid = common::transaction::ID::create();
+         auto trid = common::transaction::ID::create();
 
          {
             //
             // Send reqeust
             //
             common::message::queue::group::Involved request;
-            request.server = state.group10.server();
-            request.xid.xid = xid;
+            request.process = state.group10.server();
+            request.trid = trid;
             send( broker.id(), request);
 
 
@@ -183,8 +183,8 @@ namespace casual
 
          test::handle( state);
 
-         ASSERT_TRUE( state.state.involved.at( xid).size() == 1);
-         EXPECT_TRUE( state.state.involved.at( xid).at( 0) == state.group10.server());
+         ASSERT_TRUE( state.state.involved.at( trid).size() == 1);
+         EXPECT_TRUE( state.state.involved.at( trid).at( 0) == state.group10.server());
       }
 
       TEST( casual_queue_broker, handle_group_involved__xid1_1_group__xid2_2_groups)
@@ -195,24 +195,24 @@ namespace casual
 
          common::queue::blocking::Send send;
 
-         auto xid1 = common::transaction::ID::create();
-         auto xid2 = common::transaction::ID::create();
+         auto trid1 = common::transaction::ID::create();
+         auto trid2 = common::transaction::ID::create();
 
          {
             //
-            // Send reqeust
+            // Send request
             //
             common::message::queue::group::Involved request;
-            request.server = state.group10.server();
-            request.xid.xid = xid1;
+            request.process = state.group10.server();
+            request.trid = trid1;
             send( broker.id(), request);
 
-            request.server = state.group20.server();
-            request.xid.xid = xid2;
+            request.process = state.group20.server();
+            request.trid = trid2;
             send( broker.id(), request);
 
-            request.server = state.group10.server();
-            request.xid.xid = xid2;
+            request.process = state.group10.server();
+            request.trid = trid2;
             send( broker.id(), request);
 
 
@@ -221,12 +221,12 @@ namespace casual
 
          test::handle( state);
 
-         ASSERT_TRUE( state.state.involved.at( xid1).size() == 1);
-         EXPECT_TRUE( state.state.involved.at( xid1).at( 0) == state.group10.server());
+         ASSERT_TRUE( state.state.involved.at( trid1).size() == 1);
+         EXPECT_TRUE( state.state.involved.at( trid1).at( 0) == state.group10.server());
 
-         ASSERT_TRUE( state.state.involved.at( xid2).size() == 2);
-         EXPECT_TRUE( state.state.involved.at( xid2).at( 0) == state.group20.server());
-         EXPECT_TRUE( state.state.involved.at( xid2).at( 1) == state.group10.server());
+         ASSERT_TRUE( state.state.involved.at( trid2).size() == 2);
+         EXPECT_TRUE( state.state.involved.at( trid2).at( 0) == state.group20.server());
+         EXPECT_TRUE( state.state.involved.at( trid2).at( 1) == state.group10.server());
       }
 
 
@@ -239,11 +239,11 @@ namespace casual
 
          common::queue::blocking::Send send;
 
-         auto xid = common::transaction::ID::create();
+         auto trid = common::transaction::ID::create();
 
          {
             // prep state
-            state.state.involved[ xid].push_back( state.group10.server());
+            state.state.involved[ trid].push_back( state.group10.server());
          }
 
          {
@@ -251,8 +251,8 @@ namespace casual
             // Send reqeust
             //
             common::message::transaction::resource::commit::Request request;
-            request.id = requester.server();
-            request.xid = xid;
+            request.process = requester.server();
+            request.trid = trid;
             request.resource = 42;
             request.flags = 10;
             send( broker.id(), request);
@@ -270,17 +270,17 @@ namespace casual
 
             read( request);
 
-            EXPECT_TRUE( request.id.queue_id == common::ipc::receive::id());
-            EXPECT_TRUE( request.xid == xid);
+            EXPECT_TRUE( request.process.queue == common::ipc::receive::id());
+            EXPECT_TRUE( request.trid == trid);
             EXPECT_TRUE( request.resource == 42) << "request.resource: " << request.resource;
             EXPECT_TRUE( request.flags == 10);
 
             // group10 should not be involved
-            EXPECT_TRUE( state.state.involved.count( xid) == 0);
+            EXPECT_TRUE( state.state.involved.count( trid) == 0);
             // Should be a waiting correlation for the xid
-            EXPECT_TRUE( state.state.correlation.at( xid).caller == requester.server());
-            EXPECT_TRUE( state.state.correlation.at( xid).requests.at( 0).group == state.group10.server());
-            EXPECT_TRUE( state.state.correlation.at( xid).requests.at( 0).state == broker::State::Correlation::State::pending);
+            EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.server());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).group == state.group10.server());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).state == broker::State::Correlation::State::pending);
          }
       }
 
@@ -293,12 +293,12 @@ namespace casual
 
          common::queue::blocking::Send send;
 
-         auto xid = common::transaction::ID::create();
+         auto trid = common::transaction::ID::create();
 
          {
             // prep state
-            state.state.involved[ xid].push_back( state.group10.server());
-            state.state.involved[ xid].push_back( state.group20.server());
+            state.state.involved[ trid].push_back( state.group10.server());
+            state.state.involved[ trid].push_back( state.group20.server());
          }
 
          {
@@ -306,8 +306,8 @@ namespace casual
             // Send reqeust
             //
             common::message::transaction::resource::commit::Request request;
-            request.id = requester.server();
-            request.xid = xid;
+            request.process = requester.server();
+            request.trid = trid;
             request.resource = 42;
             request.flags = 10;
             send( broker.id(), request);
@@ -326,17 +326,17 @@ namespace casual
 
             read( request);
 
-            EXPECT_TRUE( request.id.queue_id == common::ipc::receive::id());
-            EXPECT_TRUE( request.xid == xid);
+            EXPECT_TRUE( request.process.queue == common::ipc::receive::id());
+            EXPECT_TRUE( request.trid == trid);
             EXPECT_TRUE( request.resource == 42);
             EXPECT_TRUE( request.flags == 10);
 
             // group should not be involved
-            EXPECT_TRUE( state.state.involved.count( xid) == 0);
+            EXPECT_TRUE( state.state.involved.count( trid) == 0);
             // Should be a waiting correlation for the xid
-            EXPECT_TRUE( state.state.correlation.at( xid).caller == requester.server());
-            EXPECT_TRUE( state.state.correlation.at( xid).requests.at( index).group == group.server());
-            EXPECT_TRUE( state.state.correlation.at( xid).requests.at( index).state == broker::State::Correlation::State::pending);
+            EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.server());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).group == group.server());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).state == broker::State::Correlation::State::pending);
          };
 
          check( state.group10, 0);

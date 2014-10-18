@@ -25,20 +25,20 @@ namespace casual
                namespace persistent
                {
                   template< typename R, typename M>
-                  void reply( State& state, const M& request, int code, const common::message::server::Id& target)
+                  void reply( State& state, const M& request, int code, const common::process::Handle& target)
                   {
                      R message;
-                     message.id.queue_id = common::ipc::receive::id();
-                     message.xid = request.xid;
+                     message.process = common::process::handle();
+                     message.trid = request.trid;
                      message.state = code;
 
-                     state.persistentReplies.emplace_back( target.queue_id, std::move( message));
+                     state.persistentReplies.emplace_back( target.queue, std::move( message));
                   }
 
                   template< typename R, typename M>
                   void reply( State& state, const M& request, int code)
                   {
-                     reply< R>( state, request, code, request.id);
+                     reply< R>( state, request, code, request.process);
                   }
 
 
@@ -54,20 +54,20 @@ namespace casual
                   using state::Base::Base;
 
                   template< typename T>
-                  void operator () ( const T& request, int code, const common::message::server::Id& target)
+                  void operator () ( const T& request, int code, const common::process::Handle& target)
                   {
                      M message;
-                     message.id.queue_id = common::ipc::receive::id();
-                     message.xid = request.xid;
+                     message.process = common::process::handle();
+                     message.trid = request.trid;
                      message.state = code;
 
-                     state::pending::Reply reply{ target.queue_id, message};
+                     state::pending::Reply reply{ target.queue, message};
 
-                     Q queue{ target.queue_id, m_state};
+                     Q queue{ target.queue, m_state};
 
                      if( ! queue.send( reply.message))
                      {
-                        common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.xid << " - action: pend reply\n";
+                        common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
                         m_state.persistentReplies.push_back( std::move( reply));
                      }
                   }
@@ -75,7 +75,7 @@ namespace casual
                   template< typename T>
                   void operator () ( const T& request, int code)
                   {
-                     operator()( request, code, request.id);
+                     operator()( request, code, request.process);
                   }
 
                };
@@ -86,14 +86,14 @@ namespace casual
                   using state::Base::Base;
 
                   template< typename T>
-                  void operator () ( const T& request, int code, const common::message::server::Id& target)
+                  void operator () ( const T& request, int code, const common::process::Handle& target)
                   {
                      M message;
-                     message.id.queue_id = common::ipc::receive::id();
-                     message.xid = request.xid;
+                     message.process = common::process::handle();
+                     message.trid = request.trid;
                      message.state = code;
 
-                     Q queue{ target.queue_id, m_state};
+                     Q queue{ target.queue, m_state};
 
                      queue( message);
                   }
@@ -101,7 +101,7 @@ namespace casual
                   template< typename T>
                   void operator () ( const T& request, int code)
                   {
-                     operator()( request, code, request.id);
+                     operator()( request, code, request.process);
                   }
                };
 
@@ -115,8 +115,8 @@ namespace casual
                      void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
                      {
                         M message;
-                        message.id = common::message::server::Id::current();
-                        message.xid = transaction.xid;
+                        message.process = common::process::handle();
+                        message.trid = transaction.trid;
                         message.flags = flags;
 
                         state::pending::Request request{ message};
@@ -140,7 +140,7 @@ namespace casual
                   template< typename Q>
                   bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
                   {
-                     Q queue{ instance.server.queue_id, state};
+                     Q queue{ instance.server.queue, state};
 
                      if( queue.send( message))
                      {
@@ -159,9 +159,8 @@ namespace casual
                      void operator () ( Transaction& transaction, Transaction::Resource::State filter, Transaction::Resource::State newState, long flags = TMNOFLAGS)
                      {
                         M message;
-                        message.id.queue_id = common::ipc::receive::id();
-                        message.id.pid = common::process::id();
-                        message.xid = transaction.xid;
+                        message.process = common::process::handle();
+                        message.trid = transaction.trid;
                         message.flags = flags;
 
                         state::pending::Request request{ message};
@@ -225,7 +224,7 @@ namespace casual
                      //
                      // We got a pending request for this resource, let's oblige
                      //
-                     Q queue{ message.id.queue_id, state};
+                     Q queue{ message.process.queue, state};
 
                      if( queue.send( request->message))
                      {
@@ -242,7 +241,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::warning << "failed to send pending request to resource, although the instance (" << message.id <<  ") reported idle\n";
+                        common::log::warning << "failed to send pending request to resource, although the instance (" << message.process <<  ") reported idle\n";
 
                         instance::state( state, message, state::resource::Proxy::Instance::State::idle);
                      }
@@ -262,8 +261,8 @@ namespace casual
                {
                   R result;
 
-                  result.id = message.id;
-                  result.xid = message.xid;
+                  result.process = message.process;
+                  result.trid = message.trid;
 
                   return result;
                }
@@ -278,11 +277,11 @@ namespace casual
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
 
                auto transcation = common::range::find_if(
-                     common::range::make( m_state.transactions), find::Transaction( message.xid));
+                     common::range::make( m_state.transactions), find::Transaction( message.trid));
 
                if( ! transcation.empty())
                {
-                  common::log::internal::transaction << "involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << '\n';
+                  common::log::internal::transaction << "involved trid : " << message.trid << " resources: " << common::range::make( message.resources) << " process: " <<  message.process << '\n';
 
                   common::range::copy(
                      common::range::make( message.resources),
@@ -297,13 +296,12 @@ namespace casual
                   // own's the transaction.
                   // TODO: keep track of domain-id?
                   //
-                  // We indicate that this TM is owner of the transaction, for the time being...
                   //
                   // Note: We don't keep this transaction persistent.
                   //
-                  m_state.transactions.emplace_back( common::message::server::Id::current(), message.xid);
+                  m_state.transactions.emplace_back( message.trid);
 
-                  common::log::internal::transaction << "inter-domain involved xid : " << message.xid << " resources: " << common::range::make( message.resources) << " process: " <<  message.id << '\n';
+                  common::log::internal::transaction << "inter-domain involved trid : " << message.trid << " resources: " << common::range::make( message.resources) << " process: " <<  message.process << '\n';
                }
             }
 
@@ -323,7 +321,7 @@ namespace casual
                   // Find the transaction
                   //
                   auto found = common::range::find_if(
-                        common::range::make( m_state.transactions), find::Transaction{ message.xid});
+                        common::range::make( m_state.transactions), find::Transaction{ message.trid});
 
                   if( ! found.empty())
                   {
@@ -349,14 +347,14 @@ namespace casual
                      else
                      {
                         // TODO: what to do? We have previously sent a prepare request, why do we not find the resource?
-                        common::log::error << "failed to locate resource: " <<  message.resource  << " for xid: " << message.xid << " - action: discard?\n";
+                        common::log::error << "failed to locate resource: " <<  message.resource  << " for trid: " << message.trid << " - action: discard?\n";
                      }
 
                   }
                   else
                   {
-                     // TODO: what to do? We have previously sent a prepare request, why do we not find the xid?
-                     common::log::error << "failed to locate xid: " << message.xid << " - action: discard?\n";
+                     // TODO: what to do? We have previously sent a prepare request, why do we not find the trid?
+                     common::log::error << "failed to locate trid: " << message.trid << " - action: discard?\n";
                   }
                }
 
@@ -366,7 +364,7 @@ namespace casual
                {
                   common::trace::Scope trace{ "transaction::handle::resource::connect reply", common::log::internal::transaction};
 
-                  common::log::internal::transaction << "resource (id: " << message.resource << ") " <<  message.id << " connected" << std::endl;
+                  common::log::internal::transaction << "resource (id: " << message.resource << ") " <<  message.process << " connected" << std::endl;
 
                   auto instanceRange = state::find::instance(
                         common::range::make( m_state.resources),
@@ -377,12 +375,12 @@ namespace casual
                      if( message.state == XA_OK)
                      {
                         instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
-                        instanceRange.first->server = std::move( message.id);
+                        instanceRange.first->server = std::move( message.process);
 
                      }
                      else
                      {
-                        common::log::error << "resource proxy pid: " <<  message.id.pid << " startup error" << std::endl;
+                        common::log::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
                         instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
@@ -390,7 +388,7 @@ namespace casual
                   }
                   else
                   {
-                     common::log::error << "transaction manager - unexpected resource connecting - process: " << message.id << " - action: discard" << std::endl;
+                     common::log::error << "transaction manager - unexpected resource connecting - process: " << message.process << " - action: discard" << std::endl;
                   }
 
 
@@ -406,7 +404,7 @@ namespace casual
                      queue::blocking::Writer brokerQueue{ common::ipc::broker::id(), m_state};
 
                      common::message::transaction::manager::Ready running;
-                     running.id = common::message::server::Id::current();
+                     running.process = common::process::handle();
                      brokerQueue( running);
 
                      m_connected = true;
@@ -418,7 +416,7 @@ namespace casual
                {
                   common::trace::Scope trace{ "transaction::handle::resource::prepare reply", common::log::internal::transaction};
 
-                  common::log::internal::transaction << "prepare reply - from: " << message.id << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  common::log::internal::transaction << "prepare reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
                   resource.state = Transaction::Resource::State::cPrepareReplied;
                   resource.result = Transaction::Resource::convert( message.state);
@@ -448,7 +446,7 @@ namespace casual
                            // Read-only optimazation. We can send the reply directly and
                            // discard the transaction
                            //
-                           m_state.log.remove( transaction.xid);
+                           m_state.log.remove( transaction.trid);
 
                            //
                            // Send reply
@@ -457,7 +455,7 @@ namespace casual
                               queue::non_blocking::Writer,
                               reply_type> send{ m_state};
 
-                           send( message, XA_RDONLY, transaction.owner);
+                           send( message, XA_RDONLY, transaction.trid.owner());
 
                            //
                            // Indicate that wrapper should remove the transaction from state
@@ -471,12 +469,12 @@ namespace casual
                            //
                            // Prepare has gone ok. Log state
                            //
-                           m_state.log.prepareCommit( transaction.xid);
+                           m_state.log.prepareCommit( transaction.trid);
 
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.trid.owner());
 
                            //
                            // All XA_OK is to be committed, send commit to all
@@ -525,7 +523,7 @@ namespace casual
                {
                   common::trace::Scope trace{ "transaction::handle::resource::commit reply", common::log::internal::transaction};
 
-                  common::log::internal::transaction << "commit reply - from: " << message.id << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  common::log::internal::transaction << "commit reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
                   resource.state = Transaction::Resource::State::cCommitReplied;
 
@@ -563,12 +561,12 @@ namespace casual
 
                            send( message, XA_OK, transaction.owner);
                            */
-                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.trid.owner());
 
                            //
                            // Remove transaction
                            //
-                           m_state.log.remove( message.xid);
+                           m_state.log.remove( message.trid);
                            return true;
 
                            break;
@@ -583,7 +581,7 @@ namespace casual
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.trid.owner());
 
                            break;
                         }
@@ -596,7 +594,7 @@ namespace casual
                {
                   common::trace::Scope trace{ "transaction::handle::resource::rollback reply", common::log::internal::transaction};
 
-                  common::log::internal::transaction << "rollback reply - from: " << message.id << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  common::log::internal::transaction << "rollback reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
                   resource.state = Transaction::Resource::State::cRollbackReplied;
 
@@ -629,13 +627,13 @@ namespace casual
                               queue::non_blocking::Writer,
                               reply_type> sender{ m_state};
 
-                           sender( message, XA_OK, transaction.owner);
+                           sender( message, XA_OK, transaction.trid.owner());
 
 
                            //
                            // Remove transaction
                            //
-                           m_state.log.remove( message.xid);
+                           m_state.log.remove( message.trid);
                            return true;
 
                            break;
@@ -650,7 +648,7 @@ namespace casual
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.owner);
+                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.trid.owner());
 
                            break;
                         }
@@ -670,12 +668,12 @@ namespace casual
             common::trace::Scope trace{ "transaction::handle::Begin", common::log::internal::transaction};
             ;
 
-            if( message.xid.null())
+            if( ! message.trid)
             {
-               message.xid.generate();
+               message.trid = common::transaction::ID::create( message.process);
             }
 
-            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
             if( ! found)
             {
@@ -686,7 +684,7 @@ namespace casual
                {
                   m_state.log.begin( message);
 
-                  m_state.transactions.emplace_back( message.id, message.xid);
+                  m_state.transactions.emplace_back( message.trid);
                }
 
                //
@@ -696,7 +694,7 @@ namespace casual
             }
             else
             {
-               common::log::error << "XAER_DUPID Attempt to start a transaction " << message.xid << ", which is already in progress" << std::endl;
+               common::log::error << "XAER_DUPID Attempt to start a transaction " << message.trid << ", which is already in progress" << std::endl;
 
                //
                // Send reply
@@ -715,7 +713,7 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::handle::Commit", common::log::internal::transaction};
 
-            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
             if( found)
             {
@@ -736,7 +734,7 @@ namespace casual
                      //
                      // We can remove this transaction from the log.
                      //
-                     m_state.log.remove( transaction.xid);
+                     m_state.log.remove( transaction.trid);
 
                      //
                      // Send reply
@@ -785,7 +783,7 @@ namespace casual
             }
             else
             {
-               common::log::error << "XAER_NOTA Attempt to commit transaction " << message.xid << ", which is not known to TM - action: XAER_NOTA reply" << std::endl;
+               common::log::error << "XAER_NOTA Attempt to commit transaction " << message.trid << ", which is not known to TM - action: XAER_NOTA reply" << std::endl;
 
                //
                // Send reply
@@ -806,7 +804,7 @@ namespace casual
             //
             // Find the transaction
             //
-            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
+            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
             if( found)
             {
@@ -821,7 +819,7 @@ namespace casual
             }
             else
             {
-               common::log::error << "Attempt to rollback a transaction " << message.xid.stringGlobal() << ", which is not known to TM - action: error reply" << std::endl;
+               common::log::error << "Attempt to rollback a transaction " << message.trid << ", which is not known to TM - action: error reply" << std::endl;
 
                //
                // Send reply
@@ -846,12 +844,12 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
                if( found && ! found->resources.empty())
                {
                   auto& transaction = *found;
-                  common::log::internal::transaction << "prepare - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
+                  common::log::internal::transaction << "prepare - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
                      queue::non_blocking::Writer,
@@ -872,7 +870,7 @@ namespace casual
                   // so we just reply that it has been prepared with "read only"
                   //
 
-                  common::log::internal::transaction << "XA_RDONLY transaction (" << message.xid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
+                  common::log::internal::transaction << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
                   //
                   // Send reply
@@ -893,12 +891,12 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
                if( found)
                {
                   auto& transaction = *found;
-                  common::log::internal::transaction << "commit - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
+                  common::log::internal::transaction << "commit - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
                      queue::non_blocking::Writer,
@@ -910,7 +908,7 @@ namespace casual
                else
                {
 
-                  common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
+                  common::log::internal::transaction << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
 
                   //
                   // Send reply
@@ -930,12 +928,12 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.xid});
+               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
                if( found)
                {
                   auto& transaction = *found;
-                  common::log::internal::transaction << "rollback - xid:" << transaction.xid << " owner: " << transaction.owner << " resources: " << common::range::make( transaction.resources) << "\n";
+                  common::log::internal::transaction << "rollback - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   internal::send::resource::Requests<
                      queue::non_blocking::Writer,
@@ -947,7 +945,7 @@ namespace casual
                }
                else
                {
-                  common::log::internal::transaction << "XAER_NOTA xid: " << message.xid << " is not known to this TM - action: send XAER_NOTA reply\n";
+                  common::log::internal::transaction << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
 
                   //
                   // Send reply
@@ -983,7 +981,7 @@ namespace casual
 
                         auto result = transaction.results();
 
-                        common::log::internal::transaction << "domain prepared: " << transaction.xid << " - state: " << result << std::endl;
+                        common::log::internal::transaction << "domain prepared: " << transaction.trid << " - state: " << result << std::endl;
 
                         //
                         // This TM does not own the transaction, so we don't need to store
@@ -1025,7 +1023,7 @@ namespace casual
 
                         auto result = transaction.results();
 
-                        common::log::internal::transaction << "domain committed: " << transaction.xid << " - state: " << result << std::endl;
+                        common::log::internal::transaction << "domain committed: " << transaction.trid << " - state: " << result << std::endl;
 
                         //
                         // This TM does not own the transaction, so we don't need to store

@@ -74,7 +74,7 @@ namespace casual
 
                id_type id() const;
 
-               common::message::server::Id server() const;
+               common::process::Handle server() const;
 
                common::ipc::receive::Queue& receive();
 
@@ -84,7 +84,7 @@ namespace casual
                void clear();
 
             private:
-               class Implementation;
+               struct Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
 

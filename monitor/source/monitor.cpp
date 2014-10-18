@@ -31,6 +31,7 @@ namespace
 	//
 	// Just temporary
 	//
+   /*
 	std::ostream& operator<<( std::ostream& os, const message::monitor::Notify& message)
 	{
 		os << "parentService: " << message.parentService << ", ";
@@ -44,6 +45,7 @@ namespace
 		//
 		return os;
 	}
+	*/
 }
 
 
@@ -133,7 +135,7 @@ namespace monitor
 		message::monitor::Connect message;
 
 		message.path = name;
-		message.server.queue_id = m_receiveQueue.id();
+		message.process = common::process::handle();
 
 		queue::blocking::Writer writer( ipc::broker::id());
 		writer(message);
@@ -150,8 +152,7 @@ namespace monitor
          // Tell broker that monitor is down...
          //
          message::monitor::Disconnect message;
-
-         message.server.queue_id = m_receiveQueue.id();
+         message.process = common::process::handle();
 
          queue::blocking::Writer writer( ipc::broker::id());
          writer(message);

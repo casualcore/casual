@@ -31,7 +31,7 @@ namespace casual
 
             {
                common::message::queue::connect::Request request;
-               request.server = common::message::server::Id::current();
+               request.process = common::process::handle();
                queueBroker( request);
             }
 
@@ -73,7 +73,7 @@ namespace casual
                // Send all our queues to queue-broker
                //
                common::message::queue::Information information;
-               information.server = common::message::server::Id::current();
+               information.process = common::process::handle();
                information.queues = m_state.queuebase.queues();
 
                queueBroker( information);

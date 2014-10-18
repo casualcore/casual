@@ -11,7 +11,7 @@
 #include "common/message/server.h"
 
 
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 
 namespace casual
 {
@@ -20,25 +20,6 @@ namespace casual
       namespace marshal
       {
 
-         /*
-         void print( const std::vector< char>& buffer)
-         {
-            std::vector< char>::const_iterator current = buffer.begin();
-
-            for(; current != buffer.end(); ++current)
-            {
-               if( *current == '\0')
-               {
-                  std::cout << "0";
-               }
-               else
-               {
-                  std::cout << static_cast< int>( *current);
-               }
-            }
-            std::cout << std::endl;
-         }
-         */
 
 
          TEST( casual_common, archive_basic_io)
@@ -94,7 +75,7 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.server.queue_id = 666;
+            serverConnect.process.queue = 666;
             serverConnect.serverPath = "/bla/bla/bla/sever";
 
             message::Service service;
@@ -120,7 +101,7 @@ namespace casual
 
             input >> result;
 
-            EXPECT_TRUE( result.server.queue_id == 666) << result.server.queue_id;
+            EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 3) << result.services.size();
 
@@ -132,7 +113,7 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.server.queue_id = 666;
+            serverConnect.process.queue = 666;
             serverConnect.serverPath = "/bla/bla/bla/sever";
 
 
@@ -150,7 +131,7 @@ namespace casual
 
             input >> result;
 
-            EXPECT_TRUE( result.server.queue_id == 666) << result.server.queue_id;
+            EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
 
@@ -189,9 +170,7 @@ namespace casual
 
             input & xid_target;
 
-            EXPECT_TRUE( xid_target.xid().gtrid_length > 0);
-            EXPECT_TRUE( xid_target.xid().bqual_length > 0);
-
+            EXPECT_TRUE( ! xid_target.null());
             EXPECT_TRUE( xid_target == xid_source);
 
          }

@@ -10,7 +10,7 @@
 
 
 #include "common/message/queue.h"
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 
 #include "config/queue.h"
 
@@ -34,13 +34,14 @@ namespace casual
          {
             struct Group
             {
-               using id_type = common::message::server::Id;
+
+               using id_type = common::process::Handle;
 
                Group() = default;
-               Group( std::string name, id_type id) : name( std::move( name)), id( std::move( id)) {}
+               Group( std::string name, id_type process) : name( std::move( name)), process( std::move( process)) {}
 
                std::string name;
-               id_type id;
+               id_type process;
 
             };
 
@@ -57,7 +58,7 @@ namespace casual
 
             struct Correlation
             {
-               using id_type = common::message::server::Id;
+               using id_type = common::process::Handle;
 
                Correlation( id_type caller, std::vector< Group::id_type> groups)
                   : caller( std::move( caller))
@@ -125,7 +126,7 @@ namespace casual
 
          struct Queues
          {
-            common::platform::pid_type groupId() const { return group.id.pid;}
+            common::platform::pid_type groupId() const { return group.process.pid;}
 
             broker::State::Group group;
             std::vector< common::message::queue::Queue> queues;

@@ -97,13 +97,13 @@ namespace casual
 
                struct Ready : message::basic_message< cTransactionManagerReady>
                {
-                  server::Id id;
+                  process::Handle process;
                   bool success = true;
 
                   template< typename A>
                   void marshal( A& archive)
                   {
-                     archive & id;
+                     archive & process;
                      archive & success;
                   }
                };
@@ -115,14 +115,14 @@ namespace casual
             {
                typedef basic_transaction< type> base_type;
 
-               server::Id id;
-               common::transaction::ID xid;
+               process::Handle process;
+               common::transaction::ID trid;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & id;
-                  archive & xid;
+                  archive & process;
+                  archive & trid;
                }
             };
 
@@ -229,14 +229,14 @@ namespace casual
                   //!
                   struct Reply : basic_message< cTransactionResurceConnectReply>
                   {
-                     server::Id id;
+                     process::Handle process;
                      platform::resource::id_type resource = 0;
                      int state = 0;
 
                      template< typename A>
                      void marshal( A& archive)
                      {
-                        archive & id;
+                        archive & process;
                         archive & resource;
                         archive & state;
                      }

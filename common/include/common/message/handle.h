@@ -54,10 +54,10 @@ namespace casual
                {
                   server::ping::Reply reply;
 
-                  reply.server = server::Id::current();
+                  reply.process = process::handle();
                   reply.uuid = process::uuid();
 
-                  m_send( message.server.queue_id, reply);
+                  m_send( message.process.queue, reply);
                }
 
             private:

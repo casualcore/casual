@@ -44,7 +44,7 @@ namespace casual
 
                      state::resource::Proxy::Instance instance;
                      instance.id = proxy.id;
-                     instance.server.queue_id = mockup.id();
+                     instance.server.queue = mockup.id();
                      instance.server.pid = mockup.pid();
                      instance.state = state::resource::Proxy::Instance::State::started;
 
@@ -157,8 +157,8 @@ namespace casual
          auto& rm = state.get( 100);
 
          common::message::transaction::resource::connect::Reply reply;
-         reply.id.queue_id = rm.id();
-         reply.id.pid = rm.pid();
+         reply.process.queue = rm.id();
+         reply.process.pid = rm.pid();
          reply.resource = 1;
          reply.state = XA_OK;
 
@@ -188,8 +188,8 @@ namespace casual
             auto& rm = state.get( 200);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = rm.id();
-            reply.id.pid = rm.pid();
+            reply.process.queue = rm.id();
+            reply.process.pid = rm.pid();
             reply.resource = 2;
             reply.state = XA_OK;
             send( reply);
@@ -199,8 +199,8 @@ namespace casual
             auto& rm = state.get( 201);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = rm.id();
-            reply.id.pid = rm.pid();
+            reply.process.queue = rm.id();
+            reply.process.pid = rm.pid();
             reply.resource = 2;
             reply.state = XA_OK;
             send( reply);
@@ -233,8 +233,8 @@ namespace casual
             auto& rm = state.get( 100);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = rm.id();
-            reply.id.pid = rm.pid();
+            reply.process.queue = rm.id();
+            reply.process.pid = rm.pid();
             reply.resource = 1;
             reply.state = XA_OK;
             send( reply);
@@ -244,8 +244,8 @@ namespace casual
             auto& rm = state.get( 200);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.id.queue_id = rm.id();
-            reply.id.pid = rm.pid();
+            reply.process.queue = rm.id();
+            reply.process.pid = rm.pid();
             reply.resource = 2;
             reply.state = XA_OK;
             send( reply);

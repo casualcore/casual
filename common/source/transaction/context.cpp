@@ -5,7 +5,8 @@
 //!     Author: Lazan
 //!
 
-#include "common/transaction_context.h"
+#include "common/transaction/context.h"
+
 #include "common/queue.h"
 #include "common/environment.h"
 #include "common/process.h"
@@ -75,7 +76,7 @@ namespace casual
             {
                XID* non_const_xid( const Transaction& transaction)
                {
-                  return const_cast< XID*>( &transaction.xid.xid());
+                  return const_cast< XID*>( &transaction.trid.xid);
                }
 
             } // <unnamed>
@@ -153,7 +154,7 @@ namespace casual
             common::trace::Scope trace{ "transaction::Context::Manager::Manager", common::log::internal::transaction};
 
             message::transaction::client::connect::Request request;
-            request.server = message::server::Id::current();
+            request.process = process::handle();
             request.path = process::path();
 
             log::internal::transaction << "send client connect request" << std::endl;
@@ -262,8 +263,8 @@ namespace casual
             int startTransaction( QW& writer, QR& reader, Transaction& trans)
             {
                message::transaction::begin::Request request;
-               request.id.queue_id = ipc::receive::id();
-               request.xid.generate();
+               request.process = process::handle();
+               request.trid = transaction::ID::create();
                writer( request);
 
                message::transaction::begin::Reply reply;
@@ -272,8 +273,7 @@ namespace casual
                if( reply.state == XA_OK)
                {
                   trans.state( Transaction::State::active);
-                  trans.owner = process::id();
-                  trans.xid = std::move( reply.xid);
+                  trans.trid = std::move( reply.trid);
                }
 
                return reply.state;
@@ -302,23 +302,22 @@ namespace casual
             queue::blocking::Writer writer{ manager().queue};
 
             message::transaction::resource::Involved message;
-            message.xid = id;
+            message.trid = id;
             message.resources = std::move( resources);
 
             writer( message);
          }
 
-         void Context::joinOrStart( const message::Transaction& transaction)
+         void Context::joinOrStart( const transaction::ID& transaction)
          {
             common::trace::Scope trace{ "transaction::Context::joinOrStart", common::log::internal::transaction};
 
             Transaction trans;
 
 
-            if( transaction.xid)
+            if( transaction)
             {
-               trans.owner = transaction.creator;
-               trans.xid = transaction.xid;
+               trans.trid = transaction;
                trans.state( Transaction::State::active);
 
                //auto code = local::startTransaction( writer, reader, trans);
@@ -344,7 +343,7 @@ namespace casual
                auto ids = std::mem_fn( &Resource::id);
                range::transform( m_resources.fixed, resources, ids);
 
-               involved( trans.xid, std::move( resources));
+               involved( trans.trid, std::move( resources));
 
             }
 
@@ -361,7 +360,7 @@ namespace casual
 
                if( message.returnValue == TPSUCCESS)
                {
-                  if( transaction.owner == process::id())
+                  if( transaction.trid.owner() == process::handle())
                   {
                      if( commit( transaction) != XA_OK)
                      {
@@ -372,7 +371,7 @@ namespace casual
                }
                else
                {
-                  if( transaction.owner == process::id())
+                  if( transaction.trid.owner() == process::handle())
                   {
                      if( rollback( transaction) != XA_OK)
                      {
@@ -400,17 +399,17 @@ namespace casual
                return TMER_PROTO;
             }
 
-            if( current.xid)
+            if( current.trid)
             {
                //
                // Notify TM that this RM is involved
                //
-               involved( current.xid, { rmid});
+               involved( current.trid, { rmid});
             }
 
             current.associated.push_back( rmid);
 
-            *xid = current.xid.xid();
+            *xid = current.trid.xid;
 
             switch( current.previous())
             {
@@ -437,7 +436,7 @@ namespace casual
             // RM:s can only unregister if we're outside global
             // transactions
             //
-            if( ! current.xid)
+            if( ! current.trid)
             {
                auto found = common::range::find( current.associated, rmid);
 
@@ -475,9 +474,12 @@ namespace casual
             auto code = local::startTransaction( writer, reader, trans);
             if( code  == XA_OK)
             {
-               m_transactions.push( std::move( trans));
+
+               m_transactions.push( trans);
 
                start( trans, TMNOFLAGS);
+
+               common::log::internal::transaction << "transaction: " << trans.trid << " started\n";
             }
 
             return code;
@@ -527,11 +529,11 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::commit", common::log::internal::transaction};
 
-            if( transaction.xid)
+            if( transaction.trid)
             {
                message::transaction::commit::Request request;
-               request.xid = transaction.xid;
-               request.id = message::server::Id::current();
+               request.trid = transaction.trid;
+               request.process = process::handle();
 
                queue::blocking::Writer writer( manager().queue);
                writer( request);
@@ -618,11 +620,11 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::rollback", common::log::internal::transaction};
 
-            if( transaction.xid)
+            if( transaction.trid)
             {
                message::transaction::rollback::Request request;
-               request.xid = transaction.xid;
-               request.id = message::server::Id::current();
+               request.trid = transaction.trid;
+               request.process = process::handle();
 
                queue::blocking::Writer writer( manager().queue);
                writer( request);
@@ -686,7 +688,7 @@ namespace casual
          {
             auto&& current = currentTransaction();
 
-            info.xid = current.xid.xid();
+            info.xid = current.trid.xid;
 
 
             return current ? 1 : 0;

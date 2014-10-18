@@ -20,18 +20,7 @@ namespace casual
       {
          namespace server
          {
-            Id::Id() : queue_id{ 0}, pid{ process::id()}
-            {
 
-            }
-
-            Id::Id( queue_id_type id, pid_type pid) : queue_id( id), pid( pid)
-            {}
-
-            Id Id::current()
-            {
-               return Id{ ipc::receive::id(), process::id()};
-            }
 
 
          } // server

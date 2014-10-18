@@ -113,7 +113,7 @@ namespace casual
 
          struct Executable : internal::Id< Executable>
          {
-            typedef common::message::server::Id::pid_type pid_type;
+            typedef common::platform::pid_type pid_type;
 
             std::string alias;
             std::string path;
@@ -136,7 +136,7 @@ namespace casual
 
          struct Server : Executable
          {
-            typedef common::message::server::Id::pid_type pid_type;
+            typedef common::platform::pid_type pid_type;
 
             struct Instance
             {
@@ -157,8 +157,7 @@ namespace casual
                }
 
 
-               common::message::server::Id::queue_id_type queue_id = 0;
-               pid_type pid = 0;
+               common::process::Handle process;
                std::size_t invoked = 0;
                common::platform::time_type last;
                Server::id_type server = 0;
@@ -166,7 +165,7 @@ namespace casual
 
                void remove( const Service& service);
 
-               friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.pid == rhs.pid;}
+               friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
 
             //private:
                State state = State::absent;

@@ -19,7 +19,7 @@
 #include "common/buffer/pool.h"
 
 #include "common/calling_context.h"
-#include "common/transaction_context.h"
+#include "common/transaction/context.h"
 #include "common/platform.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
@@ -422,7 +422,7 @@ namespace casual
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     m_policy.reply( message.reply.queue_id, reply);
+                     m_policy.reply( message.reply.queue, reply);
 
                      //
                      // Send ACK to broker
@@ -562,7 +562,7 @@ namespace casual
 
                   void connect( message::server::connect::Request& message, const std::vector< transaction::Resource>& resources)
                   {
-                     message.server = message::server::Id::current();
+                     message.process = common::process::handle();
                      message.path = common::process::path();
                      queue_writer brokerWriter( ipc::broker::id(), m_state);
                      brokerWriter( message);
@@ -585,7 +585,7 @@ namespace casual
                   void ack( const message::service::callee::Call& message)
                   {
                      message::service::ACK ack;
-                     ack.server.queue_id = ipc::receive::id();
+                     ack.process = common::process::handle();
                      ack.service = message.service.name;
                      queue_writer brokerWriter( ipc::broker::id(), m_state);
                      brokerWriter( ack);

@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef PROCESS_H_
-#define PROCESS_H_
+#ifndef CASUAL_COMMON_PROCESS_H_
+#define CASUAL_COMMON_PROCESS_H_
 
 #include "common/platform.h"
 #include "common/exception.h"
@@ -14,6 +14,8 @@
 
 #include "common/internal/log.h"
 #include "common/algorithm.h"
+
+#include "common/marshal.h"
 
 //
 // std
@@ -45,6 +47,31 @@ namespace casual
          //! @return process id (pid) for current process.
          //!
          platform::pid_type id();
+
+
+         struct Handle
+         {
+            platform::pid_type pid;
+            platform::queue_id_type queue;
+
+
+            friend bool operator == ( const Handle& lhs, const Handle& rhs);
+            friend std::ostream& operator << ( std::ostream& out, const Handle& value);
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               archive & pid;
+               archive & queue;
+            })
+
+         };
+
+         //!
+         //! @return the process handle
+         //!
+         Handle handle();
+
+
 
          //!
          //! @return the uuid for this process.

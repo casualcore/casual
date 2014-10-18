@@ -41,12 +41,12 @@ namespace casual
 
             static const common::transaction::ID nullId{};
 
-            common::message::queue::enqueue::Request message( const group::Queue& queue, const common::transaction::ID& xid = nullId)
+            common::message::queue::enqueue::Request message( const group::Queue& queue, const common::transaction::ID& trid = nullId)
             {
                common::message::queue::enqueue::Request result;
 
                result.queue = queue.id;
-               result.xid.xid = xid;
+               result.trid = trid;
 
                result.message.id = common::Uuid::make();
                result.message.reply = "someQueue";
@@ -59,12 +59,12 @@ namespace casual
                return result;
             }
 
-            common::message::queue::dequeue::Request request( const group::Queue& queue, const common::transaction::ID& xid = nullId)
+            common::message::queue::dequeue::Request request( const group::Queue& queue, const common::transaction::ID& trid = nullId)
             {
                common::message::queue::dequeue::Request result;
 
                result.queue = queue.id;
-               result.xid.xid = xid;
+               result.trid = trid;
 
                return result;
             }

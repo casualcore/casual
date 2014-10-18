@@ -22,8 +22,8 @@ namespace casual
          {
             common::message::transaction::begin::Request result;
 
-            result.xid = common::transaction::ID::create();
-            result.id.queue_id = 100;
+            result.trid = common::transaction::ID::create();
+            result.process.queue = 100;
             result.start = common::platform::clock_type::now();
 
 
@@ -47,10 +47,10 @@ namespace casual
          log.begin( begin);
 
 
-         auto row = log.select( begin.xid);
+         auto row = log.select( begin.trid);
 
          ASSERT_TRUE( row.size() == 1);
-         EXPECT_TRUE( row.front().xid == begin.xid) << "global: " << row.front().xid.stringGlobal() << std::endl;
+         EXPECT_TRUE( row.front().trid == begin.trid) << "row.front().trid: " << row.front().trid << std::endl;
 
       }
 
@@ -69,10 +69,10 @@ namespace casual
          auto rows = log.select();
 
          ASSERT_TRUE( rows.size() == 2);
-         EXPECT_TRUE( rows.at( 0).xid == first.xid);
-         EXPECT_TRUE( rows.at( 1).xid == second.xid);
+         EXPECT_TRUE( rows.at( 0).trid == first.trid);
+         EXPECT_TRUE( rows.at( 1).trid == second.trid);
 
-         EXPECT_TRUE( rows.at( 0).xid != rows.at( 1).xid);
+         EXPECT_TRUE( rows.at( 0).trid != rows.at( 1).trid);
 
       }
 
@@ -84,13 +84,13 @@ namespace casual
          auto begin = local::beginReqest();
          log.begin( begin);
 
-         log.prepareCommit( begin.xid);
+         log.prepareCommit( begin.trid);
 
 
-         auto rows = log.select( begin.xid);
+         auto rows = log.select( begin.trid);
 
          ASSERT_TRUE( rows.size() == 1);
-         EXPECT_TRUE( rows.at( 0).xid == begin.xid);
+         EXPECT_TRUE( rows.at( 0).trid == begin.trid);
          EXPECT_TRUE( rows.at( 0).state == Log::State::cPreparedCommit);
       }
 

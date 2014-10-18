@@ -26,8 +26,8 @@ namespace casual
                template< typename G>
                void group( const broker::State::Group& group, G& result)
                {
-                  result.pid = group.id.pid;
-                  result.queue_id = group.id.queue_id;
+                  result.pid = group.process.pid;
+                  result.queue_id = group.process.queue;
 
                   result.name = group.name;
 
@@ -71,7 +71,7 @@ namespace casual
 
             for( auto&& touple : state.queues)
             {
-               groupQeues[ touple.second.server.pid].push_back( touple.first);
+               groupQeues[ touple.second.process.pid].push_back( touple.first);
             }
 
             for( auto& group : result)

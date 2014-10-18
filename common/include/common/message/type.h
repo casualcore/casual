@@ -9,7 +9,7 @@
 #define COMMONMESSAGETYPE_H_
 
 #include "common/platform.h"
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 
 #include "common/marshal.h"
 
@@ -129,22 +129,6 @@ namespace casual
          // Below, some basic message related types that is used by others
          //
 
-         struct Transaction
-         {
-            typedef common::platform::pid_type pid_type;
-
-            common::transaction::ID xid;
-            pid_type creator = 0;
-
-            template< typename A>
-            void marshal( A& archive)
-            {
-               archive & xid;
-               archive & creator;
-            }
-         };
-
-
          struct Service
          {
             typedef int Seconds;
@@ -180,56 +164,16 @@ namespace casual
          namespace server
          {
 
-            //!
-            //! Represents id for a server.
-            //!
-            struct Id
-            {
-
-               typedef platform::queue_id_type queue_id_type;
-               typedef common::platform::pid_type pid_type;
-
-
-               Id();
-               Id( queue_id_type id, pid_type pid);
-               Id( Id&&) = default;
-               Id& operator = ( Id&&) = default;
-
-               Id( const Id&) = default;
-               Id& operator = ( const Id&) = default;
-
-
-               static Id current();
-
-
-               queue_id_type queue_id = 0;
-               pid_type pid = 0;
-
-               CASUAL_CONST_CORRECT_MARSHAL({
-                  archive & queue_id;
-                  archive & pid;
-               })
-
-               friend std::ostream& operator << ( std::ostream& out, const Id& value)
-               {
-                  return out << "{pid: " << value.pid << " queue: " << value.queue_id << "}";
-               }
-
-               friend bool operator == ( const Id& lhs, const Id& rhs) { return lhs.pid == rhs.pid && lhs.queue_id == rhs.queue_id;}
-
-
-            };
-
             template< message::Type type>
             struct basic_id : basic_message< type>
             {
 
-               server::Id server;
+               process::Handle process;
 
                template< typename A>
                void marshal( A& archive)
                {
-                  archive & server;
+                  archive & process;
                }
             };
 
@@ -251,13 +195,7 @@ namespace casual
             template< message::Type type>
             struct basic_disconnect : basic_id< type>
             {
-               server::Id server;
 
-               template< typename A>
-               void marshal( A& archive)
-               {
-                  archive & server;
-               }
             };
 
          } // server

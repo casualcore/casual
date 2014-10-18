@@ -107,7 +107,7 @@ namespace casual
          void MonitorConnect::dispatch( message_type& message)
          {
             //TODO: Temp
-            m_state.monitorQueue = message.server.queue_id;
+            m_state.monitorQueue = message.process.queue;
          }
 
          void MonitorDisconnect::dispatch( message_type& message)
@@ -125,16 +125,16 @@ namespace casual
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Connect::dispatch"};
 
-                  common::log::internal::debug << "connect request: " << message.server << std::endl;
+                  common::log::internal::debug << "connect request: " << message.process << std::endl;
 
-                  m_state.transactionManagerQueue = message.server.queue_id;
+                  m_state.transactionManagerQueue = message.process.queue;
 
                   //
                   // Send configuration to TM
                   //
                   auto configuration = transform::transaction::configuration( m_state);
 
-                  queue::blocking::Writer tmQueue{ message.server.queue_id, m_state};
+                  queue::blocking::Writer tmQueue{ message.process.queue, m_state};
                   tmQueue( configuration);
 
                }
@@ -143,7 +143,7 @@ namespace casual
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Ready::dispatch"};
 
-                  common::log::internal::debug << "connect request: " << message.id << std::endl;
+                  common::log::internal::debug << "connect request: " << message.process << std::endl;
 
                   if( message.success)
                   {
@@ -151,7 +151,7 @@ namespace casual
                      //
                      // TM is up and running
                      //
-                     auto& instance = m_state.getInstance( message.id.pid);
+                     auto& instance = m_state.getInstance( message.process.pid);
                      instance.alterState( state::Server::Instance::State::idle);
                   }
                   else
@@ -169,11 +169,11 @@ namespace casual
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::client::Connect::dispatch"};
 
-                  common::log::internal::debug << "connect request: " << message.server << std::endl;
+                  common::log::internal::debug << "connect request: " << message.process << std::endl;
 
                   try
                   {
-                     auto& instance = m_state.getInstance( message.server.pid);
+                     auto& instance = m_state.getInstance( message.process.pid);
 
 
                      //
@@ -183,7 +183,7 @@ namespace casual
                      message::transaction::client::connect::Reply reply =
                            transform::transaction::client::reply( m_state, instance);
 
-                     queue::blocking::Writer write( message.server.queue_id, m_state);
+                     queue::blocking::Writer write( message.process.queue, m_state);
                      write( reply);
                   }
                   catch( const state::exception::Missing& exception)
@@ -195,7 +195,7 @@ namespace casual
                      reply.domain = common::environment::domain::name();
                      reply.transactionManagerQueue = m_state.transactionManagerQueue;
 
-                     queue::blocking::Writer write( message.server.queue_id, m_state);
+                     queue::blocking::Writer write( message.process.queue, m_state);
                      write( reply);
 
                   }
@@ -211,7 +211,7 @@ namespace casual
 
             common::range::transform( message.services, services, transform::Service{});
 
-            m_state.addServices( message.server.pid, std::move( services));
+            m_state.addServices( message.process.pid, std::move( services));
 
          }
 
@@ -221,7 +221,7 @@ namespace casual
 
             common::range::transform( message.services, services, transform::Service{});
 
-            m_state.removeServices( message.server.pid, std::move( services));
+            m_state.removeServices( message.process.pid, std::move( services));
          }
 
          void Disconnect::dispatch( message_type& message)
@@ -229,7 +229,7 @@ namespace casual
             //
             // Remove the instance
             //
-            m_state.removeProcess( message.server.pid);
+            m_state.removeProcess( message.process.pid);
          }
 
          template< typename M>
@@ -248,13 +248,13 @@ namespace casual
          {
             common::trace::internal::Scope trace{ "broker::handle::Connect::dispatch"};
 
-            common::log::internal::debug << "connect request: " << message.server << std::endl;
+            common::log::internal::debug << "connect request: " << message.process << std::endl;
 
             try
             {
 
-               auto& instance = m_state.getInstance( message.server.pid);
-               instance.queue_id = message.server.queue_id;
+               auto& instance = m_state.getInstance( message.process.pid);
+               instance.process.queue = message.process.queue;
 
                //
                // Instance is started for the first time.
@@ -262,9 +262,9 @@ namespace casual
                //
                message::server::connect::Reply reply;
 
-               common::log::internal::debug << "connect reply: " << message.server << std::endl;
+               common::log::internal::debug << "connect reply: " << message.process << std::endl;
 
-               queue::blocking::Writer writer( message.server.queue_id, m_state);
+               queue::blocking::Writer writer( message.process.queue, m_state);
                writer( reply);
 
 
@@ -276,7 +276,7 @@ namespace casual
 
                   common::range::transform( message.services, services, transform::Service{});
 
-                  m_state.addServices( message.server.pid, std::move( services));
+                  m_state.addServices( message.process.pid, std::move( services));
                }
 
                //
@@ -294,9 +294,9 @@ namespace casual
                // strict.
                //
 
-               common::log::error << "process " << message.server << " tried to join the domain on it's own - acion: don't allow and send terminate signal" << std::endl;
+               common::log::error << "process " << message.process << " tried to join the domain on it's own - acion: don't allow and send terminate signal" << std::endl;
 
-               common::process::terminate( message.server.pid);
+               common::process::terminate( message.process.pid);
             }
          }
 
@@ -328,7 +328,7 @@ namespace casual
                   reply.service.monitor_queue = m_state.monitorQueue;
                   reply.server.push_back( transform::Instance()( *idle));
 
-                  queue::blocking::Writer writer( message.server.queue_id, m_state);
+                  queue::blocking::Writer writer( message.process.queue, m_state);
                   writer( reply);
 
                   service.lookedup++;
@@ -353,7 +353,7 @@ namespace casual
                message::service::name::lookup::Reply reply;
                reply.service.name = message.requested;
 
-               queue::blocking::Writer writer( message.server.queue_id, m_state);
+               queue::blocking::Writer writer( message.process.queue, m_state);
                writer( reply);
             }
          }
@@ -363,7 +363,7 @@ namespace casual
          {
             try
             {
-               auto& instance = m_state.getInstance( message.server.pid);
+               auto& instance = m_state.getInstance( message.process.pid);
 
                instance.alterState( state::Server::Instance::State::idle);
                ++instance.invoked;
@@ -406,7 +406,7 @@ namespace casual
          void Policy::connect(  message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
          {
 
-            message.server.queue_id = ipc::receive::id();
+            message.process = common::process::handle();
             message.path = common::process::path();
 
             //
@@ -424,8 +424,7 @@ namespace casual
 
             {
                state::Server::Instance instance;
-               instance.queue_id = ipc::receive::id();
-               instance.pid = common::process::id();
+               instance.process = common::process::handle();
                instance.server = server.id;
                instance.alterState( state::Server::Instance::State::idle);
 
@@ -447,6 +446,7 @@ namespace casual
          void Policy::disconnect()
          {
             message::server::Disconnect message;
+            message.process = common::process::handle();
 
             Disconnect disconnect( m_state);
             disconnect.dispatch( message);
@@ -461,7 +461,8 @@ namespace casual
          void Policy::ack( const message::service::callee::Call& message)
          {
             message::service::ACK ack;
-            ack.server.queue_id = ipc::receive::id();
+
+            ack.process = common::process::handle();
             ack.service = message.service.name;
 
             ACK sendACK( m_state);

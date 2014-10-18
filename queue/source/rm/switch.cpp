@@ -9,7 +9,7 @@
 
 #include "queue/environment.h"
 
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 #include "common/internal/log.h"
 #include "common/message/transaction.h"
 #include "common/queue.h"
@@ -60,9 +60,9 @@ namespace casual
                   {
                      {
                         ReqMsg request;
-                        request.xid = transaction;
+                        request.trid = transaction;
                         request.resource = rmid;
-                        request.id = common::message::server::Id::current();
+                        request.process = common::process::handle();
                         request.flags = flags;
 
                         common::queue::blocking::Writer send{ environment::broker::queue::id()};

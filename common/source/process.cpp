@@ -101,6 +101,24 @@ namespace casual
             return pid;
          }
 
+         Handle handle()
+         {
+            Handle result{ id(), ipc::receive::id()};
+
+            return result;
+         }
+
+         bool operator == ( const Handle& lhs, const Handle& rhs)
+         {
+            return lhs.pid == rhs.pid && lhs.queue == rhs.queue;
+         }
+
+         std::ostream& operator << ( std::ostream& out, const Handle& value)
+         {
+            return out << "{pid: " << value.pid << ", queue: " << value.queue << '}';
+         }
+
+
          const Uuid& uuid()
          {
             static const Uuid singleton = Uuid::make();
@@ -274,7 +292,7 @@ namespace casual
                   {
                      common::queue::blocking::Writer send( id);
                      common::message::server::ping::Request request;
-                     request.server = common::message::server::Id::current();
+                     request.process = handle();
                      send( request);
                   }
 

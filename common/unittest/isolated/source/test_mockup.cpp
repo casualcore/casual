@@ -47,7 +47,7 @@ namespace casual
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
-            request.server = message::server::Id::current();
+            request.process = process::handle();
 
             queue::blocking::Writer write( instance.id());
 
@@ -60,7 +60,7 @@ namespace casual
             read( request);
 
             EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.server.queue_id == ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == ipc::receive::id());
 
          }
       }
@@ -79,7 +79,7 @@ namespace casual
             trace::Scope trace( "sender.add  200");
             message::service::name::lookup::Request request;
             request.requested = "someService";
-            request.server = message::server::Id::current();
+            request.process = process::handle();
 
             queue::blocking::Writer write( instance.id());
 
@@ -104,7 +104,7 @@ namespace casual
             {
                read( request);
                EXPECT_TRUE( request.requested == temp + std::to_string( count));
-               EXPECT_TRUE( request.server.queue_id == ipc::receive::id());
+               EXPECT_TRUE( request.process.queue == ipc::receive::id());
             }
          }
       }
@@ -123,7 +123,7 @@ namespace casual
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
-            request.server = message::server::Id::current();
+            request.process = process::handle();
 
             queue::blocking::Writer write( router.id());
             write( request);
@@ -136,7 +136,7 @@ namespace casual
 
             read( request);
             EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.server.queue_id == ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == ipc::receive::id());
 
          }
       }
@@ -156,7 +156,7 @@ namespace casual
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
-            request.server = message::server::Id::current();
+            request.process = process::handle();
 
             queue::blocking::Writer write( router.id());
 
@@ -180,7 +180,7 @@ namespace casual
                read( request);
                //EXPECT_TRUE( read( request)) << "count: " << count;
                EXPECT_TRUE( request.requested == "someService");
-               EXPECT_TRUE( request.server.queue_id == ipc::receive::id());
+               EXPECT_TRUE( request.process.queue == ipc::receive::id());
             }
             common::log::debug << "environment::directory::domain(): " << environment::directory::domain() << std::endl;
 

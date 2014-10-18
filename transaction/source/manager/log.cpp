@@ -36,9 +36,9 @@ namespace casual
                      {
                         auto gtrid = row.get< common::platform::binary_type>( 0);
 
-                        common::range::copy( common::range::make( gtrid), std::begin( result.xid.xid().data));
+                        common::range::copy( common::range::make( gtrid), std::begin( result.trid.xid.data));
 
-                        result.xid.xid().gtrid_length = gtrid.size();
+                        result.trid.xid.gtrid_length = gtrid.size();
                      }
 
                      {
@@ -46,12 +46,12 @@ namespace casual
 
                         common::range::copy(
                               common::range::make( bqual),
-                              std::begin( result.xid.xid().data) + result.xid.xid().gtrid_length);
+                              std::begin( result.trid.xid.data) + result.trid.xid.gtrid_length);
 
-                        result.xid.xid().bqual_length = bqual.size();
+                        result.trid.xid.bqual_length = bqual.size();
                      }
 
-                     result.xid.xid().formatID = row.get< long>( 2);
+                     result.trid.xid.formatID = row.get< long>( 2);
 
                      result.pid = row.get< common::platform::pid_type>( 3);
                      result.state = static_cast< Log::State>( row.get< long>( 4));
@@ -98,7 +98,7 @@ namespace casual
 
       void Log::begin( const common::message::transaction::begin::Request& request)
       {
-         common::log::internal::transaction << "log begin for xid: " << request.xid << "\n";
+         common::log::internal::transaction << "log begin for xid: " << request.trid << "\n";
 
          auto started = std::chrono::time_point_cast< std::chrono::microseconds>( request.start).time_since_epoch().count();
          auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
@@ -106,10 +106,10 @@ namespace casual
          long state = Log::State::cBegin;
 
          m_statement.begin.execute(
-               common::transaction::global( request.xid),
-               common::transaction::branch( request.xid),
-               request.xid.xid().formatID,
-               request.id.pid,
+               common::transaction::global( request.trid),
+               common::transaction::branch( request.trid),
+               request.trid.xid.formatID,
+               request.process.pid,
                state,
                started,
                updated);
@@ -155,11 +155,11 @@ namespace casual
          return result;
       }
 
-      void Log::remove( const common::transaction::ID& xid)
+      void Log::remove( const common::transaction::ID& trid)
       {
          m_statement.remove.execute(
-            common::transaction::global( xid),
-            common::transaction::branch( xid));
+            common::transaction::global( trid),
+            common::transaction::branch( trid));
       }
 
       std::vector< Log::Row> Log::select()

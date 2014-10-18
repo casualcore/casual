@@ -5,8 +5,9 @@
 //!     Author: Lazan
 //!
 
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 #include "common/uuid.h"
+#include "common/process.h"
 
 
 
@@ -44,57 +45,64 @@ namespace casual
 
          ID::ID()
          {
-            m_xid.formatID = Format::cNull;
-            m_xid.gtrid_length = 0;
-            m_xid.bqual_length = 0;
+            xid.formatID = Format::cNull;
+            xid.gtrid_length = 0;
+            xid.bqual_length = 0;
          }
 
          ID::ID( const XID& xid)
          {
-            memcpy( &m_xid, &xid, sizeof( XID));
+            memcpy( &this->xid, &xid, sizeof( XID));
          }
 
 
-         ID::ID( const Uuid& gtrid, const Uuid& bqual)
+         ID::ID( const Uuid& gtrid, const Uuid& bqual, process::Handle owner) : m_owner( std::move( owner))
          {
-            local::casualXid( m_xid, gtrid, bqual);
+            local::casualXid( xid, gtrid, bqual);
          }
 
 
          ID::ID( ID&& rhs) noexcept
          {
-            m_xid = rhs.m_xid;
-            rhs.m_xid.formatID = Format::cNull;
+            xid = rhs.xid;
+            m_owner = std::move( rhs.m_owner);
+            rhs.xid.formatID = Format::cNull;
 
          }
          ID& ID::operator = ( ID&& rhs) noexcept
          {
-            m_xid = rhs.m_xid;
-            rhs.m_xid.formatID = Format::cNull;
+            xid = rhs.xid;
+            m_owner = std::move( rhs.m_owner);
+            rhs.xid.formatID = Format::cNull;
 
             return *this;
          }
 
          ID::ID( const ID& rhs)
          {
-            memcpy( &m_xid, &rhs.m_xid, sizeof( XID));
+            memcpy( &xid, &rhs.xid, sizeof( XID));
+            m_owner = rhs.m_owner;
          }
 
          ID& ID::operator = ( const ID& rhs)
          {
-            memcpy( &m_xid, &rhs.m_xid, sizeof( XID));
+            memcpy( &xid, &rhs.xid, sizeof( XID));
+            m_owner = rhs.m_owner;
             return *this;
+         }
+
+
+
+         ID ID::create( process::Handle owner)
+         {
+            return ID( Uuid::make(), Uuid::make(), std::move( owner));
          }
 
          ID ID::create()
          {
-            return ID( Uuid::make(), Uuid::make());
+            return ID( Uuid::make(), Uuid::make(), process::handle());
          }
 
-         void ID::generate()
-         {
-            local::casualXid( m_xid, Uuid::make(), Uuid::make());
-         }
 
          ID ID::branch() const
          {
@@ -106,7 +114,7 @@ namespace casual
 
                auto size = sizeof( Uuid::uuid_type);
 
-               memcpy( result.m_xid.data + result.m_xid.gtrid_length, bqual.get(), size);
+               memcpy( result.xid.data + result.xid.gtrid_length, bqual.get(), size);
 
             }
 
@@ -117,7 +125,7 @@ namespace casual
 
          bool ID::null() const
          {
-            return m_xid.formatID == Format::cNull;
+            return xid.formatID == Format::cNull;
          }
 
          ID::operator bool() const
@@ -125,16 +133,19 @@ namespace casual
             return ! null();
          }
 
-         const XID& ID::xid() const
+
+
+         xid_range_type ID::range() const
          {
-            return m_xid;
+            return { xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
          }
 
 
-         XID& ID::xid()
+         const process::Handle& ID::owner() const
          {
-            return m_xid;
+            return m_owner;
          }
+
 
          namespace local
          {
@@ -209,20 +220,15 @@ namespace casual
             } // <unnamed>
          } // local
 
+         /*
          std::string ID::stringGlobal() const
          {
 
-            switch( m_xid.formatID)
+            switch( xid.formatID)
             {
-               /*
-               case ID::cCasual:
-               {
-                  return local::string::fromUuid( m_xid.data, m_xid.data + m_xid.gtrid_length);
-               }
-               */
                default:
                {
-                  return local::string::generic( m_xid.data, m_xid.data + m_xid.gtrid_length);
+                  return local::string::generic( xid.data, xid.data + xid.gtrid_length);
                }
                case ID::cNull:
                {
@@ -234,17 +240,11 @@ namespace casual
 
          std::string ID::stringBranch() const
          {
-            auto first = std::begin( m_xid.data) +  m_xid.gtrid_length;
-            auto last = first +  m_xid.bqual_length;
+            auto first = std::begin( xid.data) +  xid.gtrid_length;
+            auto last = first +  xid.bqual_length;
 
-            switch( m_xid.formatID)
+            switch( xid.formatID)
             {
-               /*
-               case ID::cCasual:
-               {
-                  return local::string::fromUuid( first, last);
-               }
-               */
                default:
                {
                   return local::string::generic( first, last);
@@ -255,21 +255,45 @@ namespace casual
                }
             }
          }
+         */
+
+         std::ostream& operator << ( std::ostream& out, const ID& id)
+         {
+            if( out && id)
+            {
+               out << local::string::generic( id.xid.data, id.xid.data + id.xid.gtrid_length)
+                  << ":" << local::string::generic( id.xid.data + id.xid.gtrid_length, id.xid.data + id.xid.gtrid_length + id.xid.bqual_length)
+                  << ':' << id.m_owner.pid << ':' << id.m_owner.queue;
+            }
+            return out;
+         }
 
 
          bool operator < ( const ID& lhs, const ID& rhs)
          {
             return std::lexicographical_compare(
-               std::begin( lhs.m_xid.data), std::begin( lhs.m_xid.data) + lhs.m_xid.gtrid_length + lhs.m_xid.bqual_length,
-               std::begin( rhs.m_xid.data), std::begin( rhs.m_xid.data) + rhs.m_xid.gtrid_length + rhs.m_xid.bqual_length);
+               std::begin( lhs.xid.data), std::begin( lhs.xid.data) + lhs.xid.gtrid_length + lhs.xid.bqual_length,
+               std::begin( rhs.xid.data), std::begin( rhs.xid.data) + rhs.xid.gtrid_length + rhs.xid.bqual_length);
          }
 
          bool operator == ( const ID& lhs, const ID& rhs)
          {
-            return lhs.m_xid.gtrid_length == rhs.m_xid.gtrid_length && lhs.m_xid.bqual_length == rhs.m_xid.bqual_length &&
+            return lhs.xid.gtrid_length == rhs.xid.gtrid_length && lhs.xid.bqual_length == rhs.xid.bqual_length &&
                std::equal(
-                 std::begin( lhs.m_xid.data), std::begin( lhs.m_xid.data) + lhs.m_xid.gtrid_length + lhs.m_xid.bqual_length,
-                 std::begin( rhs.m_xid.data));
+                 std::begin( lhs.xid.data), std::begin( lhs.xid.data) + lhs.xid.gtrid_length + lhs.xid.bqual_length,
+                 std::begin( rhs.xid.data));
+         }
+
+
+         xid_range_type global( const ID& id)
+         {
+            return { id.xid.data, id.xid.data + id.xid.gtrid_length};
+         }
+
+         xid_range_type branch( const ID& id)
+         {
+            return { id.xid.data + id.xid.gtrid_length,
+                  id.xid.data + id.xid.gtrid_length + id.xid.bqual_length};
          }
 
 

@@ -5,15 +5,15 @@
 //!     Author: Lazan
 //!
 
-#ifndef CONTEXT_H_
-#define CONTEXT_H_
+#ifndef CASUAL_COMMON_TRANSACTION_CONTEXT_H_
+#define CASUAL_COMMON_TRANSACTION_CONTEXT_H_
 
 #include <tx.h>
 
 #include "common/ipc.h"
 #include "common/message/transaction.h"
 #include "common/message/server.h"
-#include "common/transaction_id.h"
+#include "common/transaction/id.h"
 
 #include <stack>
 
@@ -57,13 +57,12 @@ namespace casual
                return m_previous;
             }
 
-            explicit operator bool() const { return ! xid.null() && m_state != State::suspended;}
+            explicit operator bool() const { return trid && m_state != State::suspended;}
 
             //typedef TRANSACTION_TIMEOUT Seconds;
             //Seconds timeout = 0;
 
-            ID xid;
-            common::platform::pid_type owner = 0;
+            ID trid;
 
             //!
             //! associated rm:s to this transaction
@@ -73,7 +72,7 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
             {
-               return out << "{xid: " << rhs.xid << ", owner: " << rhs.owner << ", state: " << rhs.m_state << ", previous: " << rhs.m_previous << "}";
+               return out << "{trid: " << rhs.trid << ", state: " << rhs.m_state << ", previous: " << rhs.m_previous << "}";
             }
 
          private:
@@ -154,7 +153,7 @@ namespace casual
             //!
             //! Associate ongoing transaction, or start a new one if XID is null
             //!
-            void joinOrStart( const message::Transaction& transaction);
+            void joinOrStart( const transaction::ID& transaction);
 
 
             //!

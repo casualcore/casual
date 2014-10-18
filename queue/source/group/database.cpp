@@ -293,11 +293,11 @@ namespace casual
          {
             common::trace::internal::Scope trace{ "queue::Database::enqueue", common::log::internal::queue};
 
-            common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << message.message.id << " size: " << message.message.payload.size() << " xid: " << message.xid.xid << std::endl;
+            common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << message.message.id << " size: " << message.message.payload.size() << " trid: " << message.trid << std::endl;
 
-            auto gtrid = common::transaction::global( message.xid.xid);
+            auto gtrid = common::transaction::global( message.trid);
 
-            long state = message.xid.xid ? message::State::added : message::State::enqueued;
+            long state = message.trid ? message::State::added : message::State::enqueued;
 
             auto avalible = std::chrono::time_point_cast< std::chrono::microseconds>( message.message.avalible).time_since_epoch().count();
             auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
@@ -347,9 +347,9 @@ namespace casual
             //
             // Update state
             //
-            if( message.xid.xid)
+            if( message.trid)
             {
-               auto gtrid = common::transaction::global(  message.xid.xid);
+               auto gtrid = common::transaction::global(  message.trid);
 
                m_statement.state.xid.execute( gtrid, result.id.get());
             }
@@ -358,7 +358,7 @@ namespace casual
                m_statement.state.nullxid.execute( result.id.get());
             }
 
-            common::log::internal::queue << "dequeue - qid: " << message.queue << " id: " << result.id << " size: " << result.payload.size() << " xid: " << message.xid.xid << std::endl;
+            common::log::internal::queue << "dequeue - qid: " << message.queue << " id: " << result.id << " size: " << result.payload.size() << " trid: " << message.trid << std::endl;
 
             reply.message.push_back( std::move( result));
 

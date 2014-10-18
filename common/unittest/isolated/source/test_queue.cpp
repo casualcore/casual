@@ -35,7 +35,7 @@ namespace casual
                blocking::Writer writer( receive.id());
                message::service::Advertise message;
 
-               message.server.queue_id = 666;
+               message.process.queue = 666;
                message.serverPath = "banan";
 
                message::Service service;
@@ -55,7 +55,7 @@ namespace casual
                message::service::Advertise message;
                marshal >> message;
 
-               EXPECT_TRUE( message.server.queue_id == 666);
+               EXPECT_TRUE( message.process.queue == 666);
                EXPECT_TRUE( message.serverPath == "banan");
 
                ASSERT_TRUE( message.services.size() == 1);

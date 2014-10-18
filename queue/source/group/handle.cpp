@@ -39,8 +39,8 @@ namespace casual
                   void involved( State& state, M& message)
                   {
                      common::message::queue::group::Involved involved;
-                     involved.server = common::message::server::Id::current();
-                     involved.xid = message.xid;
+                     involved.process = common::process::handle();
+                     involved.trid = message.trid;
 
                      group::queue::blocking::Writer send{ environment::broker::queue::id(), state};
                      send( involved);
@@ -59,10 +59,10 @@ namespace casual
                   void Request::dispatch( message_type& message)
                   {
                      common::message::queue::information::queues::Reply reply;
-                     reply.server = common::message::server::Id::current();
+                     reply.process = common::process::handle();
                      reply.queues = m_state.queuebase.queues();
 
-                     queue::blocking::Writer send{ message.server.queue_id, m_state};
+                     queue::blocking::Writer send{ message.process.queue, m_state};
                      send( reply);
                   }
                } // queues
@@ -73,10 +73,10 @@ namespace casual
                   void Request::dispatch( message_type& message)
                   {
                      common::message::queue::information::queue::Reply reply;
-                     reply.server = common::message::server::Id::current();
+                     reply.process = common::process::handle();
                      reply.messages = m_state.queuebase.messages( message.qid);
 
-                     queue::blocking::Writer send{ message.server.queue_id, m_state};
+                     queue::blocking::Writer send{ message.process.queue, m_state};
                      send( reply);
                   }
 
@@ -102,7 +102,7 @@ namespace casual
                void Request::dispatch( message_type& message)
                {
                   auto reply = m_state.queuebase.dequeue( message);
-                  queue::blocking::Writer send{ message.server.queue_id, m_state};
+                  queue::blocking::Writer send{ message.process.queue, m_state};
                   send( reply);
                   local::involved( m_state, message);
                }
@@ -115,14 +115,14 @@ namespace casual
                   void Request::dispatch( message_type& message)
                   {
                      common::message::transaction::resource::commit::Reply reply;
-                     reply.id = common::message::server::Id::current();
-                     reply.xid = message.xid;
+                     reply.process = common::process::handle();
+                     reply.trid = message.trid;
                      reply.state = XA_OK;
 
                      try
                      {
-                        m_state.queuebase.commit( message.xid);
-                        common::log::internal::transaction << "committed xid: " << message.xid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        m_state.queuebase.commit( message.trid);
+                        common::log::internal::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
                      }
                      catch( ...)
                      {
@@ -130,7 +130,7 @@ namespace casual
                         reply.state = XAER_RMFAIL;
                      }
 
-                     m_state.persist( std::move( reply), message.id.queue_id);
+                     m_state.persist( std::move( reply), message.process.queue);
                   }
                }
 
@@ -139,14 +139,14 @@ namespace casual
                   void Request::dispatch( message_type& message)
                   {
                      common::message::transaction::resource::rollback::Reply reply;
-                     reply.id = common::message::server::Id::current();
-                     reply.xid = message.xid;
+                     reply.process = common::process::handle();
+                     reply.trid = message.trid;
                      reply.state = XA_OK;
 
                      try
                      {
-                        m_state.queuebase.rollback( message.xid);
-                        common::log::internal::transaction << "rollback xid: " << message.xid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        m_state.queuebase.rollback( message.trid);
+                        common::log::internal::transaction << "rollback trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
                      }
                      catch( ...)
                      {
@@ -154,7 +154,7 @@ namespace casual
                         reply.state = XAER_RMFAIL;
                      }
 
-                     m_state.persist( std::move( reply), message.id.queue_id);
+                     m_state.persist( std::move( reply), message.process.queue);
                   }
                }
             }

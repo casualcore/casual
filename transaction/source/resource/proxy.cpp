@@ -51,9 +51,8 @@ namespace casual
 
                   reply_type reply;
 
-                  reply.id.pid = common::process::id();
+                  reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
-                  reply.id.queue_id = common::ipc::receive::id();
 
                   reply.state = m_state.xaSwitches->xaSwitch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
 
@@ -84,12 +83,11 @@ namespace casual
                {
                   reply_type reply;
 
-                  reply.id.pid = common::process::id();
-                  reply.id.queue_id = common::ipc::receive::id();
+                  reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
 
                   reply.state = policy_type()( m_state, message);
-                  reply.xid = std::move( message.xid);
+                  reply.trid = std::move( message.trid);
 
 
                   tm_queue_type m_tmQueue{ m_state.tm_queue};
@@ -106,7 +104,7 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     return state.xaSwitches->xaSwitch->xa_prepare_entry( &message.xid.xid(), state.rm_id, TMNOFLAGS);
+                     return state.xaSwitches->xaSwitch->xa_prepare_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
                   }
                };
 
@@ -115,7 +113,7 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     return state.xaSwitches->xaSwitch->xa_commit_entry( &message.xid.xid(), state.rm_id, TMNOFLAGS);
+                     return state.xaSwitches->xaSwitch->xa_commit_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
                   }
                };
 
@@ -124,7 +122,7 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     return state.xaSwitches->xaSwitch->xa_rollback_entry( &message.xid.xid(), state.rm_id, TMNOFLAGS);
+                     return state.xaSwitches->xaSwitch->xa_rollback_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
                   }
                };
 

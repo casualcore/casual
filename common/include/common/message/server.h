@@ -91,25 +91,25 @@ namespace casual
             {
 
                std::string serverPath;
-               server::Id server;
+               process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & serverPath;
-                  archive & server;
+                  archive & process;
                   archive & services;
                })
             };
 
             struct Unadvertise : basic_message< cServiceUnadvertise>
             {
-               server::Id server;
+               process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  archive & server;
+                  archive & process;
                   archive & services;
                })
             };
@@ -128,12 +128,12 @@ namespace casual
                      Request& operator = ( Request&&) = default;
 
                      std::string requested;
-                     server::Id server;
+                     process::Handle process;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & requested;
-                        archive & server;
+                        archive & process;
                      })
                   };
 
@@ -145,7 +145,7 @@ namespace casual
 
                      Service service;
 
-                     std::vector< server::Id> server;
+                     std::vector< process::Handle> server;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -169,10 +169,10 @@ namespace casual
 
                int callDescriptor = 0;
                Service service;
-               server::Id reply;
+               process::Handle reply;
                common::Uuid callId;
                std::string callee;
-               Transaction transaction;
+               common::transaction::ID trid;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -181,7 +181,7 @@ namespace casual
                   archive & reply;
                   archive & callId;
                   archive & callee;
-                  archive & transaction;
+                  archive & trid;
                })
             };
 
@@ -280,12 +280,12 @@ namespace casual
             {
 
                std::string service;
-               server::Id server;
+               process::Handle process;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & service;
-                  archive & server;
+                  archive & process;
                })
             };
          } // service
