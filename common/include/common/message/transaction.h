@@ -164,7 +164,7 @@ namespace casual
                      archive & start;
                   }
 
-                  common::platform::time_type start;
+                  common::platform::time_point start;
                };
 
                typedef basic_reply< cTransactionBeginReply> Reply;

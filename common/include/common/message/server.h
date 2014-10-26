@@ -145,12 +145,12 @@ namespace casual
 
                      Service service;
 
-                     std::vector< process::Handle> server;
+                     process::Handle supplier;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & service;
-                        archive & server;
+                        archive & supplier;
                      })
                   };
                } // lookup
@@ -167,19 +167,19 @@ namespace casual
                base_call( const base_call&) = delete;
                base_call& operator = ( const base_call&) = delete;
 
-               int callDescriptor = 0;
+               platform::descriptor_type descriptor = 0;
                Service service;
                process::Handle reply;
-               common::Uuid callId;
+               common::Uuid execution;
                std::string callee;
                common::transaction::ID trid;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  archive & callDescriptor;
+                  archive & descriptor;
                   archive & service;
                   archive & reply;
-                  archive & callId;
+                  archive & execution;
                   archive & callee;
                   archive & trid;
                })

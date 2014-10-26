@@ -25,8 +25,11 @@ namespace casual
          std::ostringstream stream;
          stream << id;
 
+         std::ostringstream expected;
+         expected << gtrid << ':' << gtrid << ":0:0";
 
-         EXPECT_TRUE( stream.str() == gtrid.string() + ":" + gtrid.string() + ":0:0") << "id: " << id << std::endl << "uuid: " << gtrid << std::endl;
+
+         EXPECT_TRUE( stream.str() == expected.str()) << "stream: " << stream.str() << std::endl << "expected: " << expected.str() << std::endl;
       }
 
       TEST( casual_common_transaction_id, generic_string)

@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 
-#include "common/server_context.h"
+#include "common/server/context.h"
 #include "common/process.h"
 
 #include "common/mockup/ipc.h"
@@ -81,7 +81,7 @@ namespace casual
                message::service::callee::Call message;
 
                message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
-               message.callDescriptor = 10;
+               message.descriptor = 10;
                message.service.name = "test_service";
                message.reply.queue = id;
 
@@ -311,7 +311,7 @@ namespace casual
 
       TEST( casual_common_service_context, state_call_descriptor_reserver)
       {
-         calling::State state;
+         call::State state;
 
          auto first = state.pending.reserve();
          auto second = state.pending.reserve();

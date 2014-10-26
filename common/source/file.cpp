@@ -84,7 +84,7 @@ namespace casual
 
          std::string unique( const std::string& prefix, const std::string& postfix)
          {
-            return prefix + Uuid::make().string() + postfix;
+            return prefix + uuid::string( Uuid::make()) + postfix;
          }
 
          std::string find( const std::string& path, const std::regex& search)

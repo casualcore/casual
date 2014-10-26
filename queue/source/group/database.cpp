@@ -46,8 +46,8 @@ namespace casual
                         row.get( 3, result.redelivered);
                         row.get( 4, result.type);
 
-                        result.avalible = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 5)}};
-                        result.timestamp = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 6)}};
+                        result.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 5)}};
+                        result.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
                         row.get( 7, result.payload);
 
                         return result;

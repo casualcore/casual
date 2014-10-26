@@ -51,9 +51,10 @@ namespace casual
          struct ServiceVO
          {
             std::string name;
-            long timeout;
+            //std::chrono::microseconds timeout;
+            long long timeout = 0;
             std::vector< long> instances;
-            long lookedup;
+            long lookedup = 0;
 
             template< typename A>
             void serialize( A& archive)

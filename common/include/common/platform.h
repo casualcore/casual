@@ -171,10 +171,13 @@ namespace casual
          typedef std::chrono::system_clock clock_type;
 
 
-         typedef clock_type::time_point time_type;
+         typedef clock_type::time_point time_point;
 
 
-
+         //!
+         //! Call-descriptor type
+         //!
+         using descriptor_type = int;
 
 
 
@@ -187,18 +190,18 @@ namespace casual
    //!
    //! @{
    template< typename M>
-   void casual_marshal_value( common::platform::time_type& value, M& marshler)
+   void casual_marshal_value( common::platform::time_point& value, M& marshler)
    {
       auto time = value.time_since_epoch().count();
       marshler << time;
    }
 
    template< typename M>
-   void casual_unmarshal_value( common::platform::time_type& value, M& unmarshler)
+   void casual_unmarshal_value( common::platform::time_point& value, M& unmarshler)
    {
-      common::platform::time_type::rep representation;
+      common::platform::time_point::rep representation;
       unmarshler >> representation;
-      value = common::platform::time_type( common::platform::time_type::duration( representation));
+      value = common::platform::time_point( common::platform::time_point::duration( representation));
    }
    //! @}
 

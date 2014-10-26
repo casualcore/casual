@@ -4,7 +4,7 @@
 
 #include "transaction/manager/admin/vo/transaction.h"
 
-#include "common/server_context.h"
+#include "common/server/argument.h"
 
 #include <vector>
 

@@ -11,7 +11,7 @@
 
 
 #include "common/ipc.h"
-#include "common/uuid.h"
+//#include "common/uuid.h"
 #include "common/algorithm.h"
 
 
@@ -56,6 +56,7 @@ namespace casual
       value.marshal( unmarshler);
    }
 
+   /*
    //!
    //! Overload for Uuid
    //!
@@ -70,6 +71,7 @@ namespace casual
    {
       unmarshler >> value.get();
    }
+   */
 
    namespace common
    {

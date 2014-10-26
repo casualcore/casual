@@ -131,7 +131,6 @@ namespace casual
 
          struct Service
          {
-            typedef int Seconds;
 
             Service() = default;
             Service& operator = (const Service& rhs) = default;
@@ -146,8 +145,8 @@ namespace casual
 
             std::string name;
             long type = 0;
-            Seconds timeout = 0;
-            common::platform::queue_id_type monitor_queue = 0;
+            std::chrono::microseconds timeout = std::chrono::microseconds::zero();
+            platform::queue_id_type monitor_queue = 0;
             int transaction = 0;
 
             template< typename A>

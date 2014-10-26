@@ -208,10 +208,11 @@ namespace casual
          typename std::enable_if< traits::is_associative_map_container< T >::value, void>::type
          serialize( Reader& archive, T& container)
          {
-            std::size_t size = archive.handleContainerStart( 0);
+            auto count = archive.handleContainerStart( 0);
 
-            for( std::size_t index = 0; index < size; ++index)
+            while( count-- > 0)
             {
+               //decltype( *std::begin( container)) element;
                std::pair< typename T::key_type, typename T::mapped_type> element;
                //typename T::value_type element;
                archive >> CASUAL_MAKE_NVP( element);

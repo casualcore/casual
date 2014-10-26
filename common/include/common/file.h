@@ -55,6 +55,12 @@ namespace casual
 
          } // scoped
 
+         class Lock
+         {
+
+
+         };
+
 
          //!
          //! @return a unique file-name, with post- and pre-fix, if provided

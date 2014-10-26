@@ -10,6 +10,7 @@
 #include "broker/filter.h"
 
 #include "common/environment.h"
+#include "common/chronology.h"
 
 namespace casual
 {
@@ -67,7 +68,7 @@ namespace casual
                state::Service result;
 
                result.information.name = service.name;
-               result.information.timeout = std::stoul( service.timeout);
+               result.information.timeout = common::chronology::from::string( service.timeout);
 
                return result;
             }
@@ -187,6 +188,8 @@ namespace casual
             {
                broker::State result;
 
+               //domain.casual_default.service
+
                //
                // Handle groups
                //
@@ -269,6 +272,8 @@ namespace casual
             state::Service result;
 
             result.information.name = value.name;
+            //result.information.timeout = value.timeout;
+            result.information.type = value.type;
 
             // TODD: set against configuration
 

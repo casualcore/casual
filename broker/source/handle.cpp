@@ -80,7 +80,7 @@ namespace casual
                      {
                         try
                         {
-                           common::signal::alarm::Scoped timeout{ 10};
+                           common::signal::alarm::Scoped timeout{ std::chrono::seconds( 10)};
 
                            auto marshal = queueReader.next();
                            handler.dispatch( marshal);
@@ -326,7 +326,7 @@ namespace casual
                   message::service::name::lookup::Reply reply;
                   reply.service = service.information;
                   reply.service.monitor_queue = m_state.monitorQueue;
-                  reply.server.push_back( transform::Instance()( *idle));
+                  reply.supplier = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
                   writer( reply);

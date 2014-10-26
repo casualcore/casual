@@ -64,12 +64,12 @@ namespace casual
 
          }
 
-         TEST( casual_common, queue_reader_timeout)
+         TEST( casual_common, queue_reader_timeout_2ms)
          {
             ipc::receive::Queue receive;
             blocking::Reader reader( receive);
 
-            common::signal::alarm::Scoped timeout( 1);
+            common::signal::alarm::Scoped timeout( std::chrono::milliseconds( 2));
 
             message::service::Advertise message;
 

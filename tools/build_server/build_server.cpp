@@ -361,11 +361,6 @@ int main( int argc, char **argv)
          {
             return 1;
          }
-
-         //sf::archive::logger::Writer writer;
-         //writer << CASUAL_MAKE_NVP( settings);
-
-
       }
 
       if( settings.verbose) std::cout << "";
@@ -373,7 +368,8 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::scoped::Path path( "server_" + common::Uuid::make().string() + ".c");
+
+      common::file::scoped::Path path( common::file::unique( "server_", ".c"));
       //std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {

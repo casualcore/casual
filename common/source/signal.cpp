@@ -12,11 +12,17 @@
 #include "common/process.h"
 
 
+
 #include <signal.h>
-#include <string.h>
+#include <cstring>
 
 
 #include <stack>
+#include <atomic>
+#include <condition_variable>
+#include <thread>
+
+#include <sys/time.h>
 
 extern "C"
 {
@@ -25,14 +31,13 @@ extern "C"
 
 namespace casual
 {
-
    namespace common
    {
-      namespace local
+      namespace signal
       {
-         namespace
+         namespace local
          {
-            namespace signal
+            namespace
             {
                struct Cache
                {
@@ -118,11 +123,9 @@ namespace casual
                //
                Cache& globalCrap = Cache::instance();
 
-            } // signal
-
-
-         } // <unnamed>
-      } // local
+            } // <unnamed>
+         } // local
+      } // signal
    } // common
 } // casual
 
@@ -130,7 +133,7 @@ namespace casual
 
 void casual_common_signal_handler( int signal)
 {
-	casual::common::local::signal::Cache::instance().add( signal);
+	casual::common::signal::local::globalCrap.add( signal);
 }
 
 
@@ -154,7 +157,7 @@ namespace casual
 
 			void handle()
 			{
-				const int signal = local::signal::Cache::instance().consume();
+				const int signal = local::Cache::instance().consume();
 				switch( signal)
 				{
                case 0:
@@ -191,36 +194,75 @@ namespace casual
 
          void clear()
          {
-            local::signal::Cache::instance().clear();
+            local::Cache::instance().clear();
 
          }
 
-			namespace posponed
-         {
-            void handle()
-            {
-
-            }
-
-         } // posponed
-
 			namespace alarm
 			{
-				Scoped::Scoped( Seconds timeout)
+				Scoped::Scoped( std::chrono::microseconds timeout)
 				{
-					::alarm( timeout);
+					timer::set( timeout);
 				}
 
 				Scoped::~Scoped()
 				{
-					::alarm( 0);
+				   timer::unset();
 				}
+
+				void set( platform::time_point when)
+            {
+               auto offset = when - platform::clock_type::now();
+
+               timer::set( offset);
+            }
+
 			}
 
-			void alarm::set( common::platform::seconds_type timeout)
-			{
-			   ::alarm( timeout);
-			}
+         namespace timer
+         {
+            namespace local
+            {
+               namespace
+               {
+                  void set( itimerval& value)
+                  {
+                     log::internal::debug << "timer set to: " << value.it_value.tv_sec << "s " << value.it_value.tv_usec << "us" << std::endl;
+
+                     if( ::setitimer( ITIMER_REAL, &value, nullptr) != 0)
+                     {
+                        throw exception::invalid::Argument{ "timer::set - " + error::string()};
+                     }
+                  }
+               } // <unnamed>
+            } // local
+            void set( std::chrono::microseconds offset)
+            {
+               if( offset <= std::chrono::microseconds::zero())
+               {
+                  unset();
+               }
+               else
+               {
+                  itimerval value;
+                  value.it_interval.tv_sec = 0;
+                  value.it_interval.tv_usec = 0;
+                  value.it_value.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( offset).count();
+                  value.it_value.tv_usec = std::chrono::duration_cast< std::chrono::microseconds>( offset % std::chrono::seconds( 1)).count();
+
+                  local::set( value);
+               }
+            }
+
+            void unset()
+            {
+               itimerval value;
+               memset( &value, 0, sizeof( itimerval));
+
+               local::set( value);
+
+            }
+         }
 
 
          bool send( platform::pid_type pid, type::type signal)

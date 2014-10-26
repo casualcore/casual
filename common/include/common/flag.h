@@ -8,6 +8,7 @@
 #ifndef CASUAL_UTILITY_FLAG_H_
 #define CASUAL_UTILITY_FLAG_H_
 
+#include <cstdlib>
 
 namespace casual
 {

@@ -5,12 +5,13 @@
 //!     Author: Lazan
 //!
 
-#ifndef CASUAL_UTILITY_UUID_H_
-#define CASUAL_UTILITY_UUID_H_
+#ifndef CASUAL_COMMON_UUID_H_
+#define CASUAL_COMMON_UUID_H_
 
 #include <uuid/uuid.h>
 
 #include "common/platform.h"
+//#include "common/marshal.h"
 
 #include <string>
 
@@ -18,20 +19,11 @@ namespace casual
 {
 	namespace common
 	{
-	   namespace uuid
-      {
-         std::string string( const platform::uuid_type& uuid);
-      } // uuid
 
 		struct Uuid
 		{
 			typedef platform::uuid_type uuid_type;
 
-			enum Format
-			{
-			   cNull = -1,
-			   cFormatId = 10
-			};
 
 			Uuid();
 			Uuid( Uuid&&) = default;
@@ -44,10 +36,6 @@ namespace casual
 
 			Uuid& operator = ( const Uuid&) = default;
 
-
-
-			std::string string() const;
-			void string( const std::string& value);
 
 
 			const uuid_type& get() const;
@@ -68,23 +56,37 @@ namespace casual
 
 			static Uuid make();
 
-			static std::string toString( const uuid_type uuid);
 
-
-			friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
-         {
-            return out << uuid.string();
-         }
+			friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
 
 			friend bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs);
 
 			friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
 
 
+		   template< typename A>
+		   void marshal( A& archive)
+		   {
+		      archive & m_uuid;
+		   }
+
+		   template< typename A>
+		   void marshal( A& archive) const
+		   {
+		      archive & m_uuid;
+		   }
+
+
 		private:
 			uuid_type m_uuid;
 
 		};
+
+      namespace uuid
+      {
+         std::string string( const platform::uuid_type& uuid);
+         std::string string( const Uuid& uuid);
+      } // uuid
 
 	} // common
 } // casaul

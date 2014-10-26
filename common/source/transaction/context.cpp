@@ -70,72 +70,6 @@ namespace casual
          }
 
 
-         namespace local
-         {
-            namespace
-            {
-               XID* non_const_xid( const Transaction& transaction)
-               {
-                  return const_cast< XID*>( &transaction.trid.xid);
-               }
-
-            } // <unnamed>
-         } // local
-
-
-         int Resource::start( const Transaction& transaction, long flags)
-         {
-            log::internal::transaction << "start resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
-
-            auto result = xaSwitch->xa_start_entry( local::non_const_xid( transaction), id, flags);
-
-            if( result != XA_OK)
-            {
-               log::error << error::xa::error( result) << " failed to start resource - " << *this << '\n';
-            }
-            return result;
-         }
-
-         int Resource::end( const Transaction& transaction, long flags)
-         {
-            log::internal::transaction << "end resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
-
-            auto result = xaSwitch->xa_end_entry( local::non_const_xid( transaction), id, flags);
-
-            if( result != XA_OK)
-            {
-               log::error << error::xa::error( result) << " failed to end resource - " << *this << '\n';
-            }
-            return result;
-
-         }
-
-         int Resource::open( long flags)
-         {
-            log::internal::transaction << "open resource: " << *this <<  " flags: " << flags << '\n';
-
-            auto result = xaSwitch->xa_open_entry( openinfo.c_str(), id, flags);
-
-            if( result != XA_OK)
-            {
-               log::error << error::xa::error( result) << " failed to open resource - " << *this << '\n';
-            }
-            return result;
-         }
-
-         int Resource::close( long flags)
-         {
-            log::internal::transaction << "close resource: " << *this <<  " flags: " << flags << '\n';
-
-            auto result = xaSwitch->xa_close_entry( closeinfo.c_str(), id, flags);
-
-            if( result != XA_OK)
-            {
-               log::error << error::xa::error( result) << " failed to close resource - " << *this << '\n';
-            }
-            return result;
-         }
-
 
          Context& Context::instance()
          {
@@ -669,9 +603,14 @@ namespace casual
 
 
 
-         void Context::setCommitReturn( COMMIT_RETURN value)
+         int Context::setCommitReturn( COMMIT_RETURN value)
          {
+            if( value == TX_COMMIT_COMPLETED)
+            {
+               return TX_OK;
+            }
 
+            return TX_NOT_SUPPORTED;
          }
 
          void Context::setTransactionControl(TRANSACTION_CONTROL control)

@@ -56,8 +56,8 @@ namespace casual
                      result.pid = row.get< common::platform::pid_type>( 3);
                      result.state = static_cast< Log::State>( row.get< long>( 4));
 
-                     result.started = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 5)}};
-                     result.updated = common::platform::time_type{ std::chrono::microseconds{ row.get< common::platform::time_type::rep>( 6)}};
+                     result.started = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 5)}};
+                     result.updated = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
 
                      return result;
                   }

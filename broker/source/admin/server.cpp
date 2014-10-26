@@ -179,9 +179,9 @@ namespace broker
 
          common::server::Arguments result{ { common::process::path()}};
 
-         result.services.emplace_back( ".casual.broker.list.servers", &listServers_, 10, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.list.services", &listServices_, 10, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.update.instances", &updateInstances_, 10, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.list.servers", &listServers_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.list.services", &listServices_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.update.instances", &updateInstances_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
 
          return result;
       }

@@ -28,7 +28,7 @@ namespace casual
          //
          // Registrate the pool to the pool-holder
          //
-         template struct pool::Registration< x_octet>;
+         template class pool::Registration< x_octet>;
 
       } // buffer
    } // common

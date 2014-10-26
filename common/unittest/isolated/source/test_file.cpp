@@ -134,7 +134,7 @@ namespace casual
 
       TEST(casual_common_directory, create_one_level__expect_true)
       {
-         std::string path( environment::directory::temporary() + "/test_create_recursive_" + Uuid::make().string());
+         std::string path( environment::directory::temporary() + "/test_create_recursive_" + uuid::string( Uuid::make()));
 
          EXPECT_TRUE( directory::create( path));
          EXPECT_TRUE( directory::remove( path));
@@ -143,7 +143,7 @@ namespace casual
       TEST(casual_common_directory, create_3_level__expect_true)
       {
 
-         std::string path( environment::directory::temporary() + "/test_create_recursive_" + Uuid::make().string() + "/level2/level3");
+         std::string path( environment::directory::temporary() + "/test_create_recursive_" +uuid::string( Uuid::make()) + "/level2/level3");
 
          EXPECT_TRUE( directory::create( path));
 

@@ -43,8 +43,8 @@ namespace casual
 
                std::string transactionId;
 
-               common::platform::time_type start;
-               common::platform::time_type end;
+               common::platform::time_point start;
+               common::platform::time_point end;
 
                template< typename A>
                void marshal( A& archive)

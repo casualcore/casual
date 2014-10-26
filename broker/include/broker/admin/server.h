@@ -9,7 +9,7 @@
 
 #include "broker/admin/brokervo.h"
 
-#include "common/server_context.h"
+#include "common/server/argument.h"
 
 namespace casual
 {

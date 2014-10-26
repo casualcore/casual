@@ -99,7 +99,7 @@ namespace casual
 
                   bool manage( const Type& type) override
                   {
-                     for( auto&& check : pool_type::types())
+                     for( auto& check : pool_type::types())
                      {
                         if( check == type)
                         {
@@ -148,7 +148,7 @@ namespace casual
                P& registration( P&& pool)
                {
 
-                  for( auto&& type : P::types())
+                  for( auto& type : P::types())
                   {
                      try
                      {

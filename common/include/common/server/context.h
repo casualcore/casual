@@ -8,6 +8,7 @@
 #ifndef CASUAL_SERVER_CONTEXT_H_
 #define CASUAL_SERVER_CONTEXT_H_
 
+#include "common/server/argument.h"
 
 #include "common/message/server.h"
 #include "common/message/monitor.h"
@@ -18,7 +19,8 @@
 
 #include "common/buffer/pool.h"
 
-#include "common/calling_context.h"
+#include "common/call/context.h"
+#include "common/call/timeout.h"
 #include "common/transaction/context.h"
 #include "common/platform.h"
 #include "common/internal/log.h"
@@ -44,97 +46,6 @@ namespace casual
    {
       namespace server
       {
-
-         struct Service
-         {
-
-            enum TransactionType
-            {
-               //! if there is a transaction join it, if not, start a new one
-               cAuto = 0,
-               //! if there is a transaction join it, if not, execute outside transaction
-               cJoin = 1,
-               //! Regardless - start a new transaction
-               cAtomic = 2,
-               //! Regardless - execute outside transaction
-               cNone = 3
-            };
-
-            using function_type = std::function< void( TPSVCINFO *)>;
-            using adress_type = void(*)( TPSVCINFO *);
-
-
-            Service( std::string name, function_type function, long type, TransactionType transaction)
-               : name( std::move( name)), function( function), type( type), transaction( transaction), m_adress( *function.target< adress_type>()) {}
-
-            Service( std::string name, function_type function)
-               : Service( std::move( name), std::move( function), 0, TransactionType::cAuto) {}
-
-
-            Service( Service&&) = default;
-
-
-            void call( TPSVCINFO* serviceInformation)
-            {
-               function( serviceInformation);
-            }
-
-            std::string name;
-            function_type function;
-
-            long type = 0;
-            TransactionType transaction = TransactionType::cAuto;
-            bool active = true;
-
-            friend std::ostream& operator << ( std::ostream& out, const Service& service)
-            {
-               return out << "{name: " << service.name << " type: " << service.type << " transaction: " << service.transaction
-                     << " active: " << service.active << "};";
-            }
-
-            friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.m_adress == rhs.m_adress;}
-            friend bool operator != ( const Service& lhs, const Service& rhs) { return lhs.m_adress != rhs.m_adress;}
-
-         private:
-            adress_type m_adress;
-
-
-         };
-
-         struct Arguments
-         {
-            //Arguments() = default;
-            Arguments( Arguments&&) = default;
-            Arguments& operator = (Arguments&&) = default;
-
-            Arguments( int argc, char** argv) : argc( argc), argv( argv)
-            {
-
-            }
-
-            Arguments( std::vector< std::string> args) : arguments( std::move( args))
-            {
-               for( auto& argument : arguments)
-               {
-                  c_arguments.push_back( const_cast< char*>( argument.c_str()));
-               }
-               argc = c_arguments.size();
-               argv = c_arguments.data();
-            }
-
-            std::vector< Service> services;
-            std::function<int( int, char**)> server_init = &tpsvrinit;
-            std::function<void()> server_done = &tpsvrdone;
-            int argc;
-            char** argv;
-
-            std::vector< std::string> arguments;
-
-            std::vector< transaction::Resource> resources;
-
-         private:
-            std::vector< char*> c_arguments;
-         };
 
          struct State
          {
@@ -333,10 +244,16 @@ namespace casual
                   //
                   // Set the call-chain-id for this "chain"
                   //
-                  calling::Context::instance().callId( message.callId);
-
+                  call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "callee::handle::basic_call::dispatch"};
+
+
+                  //
+                  // Set the 'global' 'transaction' timeout, if any...
+                  //
+                  call::Timeout::instance().add( call::Timeout::Type::cTransaction, message.service.timeout);
+
 
                   auto& state = server::Context::instance().state();
 
@@ -368,7 +285,6 @@ namespace casual
                      //
                      // set the call-correlation
                      //
-                     //state.reply.callDescriptor = message.callDescriptor;
 
                      auto findIter = state.services.find( message.service.name);
 
@@ -387,7 +303,7 @@ namespace casual
                      m_policy.transaction( message, service);
 
 
-                     calling::Context::instance().currentService( message.service.name);
+                     call::Context::instance().currentService( message.service.name);
 
                      //
                      // Also takes care of buffer to pool
@@ -408,7 +324,7 @@ namespace casual
                      //
                      // Prepare reply
                      //
-                     message::service::Reply reply = transform.reply( state.jump.state, message.callDescriptor);
+                     message::service::Reply reply = transform.reply( state.jump.state, message.descriptor);
 
 
                      //
@@ -436,7 +352,7 @@ namespace casual
                      if( message.service.monitor_queue != 0)
                      {
                         state.monitor.end = platform::clock_type::now();
-                        state.monitor.callId = message.callId;
+                        state.monitor.callId = message.execution;
                         state.monitor.service = message.service.name;
                         state.monitor.parentService = message.callee;
 
@@ -495,7 +411,7 @@ namespace casual
                   //range::copy_max( message.service.name, )
                   strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
                   result.len = message.buffer.memory.size();
-                  result.cd = message.callDescriptor;
+                  result.cd = message.descriptor;
                   result.flags = 0;
 
                   result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));

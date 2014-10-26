@@ -40,8 +40,8 @@ namespace casual
          {
             common::transaction::ID trid;
             common::platform::pid_type pid = 0;
-            common::platform::time_type started;
-            common::platform::time_type updated;
+            common::platform::time_point started;
+            common::platform::time_point updated;
             State state = cUnknown;
          };
 

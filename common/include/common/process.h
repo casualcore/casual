@@ -49,14 +49,25 @@ namespace casual
          platform::pid_type id();
 
 
+         //!
+         //! Holds pid and ipc-queue for a given process
+         //!
          struct Handle
          {
-            platform::pid_type pid;
-            platform::queue_id_type queue;
+            Handle() = default;
+            Handle( platform::pid_type pid, platform::queue_id_type queue) : pid( pid), queue( queue) {}
+
+            platform::pid_type pid = 0;
+            platform::queue_id_type queue = 0;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
+
+            explicit operator bool() const
+            {
+               return pid != 0 && queue != 0;
+            }
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -67,7 +78,7 @@ namespace casual
          };
 
          //!
-         //! @return the process handle
+         //! @return the process handle for current process
          //!
          Handle handle();
 

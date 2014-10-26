@@ -106,36 +106,6 @@ namespace casual
          namespace async
          {
 
-            /*
-            class Result
-            {
-            public:
-
-               ~Result();
-               Result( Result&&);
-
-               template< typename T>
-               const Result& operator >> ( T&& value) const
-               {
-                  output() >> std::forward< T>( value);
-                  return *this;
-               }
-
-               class impl_base;
-
-            private:
-
-               friend class Receive;
-               Result( std::unique_ptr< impl_base>&& implementation);
-
-
-               const IO::Output& output() const;
-
-               std::unique_ptr< impl_base> m_implementation;
-
-            };
-            */
-
             class Receive
             {
             public:

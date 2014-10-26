@@ -29,7 +29,7 @@ namespace casual
                std::string correlation;
                std::string reply;
 
-               common::platform::time_type avalible;
+               common::platform::time_point avalible;
 
                std::size_t type;
                common::platform::binary_type payload;
@@ -89,7 +89,7 @@ namespace casual
                   struct Message : base_message
                   {
                      std::size_t redelivered = 0;
-                     common::platform::time_type timestamp;
+                     common::platform::time_point timestamp;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

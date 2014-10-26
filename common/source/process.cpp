@@ -108,6 +108,7 @@ namespace casual
             return result;
          }
 
+
          bool operator == ( const Handle& lhs, const Handle& rhs)
          {
             return lhs.pid == rhs.pid && lhs.queue == rhs.queue;
@@ -117,6 +118,7 @@ namespace casual
          {
             return out << "{pid: " << value.pid << ", queue: " << value.queue << '}';
          }
+
 
 
          const Uuid& uuid()
@@ -282,7 +284,7 @@ namespace casual
                try
                {
 
-                  common::signal::alarm::Scoped alarm{ 5};
+                  common::signal::alarm::Scoped alarm{ std::chrono::seconds( 5)};
 
                   decltype( common::ipc::receive::id()) id;
                   std::string uuid;

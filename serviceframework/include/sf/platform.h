@@ -28,7 +28,13 @@ namespace casual
 
          typedef common::Uuid Uuid;
 
-         typedef common::platform::time_type time_type;
+         namespace uuid
+         {
+            using namespace common::uuid;
+         } // uuid
+
+
+         typedef common::platform::time_point time_type;
 
          using pid_type = common::platform::pid_type;
 

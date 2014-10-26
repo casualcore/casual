@@ -18,8 +18,9 @@ namespace casual
    {
 	   namespace pimpl
       {
-         struct Simple::Implementation
+         class Simple::Implementation
          {
+         public:
             Implementation() {}
 
             Implementation( long value) : m_long( value) {}

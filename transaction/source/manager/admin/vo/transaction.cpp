@@ -15,8 +15,9 @@ namespace vo
 
 
 
-struct Transaction::Implementation
+class Transaction::Implementation
 {
+public:
     Implementation()
    //## initialization list protected section begin [200.40]
          : state( 0)

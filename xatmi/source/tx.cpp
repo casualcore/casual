@@ -80,14 +80,15 @@ int tx_rollback(void)
 int tx_set_commit_return(COMMIT_RETURN value)
 {
 
-  if( value == TX_COMMIT_COMPLETED)
-  {
-     return TX_OK;
-  }
-  else
-  {
-     return TX_NOT_SUPPORTED;
-  }
+   try
+   {
+      casual::common::transaction::Context::instance().setCommitReturn( value);
+   }
+   catch( ...)
+   {
+      return casual::common::error::handler();
+   }
+   return TX_OK;
 
 }
 

@@ -12,7 +12,7 @@
 #include <algorithm>
 
 
-#include "common/server_context.h"
+#include "common/server/context.h"
 #include "common/message/dispatch.h"
 
 

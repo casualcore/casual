@@ -159,7 +159,7 @@ namespace casual
 
                common::process::Handle process;
                std::size_t invoked = 0;
-               common::platform::time_type last;
+               common::platform::time_point last;
                Server::id_type server = 0;
                std::vector< std::reference_wrapper< Service>> services;
 

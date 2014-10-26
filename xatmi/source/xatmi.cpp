@@ -8,8 +8,8 @@
 #include "xatmi.h"
 
 #include "common/buffer/pool.h"
-#include "common/calling_context.h"
-#include "common/server_context.h"
+#include "common/call/context.h"
+#include "common/server/context.h"
 #include "common/platform.h"
 #include "common/log.h"
 
@@ -131,20 +131,17 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 {
    try
    {
-      //
-      // TODO: if needed size is less than current size, shall vi reduce it ?
-      //
 
+      auto descriptor = casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
 
-      int callDescriptor = casual::common::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
-
-      return casual::common::calling::Context::instance().getReply( &callDescriptor, odata, *olen, flags);
+      casual::common::call::Context::instance().getReply( &descriptor, odata, *olen, flags);
    }
    catch( ...)
    {
       tperrno = casual::common::error::handler();
       return -1;
    }
+   return 0;
 }
 
 int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
@@ -155,7 +152,7 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
       // TODO: if needed size is less than current size, shall vi reduce it ?
       //
 
-      return casual::common::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+      return casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
    }
    catch( ...)
    {
@@ -168,20 +165,21 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 {
    try
    {
-      return casual::common::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
+      casual::common::call::Context::instance().getReply( idPtr, odata, *olen, flags);
    }
    catch( ...)
    {
       tperrno = casual::common::error::handler();
       return -1;
    }
+   return 0;
 }
 
 int tpcancel( int id)
 {
    try
    {
-      return casual::common::calling::Context::instance().canccel( id);
+      return casual::common::call::Context::instance().canccel( id);
    }
    catch( ...)
    {

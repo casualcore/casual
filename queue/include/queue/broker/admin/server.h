@@ -11,7 +11,7 @@
 
 #include "queue/broker/admin/queuevo.h"
 
-#include "common/server_context.h"
+#include "common/server/argument.h"
 
 namespace casual
 {

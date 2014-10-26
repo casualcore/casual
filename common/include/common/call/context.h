@@ -28,12 +28,12 @@ namespace casual
          class Context;
       }
 
-      namespace calling
+      namespace call
       {
 
          struct State
          {
-            using descriptor_type = int;
+            using descriptor_type = platform::descriptor_type;
 
             struct Pending
             {
@@ -89,9 +89,7 @@ namespace casual
             using cache_range = decltype( range::make( reply_cache_type().begin(), reply_cache_type().end()));
 
 
-            reply_cache_type replyCache;
-
-            common::Uuid callId = common::Uuid::make();
+            common::Uuid execution = common::Uuid::make();
 
             std::string currentService;
          };
@@ -104,14 +102,14 @@ namespace casual
 
             int asyncCall( const std::string& service, char* idata, long ilen, long flags);
 
-            int getReply( int* idPtr, char** odata, long& olen, long flags);
+            void getReply( int* idPtr, char** odata, long& olen, long flags);
 
             int canccel( int cd);
 
             void clean();
 
-            void callId( const common::Uuid& uuid);
-            const common::Uuid& callId() const;
+            void execution( const common::Uuid& uuid);
+            const common::Uuid& execution() const;
 
             void currentService( const std::string& service);
             const std::string& currentService() const;
@@ -119,7 +117,6 @@ namespace casual
          private:
 
 
-            typedef State::reply_cache_type reply_cache_type;
 
 
             using cache_range = State::cache_range;
@@ -134,7 +131,7 @@ namespace casual
             State m_state;
 
          };
-      } // calling
+      } // call
 	} // common
 } // casual
 

@@ -11,7 +11,7 @@
 #include "transaction/manager/admin/server.h"
 
 
-#include "common/server_context.h"
+#include "common/server/context.h"
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/environment.h"

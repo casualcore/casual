@@ -12,6 +12,7 @@
 #include "queue/environment.h"
 #include "queue/broker/admin/server.h"
 
+#include "common/server/context.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/algorithm.h"

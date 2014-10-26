@@ -33,7 +33,7 @@ namespace casual
          //!
          //! When the message is available, in absolute time.
          //!
-         common::platform::time_type available;
+         common::platform::time_point available;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {

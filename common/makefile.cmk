@@ -24,12 +24,14 @@ install_libs = []
 
 
 casual_common_objectfiles = [
-    Compile( 'source/server_context.cpp'),
-    Compile( 'source/calling_context.cpp'),
+    Compile( 'source/server/context.cpp'),
+    Compile( 'source/call/context.cpp'),
+    Compile( 'source/call/timeout.cpp'),
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),
     Compile( 'source/transaction/context.cpp'),
     Compile( 'source/transaction/id.cpp'),
+    Compile( 'source/transaction/resource.cpp'),
     Compile( 'source/ipc.cpp'),
     Compile( 'source/queue.cpp'),
     Compile( 'source/message/type.cpp'),
@@ -121,6 +123,7 @@ unittest_objectfiles = [
    
    Compile( 'unittest/isolated/source/test_mockup.cpp'),
    Compile( 'unittest/isolated/source/test_traits.cpp'),
+   Compile( 'unittest/isolated/source/test_chronology.cpp'),
 ]
 
 

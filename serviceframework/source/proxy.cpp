@@ -25,8 +25,9 @@ namespace casual
          //! Used by both sync and asynk
          //!
          //! @{
-         struct Result::impl_base
+         class Result::impl_base
          {
+         public:
             virtual ~impl_base() = default;
             virtual IO::Output& output() = 0;
          };
@@ -88,8 +89,9 @@ namespace casual
          namespace async
          {
 
-            struct Receive::impl_base
+            class Receive::impl_base
             {
+            public:
                virtual ~impl_base() = default;
                virtual std::unique_ptr< Result::impl_base> receive() = 0;
             };
@@ -113,8 +115,9 @@ namespace casual
             } // receive
 
 
-            struct Service::impl_base
+            class Service::impl_base
             {
+            public:
                virtual ~impl_base() = default;
                virtual std::unique_ptr< Receive::impl_base> call() = 0;
                virtual IO::Input& input() = 0;
@@ -258,8 +261,9 @@ namespace casual
          namespace sync
          {
 
-            struct Service::impl_base
+            class Service::impl_base
             {
+            public:
                virtual ~impl_base() = default;
                virtual std::unique_ptr< Result::impl_base> call() = 0;
                virtual IO::Input& input() = 0;

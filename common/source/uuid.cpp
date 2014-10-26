@@ -9,6 +9,7 @@
 #include "common/uuid.h"
 
 #include <cassert>
+#include <ostream>
 
 
 namespace casual
@@ -21,7 +22,15 @@ namespace casual
       {
          std::string string( const platform::uuid_type& uuid)
          {
-            return Uuid::toString( uuid);
+            platform::uuid_string_type buffer;
+            uuid_unparse_lower( uuid, buffer);
+
+            return buffer;
+         }
+
+         std::string string( const Uuid& uuid)
+         {
+            return string( uuid.get());
          }
       } // uuid
 
@@ -56,34 +65,17 @@ namespace casual
 		   assert( uuid_parse( uuid.c_str(), m_uuid) == 0);
 		}
 
-		std::string Uuid::string() const
-		{
-		   return Uuid::toString( m_uuid);
-		}
-
-
-		void Uuid::string( const std::string& value)
-		{
-		   platform::uuid_string_type buffer;
-		   buffer[ sizeof( platform::uuid_string_type) - 1] = '\0';
-
-		   auto end = value.size() < sizeof( platform::uuid_string_type) - 1? value.end() : value.begin() + sizeof( platform::uuid_string_type) - 1;
-
-		   std::copy( value.begin(), end, std::begin( buffer));
-
-		   assert( uuid_parse( buffer, m_uuid) == 0);
-
-		}
 
 		const Uuid::uuid_type& Uuid::get() const
 		{
 			return m_uuid;
 		}
 
-		Uuid::uuid_type& Uuid::get()
+      Uuid::uuid_type& Uuid::get()
       {
          return m_uuid;
       }
+
 
 		void Uuid::copy( uuid_type& uuid) const
 		{
@@ -100,11 +92,13 @@ namespace casual
 			return uuid_compare( m_uuid, rhs.m_uuid) == 0;
 		}
 
-      std::string Uuid::toString( const uuid_type uuid)
+
+      std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
       {
          platform::uuid_string_type buffer;
-         uuid_unparse_lower( uuid, buffer);
-         return buffer;
+         uuid_unparse_lower( uuid.m_uuid, buffer);
+         out.write( buffer, sizeof( buffer) - 1);
+         return out;
       }
 
       bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs)

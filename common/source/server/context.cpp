@@ -5,11 +5,10 @@
 //!     Author: Lazan
 //!
 
-#include "common/server_context.h"
+#include "common/server/context.h"
 
 #include "common/queue.h"
 #include "common/buffer/pool.h"
-#include "common/calling_context.h"
 #include "common/process.h"
 
 #include "common/log.h"
@@ -137,8 +136,9 @@ namespace casual
 
          void Context::finalize()
          {
+            call::Timeout::instance().clear();
             buffer::pool::Holder::instance().clear();
-            calling::Context::instance().currentService( "");
+            call::Context::instance().currentService( "");
          }
 
 

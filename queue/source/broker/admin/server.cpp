@@ -137,8 +137,8 @@ namespace casual
 
                common::server::Arguments result{ { common::process::path()}};
 
-               result.services.emplace_back( ".casual.queue.list.groups", &listGroups_, 10, common::server::Service::cNone);
-               result.services.emplace_back( ".casual.queue.list.queues", &listQueues_, 10, common::server::Service::cNone);
+               result.services.emplace_back( ".casual.queue.list.groups", &listGroups_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+               result.services.emplace_back( ".casual.queue.list.queues", &listQueues_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
 
                return result;
             }

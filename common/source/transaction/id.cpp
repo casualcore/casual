@@ -151,10 +151,10 @@ namespace casual
          {
             namespace
             {
-               namespace string
+               namespace stream
                {
 
-                  char hex( char value)
+                  inline char hex( char value)
                   {
                      if( value < 10)
                      {
@@ -164,105 +164,59 @@ namespace casual
                   }
 
 
-                  void generic( const char* first, const char* last, std::string& result)
+                  inline std::ostream& generic_hex( std::ostream& out, const char* first, const char* last)
                   {
                      while( first != last)
                      {
-                        result.push_back( hex( ( 0xf0 & *first) >> 4));
-                        result.push_back( hex( 0x0f & *first));
+                        out << hex( ( 0xf0 & *first) >> 4);
+                        out << hex( 0x0f & *first);
 
                         ++first;
                      }
-
+                     return out;
                   }
 
-                  std::string generic( const char* first, const char* last)
+                  inline std::ostream& generic( std::ostream& out, const char* first, const char* last)
                   {
-
-                     std::string result;
-
                      auto size = last - first;
-                     result.reserve( size + 4);
 
                      switch( size)
                      {
                         case 16:
                         {
-                           generic( first, first + 4, result);
-                           result.push_back( '-');
+                           generic_hex( out, first, first + 4) << '-';
                            first += 4;
                         }
                         case 12:
                         {
-                           generic( first, first + 2, result);
-                           result.push_back( '-');
-                           generic( first + 2, first + 4, result);
-                           result.push_back( '-');
+                           generic_hex( out, first, first + 2) << '-';
+                           generic( out, first + 2, first + 4) << '-';
                            first += 4;
                         }
                         case 8:
                         {
-                           generic( first, first + 2, result);
-                           result.push_back( '-');
+                           generic_hex( out, first, first + 2) << '-';
                            first += 2;
                         }
                         default:
                         {
-                           generic( first, last, result);
+                           generic_hex( out, first, last);
                            break;
                         }
                      }
-                     return result;
+                     return out;
                   }
-
-               } // string
-
+               } // stream
             } // <unnamed>
          } // local
 
-         /*
-         std::string ID::stringGlobal() const
-         {
-
-            switch( xid.formatID)
-            {
-               default:
-               {
-                  return local::string::generic( xid.data, xid.data + xid.gtrid_length);
-               }
-               case ID::cNull:
-               {
-                  return {};
-               }
-            }
-
-         }
-
-         std::string ID::stringBranch() const
-         {
-            auto first = std::begin( xid.data) +  xid.gtrid_length;
-            auto last = first +  xid.bqual_length;
-
-            switch( xid.formatID)
-            {
-               default:
-               {
-                  return local::string::generic( first, last);
-               }
-               case ID::cNull:
-               {
-                  return {};
-               }
-            }
-         }
-         */
 
          std::ostream& operator << ( std::ostream& out, const ID& id)
          {
             if( out && id)
             {
-               out << local::string::generic( id.xid.data, id.xid.data + id.xid.gtrid_length)
-                  << ":" << local::string::generic( id.xid.data + id.xid.gtrid_length, id.xid.data + id.xid.gtrid_length + id.xid.bqual_length)
+               local::stream::generic( out, id.xid.data, id.xid.data + id.xid.gtrid_length) << ':';
+               local::stream::generic( out, id.xid.data + id.xid.gtrid_length, id.xid.data + id.xid.gtrid_length + id.xid.bqual_length)
                   << ':' << id.m_owner.pid << ':' << id.m_owner.queue;
             }
             return out;

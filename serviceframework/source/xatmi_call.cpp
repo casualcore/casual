@@ -86,10 +86,14 @@ namespace casual
                     {
                        return false;
                     }
+                    case TPETIME:
+                    {
+                       throw exception::xatmi::Timeout{ "deadline reached for descriptor: " + std::to_string( callDescriptor), __FILE__, __LINE__};
+                    }
                     default:
                     {
                        output.reset( out);
-                       throw exception::NotReallySureWhatToCallThisExcepion( common::error::xatmi::error( tperrno));
+                       throw exception::xatmi::System( common::error::xatmi::error( tperrno));
                     }
                  }
                }

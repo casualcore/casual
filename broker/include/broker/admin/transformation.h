@@ -76,7 +76,7 @@ namespace casual
                   admin::ServiceVO result;
 
                   result.name = value.information.name;
-                  result.timeout = value.information.timeout;
+                  result.timeout = value.information.timeout.count();
                   result.lookedup = value.lookedup;
 
                   common::range::transform( value.instances, result.instances, Pid{});

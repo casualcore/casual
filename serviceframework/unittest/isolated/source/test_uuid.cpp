@@ -30,7 +30,7 @@ namespace casual
       sf::platform::Uuid out;
       reader >> sf::makeNameValuePair( "uuid", out);
 
-      EXPECT_TRUE( uuid == out) << " uuid.string(): " << uuid.string() << " out.string(): " << out.string();
+      EXPECT_TRUE( uuid == out) << "uuid: " << uuid << " out: " << out;
    }
 
 }

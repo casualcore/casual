@@ -66,10 +66,14 @@ namespace casual
 
          void operator () ( const admin::ServiceVO& value) const
          {
+
+            std::chrono::microseconds timeout( value.timeout);
+
             std::cout <<  std::setw( 32) << std::setfill( ' ') << std::left << value.name <<
                   std::setw( 12) << std::right << value.instances.size() <<
-                  std::setw( 14) << std::right << value.lookedup <<
-                  std::setw( 10) << value.timeout << std::endl;
+                  std::setw( 14) << std::right << value.lookedup
+                  << std::setw( 10) << std::chrono::duration_cast< std::chrono::seconds>( timeout).count() << '.'
+                  << std::chrono::duration_cast< std::chrono::milliseconds>( timeout).count() % 1000 << std::endl;
          }
 
       };

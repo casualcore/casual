@@ -63,15 +63,38 @@ namespace casual
 				class Scoped
 				{
 				public:
-					typedef std::size_t Seconds;
 
-					Scoped( Seconds timeout);
+					Scoped( std::chrono::microseconds timeout);
+
+	            template< typename R, typename P>
+	            Scoped( std::chrono::duration< R, P> timeout)
+	               : Scoped( std::chrono::duration_cast< std::chrono::microseconds>( timeout))
+	            {
+	            }
+
 					~Scoped();
 
 				};
 
-				void set( common::platform::seconds_type timeout);
+				void set( platform::time_point when);
+
 			}
+
+			namespace timer
+			{
+			   void set( std::chrono::microseconds offset);
+
+			   template< typename R, typename P>
+			   void set( std::chrono::duration< R, P> offset)
+			   {
+			      set( std::chrono::duration_cast< std::chrono::microseconds>( offset));
+			   }
+
+			   void unset();
+
+			}
+
+
 
 
 
