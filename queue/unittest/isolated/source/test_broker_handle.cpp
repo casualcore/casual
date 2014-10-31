@@ -78,7 +78,7 @@ namespace casual
                   handler.dispatch( read.next());
                }
             }
-            catch( const common::exception::signal::Terminate&)
+            catch( const common::exception::Shutdown&)
             {
                // we're done
             }
