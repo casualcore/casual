@@ -37,7 +37,7 @@ namespace casual
          {
             std::cout << std::setfill( ' ') <<
                   std::setw( 10) << value.pid <<
-                  std::setw( 12) << value.queueId << std::setw( 8);
+                  std::setw( 12) << value.queue << std::setw( 8);
 
             switch( static_cast< state::Server::Instance::State>( value.state))
             {
@@ -78,18 +78,40 @@ namespace casual
 
       };
 
+      namespace call
+      {
+         std::vector< admin::ServerVO> servers()
+         {
+
+            sf::xatmi::service::binary::Sync service( ".casual.broker.list.servers");
+            auto reply = service();
+
+            std::vector< admin::ServerVO> serviceReply;
+
+            reply >> CASUAL_MAKE_NVP( serviceReply);
+
+            return serviceReply;
+         }
+
+         admin::ShutdownVO shutdown()
+         {
+            sf::xatmi::service::binary::Sync service( ".casual.broker.shutdown");
+
+            auto reply = service();
+
+            admin::ShutdownVO serviceReply;
+
+            reply >> CASUAL_MAKE_NVP( serviceReply);
+
+            return serviceReply;
+         }
+      }
 
       void listServers()
       {
-         sf::xatmi::service::binary::Sync service( ".casual.broker.list.servers");
-         auto reply = service();
+         auto servers = call::servers();
 
-         std::vector< admin::ServerVO> serviceReply;
-
-         reply >> CASUAL_MAKE_NVP( serviceReply);
-
-         std::for_each( std::begin( serviceReply), std::end( serviceReply), Print() );
-
+         common::range::for_each( servers, Print());
       }
 
       void listServices()
@@ -142,9 +164,20 @@ namespace casual
       }
 
 
-   }
+      void shutdown()
+      {
+         auto servers = call::servers();
 
-}
+         auto result = call::shutdown();
+
+
+         std::cout << CASUAL_MAKE_NVP( result) << std::endl;
+
+
+      }
+
+   } // broker
+} // casual
 
 
 
@@ -164,7 +197,8 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
          casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
          casual::common::argument::directive( {"-usi", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::updateInstances),
-         casual::common::argument::directive( {"-lsvr-json", "--list-servers-json"}, "list all servers", &casual::broker::listServicesJSON)
+         casual::common::argument::directive( {"-lsvr-json", "--list-servers-json"}, "list all servers", &casual::broker::listServicesJSON),
+         casual::common::argument::directive( {"-s", "--shutdown"}, "list all servers", &casual::broker::shutdown)
    );
 
 

@@ -9,6 +9,7 @@
 #include "broker/transform.h"
 #include "broker/filter.h"
 
+#include "common/server/lifetime.h"
 #include "common/queue.h"
 #include "common/internal/log.h"
 #include "common/environment.h"
@@ -25,6 +26,7 @@
 
 namespace casual
 {
+   using namespace common;
 
    namespace broker
    {
@@ -94,6 +96,51 @@ namespace casual
                   }
                };
 
+               struct Shutdown : state::Base
+               {
+                  using state::Base::Base;
+
+
+                  void operator () ( State::Batch& batch)
+                  {
+                     common::log::information << "shutdown group '" << batch.group << "'\n";
+
+                     //
+                     // Take care of executables
+                     //
+
+                     std::vector< platform::pid_type> executables;
+
+                     for( auto& executable : batch.executables)
+                     {
+                        range::append( executable.get().instances, executables);
+                     }
+
+
+                     //
+                     // Take care of xatmi-servers
+                     //
+
+                     std::vector< process::Handle> servers;
+
+                     for( auto& server : batch.servers)
+                     {
+                        for( auto& pid : server.get().instances)
+                        {
+                           //
+                           // Make sure we don't add our self
+                           //
+                           if( pid != process::id())
+                           {
+                              servers.push_back( m_state.getInstance( pid).process);
+                           }
+                        }
+                     }
+                     server::lifetime::shutdown( m_state, servers, executables, std::chrono::seconds( 2));
+                  }
+               };
+
+
             } // <unnamed>
          } // local
 
@@ -101,7 +148,25 @@ namespace casual
          {
             auto bootOrder = state.bootOrder();
 
-            common::range::for_each( bootOrder, local::Boot{ state});
+            range::for_each( bootOrder, local::Boot{ state});
+         }
+
+
+         void shutdown( State& state)
+         {
+            auto shutdownOrder = state.bootOrder();
+            std::reverse( std::begin( shutdownOrder), std::end( shutdownOrder));
+
+            try
+            {
+               signal::alarm::Scoped alarm( std::chrono::seconds( 10));
+
+               range::for_each( shutdownOrder, local::Shutdown{ state});
+            }
+            catch( const exception::signal::Timeout&)
+            {
+               log::error << "failed to shutdown - TODO: send reply" << std::endl;
+            }
          }
 
          void MonitorConnect::dispatch( message_type& message)

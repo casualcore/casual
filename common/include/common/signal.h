@@ -74,6 +74,9 @@ namespace casual
 
 					~Scoped();
 
+				private:
+					std::chrono::microseconds m_old;
+
 				};
 
 				void set( platform::time_point when);
@@ -82,7 +85,7 @@ namespace casual
 
 			namespace timer
 			{
-			   void set( std::chrono::microseconds offset);
+			   std::chrono::microseconds set( std::chrono::microseconds offset);
 
 			   template< typename R, typename P>
 			   void set( std::chrono::duration< R, P> offset)
@@ -90,7 +93,7 @@ namespace casual
 			      set( std::chrono::duration_cast< std::chrono::microseconds>( offset));
 			   }
 
-			   void unset();
+			   std::chrono::microseconds unset();
 
 			}
 

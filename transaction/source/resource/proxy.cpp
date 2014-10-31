@@ -13,7 +13,10 @@
 #include "common/process.h"
 #include "common/trace.h"
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
 #include "common/internal/trace.h"
+
+#include "sf/log.h"
 
 
 
@@ -173,8 +176,6 @@ namespace casual
             } // domain
 
 
-
-
          } // handle
 
          namespace validate
@@ -197,10 +198,21 @@ namespace casual
 
         Proxy::Proxy( State&& state)
            : m_state( std::move(state))
-         {
+        {
            validate::state( m_state);
 
-         }
+        }
+
+        Proxy::~Proxy()
+        {
+           auto result = m_state.xaSwitches->xaSwitch->xa_close_entry( m_state.rm_closeinfo.c_str(), m_state.rm_id, TMNOFLAGS);
+
+           if( result != XA_OK)
+           {
+              common::log::error << common::error::xa::error( result) << " - failed to close resource" << std::endl;
+              common::log::internal::transaction << CASUAL_MAKE_NVP( m_state);
+           }
+        }
 
          void Proxy::start()
          {
@@ -214,6 +226,7 @@ namespace casual
             common::log::internal::transaction << "prepare message dispatch handlers\n";
 
             message::dispatch::Handler handler{
+               common::message::handle::Shutdown{},
                handle::Prepare{ m_state},
                handle::Commit{ m_state},
                handle::Rollback{ m_state},

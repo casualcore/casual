@@ -200,14 +200,13 @@ namespace casual
 
 			namespace alarm
 			{
-				Scoped::Scoped( std::chrono::microseconds timeout)
+				Scoped::Scoped( std::chrono::microseconds timeout) : m_old( timer::set( timeout))
 				{
-					timer::set( timeout);
 				}
 
 				Scoped::~Scoped()
 				{
-				   timer::unset();
+				   timer::set( m_old);
 				}
 
 				void set( platform::time_point when)
@@ -225,22 +224,29 @@ namespace casual
             {
                namespace
                {
-                  void set( itimerval& value)
+                  std::chrono::microseconds set( itimerval& value)
                   {
-                     log::internal::debug << "timer set to: " << value.it_value.tv_sec << "s " << value.it_value.tv_usec << "us" << std::endl;
+                     itimerval old;
 
-                     if( ::setitimer( ITIMER_REAL, &value, nullptr) != 0)
+                     if( ::setitimer( ITIMER_REAL, &value, &old) != 0)
                      {
                         throw exception::invalid::Argument{ "timer::set - " + error::string()};
                      }
+
+                     log::internal::debug << "timer set to: " << value.it_value.tv_sec << "s " << value.it_value.tv_usec << "us - old: "
+                           << old.it_value.tv_sec << "s " <<  old.it_value.tv_usec << "ms\n";
+
+                     return std::chrono::seconds( old.it_value.tv_sec) + std::chrono::microseconds( old.it_value.tv_usec);
                   }
                } // <unnamed>
             } // local
-            void set( std::chrono::microseconds offset)
+
+
+            std::chrono::microseconds set( std::chrono::microseconds offset)
             {
                if( offset <= std::chrono::microseconds::zero())
                {
-                  unset();
+                  return unset();
                }
                else
                {
@@ -250,16 +256,16 @@ namespace casual
                   value.it_value.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( offset).count();
                   value.it_value.tv_usec = std::chrono::duration_cast< std::chrono::microseconds>( offset % std::chrono::seconds( 1)).count();
 
-                  local::set( value);
+                  return local::set( value);
                }
             }
 
-            void unset()
+            std::chrono::microseconds unset()
             {
                itimerval value;
                memset( &value, 0, sizeof( itimerval));
 
-               local::set( value);
+               return local::set( value);
 
             }
          }

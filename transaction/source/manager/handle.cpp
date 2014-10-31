@@ -140,7 +140,7 @@ namespace casual
                   template< typename Q>
                   bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
                   {
-                     Q queue{ instance.server.queue, state};
+                     Q queue{ instance.process.queue, state};
 
                      if( queue.send( message))
                      {
@@ -375,7 +375,7 @@ namespace casual
                      if( message.state == XA_OK)
                      {
                         instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
-                        instanceRange.first->server = std::move( message.process);
+                        instanceRange.first->process = std::move( message.process);
 
                      }
                      else

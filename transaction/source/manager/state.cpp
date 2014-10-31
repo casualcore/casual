@@ -219,7 +219,7 @@ namespace casual
          {
             for( auto& instance : resource.instances)
             {
-               result.push_back( instance.server.pid);
+               result.push_back( instance.process.pid);
             }
          }
          return result;

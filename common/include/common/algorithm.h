@@ -565,6 +565,14 @@ namespace casual
             std::copy( std::begin( range), std::end( range), output);
          }
 
+         template< typename R, typename O>
+         O& append( R&& range, O& output)
+         {
+            output.insert( std::end( output), std::begin( range), std::end( range));
+            return output;
+         }
+
+
          template< typename R, typename Size, typename Iter>
          void copy_max( R&& range, Size size, Iter output)
          {
@@ -591,8 +599,7 @@ namespace casual
          template< typename R, typename C, typename T>
          auto transform( R&& range, C& container, T transform) -> decltype( make( container))
          {
-            auto inputRange = make( range);
-            std::transform( std::begin( inputRange), std::end( inputRange), std::back_inserter( container), transform);
+            std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
             return make( container);
          }
 

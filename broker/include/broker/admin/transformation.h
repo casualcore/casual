@@ -40,7 +40,7 @@ namespace casual
                   auto& value = m_state.getInstance( pid);
 
                   result.pid = value.process.pid;
-                  result.queueId = value.process.queue;
+                  result.queue = value.process.queue;
                   result.state = static_cast< long>( value.state);
                   result.invoked = value.invoked;
                   result.last = value.last;

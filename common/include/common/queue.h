@@ -29,9 +29,14 @@ namespace casual
 
          namespace policy
          {
+            struct Ignore
+            {
+               inline void apply() {}
+            };
+
             struct NoAction
             {
-               void apply()
+               inline void apply()
                {
                   throw;
                }

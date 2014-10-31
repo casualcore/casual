@@ -12,6 +12,7 @@
 
 
 #include "common/server/context.h"
+#include "common/server/lifetime.h"
 #include "common/trace.h"
 #include "common/queue.h"
 #include "common/environment.h"
@@ -54,16 +55,26 @@ namespace casual
       {
          try
          {
+            std::vector< common::process::Handle> instances;
 
-            common::process::children::terminate( m_state);
+            for( auto& resource : m_state.resources)
+            {
+               common::range::transform( resource.instances, instances, std::mem_fn( &state::resource::Proxy::Instance::process));
+            }
 
-            common::log::information << "casual-transaction-manager is off-line\n";
+            common::server::lifetime::shutdown( m_state, instances, {}, std::chrono::seconds( 1));
 
-         }
-         catch( const common::exception::signal::Timeout& exception)
-         {
             auto pids  = m_state.processes();
-            common::log::error << "failed to get response for terminated resource proxies pids: " << range::make( pids) << " - action: abort" << std::endl;
+
+            if( pids.size() != 0)
+            {
+               common::log::error << "failed to shutdown resource proxies: " << range::make( pids) << " - action: abort" << std::endl;
+            }
+            else
+            {
+               common::log::information << "casual-transaction-manager off-line\n";
+            }
+
          }
          catch( ...)
          {
@@ -110,6 +121,7 @@ namespace casual
             //
 
             message::dispatch::Handler handler{
+               common::message::handle::Shutdown{},
                handle::Begin{ m_state},
                handle::Commit{ m_state},
                handle::Rollback{ m_state},

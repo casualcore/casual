@@ -151,10 +151,11 @@ namespace casual
          //!
          int wait( platform::pid_type pid);
 
+
          //!
          //! Tries to terminate pids
          //!
-         //! @return pids that did NOT received the signal
+         //! @return pids that did received the signal
          //!
          std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids);
 
@@ -186,71 +187,74 @@ namespace casual
                int status = 0;
                Reason reason = Reason::unknown;
 
+               explicit operator bool () { return pid != 0;}
+
+
+               friend bool operator == ( platform::pid_type pid, const Exit& rhs) { return pid == rhs.pid;}
+               friend bool operator == ( const Exit& lhs, platform::pid_type pid) { return pid == lhs.pid;}
+
                friend std::ostream& operator << ( std::ostream& out, const Exit& terminated);
+
 
             };
 
             std::vector< Exit> ended();
+
+
+            //!
+            //!
+            //!
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids);
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
+
+
+            //!
+            //! Terminates and waits for the termination.
+            //!
+            //! @return the terminated pids
+            //!
+            //
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids);
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
 
          }
 
          namespace children
          {
 
+
+            //!
+            //! Terminate all children that @p pids dictates.
+            //! When a child is terminated state is updated
+            //!
+            //! @param state the state object
+            //! @param pids to terminate
+            //!
+            template< typename S>
+            void terminate( S& state, std::vector< platform::pid_type> pids)
+            {
+               for( auto& pid : lifetime::terminate( std::move( pids)))
+               {
+                  state.removeProcess( pid);
+               }
+            }
+
             //!
             //! Terminate all children that @p state dictates.
             //! When a child is terminated state is updated
             //!
             //! @param state the state object
-            //! @param timeout default to 5s
             //!
-            template< typename S, typename T = std::chrono::seconds>
-            void terminate( S& state, T timeout = std::chrono::seconds( 5))
+            template< typename S>
+            void terminate( S& state)
             {
                //
                // Terminate all processes
                //
 
-               //
-               // We remove the pids that is absent
-               //
-               for( auto pid : process::terminate( state.processes()))
-               {
-                  state.removeProcess( pid);
-               }
-
-               auto processes = state.processes();
-               log::internal::debug << "terminating processes: " << range::make( processes) << std::endl;
-
-
-
-               auto start = platform::clock_type::now();
-
-               while( state.processes().size() > 0)
-               {
-                  process::sleep( timeout / 20);
-
-                  for( auto dead : process::lifetime::ended())
-                  {
-                     log::internal::debug << "pid : " << dead.pid << " terminated" << std::endl;
-                     state.removeProcess( dead.pid);
-                  }
-
-                  //
-                  // It seems that sometimes the signal doesn't "take", so
-                  // we fire again...
-                  //
-                  for( auto pid : process::terminate( state.processes()))
-                  {
-                     state.removeProcess( pid);
-                  }
-
-                  if( platform::clock_type::now() - start > timeout)
-                  {
-                     throw exception::signal::Timeout{};
-                  }
-               }
+               terminate( state, state.processes());
             }
+
 
          } // children
 

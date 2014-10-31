@@ -246,6 +246,7 @@ namespace casual
 
          casual::common::message::dispatch::Handler handler{
             broker::handle::connect::Request{ m_state},
+            broker::handle::shutdown::Request{ m_state},
             broker::handle::lookup::Request{ m_state},
             broker::handle::group::Involved{ m_state},
             broker::handle::transaction::commit::Request{ m_state},

@@ -52,6 +52,10 @@ namespace casual
 
 			void serverInstances( const std::vector< admin::update::InstancesVO>& instances);
 
+
+			admin::ShutdownVO shutdown();
+
+
 			const State& state() const
 			{
 			   return m_state;

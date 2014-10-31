@@ -44,8 +44,7 @@ namespace casual
 
                      state::resource::Proxy::Instance instance;
                      instance.id = proxy.id;
-                     instance.server.queue = mockup.id();
-                     instance.server.pid = mockup.pid();
+                     instance.process = mockup.server();
                      instance.state = state::resource::Proxy::Instance::State::started;
 
                      proxy.instances.push_back( std::move( instance));

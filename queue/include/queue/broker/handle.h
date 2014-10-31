@@ -68,6 +68,19 @@ namespace casual
          namespace handle
          {
 
+            namespace shutdown
+            {
+               struct Request : Base
+               {
+                  using message_type = common::message::shutdown::Request;
+
+                  using Base::Base;
+
+                  void dispatch( message_type& message);
+               };
+
+            } // shutdown
+
             namespace peek
             {
                namespace queue

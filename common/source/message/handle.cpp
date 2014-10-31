@@ -17,9 +17,9 @@ namespace casual
          namespace handle
          {
 
-            void Terminate::dispatch( message_type& message)
+            void Shutdown::dispatch( message_type& message)
             {
-               throw exception::signal::Terminate{};
+               throw exception::Shutdown{ "shutdown " + process::path()};
             }
 
 

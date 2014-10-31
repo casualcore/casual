@@ -9,12 +9,18 @@
 #include "broker/filter.h"
 
 #include "common/server/service.h"
+#include "common/server/lifetime.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 #include "common/exception.h"
+#include "common/algorithm.h"
 
 #include "common/ipc.h"
 #include "common/process.h"
+
+
+
+#include <functional>
 
 namespace casual
 {
@@ -355,34 +361,37 @@ namespace casual
          return result;
       }
 
-      void State::instance( state::Server& server, std::size_t instances)
+      std::vector< common::platform::pid_type> State::instance( state::Server& server, std::size_t instances)
       {
          if( instances > server.instances.size())
          {
-            boot( server, instances - server.instances.size());
+            return boot( server, instances - server.instances.size());
          }
          else
          {
-            shutdown( server, server.instances.size() - instances);
+            return shutdown( server, server.instances.size() - instances);
          }
       }
 
-      void State::instance( state::Server::id_type id, std::size_t instances)
+      std::vector< common::platform::pid_type> State::instance( state::Server::id_type id, std::size_t instances)
       {
          auto found = common::range::find( servers, id);
 
          if( found)
          {
-            instance( found->second, instances);
+            return instance( found->second, instances);
          }
+         return {};
       }
 
 
-      void State::boot( state::Server& server, std::size_t instances)
+      std::vector< common::platform::pid_type> State::boot( state::Server& server, std::size_t instances)
       {
-         while( instances-- != 0)
+         std::vector< common::platform::pid_type> pids( instances);
+
+         for( auto& pid : pids)
          {
-            auto pid = common::process::spawn( server.path, server.arguments);
+            pid = common::process::spawn( server.path, server.arguments);
 
             state::Server::Instance instance;
             instance.process.pid = pid;
@@ -392,27 +401,40 @@ namespace casual
             server.instances.push_back( pid);
 
             this->instances.emplace( pid, std::move( instance));
-            //result.push_back( std::move( instance));
          }
+         return pids;
 
       }
 
-      void State::shutdown( state::Server& server, std::size_t instances)
+      std::vector< common::platform::pid_type> State::shutdown( state::Server& server, std::size_t instances)
       {
          assert( server.instances.size() >= instances);
 
          auto range = common::range::make( server.instances);
 
-         range.last = range.last - instances;
+         range.first = range.last - instances;
 
+         std::vector< common::process::Handle> servers;
 
          for( auto& pid : range)
          {
-            auto&& instance = this->instances.at( pid);
-            common::process::terminate( instance.process.pid);
-
-            instance.alterState( state::Server::Instance::State::shutdown);
+            //
+            // make sure we don't try to shutdown our self...
+            //
+            if( pid != common::process::id())
+            {
+               servers.push_back( getInstance( pid).process);
+            }
          }
+
+         auto result = common::server::lifetime::soft::shutdown( servers, std::chrono::milliseconds( 500));
+
+         for( auto& pid : result)
+         {
+            removeProcess( pid);
+         }
+
+         return result;
       }
 
 

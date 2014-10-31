@@ -282,12 +282,12 @@ namespace casual
 
          std::vector< common::platform::pid_type> processes() const;
 
-         void instance( state::Server::id_type id, std::size_t instance);
-         void instance( state::Server& server, std::size_t instance);
+         std::vector< common::platform::pid_type> instance( state::Server::id_type id, std::size_t instance);
+         std::vector< common::platform::pid_type> instance( state::Server& server, std::size_t instance);
 
       private:
-         void boot( state::Server& server, std::size_t instances);
-         void shutdown( state::Server& server, std::size_t instances);
+         std::vector< common::platform::pid_type> boot( state::Server& server, std::size_t instances);
+         std::vector< common::platform::pid_type> shutdown( state::Server& server, std::size_t instances);
 
       };
 
@@ -318,6 +318,7 @@ namespace casual
          {
             using Reader = common::queue::non_blocking::remove::basic_reader< State>;
             using Writer = common::queue::non_blocking::remove::basic_writer< State>;
+            using Send = common::queue::non_blocking::remove::basic_send< State>;
 
          } // non_blocking
 

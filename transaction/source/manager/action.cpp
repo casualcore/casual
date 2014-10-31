@@ -78,7 +78,7 @@ namespace casual
                   state::resource::Proxy::Instance instance;//( proxy.id);
                   instance.id = proxy.id;
 
-                  instance.server.pid = process::spawn(
+                  instance.process.pid = process::spawn(
                         info.server,
                         {
                               "--tm-queue", std::to_string( ipc::receive::id()),
@@ -125,11 +125,11 @@ namespace casual
 
                   if( found)
                   {
-                     queue::non_blocking::Writer write{ found->server.queue, m_state};
+                     queue::non_blocking::Writer write{ found->process.queue, m_state};
 
                      if( ! write.send( message.message))
                      {
-                        common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->server << "\n";
+                        common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
                         message.resources.push_back( id);
                      }
                   }

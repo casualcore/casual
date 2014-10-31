@@ -14,10 +14,11 @@ namespace casual
    {
       namespace admin
       {
+
          struct InstanceVO
          {
-            long pid;
-            long queueId;
+            sf::platform::pid_type pid;
+            sf::platform::queue_id_type queue;
             long state;
             long invoked;
             sf::platform::time_type last;
@@ -26,7 +27,7 @@ namespace casual
             void serialize( A& archive)
             {
                archive & CASUAL_MAKE_NVP( pid);
-               archive & CASUAL_MAKE_NVP( queueId);
+               archive & CASUAL_MAKE_NVP( queue);
                archive & CASUAL_MAKE_NVP( state);
                archive & CASUAL_MAKE_NVP( invoked);
                archive & CASUAL_MAKE_NVP( last);
@@ -53,7 +54,7 @@ namespace casual
             std::string name;
             //std::chrono::microseconds timeout;
             long long timeout = 0;
-            std::vector< long> instances;
+            std::vector< sf::platform::pid_type> instances;
             long lookedup = 0;
 
             template< typename A>
@@ -64,6 +65,21 @@ namespace casual
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( lookedup);
             }
+         };
+
+         struct ShutdownVO
+         {
+            using pids = std::vector< sf::platform::pid_type>;
+
+            pids online;
+            pids offline;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( online);
+               archive & CASUAL_MAKE_NVP( offline);
+            })
+
          };
 
          namespace update
@@ -81,6 +97,8 @@ namespace casual
                }
             };
          } // update
+
+
 
       } // admin
    } // broker

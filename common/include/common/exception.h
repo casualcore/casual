@@ -73,6 +73,12 @@ namespace casual
                : Base( "environment variable not found: " + description) {}
          };
 
+
+         struct Shutdown : Base
+         {
+            using Base::Base;
+         };
+
          namespace invalid
          {
             struct Base : common::exception::Base

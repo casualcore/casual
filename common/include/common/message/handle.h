@@ -71,9 +71,9 @@ namespace casual
             }
 
 
-            struct Terminate
+            struct Shutdown
             {
-               using message_type = message::Terminate;
+               using message_type = message::shutdown::Request;
 
                void dispatch( message_type& message);
             };

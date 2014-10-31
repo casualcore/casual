@@ -196,60 +196,100 @@ namespace casual
 
          namespace local
          {
-            bool wait( lifetime::Exit& exit, platform::pid_type pid, int flags = WNOHANG)
+            namespace
             {
-               exit.pid = waitpid( pid, &exit.status, flags);
-
-               if( exit.pid == -1)
+               lifetime::Exit wait( platform::pid_type pid, int flags = WNOHANG)
                {
-                  if( errno == error::cNoChildProcesses)
-                  {
+                  lifetime::Exit exit;
 
-                  }
-                  else
+                  auto result = waitpid( pid, &exit.status, flags);
+
+                  if( result == -1)
                   {
-                     log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
-                     throw exception::NotReallySureWhatToNameThisException( error::string());
-                  }
-               }
-               else if( exit.pid != 0)
-               {
-                  if( WIFEXITED( exit.status))
-                  {
-                     exit.reason = lifetime::Exit::Reason::exited;
-                     exit.status = WEXITSTATUS( exit.status);
-                  }
-                  else if( WIFSIGNALED( exit.status))
-                  {
-                     if( WCOREDUMP( exit.status))
+                     switch( errno)
                      {
-                        exit.reason = lifetime::Exit::Reason::core;
-                        exit.status = 0;
-                     }
-                     else
-                     {
-                        exit.reason = lifetime::Exit::Reason::signaled;
-                        exit.status = WTERMSIG( exit.status);
+                        case ECHILD:
+                        {
+                           // no child
+                           break;
+                        }
+                        case EINTR:
+                        {
+                           signal::handle();
+                           break;
+                        }
+                        default:
+                        {
+                           log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
+                           throw exception::NotReallySureWhatToNameThisException( error::string());
+                        }
                      }
                   }
-                  else if( WIFSTOPPED( exit.status))
+                  else if( result != 0)
                   {
-                     exit.reason = lifetime::Exit::Reason::stopped;
-                     exit.status = WSTOPSIG( exit.status);
+                     exit.pid = result;
+
+
+                     if( WIFEXITED( exit.status))
+                     {
+                        exit.reason = lifetime::Exit::Reason::exited;
+                        exit.status = WEXITSTATUS( exit.status);
+                     }
+                     else if( WIFSIGNALED( exit.status))
+                     {
+                        if( WCOREDUMP( exit.status))
+                        {
+                           exit.reason = lifetime::Exit::Reason::core;
+                           exit.status = 0;
+                        }
+                        else
+                        {
+                           exit.reason = lifetime::Exit::Reason::signaled;
+                           exit.status = WTERMSIG( exit.status);
+                        }
+                     }
+                     else if( WIFSTOPPED( exit.status))
+                     {
+                        exit.reason = lifetime::Exit::Reason::stopped;
+                        exit.status = WSTOPSIG( exit.status);
+                     }
                   }
-                  return true;
+                  return exit;
                }
-               return false;
-            }
+
+               void wait( const std::vector< platform::pid_type> pids, std::vector< lifetime::Exit>& result)
+               {
+                  while( result.size() < pids.size())
+                  {
+                     auto exit = local::wait( -1, 0);
+
+                     if( range::find( pids, exit.pid))
+                     {
+                        result.push_back( std::move( exit));
+                     }
+                  }
+               }
+
+               void terminate( std::vector< platform::pid_type> pids, std::vector< platform::pid_type>& result)
+               {
+                  auto terminated = process::terminate( pids);
+
+                  range::append( range::difference( pids, terminated), result);
+
+                  for( const auto& exit : lifetime::wait( terminated))
+                  {
+                     result.push_back( exit.pid);
+                  }
+
+                  log::internal::debug << "terminated processes: " << range::make( result) << std::endl;
+               }
+            } // <unnamed>
+
          } // local
 
          int wait( platform::pid_type pid)
          {
-            lifetime::Exit exit;
-
-            local::wait( exit, pid, 0);
-
-            return exit.status;
+            return local::wait( pid, 0).status;
          }
 
 
@@ -260,7 +300,7 @@ namespace casual
             std::vector< platform::pid_type> result;
             for( auto pid : pids)
             {
-               if( ! terminate( pid))
+               if( terminate( pid))
                {
                   result.push_back( pid);
                }
@@ -370,15 +410,84 @@ namespace casual
 
                Exit exit;
 
-               while( local::wait( exit, -1))
+               while( true)
                {
-                  result.push_back( exit);
+                  auto exit = local::wait( -1);
+                  if( exit)
+                  {
+                     result.push_back( exit);
+                  }
+                  else
+                  {
+                     return result;
+                  }
                }
+               return result;
+            }
+
+
+
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids)
+            {
+               std::vector< Exit> result;
+
+               local::wait( pids, result);
 
                return result;
             }
-         } // lifetime
 
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            {
+               if( pids.empty())
+                  return {};
+
+               std::vector< Exit> result;
+               try
+               {
+                  signal::alarm::Scoped alarm( timeout);
+
+                  local::wait( pids, result);
+
+               }
+               catch( const exception::signal::Timeout&)
+               {
+
+               }
+               return result;
+            }
+
+
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids)
+            {
+               std::vector< platform::pid_type> result;
+
+               local::terminate( pids, result);
+
+               return result;
+            }
+
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            {
+               if( pids.empty())
+                  return {};
+
+               std::vector< platform::pid_type> result;
+
+               try
+               {
+                  signal::alarm::Scoped alarm( timeout);
+
+                  local::terminate( pids, result);
+               }
+               catch( const exception::signal::Timeout&)
+               {
+
+               }
+               return result;
+
+            }
+
+         } // lifetime
 
 
       } // process

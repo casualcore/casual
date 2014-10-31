@@ -126,6 +126,8 @@ namespace casual
          namespace handle
          {
 
+
+
             //!
             //! Handles XATMI-calls
             //!

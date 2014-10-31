@@ -29,15 +29,14 @@ namespace casual
                   std::string openinfo;
                   std::string closeinfo;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & instances;
                      archive & id;
                      archive & key;
                      archive & openinfo;
                      archive & closeinfo;
-                  }
+                  })
                };
 
             } // resource
@@ -61,13 +60,12 @@ namespace casual
                      std::vector< resource::Manager> resourceManagers;
                      std::string domain;
 
-                     template< typename A>
-                     void marshal( A& archive)
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & transactionManagerQueue;
                         archive & resourceManagers;
                         archive & domain;
-                     }
+                     })
                   };
                } // connect
 
@@ -86,12 +84,11 @@ namespace casual
                   std::string domain;
                   std::vector< resource::Manager> resources;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & domain;
                      archive & resources;
-                  }
+                  })
                };
 
 
@@ -100,12 +97,11 @@ namespace casual
                   process::Handle process;
                   bool success = true;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & process;
                      archive & success;
-                  }
+                  })
                };
             } // manager
 
@@ -118,12 +114,11 @@ namespace casual
                process::Handle process;
                common::transaction::ID trid;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & process;
                   archive & trid;
-               }
+               })
             };
 
 
@@ -144,25 +139,23 @@ namespace casual
                platform::resource::id_type resource = 0;
                int state = 0;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
                   archive & resource;
                   archive & state;
-               }
+               })
             };
 
             namespace begin
             {
                struct Request : public basic_request< cTransactionBeginRequest>
                {
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & start;
-                  }
+                  })
 
                   common::platform::time_point start;
                };
@@ -196,12 +189,11 @@ namespace casual
                {
                   std::vector< platform::resource::id_type> resources;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & resources;
-                  }
+                  })
                };
 
                template< message::Type type>
@@ -212,13 +204,12 @@ namespace casual
                   platform::resource::id_type resource = 0;
                   int flags = 0;
 
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & resource;
                      archive & flags;
-                  }
+                  })
 
                };
 
@@ -233,13 +224,12 @@ namespace casual
                      platform::resource::id_type resource = 0;
                      int state = 0;
 
-                     template< typename A>
-                     void marshal( A& archive)
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & process;
                         archive & resource;
                         archive & state;
-                     }
+                     })
                   };
                } // connect
 

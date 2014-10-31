@@ -12,6 +12,7 @@
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/process.h"
+#include "common/server/lifetime.h"
 
 
 
@@ -62,6 +63,23 @@ namespace casual
                } // <unnamed>
             } // local
 
+
+            namespace shutdown
+            {
+               void Request::dispatch( message_type& message)
+               {
+                  std::vector< common::process::Handle> groups;
+                  common::range::transform( m_state.groups, groups, std::mem_fn( &broker::State::Group::process));
+
+                  for( auto pid : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
+                  {
+                     m_state.removeProcess( pid);
+                  }
+
+                  throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
+               }
+
+            } // shutdown
 
             namespace peek
             {

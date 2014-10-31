@@ -61,6 +61,7 @@ namespace casual
          public:
 
             Proxy( State&& state);
+            ~Proxy();
 
             void start();
 

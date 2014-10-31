@@ -163,6 +163,37 @@ namespace broker
                reply.size,
                reply.flags);
          }
+
+
+         void shutdown_( TPSVCINFO *serviceInfo)
+         {
+            casual::sf::service::reply::State reply;
+
+            try
+            {
+               auto service_io = local::server->createService( serviceInfo);
+
+               auto serviceReturn = service_io.call(
+                  *local::implementation,
+                  &Server::shutdown);
+
+               service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+               reply = service_io.finalize();
+            }
+            catch( ...)
+            {
+               local::server->handleException( serviceInfo, reply);
+            }
+
+            tpreturn(
+               reply.value,
+               reply.code,
+               reply.data,
+               reply.size,
+               reply.flags);
+         }
+
       }
 
 
@@ -182,6 +213,7 @@ namespace broker
          result.services.emplace_back( ".casual.broker.list.servers", &listServers_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
          result.services.emplace_back( ".casual.broker.list.services", &listServices_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
          result.services.emplace_back( ".casual.broker.update.instances", &updateInstances_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.shutdown", &shutdown_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
 
          return result;
       }
@@ -220,9 +252,14 @@ namespace broker
 
       void Server::updateInstances( const std::vector<admin::update::InstancesVO>& instances)
       {
-         common::trace::internal::Scope trace( "Server::_broker_updateInstances");
+         common::trace::internal::Scope trace( "Server::updateInstances");
 
          m_broker->serverInstances( instances);
+      }
+
+      admin::ShutdownVO Server::shutdown()
+      {
+         return m_broker->shutdown();
       }
 
 

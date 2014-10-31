@@ -50,7 +50,7 @@ namespace casual
                   };
 
                   id_type id;
-                  common::process::Handle server;
+                  common::process::Handle process;
                   State state = State::absent;
 
                };
@@ -423,7 +423,7 @@ namespace casual
                Instance( common::platform::pid_type pid) : m_pid( pid) {}
                bool operator () ( const resource::Proxy::Instance& instance) const
                {
-                  return instance.server.pid == m_pid;
+                  return instance.process.pid == m_pid;
                }
             private:
                common::platform::pid_type m_pid;

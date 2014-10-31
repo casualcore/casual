@@ -21,7 +21,6 @@
 
 namespace casual
 {
-   using namespace common;
 
 	namespace broker
 	{
@@ -34,12 +33,30 @@ namespace casual
          void boot( State& state);
 
 
+         void shutdown( State& state);
+
+
+         //!
+         //! Shutdown
+         //!
+         /*
+         struct Shutdown : Base
+         {
+            typedef common::message::shutdown::Request message_type;
+
+            using Base::Base;
+
+            void dispatch( message_type& message);
+         };
+         */
+
+
          //!
          //! Monitor Connect
          //!
          struct MonitorConnect: public Base
          {
-            typedef message::monitor::Connect message_type;
+            typedef common::message::monitor::Connect message_type;
 
             using Base::Base;
 
@@ -51,7 +68,7 @@ namespace casual
          //!
          struct MonitorDisconnect: public Base
          {
-            typedef message::monitor::Disconnect message_type;
+            typedef common::message::monitor::Disconnect message_type;
 
             using Base::Base;
 
@@ -69,7 +86,7 @@ namespace casual
                //!
                struct Connect : public Base
                {
-                  using message_type = message::transaction::manager::Connect;
+                  using message_type = common::message::transaction::manager::Connect;
 
                   using Base::Base;
 
@@ -81,7 +98,7 @@ namespace casual
                //!
                struct Ready : public Base
                {
-                  using message_type = message::transaction::manager::Ready;
+                  using message_type = common::message::transaction::manager::Ready;
 
                   using Base::Base;
 
@@ -99,7 +116,7 @@ namespace casual
                struct Connect : public Base
                {
 
-                  using message_type = message::transaction::client::connect::Request;
+                  using message_type = common:: message::transaction::client::connect::Request;
 
                   using Base::Base;
 
@@ -115,7 +132,7 @@ namespace casual
          //!
          struct Advertise : public Base
          {
-            typedef message::service::Advertise message_type;
+            typedef common::message::service::Advertise message_type;
 
             using Base::Base;
 
@@ -127,7 +144,7 @@ namespace casual
          //!
          struct Disconnect : public Base
          {
-            typedef message::server::Disconnect message_type;
+            typedef common::message::server::Disconnect message_type;
 
             using Base::Base;
 
@@ -140,7 +157,7 @@ namespace casual
 
          struct Connect : public Base
          {
-            typedef message::server::connect::Request message_type;
+            typedef common::message::server::connect::Request message_type;
 
             using Base::Base;
 
@@ -154,7 +171,7 @@ namespace casual
          //!
 		   struct Unadvertise : public Base
          {
-            typedef message::service::Unadvertise message_type;
+            typedef common::message::service::Unadvertise message_type;
 
             using Base::Base;
 
@@ -167,7 +184,7 @@ namespace casual
          //!
          struct ServiceLookup : public Base
          {
-            typedef message::service::name::lookup::Request message_type;
+            typedef common::message::service::name::lookup::Request message_type;
 
             using Base::Base;
 
@@ -184,7 +201,7 @@ namespace casual
          struct ACK : public Base
          {
 
-            typedef message::service::ACK message_type;
+            typedef common::message::service::ACK message_type;
 
             using Base::Base;
 
@@ -209,19 +226,19 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect(  message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources);
+            void connect(  common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources);
 
             void disconnect();
 
-            void reply( platform::queue_id_type id, message::service::Reply& message);
+            void reply( common::platform::queue_id_type id, common::message::service::Reply& message);
 
-            void ack( const message::service::callee::Call& message);
+            void ack( const common::message::service::callee::Call& message);
 
-            void transaction( const message::service::callee::Call&, const server::Service&);
+            void transaction( const common::message::service::callee::Call&, const common::server::Service&);
 
-            void transaction( const message::service::Reply& message);
+            void transaction( const common::message::service::Reply& message);
 
-            void statistics( platform::queue_id_type id, message::monitor::Notify& message);
+            void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message);
 
          private:
 

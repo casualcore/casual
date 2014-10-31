@@ -57,6 +57,10 @@ namespace broker
          void updateInstances( const std::vector< admin::update::InstancesVO>& instances);
 
 
+         admin::ShutdownVO shutdown();
+
+
+
       private:
          static Broker* m_broker;
       };

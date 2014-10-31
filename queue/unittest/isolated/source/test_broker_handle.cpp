@@ -61,7 +61,7 @@ namespace casual
                broker::handle::transaction::rollback::Request{ state.state},
                broker::handle::transaction::rollback::Reply{ state.state},
                broker::handle::peek::queue::Request{ state.state},
-               common::message::handle::Terminate{},
+               common::message::handle::Shutdown{},
             };
          }
 
@@ -106,7 +106,7 @@ namespace casual
             send( broker.id(), request);
 
 
-            send( broker.id(), common::message::Terminate{});
+            send( broker.id(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -142,7 +142,7 @@ namespace casual
             send( broker.id(), request);
 
 
-            send( broker.id(), common::message::Terminate{});
+            send( broker.id(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -178,7 +178,7 @@ namespace casual
             send( broker.id(), request);
 
 
-            send( broker.id(), common::message::Terminate{});
+            send( broker.id(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -216,7 +216,7 @@ namespace casual
             send( broker.id(), request);
 
 
-            send( broker.id(), common::message::Terminate{});
+            send( broker.id(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -258,7 +258,7 @@ namespace casual
             send( broker.id(), request);
 
 
-            send( broker.id(), common::message::Terminate{});
+            send( broker.id(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -313,7 +313,7 @@ namespace casual
             send( broker.id(), request);
 
 
-            send( broker.id(), common::message::Terminate{});
+            send( broker.id(), common::message::shutdown::Request{});
          }
 
          test::handle( state);

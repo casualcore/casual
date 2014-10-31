@@ -24,7 +24,8 @@ namespace casual
          {
 
             UTILITY_BASE = 500,
-            cTerminate,
+            cShutdowndRequest,
+            cShutdowndReply,
 
             // Server
             SERVER_BASE = 1000, // message type can't be 0!
@@ -122,7 +123,47 @@ namespace casual
          //! Message to "force" exit/termination.
          //! useful in unittest, to force exit on blocking read
          //!
-         using Terminate = basic_message< cTerminate>;
+         namespace shutdown
+         {
+            struct Request : basic_message< cShutdowndRequest>
+            {
+               process::Handle process;
+               bool reply = false;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & reply;
+               })
+            };
+
+            struct Reply : basic_message< cShutdowndReply>
+            {
+               template< typename ID>
+               struct holder_t
+               {
+                  std::vector< ID> online;
+                  std::vector< ID> offline;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & online;
+                     archive & offline;
+                  })
+               };
+
+               holder_t< platform::pid_type> executables;
+               holder_t< process::Handle> servers;
+
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & executables;
+                  archive & servers;
+               })
+            };
+
+         } // shutdown
+
 
 
          //
@@ -149,15 +190,14 @@ namespace casual
             platform::queue_id_type monitor_queue = 0;
             int transaction = 0;
 
-            template< typename A>
-            void marshal( A& archive)
+            CASUAL_CONST_CORRECT_MARSHAL(
             {
                archive & name;
                archive & type;
                archive & timeout;
                archive & monitor_queue;
                archive & transaction;
-            }
+            })
          };
 
          namespace server
@@ -169,11 +209,10 @@ namespace casual
 
                process::Handle process;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & process;
-               }
+               })
             };
 
 
@@ -183,12 +222,11 @@ namespace casual
 
                std::string path;
 
-               template< typename A>
-               void marshal( A& archive)
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
                   basic_id< type>::marshal( archive);
                   archive & path;
-               }
+               })
             };
 
             template< message::Type type>

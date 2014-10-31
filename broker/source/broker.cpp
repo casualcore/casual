@@ -228,6 +228,7 @@ namespace casual
 
 
             message::dispatch::Handler handler{
+               //handle::Shutdown{ m_state},
                handle::Connect{ m_state},
                handle::Disconnect{ m_state},
                handle::Advertise{ m_state},
@@ -284,6 +285,22 @@ namespace casual
                   }
                };
          common::range::for_each( instances, updateInstances);
+      }
+
+      admin::ShutdownVO Broker::shutdown()
+      {
+
+         auto orginal = m_state.processes();
+
+         admin::ShutdownVO result;
+
+         handle::shutdown( m_state);
+
+         result.online = m_state.processes();
+         result.offline = range::to_vector( range::difference( orginal, result.online));
+
+
+         return result;
       }
 
 	} // broker
