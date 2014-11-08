@@ -12,7 +12,8 @@ Created on 28 apr 2012
 import sys
 import os.path
 
-from casual.make.engine import engine
+#from casual.make.functiondefinitions import Compile
+from casual.make.internal.engine import engine
 
         
 def casual_make( casual_makefile):

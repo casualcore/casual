@@ -9,7 +9,7 @@ Contains the basic syntax to produce makefile
 #
 # Imports
 #
-from casual.make.internal import *
+from casual.make.internal.functions import *
 
 
 export=dict()

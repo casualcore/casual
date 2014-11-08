@@ -3,7 +3,7 @@
 #
 # Common stuff
 #
-include $(CASUALMAKE_PATH)/casual_make/casual/make/platform/common.mk
+include $(CASUALMAKE_PATH)/casual/make/platform/common.mk
 
 
 #

@@ -6,6 +6,6 @@ IncludePaths( ['include', 'current'])
 Compile('current/src/gtest-all.cc','obj/gtest-all.o')
 Compile('current/src/gtest_main.cc','obj/gtest_main.o')
 
-LinkArchive('gtest',
+LinkArchive('bin/gtest',
 	['obj/gtest-all.o',
 	'obj/gtest_main.o'])

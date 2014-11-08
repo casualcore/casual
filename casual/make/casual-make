@@ -6,16 +6,13 @@ Created on 14 maj 2012
 @author: hbergk
 '''
 
-SCRIPTVERSION="2.0"
-SENASTUPPDATERAD="20120715"
-
 #
 # Imports
 #
 import sys
 import os
 import multiprocessing
-from casual.make.make import casual_make
+from make import casual_make
 import subprocess
 import re
 

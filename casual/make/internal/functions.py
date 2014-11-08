@@ -10,7 +10,7 @@ import re
 from contextlib import contextmanager
 
 from casual.make.platform.factory import factory
-from casual.make.engine import engine
+from engine import engine
 
 
 
@@ -40,7 +40,7 @@ class Target:
 #
 # Set up casual_make-program. Normally casual_make
 #
-def_casual_make='casual_make.py'
+def_casual_make='casual-make-generate'
 
 def_Deploy='make.deploy.ksh'
 
