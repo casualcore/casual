@@ -310,7 +310,7 @@ if __name__ == '__main__':
     #
     # Assemble command
     #
-    command = MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " " + GMAKE_OPTIONS + " --no-builtin-rules --no-keep-going -f " + make_file + '\n' 
+    command = MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " " + GMAKE_OPTIONS + " --no-print-directory --no-builtin-rules --no-keep-going -f " + make_file + '\n' 
     
     print bcolors.header( "executes: ") + command
     
