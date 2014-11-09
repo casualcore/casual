@@ -19,6 +19,8 @@ import re
 
 from internal import path
 
+from casual.common.color import color
+
 #
 # Globals to use
 #
@@ -26,108 +28,6 @@ GMAKE_OPTIONS=""
 FORCE_MAKEMAKE=0
 MAKE_PATH="/usr/bin/make"
 USER_MAKE_FILE=""
-
-class  Bcolors:
-    
-    __active = True;
-    
-    def __grey( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[30;1m'
-        else: return '\033[30m'
-    
-    def __red( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[31;1m'
-        else: return '\033[31m'
- 
-    def __green( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[32;1m'
-        else: return '\033[32m'
-    
-    def __yellow( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[33;1m'
-        else: return '\033[33m'
-    
-    def __blue( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[34;1m'
-        else: return '\033[34m'
-        
-    def __magenta( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[35;1m'
-        else: return '\033[35m'
-    
-    def __cyan( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[36;1m'
-        else: return '\033[36m'
-    
-    def __white( self, bold = False):
-        if not self.__active: return ''
-        if bold: return '\033[37;1m'
-        else: return '\033[37m'
-    
-    def __error( self, bold = False):
-        if not self.__active: return ''
-        else: return '\033[0;1;31m'
-    
-    def __pink(self, bold = False):
-        if not self.__active: return ''
-        else: return '\033[0;1;35m'
-    
-    
-    def __end(self):
-       if not self.__active: return ''
-       return '\033[0m'
-    
-    def magenta( self, string, bold = False):
-        return self.__magenta( bold) + string + self.__end()
-    
-    def error( self, string, bold = False):
-        return self.__error( bold) + string + self.__end()
-    
-    def warning(self, string, bold = False):
-        return self.__pink( bold) + string + self.__end()
-    
-    def blue( self, string, bold = False):
-        return self.__blue( bold) + string + self.__end()
-
-    def green( self, string, bold = False):
-        return self.__green( bold) + string + self.__end()
-    
-    def red( self, string, bold = False):
-        return self.__red( bold) + string + self.__end()
-    
-    
-    def cyan( self, string, bold = False):
-        return self.__cyan( bold) + string + self.__end()
-    
-    header = cyan
-    
-    def yellow( self, info, bold = False):
-        return self.__yellow(bold) + info + self.__end()
-    
-    def white( self, string, bold = False):
-        return self.__white( bold) + string + self.__end()
-    
-    info = white
-    
-    def grey( self, string, bold = False):
-        return self.__grey( bold) + string + self.__end()
-    
-    def none(self, string, bold = False):
-        return string
-    
-    
-    def activate( self, value = True):
-        self.__active = value
-
-bcolors=Bcolors()
-
 
 
 
@@ -218,38 +118,36 @@ reformat.ingore_filters = [
 
 reformat.filters = [ 
     [ re.compile(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*'),  
-     lambda match: bcolors.green( 'compile ') + '(' +  match.group(1) + '): ' + bcolors.white( match.group(3)) + '\n' ],
+     lambda match: color.green( 'compile ') + '(' +  match.group(1) + '): ' + color.white( match.group(3)) + '\n' ],
     [ re.compile(r'(^ar) \S+ (\S+\.a).*'),  
-     lambda match: bcolors.blue( 'archive ') + '(' + match.group(1) + '): ' + bcolors.white( match.group(2)) + '\n' ],
+     lambda match: color.blue( 'archive ') + '(' + match.group(1) + '): ' + color.white( match.group(2)) + '\n' ],
     [ re.compile(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*'),
-     lambda match: bcolors.blue( 'link ') + '(' + match.group(1) + '): ' + bcolors.white( match.group(4)) + '\n' ],
+     lambda match: color.blue( 'link ') + '(' + match.group(1) + '): ' + color.white( match.group(4)) + '\n' ],
     [ re.compile(r'^(.*[.]cmk )(.*)'),  
-     lambda match: bcolors.cyan( 'makefile: ') + bcolors.blue( match.group(2) ) + ' ' + match.group(1) + '\n'],
+     lambda match: color.cyan( 'makefile: ') + color.blue( match.group(2) ) + ' ' + match.group(1) + '\n'],
     [ re.compile(r'(^make.*:)(.*)'),  
-     lambda match: bcolors.header( match.group(1) ) + match.group(2) + '\n'],
+     lambda match: color.header( match.group(1) ) + match.group(2) + '\n'],
     [ re.compile(r'^rm -f (.*)'),  
-     lambda match: bcolors.header( 'delete: ' ) + match.group(1) + '\n' ],
+     lambda match: color.header( 'delete: ' ) + match.group(1) + '\n' ],
     [ re.compile(r'^mkdir( [-].+)*[ ](.*)'),  
-     lambda match: bcolors.header( 'create: ' ) + match.group( 2) + '\n' ],
+     lambda match: color.header( 'create: ' ) + match.group( 2) + '\n' ],
     [ re.compile(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*'),  
-     lambda match: bcolors.blue( 'buildserver (' + match.group(1) + '): ' ) + bcolors.white( match.group(2)) + '\n' ],
+     lambda match: color.blue( 'buildserver (' + match.group(1) + '): ' ) + color.white( match.group(2)) + '\n' ],
     [ re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)'),  
-     lambda match: bcolors.blue( 'prepare install: ') + bcolors.white( match.group(1)) +  ' --> ' +  match.group(2) + '\n' ],
+     lambda match: color.blue( 'prepare install: ') + color.white( match.group(1)) +  ' --> ' +  match.group(2) + '\n' ],
     [ re.compile(r'^(>[a-zA-Z+.]+)[\s]+(.*)'),  
-     lambda match: bcolors.green( 'updated: ') + match.group(2) + ' ' + bcolors.blue( match.group(1)) + '\n' ],
+     lambda match: color.green( 'updated: ') + match.group(2) + ' ' + color.blue( match.group(1)) + '\n' ],
     [ re.compile(r'^generates makefile.*from[ ](.*)'),  
-     lambda match: bcolors.cyan( 'makefile: ') + bcolors.yellow( 'generate ') + bcolors.white( match.group(1)) + '\n' ],
+     lambda match: color.cyan( 'makefile: ') + color.yellow( 'generate ') + color.white( match.group(1)) + '\n' ],
     [ re.compile(r'^casual-build-resource-proxy.*--output[ ]+([^ ]+)'),  
-     lambda match: bcolors.blue( 'build-rm-proxy: ') + bcolors.white( match.group(1)) +'\n' ],
+     lambda match: color.blue( 'build-rm-proxy: ') + color.white( match.group(1)) +'\n' ],
 ];
     
     
 
 
 if __name__ == '__main__':
-    #
-    # Kolla om anvandaren har skickat med ngon imake/make-fil
-    #
+
     
     (options, args) = handleArguments()
     
@@ -260,7 +158,6 @@ if __name__ == '__main__':
     FORCE_MAKEMAKE=options.FORCE_MAKEMAKE;
             
     
-    
     if len(args) != 1:
         GMAKE_OPTIONS=optionsAsString( options) + " all"
     else:
@@ -268,14 +165,14 @@ if __name__ == '__main__':
 
 
     if not options.COLORS:
-        bcolors.activate( False)
+        color.active( False)
     
     #
     # Check if we should generate
     #
-    if FORCE_MAKEMAKE == 1 or not os.path.isfile( USER_MAKE_FILE)  or os.path.getmtime( make_file) < os.path.getmtime( causal_make_file) :
+    if FORCE_MAKEMAKE == 1 or not os.path.isfile( make_file)  or os.path.getmtime( make_file) < os.path.getmtime( causal_make_file) :
         if not os.path.isfile( causal_make_file ):
-            sys.stderr.write( bcolors.error( 'error: Could not find the casaul make file ') + causal_make_file + '\n')
+            sys.stderr.write( color.error( 'error: Could not find the casaul make file ') + causal_make_file + '\n')
             sys.exit( 1)
 
         sys.stdout.write( reformat( 'generates makefile from ' + os.path.abspath( causal_make_file))) 
@@ -284,7 +181,7 @@ if __name__ == '__main__':
             casual_make( causal_make_file)
 
         except:
-            sys.stderr.write( bcolors.error( 'error: ' ) + "Could not generate " + make_file + " from " + causal_make_file + '\n')
+            sys.stderr.write( color.error( 'error: ' ) + "Could not generate " + make_file + " from " + causal_make_file + '\n')
             raise
             sys.exit(1)
 
@@ -295,7 +192,7 @@ if __name__ == '__main__':
 
 
     if CPU_COUNT == 0:
-        sys.stderr.write( bcolors.warning( "warning: Could not detect how many CPU's the machine has - guess on 2\n"))
+        sys.stderr.write( color.warning( "warning: Could not detect how many CPU's the machine has - guess on 2\n"))
         CPU_COUNT=2
 
 
@@ -312,7 +209,7 @@ if __name__ == '__main__':
     #
     command = MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " " + GMAKE_OPTIONS + " --no-print-directory --no-builtin-rules --no-keep-going -f " + make_file + '\n' 
     
-    print bcolors.header( "executes: ") + command
+    print color.header( "executes: ") + command
     
     #
     # Call command
@@ -336,9 +233,9 @@ if __name__ == '__main__':
         user_target = args[0]
 
     if process.returncode == 0:
-        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.green( 'SUCCESS', True)
+        print 'target ' + color.blue( user_target) + ': ' + color.green( 'SUCCESS')
     else:
-        print 'target ' + bcolors.blue( user_target) + ': ' + bcolors.error( 'FAILED', True)
+        print 'target ' + color.blue( user_target) + ': ' + color.error( 'FAILED')
     
     #print reformat( process.stdout.readline())
     

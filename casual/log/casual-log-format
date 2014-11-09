@@ -15,71 +15,8 @@ import signal
 
 from functools import partial
 
+from casual.common.color import color
 
-class  Color:
-    
-    __grey = '\033[30'
-    
-    __red = '\033[31'
-    
-    __green = '\033[32'
-
-    __yellow = '\033[33'
-    
-    __blue = '\033[34'
-    __magenta = '\033[35'
-    
-    __pink = '\033[0;1;35m'
-    
-    __cyan = '\033[36'
-    __white = '\033[37'
-    __error = '\033[91'
-    
-    __WARNING = '\033[0;23m'
-    
-    __ENDC = '\033[0m'
-    
-    
-    def __bold(self, string, bold = False):
-        if bold:
-            return string + ';1m'
-        else:
-            return string + 'm';
-    
-    def grey( self, string, bold = False):
-        return self.__bold( self.__grey, bold) + string + self.__ENDC
-    
-    def header( self, string):
-        return self.__magenta + string + self.__ENDC
-    
-    def red( self, string, bold = False):
-        return self.__bold( self.__red, bold) + string + self.__ENDC
-    
-    def blue( self, string, bold = False):
-        return self.__bold( self.__blue, bold) + string + self.__ENDC
-
-    def green( self, string, bold = False):
-        return self.__bold( self.__green, bold) + string + self.__ENDC
-
-    def cyan( self, string, bold = False):
-        return self.__bold( self.__cyan, bold) + string + self.__ENDC
-    
-    def error( self, string):
-        return self.__error + string + self.__ENDC
-    
-    def yellow( self, string, bold = False):
-        return self.__bold( self.__yellow, bold) + string + self.__ENDC
-    
-    def white( self, string, bold = False):
-        return self.__bold( self.__white, bold) + string + self.__ENDC
-    
-    def warning(self, string, bold = False):
-        return self.__pink + string + self.__ENDC
-    
-    def default(self, string, bold = False):
-        return string
-
-color=Color()
 
 
 def time( time):
