@@ -289,25 +289,6 @@ namespace casual
             m_state.removeServices( message.process.pid, std::move( services));
          }
 
-         void Disconnect::dispatch( message_type& message)
-         {
-            //
-            // Remove the instance
-            //
-            m_state.removeProcess( message.process.pid);
-         }
-
-         template< typename M>
-         void Disconnect::dispatch( M& message)
-         {
-            //
-            // Remove the instance
-            //
-            m_state.removeProcess( message.server.pid);
-
-            // TODO: We have to check if this affect pending...
-         }
-
 
          void Connect::dispatch( message_type& message)
          {
@@ -508,14 +489,6 @@ namespace casual
             }
          }
 
-         void Policy::disconnect()
-         {
-            message::server::Disconnect message;
-            message.process = common::process::handle();
-
-            Disconnect disconnect( m_state);
-            disconnect.dispatch( message);
-         }
 
          void Policy::reply( platform::queue_id_type id, message::service::Reply& message)
          {

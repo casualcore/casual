@@ -33,22 +33,11 @@ namespace casual
          void boot( State& state);
 
 
-         void shutdown( State& state);
-
-
          //!
          //! Shutdown
          //!
-         /*
-         struct Shutdown : Base
-         {
-            typedef common::message::shutdown::Request message_type;
+         void shutdown( State& state);
 
-            using Base::Base;
-
-            void dispatch( message_type& message);
-         };
-         */
 
 
          //!
@@ -139,21 +128,6 @@ namespace casual
             void dispatch( message_type& message);
          };
 
-         //!
-         //! A server is disconnected
-         //!
-         struct Disconnect : public Base
-         {
-            typedef common::message::server::Disconnect message_type;
-
-            using Base::Base;
-
-            void dispatch( message_type& message);
-
-            template< typename M>
-            void dispatch( M& message);
-         };
-
 
          struct Connect : public Base
          {
@@ -227,8 +201,6 @@ namespace casual
 
 
             void connect(  common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources);
-
-            void disconnect();
 
             void reply( common::platform::queue_id_type id, common::message::service::Reply& message);
 

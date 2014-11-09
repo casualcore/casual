@@ -8,6 +8,9 @@
 #include "common/server/lifetime.h"
 #include "common/queue.h"
 
+#include "common/trace.h"
+#include "common/internal/log.h"
+
 namespace casual
 {
    namespace common
@@ -42,7 +45,9 @@ namespace casual
                      }
                   }
 
-                  range::append( range::intersection( requested, process::lifetime::wait( result, timeout)), result);
+                  range::append( range::intersection( requested, process::lifetime::wait( requested, timeout)), result);
+
+                  log::internal::debug << "soft off-line: " << range::make( result) << std::endl;
 
                   return result;
 
@@ -54,6 +59,7 @@ namespace casual
             {
                std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
+
                   std::vector< platform::pid_type> origin;
 
                   for( auto& handle: servers)
@@ -63,9 +69,12 @@ namespace casual
 
                   auto result = soft::shutdown( servers, timeout);
 
+
                   auto running = range::difference( origin, result);
 
                   range::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
+
+                  log::internal::debug << "hard off-line: " << range::intersection( running, result) << std::endl;
 
                   return result;
 

@@ -173,30 +173,6 @@ namespace casual
       }
 
 
-      TEST( casual_common_service_context, disconnect)
-      {
-         trace::internal::Scope trace( "casual_common_service_context, disconnect");
-
-         mockup::ipc::clear();
-
-         mockup::ipc::Router router{ ipc::receive::id()};
-
-         {
-            local::broker::prepare( router.id());
-            callee::handle::Call callHandler( local::arguments());
-         }
-
-         auto reader = queue::blocking::reader( mockup::ipc::broker::queue().receive());
-         message::server::Disconnect message;
-         reader( message);
-
-         EXPECT_TRUE( message.process.pid == process::id());
-
-
-      }
-
-
-
 
       TEST( casual_common_service_context, call_service__gives_reply)
       {

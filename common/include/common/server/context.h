@@ -224,8 +224,6 @@ namespace casual
                         // If there are open resources, close'em
                         //
                         transaction::Context::instance().close();
-
-                        m_policy.disconnect();
                      }
                      catch( ...)
                      {
@@ -444,8 +442,6 @@ namespace casual
 
                   void connect( message::server::connect::Request& message, const std::vector< transaction::Resource>& resources);
 
-                  void disconnect();
-
                   void reply( platform::queue_id_type id, message::service::Reply& message);
 
                   void ack( const message::service::callee::Call& message);
@@ -509,10 +505,6 @@ namespace casual
                      brokerWriter( ack);
                   }
 
-                  void disconnect()
-                  {
-                     // no-op
-                  }
 
                   void statistics( platform::queue_id_type id, message::monitor::Notify& message)
                   {

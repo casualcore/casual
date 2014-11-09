@@ -29,7 +29,7 @@ namespace casual
                TestHandler() = default;
                //TestHandler( TestHandler&&) = default;
 
-               typedef message::server::Disconnect message_type;
+               typedef message::shutdown::Request message_type;
 
                void dispatch( message_type& message)
                {

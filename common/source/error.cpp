@@ -44,12 +44,13 @@ namespace casual
             }
             catch( const exception::Shutdown& exception)
             {
-               log::information << file::basename( process::path()) << " - off-line" << std::endl;
+               log::information << "off-line" << std::endl;
                return 0;
             }
             catch( const exception::signal::Terminate& exception)
             {
-               log::information << file::basename( process::path()) << " terminated - " <<  exception << std::endl;
+               log::information << "terminated - " <<  exception << std::endl;
+               log::internal::debug << exception << std::endl;
                return 0;
             }
             catch( const exception::invalid::Process& exception)

@@ -230,7 +230,6 @@ namespace casual
             message::dispatch::Handler handler{
                //handle::Shutdown{ m_state},
                handle::Connect{ m_state},
-               handle::Disconnect{ m_state},
                handle::Advertise{ m_state},
                handle::Unadvertise{ m_state},
                handle::ServiceLookup{ m_state},

@@ -79,7 +79,7 @@ namespace casual
             } // connect
 
 
-            typedef basic_disconnect< cServerDisconnect> Disconnect;
+            //typedef basic_disconnect< cServerDisconnect> Disconnect;
 
          } // server
 

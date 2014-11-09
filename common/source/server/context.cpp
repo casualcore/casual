@@ -188,19 +188,6 @@ namespace casual
                }
 
 
-               void Default::disconnect()
-               {
-                  // TODO: we shall get rid of disconnect messages, and rely on terminate-signal
-
-                  message::server::Disconnect message;
-                  message.process = process::handle();
-                  //
-                  // we can't block here...
-                  //
-                  non_blocking_broker_writer brokerWriter;
-                  brokerWriter( message);
-               }
-
                void Default::statistics( platform::queue_id_type id, message::monitor::Notify& message)
                {
                   monitor_writer writer{ id};
