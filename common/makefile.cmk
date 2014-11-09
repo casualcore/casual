@@ -1,4 +1,4 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 if sys.platform.startswith('darwin'):
     UUIDLIB='c'

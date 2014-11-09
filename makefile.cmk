@@ -1,4 +1,4 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 
 Parallel( False)

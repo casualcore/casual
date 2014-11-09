@@ -1,59 +1,51 @@
 
 
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
-Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
 IncludePaths( [
-   "../common/include",
-   "../xatmi/include",
-   "$(UNITTEST_INCLUDE_PATH)",
+   '../common/include',
+   '../xatmi/include',
+   '$(UNITTEST_INCLUDE_PATH)',
    ])
 
 
 LibraryPaths([
-    "../common/bin",
-    "../xatmi/bin",
-    "$(JSON_LIBRARY_PATH)",
+    '../common/bin',
+    '../xatmi/bin',
+    '$(JSON_LIBRARY_PATH)',
     ])
 
 
 install_lib = []
 
-Compile( "source/string.cpp", "obj/string.o")
-Compile( "source/octet.cpp", "obj/octet.o")
-Compile( "source/order.cpp", "obj/order.o")
-Compile( "source/field.cpp", "obj/field.o")
 
-target = LinkLibrary( "bin/casual-buffer",
+
+lib_buffer = LinkLibrary( 'bin/casual-buffer',
     [
-     "obj/string.o",
-     "obj/octet.o",
-     "obj/order.o",
-     "obj/field.o"
+     Compile( 'source/string.cpp'),
+     Compile( 'source/octet.cpp'),
+     Compile( 'source/order.cpp'),
+     Compile( 'source/field.cpp'),
     ],
     [
-     "casual-common",
+     'casual-common',
     ])
 
-install_lib.append( target)
+install_lib.append( lib_buffer)
 
 #
 # Unittest
 #
-Compile( "unittest/isolated/source/test_field_buffer.cpp", "unittest/isolated/obj/test_field_buffer.o")
-Compile( "unittest/isolated/source/test_octet_buffer.cpp", "unittest/isolated/obj/test_octet_buffer.o")
-Compile( "unittest/isolated/source/test_order_buffer.cpp", "unittest/isolated/obj/test_order_buffer.o")
-Compile( "unittest/isolated/source/test_string_buffer.cpp", "unittest/isolated/obj/test_string_buffer.o")
-
-LinkIsolatedUnittest( "bin/test-buffer",
+LinkIsolatedUnittest( 'bin/test-buffer',
    [
-    "unittest/isolated/obj/test_octet_buffer.o",
-    "unittest/isolated/obj/test_order_buffer.o",
-    "unittest/isolated/obj/test_string_buffer.o",
-    "unittest/isolated/obj/test_field_buffer.o",
+    Compile( 'unittest/isolated/source/test_field_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_octet_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_order_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_string_buffer.cpp'),
    ],
-   ["casual-common", "casual-xatmi", "casual-buffer"])  
+   [ lib_buffer, 'casual-common', 'casual-xatmi'])  
    
 #
 # Install

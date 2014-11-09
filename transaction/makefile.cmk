@@ -1,20 +1,20 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 import sys; 
     
-IncludePaths( ["include",
-    "../common/include",
-    "../xatmi/include",
-    "../configuration/include",
-    "../serviceframework/include",
-    "../thirdparty/database/include",
-    "$(UNITTEST_INCLUDE_PATH)"])
+IncludePaths( ['include',
+    '../common/include',
+    '../xatmi/include',
+    '../configuration/include',
+    '../serviceframework/include',
+    '../thirdparty/database/include',
+    '$(UNITTEST_INCLUDE_PATH)'])
 
-LibraryPaths( ["bin",
-    "../common/bin",
-    "../buffer/bin",
-    "../configuration/bin",
-    "../serviceframework/bin",
-    "../xatmi/bin"])
+LibraryPaths( ['bin',
+    '../common/bin',
+    '../buffer/bin',
+    '../configuration/bin',
+    '../serviceframework/bin',
+    '../xatmi/bin'])
 
 #    $(IBM_DB_LIB)
 
@@ -26,30 +26,30 @@ install_bin = []
 # Compile and link the transaction manager
 #
 
-manager_archive = LinkArchive( "bin/manager-archive",
+manager_archive = LinkArchive( 'bin/manager-archive',
      [
-    Compile( "source/manager/manager.cpp", 'obj/manager/manager.o'),
-    Compile( "source/manager/state.cpp", "obj/manager/state.o"),
-    Compile( "source/manager/action.cpp", "obj/manager/action.o"),
-    Compile( "source/manager/log.cpp", "obj/manager/log.o"),
-    Compile( "source/manager/handle.cpp", "obj/manager/handle.o"),
-    Compile( "source/manager/admin/server.cpp", "obj/manager/admin/server.o"),
-    Compile( "source/manager/admin/vo/transaction.cpp", "obj/manager/admin/vo/transaction.o"),
+    Compile( 'source/manager/manager.cpp'),
+    Compile( 'source/manager/state.cpp'),
+    Compile( 'source/manager/action.cpp'),
+    Compile( 'source/manager/log.cpp'),
+    Compile( 'source/manager/handle.cpp'),
+    Compile( 'source/manager/admin/server.cpp'),
+    Compile( 'source/manager/admin/vo/transaction.cpp'),
     ])
  
 
 
-target = LinkExecutable( "bin/casual-transaction-manager",
+target = LinkExecutable( 'bin/casual-transaction-manager',
     [
-     Compile( "source/manager/main.cpp", "obj/manager/main.o")
+     Compile( 'source/manager/main.cpp')
     ],
     [ 
       manager_archive, 
-     "casual-sf", 
-     "casual-common", 
-     "casual-configuration", 
-     "sqlite3",
-     "casual-xatmi",
+     'casual-sf', 
+     'casual-common', 
+     'casual-configuration', 
+     'sqlite3',
+     'casual-xatmi',
      ])
 
 install_bin.append( target)
@@ -59,44 +59,43 @@ install_bin.append( target)
 # Compile and link resurce-proxy-server lib
 #
 
-target = LinkLibrary( "bin/casual-resource-proxy-server",
+target = LinkLibrary( 'bin/casual-resource-proxy-server',
    [
-    Compile( "source/resource/proxy_server.cpp", "obj/resource/proxy_server.o"),
-    Compile( "source/resource/proxy.cpp", "obj/resource/proxy.o"),
+    Compile( 'source/resource/proxy_server.cpp'),
+    Compile( 'source/resource/proxy.cpp'),
    ],
-   ["casual-common", "casual-sf"])
+   ['casual-common', 'casual-sf'])
 
 install_lib.append( target)
 
 #
 # unittest
 #
-unitest_objectfiles = [
-    Compile( "unittest/isolated/source/test_configuration.cpp", "unittest/isolated/obj/test_configuration.o"),
-    Compile( "unittest/isolated/source/test_transactionlog.cpp", "unittest/isolated/obj/test_transactionlog.o"),
-    Compile( "unittest/isolated/source/test_manager.cpp", "unittest/isolated/obj/test_manager.o"),
-];
-
-LinkIsolatedUnittest( "bin/test-casual-transaction",
-    unitest_objectfiles,
+ 
+LinkIsolatedUnittest( 'bin/test-casual-transaction',
+    [
+        Compile( 'unittest/isolated/source/test_configuration.cpp'),
+        Compile( 'unittest/isolated/source/test_transactionlog.cpp'),
+        Compile( 'unittest/isolated/source/test_manager.cpp'),
+    ],
     [ 
      manager_archive, 
-     "casual-common", 
-     "casual-sf", 
-     "casual-configuration", 
-     "sqlite3", 
-     "casual-mockup",
-     "casual-xatmi",
-     "casual-mockup-unittest-environment"
+     'casual-common', 
+     'casual-sf', 
+     'casual-configuration', 
+     'sqlite3', 
+     'casual-mockup',
+     'casual-xatmi',
+     'casual-mockup-unittest-environment'
      ])
 
 
 #
 # Mockup resource proxy
 #
-target = LinkExecutable( "bin/rm-proxy-casual-mockup",
-    [ Compile( "source/resource/template_build_resource_proxy.c", "obj/resource/template_build_resource_proxy.o")],
-    [ "casual-mockup-rm", "casual-resource-proxy-server"])
+target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
+    [ Compile( 'source/resource/template_build_resource_proxy.c')],
+    [ 'casual-mockup-rm', 'casual-resource-proxy-server'])
 
 
 install_bin.append( target)

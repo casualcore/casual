@@ -1,24 +1,24 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 
-Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
 IncludePaths([
-	"include",
-	"../common/include",
-	"../serviceframework/include",
-	"../xatmi/include",
-	"../thirdparty/database/include",
-	"$(UNITTEST_INCLUDE_PATH)",
+	'include',
+	'../common/include',
+	'../serviceframework/include',
+	'../xatmi/include',
+	'../thirdparty/database/include',
+	'$(UNITTEST_INCLUDE_PATH)',
 	])
 
 
 LibraryPaths([
-	"bin",
-    "../common/bin",
-    "../xatmi/bin",
-    "../serviceframework/bin",
-    "$(JSON_LIBRARY_PATH)",
+	'bin',
+    '../common/bin',
+    '../xatmi/bin',
+    '../serviceframework/bin',
+    '$(JSON_LIBRARY_PATH)',
     ])
 
 
@@ -26,53 +26,46 @@ install_lib = []
 install_bin = []
 
 
-target = LinkLibrary( "bin/casual-monitor-vo",
-    [Compile( "source/monitorvo.cpp", "obj/monitorvo.o")],
-    ["casual-common",
-    "casual-sf"])
+lib_vo = LinkLibrary( 'bin/casual-monitor-vo',
+    [Compile( 'source/monitorvo.cpp')],
+    ['casual-common',
+    'casual-sf'])
 
-install_lib.append( target)
+install_lib.append( lib_vo)
 
-LinkArchive( 'bin/casual-monitor-db',
+archive_monitor_db = LinkArchive( 'bin/casual-monitor-db',
 	[
-		Compile( "source/monitordb.cpp", "obj/monitordb.o"),
+		Compile( 'source/monitordb.cpp'),
 	])
 
 
-
-casual_monitor_objects = [
-	Compile( "source/monitor.cpp", "obj/monitor.o"),
-	Compile( "source/monitor_main.cpp", "obj/monitor_main.o"),
-]
-
-target = LinkExecutable( "bin/casual-monitor",
-	casual_monitor_objects,
+target = LinkExecutable( 'bin/casual-monitor',
 	[
-	'casual-monitor-db',
-	"casual-monitor-vo",
-	"casual-common",
-	"sqlite3"] )
+		Compile( 'source/monitor.cpp'),
+		Compile( 'source/monitor_main.cpp'),
+	],
+	[
+	archive_monitor_db,
+	lib_vo,
+	'casual-common',
+	'sqlite3'] )
 
 install_bin.append( target)
 
 
-casual_monitor_request_objects = [
-	Compile( "source/statisticserver.cpp", "obj/statisticserver.o"),
-	Compile( "source/statisticimplementation.cpp", "obj/statisticimplementation.o"),			
-]
-
-
-
-target = LinkServer("bin/casual-monitor-request-server",
-    casual_monitor_request_objects,
+target = LinkServer('bin/casual-monitor-request-server',
     [
-	'casual-monitor-db',
-	"casual-monitor-vo",
-    "casual-xatmi",
-    "casual-common",
-    "casual-sf",
-    "sqlite3"],
-    ["getMonitorStatistics"])
+	   Compile( 'source/statisticserver.cpp'),
+	   Compile( 'source/statisticimplementation.cpp'),			
+	],
+    [
+	archive_monitor_db,
+	lib_vo,
+    'casual-xatmi',
+    'casual-common',
+    'casual-sf',
+    'sqlite3'],
+    ['getMonitorStatistics'])
 
 install_bin.append( target)
 	
@@ -80,13 +73,13 @@ install_bin.append( target)
 #
 # unittest
 #
-LinkIsolatedUnittest( "bin/test-casual-monitor",
-	[ Compile( "unittest/isolated/source/test_monitor.cpp", "unittest/isolated/obj/test_monitor.o")],
+LinkIsolatedUnittest( 'bin/test-casual-monitor',
+	[ Compile( 'unittest/isolated/source/test_monitor.cpp')],
 	[
-	'casual-monitor-db',
-	"casual-monitor-vo",
-	"casual-common",
-	"sqlite3"])	
+	archive_monitor_db,
+	lib_vo,
+	'casual-common',
+	'sqlite3'])	
 
 #
 # Install

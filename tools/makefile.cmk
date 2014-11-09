@@ -1,41 +1,41 @@
 
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
-Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
 
-IncludePaths( ["include",
-    "../common/include",
-    "../xatmi/include",
-    "../configuration/include",
-    "../serviceframework/include",
-    "$(YAML_INCLUDE_PATH)",
-    "$(UNITTEST_INCLUDE_PATH)"])
+IncludePaths( ['include',
+    '../common/include',
+    '../xatmi/include',
+    '../configuration/include',
+    '../serviceframework/include',
+    '$(YAML_INCLUDE_PATH)',
+    '$(UNITTEST_INCLUDE_PATH)'])
 
-LibraryPaths( ["bin",
-    "../buffer/bin",
-    "../common/bin",
-    "../xatmi/bin",
-    "../configuration/bin",
-    "../serviceframework/bin",
-    "$(YAML_LIBRARY_PATH)",
-    "$(JSON_LIBRARY_PATH)"])
+LibraryPaths( ['bin',
+    '../buffer/bin',
+    '../common/bin',
+    '../xatmi/bin',
+    '../configuration/bin',
+    '../serviceframework/bin',
+    '$(YAML_LIBRARY_PATH)',
+    '$(JSON_LIBRARY_PATH)'])
 
 
 install_bin = []
 
 
-target = LinkExecutable( "bin/casual-build-server",
-   [ Compile( "build_server/build_server.cpp", "build_server/obj/build_server.o")],
-   [ "casual-common", "casual-sf", "casual-configuration"])
+target = LinkExecutable( 'bin/casual-build-server',
+   [ Compile( 'build_server/build_server.cpp')],
+   [ 'casual-common', 'casual-sf', 'casual-configuration'])
 
 install_bin.append( target)
 
-target = LinkExecutable( "bin/casual-build-resource-proxy",
-   [ Compile( "resource_proxy/build_resource_proxy.cpp", "resource_proxy/obj/build_resource_proxy.o")],
-   [ "casual-common", 
-    "casual-sf", 
-    "casual-configuration"])
+target = LinkExecutable( 'bin/casual-build-resource-proxy',
+   [ Compile( 'resource_proxy/build_resource_proxy.cpp')],
+   [ 'casual-common', 
+    'casual-sf', 
+    'casual-configuration'])
 
 install_bin.append( target)
 

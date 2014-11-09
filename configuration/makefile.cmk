@@ -1,56 +1,53 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
-Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
 IncludePaths([
-   "include",
-   "../common/include",
-   "../xatmi/include",
-   "../serviceframework/include",
-   "$(JSON_INCLUDE_PATH)",
-   "$(UNITTEST_INCLUDE_PATH)",
+   'include',
+   '../common/include',
+   '../xatmi/include',
+   '../serviceframework/include',
+   '$(JSON_INCLUDE_PATH)',
+   '$(UNITTEST_INCLUDE_PATH)',
    ])
 
 
 LibraryPaths([
-    "bin",
-    "../common/bin",
-    "../xatmi/bin",
-    "../serviceframework/bin",
-    "$(JSON_LIBRARY_PATH)",
+    'bin',
+    '../common/bin',
+    '../xatmi/bin',
+    '../serviceframework/bin',
+    '$(JSON_LIBRARY_PATH)',
     ])
 
 intall_libs = []
 
-casual_configuration_objectfiles = [
-    Compile( "source/file.cpp", "obj/file.o"),
-    Compile( "source/domain.cpp", "obj/domain.o"),
-    Compile( "source/xa_switch.cpp", "obj/xa_switch.o"),
-    Compile( "source/serverdefinition.cpp", "obj/serverdefinition.o"),
-    Compile( "source/queue.cpp", "obj/queue.o")
-]
 
-intall_libs.append( 
+lib_configuration = LinkLibrary( 'bin/casual-configuration',
+    [
+        Compile( 'source/file.cpp'),
+        Compile( 'source/domain.cpp'),
+        Compile( 'source/xa_switch.cpp'),
+        Compile( 'source/serverdefinition.cpp'),
+        Compile( 'source/queue.cpp')
+    ],
+    ['casual-common',
+    'casual-sf'])
 
-LinkLibrary( "bin/casual-configuration",
-    casual_configuration_objectfiles,
-    ["casual-common",
-    "casual-sf"])
-)
 
+intall_libs.append( lib_configuration)
 
 #
 # Unittest
 #
-test_configuration_objectfiles = [
-    Compile( "unittest/isolated/source/test_domain.cpp", "obj/test_domain.o"),
-    Compile( "unittest/isolated/source/test_xa_switch.cpp", "obj/test_xa_switch.o"),
-    Compile( "unittest/isolated/source/test_queue.cpp", "obj/test_queue.o"),
-]
 
-LinkIsolatedUnittest( "bin/test-casual-configuration",
-   test_configuration_objectfiles,
-   ["casual-configuration", "casual-sf"])  
+LinkIsolatedUnittest( 'bin/test-casual-configuration',
+   [
+        Compile( 'unittest/isolated/source/test_domain.cpp'),
+        Compile( 'unittest/isolated/source/test_xa_switch.cpp'),
+        Compile( 'unittest/isolated/source/test_queue.cpp'),
+   ],
+   [ lib_configuration, 'casual-sf'])  
    
 #
 # Install

@@ -1,27 +1,27 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 
-Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
 
 IncludePaths( [
-    "include",
-    "admin/include",
-	"../common/include",
-	"../configuration/include",
-	"../xatmi/include",
-	"../serviceframework/include",
-	"$(UNITTEST_INCLUDE_PATH)",
-    "$(YAML_INCLUDE_PATH)" ])
+    'include',
+    'admin/include',
+	'../common/include',
+	'../configuration/include',
+	'../xatmi/include',
+	'../serviceframework/include',
+	'$(UNITTEST_INCLUDE_PATH)',
+    '$(YAML_INCLUDE_PATH)' ])
 
 LibraryPaths( [
-    "../common/bin",
-    "../serviceframework/bin",
-	"../xatmi/bin",
-	"../buffer/bin",
-	"../configuration/bin",
-	"$(YAML_LIBRARY_PATH)",
-	"$(JSON_LIBRARY_PATH)"])
+    '../common/bin',
+    '../serviceframework/bin',
+	'../xatmi/bin',
+	'../buffer/bin',
+	'../configuration/bin',
+	'$(YAML_LIBRARY_PATH)',
+	'$(JSON_LIBRARY_PATH)'])
 
 
 #
@@ -43,10 +43,10 @@ install_bins = []
 
 
 casual_broker_logic_objectfiles = [
-   Compile( "source/broker.cpp", "obj/broker.o"),
-   Compile( "source/handle.cpp", "obj/handle.o"),
-   Compile( "source/state.cpp", "obj/state.o"),
-   Compile( "source/transform.cpp", "obj/transform.o"),
+   Compile( 'source/broker.cpp', 'obj/broker.o'),
+   Compile( 'source/handle.cpp', 'obj/handle.o'),
+   Compile( 'source/state.cpp', 'obj/state.o'),
+   Compile( 'source/transform.cpp', 'obj/transform.o'),
    ]
 
 
@@ -56,18 +56,18 @@ logic_archive = LinkArchive( 'bin/casual-broker-logic',
 
 	
 casual_broker_objectfiles = [
-    Compile( "source/main.cpp", "obj/main.o"),
-    Compile( "source/admin/server.cpp", "obj/admin/server.o"),
+    Compile( 'source/main.cpp', 'obj/main.o'),
+    Compile( 'source/admin/server.cpp', 'obj/admin/server.o'),
 ]
 
-target = LinkExecutable( "bin/casual-broker",
+target = LinkExecutable( 'bin/casual-broker',
 	casual_broker_objectfiles,
 	[
      logic_archive,
-     "casual-common",
-     "casual-sf",
-     "casual-xatmi",
-     "casual-configuration"]
+     'casual-common',
+     'casual-sf',
+     'casual-xatmi',
+     'casual-configuration']
    )
    
    #casual-broker-admin-vo )
@@ -80,9 +80,9 @@ install_bins.append( target)
 #
 
 
-target = LinkExecutable( "bin/casual-broker-admin",
+target = LinkExecutable( 'bin/casual-broker-admin',
     [ Compile( 'source/admin/client.cpp', 'obj/admin/client.o')],
-    ["casual-common", "casual-sf", "casual-xatmi"])
+    ['casual-common', 'casual-sf', 'casual-xatmi'])
 	
 
 install_bins.append( target)
@@ -91,21 +91,21 @@ install_bins.append( target)
 
 
 test_casual_broker_isolated = [
-#    Compile( "unittest/isolated/source/test_broker.cpp", "unittest/isolated/obj/test_broker.o"),
-    Compile( "unittest/isolated/source/test_broker_confguration.cpp", "unittest/isolated/obj/test_broker_confguration.o"),
-#    Compile( "unittest/isolated/source/test_broker_transformation.cpp", "unittest/isolated/obj/test_broker_transformation.o"),
+#    Compile( 'unittest/isolated/source/test_broker.cpp', 'unittest/isolated/obj/test_broker.o'),
+    Compile( 'unittest/isolated/source/test_broker_confguration.cpp', 'unittest/isolated/obj/test_broker_confguration.o'),
+#    Compile( 'unittest/isolated/source/test_broker_transformation.cpp', 'unittest/isolated/obj/test_broker_transformation.o'),
 ]
  
  
-LinkIsolatedUnittest( "bin/test-casual-broker-isolated",
+LinkIsolatedUnittest( 'bin/test-casual-broker-isolated',
    test_casual_broker_isolated,
     [
      logic_archive,
-     "casual-common", 
-     "casual-sf", 
-     "casual-configuration", 
-     "casual-mockup-unittest-environment", 
-     "casual-mockup",
+     'casual-common', 
+     'casual-sf', 
+     'casual-configuration', 
+     'casual-mockup-unittest-environment', 
+     'casual-mockup',
      ])
 
 	

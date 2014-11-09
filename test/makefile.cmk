@@ -1,4 +1,4 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
@@ -26,13 +26,10 @@ LibraryPaths( [ 'bin',
 install_bin = []
 
 
-LinkArchive( 'bin/sftestproxy', 
+archive_proxy = LinkArchive( 'bin/sftestproxy', 
 	[ 
-	   Compile( 'source/sf_testproxy.cpp', 'obj/sf_testproxy.o')
+	   Compile( 'source/sf_testproxy.cpp')
 	])
-
-
-
 
 
 
@@ -63,9 +60,9 @@ install_bin.append( target)
 #
 
 
-LinkArchive( 'bin/sf-test-vo',
+archive_vo = LinkArchive( 'bin/sf-test-vo',
     [
-	   Compile( 'source/sf_testvo.cpp', 'obj/sf_testvo.o')
+	   Compile( 'source/sf_testvo.cpp')
 	])
 
 
@@ -80,7 +77,7 @@ target = LinkServer('bin/sf_test',
 	   Compile( 'source/template_sf_server_implementation.cpp', 'obj/template_sf_server_implementation.o'),
     ],
     [
-	'sf-test-vo',
+	archive_vo,
     'casual-xatmi',
     'casual-common',
     'casual-sf'
@@ -96,7 +93,7 @@ install_bin.append( target)
 
 target = LinkExecutable( 'bin/test_client',
 	[ 
-		Compile( 'source/template_client.cpp', 'obj/template_client.o')
+		Compile( 'source/template_client.cpp')
 	], 
     ['casual-common', 'casual-xatmi'])
 	
@@ -106,7 +103,7 @@ install_bin.append( target)
 
 target = LinkExecutable( 'bin/test_multicall_client',
 	[
-		Compile( 'source/test_multicall.cpp', 'obj/test_multicall.o')
+		Compile( 'source/test_multicall.cpp')
 	], ['casual-common', 'casual-xatmi', 'casual-sf'])
 	
 install_bin.append( target)
@@ -114,9 +111,9 @@ install_bin.append( target)
 
 target = LinkExecutable( 'bin/test_proxycall_client',
 	[ 
-		Compile( 'source/test_proxycall.cpp', 'obj/test_proxycall.o')
+		Compile( 'source/test_proxycall.cpp')
     ], 
-	['casual-sf', 'sftestproxy', 'casual-xatmi'])
+	['casual-sf', archive_proxy, 'casual-xatmi'])
 	
 install_bin.append( target)
 #
@@ -125,7 +122,7 @@ install_bin.append( target)
 
 LinkIsolatedUnittest( 'unittest/bin/test-casual-generation-isolated',
     [
-	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp', 'unittest/isolated/obj/test_yaml_sf_generation.o')
+	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp')
 	],
     ['casual-sf', 'casual-xatmi', 'yaml-cpp'])
 	
@@ -137,12 +134,14 @@ LinkIsolatedUnittest( 'unittest/bin/test-casual-generation-isolated',
 
 LinkServer('bin/sf-detoct-test-server',
     [ 
-	   Compile( 'source/sf_testserverserver.cpp', 'obj/sf_testserverserver.o'),
-	   Compile( 'source/sf_testserverimplementation.cpp', 'obj/sf_testserverimplementation.o')
+	   Compile( 'source/sf_testserverserver.cpp'),
+	   Compile( 'source/sf_testserverimplementation.cpp'),
 	],
-    ['sf-test-vo',
-    'casual-sf',
-    'casual-xatmi'],
+    [
+	  archive_vo,
+     'casual-sf',
+     'casual-xatmi'
+    ],
     ['casual_sf_test1','casual_sf_test2'])
 
 #
