@@ -12,6 +12,8 @@ from contextlib import contextmanager
 from casual.make.platform.factory import factory
 from engine import engine
 
+import path
+
 
 
 #
@@ -525,7 +527,7 @@ def internal_build( casual_make_file):
     
     casual_make_file = os.path.abspath( casual_make_file)
     
-    state().make_files_to_build.append( [ False, casual_make_file, os.path.splitext( casual_make_file)[0] + '.mk'])
+    state().make_files_to_build.append( [ False, casual_make_file, path.makefile( casual_make_file)])
     
 
 def internal_library_targets( libs):

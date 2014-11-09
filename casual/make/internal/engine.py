@@ -21,6 +21,8 @@ import os
 # Project
 #
 
+import path
+
 #from casual.make.functiondefinitions import *
 #from casual.make.internal import debug
 #from _pyio import StringIO
@@ -63,7 +65,7 @@ class Engine(object):
         output = StringIO.StringIO();
         sys.stdout = output;
         
-        scoped_make_file =  os.path.splitext( self.casual_make_file)[ 0] + '_' + name +'.mk';
+        scoped_make_file =  self.makefiles_path + '/' + self.makefile_stem + '_' + name +'.mk';
         
         self.output_stack.append( [ output, scoped_make_file]);
         
@@ -88,7 +90,7 @@ class Engine(object):
         
             cmk = StringIO.StringIO();
             
-            cmk.write( 'from casual.make.functiondefinitions import *')
+            cmk.write( 'from casual.make.directive import *')
             
             cmk.write( '\n' + 'internal_pre_make_rules()\n');
             
@@ -130,10 +132,24 @@ class Engine(object):
             for line in stream:
                 makefile.write( line);
                 
+    def prepareOutputs(self, casual_makefile):
+        
+        self.makefiles_path = path.makepath( casual_makefile)
+        
+        self.makefile_stem = path.makestem( casual_makefile) 
+        
+        #
+        # Make sure the path exists
+        #
+        if not os.path.exists( self.makefiles_path):
+            os.makedirs( self.makefiles_path);
+
+        
         
     def run(self, casual_makefile):
         
         self.casual_make_file = os.path.abspath( casual_makefile)
+        self.prepareOutputs( self.casual_make_file)
         
         globalVariables= {}
         
@@ -155,7 +171,7 @@ class Engine(object):
         sys.stdout = sys.__stdout__
         
         
-        makefile = os.path.splitext( self.casual_make_file)[ 0] + ".mk";
+        makefile = self.makefiles_path + '/' + self.makefile_stem + '.mk';
 
         pre_make_statements = globalVariables[ 'internal_global_pre_make_statement_stack']
             

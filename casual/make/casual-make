@@ -12,9 +12,12 @@ Created on 14 maj 2012
 import sys
 import os
 import multiprocessing
-from make import casual_make
+from internal.generate import casual_make
 import subprocess
 import re
+
+
+from internal import path
 
 #
 # Globals to use
@@ -146,8 +149,8 @@ def handleArguments():
     parser.set_defaults(COLORS=True)
     parser.set_defaults(IGNORE_ERRORS=False)
     parser.set_defaults(USE_VALGRIND=False)
-    parser.set_defaults(USER_MAKE_FILE="makefile.mk")
-    parser.add_option("-f", "--file", dest="USER_MAKE_FILE") 
+    parser.set_defaults(causal_make_file="makefile.cmk")
+    parser.add_option("-f", "--file", dest="causal_make_file") 
     parser.add_option("-d", "--debug", action="store_true", dest="DEBUG")
     parser.add_option("-a", "--analyze", action="store_true", dest="ANALYZE")
     parser.add_option("-r", "--release", action="store_true", dest="RELEASE") 
@@ -250,11 +253,12 @@ if __name__ == '__main__':
     
     (options, args) = handleArguments()
     
-    USER_MAKE_FILE=options.USER_MAKE_FILE
+    causal_make_file = options.causal_make_file
+    
+    make_file = path.makefile( causal_make_file)
+    
     FORCE_MAKEMAKE=options.FORCE_MAKEMAKE;
             
-    CORRESPONDING_CASUAL_MAKE_FILE=os.path.splitext(USER_MAKE_FILE)[0] + ".cmk"; 
-    
     
     
     if len(args) != 1:
@@ -267,20 +271,20 @@ if __name__ == '__main__':
         bcolors.activate( False)
     
     #
-    # Kolla om vi ska generera om
+    # Check if we should generate
     #
-    if FORCE_MAKEMAKE == 1 or not os.path.isfile( USER_MAKE_FILE)  or os.path.getmtime(USER_MAKE_FILE) < os.path.getmtime(CORRESPONDING_CASUAL_MAKE_FILE) :
-        if not os.path.isfile( CORRESPONDING_CASUAL_MAKE_FILE ):
-            sys.stderr.write( bcolors.error( 'error: Could not find the casaul make file ') + CORRESPONDING_CASUAL_MAKE_FILE)
+    if FORCE_MAKEMAKE == 1 or not os.path.isfile( USER_MAKE_FILE)  or os.path.getmtime( make_file) < os.path.getmtime( causal_make_file) :
+        if not os.path.isfile( causal_make_file ):
+            sys.stderr.write( bcolors.error( 'error: Could not find the casaul make file ') + causal_make_file + '\n')
             sys.exit( 1)
 
-        sys.stdout.write( reformat( 'generates makefile from ' + os.path.abspath( CORRESPONDING_CASUAL_MAKE_FILE))) 
+        sys.stdout.write( reformat( 'generates makefile from ' + os.path.abspath( causal_make_file))) 
     
         try:
-            casual_make( CORRESPONDING_CASUAL_MAKE_FILE)
+            casual_make( causal_make_file)
 
         except:
-            sys.stderr.write( bcolors.error( 'error: ' ) + "Could not generate " + USER_MAKE_FILE + " from " + CORRESPONDING_CASUAL_MAKE_FILE + '\n')
+            sys.stderr.write( bcolors.error( 'error: ' ) + "Could not generate " + make_file + " from " + causal_make_file + '\n')
             raise
             sys.exit(1)
 
@@ -303,13 +307,12 @@ if __name__ == '__main__':
     MAX_LOAD=JOB_COUNT
 
 
-    print bcolors.header( "executes: ") + MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " --no-builtin-rules --no-keep-going " + GMAKE_OPTIONS + " -f " + USER_MAKE_FILE 
-
-
     #
     # Assemble command
     #
-    command = MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " " + GMAKE_OPTIONS + " --no-builtin-rules --no-keep-going -f " + USER_MAKE_FILE + '\n' 
+    command = MAKE_PATH + " -j " + str(int(JOB_COUNT)) + " -l " + str(int(MAX_LOAD)) + " " + GMAKE_OPTIONS + " --no-builtin-rules --no-keep-going -f " + make_file + '\n' 
+    
+    print bcolors.header( "executes: ") + command
     
     #
     # Call command

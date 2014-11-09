@@ -9,7 +9,7 @@ Contains the basic syntax to produce makefile
 #
 # Imports
 #
-from casual.make.internal.functions import *
+from casual.make.internal.directive import *
 
 
 export=dict()
@@ -119,9 +119,9 @@ def Compile( sourcefile, objectfile = None, directive = ''):
  Compiles a source file to an object file, with excplicit directives
 
  :param sourcefile:    name of the sourcefile (src/myfile.cpp)
- :param objectfile:    name of the output object file (obj/myfile.o)
+ :param objectfile:  optional name of the output object file (obj/myfile.o)
  :param directive:   optional compile directive for this TU, default ''
- :return: the target (which contains 
+ :return: the target (which contains the name of the objectfile) 
     """
 
     if not objectfile:

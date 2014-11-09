@@ -1,16 +1,10 @@
 
 
-#
-# Common stuff
-#
-include $(CASUALMAKE_PATH)/casual/make/platform/common.mk
-
 
 #
 # Default libs
 #
 DEFAULT_LIBS :=  
-
 
 
 ######################################################################
