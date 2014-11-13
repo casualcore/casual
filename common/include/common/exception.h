@@ -101,23 +101,26 @@ namespace casual
             {
                using Base::Base;
             };
-
          }
 
-         struct QueueFailed : public Base
+         namespace limit
          {
-            using Base::Base;
-         };
+            struct Memory : Base
+            {
+               using Base::Base;
+            };
 
-         struct QueueSend : public Base
-         {
-            using Base::Base;
-         };
+         } // limit
 
-         struct QueueReceive : public Base
+         namespace queue
          {
-            using Base::Base;
-         };
+            struct Unavailable : Base
+            {
+               using Base::Base;
+            };
+
+         } // queue
+
 
          namespace signal
          {

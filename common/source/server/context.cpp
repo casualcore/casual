@@ -190,8 +190,15 @@ namespace casual
 
                void Default::statistics( platform::queue_id_type id, message::monitor::Notify& message)
                {
-                  monitor_writer writer{ id};
-                  writer( message);
+                  try
+                  {
+                     monitor_writer writer{ id};
+                     writer( message);
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
+                  }
                }
 
                void Default::transaction( const message::service::callee::Call& message, const server::Service& service)

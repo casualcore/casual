@@ -334,16 +334,25 @@ namespace casual
                      m_policy.transaction( reply);
 
                      //
+                     // Send ACK to broker
+                     //
+                     m_policy.ack( message);
+
+                     //
                      // User has called tpreturn.
                      // Send reply to caller. We previously "saved" state when the user called tpreturn.
                      // we now use it
                      //
-                     m_policy.reply( message.reply.queue, reply);
-
-                     //
-                     // Send ACK to broker
-                     //
-                     m_policy.ack( message);
+                     try
+                     {
+                        m_policy.reply( message.reply.queue, reply);
+                     }
+                     catch( const exception::queue::Unavailable&)
+                     {
+                        // TODO: What are the semantics of 'order' of failure?
+                        //       If TM is down, should we send reply to caller?
+                        //       If broker is down, should we send reply to caller?
+                     }
 
 
                      //

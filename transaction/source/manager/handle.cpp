@@ -7,6 +7,8 @@
 
 #include "transaction/manager/handle.h"
 
+#include "transaction/manager/action.h"
+
 
 namespace casual
 {
@@ -41,15 +43,10 @@ namespace casual
                      reply< R>( state, request, code, request.process);
                   }
 
+               } // persistent
 
-
-               } // delayed
-
-               template< typename Q, typename M, typename Enable = void>
-               struct Reply;
-
-               template< typename Q, typename M>
-               struct Reply< Q, M, typename std::enable_if< ! common::queue::is_blocking< Q>::value>::type> : state::Base
+               template< typename M>
+               struct Reply : state::Base
                {
                   using state::Base::Base;
 
@@ -63,13 +60,14 @@ namespace casual
 
                      state::pending::Reply reply{ target.queue, message};
 
-                     Q queue{ target.queue, m_state};
+                     action::persistent::Send send{ m_state};
 
-                     if( ! queue.send( reply.message))
+                     if( ! send( reply))
                      {
                         common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
                         m_state.persistentReplies.push_back( std::move( reply));
                      }
+
                   }
 
                   template< typename T>
@@ -78,31 +76,6 @@ namespace casual
                      operator()( request, code, request.process);
                   }
 
-               };
-
-               template< typename Q, typename M>
-               struct Reply< Q, M, typename std::enable_if< common::queue::is_blocking< Q>::value>::type> : state::Base
-               {
-                  using state::Base::Base;
-
-                  template< typename T>
-                  void operator () ( const T& request, int code, const common::process::Handle& target)
-                  {
-                     M message;
-                     message.process = common::process::handle();
-                     message.trid = request.trid;
-                     message.state = code;
-
-                     Q queue{ target.queue, m_state};
-
-                     queue( message);
-                  }
-
-                  template< typename T>
-                  void operator () ( const T& request, int code)
-                  {
-                     operator()( request, code, request.process);
-                  }
                };
 
 
@@ -452,7 +425,6 @@ namespace casual
                            // Send reply
                            //
                            internal::send::Reply<
-                              queue::non_blocking::Writer,
                               reply_type> send{ m_state};
 
                            send( message, XA_RDONLY, transaction.trid.owner());
@@ -624,7 +596,6 @@ namespace casual
                            // Send reply
                            //
                            internal::send::Reply<
-                              queue::non_blocking::Writer,
                               reply_type> sender{ m_state};
 
                            sender( message, XA_OK, transaction.trid.owner());
@@ -700,7 +671,6 @@ namespace casual
                // Send reply
                //
                internal::send::Reply<
-                  queue::non_blocking::Writer,
                   reply_type> sender{ m_state};
 
                sender( message, XAER_DUPID);
@@ -740,7 +710,6 @@ namespace casual
                      // Send reply
                      //
                      internal::send::Reply<
-                        queue::non_blocking::Writer,
                         common::message::transaction::prepare::Reply> sender{ m_state};
 
                      sender( message, XA_RDONLY);
@@ -789,7 +758,6 @@ namespace casual
                // Send reply
                //
                internal::send::Reply<
-                  queue::non_blocking::Writer,
                   reply_type> sender{ m_state};
 
                sender( message, XAER_NOTA);
@@ -825,7 +793,6 @@ namespace casual
                // Send reply
                //
                internal::send::Reply<
-                  queue::non_blocking::Writer,
                   reply_type> sender{ m_state};
 
                sender( message, XAER_NOTA);
@@ -876,7 +843,6 @@ namespace casual
                   // Send reply
                   //
                   internal::send::Reply<
-                     queue::non_blocking::Writer,
                      reply_type> sender{ m_state};
 
                   sender( message, XA_RDONLY);
@@ -914,7 +880,6 @@ namespace casual
                   // Send reply
                   //
                   internal::send::Reply<
-                     queue::non_blocking::Writer,
                      reply_type> sender{ m_state};
 
                   sender( message, XAER_NOTA);
@@ -951,7 +916,6 @@ namespace casual
                   // Send reply
                   //
                   internal::send::Reply<
-                     queue::non_blocking::Writer,
                      reply_type> sender{ m_state};
 
                   sender( message, XAER_NOTA);
@@ -990,7 +954,6 @@ namespace casual
                         // Send reply
                         //
                         internal::send::Reply<
-                           queue::non_blocking::Writer,
                            reply_type> sender{ m_state};
 
                         sender( message, Transaction::Resource::convert( result));
@@ -1032,7 +995,6 @@ namespace casual
                         // Send reply
                         //
                         internal::send::Reply<
-                           queue::non_blocking::Writer,
                            reply_type> sender{ m_state};
 
                         sender( message, Transaction::Resource::convert( result));

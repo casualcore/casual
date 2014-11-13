@@ -104,11 +104,24 @@ namespace casual
 
             bool Send::operator () ( state::pending::Reply& message) const
             {
-               queue::non_blocking::Writer write{ message.target, m_state};
-               if( ! write.send( message.message))
+               try
                {
-                  common::log::internal::transaction << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
-                  return false;
+                  queue::non_blocking::Writer write{ message.target, m_state};
+
+                  if( ! write.send( message.message))
+                  {
+                     common::log::internal::transaction << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
+                     return false;
+                  }
+               }
+               catch( const exception::queue::Unavailable&)
+               {
+                  common::log::error << "failed to send reply to " << message.target << " TODO: rollback transaction?\n";
+                  //
+                  // ipc-queue has been removed...
+                  // TODO: deduce from message.message.type what we should do
+                  //  We should rollback if we are in a prepare stage?
+                  //
                }
                return true;
             }

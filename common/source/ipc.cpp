@@ -163,9 +163,29 @@ namespace casual
                      {
                         return false;
                      }
+                     case EIDRM:
+                     {
+                        throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( m_id) + " - " + common::error::string()};
+                     }
+                     case ENOMEM:
+                     {
+                        throw exception::limit::Memory{ "id: " + std::to_string( m_id) + " - " + common::error::string()};
+                     }
+                     case EINVAL:
+                     {
+                        if( /* message.size() < MSGMAX  && */ message.payload.type > 0)
+                        {
+                           //
+                           // The problem is with queue-id. We guess that it has been removed.
+                           //
+                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( m_id) + " - " + common::error::string()};
+                        }
+                        // we let it fall through to default
+                     }
+                     case EFAULT:
                      default:
                      {
-                        throw common::exception::invalid::Argument( "id: " + std::to_string( m_id) + " - " + common::error::string());
+                        throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( m_id) + " - " + common::error::string());
                      }
                   }
                }
