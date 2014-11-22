@@ -91,7 +91,7 @@ namespace casual
 
          // there is always a error-queue, and a global error-queue
          ASSERT_TRUE( queues.size() == 3);
-         EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+         EXPECT_TRUE( queues.at( 0).name == "error-queue") << "queues.at( 0).name: " << queues.at( 0).name;
          EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
          EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
       }
@@ -122,7 +122,7 @@ namespace casual
          auto queues = database.queues();
 
          ASSERT_TRUE( queues.size() == 3) << queues.size();
-         EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+         EXPECT_TRUE( queues.at( 0).name == "error-queue");
          EXPECT_TRUE( queues.at( 1).name == "foo-bar_error");
          EXPECT_TRUE( queues.at( 2).name == "foo-bar");
       }
@@ -152,7 +152,7 @@ namespace casual
 
             // there is always a error-queue, and a global error-queue
             ASSERT_TRUE( queues.size() == 3);
-            EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+            //EXPECT_TRUE( queues.at( 0).name == "unittest_queue_server_database-error-queue") << queues.at( 0).name;
             EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
             EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
          }
@@ -186,7 +186,7 @@ namespace casual
 
             // there is always a error-queue, and a global error-queue
             ASSERT_TRUE( queues.size() == 5 * 2 + 1);
-            EXPECT_TRUE( queues.at( 0).name == "casual-error-queue");
+            //EXPECT_TRUE( queues.at( 0).name == "unittest_queue_server_database-error-queue") << queues.at( 0).name;
             EXPECT_TRUE( queues.at( 1).name == "unittest_queue_1_error") << queues.at( 1).name;
             EXPECT_TRUE( queues.at( 2).name == "unittest_queue_1") << queues.at( 2).name;
          }
