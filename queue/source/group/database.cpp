@@ -98,9 +98,9 @@ namespace casual
                 (
                   id           INTEGER  PRIMARY KEY,
                   name         TEXT     UNIQUE,
-                  retries      NUMBER,
-                  error        NUMBER,
-                  type         NUMBER ); )"
+                  retries      INTEGER,
+                  error        INTEGER,
+                  type         INTEGER ); )"
               );
 
 
@@ -111,12 +111,12 @@ namespace casual
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
                   correlation   TEXT,
-                  state         NUMBER,
+                  state         INTEGER,
                   reply         TEXT,
-                  redelivered   NUMBER,
-                  type          NUMBER,
-                  avalible      NUMBER,
-                  timestamp     NUMBER,
+                  redelivered   INTEGER,
+                  type          INTEGER,
+                  avalible      INTEGER,
+                  timestamp     INTEGER,
                   payload       BLOB,
                   FOREIGN KEY (queue) REFERENCES queues( id)); )");
 
@@ -127,23 +127,21 @@ namespace casual
                "CREATE INDEX IF NOT EXISTS i_queue_messages  ON messages ( queue);" );
 
             m_connection.execute(
-               "CREATE INDEX IF NOT EXISTS i_timestamp_messages  ON messages ( timestamp);" );
+              "CREATE INDEX IF NOT EXISTS i_dequeue_messages  ON messages ( queue, avalible);" );
+
+            m_connection.execute(
+               "CREATE INDEX IF NOT EXISTS i_timestamp_messages  ON messages ( timestamp ASC);" );
 
             m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_gtrid_messages  ON messages ( gtrid);" );
 
 
             //
-            // Global error queue
+            // group error queue
             //
-            m_connection.execute( R"( INSERT OR IGNORE INTO queues VALUES ( 1, "casual-error-queue", 0, 1, 1); )");
+            auto groupname = common::file::removeExtension( common::file::basename( database));
+            m_connection.execute( "INSERT OR IGNORE INTO queues VALUES ( 1, \"" + groupname + "error-queue\", 0, 1, 1); ");
             m_errorQueue = 1;
-
-            //
-            // the global error queue has it self as an error queue.
-            //
-            //m_connection.execute( " UPDATE OR IGNORE queues SET error = :qid WHERE rowid = :qid;", m_errorQueue);
-
 
 
             //

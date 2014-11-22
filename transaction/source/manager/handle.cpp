@@ -778,16 +778,35 @@ namespace casual
             {
                auto& transaction = *found;
 
-               internal::send::resource::Requests<
-                  queue::non_blocking::Writer,
-                  common::message::transaction::resource::rollback::Request> request{ m_state};
+               if( transaction.resources.empty())
+               {
+                  common::log::internal::transaction << "no resources involved - " << transaction << " XA_OK\n";
 
-               request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cRollbackRequested);
+                  //
+                  // We can remove this transaction from the log.
+                  //
+                  m_state.log.remove( transaction.trid);
 
+                  //
+                  // Send reply
+                  //
+                  internal::send::Reply<
+                     reply_type> sender{ m_state};
+
+                  sender( message, XA_OK);
+               }
+               else
+               {
+                  internal::send::resource::Requests<
+                     queue::non_blocking::Writer,
+                     common::message::transaction::resource::rollback::Request> request{ m_state};
+
+                  request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cRollbackRequested);
+               }
             }
             else
             {
-               common::log::error << "Attempt to rollback a transaction " << message.trid << ", which is not known to TM - action: error reply" << std::endl;
+               common::log::error << "XAER_NOTA Attempt to rollback a transaction " << message.trid << ", which is not known to TM - action: error reply" << std::endl;
 
                //
                // Send reply

@@ -178,7 +178,7 @@ int main( int argc, char** argv)
    }
    catch( const casual::sf::exception::Base& exception)
    {
-      std::cerr << exception;
+      std::cerr << exception << std::endl;
    }
 
 
