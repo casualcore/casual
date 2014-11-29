@@ -572,7 +572,7 @@ namespace casual
                   ++argumentRange;
 
                   //
-                  // Find the end of values assosiated with this option
+                  // Find the end of values associated with this option
                   //
                   auto assignRange  = argumentRange - range::find_first_of( argumentRange, m_groups, argument::internal::HasOption());
 

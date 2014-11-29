@@ -82,23 +82,25 @@ namespace casual
 			uuid_copy( uuid, m_uuid);
 		}
 
-		bool Uuid::operator < ( const Uuid& rhs) const
-		{
-			return uuid_compare( m_uuid, rhs.m_uuid) < 0;
-		}
-
-		bool Uuid::operator == ( const Uuid& rhs) const
-		{
-			return uuid_compare( m_uuid, rhs.m_uuid) == 0;
-		}
-
-
-      std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
+      Uuid::operator bool() const noexcept
       {
-         platform::uuid_string_type buffer;
-         uuid_unparse_lower( uuid.m_uuid, buffer);
-         out.write( buffer, sizeof( buffer) - 1);
-         return out;
+         return  *this != empty();
+      }
+
+
+      bool operator < ( const Uuid& lhs, const Uuid& rhs)
+      {
+         return uuid_compare( lhs.m_uuid, rhs.m_uuid) < 0;
+      }
+
+      bool operator == ( const Uuid& lhs, const Uuid& rhs)
+      {
+         return uuid_compare( lhs.m_uuid, rhs.m_uuid) == 0;
+      }
+
+      bool operator != ( const Uuid& lhs, const Uuid& rhs)
+      {
+         return ! ( lhs == rhs);
       }
 
       bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs)
@@ -109,6 +111,15 @@ namespace casual
       bool operator == ( const Uuid::uuid_type& lhs, const Uuid& rhs)
       {
          return uuid_compare( lhs, rhs.get()) == 0;
+      }
+
+
+      std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
+      {
+         platform::uuid_string_type buffer;
+         uuid_unparse_lower( uuid.m_uuid, buffer);
+         out.write( buffer, sizeof( buffer) - 1);
+         return out;
       }
 
    } // common

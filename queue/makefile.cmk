@@ -108,13 +108,17 @@ rm = LinkLibrary( 'bin/casual-queue-rm',
 
 install_lib.append( rm);
 
+
+
+
+
 #
-# Client API
+# Client rm-API
 #
 
-queue_api = LinkLibrary( 'bin/casual-queue', 
+queue_api_rm = LinkLibrary( 'bin/casual-queue-api-rm', 
    [
-       Compile( 'source/queue.cpp')
+       Compile( 'source/api/rm/queue.cpp')
    ],
    [ 
     common, 
@@ -123,8 +127,39 @@ queue_api = LinkLibrary( 'bin/casual-queue',
     'casual-xatmi'
     ])
 
+install_lib.append( queue_api_rm);
+
+queue_api = LinkLibrary( 'bin/casual-queue-api', 
+   [
+       Compile( 'source/api/queue.cpp')
+   ],
+   [ 
+    #common,
+    'casual-sf', 
+    'casual-common', 
+    #'casual-xatmi'
+    ])
+
 install_lib.append( queue_api);
 
+
+#
+# Server
+#
+server = LinkServer( 'bin/casual-queue-server',
+    [
+       Compile( 'source/server/server.cpp'),
+     ],
+    [
+      queue_api_rm,
+     'casual-common',
+     'casual-xatmi',
+     'casual-sf',
+     ],
+    'source/server/server.yaml',
+    [ 'casual-queue-rm' ] );
+
+install_bin.append( server);
 
 #
 # Client
@@ -134,8 +169,8 @@ queue_client = LinkExecutable( 'bin/casual-queue-admin',
         Compile( 'source/broker/admin/client.cpp'),
      ], 
    [common, queue_api, 'casual-common', 'casual-sf'])
-
-
+ 
+ 
 install_bin.append( queue_client);
 
 

@@ -107,6 +107,11 @@ struct Settings
             xa_switches.push_back( std::move( findIter->second));
             xa_mapping.erase( findIter);
          }
+         else
+         {
+            throw common::exception::invalid::Argument{ "invalid resource key - " + resource };
+         }
+
       }
    }
 
@@ -389,9 +394,15 @@ int main( int argc, char **argv)
       return build( path, settings);
 
    }
+   catch( const casual::common::exception::Base& exception)
+   {
+      std::cerr << "error: " << exception << std::endl;
+      return common::error::handler();
+   }
    catch( ...)
    {
-      return common::error::handler();
+      std::cerr << "error: unknown" << std::endl;
+      return 10;
    }
 
    return 0;

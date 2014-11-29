@@ -48,8 +48,7 @@ namespace casual
 			//!
 			void copy( uuid_type& uuid) const;
 
-			bool operator < ( const Uuid& rhs) const;
-			bool operator == ( const Uuid& rhs) const;
+			explicit operator bool() const noexcept;
 
 
 			static const Uuid& empty();
@@ -59,9 +58,12 @@ namespace casual
 
 			friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
 
+         friend bool operator < ( const Uuid& lhs, const Uuid& rhs);
+         friend bool operator == ( const Uuid& lhs, const Uuid& rhs);
+         friend bool operator != ( const Uuid& lhs, const Uuid& rhs);
 			friend bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs);
-
 			friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
+
 
 
 		   template< typename A>

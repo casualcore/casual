@@ -9,8 +9,10 @@
 #define CASUAL_QUEUE_BROKER_ADMIN_TRANSFORM_H_
 
 #include "queue/broker/admin/queuevo.h"
+#include "queue/api/message.h"
+
 #include "common/message/queue.h"
-#include "queue/queue.h"
+
 
 namespace casual
 {

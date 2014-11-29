@@ -174,7 +174,16 @@ namespace casual
             // create the views
             //
             m_resources.dynamic = range::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
-            m_resources.fixed = range::make( m_resources.all) - m_resources.dynamic;
+            m_resources.fixed = range::make(  m_resources.dynamic.last, std::end( m_resources.all));
+
+            common::log::internal::transaction << "static resources: " << m_resources.fixed << std::endl;
+            common::log::internal::transaction << "dynamic resources: " << m_resources.dynamic << std::endl;
+
+
+            //
+            // Open the resources... Not sure if we can do this, or if the user has to call tx_open by them self...
+            //
+            open();
 
          }
 
@@ -212,18 +221,6 @@ namespace casual
 
                return reply.state;
             }
-
-
-            namespace resource
-            {
-
-               void involved( transaction::ID& xid, const std::vector< int>& ids)
-               {
-
-               }
-
-            } // resource
-
 
          } // local
 
@@ -323,7 +320,17 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::resourceRegistration", common::log::internal::transaction};
 
-            auto&& current = currentTransaction();
+            //
+            // Verify that rmid is known and is dynamic
+            //
+            if( ! common::range::find( m_resources.dynamic, rmid))
+            {
+               common::log::error << "invalid resource id " << rmid << " TMER_INVAL\n";
+               return TMER_INVAL;
+            }
+
+
+            auto& current = currentTransaction();
 
             //
             // XA-spec - RM can't reg when it's already regged... Why?
@@ -353,8 +360,6 @@ namespace casual
                }
                default:
                {
-
-
                   return TM_OK;
                }
             }

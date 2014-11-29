@@ -287,11 +287,19 @@ namespace casual
 
 
 
-         void Database::enqueue( const common::message::queue::enqueue::Request& message)
+         common::message::queue::enqueue::Reply Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
             common::trace::internal::Scope trace{ "queue::Database::enqueue", common::log::internal::queue};
 
-            common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << message.message.id << " size: " << message.message.payload.size() << " trid: " << message.trid << std::endl;
+            common::message::queue::enqueue::Reply reply;
+
+            //
+            // We create a unique id if none is provided.
+            //
+            reply.id = message.message.id ? message.message.id : common::Uuid::make();
+
+
+            common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << reply.id << " size: " << message.message.payload.size() << " trid: " << message.trid << std::endl;
 
             auto gtrid = common::transaction::global( message.trid);
 
@@ -301,7 +309,7 @@ namespace casual
             auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
             m_statement.enqueue.execute(
-                  message.message.id.get(),
+                  reply.id.get(),
                   message.queue,
                   message.queue,
                   gtrid,
@@ -313,6 +321,8 @@ namespace casual
                   avalible,
                   timestamp,
                   message.message.payload);
+
+            return reply;
          }
 
 

@@ -1,26 +1,26 @@
 from casual.make.directive import *
 
 IncludePaths([ 
-	"../common/include", 
-	"$(UNITTEST_INCLUDE_PATH)",
+	'../common/include', 
+	'$(UNITTEST_INCLUDE_PATH)',
 	])
 
 LibraryPaths([ 
-    "../common/bin",
+    '../common/bin',
     ])
 
 
 install_lib = []
  
 
-lib_xatmi = LinkLibrary( "bin/casual-xatmi",
+lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
 	[
-		Compile( "source/xatmi.cpp"),
-		Compile( "source/xatmi_server.cpp"),
-		Compile( "source/xa.cpp"),
-		Compile( "source/tx.cpp"),
+		Compile( 'source/xatmi.cpp'),
+		Compile( 'source/xatmi_server.cpp'),
+		Compile( 'source/xa.cpp'),
+		Compile( 'source/tx.cpp'),
 	],
-	["casual-common"])
+	['casual-common'])
 
 install_lib.append( lib_xatmi)
 
@@ -28,9 +28,9 @@ install_lib.append( lib_xatmi)
 # unittest
 #
 
-LinkIsolatedUnittest( "bin/test-casual-xatmi",
+LinkIsolatedUnittest( 'bin/test-casual-xatmi',
     [
-       Compile( "unittest/isolated/source/test_buffer.cpp"),
+       Compile( 'unittest/isolated/source/test_buffer.cpp'),
     ],
     [ lib_xatmi])
 

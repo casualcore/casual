@@ -7,12 +7,14 @@
 
 #include "queue/broker/admin/queuevo.h"
 
-#include "queue/queue.h"
+#include "queue/api/queue.h"
 
 #include "common/arguments.h"
 
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
+
+#include "xatmi.h"
 
 namespace casual
 {
@@ -68,11 +70,32 @@ namespace casual
 
          message.attribues.reply = queue;
          message.payload.type = 42;
-         message.payload.data = { 'a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c' ,'a', 'b', 'c' ,'a', 'b', 'c'};
+
+         while( std::cin)
+         {
+            message.payload.data.push_back( std::cin.get());
+         }
 
          auto id = queue::enqueue( queue, message);
 
-         std::cout << CASUAL_MAKE_NVP( id);
+         std::cout << id << std::endl;
+      }
+
+      void dequeue_( const std::string& queue)
+      {
+
+         const auto message = queue::dequeue( queue);
+
+         //std::cout << CASUAL_MAKE_NVP( message);
+
+         if( ! message.empty())
+         {
+            for( const auto& c : message.front().payload.data)
+            {
+               std::cout.put( c);
+            }
+            std::cout << std::endl;
+         }
 
       }
 
@@ -87,7 +110,8 @@ namespace casual
             common::argument::directive( {"-g", "--list-groups"}, "list all servers", &queue::listGroups),
             common::argument::directive( {"-q", "--list-queues"}, "list queues", &queue::listQueues),
             common::argument::directive( {"-p", "--peek-queue"}, "peek queue", &queue::listQueues),
-            common::argument::directive( {"--enqueue"}, "peek queue", &queue::enqueue_)
+            common::argument::directive( {"-e", "--enqueue"}, "enqueue", &queue::enqueue_),
+            common::argument::directive( {"-d", "--dequeue"}, "dequeue", &queue::dequeue_)
       );
 
       return parser;

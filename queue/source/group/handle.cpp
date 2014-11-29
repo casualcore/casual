@@ -90,9 +90,18 @@ namespace casual
             {
                void Request::dispatch( message_type& message)
                {
-                  m_state.queuebase.enqueue( message);
-                  local::involved( m_state, message);
+                  queue::blocking::Writer send{ message.process.queue, m_state};
 
+                  try
+                  {
+                     auto reply = m_state.queuebase.enqueue( message);
+                     send( reply);
+                     local::involved( m_state, message);
+                  }
+                  catch( const sql::database::exception::Base& exception)
+                  {
+                     common::log::error << exception.what() << std::endl;
+                  }
                }
 
             } // enqueue
@@ -101,10 +110,18 @@ namespace casual
             {
                void Request::dispatch( message_type& message)
                {
-                  auto reply = m_state.queuebase.dequeue( message);
                   queue::blocking::Writer send{ message.process.queue, m_state};
-                  send( reply);
-                  local::involved( m_state, message);
+
+                  try
+                  {
+                     auto reply = m_state.queuebase.dequeue( message);
+                     send( reply);
+                     local::involved( m_state, message);
+                  }
+                  catch( const sql::database::exception::Base& exception)
+                  {
+                     common::log::error << exception.what() << std::endl;
+                  }
                }
             } // dequeue
 

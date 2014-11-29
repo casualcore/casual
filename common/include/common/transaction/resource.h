@@ -11,6 +11,7 @@
 
 #include "tx.h"
 
+#include "common/platform.h"
 
 #include <string>
 #include <ostream>
@@ -25,6 +26,8 @@ namespace casual
 
          struct Resource
          {
+            using id_type = common::platform::resource::id_type;
+
             Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
             Resource( std::string key, xa_switch_t* xa);
 
@@ -39,14 +42,17 @@ namespace casual
 
             std::string key;
             xa_switch_t* xaSwitch;
-            int id = 0;
+            id_type id = 0;
 
             std::string openinfo;
             std::string closeinfo;
 
 
 
+
             friend std::ostream& operator << ( std::ostream& out, const Resource& resource);
+            friend bool operator == ( const Resource& lhs, id_type rhs) { return lhs.id == rhs;}
+            friend bool operator == ( id_type lhs, const Resource& rhs) { return lhs == rhs.id;}
          };
 
       } // transaction

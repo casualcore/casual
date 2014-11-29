@@ -66,6 +66,17 @@ namespace casual
                      archive & message;
                   })
                };
+
+               struct Reply : basic_message< Type::cQueueEnqueueReply>
+               {
+                  common::Uuid id;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & id;
+                  })
+               };
+
             } // enqueue
 
             namespace dequeue

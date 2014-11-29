@@ -66,12 +66,19 @@ namespace casual
                std::size_t concurency = 0;
 
                std::vector< Instance> instances;
+
+
+               friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
+               {
+                  return lhs.id < rhs.id;
+               }
+
+               friend bool operator == ( const Proxy& lhs, id_type rhs) { return lhs.id == rhs; }
+               friend bool operator == ( id_type lhs, const Proxy& rhs) { return lhs == rhs.id; }
+
             };
 
-            inline bool operator < ( const Proxy& lhs, const Proxy& rhs)
-            {
-               return lhs.id < rhs.id;
-            }
+
 
 
             namespace update

@@ -87,6 +87,7 @@ namespace casual
             cQueueConnectRequest,
             cQueueConnectReply,
             cQueueEnqueueRequest,
+            cQueueEnqueueReply,
             cQueueDequeueRequest,
             cQueueDequeueReply,
             cQueueInformation,

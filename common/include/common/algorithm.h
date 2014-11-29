@@ -351,7 +351,7 @@ namespace casual
          {
             Range result( lhs);
             if( rhs.first < result.first) result.first = rhs.first;
-            if( rhs.last > result.last) result = rhs.last;
+            if( rhs.last > result.last) result.last = rhs.last;
             return result;
          }
 
@@ -363,16 +363,40 @@ namespace casual
          }
          */
 
+
          //template< typename Iter>
          friend Range< Iter> operator - ( const Range& lhs, const Range& rhs)
          {
             Range result{ lhs};
-            if( rhs.last > result.first && rhs.last < result.last) result.first = rhs.last;
 
-            if( rhs.first < result.last && rhs.first > result.first) result.last = rhs.first;
+            //
+            // TODO: make this better...
 
+            if( rhs)
+            {
+               if( result.last > rhs.last)
+               {
+                  result.first = rhs.last;
+               }
+               if( result.first <= rhs.first)
+               {
+                  result.last = rhs.first;
+               }
+            }
+
+            //
+            // Make sure the ranges overlap
+            //
+            /*
+            if( result.last > rhs.first && result.first < rhs.last)
+            {
+               if( result.last > rhs.first) result.last = rhs.first;
+               else if( rhs.last > result.first) result.first = rhs.last;
+            }
+            */
             return result;
          }
+
 
          //template< typename Iter>
          friend std::ostream& operator << ( std::ostream& out, Range range)

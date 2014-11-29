@@ -24,7 +24,7 @@
 #include "sf/buffer.h"
 
 
-#include "queue/queue.h"
+#include "queue/api/rm/queue.h"
 
 
 
@@ -152,13 +152,13 @@ void casual_test3( TPSVCINFO *serviceContext)
          message.payload.type = 42;
          casual::common::range::copy( task.message, std::back_inserter( message.payload.data));
 
-         auto id = casual::queue::enqueue( task.enqueue, message);
+         auto id = casual::queue::rm::enqueue( task.enqueue, message);
 
          casual::sf::log::debug << CASUAL_MAKE_NVP( id);
       }
       else if( ! task.dequeue.empty())
       {
-         auto dequeued = casual::queue::dequeue( task.dequeue);
+         auto dequeued = casual::queue::rm::dequeue( task.dequeue);
 
          if( ! dequeued.empty())
          {

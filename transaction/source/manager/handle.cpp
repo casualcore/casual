@@ -249,18 +249,27 @@ namespace casual
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
 
-               auto transcation = common::range::find_if(
-                     common::range::make( m_state.transactions), find::Transaction( message.trid));
+               auto transaction = common::range::find_if(
+                     m_state.transactions, find::Transaction( message.trid));
 
-               if( ! transcation.empty())
+               if( transaction)
                {
-                  common::log::internal::transaction << "involved trid : " << message.trid << " resources: " << common::range::make( message.resources) << " process: " <<  message.process << '\n';
+                  for( auto& resource : message.resources)
+                  {
+                     if( common::range::find( m_state.resources, resource))
+                     {
+                        transaction->resources.push_back( resource);
+                     }
+                     else
+                     {
+                        common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                     }
+                  }
 
-                  common::range::copy(
-                     common::range::make( message.resources),
-                     std::back_inserter( transcation.first->resources));
+                  common::range::trim( transaction->resources, common::range::unique( common::range::sort( transaction->resources)));
 
-                  common::range::trim( transcation.first->resources, common::range::unique( common::range::sort( common::range::make( transcation.first->resources))));
+                  common::log::internal::transaction << "involved: " << *transaction << '\n';
+
                }
                else
                {

@@ -111,6 +111,7 @@ namespace casual
          {
             queue::Message result;
 
+            result.id = value.id;
             result.attribues.available = value.avalible;
             result.attribues.properties = value.correlation;
             result.attribues.reply = value.reply;

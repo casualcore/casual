@@ -229,6 +229,9 @@ namespace casual
          EXPECT_NO_THROW({
             database.enqueue( message);
          });
+
+         EXPECT_TRUE( static_cast< bool>( database.enqueue( message).id));
+
       }
 
       TEST( casual_queue_group_database, enqueue_one_message__get_queue_info)

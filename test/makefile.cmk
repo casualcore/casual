@@ -39,7 +39,7 @@ target = LinkServer( 'bin/test',
 		'casual-xatmi', 
 		'casual-common', 
 		'casual-sf',
-		'casual-queue'
+		'casual-queue-api-rm'
 	],
 	'source/template_server.yaml',
 	['rm-mockup', 'casual-queue-rm'])

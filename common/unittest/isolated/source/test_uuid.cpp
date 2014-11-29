@@ -65,6 +65,19 @@ namespace casual
          EXPECT_TRUE( uuid::string( oneUuid) == "00000000-0000-0000-0000-000000000000") << uuid::string( oneUuid);
       }
 
+      TEST( casual_common_uuid, operator_bool_on_default_constructed__expect_false)
+      {
+         Uuid oneUuid;
+
+         EXPECT_FALSE( oneUuid) << uuid::string( oneUuid);
+      }
+
+      TEST( casual_common_uuid, operator_bool_on_created__expect_true)
+      {
+         Uuid oneUuid = Uuid::make();
+
+         EXPECT_TRUE( static_cast< bool>( oneUuid) ) << uuid::string( oneUuid);
+      }
 	}
 
 }

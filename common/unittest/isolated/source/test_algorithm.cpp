@@ -411,8 +411,83 @@ namespace casual
 
       }
 
+      TEST( casual_common_algorithm, range__add)
+      {
+         std::vector< int> origin{ 1, 2};
+
+         auto range1 = range::make( std::begin( origin), std::begin( origin) + 1);
+         auto range2 = range::make( std::begin( origin) + 1, std::begin( origin) + 2);
+
+         auto result = range1 + range2;
+
+         ASSERT_TRUE( result.size() == 2);
+         EXPECT_TRUE( *result.first == 1) << result;
+         EXPECT_TRUE( *result.first + 1 == 2) << result;
+      }
 
 
-   } // algorithm
+      TEST( casual_common_algorithm, range__substract_upper_size_1_from_size_2)
+      {
+         std::vector< int> origin{ 1, 2};
+
+         auto range1 = range::make( std::begin( origin) + 1, std::begin( origin) + 2);
+
+         auto result = range::make( origin) - range1;
+
+         ASSERT_TRUE( result.size() == 1) << result;
+         EXPECT_TRUE( *result.first == 1) << result;
+      }
+
+      TEST( casual_common_algorithm, range__substract_lower_size_1_from_size_2)
+      {
+         std::vector< int> origin{ 1, 2};
+
+         auto range1 = range::make( std::begin( origin), std::begin( origin) + 1);
+
+         auto result = range::make( origin) - range1;
+
+         ASSERT_TRUE( result.size() == 1) << result;
+         EXPECT_TRUE( *result.first == 2) << result;
+      }
+
+      TEST( casual_common_algorithm, range__substract_upper_size_0_from_size_2)
+      {
+         std::vector< int> origin{ 1, 2};
+
+         auto range1 = range::make( std::end( origin), std::end( origin));
+
+         auto result = range::make( origin) - range1;
+
+         ASSERT_TRUE( result.size() == 2) << result;
+         EXPECT_TRUE( *result.first == 1) << result;
+      }
+
+      TEST( casual_common_algorithm, range__substract_lower_size_0_from_size_2)
+      {
+         std::vector< int> origin{ 1, 2};
+
+         auto range1 = range::make( std::begin( origin), std::begin( origin));
+
+         auto result = range::make( origin) - range1;
+
+         ASSERT_TRUE( result.size() == 2) << result;
+         EXPECT_TRUE( *result.first == 1) << result;
+      }
+
+      TEST( casual_common_algorithm, range__substract_size_1_from_size_1)
+      {
+         std::vector< int> origin{ 1};
+
+         auto range1 = range::make( std::begin( origin), std::begin( origin) + 1);
+
+         auto result = range::make( origin) - range1;
+
+         ASSERT_TRUE( result.size() == 0) << result;
+      }
+
+
+
+
+   } // common
 
 } // casual
