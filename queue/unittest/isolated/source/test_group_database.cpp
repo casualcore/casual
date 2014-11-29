@@ -226,11 +226,10 @@ namespace casual
 
          auto message = local::message( queue);
 
-         EXPECT_NO_THROW({
-            database.enqueue( message);
-         });
 
-         EXPECT_TRUE( static_cast< bool>( database.enqueue( message).id));
+         EXPECT_NO_THROW({
+            EXPECT_TRUE( static_cast< bool>( database.enqueue( message).id));
+         });
 
       }
 
