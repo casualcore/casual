@@ -11,7 +11,7 @@ if sys.platform.startswith('darwin'):
     
     
 else:
-    platform_specific_libs ['uuid']
+    platform_specific_libs = ['uuid', 'resolv']
     
     platform_specific_lib_paths = []
 
