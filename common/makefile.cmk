@@ -1,9 +1,19 @@
 from casual.make.directive import *
 
+
+
 if sys.platform.startswith('darwin'):
-    UUIDLIB='c'
+    
+    
+    platform_specific_libs = [ 'c', 'iconv', 'resolv']
+    
+    platform_specific_lib_paths = [ '/opt/local/lib' ]
+    
+    
 else:
-    UUIDLIB='uuid'
+    platform_specific_libs ['uuid']
+    
+    platform_specific_lib_paths = []
 
 
 
@@ -17,7 +27,7 @@ IncludePaths( [
     '$(UNITTEST_INCLUDE_PATH)'
     ])
 
-LibraryPaths( [ '$(UNITTEST_LIBRARY_PATH)'])
+LibraryPaths( platform_specific_lib_paths + [ '$(UNITTEST_LIBRARY_PATH)'])
 
 
 install_libs = []
@@ -49,12 +59,13 @@ casual_common_objectfiles = [
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
     Compile( 'source/network_byteorder.cpp'),
+    Compile( 'source/transcode.cpp'),
 ]
 
 
 common = LinkLibrary( 'bin/casual-common', 
 	casual_common_objectfiles,
-	[UUIDLIB])
+	platform_specific_libs)
 
 install_libs.append( common)
 
@@ -125,6 +136,7 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_mockup.cpp'),
    Compile( 'unittest/isolated/source/test_traits.cpp'),
    Compile( 'unittest/isolated/source/test_chronology.cpp'),
+   Compile( 'unittest/isolated/source/test_transcode.cpp'),
 ]
 
 

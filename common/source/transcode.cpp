@@ -5,7 +5,7 @@
 //      Author: Kristone
 //
 
-#include "common/transcoding.h"
+#include "common/transcode.h"
 
 #include <resolv.h>
 
@@ -30,7 +30,7 @@ namespace casual
 {
    namespace common
    {
-      namespace transcoding
+      namespace transcode
       {
 
          std::string Base64::encode( const std::vector<char>& value)
@@ -77,9 +77,9 @@ namespace casual
             return result;
          }
 
-         namespace
+         namespace local
          {
-            namespace local
+            namespace
             {
                class converter
                {
@@ -154,9 +154,9 @@ namespace casual
             }
          }
 
-         namespace
+         namespace local
          {
-            namespace local
+            namespace
             {
                struct locale
                {
@@ -168,7 +168,7 @@ namespace casual
 
                locale info()
                {
-                  std::istringstream stream( std::locale( "").name());
+                  std::istringstream stream( std::locale().name());
 
                   locale result;
 
@@ -186,68 +186,12 @@ namespace casual
 
          std::string UTF8::encode( const std::string& value)
          {
-/*
-            typedef std::wstring::value_type wide_type;
-            typedef std::string::value_type tiny_type;
-
-            const std::locale current( "");
-            const auto& facet = std::use_facet<std::ctype<wide_type>>(current);
-            const auto& widener = [&]( const tiny_type c)
-            {
-               return facet.widen( c);
-            };
-
-            std::wstring wide;
-            std::transform(
-               value.begin(),
-               value.end(),
-               std::back_inserter( wide),
-               widener);
-
-            // throws std::range_error
-            return std::wstring_convert<std::codecvt_utf8<wide_type>,wide_type>().to_bytes( wide);
-*/
-            // setlocale needs to be called before nl_langinfo works
-            //const std::string codeset = nl_langinfo( CODESET);
 
             return encode( value, local::info().codeset);
          }
 
          std::string UTF8::decode( const std::string& value)
          {
-/*
-            typedef std::wstring::value_type wide_type;
-            typedef std::string::value_type tiny_type;
-
-            // throws std::range_error
-            const auto wide = std::wstring_convert<std::codecvt_utf8<wide_type>,wide_type>().from_bytes( value);
-
-            const std::locale current( "");
-            const auto& facet = std::use_facet<std::ctype<wide_type>>(current);
-            const auto& narrower = [&]( const wide_type c)
-            {
-               const auto r = facet.narrow( c, 0);
-
-               if( r) return r;
-
-               if( c) throw std::logic_error( "UTF8-decode failed");
-
-               return r;
-            };
-
-            std::string narrow;
-            std::transform(
-               wide.begin(),
-               wide.end(),
-               std::back_inserter( narrow),
-               narrower);
-
-            return narrow;
-*/
-
-            // setlocale needs to be called before nl_langinfo works ...
-            //const std::string codeset = nl_langinfo( CODESET);
-
             return decode( value, local::info().codeset);
          }
 

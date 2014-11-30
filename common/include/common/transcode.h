@@ -15,7 +15,7 @@ namespace casual
 {
    namespace common
    {
-      namespace transcoding
+      namespace transcode
       {
          struct Base64
          {
