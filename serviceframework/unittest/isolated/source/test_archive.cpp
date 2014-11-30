@@ -10,8 +10,10 @@
 
 
 #include "sf/namevaluepair.h"
-#include "sf/basic_archive.h"
-#include "sf/archive_binary.h"
+#include "sf/archive/basic.h"
+#include "sf/archive/binary.h"
+
+#include "common/log.h"
 
 #include "../include/test_vo.h"
 
@@ -29,7 +31,7 @@ namespace casual
    TEST( casual_sf_binary_writer, serialize_pod)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
       sf::archive::binary::Writer writer( buffer);
 
       writer << CASUAL_MAKE_NVP( 10);
@@ -38,7 +40,7 @@ namespace casual
    TEST( casual_sf_binary_writer, serialize_string)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
       sf::archive::binary::Writer writer( buffer);
 
       writer << CASUAL_MAKE_NVP( std::string{ "test"});
@@ -59,7 +61,7 @@ namespace casual
    TEST( casual_sf_binary_reader_writer, serialize_pod)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
       sf::archive::binary::Writer writer( buffer);
 
       writer << CASUAL_MAKE_NVP( 34L);
@@ -79,7 +81,7 @@ namespace casual
    TEST( casual_sf_binary_reader_writer, serialize_vector_long)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
       sf::archive::binary::Writer writer( buffer);
 
 
@@ -105,7 +107,7 @@ namespace casual
    TEST( casual_sf_binary_reader_writer, map_long_string)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
       sf::archive::binary::Writer writer( buffer);
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
@@ -146,7 +148,7 @@ namespace casual
    TEST( casual_sf_binary_reader_writer, serializible)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
 
       {
          sf::archive::binary::Writer writer( buffer);
@@ -173,7 +175,7 @@ namespace casual
    TEST( casual_sf_binary_reader_writer, complex_serializible)
    {
 
-      sf::buffer::Binary buffer;
+      sf::buffer::binary::Stream buffer;
 
       {
          test::Composite value;
@@ -184,6 +186,7 @@ namespace casual
 
          sf::archive::binary::Writer writer( buffer);
          writer << CASUAL_MAKE_NVP( range);
+
       }
 
       {

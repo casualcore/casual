@@ -21,21 +21,30 @@ namespace casual
 
          TEST( casual_sf_buffer, X_OCTET_type_subtype)
          {
-            X_Octet buffer( "YAML");
+            X_Octet buffer( "yaml");
 
 
-            Type type = buffer.type();
+            Type type = buffer::type( buffer);
 
             EXPECT_TRUE( type.name == "X_OCTET");
-            EXPECT_TRUE( type.subname == "YAML");
+            EXPECT_TRUE( type.subname == "yaml");
 
          }
 
          TEST( casual_sf_buffer, test)
          {
-            //test_buffer buffer;
+            binary::Stream input;
 
-            //EXPECT_TRUE( type.subname == "YAML");
+            input << std::string{ "bla"};
+
+            binary::Stream output = std::move( input);
+
+            std::string out;
+            output >> out;
+
+            EXPECT_TRUE( out == "bla");
+
+
 
          }
 

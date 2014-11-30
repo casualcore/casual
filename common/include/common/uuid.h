@@ -5,19 +5,18 @@
 //!     Author: Lazan
 //!
 
-#ifndef CASUAL_UTILITY_UUID_H_
-#define CASUAL_UTILITY_UUID_H_
+#ifndef CASUAL_COMMON_UUID_H_
+#define CASUAL_COMMON_UUID_H_
 
 #include <uuid/uuid.h>
 
 #include "common/platform.h"
+//#include "common/marshal.h"
 
 #include <string>
 
 namespace casual
 {
-
-
 	namespace common
 	{
 
@@ -25,16 +24,18 @@ namespace casual
 		{
 			typedef platform::uuid_type uuid_type;
 
+
 			Uuid();
 			Uuid( Uuid&&) = default;
 			Uuid( const Uuid&) = default;
 
-			Uuid& operator = ( const Uuid&) = default;
-
 			Uuid( uuid_type& uuid);
 
-			std::string string() const;
-			void string( const std::string& value);
+			Uuid( const std::string& uuid);
+
+
+			Uuid& operator = ( const Uuid&) = default;
+
 
 
 			const uuid_type& get() const;
@@ -45,10 +46,9 @@ namespace casual
 			//!
 			//! @param uuid target to copy to.
 			//!
-			void copy( uuid_type& uuid);
+			void copy( uuid_type& uuid) const;
 
-			bool operator < ( const Uuid& rhs) const;
-			bool operator == ( const Uuid& rhs) const;
+			explicit operator bool() const noexcept;
 
 
 			static const Uuid& empty();
@@ -56,17 +56,52 @@ namespace casual
 			static Uuid make();
 
 
+			friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
+
+         friend bool operator < ( const Uuid& lhs, const Uuid& rhs);
+         friend bool operator == ( const Uuid& lhs, const Uuid& rhs);
+         friend bool operator != ( const Uuid& lhs, const Uuid& rhs);
+			friend bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs);
+			friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
+
+
+
+		   template< typename A>
+		   void marshal( A& archive)
+		   {
+		      archive & m_uuid;
+		   }
+
+		   template< typename A>
+		   void marshal( A& archive) const
+		   {
+		      archive & m_uuid;
+		   }
+
+
 		private:
 			uuid_type m_uuid;
 
 		};
 
-	}
-}
+      namespace uuid
+      {
+         std::string string( const platform::uuid_type& uuid);
+         std::string string( const Uuid& uuid);
+      } // uuid
 
-bool operator == ( const casual::common::Uuid& lhs, const casual::common::Uuid::uuid_type& rhs);
+	} // common
+} // casaul
 
-bool operator == ( const casual::common::Uuid::uuid_type& rhs, const casual::common::Uuid& lhs);
+
+
+
+
+
+
+
+
+
 
 
 

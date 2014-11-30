@@ -8,7 +8,8 @@
 
 #include "tx.h"
 
-#include "common/transaction_context.h"
+#include "common/transaction/context.h"
+#include "common/error.h"
 
 
 int tx_begin(void)
@@ -79,14 +80,15 @@ int tx_rollback(void)
 int tx_set_commit_return(COMMIT_RETURN value)
 {
 
-  if( value == TX_COMMIT_COMPLETED)
-  {
-     return TX_OK;
-  }
-  else
-  {
-     return TX_NOT_SUPPORTED;
-  }
+   try
+   {
+      casual::common::transaction::Context::instance().setCommitReturn( value);
+   }
+   catch( ...)
+   {
+      return casual::common::error::handler();
+   }
+   return TX_OK;
 
 }
 
@@ -120,13 +122,13 @@ int tx_info( TXINFO* info)
 {
    try
    {
-      casual::common::transaction::Context::instance().info( *info);
+      return casual::common::transaction::Context::instance().info( *info);
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      casual::common::error::handler();
    }
-   return TX_OK;
+   return 0;
 }
 
 

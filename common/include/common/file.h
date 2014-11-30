@@ -12,6 +12,8 @@
 
 #include <regex>
 
+#include "common/move.h"
+
 namespace casual
 {
 
@@ -21,34 +23,49 @@ namespace casual
       {
          void remove( const std::string& path);
 
-         class RemoveGuard
+         namespace scoped
          {
-         public:
-            RemoveGuard( const std::string& path);
-            ~RemoveGuard();
+            class Path
+            {
+            public:
+               Path( std::string path);
 
-            RemoveGuard( RemoveGuard&&) = default;
+               Path();
+               ~Path();
 
-            RemoveGuard( const RemoveGuard&) = delete;
-            RemoveGuard& operator =( const RemoveGuard&) = delete;
+               Path( Path&&) noexcept;
+               Path& operator = ( Path&&) noexcept;
 
-            const std::string& path() const;
+               Path( const Path&) = delete;
+               Path& operator =( const Path&) = delete;
 
-            void release() { released = true; };
 
-         private:
+               const std::string& path() const;
 
-            const std::string m_path;
-            bool released = false;
+               operator const std::string&() const;
+
+               std::string release();
+
+               friend std::ostream& operator << ( std::ostream& out, const Path& value);
+
+            private:
+               std::string m_path;
+            };
+
+
+         } // scoped
+
+         class Lock
+         {
+
+
          };
 
-         class ScopedPath: public RemoveGuard
-         {
-         public:
-            using RemoveGuard::RemoveGuard;
 
-            operator const std::string&();
-         };
+         //!
+         //! @return a unique file-name, with post- and pre-fix, if provided
+         //!
+         std::string unique( const std::string& prefix = "", const std::string& postfix = "");
 
          //!
          //! Find the first file that matches search
@@ -92,6 +109,8 @@ namespace casual
       {
 
          bool create( const std::string& path);
+
+         bool remove( const std::string& path);
 
       }
 

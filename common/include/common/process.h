@@ -5,10 +5,17 @@
 //!     Author: Lazan
 //!
 
-#ifndef PROCESS_H_
-#define PROCESS_H_
+#ifndef CASUAL_COMMON_PROCESS_H_
+#define CASUAL_COMMON_PROCESS_H_
 
 #include "common/platform.h"
+#include "common/exception.h"
+#include "common/file.h"
+
+#include "common/internal/log.h"
+#include "common/algorithm.h"
+
+#include "common/marshal.h"
 
 //
 // std
@@ -21,13 +28,67 @@ namespace casual
 {
    namespace common
    {
+      struct Uuid;
+
       namespace process
       {
+
+         //!
+         //! @return the path of the current process
+         //!
+         const std::string& path();
+
+         //!
+         //! Sets the path of the current process
+         //!
+         void path( const std::string& path);
 
          //!
          //! @return process id (pid) for current process.
          //!
          platform::pid_type id();
+
+
+         //!
+         //! Holds pid and ipc-queue for a given process
+         //!
+         struct Handle
+         {
+            Handle() = default;
+            Handle( platform::pid_type pid, platform::queue_id_type queue) : pid( pid), queue( queue) {}
+
+            platform::pid_type pid = 0;
+            platform::queue_id_type queue = 0;
+
+
+            friend bool operator == ( const Handle& lhs, const Handle& rhs);
+            friend std::ostream& operator << ( std::ostream& out, const Handle& value);
+
+            explicit operator bool() const
+            {
+               return pid != 0 && queue != 0;
+            }
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               archive & pid;
+               archive & queue;
+            })
+
+         };
+
+         //!
+         //! @return the process handle for current process
+         //!
+         Handle handle();
+
+
+
+         //!
+         //! @return the uuid for this process.
+         //! used as a unique id over time
+         //!
+         const Uuid& uuid();
 
          //!
          //! Sleep for a while
@@ -90,22 +151,30 @@ namespace casual
          //!
          int wait( platform::pid_type pid);
 
+
          //!
          //! Tries to terminate pids
          //!
-         void terminate( const std::vector< platform::pid_type>& pids);
+         //! @return pids that did received the signal
+         //!
+         std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids);
 
          //!
          //! Tries to terminate pid
          //!
-         void terminate( platform::pid_type pid);
+         bool terminate( platform::pid_type pid);
+
+         //!
+         //!
+         //!
+         file::scoped::Path singleton( std::string queue_id_file);
 
 
-         struct lifetime
+         namespace lifetime
          {
             struct Exit
             {
-               enum class Why
+               enum class Reason
                {
                   unknown,
                   exited,
@@ -116,35 +185,78 @@ namespace casual
 
                platform::pid_type pid = 0;
                int status = 0;
-               Why why = Why::unknown;
+               Reason reason = Reason::unknown;
 
-               std::string string() const
-               {
-                  std::string result;
-                  result = "pid: " + std::to_string( pid) + " why: ";
-                  switch( why)
-                  {
-                     case Why::unknown: result += "unknown"; break;
-                     case Why::exited: result += "exited"; break;
-                     case Why::stopped: result += "stopped"; break;
-                     case Why::signaled: result += "signaled"; break;
-                     case Why::core: result += "core"; break;
-                  }
-                  return result;
-               }
+               explicit operator bool () { return pid != 0;}
+
+
+               friend bool operator == ( platform::pid_type pid, const Exit& rhs) { return pid == rhs.pid;}
+               friend bool operator == ( const Exit& lhs, platform::pid_type pid) { return pid == lhs.pid;}
+
+               friend std::ostream& operator << ( std::ostream& out, const Exit& terminated);
+
 
             };
 
-            static std::vector< Exit> ended();
-            //static void clear();
+            std::vector< Exit> ended();
 
-            // called by signal...
-            static void death();
 
-         private:
-            //static std::vector< Exit>& state();
-         };
+            //!
+            //!
+            //!
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids);
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
 
+
+            //!
+            //! Terminates and waits for the termination.
+            //!
+            //! @return the terminated pids
+            //!
+            //
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids);
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
+
+         }
+
+         namespace children
+         {
+
+
+            //!
+            //! Terminate all children that @p pids dictates.
+            //! When a child is terminated state is updated
+            //!
+            //! @param state the state object
+            //! @param pids to terminate
+            //!
+            template< typename S>
+            void terminate( S& state, std::vector< platform::pid_type> pids)
+            {
+               for( auto& pid : lifetime::terminate( std::move( pids)))
+               {
+                  state.removeProcess( pid);
+               }
+            }
+
+            //!
+            //! Terminate all children that @p state dictates.
+            //! When a child is terminated state is updated
+            //!
+            //! @param state the state object
+            //!
+            template< typename S>
+            void terminate( S& state)
+            {
+               //
+               // Terminate all processes
+               //
+
+               terminate( state, state.processes());
+            }
+
+
+         } // children
 
       } // process
    } // common

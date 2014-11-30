@@ -12,7 +12,7 @@
 #include <string>
 
 #include "common/ipc.h"
-#include "common/message.h"
+#include "common/message/monitor.h"
 
 #include "monitor/monitordb.h"
 

@@ -7,10 +7,11 @@
 
 #include "xatmi.h"
 
-#include "common/buffer_context.h"
-#include "common/calling_context.h"
-#include "common/server_context.h"
-#include "common/types.h"
+#include "common/buffer/pool.h"
+#include "common/call/context.h"
+#include "common/server/context.h"
+#include "common/platform.h"
+#include "common/log.h"
 
 #include "common/string.h"
 #include "common/error.h"
@@ -26,14 +27,11 @@ extern "C"
    long tpurcode = 0;
 }
 
-char* tpalloc( const char* const type, const char* const subtype, const long size)
+char* tpalloc( const char* type, const char* subtype, long size)
 {
    try
    {
-      auto&& result = casual::common::buffer::Context::instance().allocate( type ? type : "", subtype ? subtype : "", size);
-
-      return casual::common::transform::public_buffer( result);
-
+      return casual::common::buffer::pool::Holder::instance().allocate( { type, subtype}, size);
    }
    catch( ...)
    {
@@ -42,13 +40,12 @@ char* tpalloc( const char* const type, const char* const subtype, const long siz
    }
 }
 
-char* tprealloc( const char* ptr, const long size)
+char* tprealloc( const char* ptr, long size)
 {
 
    try
    {
-      auto&& buffer = casual::common::buffer::Context::instance().reallocate( ptr, size);
-      return casual::common::transform::public_buffer( buffer);
+      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size);
    }
    catch( ...)
    {
@@ -79,16 +76,16 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
    try
    {
-      const auto& buffer = casual::common::buffer::Context::instance().get( ptr);
+      auto& buffer = casual::common::buffer::pool::Holder::instance().get( ptr);
 
       //
       // type is optional
       //
       if( type)
       {
-         const int type_size = { 8 };
-         memset( type, '\0', type_size);
-         local::copy_max( buffer.type().begin(), buffer.type().end(), type_size, type);
+         const std::size_t size{ 8 };
+         memset( type, '\0', size);
+         casual::common::range::copy_max( buffer.type.type, size, type);
       }
 
       //
@@ -96,12 +93,12 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       //
       if( subtype)
       {
-         const int subtype_size = { 16 };
-         memset( subtype, '\0', subtype_size);
-         local::copy_max( buffer.subtype().begin(), buffer.subtype().end(), subtype_size, subtype);
+         const std::size_t size{ 16 };
+         memset( subtype, '\0', size);
+         casual::common::range::copy_max( buffer.type.subtype, size, subtype);
       }
 
-      return buffer.size();
+      return buffer.memory.size();
 
    }
    catch( ...)
@@ -114,7 +111,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
 
 void tpfree( const char* const ptr)
 {
-   casual::common::buffer::Context::instance().deallocate( ptr);
+   casual::common::buffer::pool::Holder::instance().deallocate( ptr);
 }
 
 void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
@@ -134,20 +131,17 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 {
    try
    {
-      //
-      // TODO: if needed size is less than current size, shall vi reduce it ?
-      //
 
+      auto descriptor = casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
 
-      int callDescriptor = casual::common::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
-
-      return casual::common::calling::Context::instance().getReply( &callDescriptor, odata, *olen, flags);
+      casual::common::call::Context::instance().getReply( &descriptor, odata, *olen, flags);
    }
    catch( ...)
    {
       tperrno = casual::common::error::handler();
       return -1;
    }
+   return 0;
 }
 
 int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
@@ -158,7 +152,7 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
       // TODO: if needed size is less than current size, shall vi reduce it ?
       //
 
-      return casual::common::calling::Context::instance().asyncCall( svc, idata, ilen, flags);
+      return casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
    }
    catch( ...)
    {
@@ -171,7 +165,21 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 {
    try
    {
-      return casual::common::calling::Context::instance().getReply( idPtr, odata, *olen, flags);
+      casual::common::call::Context::instance().getReply( idPtr, odata, *olen, flags);
+   }
+   catch( ...)
+   {
+      tperrno = casual::common::error::handler();
+      return -1;
+   }
+   return 0;
+}
+
+int tpcancel( int id)
+{
+   try
+   {
+      return casual::common::call::Context::instance().canccel( id);
    }
    catch( ...)
    {
@@ -179,6 +187,7 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
       return -1;
    }
 }
+
 
 int tpadvertise( const char* const svcname, void (*func)( TPSVCINFO *))
 {
@@ -210,17 +219,17 @@ int tpunadvertise( const char* const svcname)
 
 const char* tperrnostring( int error)
 {
-   return casual::common::error::tperrnoStringRepresentation( error).c_str();
+   return casual::common::error::xatmi::error( error).c_str();
 }
 
 int tpsvrinit( int argc, char **argv)
 {
-   casual::common::logger::debug << "internal tpsvrinit called";
-   return 0;
+  casual::common::log::debug << "internal tpsvrinit called" << std::endl;
+  return 0;
 }
 
 void tpsvrdone()
 {
-   casual::common::logger::debug << "internal tpsvrdone called";
+  casual::common::log::debug << "internal tpsvrdone called" << std::endl;
 }
 

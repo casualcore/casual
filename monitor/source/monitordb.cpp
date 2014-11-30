@@ -7,6 +7,7 @@
 #include "monitor/monitordb.h"
 #include "common/trace.h"
 #include "common/environment.h"
+#include "common/chronology.h"
 
 
 #include <vector>
@@ -44,7 +45,7 @@ namespace monitor
 				{
 					value = row[attribute].front();
 				}
-				common::logger::debug << "getValue(" << attribute << "): " << value;
+				common::log::debug << "getValue(" << attribute << "): " << value << std::endl;
 				return value;
 			}
 		}
@@ -101,7 +102,7 @@ namespace monitor
 		stream << "CREATE TABLE IF NOT EXISTS calls ( "
 			   << "service			TEXT, "
                << "parentservice	TEXT, "
-               << "callid			TEXT, "
+               << "callid			TEXT, " // should not be string
                << "transactionid	BLOB, "
                << "start			NUMBER, "
                << "end				NUMBER, "
@@ -124,7 +125,7 @@ namespace monitor
 		if ( !m_database.sql( stream.str(),
 				message.service,
 				message.parentService,
-				message.callId.string(),
+				common::uuid::string( message.callId), // should not be string
 				message.transactionId,
 				std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
 				std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count()))
@@ -153,12 +154,14 @@ namespace monitor
      		vo::MonitorVO vo;
      		vo.setSrv( local::getValue( *row, "service"));
      		vo.setParentService( local::getValue( *row, "parentservice"));
-     		sf::Uuid callId;
-     		callId.string( local::getValue( *row, "callid"));
+     		sf::platform::Uuid callId( local::getValue( *row, "callid"));
      		vo.setCallId( callId);
      		//vo.setTransactionId( local::getValue( *row, "transactionid"));
-     		vo.setStart( common::transform::time( strtoll(local::getValue( *row,"start").c_str(), 0, 10)));
-     		vo.setEnd( common::transform::time( strtoll(local::getValue( *row,"end").c_str(), 0, 10)));
+
+     		std::chrono::microseconds start{ strtoll(local::getValue( *row,"start").c_str(), 0, 10)};
+     		vo.setStart( common::platform::time_point{ start});
+     		std::chrono::microseconds end{ strtoll(local::getValue( *row,"end").c_str(), 0, 10)};
+     		vo.setEnd( common::platform::time_point{ end});
 			result.push_back( vo);
 		}
 

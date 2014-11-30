@@ -10,10 +10,8 @@
 
 #include "../include/test_vo.h"
 
-#include "sf/archive_yaml.h"
+#include "sf/archive/yaml.h"
 #include "sf/exception.h"
-
-#include "common/types.h"
 
 
 namespace casual

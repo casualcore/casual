@@ -1,7 +1,7 @@
 
 		
 
-#include <sf/archive.h>
+#include <sf/archive/archive.h>
 
 
 //## includes protected section begin [200.20]
@@ -50,9 +50,9 @@ struct MonitorVO::Implementation
    //## additional attributes protected section end   [200.impl.attr.10]
    std::string parentService;
    std::string srv;
-   sf::Uuid callId;
-   sf::time_type start;
-   sf::time_type end;
+   sf::platform::Uuid callId;
+   sf::platform::time_type start;
+   sf::platform::time_type end;
    //## additional attributes protected section begin [200.impl.attr.20]
    //## additional attributes protected section end   [200.impl.attr.20]
 
@@ -95,15 +95,15 @@ std::string MonitorVO::getSrv() const
 {
    return pimpl->srv;
 }
-sf::Uuid MonitorVO::getCallId() const
+sf::platform::Uuid MonitorVO::getCallId() const
 {
    return pimpl->callId;
 }
-sf::time_type MonitorVO::getStart() const
+sf::platform::time_type MonitorVO::getStart() const
 {
    return pimpl->start;
 }
-sf::time_type MonitorVO::getEnd() const
+sf::platform::time_type MonitorVO::getEnd() const
 {
    return pimpl->end;
 }
@@ -117,15 +117,15 @@ void MonitorVO::setSrv( std::string value)
 {
    pimpl->srv = value;
 }
-void MonitorVO::setCallId( sf::Uuid value)
+void MonitorVO::setCallId( sf::platform::Uuid value)
 {
    pimpl->callId = value;
 }
-void MonitorVO::setStart( sf::time_type value)
+void MonitorVO::setStart( sf::platform::time_type value)
 {
    pimpl->start = value;
 }
-void MonitorVO::setEnd( sf::time_type value)
+void MonitorVO::setEnd( sf::platform::time_type value)
 {
    pimpl->end = value;
 }

@@ -10,8 +10,11 @@
 
 
 #include "sf/namevaluepair.h"
+#include "sf/archive/archive.h"
 
-#include "sf/types.h"
+#include "sf/platform.h"
+
+#include "sf/pimpl.h"
 
 namespace casual
 {
@@ -36,7 +39,7 @@ namespace casual
          std::string m_string;
          short m_short;
          long long m_longlong;
-         sf::time_type m_time;
+         sf::platform::time_type m_time;
 
          template< typename A>
          void serialize( A& archive)
@@ -97,7 +100,7 @@ value:
 
       struct Binary : public SimpleVO
       {
-         common::binary_type m_binary;
+         sf::platform::binary_type m_binary;
 
          template< typename A>
          void serialize( A& archive)
@@ -107,9 +110,46 @@ value:
          }
       };
 
-   }
 
-}
+      namespace pimpl
+      {
+         struct Simple
+         {
+
+            // user defined
+            Simple( long value);
+
+            Simple();
+            ~Simple();
+            Simple( const Simple&);
+            Simple& operator = ( const Simple&);
+            Simple( Simple&&) noexcept;
+            Simple& operator = ( Simple&&) noexcept;
+
+
+            long getLong() const;
+            const std::string& getString() const;
+            std::string& getString();
+
+
+            void setLong( long value);
+            void setString( const std::string& value);
+
+
+
+            void serialize( sf::archive::Reader& reader);
+            void serialize( sf::archive::Writer& writer) const;
+
+
+         private:
+            class Implementation;
+            sf::Pimpl< Implementation> m_pimpl;
+         };
+
+      } // pimpl
+
+   } // test
+} // casual
 
 
 

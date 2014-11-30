@@ -9,7 +9,7 @@
 
 #include <xatmi.h>
 
-#include "sf/archive_yaml.h"
+#include "sf/archive/yaml.h"
 #include "sf/buffer.h"
 #include "sf/service.h"
 #include "sf/server.h"
@@ -37,11 +37,11 @@ namespace casual
 
             writer << CASUAL_MAKE_NVP( value);
 
-            sf::buffer::X_Octet buffer( "YAML");
+            sf::buffer::X_Octet buffer( "yaml");
 
             buffer.str( emitter.c_str());
 
-            sf::buffer::Raw raw = buffer.release();
+            auto raw = buffer.release();
 
             serviceInfo.data = raw.buffer;
             serviceInfo.len = raw.size;

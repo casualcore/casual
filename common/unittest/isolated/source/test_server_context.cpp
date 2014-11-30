@@ -8,11 +8,11 @@
 #include <gtest/gtest.h>
 
 
-#include "common/server_context.h"
+#include "common/server/context.h"
+#include "common/process.h"
 
-#include "common/mockup.h"
-
-#include "common/buffer_context.h"
+#include "common/mockup/ipc.h"
+#include "common/buffer/pool.h"
 
 
 // we need some values
@@ -47,131 +47,6 @@ namespace casual
 
          namespace
          {
-            struct Policy
-            {
-               /*
-               template< typename base_type>
-               using reader_q = queue::ipc_wrapper< queue::blocking::basic_reader< queue::policy::NoAction, base_type>>;
-
-               template< typename base_type>
-               using writer_q = queue::ipc_wrapper< queue::blocking::basic_writer< queue::policy::NoAction, base_type>>;
-             */
-
-               typedef mockup::queue::blocking::Writer writer_queue;
-               typedef mockup::queue::non_blocking::Reader reader_queue;
-
-
-
-               //typedef writer_q< reply_queue> reply_writer;
-               //typedef writer_q< monitor_queue> monitor_writer;
-
-               struct id
-               {
-                  static common::platform::queue_id_type instance() { return 10;}
-                  static common::platform::queue_id_type broker() { return 1;}
-                  static common::platform::queue_id_type monitor() { return 500;}
-               };
-
-
-
-            private:
-
-               /*
-               typedef writer_q< connect_queue> connect_writer;
-               typedef writer_q< ack_queue> ack_writer;
-               typedef writer_q< disconnect_queue> non_blocking_broker_writer;
-               typedef reader_q< configuration_queue> configuration_reader;
-               */
-
-
-            public:
-
-               static void reset()
-               {
-                  mockup::queue::clearAllQueues();
-
-                  // reset global TM queue
-                  transaction::Context::instance().state().transactionManagerQueue = 0;
-
-                  // prep the configuration reply - only message we will read
-                  message::server::Configuration message;
-                  message.transactionManagerQueue = 666;
-
-                  writer_queue instanceQ( id::instance());
-                  instanceQ( message);
-               }
-
-
-               message::server::Configuration connect( message::server::Connect& message)
-               {
-                  //
-                  // Let the broker know about us, and our services...
-                  //
-
-                  message.server.queue_id = id::instance();
-                  message.path = "test/path";
-
-                  writer_queue brokerWriter{ id::broker()};
-                  brokerWriter( message);
-
-
-                  //
-                  // Wait for configuration reply
-                  //
-                  reader_queue reader{ id::instance()};
-                  message::server::Configuration configuration;
-                  reader( configuration);
-
-                  return configuration;
-               }
-
-               void disconnect()
-               {
-                  message::server::Disconnect message;
-
-                  //
-                  // we can't block here...
-                  //
-                  writer_queue brokerWriter{ id::broker()};
-                  brokerWriter( message);
-               }
-
-               void reply( platform::queue_id_type id, message::service::Reply& message)
-               {
-                  writer_queue writer{ id};
-                  writer( message);
-               }
-
-
-
-               void ack( const message::service::callee::Call& message)
-               {
-                  message::service::ACK ack;
-                  ack.server.queue_id = id::instance();
-                  ack.service = message.service.name;
-
-                  writer_queue brokerWriter{ id::broker()};
-                  brokerWriter( ack);
-               }
-
-               void transaction( const message::service::callee::Call& message)
-               {
-
-               }
-
-               void transaction( const message::service::Reply& message)
-               {
-
-               }
-
-               void statistics( platform::queue_id_type id, message::monitor::Notify& message)
-               {
-                  writer_queue writer{ id};
-                  writer( message);
-               }
-            };
-
-            typedef common::callee::handle::basic_call< Policy> Call;
 
 
             const std::string& replyMessage()
@@ -183,7 +58,7 @@ namespace casual
             void test_service( TPSVCINFO *serviceInfo)
             {
 
-               auto buffer = buffer::Context::instance().allocate( "X_OCTET", "STRING", 1024);
+               auto buffer = buffer::pool::Holder::instance().allocate( {"X_OCTET", "binary"}, 1024);
 
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
@@ -191,164 +66,183 @@ namespace casual
                server::Context::instance().longJumpReturn( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
             }
 
-
-
             server::Arguments arguments()
             {
-               server::Arguments arguments;
+               server::Arguments arguments{ { "/test/path"}};
 
-               arguments.m_services.emplace_back( "test_service", &test_service);
-
-               arguments.m_argc = 1;
-
-               static const char* path{ "/test/path"};
-               arguments.m_argv = &const_cast< char*&>( path);
+               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::cNone);
 
                return arguments;
             }
 
 
-            message::service::callee::Call callMessage()
+            message::service::callee::Call callMessage( platform::queue_id_type id)
             {
                message::service::callee::Call message;
 
-               message.buffer = { "STRING", "", 1024};
-               message.callDescriptor = 10;
+               message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
+               message.descriptor = 10;
                message.service.name = "test_service";
-               message.reply.queue_id = Policy::id::instance();
+               message.reply.queue = id;
 
                return message;
             }
 
-            /*
-            struct ScopedBrokerQueue
+
+
+            namespace broker
             {
-               ScopedBrokerQueue()
+               void prepare( platform::queue_id_type id)
                {
-                  if( common::file::exists( common::environment::file::brokerQueue()))
+                  common::queue::blocking::Writer send( id);
+                  // server connect
                   {
-                     throw exception::QueueFailed( "Broker queue file exists - Can't run tests within an existing casual domain");
+                     message::server::connect::Reply reply;
+                     send( reply);
                   }
 
-                  path.reset( new file::ScopedPath( common::environment::file::brokerQueue()));
-
-                  std::ofstream out( common::environment::file::brokerQueue());
-                  out << brokerQueue.id();
+                  // transaction client connect
+                  {
+                     message::transaction::client::connect::Reply reply;
+                     reply.domain = "unittest-domain";
+                     reply.transactionManagerQueue = mockup::ipc::transaction::manager::queue().id();
+                     send( reply);
+                  }
 
                }
-
-               ScopedBrokerQueue( ScopedBrokerQueue&&) = default;
-
-            private:
-
-               std::unique_ptr< file::ScopedPath> path;
-               ipc::receive::Queue brokerQueue;
-            };
-            */
+            } // broker
 
          } // <unnamed>
       } // local
 
 
+      TEST( casual_common_service_context, arguments)
+      {
+         server::Arguments arguments{ { "arg1", "arg2"}};
+
+         ASSERT_TRUE( arguments.argc == 2);
+         EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
+         EXPECT_TRUE( arguments.argv[ 1] == std::string( "arg2"));
+
+         EXPECT_TRUE( arguments.arguments.at( 0) == "arg1");
+         EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
+      }
+
+      TEST( casual_common_service_context, arguments_move)
+      {
+         server::Arguments origin{ { "arg1", "arg2"}};
+
+         server::Arguments arguments = std::move( origin);
+
+         ASSERT_TRUE( arguments.argc == 2);
+         EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
+         EXPECT_TRUE( arguments.argv[ 1] == std::string( "arg2"));
+
+         EXPECT_TRUE( arguments.arguments.at( 0) == "arg1");
+         EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
+      }
+
+
+
 
       TEST( casual_common_service_context, connect)
       {
-         local::Policy::reset();
+         mockup::ipc::clear();
 
-         auto arguments = local::arguments();
+         mockup::ipc::Router router{ ipc::receive::id()};
 
-         local::Call callHandler( arguments);
-
-         local::Policy::reader_queue broker{ local::Policy::id::broker()};
-         message::server::Connect message;
-
-         ASSERT_TRUE( broker( message));
-         EXPECT_TRUE( message.server.queue_id == local::Policy::id::instance());
-      }
-
-
-      TEST( casual_common_service_context, connect_reply)
-      {
-         local::Policy::reset();
-
-         auto arguments = local::arguments();
-
-         local::Call callHandler( arguments);
-
-         EXPECT_TRUE( transaction::Context::instance().state().transactionManagerQueue == 666);
-
-      }
-
-      TEST( casual_common_service_context, disconnect)
-      {
-         local::Policy::reset();
-         auto arguments = local::arguments();
-
+         //
+         // Prepare "broker response"
+         //
          {
-            local::Call callHandler( arguments);
+            local::broker::prepare( router.id());
          }
 
-         local::Policy::reader_queue broker{ local::Policy::id::broker()};
-         message::server::Disconnect message;
+         callee::handle::Call callHandler( local::arguments());
 
-         ASSERT_TRUE( broker( message));
-         EXPECT_TRUE( message.server.pid == process::id());
+         message::server::connect::Request message;
+
+         queue::blocking::Reader read( mockup::ipc::broker::queue().receive());
+         read( message);
+
+         EXPECT_TRUE( message.process == process::handle());
+
+         ASSERT_TRUE( message.services.size() == 1);
+         EXPECT_TRUE( message.services.at( 0).name == "test_service");
 
       }
+
+
 
       TEST( casual_common_service_context, call_service__gives_reply)
       {
-         local::Policy::reset();
-         //local::ScopedBrokerQueue scopedQueue;
+         mockup::ipc::clear();
+
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
 
          {
-            auto arguments = local::arguments();
-            local::Call callHandler( arguments);
+            local::broker::prepare( router.id());
+            callee::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage();
+            auto message = local::callMessage( caller.id());
             callHandler.dispatch( message);
          }
 
 
-         local::Policy::reader_queue reader{ local::Policy::id::instance()};
+         queue::blocking::Reader reader( caller.receive());
          message::service::Reply message;
 
-         ASSERT_TRUE( reader( message));
-         EXPECT_TRUE( message.buffer.raw() == local::replyMessage());
+         reader( message);
+         EXPECT_TRUE( message.buffer.memory.data() == local::replyMessage());
+
       }
+
 
       TEST( casual_common_service_context, call_service__gives_broker_ack)
       {
-         local::Policy::reset();
-         //local::ScopedBrokerQueue scopedQueue;
+         mockup::ipc::clear();
+
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
 
          {
-            auto arguments = local::arguments();
-            local::Call callHandler( arguments);
+            local::broker::prepare( router.id());
+            callee::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage();
+            auto message = local::callMessage( caller.id());
             callHandler.dispatch( message);
          }
 
-         local::Policy::reader_queue broker{ local::Policy::id::broker()};
+         queue::blocking::Reader broker( mockup::ipc::broker::queue().receive());
          message::service::ACK message;
 
-
-         ASSERT_TRUE( broker( message));
+         broker( message);
          EXPECT_TRUE( message.service == "test_service");
-         EXPECT_TRUE( message.server.queue_id == local::Policy::id::instance());
-
+         EXPECT_TRUE( message.process.queue == ipc::receive::id());
       }
+
 
       TEST( casual_common_service_context, call_non_existing_service__throws)
       {
-         local::Policy::reset();
-         //local::ScopedBrokerQueue scopedQueue;
+         mockup::ipc::clear();
 
-         auto arguments = local::arguments();
-         local::Call callHandler( arguments);
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
 
-         auto message = local::callMessage();
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
+
+         local::broker::prepare( router.id());
+         callee::handle::Call callHandler( local::arguments());
+
+         auto message = local::callMessage( caller.id());
          message.service.name = "non_existing";
 
 
@@ -358,25 +252,47 @@ namespace casual
       }
 
 
+
       TEST( casual_common_service_context, call_service__gives_monitor_notify)
       {
-         local::Policy::reset();
-         //local::ScopedBrokerQueue scopedQueue;
+         mockup::ipc::clear();
+
+         // just a cache to keep queue writable
+         mockup::ipc::Router router{ ipc::receive::id()};
+
+         // instance that "calls" a service in callee::handle::Call, and get's a reply
+         mockup::ipc::Instance caller( 10);
+
+         mockup::ipc::Instance monitor( 42);
 
          {
-            auto arguments = local::arguments();
-            local::Call callHandler( arguments);
+            local::broker::prepare( router.id());
 
-            auto message = local::callMessage();
-            message.service.monitor_queue = local::Policy::id::monitor();
+            callee::handle::Call callHandler( local::arguments());
+
+            auto message = local::callMessage( caller.id());
+            message.service.monitor_queue = monitor.id();
             callHandler.dispatch( message);
          }
 
-         local::Policy::reader_queue monitor{ local::Policy::id::monitor()};
-         message::monitor::Notify message;
+         queue::blocking::Reader reader( monitor.receive());
 
-         ASSERT_TRUE( monitor( message));
+         message::monitor::Notify message;
+         reader( message);
          EXPECT_TRUE( message.service == "test_service");
+
+         mockup::ipc::broker::queue().clear();
+         ipc::receive::queue().clear();
+      }
+
+      TEST( casual_common_service_context, state_call_descriptor_reserver)
+      {
+         call::State state;
+
+         auto first = state.pending.reserve();
+         auto second = state.pending.reserve();
+
+         EXPECT_TRUE( first < second);
       }
 
    } // common

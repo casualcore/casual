@@ -1,0 +1,15 @@
+
+server:
+  type: casual-sf
+  services:
+    - name: casual.enqueue
+      function: enqueue
+      transaction: join
+    
+    - name: casual.dequeue
+      function: dequeue
+      transaction: join
+      
+      
+
+    

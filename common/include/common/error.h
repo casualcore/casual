@@ -23,13 +23,32 @@ namespace casual
 
          int handler();
 
-         std::string stringFromErrno();
+         //!
+         //! @return string representation of errno
+         //!
+         std::string string();
 
-         const std::string& tperrnoStringRepresentation( int error);
+         std::string string( int code);
 
-      }
-   }
-}
+
+         namespace xatmi
+         {
+            std::string error( int error);
+         } // xatmi
+
+         namespace xa
+         {
+            const char* error( int code);
+         } // xa
+
+         namespace tx
+         {
+            const char* error( int code);
+         } // tx
+
+      } // error
+   } // common
+} // casual
 
 
 

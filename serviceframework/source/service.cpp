@@ -11,7 +11,7 @@
 // TODO: temporary to test factory
 #include "sf/service_protocol.h"
 
-#include "common/trace.h"
+#include "common/internal/trace.h"
 
 
 //
@@ -88,9 +88,23 @@ namespace casual
             return singleton;
          }
 
+
+         template< typename T>
+         std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* serviceInfo) const
+         {
+            if( common::log::active( common::log::category::Type::parameter))
+            {
+               return std::unique_ptr< Interface>( new protocol::parameter::Log< T>( serviceInfo));
+            }
+
+            return std::unique_ptr< Interface>( new T( serviceInfo));
+         }
+
+
+
          std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
          {
-            common::Trace trace( "sf::service::Factory::create");
+            common::trace::internal::Scope trace( "sf::service::Factory::create");
 
             sf::buffer::Type type = sf::buffer::type( serviceInfo->data);
 
@@ -108,11 +122,11 @@ namespace casual
 
          Factory::Factory()
          {
-            common::Trace trace( "sf::service::Factory::Factory");
+            common::trace::internal::Scope trace( "sf::service::Factory::Factory");
 
-            registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "YAML"));
+            registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "yaml"));
             registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));
-            registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "JSON"));
+            registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "json"));
          }
 
 

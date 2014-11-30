@@ -12,13 +12,13 @@
 #include <algorithm>
 
 
-#include "common/server_context.h"
-#include "common/message_dispatch.h"
+#include "common/server/context.h"
+#include "common/message/dispatch.h"
+#include "common/message/handle.h"
 
 
 #include "common/error.h"
-#include "common/logger.h"
-#include "common/environment.h"
+#include "common/process.h"
 
 
 using namespace casual;
@@ -35,13 +35,18 @@ namespace local
          {
             common::server::Arguments operator ()( struct casual_server_argument& value) const
             {
-               common::server::Arguments result;
+               common::server::Arguments result( value.argc, value.argv);
 
                auto service = value.services;
 
                while( service->functionPointer != nullptr)
                {
-                  result.m_services.emplace_back( service->name, service->functionPointer);
+                  result.services.emplace_back(
+                        service->name,
+                        service->functionPointer,
+                        service->type,
+                        common::server::Service::TransactionType( service->transaction));
+
                   ++service;
                }
 
@@ -53,11 +58,8 @@ namespace local
                   ++xaSwitch;
                }
 
-               result.m_argc = value.argc;
-               result.m_argv = value.argv;
-
-               result.m_server_init = value.serviceInit;
-               result.m_server_done = value.serviceDone;
+               result.server_init = value.serviceInit;
+               result.server_done = value.serviceDone;
 
                return result;
 
@@ -73,22 +75,18 @@ int casual_start_server( casual_server_argument* serverArgument)
 {
    try
    {
+      common::process::path( serverArgument->argv[ 0]);
 
-
-      common::message::dispatch::Handler handler;
-
-      {
-         auto arguments = local::transform::ServerArguments()( *serverArgument);
-
-         common::environment::file::executable( serverArgument->argv[ 0]);
-
-         handler.add< common::callee::handle::Call>( arguments);
-      }
+      common::message::dispatch::Handler handler{
+         common::callee::handle::Call{ local::transform::ServerArguments()( *serverArgument)},
+         common::message::handle::Shutdown{},
+      };
 
       //
       // Start the message-pump
       //
-      common::message::dispatch::pump( handler);
+      common::queue::blocking::Reader receiveQueue( common::ipc::receive::queue());
+      common::message::dispatch::pump( handler, receiveQueue);
 	}
 	catch( ...)
 	{

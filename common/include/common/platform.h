@@ -42,6 +42,8 @@
 // std
 //
 #include <string>
+#include <vector>
+#include <chrono>
 
 namespace casual
 {
@@ -111,7 +113,7 @@ namespace casual
 			};
 
 
-			enum logger_priority
+			enum log_category
 			{
 				//! system is unusable
 				cLOG_emergency = LOG_EMERG,
@@ -139,11 +141,70 @@ namespace casual
 			static const signal_type cSignal_Quit = SIGQUIT;
 			static const signal_type cSignal_Interupt = SIGINT;
 			static const signal_type cSignal_ChildTerminated = SIGCHLD;
+			static const signal_type cSignal_UserDefined = SIGUSR1;
 
-			std::string getSignalDescription( signal_type);
+
+
+
+
+			namespace resource
+         {
+            typedef int id_type;
+
+         } // resource
+
+
+
+			typedef std::vector< char> binary_type;
+
+         //typedef char* raw_buffer_type;
+			using raw_buffer_type = char*;
+			using const_raw_buffer_type = const char*;
+
+         inline raw_buffer_type public_buffer( const_raw_buffer_type buffer)
+         {
+            return const_cast< raw_buffer_type>( buffer);
+         }
+
+         // TODO: change to: typedef std::chrono::steady_clock clock_type;
+         // When clang has to_time_t for steady_clock
+         typedef std::chrono::system_clock clock_type;
+
+
+         typedef clock_type::time_point time_point;
+
+
+         //!
+         //! Call-descriptor type
+         //!
+         using descriptor_type = int;
+
+
+
 
 		} // platform
-	} // utility
+	} // common
+
+	//!
+   //! Overload for time_type
+   //!
+   //! @{
+   template< typename M>
+   void casual_marshal_value( common::platform::time_point& value, M& marshler)
+   {
+      auto time = value.time_since_epoch().count();
+      marshler << time;
+   }
+
+   template< typename M>
+   void casual_unmarshal_value( common::platform::time_point& value, M& unmarshler)
+   {
+      common::platform::time_point::rep representation;
+      unmarshler >> representation;
+      value = common::platform::time_point( common::platform::time_point::duration( representation));
+   }
+   //! @}
+
 } // casual
 
 

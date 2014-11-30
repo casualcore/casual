@@ -11,7 +11,7 @@ resources:
     # Name of the xa switch struct 
     xa_struct_name: db2xa_switch_static_std
     
-    # needed libraries
+    # needed libraries, user can link this her self
     libraries:
       - db2
       
@@ -20,7 +20,11 @@ resources:
     server: rm-proxy-casual-mockup
     xa_struct_name: casual_mockup_xa_switch_static
     libraries:
-      - casual-mockup
+      - casual-mockup-rm
 
-      
+  - key: casual-queue-rm
+    server: casual-queue-resource-proxy
+    xa_struct_name: casual_queue_xa_switch_dynamic
+    libraries:
+      - casual-queue-rm
   

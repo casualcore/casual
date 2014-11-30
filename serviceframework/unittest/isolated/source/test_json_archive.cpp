@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 
-#include "sf/archive_json.h"
+#include "sf/archive/json.h"
 
 #include "../include/test_vo.h"
 

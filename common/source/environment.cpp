@@ -41,7 +41,20 @@ namespace casual
 					{
 						throw exception::EnvironmentVariableNotFound( name);
 					}
+				}
 
+            std::string get( const std::string& name, const std::string& alternative)
+            {
+               if( exists( name))
+               {
+                  return get( name);
+               }
+               return alternative;
+            }
+
+				void set( const std::string& name, const std::string& value)
+				{
+				   setenv( name.c_str(), value.c_str(), 1);
 				}
 			}
 
@@ -71,31 +84,9 @@ namespace casual
 			namespace file
          {
 
-			   namespace local
-			   {
-               namespace
-               {
-                  std::string& executablePath()
-                  {
-                     static std::string path;
-                     return path;
-                  }
-               }
-            }
-
-            void executable( const std::string& path)
-            {
-               local::executablePath() = path;
-            }
-
-            const std::string& executable()
-            {
-               return local::executablePath();
-            }
-
             std::string brokerQueue()
             {
-               return directory::domain() + "/.casual_broker_queue";
+               return domain::singleton::path() + "/.casual-broker-queue";
             }
 
             std::string configuration()
@@ -116,12 +107,55 @@ namespace casual
 				return time( 0);
 			}
 
-			std::string getDomainName()
-			{
-				//
-				// TODO: Maybe store the domainname in broker-queue-file?
-				return "domain-1";
-			}
+			namespace local
+         {
+            namespace
+            {
+               std::string& domainName()
+               {
+                  static std::string path;
+                  return path;
+               }
+            }
+		   }
+
+			namespace domain
+         {
+            const std::string& name()
+            {
+               return local::domainName();
+            }
+
+            void name( const std::string& value)
+            {
+               local::domainName() = value;
+            }
+
+            namespace singleton
+            {
+               namespace local
+               {
+                  namespace
+                  {
+                     std::string path( std::string path)
+                     {
+                        common::directory::create( path);
+                        return path;
+                     }
+
+                  } // <unnamed>
+               } // local
+
+               const std::string& path()
+               {
+                  static const std::string path = local::path( directory::domain() + "/.singleton");
+                  return path;
+               }
+
+            } // singleton
+
+         } // domain
+
 
 
 		}

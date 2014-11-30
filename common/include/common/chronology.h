@@ -8,25 +8,33 @@
 #ifndef CHRONOLOGY_H_
 #define CHRONOLOGY_H_
 
-#include "common/types.h"
+#include "common/platform.h"
 
 #include <string>
 
 namespace casual
 {
 
-namespace common
-{
-
-   namespace chronology
+   namespace common
    {
-      std::string local();
-      std::string local( const common::time_type& time);
-      std::string universal();
-      std::string universal( const common::time_type& time);
-   }
 
-}
+      namespace chronology
+      {
+         std::string local();
+         std::string local( const platform::time_point& time);
+         std::string universal();
+         std::string universal( const platform::time_point& time);
+
+
+         namespace from
+         {
+            std::chrono::microseconds string( const std::string& value);
+         } // from
+
+
+      }
+
+   }
 
 }
 

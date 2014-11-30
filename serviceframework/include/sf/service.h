@@ -9,7 +9,7 @@
 #define SERVICE_H_
 
 
-#include "sf/archive.h"
+#include "sf/archive/archive.h"
 #include "sf/buffer.h"
 
 #include "xatmi.h"
@@ -168,21 +168,8 @@ namespace casual
 
             typedef std::function< std::unique_ptr< Interface>( TPSVCINFO* serviceInfo)> function_type;
 
-            template< typename T>
-            struct Registrator
-            {
-
-            };
 
 
-            template< typename T>
-            struct Creator
-            {
-               std::unique_ptr< Interface> operator()( TPSVCINFO* serviceInfo) const
-               {
-                  return std::unique_ptr< Interface>( new T( serviceInfo));
-               }
-            };
 
             static Factory& instance();
 
@@ -197,6 +184,12 @@ namespace casual
 
 
          private:
+
+            template< typename T>
+            struct Creator
+            {
+               std::unique_ptr< Interface> operator()( TPSVCINFO* serviceInfo) const;
+            };
 
             Factory();
 

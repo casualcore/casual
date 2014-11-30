@@ -21,19 +21,13 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.2086429961." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1805529713" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.gnu.platform.base.822825828" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder arguments="--no-colors" buildPath="${workspace_loc:/casual/Debug}" command="pmake" id="cdt.managedbuild.builder.gnu.cross.1730712088" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross">
-								<outputEntries>
-									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name=""/>
-								</outputEntries>
-							</builder>
+							<builder arguments="--no-colors" buildPath="${workspace_loc:/casual/Debug}" command="pmake" id="cdt.managedbuild.builder.gnu.cross.1730712088" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.754276201" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.193687276" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<option id="gnu.cpp.compiler.option.include.paths.1419399240" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/casual/tools/unittest/gtest/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/tools/unittest/gtest/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/Users/Lazan/Development/third-party/yaml-cpp/include"/>
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
-									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/core"/>
-									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/http"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.696713577" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
@@ -47,15 +41,8 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.option.optimization.level.749153560" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.debugging.level.1980587792" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.893169188" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/casual/tools/unittest/gtest/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/Users/Lazan/Development/third-party/yaml-cpp/include"/>
-									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/core"/>
 									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/http"/>
-								</option>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.250019515" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
-									<listOptionValue builtIn="false" value="_GLIBCXX_NOEXCEPT=throw()"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1370332391" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -67,20 +54,33 @@
 								</inputType>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.base.196217404" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.2022899807" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/casual/tools/unittest/gtest/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/Users/Lazan/Development/third-party/yaml-cpp/include"/>
-									<listOptionValue builtIn="false" value="/usr/local/include"/>
-									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/core"/>
-									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/http"/>
-								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1782442094" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="source|buffers/unittest/isolated/source" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
+					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.2086429961.1194469131" name="/" resourcePath="plugin">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.base.196181222" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base" unusedChildren="">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.955967594" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.754276201"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1906559334" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base.193687276">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1995923011" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.2147234633" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base.1160670154">
+								<option id="gnu.c.compiler.option.include.paths.2119378655" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/core"/>
+									<listOptionValue builtIn="false" value="/Users/hbergk/tools/nginx/nginx-1.5.2/src/http"/>
+									<listOptionValue builtIn="false" value="/Users/Lazan/Development/third-party/nginx-1.5.2/src/core"/>
+									<listOptionValue builtIn="false" value="/Users/Lazan/Development/third-party/nginx-1.5.2/src/http"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.25485666" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1115562621" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base.339415053"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.786901461" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base.1731101008"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1681098663" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base.196217404">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.30069822" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -131,9 +131,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="buffers/unittest/isolated/source|source" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>

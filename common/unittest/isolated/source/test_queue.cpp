@@ -9,7 +9,7 @@
 
 #include "common/queue.h"
 #include "common/ipc.h"
-#include "common/message.h"
+#include "common/message/server.h"
 #include "common/exception.h"
 #include "common/signal.h"
 
@@ -29,13 +29,13 @@ namespace casual
          {
             ipc::receive::Queue receive;
 
-            ipc::send::Queue send( receive.id());
+            //ipc::send::Queue send( receive.id());
 
             {
-               blocking::Writer writer( send);
+               blocking::Writer writer( receive.id());
                message::service::Advertise message;
 
-               message.server.queue_id = 666;
+               message.process.queue = 666;
                message.serverPath = "banan";
 
                message::Service service;
@@ -55,7 +55,7 @@ namespace casual
                message::service::Advertise message;
                marshal >> message;
 
-               EXPECT_TRUE( message.server.queue_id == 666);
+               EXPECT_TRUE( message.process.queue == 666);
                EXPECT_TRUE( message.serverPath == "banan");
 
                ASSERT_TRUE( message.services.size() == 1);
@@ -64,12 +64,12 @@ namespace casual
 
          }
 
-         TEST( casual_common, queue_reader_timeout)
+         TEST( casual_common, queue_reader_timeout_2ms)
          {
             ipc::receive::Queue receive;
             blocking::Reader reader( receive);
 
-            common::signal::alarm::Scoped timeout( 1);
+            common::signal::alarm::Scoped timeout( std::chrono::milliseconds( 2));
 
             message::service::Advertise message;
 
@@ -96,8 +96,8 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            ipc::send::Queue send( receive.id());
-            blocking::Writer writer( send);
+            //ipc::send::Queue send( receive.id());
+            blocking::Writer writer( receive.id());
 
             message::service::Advertise sendMessage;
             sendMessage.serverPath = "banan";
@@ -114,18 +114,18 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            ipc::send::Queue send( receive.id());
-            blocking::Writer writer( send);
+            //ipc::send::Queue send( receive.id());
+            blocking::Writer writer( receive.id());
 
             message::service::Advertise sendMessage;
             sendMessage.serverPath = "banan";
-            sendMessage.services.resize( 100);
+            sendMessage.services.resize( 50);
             writer( sendMessage);
 
             message::service::Advertise receiveMessage;
             EXPECT_TRUE( reader( receiveMessage));
             EXPECT_TRUE( receiveMessage.serverPath == "banan");
-            EXPECT_TRUE( receiveMessage.services.size() == 100);
+            EXPECT_TRUE( receiveMessage.services.size() == 50);
 
          }
       }

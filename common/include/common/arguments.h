@@ -18,6 +18,10 @@
 #include <type_traits>
 
 
+#include "common/process.h"
+#include "common/algorithm.h"
+
+
 namespace casual
 {
    namespace common
@@ -64,20 +68,78 @@ namespace casual
 
          }
 
-         class Base
+
+         namespace option
          {
-         public:
-            virtual ~Base() {}
+            struct Holder
+            {
 
-            virtual bool option( const std::string& option) const = 0;
+               template< typename T>
+               Holder( T&& option) : m_option( std::make_shared< holder_type< T>>( std::forward< T>( option)))
+               {
 
-            virtual void assign( const std::string& option, std::vector< std::string>&& values) = 0;
+               }
 
-            virtual bool consumed() const = 0;
+               bool option( const std::string& option) const
+               {
+                  return m_option->option( option);
+               }
+               void assign( const std::string& option, std::vector< std::string>&& values) const
+               {
+                  m_option->assign( option, std::move( values));
+               }
+               bool consumed() const
+               {
+                  return m_option->consumed();
+               }
+               void dispatch() const
+               {
+                  m_option->dispatch();
+               }
 
-            virtual void dispatch() const = 0;
+            private:
+               class base_type
+               {
+               public:
+                  virtual ~base_type() {}
+                  virtual bool option( const std::string& option) const = 0;
+                  virtual void assign( const std::string& option, std::vector< std::string>&& values) = 0;
+                  virtual bool consumed() const = 0;
+                  virtual void dispatch() const = 0;
+               };
 
-         };
+               template< typename T>
+               struct holder_type : public base_type
+               {
+                  template< typename O>
+                  holder_type( O&& option) : m_option_type{ std::forward< T>( option)} {}
+
+               private:
+                  bool option( const std::string& option) const override
+                  {
+                     return m_option_type.option( option);
+                  }
+                  void assign( const std::string& option, std::vector< std::string>&& values) override
+                  {
+                     m_option_type.assign( option, std::move( values));
+                  }
+                  bool consumed() const override
+                  {
+                     return m_option_type.consumed();
+                  }
+                  void dispatch() const override
+                  {
+                     m_option_type.dispatch();
+                  }
+                  T m_option_type;
+               };
+
+               std::shared_ptr< base_type> m_option;
+
+            };
+
+         } // option
+
 
          namespace internal
          {
@@ -88,7 +150,7 @@ namespace casual
                T operator () ( const std::string& value) const
                {
                   std::istringstream converter( value);
-                  T result;
+                  T result{};
                   converter >> result;
                   return result;
                }
@@ -305,32 +367,33 @@ namespace casual
 
 
 
-            template< typename C>
-            auto find( const std::string& option, C& container) -> decltype( container.begin())
+            struct Option
             {
-               return std::find_if(
-                  std::begin( container),
-                  std::end( container),
-                  std::bind( &Base::option, std::placeholders::_1, option));
-            }
+               Option( const std::string& option) : option( option) {}
 
-            template< typename Iter>
-            Iter find( Iter start, Iter end, Base* base)
+               template< typename T>
+               bool operator () ( T&& value) const
+               {
+                  return value.option( option);
+               }
+            private:
+               const std::string& option;
+            };
+
+
+            struct HasOption
             {
-               return std::find_if(
-                  start,
-                  end,
-                  std::bind( &Base::option, base, std::placeholders::_1));
-            }
-
-
+               bool operator() ( const std::string& option, const option::Holder& holder) const
+               {
+                  return holder.option( option);
+               }
+            };
          } // internal
 
 
-         class Directive : public Base
+         class Directive
          {
          public:
-
 
             template< typename C, typename... Args>
             Directive( C cardinality, const std::vector< std::string>& options, const std::string& description, Args&&... args)
@@ -343,24 +406,24 @@ namespace casual
             Directive( Directive&&) = default;
 
 
-            bool option( const std::string& option) const override
+            bool option( const std::string& option) const
             {
-               return std::find( std::begin( m_options), std::end( m_options), option) != std::end( m_options);
+               return ! range::find( range::make( m_options), option).empty();
             }
 
-            void assign( const std::string& option, std::vector< std::string>&& values) override
+            void assign( const std::string& option, std::vector< std::string>&& values)
             {
                std::move( std::begin( values), std::end( values), std::back_inserter( m_values));
                //m_values = std::move( values);
                m_assigned = true;
             }
 
-            bool consumed() const override
+            bool consumed() const
             {
                return false; //m_assigned;
             }
 
-            void dispatch() const override
+            void dispatch() const
             {
                if( m_assigned)
                {
@@ -392,66 +455,52 @@ namespace casual
 
 
          //template< typename C>
-         class Group : public Base
+         class Group
          {
          public:
 
             //typedef C correlation_type;
-            typedef std::vector< std::shared_ptr< Base>> groups_type;
+            typedef std::vector< option::Holder> groups_type;
 
-
-            Group() = default;
-            Group( Group&&) = default;
-            Group( const Group&) = default;
-
-            /*
-            template< typename... Args>
-            Group( Args&&... args)
-            {
-               add( std::forward< Args>( args)...);
-            }
-            */
 
             template< typename T, typename... Args>
             void add( T&& directive, Args&&... args)
             {
-               m_groups.emplace_back( std::make_shared< typename std::decay< T>::type>( std::forward< T>( directive)));
+               m_groups.emplace_back( std::forward< T>( directive));
                add( std::forward< Args>(args)...);
             }
 
-            bool option( const std::string& option) const override
-            {
-               return internal::find( option, m_groups) != std::end( m_groups);
-            }
-
-            void assign( const std::string& option, std::vector< std::string>&& values) override
-            {
-               auto findIter = internal::find( option, m_groups);
-
-               if( findIter != std::end( m_groups))
-               {
-                  (*findIter)->assign( option, std::move( values));
-               }
-            }
-
-            bool consumed() const override
-            {
-               return std::all_of(
-                     std::begin( m_groups),
-                     std::end( m_groups),
-                     std::bind( &Base::consumed, std::placeholders::_1));
-            }
-
-            void dispatch() const override
-            {
-               for( auto& base : m_groups)
-               {
-                  base->dispatch();
-               }
-            }
-
-
          protected:
+
+            friend struct option::Holder;
+
+            bool option( const std::string& option) const
+            {
+               return range::any_of( m_groups, internal::Option{ option});
+            }
+
+            void assign( const std::string& option, std::vector< std::string>&& values)
+            {
+               auto found = range::find_if( range::make( m_groups), internal::Option{ option});
+
+               if( found)
+               {
+                  found.first->assign( option, std::move( values));
+               }
+            }
+
+            bool consumed() const
+            {
+               return range::all_of( m_groups, std::mem_fn( &option::Holder::consumed));
+            }
+
+            void dispatch() const
+            {
+               range::for_each( m_groups, std::mem_fn( &option::Holder::dispatch));
+            }
+
+
+
 
             void add() {}
 
@@ -488,6 +537,12 @@ namespace casual
             return false;
          }
 
+         bool parse( const std::vector< std::string>& arguments)
+         {
+            return parse( process::path(), arguments);
+         }
+
+
          bool parse( const std::string& processName, const std::vector< std::string>& arguments)
          {
             m_processName = processName;
@@ -496,41 +551,38 @@ namespace casual
             //
             // Find first argument that has a handler
             //
-            auto current = argument::internal::find(
-                  std::begin( arguments),
-                  std::end( arguments),
-                  this);
+
+            auto argumentRange = range::find_first_of( arguments, m_groups, argument::internal::HasOption());
 
             //auto start = current;
 
-            while( current != std::end( arguments))
+            while( ! argumentRange.empty())
             {
-
-               //std::cout << "current " << *current << std::endl;
 
                //
                // Try to find a handler for this argument
                //
-               auto handler = argument::internal::find( *current, m_groups);
+               auto found = range::find_if( m_groups, argument::internal::Option{ *argumentRange});
 
-               if( handler != std::end( m_groups))
+
+               if( found)
                {
-                  //
-                  // Find the end of values assosiated with this option
-                  //
-                  auto currentEnd = argument::internal::find(
-                     current + 1,
-                     std::end( arguments),
-                     this);
 
-                  (*handler)->assign( *current, { current + 1, currentEnd});
+                  auto argument = *argumentRange;
+                  ++argumentRange;
 
-                  current = currentEnd;
+                  //
+                  // Find the end of values associated with this option
+                  //
+                  auto assignRange  = argumentRange - range::find_first_of( argumentRange, m_groups, argument::internal::HasOption());
+
+                  found->assign( argument, { std::begin( assignRange), std::end( assignRange)});
+
                }
                else
                {
                   // temp
-                  ++current;
+                  ++argumentRange;
                }
             }
 

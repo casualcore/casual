@@ -12,6 +12,8 @@
 #include <string>
 #include <stdexcept>
 
+#include <ostream>
+
 namespace casual
 {
    namespace sf
@@ -21,12 +23,28 @@ namespace casual
          class Base : public std::exception
          {
          public:
+
+            Base( std::string information) : m_information( std::move( information)) {}
+            Base( std::string information, const char* file, decltype( __LINE__) line) : Base( std::move( information))
+            {
+               m_information.push_back( '\0');
+               m_information.append( file);
+               m_information.append( ':' + std::to_string( line));
+
+            }
+
             const char* what() const noexcept
             {
                return m_information.c_str();
             }
+
+            friend std::ostream& operator << ( std::ostream& out, const Base& exception)
+            {
+               return out << exception.what();
+            }
+
          protected:
-            Base( const std::string& information) : m_information( information) {}
+            ~Base() = default;
 
          private:
             std::string m_information;
@@ -35,15 +53,41 @@ namespace casual
 
          struct Validation : public Base
          {
-            Validation( const std::string& information) : Base( information) {}
-
+            using Base::Base;
          };
+
+
+
 
          struct NotReallySureWhatToCallThisExcepion : public Base
          {
+            using Base::Base;
             NotReallySureWhatToCallThisExcepion() : Base( "NotRealllySureWhatToCallThisExcepion") {}
 
          };
+
+         namespace memory
+         {
+            struct Allocation : public Base
+            {
+               using Base::Base;
+            };
+
+         } // memory
+
+         namespace xatmi
+         {
+            struct Timeout : Base
+            {
+               using Base::Base;
+            };
+
+            struct System : Base
+            {
+               using Base::Base;
+            };
+
+         } // xatmi
 
       }
 

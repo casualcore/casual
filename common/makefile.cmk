@@ -1,149 +1,154 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 if sys.platform.startswith('darwin'):
-    UUIDLIB="c"
+    UUIDLIB='c'
 else:
-    UUIDLIB="uuid"
+    UUIDLIB='uuid'
 
-INCLUDE_PATHS=[ 
+
+
+IncludePaths( [ 
     'include',
-	'../xatmi/include',
-	'../buffers/include',
-	'../transaction/include',
-	'../serviceframework/include',
-	'../buffers/include',
-	'$(UNITTEST_INCLUDE_PATH)'
-	]
+    '../xatmi/include',
+    '../buffers/include',
+    '../transaction/include',
+    '../serviceframework/include',
+    '../buffers/include',
+    '$(UNITTEST_INCLUDE_PATH)'
+    ])
 
-LIBRARY_PATHS= ['../buffers/bin']
-
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
-
-Compile( "source/server_context.cpp", "obj/server_context.o")
-Compile( "source/calling_context.cpp", "obj/calling_context.o")
-Compile( "source/buffer_context.cpp", "obj/buffer_context.o")
-Compile( "source/transaction_context.cpp", "obj/transaction_context.o")
-Compile( "source/ipc.cpp", "obj/ipc.o")
-Compile( "source/queue.cpp", "obj/queue.o")
-
-Compile( "source/uuid.cpp", "obj/uuid.o")
-Compile( "source/environment.cpp", "obj/environment.o")
-Compile( "source/file.cpp", "obj/file.o")
-Compile( "source/signal.cpp", "obj/signal.o")
-Compile( "source/platform.cpp", "obj/platform.o")
-Compile( "source/logger.cpp", "obj/logger.o")
-Compile( "source/error.cpp", "obj/error.o")
-Compile( "source/chronology.cpp", "obj/chronology.o")
-Compile( "source/process.cpp", "obj/process.o")
-Compile( "source/network_byteorder.cpp", "obj/network_byteorder.o")
-Compile( "source/transcoding.cpp", "obj/transcoding.o")
-
-Compile( "source/field_buffer.cpp", "obj/field_buffer.o")
-Compile( "source/octet_buffer.cpp", "obj/octet_buffer.o")
-Compile( "source/order_buffer.cpp", "obj/order_buffer.o")
-Compile( "source/string_buffer.cpp", "obj/string_buffer.o")
+LibraryPaths( [ '$(UNITTEST_LIBRARY_PATH)'])
 
 
+install_libs = []
 
 
-LinkLibrary( "casual-common", 
-	[
-	"obj/server_context.o",
-	"obj/calling_context.o",
-	"obj/buffer_context.o",
-	"obj/transaction_context.o",
-	"obj/ipc.o",
-	"obj/queue.o",
-	"obj/uuid.o",
-	"obj/environment.o",
-	"obj/file.o",
-	"obj/signal.o",
-	"obj/platform.o",
-	"obj/logger.o",
-	"obj/error.o",
-	"obj/chronology.o",
-	"obj/process.o",
-	"obj/network_byteorder.o",
-	"obj/transcoding.o",
-	"obj/field_buffer.o",
-	"obj/octet_buffer.o",
-	"obj/order_buffer.o",
-	"obj/string_buffer.o",
-	],
-	[UUIDLIB, "resolv"])
+casual_common_objectfiles = [
+    Compile( 'source/server/context.cpp'),
+    Compile( 'source/server/lifetime.cpp'),
+    Compile( 'source/call/context.cpp'),
+    Compile( 'source/call/timeout.cpp'),
+    Compile( 'source/buffer/x_octet.cpp'),
+    Compile( 'source/buffer/pool.cpp'),
+    Compile( 'source/transaction/context.cpp'),
+    Compile( 'source/transaction/id.cpp'),
+    Compile( 'source/transaction/resource.cpp'),
+    Compile( 'source/ipc.cpp'),
+    Compile( 'source/queue.cpp'),
+    Compile( 'source/message/type.cpp'),
+    Compile( 'source/message/handle.cpp'),
+    
+    Compile( 'source/uuid.cpp'),
+    Compile( 'source/environment.cpp'),
+    Compile( 'source/file.cpp'),
+    Compile( 'source/string.cpp'),
+    Compile( 'source/signal.cpp'),
+    Compile( 'source/log.cpp'),
+    Compile( 'source/trace.cpp'),
+    Compile( 'source/error.cpp'),
+    Compile( 'source/chronology.cpp'),
+    Compile( 'source/process.cpp'),
+    Compile( 'source/network_byteorder.cpp'),
+]
 
+
+common = LinkLibrary( 'bin/casual-common', 
+	casual_common_objectfiles,
+	[UUIDLIB])
+
+install_libs.append( common)
 
 #
 # Mockup stuff, only for unittest
 #
-Compile( "source/mockup.cpp", "obj/mockup.o")
+mockup = LinkLibrary( 'bin/casual-mockup', 
+     [
+       #Compile( 'source/mockup.cpp', 'obj/mockup.o'),
+       Compile( 'source/mockup/ipc.cpp'),
+     ],
+     [ common])
 
-LinkArchive( "casual-mockup", ["obj/mockup.o"])
+install_libs.append( mockup)
+
+#
+# The mockup-rm, only for testing
+#
+target = LinkLibrary( 'bin/casual-mockup-rm', 
+     [
+       Compile( 'source/mockup/rm.cpp')
+     ],
+     [ common])
+
+install_libs.append( target)
+
+mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
+    [ 
+      Compile( 'source/mockup/unittest_envrionment.cpp'),  
+    ],
+    [ common, mockup, 'gtest'])
+
+install_libs.append( mockup_unittest)
 
 
-Compile( "unittest/isolated/source/simple_process.cpp", "unittest/isolated/obj/simple_process.o")
-
-LinkExecutable( "simple_process",
-    ["unittest/isolated/obj/simple_process.o"], 
-    ["casual-common"]
+target_simple_process = LinkExecutable( 'bin/simple_process',
+    [
+     Compile( 'unittest/isolated/source/simple_process.cpp')
+    ], 
+    [ common]
     )	
 	
+   
 #
 # unittest
 #
-Compile( "unittest/isolated/source/test_buffer.cpp", "unittest/isolated/obj/test_buffer.o")
-Compile( "unittest/isolated/source/test_ipc.cpp", "unittest/isolated/obj/test_ipc.o")
-Compile( "unittest/isolated/source/test_marshal.cpp", "unittest/isolated/obj/test_marshal.o")
-Compile( "unittest/isolated/source/test_queue.cpp", "unittest/isolated/obj/test_queue.o")
-Compile( "unittest/isolated/source/test_message_dispatch.cpp", "unittest/isolated/obj/test_message_dispatch.o")
-Compile( "unittest/isolated/source/test_server_context.cpp", "unittest/isolated/obj/test_server_context.o")
+unittest_objectfiles = [
+   Compile( 'unittest/isolated/source/test_buffer.cpp'),
+   Compile( 'unittest/isolated/source/test_ipc.cpp'),
+   Compile( 'unittest/isolated/source/test_marshal.cpp'),
+   Compile( 'unittest/isolated/source/test_queue.cpp'),
+   Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
+   Compile( 'unittest/isolated/source/test_server_context.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_uuid.cpp'),
+   Compile( 'unittest/isolated/source/test_arguments.cpp'),
+   Compile( 'unittest/isolated/source/test_file.cpp'),
+   Compile( 'unittest/isolated/source/test_process.cpp'),
+   Compile( 'unittest/isolated/source/test_string.cpp'),
+   Compile( 'unittest/isolated/source/test_error.cpp'),
+   Compile( 'unittest/isolated/source/test_network_byteorder.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_signal.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_transaction_id.cpp'),
+   Compile( 'unittest/isolated/source/test_algorithm.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_mockup.cpp'),
+   Compile( 'unittest/isolated/source/test_traits.cpp'),
+   Compile( 'unittest/isolated/source/test_chronology.cpp'),
+]
 
-Compile( "unittest/isolated/source/test_uuid.cpp", "unittest/isolated/obj/test_uuid.o")
-Compile( "unittest/isolated/source/test_arguments.cpp", "unittest/isolated/obj/test_arguments.o")
-Compile( "unittest/isolated/source/test_file.cpp", "unittest/isolated/obj/test_file.o")
-Compile( "unittest/isolated/source/test_process.cpp", "unittest/isolated/obj/test_process.o")
-Compile( "unittest/isolated/source/test_string.cpp", "unittest/isolated/obj/test_string.o")
-Compile( "unittest/isolated/source/test_error.cpp", "unittest/isolated/obj/test_error.o")
-Compile( "unittest/isolated/source/test_network_byteorder.cpp", "unittest/isolated/obj/test_network_byteorder.o")
-Compile( "unittest/isolated/source/test_transcoding.cpp", "unittest/isolated/obj/test_transcoding.o")
-
-Compile( "unittest/isolated/source/test_signal.cpp", "unittest/isolated/obj/test_signal.o")
-Compile( "unittest/isolated/source/test_types.cpp", "unittest/isolated/obj/test_types.o")
-
-Compile( "unittest/isolated/source/test_field_buffer.cpp", "unittest/isolated/obj/test_field_buffer.o")
-Compile( "unittest/isolated/source/test_octet_buffer.cpp", "unittest/isolated/obj/test_octet_buffer.o")
-Compile( "unittest/isolated/source/test_order_buffer.cpp", "unittest/isolated/obj/test_order_buffer.o")
-Compile( "unittest/isolated/source/test_string_buffer.cpp", "unittest/isolated/obj/test_string_buffer.o")
 
 
-LinkIsolatedUnittest( "casual-common-isolated", 
+target_test_common = LinkIsolatedUnittest( 'bin/test-casual-common-isolated', 
+	unittest_objectfiles,
 	[
-	"unittest/isolated/obj/test_buffer.o",
-	"unittest/isolated/obj/test_ipc.o",
-	"unittest/isolated/obj/test_marshal.o",
-	"unittest/isolated/obj/test_queue.o",
-	"unittest/isolated/obj/test_message_dispatch.o",
-	"unittest/isolated/obj/test_server_context.o",
-	"unittest/isolated/obj/test_uuid.o",
-    "unittest/isolated/obj/test_file.o",
-    "unittest/isolated/obj/test_arguments.o",
-    "unittest/isolated/obj/test_process.o",
-    "unittest/isolated/obj/test_string.o",
-    "unittest/isolated/obj/test_error.o",
-    "unittest/isolated/obj/test_network_byteorder.o",
-    "unittest/isolated/obj/test_transcoding.o",
-    "unittest/isolated/obj/test_signal.o", 
-    "unittest/isolated/obj/test_types.o",
-    "unittest/isolated/obj/test_field_buffer.o",
-    "unittest/isolated/obj/test_octet_buffer.o",
-    "unittest/isolated/obj/test_order_buffer.o",
-    "unittest/isolated/obj/test_string_buffer.o",
-    ],
-	["casual-common", "casual-mockup"] )	
+     common,
+     mockup,
+     mockup_unittest,
+    ])		
 
 #
-# Install
+# We execute 'simple_process' from test-casual-common-isolated, so
+# we need to meke sure simple_process is built before
 #
-InstallLibrary("casual-common", "$CASUAL_HOME/lib/.")
-InstallExecutable("simple_process","$CASUAL_HOME/bin/.")
+Dependencies( target_test_common, [ target_simple_process ]);
+
+#
+# Install 
+#
+Install( install_libs, '$(CASUAL_HOME)/lib')
+
+
+
+
+

@@ -51,13 +51,13 @@ namespace casual
          }
 
 
-         TEST( casual_common, ipc_queue_receive_timeout)
+         TEST( casual_common, ipc_queue_receive_timeout_5ms)
          {
             receive::Queue receive;
 
             message::Transport response;
 
-            common::signal::alarm::Scoped timeout( 1);
+            common::signal::alarm::Scoped timeout( std::chrono::milliseconds( 5));
 
             //
             // We don't expect to get any messages, and for the timeout to kick in

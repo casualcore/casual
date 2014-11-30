@@ -13,8 +13,12 @@
 #include "common/platform.h"
 #include "common/error.h"
 
+#include "common/string.h"
+#include "common/signal.h"
+
 #include <stdexcept>
 #include <string>
+#include <ostream>
 
 #include <xatmi.h>
 #include <tx.h>
@@ -28,8 +32,17 @@ namespace casual
 
          struct Base : public std::runtime_error
          {
+
             Base( const std::string& description)
                : std::runtime_error( description) {}
+
+            Base( const std::string& description, const char* file, decltype( __LINE__) line)
+               : std::runtime_error( description + " - " + file + ":" + std::to_string( line)) {}
+
+            friend std::ostream& operator << ( std::ostream& out, const Base& exception)
+            {
+               return out << exception.what();
+            }
          };
 
 
@@ -61,21 +74,53 @@ namespace casual
          };
 
 
-
-         struct QueueFailed : public Base
+         struct Shutdown : Base
          {
             using Base::Base;
          };
 
-         struct QueueSend : public Base
+         namespace invalid
          {
-            using Base::Base;
-         };
+            struct Base : common::exception::Base
+            {
+               using common::exception::Base::Base;
 
-         struct QueueReceive : public Base
+            };
+
+            struct Argument : Base
+            {
+               using Base::Base;
+            };
+
+            struct Process : Base
+            {
+               using Base::Base;
+            };
+
+            struct File : Base
+            {
+               using Base::Base;
+            };
+         }
+
+         namespace limit
          {
-            using Base::Base;
-         };
+            struct Memory : Base
+            {
+               using Base::Base;
+            };
+
+         } // limit
+
+         namespace queue
+         {
+            struct Unavailable : Base
+            {
+               using Base::Base;
+            };
+
+         } // queue
+
 
          namespace signal
          {
@@ -97,7 +142,10 @@ namespace casual
                   : Base( description) {}
 
                basic_signal()
-                  : Base( common::platform::getSignalDescription( signal)) {}
+                  : Base( common::signal::type::string( signal)) {}
+
+               basic_signal( const std::string& description, const char* file, decltype( __LINE__) line)
+                  : Base( description, file, line) {}
 
                common::platform::signal_type getSignal() const
                {
@@ -108,6 +156,8 @@ namespace casual
             typedef basic_signal< common::platform::cSignal_Alarm> Timeout;
 
             typedef basic_signal< common::platform::cSignal_Terminate> Terminate;
+
+            typedef basic_signal< common::platform::cSignal_UserDefined> User;
 
 
             namespace child
@@ -133,6 +183,9 @@ namespace casual
             {
                basic_exeption( const std::string& description)
                   : base_type( description) {}
+
+               basic_exeption( const std::string& description, const char* file, decltype( __LINE__) line)
+                  : base_type( description, file, line) {}
 
                basic_exeption()
                   : base_type( "No additional information") {}

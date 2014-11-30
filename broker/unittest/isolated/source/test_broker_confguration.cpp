@@ -9,8 +9,11 @@
 
 #include <gtest/gtest.h>
 
+#include "broker/state.h"
 #include "broker/broker.h"
-#include "broker/action.h"
+#include "broker/transform.h"
+
+#include "sf/log.h"
 
 
 #include "config/domain.h"
@@ -23,26 +26,25 @@ namespace casual
 {
    namespace broker
    {
-      TEST( casual_broker_configuration, add_groups)
+      TEST( casual_broker_configuration, transform_domain)
       {
-         State state;
 
          auto domain = config::domain::get( common::file::basedir( __FILE__) + "/../../../../configuration/domain.yaml");
 
-         action::add::groups( state, domain.groups);
 
-         EXPECT_TRUE( state.groups.size() == 5);
+         auto state = transform::configuration::Domain{}( domain);
+
+         ASSERT_TRUE( state.groups.size() == 6) << CASUAL_MAKE_NVP( state.groups);
 
 
-         EXPECT_TRUE( state.groups.at( "group3")->dependencies.size() == 1) << "size: " << state.groups.at( "group3")->dependencies.size();
+         EXPECT_TRUE( state.groups.at( 1).dependencies.size() == 1) << CASUAL_MAKE_NVP(state.groups.at( 1));
 
-         ASSERT_TRUE( state.groups.at( "group4")->dependencies.size() == 2);
-         EXPECT_TRUE( state.groups.at( "group4")->dependencies.at( 0)->name == "group3");
-         EXPECT_TRUE( state.groups.at( "group4")->dependencies.at( 1)->name == "casual");
-
+         ASSERT_TRUE( state.groups.at( 2).dependencies.size() == 1) << CASUAL_MAKE_NVP(state.groups.at( 2));
+         EXPECT_TRUE( state.groups.at( 2).dependencies.at( 0) == 10) << CASUAL_MAKE_NVP(state.groups.at( 2));
 
       }
 
+      /*
       TEST( casual_broker_configuration, boot_order)
       {
          State state;
@@ -59,6 +61,7 @@ namespace casual
 
 
       }
+      */
 
 
    }

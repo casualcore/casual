@@ -55,16 +55,29 @@ namespace casual
 		{
 			Uuid oneUuid = Uuid::make();
 
-			EXPECT_TRUE( oneUuid.string().size() == 36);
+			EXPECT_TRUE( uuid::string( oneUuid).size() == 36);
 		}
 
 		TEST( casual_common_uuid, default_constructed_getString__expect_00000000_0000_0000_0000_000000000000)
       {
          Uuid oneUuid;
 
-         EXPECT_TRUE( oneUuid.string() == "00000000-0000-0000-0000-000000000000") << oneUuid.string();
+         EXPECT_TRUE( uuid::string( oneUuid) == "00000000-0000-0000-0000-000000000000") << uuid::string( oneUuid);
       }
 
+      TEST( casual_common_uuid, operator_bool_on_default_constructed__expect_false)
+      {
+         Uuid oneUuid;
+
+         EXPECT_FALSE( oneUuid) << uuid::string( oneUuid);
+      }
+
+      TEST( casual_common_uuid, operator_bool_on_created__expect_true)
+      {
+         Uuid oneUuid = Uuid::make();
+
+         EXPECT_TRUE( static_cast< bool>( oneUuid) ) << uuid::string( oneUuid);
+      }
 	}
 
 }

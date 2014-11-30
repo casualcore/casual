@@ -8,7 +8,7 @@
 #ifndef TRACE_H_
 #define TRACE_H_
 
-#include "common/logger.h"
+#include "common/log.h"
 
 #include <string>
 
@@ -16,62 +16,49 @@ namespace casual
 {
    namespace common
    {
-      class Trace
-      {
-      public:
-         template< typename T>
-         Trace( T&& info) : m_information{ std::forward< T>( info)}
-         {
-            logger::trace << m_information << " - in";
-         }
-
-         ~Trace()
-         {
-            if( std::uncaught_exception())
-            {
-               logger::trace << m_information << " - out*";
-            }
-            else
-            {
-               logger::trace << m_information << " - out";
-            }
-         }
-
-         Trace( const Trace&) = delete;
-         Trace& operator = ( const Trace&) = delete;
-
-      private:
-         std::string m_information;
-      };
-
       namespace trace
       {
-         struct Exit
+         namespace internal
+         {
+            class basic
+            {
+            public:
+               basic( std::string information, std::ostream& log = log::trace);
+
+            protected:
+               std::string m_information;
+               std::ostream& m_log;
+
+            };
+
+
+         } // internal
+
+         class Scope : public internal::basic
          {
          public:
-            template< typename T>
-            Exit( T&& information) : m_information{ std::forward< T>( information)} {}
+            Scope( std::string information, std::ostream& log = log::trace);
+            ~Scope();
+         };
 
-            ~Exit()
-           {
-              if( std::uncaught_exception())
-              {
-                 logger::trace << m_information << " - failed";
-              }
-              else
-              {
-                 logger::trace << m_information << " - ok";
-              }
-           }
+
+         class Outcome : public internal::basic
+         {
+         public:
+            Outcome( std::string information, std::ostream& ok = log::information, std::ostream& fail = log::error);
+            ~Outcome();
 
          private:
-            std::string m_information;
+            std::ostream& m_fail;
          };
-      }
-   }
 
 
-}
+      } // trace
+
+      using Trace = trace::Scope;
+
+   } // common
+} // casual
 
 
 

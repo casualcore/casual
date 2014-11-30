@@ -36,11 +36,19 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 3);
       }
 
-      TEST( casual_common_string, split_bla___bla_bla__traling_ws_gives_3_occurencies)
+      TEST( casual_common_string, split_bla___bla_bla__traling_ws__gives_3_occurencies)
       {
          auto splittet = string::split( "  bla    bla bla  ");
 
          EXPECT_TRUE( splittet.size() == 3);
+      }
+
+      TEST( casual_common_string, split_casual_log_with_comma__gives_7_occurencies)
+      {
+         auto splittet = string::split( "error,warning,debug,information,casual.debug,casual.trace,casual.transaction", ',');
+
+         ASSERT_TRUE( splittet.size() == 7);
+         EXPECT_TRUE( splittet.back() == "casual.transaction");
       }
 
       TEST( casual_common_string, from_string_int)
@@ -51,6 +59,15 @@ namespace casual
       TEST( casual_common_string, from_string_long)
       {
          EXPECT_TRUE( from_string< long>( "42") == 42);
+      }
+
+      TEST( casual_common_string, trim)
+      {
+         auto trimmed = string::trim( "  1 2 3 4 5   ");
+
+         EXPECT_TRUE( trimmed.size() == 9);
+         EXPECT_TRUE( trimmed.at( 0) == '1');
+         EXPECT_TRUE( trimmed.at( 8) == '5');
       }
 
    }

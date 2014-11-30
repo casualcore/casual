@@ -9,13 +9,19 @@
 #define BUFFER_H_
 
 #include "sf/exception.h"
-#include "common/types.h"
+#include "sf/platform.h"
+
+
+#include "common/algorithm.h"
+#include "common/internal/log.h"
+#include "common/string.h"
 
 //
 // std
 //
 #include <memory>
 #include <string>
+#include <typeinfo>
 
 #include <cstring>
 
@@ -36,8 +42,8 @@ namespace casual
       {
          struct Type
          {
-            Type( const std::string& type_name, const std::string& subtype_name)
-             : name( type_name), subname( subtype_name) {}
+            Type( std::string name, std::string subname)
+             : name( std::move( name)), subname( std::move( subname)) {}
 
             Type() = default;
             Type( Type&&) = default;
@@ -56,179 +62,227 @@ namespace casual
 
          };
 
-         Type type( common::raw_buffer_type buffer);
+         Type type( platform::raw_buffer_type buffer);
 
-         //!
-         //! Holds the buffer and its size together. Has no resource responsibility
-         //!
-         struct Raw
+
+         struct Buffer
          {
-            Raw( common::raw_buffer_type p_buffer, std::size_t p_size);
 
-            common::raw_buffer_type buffer;
-            long size;
-         };
-
-         inline Raw raw( TPSVCINFO* serviceInfo)
-         {
-            return Raw( serviceInfo->data, serviceInfo->len);
-         }
-
-         class Base
-         {
-         public:
-
-
-            Base( Base&&) = default;
-            Base& operator = ( Base&&) = default;
-
-            virtual ~Base();
-
-            //Base( const Base&) = delete;
-
-            //!
-            //! @return the 'raw buffer'
-            //!
-            Raw raw();
-            std::size_t size() const;
-
-            //!
-            //! Releases the responsibility for the resource.
-            //!
-            //! @attention No other member function is callable after.
-            //!
-            Raw release();
-
-            void reset( Raw buffer);
-
-            Type type() const;
-
-         private:
-
-            struct xatmi_deleter
+            enum
             {
-               void operator () ( common::raw_buffer_type xatmiBuffer) const;
+               defaultSize = 256
             };
 
-            virtual void doReset( Raw buffer);
+            using buffer_type =  platform::raw_buffer_type;
+            using iterator = buffer_type;
+            using const_iterator = platform::const_raw_buffer_type;
+            using size_type = std::size_t;
 
-         protected:
+            using range_type = common::Range< iterator>;
+            using const_range_type = common::Range< const_iterator>;
 
-            Base( Raw buffer);
-            Base( Type&& type, std::size_t size);
-
-
-
-            void expand( std::size_t expansion);
-
-            std::unique_ptr< char, xatmi_deleter> m_buffer;
-            std::size_t m_size;
-         };
-
-
-
-         class Binary : public Base
-         {
-         public:
-            Binary();
-            Binary( Raw buffer) : Base( buffer) {}
-
-            //Binary( Base&&);
-            Binary( Binary&&);
-            Binary& operator = ( Binary&&);
-
-            Binary( const Binary&) = delete;
-
-            template< typename T>
-            void write( T&& value)
+            //!
+            //! Holds the buffer and its size together. Has no resource responsibility
+            //!
+            struct Raw
             {
-               write( &value, sizeof( T));
-            }
+               Raw( buffer_type buffer, size_type size) : buffer{ buffer}, size{ size} {}
 
-            void write( const common::binary_type& value)
-            {
-               write( value.size());
-               write( value.data(), value.size());
-            }
+               buffer_type buffer;
+               size_type size;
+            };
 
-            void write( const std::string& value)
-            {
-               write( value.size());
-               write( value.data(), value.size());
-            }
 
-            template< typename T>
-            void read( T& value)
-            {
-               Raw raw = Base::raw();
-               if( m_read_offset + static_cast< long>( sizeof( T)) > raw.size)
-               {
-                  throw exception::NotReallySureWhatToCallThisExcepion();
-               }
-               memcpy( &value, raw.buffer + m_read_offset, sizeof( T));
-               m_read_offset += sizeof( T);
-            }
+            //!
+            //! Allocates a buffer of @p type with @size size
+            //!
+            Buffer( const Type& type, size_type size);
 
-            void read( std::string& value)
-            {
-               read_assign( value);
-            }
+            //!
+            //! Takes over ownership of the raw buffer.
+            //!
+            Buffer( const Raw& buffer);
 
-            void read( common::binary_type& value)
-            {
-               read_assign( value);
-            }
+            Buffer( Buffer&&);
+            Buffer& operator = ( Buffer&&);
+            ~Buffer();
+
+            buffer_type data() noexcept;
+            const buffer_type data() const noexcept;
+
+            size_type size() const noexcept;
+
+            //!
+            //! Releases ownership of buffer
+            //!
+            //! @return the raw buffer
+            //!
+            Raw release() noexcept;
+
+            //!
+            //! Resets the internal buffer, and take ownership
+            //! of the raw buffer.
+            //! The current buffer is freed (if one exists).
+            //!
+            //! @param raw the new buffer
+            //!
+            void reset( Raw raw);
+
+            //!
+            //! Resize the buffer.
+            //! @note could be a smaller size than the current buffer
+            //!   which could lead to freeing memory
+            //!
+            void resize( size_type size);
+
+            void swap( Buffer& buffer) noexcept;
+
+
+            iterator begin() noexcept { return m_buffer.get();}
+            iterator end() noexcept { return m_buffer.get() + m_size;}
+            const_iterator begin() const noexcept { return m_buffer.get();}
+            const_iterator end() const noexcept { return m_buffer.get() + m_size;}
+
+
+            //void clear() noexcept;
+
+            friend std::ostream& operator << ( std::ostream& out, const Buffer& buffer);
 
          private:
-
-            template< typename T>
-            void write( T* value, std::size_t lenght)
+            struct deleter_type
             {
-               if( m_write_offset + lenght > size())
-               {
-                  expand( lenght);
-               }
+               void operator () ( buffer_type buffer) const;
+            };
 
-               Raw raw = Base::raw();
+            using holder_type = std::unique_ptr< typename std::remove_pointer< buffer_type>::type, deleter_type>;
 
-               memcpy( raw.buffer + m_write_offset, value, lenght);
-               m_write_offset += lenght;
-            }
-
-            template< typename T>
-            void read_assign( T& value)
-            {
-               decltype( value.size()) size;
-               read( size);
-
-               Raw raw = Base::raw();
-               if( m_read_offset + static_cast< long>( size) > raw.size)
-               {
-                  throw exception::NotReallySureWhatToCallThisExcepion();
-               }
-               value.assign( raw.buffer + m_read_offset, raw.buffer + m_read_offset + size);
-               m_read_offset += size;
-            }
-
-
-            long m_write_offset = 0;
-            long m_read_offset = 0;
+            holder_type m_buffer;
+            size_type m_size;
          };
 
 
+         inline std::ostream& operator << ( std::ostream& out, const Buffer& buffer)
+         {
+            out << "@" << static_cast< void*>( buffer.data()) << " size: " << buffer.size();
+            return out;
+         }
 
-         class X_Octet : public Base
+
+
+
+         Type type( const Buffer& source);
+
+         Buffer copy( const Buffer& source);
+
+
+
+         namespace binary
+         {
+            struct Stream : public Buffer
+            {
+               using Buffer::Buffer;
+
+               Stream();
+
+               template< typename T>
+               Stream& operator << ( const T& value)
+               {
+                  write( value);
+                  return *this;
+               }
+
+               template< typename T>
+               Stream& operator >> ( T& value)
+               {
+                  read( value);
+                  return *this;
+               }
+
+               void clear() noexcept;
+
+               void swap( Stream& buffer) noexcept;
+
+            private:
+
+               void consume( void* value, size_type count);
+
+               void append( const void* value, size_type count);
+
+               template< typename T>
+               void write( const T& value)
+               {
+                  append( &value, sizeof( T));
+               }
+
+               void write( const platform::binary_type& value)
+               {
+                  write( value.size());
+                  append( value.data(), value.size());
+               }
+
+               void write( const std::string& value)
+               {
+                  write( value.size());
+                  append( value.data(), value.size());
+               }
+
+
+               template< typename T>
+               void read( T& value)
+               {
+                  consume( &value, sizeof( T));
+               }
+
+               void read( std::string& value)
+               {
+                  auto size = value.size();
+                  read( size);
+                  value.resize( size);
+                  consume( &value[ 0], size);
+               }
+
+               void read( platform::binary_type& value)
+               {
+                  auto size = value.size();
+                  read( size);
+                  value.resize( size);
+                  consume( value.data(), size);
+               }
+
+               size_type m_write_offset = 0;
+               size_type m_read_offset = 0;
+            };
+
+
+
+         } // binary
+
+
+         inline Buffer::Raw raw( TPSVCINFO* serviceInfo)
+         {
+            return Buffer::Raw( serviceInfo->data, serviceInfo->len);
+         }
+
+
+
+
+         class X_Octet : public binary::Stream
          {
          public:
             X_Octet( const std::string& subtype);
-            X_Octet( const std::string& subtype, std::size_t size);
+            X_Octet( const std::string& subtype, size_type size);
 
-            X_Octet( Raw buffer);
+            X_Octet( Buffer::Raw buffer);
 
             std::string str() const;
             void str( const std::string& new_string);
 
+         private:
+            void doClear() {}
+
          };
+
+
 
          /*
          template< typename T>

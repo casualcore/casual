@@ -12,6 +12,8 @@
 #include "common/file.h"
 #include "common/exception.h"
 
+#include "common/signal.h"
+
 namespace casual
 {
    namespace common
@@ -37,6 +39,8 @@ namespace casual
 
          // wait for it..
          EXPECT_TRUE( process::wait( pid) == 0);
+
+         signal::clear();
       }
 
       TEST( casual_common_process, spawn_one_process_with_argument)
@@ -50,6 +54,8 @@ namespace casual
          // wait for it..
          pid = process::wait( pid);
          EXPECT_TRUE( pid == 42) << "pid: " << pid;
+
+         signal::clear();
       }
 
       TEST( casual_common_process, spawn_one_process_check_termination)
@@ -70,6 +76,27 @@ namespace casual
 
          ASSERT_TRUE( terminated.size() == 1) << "terminated.size(): " << terminated.size();
          EXPECT_TRUE( terminated.front().pid == pid);
+
+         signal::clear();
+      }
+
+
+      TEST( casual_common_process, spawn_10_process__children_terminate)
+      {
+         std::vector< platform::pid_type> pids( 10);
+
+         for( auto& pid : pids)
+         {
+            pid = process::spawn( local::processPath(), {});
+         }
+
+         auto terminated = process::lifetime::terminate( pids, std::chrono::seconds( 5));
+
+
+         ASSERT_TRUE( pids.size() == terminated.size());
+         EXPECT_TRUE( range::equal( range::sort( pids), range::sort( range::sort( pids))));
+
+         signal::clear();
       }
 
       /*

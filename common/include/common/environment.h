@@ -23,7 +23,17 @@ namespace casual
 			{
 				bool exists( const std::string& name);
 
+				//!
+				//! @return value of invironment variable with @p name
+				//! @throws exception::EnvironmentVariableNotFound if not found
+				//!
 				std::string get( const std::string& name);
+
+            //!
+            //! @return value of environment variable with @p name or value of alternative if
+            //!   variable isn't found
+            //!
+            std::string get( const std::string& name, const std::string& alternative);
 
 				template< typename T>
 				T get( const std::string& name)
@@ -32,6 +42,18 @@ namespace casual
 					T result;
 					converter >> result;
 					return result;
+				}
+
+
+				void set( const std::string& name, const std::string& value);
+
+				template< typename T>
+				void set( const std::string& name, T&& value)
+				{
+				   std::ostringstream converter;
+				   converter << value;
+				   const std::string& string = converter.str();
+				   set( name, string);
 				}
 
 			}
@@ -58,9 +80,9 @@ namespace casual
 			namespace file
 			{
 
-			   void executable( const std::string& path);
+			   //void executable( const std::string& path);
 
-			   const std::string& executable();
+			   //const std::string& executable();
 
 			   std::string brokerQueue();
 
@@ -79,11 +101,22 @@ namespace casual
 
 			platform::seconds_type getTime();
 
-			std::string getDomainName();
+			namespace domain
+         {
+			   //!
+			   //! @return the name of the casual domain.
+			   //!
+			   const std::string& name();
 
+			   void name( const std::string& value);
 
+			   namespace singleton
+            {
+			      const std::string& path();
 
+            } // singleton
 
+         } // domain
 
 
 		}

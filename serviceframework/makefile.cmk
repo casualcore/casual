@@ -1,78 +1,67 @@
-from casual.make.functiondefinitions import *
+from casual.make.directive import *
 
 
-Include( "$(CASUAL_BUILD_ENVIRONMENT)")
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
 
 
-INCLUDE_PATHS = ["include",
-    "../common/include",
-    "../xatmi/include",
-    "$(YAML_INCLUDE_PATH)",
-    "$(JSON_INCLUDE_PATH)",
-	"$(UNITTEST_INCLUDE_PATH)"]
+IncludePaths([
+    'include',
+    '../common/include',
+    '../xatmi/include',
+    '$(YAML_INCLUDE_PATH)',
+    '$(JSON_INCLUDE_PATH)',
+	'$(UNITTEST_INCLUDE_PATH)',
+    ])
 	
-LIBRARY_PATHS = ["../common/bin",
-    "../xatmi/bin",
-    "../buffers/bin",
-    "$(YAML_LIBRARY_PATH)",
-    "$(JSON_LIBRARY_PATH)"]
+LibraryPaths([
+    '../common/bin',
+    '../xatmi/bin',
+    '$(YAML_LIBRARY_PATH)',
+    '$(JSON_LIBRARY_PATH)',
+    ])
 
-SetIncludePaths( INCLUDE_PATHS)
-SetLibraryPaths( LIBRARY_PATHS)
+install_lib = []
 
+lib_sf = LinkLibrary( 'bin/casual-sf',
+    [
+        Compile( 'source/archive/archive.cpp'),
+        Compile( 'source/archive/maker.cpp'),
+        Compile( 'source/archive/log.cpp'),
+        Compile( 'source/buffer.cpp'),
+        Compile( 'source/server.cpp'),
+        Compile( 'source/proxy.cpp'),
+        Compile( 'source/service.cpp'),
+        Compile( 'source/service_protocol.cpp'),
+        Compile( 'source/xatmi_call.cpp'),
+        Compile( 'source/platform.cpp'),
+        
+        Compile( 'source/trace.cpp', 'obj/trace.o'),
+    ],
+    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c'])
 
-Compile( "source/archive.cpp", "obj/archive.o")
-Compile( "source/archive_maker.cpp", "obj/archive_maker.o")
-Compile( "source/buffer.cpp", "obj/buffer.o")
-Compile( "source/server.cpp", "obj/server.o")
-Compile( "source/service.cpp", "obj/service.o")
-Compile( "source/service_protocol.cpp", "obj/service_protocol.o")
-Compile( "source/archive_logger.cpp", "obj/archive_logger.o")
-Compile( "source/xatmi_call.cpp", "obj/xatmi_call.o")
-
-Compile( "source/trace.cpp", "obj/trace.o")
-
-LinkLibrary( "casual-sf",
-    ["obj/archive.o",
-    "obj/archive_maker.o",
-    "obj/buffer.o",
-    "obj/server.o",
-    "obj/service.o",
-    "obj/service_protocol.o",
-    "obj/archive_logger.o",
-    "obj/xatmi_call.o",
-    "obj/trace.o"],
-    ["casual-common", "casual-xatmi", "yaml-cpp", "json-c"])
-
+install_lib.append( lib_sf)
 
 #
 # unittest
 #
-Compile( "unittest/isolated/source/test_namevaluepair.cpp", "unittest/isolated/obj/test_namevaluepair.o")
-Compile( "unittest/isolated/source/test_archive.cpp", "unittest/isolated/obj/test_archive.o")
-Compile( "unittest/isolated/source/test_traits.cpp", "unittest/isolated/obj/test_traits.o")
-Compile( "unittest/isolated/source/test_yaml_archive.cpp", "unittest/isolated/obj/test_yaml_archive.o")
-Compile( "unittest/isolated/source/test_json_archive.cpp", "unittest/isolated/obj/test_json_archive.o")
-Compile( "unittest/isolated/source/test_buffer.cpp", "unittest/isolated/obj/test_buffer.o")
-Compile( "unittest/isolated/source/test_service.cpp", "unittest/isolated/obj/test_service.o")
-Compile( "unittest/isolated/source/test_uuid.cpp", "unittest/isolated/obj/test_uuid.o")
-Compile( "unittest/isolated/source/test_xatmi_call.cpp", "unittest/isolated/obj/test_xatmi_call.o")
 
-
-LinkIsolatedUnittest( "casual-sf-isolated",
-	["unittest/isolated/obj/test_namevaluepair.o",
-	"unittest/isolated/obj/test_archive.o",
-	"unittest/isolated/obj/test_traits.o",
-	"unittest/isolated/obj/test_yaml_archive.o",
-	"unittest/isolated/obj/test_json_archive.o",
-	"unittest/isolated/obj/test_buffer.o",
-	"unittest/isolated/obj/test_service.o",
-	"unittest/isolated/obj/test_uuid.o",
-	"unittest/isolated/obj/test_xatmi_call.o"],
-	["casual-sf", "casual-xatmi", "casual-common", "json-c", "yaml-cpp"])
+LinkIsolatedUnittest( 'bin/test-casual-sf',
+	[
+        Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
+        Compile( 'unittest/isolated/source/test_archive.cpp'),
+        Compile( 'unittest/isolated/source/test_traits.cpp'),
+        Compile( 'unittest/isolated/source/test_yaml_archive.cpp'),
+        Compile( 'unittest/isolated/source/test_json_archive.cpp'),
+        Compile( 'unittest/isolated/source/test_buffer.cpp'),
+        Compile( 'unittest/isolated/source/test_service.cpp'),
+        Compile( 'unittest/isolated/source/test_uuid.cpp'),
+        Compile( 'unittest/isolated/source/test_xatmi_call.cpp'),
+        Compile( 'unittest/isolated/source/test_vo.cpp'),
+    ],
+	[ lib_sf, 'casual-xatmi', 'casual-common', 'json-c', 'yaml-cpp'])
 
 #
 # Install
 #
-InstallLibrary("casual-sf", "$CASUAL_HOME/lib/.")
+Install( install_lib, '$(CASUAL_HOME)/lib')
 

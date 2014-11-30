@@ -8,10 +8,10 @@
 #include <gtest/gtest.h>
 
 #include "common/marshal.h"
-#include "common/message.h"
+#include "common/message/server.h"
 
 
-#include "common/types.h"
+#include "common/transaction/id.h"
 
 namespace casual
 {
@@ -20,25 +20,6 @@ namespace casual
       namespace marshal
       {
 
-         /*
-         void print( const std::vector< char>& buffer)
-         {
-            std::vector< char>::const_iterator current = buffer.begin();
-
-            for(; current != buffer.end(); ++current)
-            {
-               if( *current == '\0')
-               {
-                  std::cout << "0";
-               }
-               else
-               {
-                  std::cout << static_cast< int>( *current);
-               }
-            }
-            std::cout << std::endl;
-         }
-         */
 
 
          TEST( casual_common, archive_basic_io)
@@ -94,7 +75,7 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.server.queue_id = 666;
+            serverConnect.process.queue = 666;
             serverConnect.serverPath = "/bla/bla/bla/sever";
 
             message::Service service;
@@ -120,7 +101,7 @@ namespace casual
 
             input >> result;
 
-            EXPECT_TRUE( result.server.queue_id == 666) << result.server.queue_id;
+            EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 3) << result.services.size();
 
@@ -132,7 +113,7 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.server.queue_id = 666;
+            serverConnect.process.queue = 666;
             serverConnect.serverPath = "/bla/bla/bla/sever";
 
 
@@ -150,18 +131,16 @@ namespace casual
 
             input >> result;
 
-            EXPECT_TRUE( result.server.queue_id == 666) << result.server.queue_id;
+            EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
 
          }
 
-         TEST( casual_common, marshal_null_XID)
+         TEST( casual_common, marshal_transaction_id_null)
          {
 
-            XID xid_source;
-
-            xid_source.formatID = common::cNull_XID;
+            transaction::ID xid_source;
 
             output::Binary output;
 
@@ -169,55 +148,31 @@ namespace casual
 
             input::Binary input( std::move( output));
 
-            XID xid_target;
+            transaction::ID xid_target;
 
             input >> xid_target;
 
-            EXPECT_TRUE( xid_target.formatID == cNull_XID);
+            EXPECT_TRUE( xid_target.null());
          }
 
-         TEST( casual_common, marshal_XID)
+         TEST( casual_common, marshal_transaction_id)
          {
 
-            XID xid_source;
-
-            auto uuid_source = Uuid::make();
-            long uuid_size = sizeof( decltype( uuid_source.get()));
-
-            xid_source.formatID = 1;
-            xid_source.gtrid_length = uuid_size;
-            xid_source.bqual_length = uuid_size;
-
-            std::copy( std::begin(uuid_source.get()), std::end( uuid_source.get()), xid_source.data);
-            std::copy( std::begin(uuid_source.get()), std::end( uuid_source.get()), xid_source.data + uuid_size);
+            transaction::ID xid_source = transaction::ID::create();
 
             output::Binary output;
 
-            output << xid_source;
+            output & xid_source;
 
             input::Binary input( std::move( output));
 
-            XID xid_target;
+            transaction::ID xid_target;
 
-            input >> xid_target;
+            input & xid_target;
 
-            ASSERT_TRUE( xid_target.gtrid_length == uuid_size);
-            ASSERT_TRUE( xid_target.bqual_length == uuid_size);
+            EXPECT_TRUE( ! xid_target.null());
+            EXPECT_TRUE( xid_target == xid_source);
 
-
-            auto gtrid_start = std::begin( xid_target.data);
-            auto gtrid_end = std::begin( xid_target.data) + xid_target.gtrid_length;
-            auto bqual_start = gtrid_end;
-            auto bqual_end = bqual_start + xid_target.bqual_length;
-
-            Uuid gtrid;
-            std::copy( gtrid_start, gtrid_end, std::begin( gtrid.get()));
-
-            Uuid bqual;
-            std::copy( bqual_start, bqual_end, std::begin( bqual.get()));
-
-            EXPECT_TRUE( gtrid == uuid_source);
-            EXPECT_TRUE( bqual == uuid_source);
          }
 
       }

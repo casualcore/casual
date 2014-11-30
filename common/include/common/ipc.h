@@ -15,8 +15,8 @@
 #include "common/file.h"
 #include "common/uuid.h"
 #include "common/platform.h"
+#include "common/algorithm.h"
 
-#include "common/types.h"
 
 
 //
@@ -42,8 +42,8 @@ namespace casual
 
                struct Header
                {
-                  correalation_type m_correlation;
-                  long m_count;
+                  correalation_type correlation;
+                  long count;
 
                };
 
@@ -60,24 +60,24 @@ namespace casual
                Transport() : m_size( message_max_size)
                {
                   //static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
-                  memset( &m_payload, 0, sizeof( Payload));
+                  memset( &payload, 0, sizeof( Payload));
                }
 
                struct Payload
                {
 
-                  message_type_type m_type;
+                  message_type_type type;
 
-                  Header m_header;
+                  Header header;
 
-                  payload_type m_payload;
+                  payload_type payload;
 
-               } m_payload;
+               } payload;
 
 
-               void* raw() { return &m_payload;}
+               void* raw() { return &payload;}
 
-               std::size_t size() { return m_size; }
+               std::size_t size() const { return m_size; }
 
                void size( std::size_t size)
                {
@@ -86,6 +86,13 @@ namespace casual
 
                std::size_t paylodSize() { return m_size - sizeof( Header);}
                void paylodSize( std::size_t size) { m_size = size +  sizeof( Header);}
+
+               friend std::ostream& operator << ( std::ostream& out, const Transport& value)
+               {
+                  return out << "{type: " << value.payload.type << " header: {correlation: " << common::uuid::string( value.payload.header.correlation)
+                        << " count:" << value.payload.header.count << "} size: " << value.size() << "}";
+               }
+
 
             private:
 
@@ -96,13 +103,13 @@ namespace casual
             struct Complete
             {
                typedef platform::message_type_type message_type_type;
-               typedef common::binary_type payload_type;
+               typedef platform::binary_type payload_type;
 
                Complete() = default;
 
                Complete( Transport& transport);
 
-               Complete( message_type_type messageType, common::binary_type&& buffer)
+               Complete( message_type_type messageType, platform::binary_type&& buffer)
                   : type( messageType), correlation( Uuid::make()), payload( std::move( buffer)), complete( true)
                {}
 
@@ -116,8 +123,12 @@ namespace casual
                payload_type payload;
                bool complete = false;
 
+               friend std::ostream& operator << ( std::ostream& out, const Complete& value)
+               {
+                  return out << "{ type: " << value.type << " correlation: " << value.correlation << " size: "
+                        << value.payload.size() << " complete: " << value.complete << '}';
+               }
             };
-
 
          } // message
 
@@ -127,27 +138,32 @@ namespace casual
 
          namespace internal
          {
+
+            enum
+            {
+               cInvalid = -1
+            };
+
             class base_queue
             {
             public:
                typedef platform::queue_id_type id_type;
-
-               base_queue() = default;
-               base_queue( id_type id) : m_id( id) {}
-
-               base_queue( base_queue&& rhs)
-               {
-                  m_id = rhs.m_id;
-                  rhs.m_id = 0;
-               }
-
 
                base_queue( const base_queue&) = delete;
 
                id_type id() const;
 
             protected:
-               id_type m_id = 0;
+
+               base_queue() = default;
+               base_queue( id_type id) : m_id( id) {}
+
+               base_queue( base_queue&& rhs)
+               {
+                  std::swap( m_id, rhs.m_id);
+               }
+
+               id_type m_id = cInvalid;
             };
 
          }
@@ -179,7 +195,7 @@ namespace casual
                //!
                //! @return true if sent, false otherwise
                //!
-               bool operator () ( message::Complete& message) const
+               bool operator () ( const message::Complete& message) const
                {
                   return send( message, 0);
                }
@@ -189,7 +205,7 @@ namespace casual
                //!
                //! @return true if sent, false otherwise
                //!
-               bool operator () ( message::Complete& message, const long flags) const
+               bool operator () ( const message::Complete& message, const long flags) const
                {
                   return send( message, flags);
                }
@@ -197,7 +213,7 @@ namespace casual
             private:
 
                bool send( message::Transport& message, const long flags) const;
-               bool send( message::Complete& message, const long flags) const;
+               bool send( const message::Complete& message, const long flags) const;
             };
 
          }
@@ -213,7 +229,14 @@ namespace casual
                   cNoBlocking = common::platform::cIPC_NO_WAIT
                };
 
+               using type_type = message::Complete::message_type_type;
+
+               //!
+               //! Creates and manage an ipc-queue
+               //!
                Queue();
+
+
                ~Queue();
 
                Queue( Queue&&) = default;
@@ -234,33 +257,59 @@ namespace casual
                //!
                //! @return 0..1 occurrences of a logical complete message.
                //!
-               std::vector< message::Complete> operator () ( message::Complete::message_type_type type, const long flags);
+               std::vector< message::Complete> operator () ( type_type type, const long flags);
+
+               //!
+               //! Tries to find the first logic complete message with any of the types in @p types
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               std::vector< message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
+
+               //!
+               //! Clear and discard all messages in queue.
+               //!
+               void clear();
 
             private:
 
-               typedef std::deque< message::Complete> cache_type;
+               typedef std::vector< message::Complete> cache_type;
+               using range_type = decltype( range::make( cache_type::iterator(), cache_type::iterator()));
 
                template< typename P>
-               cache_type::iterator find( P predicate, const long flags);
+               range_type find( P predicate, const long flags);
 
                bool receive( message::Transport& message, const long flags);
 
-               cache_type::iterator cache( message::Transport& message);
+               range_type cache( message::Transport& message);
 
-               common::file::ScopedPath m_scopedPath;
+               common::file::scoped::Path m_path;
 
                cache_type m_cache;
             };
          }
 
+         namespace broker
+         {
+            send::Queue::id_type id();
 
-         send::Queue& getBrokerQueue();
+            //send::Queue& queue();
 
-         receive::Queue& getReceiveQueue();
+         } // broker
+
+
+         namespace receive
+         {
+            receive::Queue::id_type id();
+
+            receive::Queue& queue();
+
+         } // receive
+
 
 
          //!
-         //! Removes an ipc-queue resource
+         //! Removes an ipc-queue resource.
          //!
          void remove( platform::queue_id_type id);
 

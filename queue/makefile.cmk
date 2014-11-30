@@ -1,0 +1,222 @@
+from casual.make.directive import *
+
+
+
+IncludePaths( [ 
+    'include',
+    '../common/include',
+    '../configuration/include',
+    '../serviceframework/include', 
+    '../thirdparty/database/include',
+    '../xatmi/include',
+    '../transaction/include',
+    '$(UNITTEST_INCLUDE_PATH)'
+    ]);
+
+
+LibraryPaths( [ 
+        'bin',
+        '../transaction/bin',
+        '../configuration/bin',
+        '../serviceframework/bin',
+        '../common/bin',
+        '../xatmi/bin',
+    ]);
+    
+
+
+
+install_lib = []
+install_bin = []
+
+#
+# Common stuff
+#
+
+common = LinkLibrary( 'bin/casual-queue-common',
+   [
+    Compile( 'source/environment.cpp'),
+    Compile( 'source/transform.cpp'),
+   ],
+   [ 'casual-common', ]);
+ 
+install_lib.append( common);
+
+#
+# Group
+#
+
+group_archive = LinkArchive( 'bin/casual-queue-group-archive',
+    [
+   Compile( 'source/group/group.cpp'),
+   Compile( 'source/group/database.cpp'),
+   Compile( 'source/group/handle.cpp')
+])
+
+
+queue_group = LinkExecutable( 'bin/casual-queue-group', 
+    [Compile( 'source/group/main.cpp')], 
+    [
+     group_archive,
+     common,
+     'casual-common',
+     'sqlite3',
+     ]);
+     
+ 
+install_bin.append( queue_group);
+ 
+#
+# Broker
+#
+
+broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
+   [
+     Compile( 'source/broker/handle.cpp'),
+     Compile( 'source/broker/broker.cpp'),
+     Compile( 'source/broker/admin/server.cpp'),
+   ])
+
+
+queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
+    [
+      Compile( 'source/broker/main.cpp'),
+    ], 
+    [ 
+     broker_archive,
+     common,
+     'casual-common', 
+     'casual-configuration', 
+     'casual-sf', 
+     'casual-xatmi',
+     ]);
+
+
+install_bin.append( queue_broker);
+
+#
+# rm
+#  
+rm = LinkLibrary( 'bin/casual-queue-rm',
+    [
+     Compile( 'source/rm/switch.cpp'),
+    ],       
+     [ common,
+      'casual-common',
+      ]);
+
+
+install_lib.append( rm);
+
+
+
+
+
+#
+# Client rm-API
+#
+
+queue_api_rm = LinkLibrary( 'bin/casual-queue-api-rm', 
+   [
+       Compile( 'source/api/rm/queue.cpp')
+   ],
+   [ 
+    common, 
+    rm, 
+    'casual-common', 
+    'casual-xatmi'
+    ])
+
+install_lib.append( queue_api_rm);
+
+queue_api = LinkLibrary( 'bin/casual-queue-api', 
+   [
+       Compile( 'source/api/queue.cpp')
+   ],
+   [ 
+    #common,
+    'casual-sf', 
+    'casual-common', 
+    #'casual-xatmi'
+    ])
+
+install_lib.append( queue_api);
+
+
+#
+# Server
+#
+server = LinkServer( 'bin/casual-queue-server',
+    [
+       Compile( 'source/server/server.cpp'),
+     ],
+    [
+      queue_api_rm,
+     'casual-common',
+     'casual-xatmi',
+     'casual-sf',
+     ],
+    'source/server/server.yaml',
+    [ 'casual-queue-rm' ] );
+
+install_bin.append( server);
+
+#
+# Client
+#
+queue_client = LinkExecutable( 'bin/casual-queue-admin', 
+    [
+        Compile( 'source/broker/admin/client.cpp'),
+     ], 
+   [common, queue_api, 'casual-common', 'casual-sf'])
+ 
+ 
+install_bin.append( queue_client);
+
+
+
+Environment( 'CASUAL_LOG', '')
+
+resource_proxy = LinkResourceProxy( 'bin/casual-queue-resource-proxy', 'casual-queue-rm', [ rm])
+
+install_bin.append( resource_proxy);
+
+
+
+#
+# Unittest
+#
+
+test_casual_queue = LinkIsolatedUnittest( 'unittest/bin/test-casual-queue', 
+    [
+     Compile( 'unittest/isolated/source/test_group_database.cpp'),
+     Compile( 'unittest/isolated/source/test_transform.cpp'),
+     Compile( 'unittest/isolated/source/test_broker_handle.cpp'),
+    ],
+    [
+     group_archive,
+     broker_archive,
+     common,
+     'casual-mockup',
+     'casual-mockup-unittest-environment',
+     'casual-common',
+     'casual-sf',
+     'casual-configuration',
+     'sqlite3',
+     'casual-xatmi'
+     ]  
+);
+
+
+#
+# Make sure the executables is linked before unittest
+#
+Dependencies( test_casual_queue, [ queue_broker, queue_group])
+
+
+
+Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_bin, '$(CASUAL_HOME)/bin')
+
+
+

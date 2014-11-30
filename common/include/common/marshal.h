@@ -11,8 +11,8 @@
 
 
 #include "common/ipc.h"
-#include "common/types.h"
-#include "common/uuid.h"
+//#include "common/uuid.h"
+#include "common/algorithm.h"
 
 
 
@@ -26,37 +26,52 @@
 
 
 
+#define CASUAL_CONST_CORRECT_MARSHAL( statement) \
+   template< typename A> \
+   void marshal( A& archive)  \
+   {  \
+         statement \
+   } \
+   template< typename A> \
+   void marshal( A& archive) const \
+   {  \
+         statement \
+   } \
+
+
+
+
+
 namespace casual
 {
-
-   template< typename M, typename T>
-   void marshal_value( M& marshler, T& value)
+   template< typename T, typename M>
+   void casual_marshal_value( T& value, M& marshler)
    {
       value.marshal( marshler);
    }
 
-   template< typename M, typename T>
-   void unmarshal_value( M& unmarshler, T& value)
+   template< typename T, typename M>
+   void casual_unmarshal_value( T& value, M& unmarshler)
    {
       value.marshal( unmarshler);
    }
 
+   /*
    //!
    //! Overload for Uuid
    //!
    template< typename M>
-   void marshal_value( M& marshler, common::Uuid& value)
+   void casual_marshal_value( casual::common::Uuid& value, M& marshler)
    {
       marshler << value.get();
    }
 
    template< typename M>
-   void unmarshal_value( M& unmarshler, common::Uuid& value)
+   void casual_unmarshal_value( casual::common::Uuid& value, M& unmarshler)
    {
       unmarshler >> value.get();
    }
-
-
+   */
 
    namespace common
    {
@@ -66,9 +81,12 @@ namespace casual
          {
             struct Binary
             {
-               typedef common::binary_type buffer_type;
+               typedef platform::binary_type buffer_type;
 
-               Binary() = default;
+               Binary()
+               {
+                  m_buffer.reserve( 512);
+               }
                Binary( Binary&&) = default;
                Binary( const Binary&) = delete;
                Binary& operator = ( const Binary&) = delete;
@@ -101,20 +119,39 @@ namespace casual
                }
 
 
-            private:
-
                //
                // Be friend with free marshal function so we can use more
                // bare-bone stuff when we do non-intrusive marshal for third-party types
                //
-               template< typename M, typename T>
-               friend void marshal_value( M& marshler, T& value);
+               //template< typename M, typename T>
+               //friend void casual_marshal_value( M& marshler, T& value);
+
+
+               template< typename Iter>
+               void append( Iter first, Iter last)
+               {
+                  const auto oldSize = expand( last - first);
+
+                  std::copy(
+                     first,
+                     last,
+                     std::begin( m_buffer) + oldSize);
+               }
+
+               template< typename C>
+               void append( C&& range)
+               {
+                  const auto offset = expand( range.size());
+                  range::copy( std::forward< C>( range), std::begin( m_buffer) + offset);
+               }
+
+            private:
 
                template< typename T>
                typename std::enable_if< ! std::is_pod< T>::value>::type
                write( T& value)
                {
-                  casual::marshal_value( *this, value);
+                  casual_marshal_value( value, *this);
                }
 
                template< typename T>
@@ -128,11 +165,9 @@ namespace casual
                template< typename T>
                void writePod( T&& value)
                {
-                  const auto size = m_buffer.size();
+                  const auto oldSize = expand( sizeof( T));
 
-                  m_buffer.resize( size + sizeof( T));
-
-                  memcpy( &m_buffer[ size], &value, sizeof( T));
+                  memcpy( &m_buffer[ oldSize], &value, sizeof( T));
                }
 
                template< typename T>
@@ -149,22 +184,38 @@ namespace casual
                void write( std::string& value)
                {
                   writePod( value.size());
-                  const auto size = m_buffer.size();
 
-                  m_buffer.resize( size + value.size());
-
-                  memcpy( &m_buffer[ size], value.c_str(), value.size());
+                  append(
+                     std::begin( value),
+                     std::end( value));
                }
 
-               void write( common::binary_type& value)
+               void write( platform::binary_type& value)
                {
                   writePod( value.size());
 
-                  m_buffer.insert( std::end( m_buffer), std::begin( value), std::end( value));
+                  append(
+                     std::begin( value),
+                     std::end( value));
+               }
+
+               std::size_t expand( std::size_t size)
+               {
+                  const auto oldSize = m_buffer.size();
+
+                  if( m_buffer.capacity() - m_buffer.size() < size)
+                  {
+                     m_buffer.reserve( m_buffer.capacity() * 2);
+                  }
+
+                  m_buffer.resize( m_buffer.size() + size);
+                  return oldSize;
                }
 
                buffer_type m_buffer;
             };
+
+
 
          } // output
 
@@ -173,7 +224,7 @@ namespace casual
 
             struct Binary
             {
-               typedef common::binary_type buffer_type;
+               typedef platform::binary_type buffer_type;
                typedef buffer_type::size_type offest_type;
                typedef ipc::message::Transport transport_type;
                typedef transport_type::message_type_type message_type_type;
@@ -205,18 +256,25 @@ namespace casual
                }
 
 
+               ipc::message::Complete release()
+               {
+                  m_offset = 0;
+                  return ipc::message::Complete( m_messageType, std::move( m_buffer));
+               }
+
+
 
                void add( transport_type& message)
                {
-                  m_messageType = message.m_payload.m_type;
+                  m_messageType = message.payload.type;
                   auto size = message.paylodSize();
                   auto bufferSize = m_buffer.size();
 
                   m_buffer.resize( m_buffer.size() + size);
 
                   std::copy(
-                     std::begin( message.m_payload.m_payload),
-                     std::begin( message.m_payload.m_payload) + size,
+                     std::begin( message.payload.payload),
+                     std::begin( message.payload.payload) + size,
                      std::begin( m_buffer) + bufferSize);
                }
 
@@ -234,6 +292,26 @@ namespace casual
                   return *this;
                }
 
+               //
+               // Be friend with free marshal function so we can use more
+               // bare-bone stuff when we do non-intrusive marshal for third-party types
+               //
+               //template< typename M, typename T>
+               //friend void casual_unmarshal_value( M& marshler, T& value);
+
+
+               template< typename Iter>
+               void consume( Iter out, std::size_t size)
+               {
+                  assert( m_buffer.size() >= size + m_offset);
+
+                  std::copy(
+                     std::begin( m_buffer) + m_offset,
+                     std::begin( m_buffer) + m_offset + size, out);
+
+                  m_offset += size;
+               }
+
 
             private:
 
@@ -244,7 +322,7 @@ namespace casual
                typename std::enable_if< ! std::is_pod< T>::value>::type
                read( T& value)
                {
-                  casual::unmarshal_value( *this, value);
+                  casual_unmarshal_value( value, *this);
                }
 
                template< typename T>
@@ -276,33 +354,28 @@ namespace casual
 
                   value.resize( size);
 
-                  std::copy(
-                     std::begin( m_buffer) + m_offset,
-                     std::begin( m_buffer) + m_offset + size,
-                     std::begin( value));
-
-                  m_offset += size;
+                  consume( std::begin( value), size);
                }
 
-               void read( common::binary_type& value)
+               void read( platform::binary_type& value)
                {
                   std::string::size_type size;
                   *this >> size;
 
-                  value.assign(
-                     std::begin( m_buffer) + m_offset,
-                     std::begin( m_buffer) + m_offset + size);
+                  value.resize( size);
 
-                  m_offset += size;
+                  consume( std::begin( value), size);
                }
 
                template< typename T>
                void readPod( T& value)
                {
-                  assert( m_buffer.size() >= ( sizeof( T) +  m_offset));
+                  const auto size = sizeof( T);
 
-                  memcpy( &value, &m_buffer[ m_offset], sizeof( T));
-                  m_offset += sizeof( T);
+                  assert( m_buffer.size() >= size + m_offset);
+
+                  memcpy( &value, &m_buffer[ m_offset], size);
+                  m_offset += size;
                }
 
                buffer_type m_buffer;

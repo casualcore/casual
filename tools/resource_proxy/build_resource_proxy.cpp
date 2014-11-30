@@ -18,7 +18,7 @@
 
 #include "config/xa_switch.h"
 
-#include "sf/archive_logger.h"
+#include "sf/log.h"
 
 #include <string>
 #include <iostream>
@@ -40,7 +40,7 @@ void generate( std::ostream& out, const config::xa::Switch& xa_switch)
 *
 */
 
-#include "transaction/resource_proxy_server.h"
+#include "transaction/resource/proxy_server.h"
 #include <xa.h>
 
 #ifdef __cplusplus
@@ -107,7 +107,7 @@ struct Settings
 
    std::string linkDirectives;
 
-   std::string compiler = "gcc";
+   std::string compiler = "g++";
    bool verbose = false;
    bool keepSource = false;
 
@@ -118,7 +118,7 @@ struct Settings
       archive & CASUAL_MAKE_NVP( output);
       archive & CASUAL_MAKE_NVP( resourceKey);
       archive & CASUAL_MAKE_NVP( linkDirectives);
-      archive & CASUAL_MAKE_NVP( verbose);
+      archive & CASUAL_MAKE_NVP( compiler);
       archive & CASUAL_MAKE_NVP( verbose);
       archive & CASUAL_MAKE_NVP( keepSource);
 
@@ -162,7 +162,7 @@ int build( const std::string& c_file, const config::xa::Switch& xa_switch, const
    // Compile and link
    //
 
-   std::vector< std::string> arguments{ c_file, "-o", xa_switch.server};
+   std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
    for( auto& lib : xa_switch.libraries)
    {
@@ -201,7 +201,7 @@ config::xa::Switch configuration( const Settings& settings)
 
    if( findKey == std::end( swithces))
    {
-      throw common::exception::NotReallySureWhatToNameThisException( "resource-key: " + settings.resourceKey + " not found");
+      throw common::exception::invalid::Argument( "resource-key: " + settings.resourceKey + " not found");
    }
    return *findKey;
 }
@@ -215,8 +215,6 @@ int main( int argc, char **argv)
       Settings settings;
 
       {
-         trace::Exit log( "parse arguments", true);
-
          using namespace casual::common;
 
          Arguments handler;
@@ -234,9 +232,11 @@ int main( int argc, char **argv)
             return 1;
          }
 
-         //sf::archive::logger::Writer writer;
-         //writer << CASUAL_MAKE_NVP( settings);
 
+         if( settings.verbose)
+         {
+            std::cout << std::endl << CASUAL_MAKE_NVP( settings);
+         }
 
       }
 
@@ -245,10 +245,15 @@ int main( int argc, char **argv)
 
       auto xa_switch = configuration( settings);
 
+      if( settings.output.empty())
+      {
+         settings.output = xa_switch.server;
+      }
+
       //
       // Generate file
       //
-      common::file::ScopedPath path( "xa_switch" + common::Uuid::make().string() + ".c");
+      common::file::scoped::Path path( common::file::unique( "xa_switch_", ".c"));
 
       {
          trace::Exit log( "generate file:  " + path.path(), settings.verbose);
@@ -268,8 +273,14 @@ int main( int argc, char **argv)
 
 
    }
+   catch( const common::exception::invalid::Base& exception)
+   {
+      std::cerr << "error: " << exception << std::endl;
+      return 1;
+   }
    catch( ...)
    {
+      std::cerr << "error: details is found in casual.log\n";
       return common::error::handler();
    }
 

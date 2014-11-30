@@ -13,11 +13,8 @@
 #include "common/exception.h"
 #include "common/signal.h"
 #include "common/uuid.h"
-#include "common/logger.h"
-
-
-// TODO: header dependency to sf... not so good...
-#include "sf/functional.h"
+#include "common/internal/log.h"
+#include "common/algorithm.h"
 
 
 #include <fstream>
@@ -56,7 +53,7 @@ namespace casual
          {
 
             Complete::Complete( Transport& transport)
-               : type( transport.m_payload.m_type), correlation( transport.m_payload.m_header.m_correlation)
+               : type( transport.payload.type), correlation( transport.payload.header.correlation)
             {
                add( transport);
             }
@@ -65,10 +62,10 @@ namespace casual
             {
                payload.insert(
                   std::end( payload),
-                  std::begin( transport.m_payload.m_payload),
-                  std::begin( transport.m_payload.m_payload) + transport.paylodSize());
+                  std::begin( transport.payload.payload),
+                  std::begin( transport.payload.payload) + transport.paylodSize());
 
-               complete = transport.m_payload.m_header.m_count == 0;
+               complete = transport.payload.header.count == 0;
 
             }
          }// message
@@ -81,15 +78,16 @@ namespace casual
 
             }
 
-            bool Queue::send( message::Complete& message, const long flags) const
+
+            bool Queue::send( const message::Complete& message, const long flags) const
             {
                //
                // partition the payload and send the resulting physical messages
                //
 
                ipc::message::Transport transport;
-               transport.m_payload.m_type = message.type;
-               message.correlation.copy( transport.m_payload.m_header.m_correlation);
+               transport.payload.type = message.type;
+               message.correlation.copy( transport.payload.header.correlation);
 
                //
                // This crap got to do a lot better...
@@ -97,11 +95,11 @@ namespace casual
                auto size = message.payload.size();
                if( size % message::Transport::payload_max_size == 0 && size > 0)
                {
-                  transport.m_payload.m_header.m_count = size / message::Transport::payload_max_size - 1;
+                  transport.payload.header.count = size / message::Transport::payload_max_size - 1;
                }
                else
                {
-                  transport.m_payload.m_header.m_count = size / message::Transport::payload_max_size;
+                  transport.payload.header.count = size / message::Transport::payload_max_size;
                }
 
 
@@ -113,7 +111,7 @@ namespace casual
                   auto partEnd = partBegin + message::Transport::payload_max_size > std::end( message.payload) ?
                         std::end( message.payload) : partBegin + message::Transport::payload_max_size;
 
-                  std::copy( partBegin, partEnd, std::begin( transport.m_payload.m_payload));
+                  std::copy( partBegin, partEnd, std::begin( transport.payload.payload));
 
                   transport.paylodSize( partEnd - partBegin);
 
@@ -122,18 +120,22 @@ namespace casual
                   //
                   if( ! send( transport, flags))
                   {
-                     if( transport.m_payload.m_header.m_count > 0)
+                     if( transport.payload.header.count > 0)
                      {
                         // TODO: Partially sent message, what to do now?
+                        log::internal::ipc << "TODO: Partially sent message, what to do now?\n";
                      }
                      return false;
                   }
 
-                  --transport.m_payload.m_header.m_count;
+                  --transport.payload.header.count;
 
 
                   partBegin = partEnd;
                }
+
+               log::internal::ipc << "ipc[" << id() << "] sent message - " << message << std::endl;
+
 
                return true;
             }
@@ -144,6 +146,7 @@ namespace casual
                // We have to check and process (throw) pending signals before we might block
                //
                common::signal::handle();
+
                auto result = msgsnd( m_id, message.raw(), message.size(), flags);
 
                if( result == -1)
@@ -153,15 +156,36 @@ namespace casual
                      case EINTR:
                      {
                         common::signal::handle();
+
                         return false;
                      }
                      case EAGAIN:
                      {
                         return false;
                      }
+                     case EIDRM:
+                     {
+                        throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( m_id) + " - " + common::error::string()};
+                     }
+                     case ENOMEM:
+                     {
+                        throw exception::limit::Memory{ "id: " + std::to_string( m_id) + " - " + common::error::string()};
+                     }
+                     case EINVAL:
+                     {
+                        if( /* message.size() < MSGMAX  && */ message.payload.type > 0)
+                        {
+                           //
+                           // The problem is with queue-id. We guess that it has been removed.
+                           //
+                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( m_id) + " - " + common::error::string()};
+                        }
+                        // we let it fall through to default
+                     }
+                     case EFAULT:
                      default:
                      {
-                        throw common::exception::QueueSend( "id: " + std::to_string( m_id) + " - " + common::error::stringFromErrno());
+                        throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( m_id) + " - " + common::error::string());
                      }
                   }
                }
@@ -172,43 +196,50 @@ namespace casual
 
          namespace receive
          {
-
             Queue::Queue()
                : internal::base_queue( msgget( IPC_PRIVATE, IPC_CREAT | 0660)),
-                    m_scopedPath( environment::directory::temporary() + "/ipc_queue_" + Uuid::make().string())
+                    m_path( file::unique( environment::directory::temporary() + "/ipc_queue_"))
             {
+               if( m_id  == -1)
+               {
+
+                  throw exception::invalid::Argument( "ipc queue create failed - " + common::error::string(), __FILE__, __LINE__);
+               }
+
                //
                // Write queue information
                //
-               std::ofstream ipcQueueFile( m_scopedPath.path());
+               std::ofstream ipcQueueFile( m_path.path());
 
                ipcQueueFile << "id: " << m_id << std::endl
                      << "pid: " << process::id() <<  std::endl
-                     << "path: " << environment::file::executable() << std::endl;
+                     << "path: " << process::path() << std::endl;
 
 
-               if( m_id  == -1)
-               {
-                  throw common::exception::QueueFailed( common::error::stringFromErrno());
-               }
+               log::internal::ipc << "created queue - id: " << m_id << " pid: " <<  process::id() << std::endl;
 
             }
 
 
             Queue::~Queue()
             {
-               if( ! m_cache.empty())
-               {
-                  logger::error << "queue: " << m_id << " has unconsumed messages in cache";
-               }
-
                try
                {
-                  //
-                  // Destroy queue
-                  //
-                  ipc::remove( m_id);
-                  logger::debug << "queue id: " << m_id << " removed";
+
+                  if( ! m_cache.empty())
+                  {
+                     log::error << "queue: " << m_id << " has unconsumed messages in cache";
+                  }
+
+                  if( m_id != -1)
+                  {
+                     //
+                     // Destroy queue
+                     //
+                     ipc::remove( m_id);
+                     log::internal::ipc << "queue id: " << m_id << " removed - cache capacity: " << m_cache.capacity() << std::endl;
+                  }
+
                }
                catch( ...)
                {
@@ -248,6 +279,23 @@ namespace casual
 
                      };
 
+                     struct Types
+                     {
+                        typedef message::Complete::message_type_type message_type;
+                        using message_types = std::vector< message_type>;
+
+                        Types( message_types types) : m_types( std::move( types)) {}
+
+                        bool operator () ( const message::Complete& message) const
+                        {
+                           return ! range::find( m_types, message.type).empty();
+                        }
+
+
+                     private:
+                        message_types m_types;
+
+                     };
 
 
                      struct Correlation
@@ -261,27 +309,23 @@ namespace casual
                      private:
                         message::Transport::correalation_type& m_correlation;
                      };
-
-
-                     typedef sf::functional::Chain< sf::functional::link::And> And;
-
                   } // find
                } // <unnamed>
             } // local
-
-
 
 
             std::vector< message::Complete> Queue::operator () ( const long flags)
             {
                std::vector< message::Complete> result;
 
-               auto findIter = find( local::find::Complete(), flags);
+               auto found = find( local::find::Complete(), flags);
 
-               if( findIter != std::end( m_cache))
+               if( found)
                {
-                  result.push_back( std::move( *findIter));
-                  m_cache.erase( findIter);
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -291,34 +335,65 @@ namespace casual
             {
                std::vector< message::Complete> result;
 
-               auto findIter = find(
-                     local::find::And::link(
+               auto found = find(
+                     chain::And::link(
                            local::find::Type( type),
                            local::find::Complete()), flags);
 
-               if( findIter != std::end( m_cache))
+               if( found)
                {
-                  result.push_back( std::move( *findIter));
-                  m_cache.erase( findIter);
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
             }
 
-            template< typename P>
-            Queue::cache_type::iterator Queue::find( P predicate, const long flags)
+            std::vector< message::Complete> Queue::operator () ( const std::vector< type_type>& types, const long flags)
             {
-               auto findIter = std::find_if( std::begin( m_cache), std::end( m_cache), predicate);
+               std::vector< message::Complete> result;
+
+               auto found = find(
+                     chain::And::link(
+                           local::find::Types( types),
+                           local::find::Complete()), flags);
+
+               if( found)
+               {
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
+               }
+
+               return result;
+            }
+
+            void Queue::clear()
+            {
+               while( ! operator() ( ipc::receive::Queue::cNoBlocking).empty())
+                  ;
+
+               m_cache.clear();
+            }
+
+
+            template< typename P>
+            Queue::range_type Queue::find( P predicate, const long flags)
+            {
+               auto found = range::find_if( m_cache, predicate);
 
                message::Transport transport;
 
-               while( findIter == std::end( m_cache) && receive( transport, flags))
+               while( ! found && receive( transport, flags))
                {
-                  findIter = cache( transport);
-                  findIter = std::find_if( findIter, std::end( m_cache), predicate);
+                  found = cache( transport);
+                  found = range::find_if( found, predicate);
                }
 
-               return findIter;
+               return found;
             }
 
 
@@ -328,6 +403,7 @@ namespace casual
                // We have to check and process (throw) pending signals before we might block
                //
                common::signal::handle();
+
                auto result = msgrcv( m_id, message.raw(), message.size(), 0, flags);
 
                if( result == -1)
@@ -337,6 +413,7 @@ namespace casual
                      case EINTR:
                      {
                         common::signal::handle();
+
                         return false;
                      }
                      case ENOMSG:
@@ -345,7 +422,10 @@ namespace casual
                      }
                      default:
                      {
-                        throw common::exception::QueueReceive( common::error::stringFromErrno() + " - id: " + std::to_string( m_id) + " - flags: " + std::to_string( flags) + " - size: " + std::to_string( message.size()));
+                        std::ostringstream msg;
+                        msg << "ipc[" << id() << "] receive failed - message: " << message << " - " << common::error::string();
+                        log::internal::ipc << msg.str() << std::endl;
+                        throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
                      }
                   }
                }
@@ -355,20 +435,23 @@ namespace casual
                return result > 0;
             }
 
-            Queue::cache_type::iterator Queue::cache( message::Transport& message)
-            {
-               auto findIter = std::find_if( std::begin( m_cache), std::end( m_cache),
-                     local::find::Correlation( message.m_payload.m_header.m_correlation));
 
-               if( findIter != std::end( m_cache))
+
+            Queue::range_type Queue::cache( message::Transport& message)
+            {
+               auto found = range::find_if( m_cache,
+                     local::find::Correlation( message.payload.header.correlation));
+
+               if( found)
                {
-                  findIter->add( message);
+                  found->add( message);
                }
                else
                {
-                  return m_cache.emplace( std::end( m_cache), message);
+                  found.first = m_cache.emplace( std::end( m_cache), message);
+                  found.last = std::end( m_cache);
                }
-               return findIter;
+               return found;
             }
 
          } // receive
@@ -385,10 +468,11 @@ namespace casual
 
                   if( file.fail())
                   {
-                     throw common::exception::xatmi::SystemError( "Failed to open domain configuration file: " + brokerFile);
+                     log::internal::ipc << "Failed to open broker queue configuration file" << std::endl;
+                     throw common::exception::xatmi::SystemError( "Failed to open broker queue configuration file: " + brokerFile);
                   }
 
-                  send::Queue::id_type id;
+                  send::Queue::id_type id{ 0};
                   file >> id;
 
                   return send::Queue( id);
@@ -397,24 +481,52 @@ namespace casual
             }
          }
 
-
-         send::Queue& getBrokerQueue()
+         namespace broker
          {
-            static send::Queue brokerQueue = local::initializeBrokerQueue();
-            return brokerQueue;
-         }
 
-         receive::Queue& getReceiveQueue()
+
+            send::Queue& queue()
+            {
+               static send::Queue brokerQueue = local::initializeBrokerQueue();
+               return brokerQueue;
+            }
+
+            send::Queue::id_type id()
+            {
+               return queue().id();
+            }
+
+         } // broker
+
+
+         namespace receive
          {
-            static receive::Queue singleton;
-            return singleton;
-         }
+            receive::Queue::id_type id()
+            {
+               return queue().id();
+            }
+
+            receive::Queue create()
+            {
+               receive::Queue queue;
+               return queue;
+            }
+
+
+            receive::Queue& queue()
+            {
+               static receive::Queue singleton = create();
+               return singleton;
+            }
+
+         } // receive
 
          void remove( platform::queue_id_type id)
          {
+
             if( msgctl( id, IPC_RMID, nullptr) != 0)
             {
-               throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
+               throw exception::invalid::Argument( "failed to rmove ipc-queue id: " + std::to_string( id ) + " - " + error::string(), __FILE__, __LINE__);
             }
          }
 

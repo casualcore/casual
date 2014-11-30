@@ -9,17 +9,22 @@
 #include "common/exception.h"
 #include "common/error.h"
 #include "common/file.h"
-#include "common/logger.h"
-#include "common/trace.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 #include "common/signal.h"
 #include "common/string.h"
+#include "common/environment.h"
+#include "common/uuid.h"
 
+#include "common/message/server.h"
+#include "common/queue.h"
 
 //
 // std
 //
 #include <algorithm>
 #include <functional>
+#include <fstream>
 
 // TODO: temp
 #include <iostream>
@@ -29,6 +34,15 @@
 #include <signal.h>
 //#include <fcntl.h>
 
+#include <spawn.h>
+
+
+#ifdef __APPLE__
+   #include <crt_externs.h>
+#else
+   #include <unistd.h>
+#endif
+
 
 
 namespace casual
@@ -37,7 +51,48 @@ namespace casual
    {
       namespace process
       {
+         namespace local
+         {
+            namespace
+            {
+               std::string getProcessPath()
+               {
+                  if( environment::variable::exists( "_"))
+                  {
+                     return environment::variable::get( "_");
+                  }
 
+                  return std::string{};
+               }
+
+               std::string& path()
+               {
+                  static std::string path = getProcessPath();
+                  return path;
+               }
+
+               char* const * environment()
+               {
+                  #ifdef __APPLE__
+                      return *::_NSGetEnviron();
+                  #else
+                     return ::environ;
+                  #endif
+               }
+
+
+            } // <unnamed>
+         } // local
+
+         const std::string& path()
+         {
+            return local::path();
+         }
+
+         void path( const std::string& path)
+         {
+            local::path() = path;
+         }
 
 
          platform::pid_type id()
@@ -46,55 +101,39 @@ namespace casual
             return pid;
          }
 
-         void sleep( std::chrono::microseconds time)
+         Handle handle()
          {
-            usleep( time.count());
+            Handle result{ id(), ipc::receive::id()};
+
+            return result;
          }
 
 
-         namespace local
+         bool operator == ( const Handle& lhs, const Handle& rhs)
          {
-            namespace
-            {
-               std::string readFromPipe( int filedescripor)
-               {
-                  std::string result;
+            return lhs.pid == rhs.pid && lhs.queue == rhs.queue;
+         }
 
-                  auto stream = fdopen( filedescripor, "r");
+         std::ostream& operator << ( std::ostream& out, const Handle& value)
+         {
+            return out << "{pid: " << value.pid << ", queue: " << value.queue << '}';
+         }
 
-                  if( stream)
-                  {
-                     char c = 0;
-                     while( ( c = fgetc( stream)) != EOF)
-                     {
-                        result.push_back( c);
-                     }
 
-                     fclose( stream);
-                  }
-                  else
-                  {
-                     result = "failed to open read stream for " + std::to_string( filedescripor);
-                  }
 
-                  return result;
-               }
+         const Uuid& uuid()
+         {
+            static const Uuid singleton = Uuid::make();
+            return singleton;
+         }
 
-               void writeToPipe( int filedescripor, const std::string& message)
-               {
-                  auto stream = fdopen( filedescripor, "w");
-                  if( stream)
-                  {
-                     fprintf( stream, message.c_str());
-                     fclose( stream);
-                  }
-                  else
-                  {
-                     std::cerr << "failed to open write stream for " + std::to_string( filedescripor) << std::endl;
-                  }
-               }
-            } //
-         } // local
+         void sleep( std::chrono::microseconds time)
+         {
+            std::this_thread::sleep_for( time);
+         }
+
+
+
 
          platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments)
          {
@@ -113,113 +152,39 @@ namespace casual
                   std::begin( arguments),
                   std::end( arguments),
                   std::back_inserter( c_arguments),
-                  std::bind( &std::string::data, std::placeholders::_1));
+                  std::mem_fn( &std::string::data));
 
             c_arguments.push_back( nullptr);
 
-            /*
-            int pipeDesriptor[2];
-            if( pipe( pipeDesriptor) == -1)
+
+            std::vector< const char*> c_environment;
+            c_environment.push_back( nullptr);
+
+
+
+            posix_spawnattr_t attributes;
+
+            posix_spawnattr_init( &attributes);
+
+            platform::pid_type pid;
+
+            auto status =  posix_spawnp(
+                  &pid,
+                  path.c_str(),
+                  nullptr,
+                  &attributes,
+                  const_cast< char* const*>( c_arguments.data()),
+                  local::environment()// environ //const_cast< char* const*>( c_environment.data())
+                  );
+            switch( status)
             {
-               throw exception::NotReallySureWhatToNameThisException( "failed to create pipe");
-            }
-            */
-
-            // TODO: temp
-            //local::writeToPipe( pipeDesriptor[ 1], "hej");
-            //std::cerr << "local::readFromPipe: " << local::readFromPipe( pipeDesriptor[ 0]) << std::endl;
-
-
-            platform::pid_type pid = fork();
-
-            switch( pid)
-            {
-               case -1:
-               {
-                  throw exception::NotReallySureWhatToNameThisException();
-               }
                case 0:
-               {
-                  // In the child process.  Iterate through all possible file descriptors
-                  // and explicitly close them.
-                  /*
-                  long maxfd = sysconf( _SC_OPEN_MAX);
-                  for( long filedescripor = 0; filedescripor < maxfd; ++filedescripor)
-                  {
-                     close( filedescripor);
-                  }
-                  */
-
-                  //
-                  // Close other end of the pipe, and make sure it's own end is closed
-                  // when exited
-                  //
-                  //close( pipeDesriptor[ 0]);
-                  //fcntl( pipeDesriptor[ 1], F_SETFD, FD_CLOEXEC);
-
-                  //
-                  // executed by shild, lets start process
-                  //
-                  execvp( path.c_str(), const_cast< char* const*>( c_arguments.data()));
-
-                  //std::cerr << "errno: " << error::stringFromErrno() << std::endl;
-
-                  //
-                  // If we reach this, the execution failed...
-                  // We pipe to the parent
-                  //
-                  //local::writeToPipe( pipeDesriptor[ 1], "execution filed");
-                  _exit( 222);
-
-
-                  // We can't throw, we log it...
-                  //
-                  //logger::error << "failed to execute " + path + " - " + error::stringFromErrno();
-                  // TODO: hack, use pipe to get real exit from the child later on...
-
                   break;
-               }
                default:
-               {
-                  //
-                  // Parent process
-                  //
-
-                  //
-                  // Close other end
-                  //
-                  //close( pipeDesriptor[ 1]);
-
-                  //
-                  // read from child
-                  //
-                  //auto result = local::readFromPipe( pipeDesriptor[ 0]);
-                  //close( pipeDesriptor[ 0]);
-
-                  //if( result.empty())
-                  {
-
-                     //
-                     // We have started the process, hopefully...
-                     //
-                     logger::information << "spawned pid: " << pid << " - " << path << " " << string::join( arguments, " ");
-                  }
-                  /*
-                  else
-                  {
-                     logger::error << "failed to spawn: " << path << " " << string::join( arguments, " ") << " - " << result;
-                  }
-                  */
-                  break;
-               }
+                  throw exception::invalid::Argument( "spawn failed for: " + path + " - " + error::string( status));
             }
-
             return pid;
          }
-
-
-
-
 
 
 
@@ -231,121 +196,299 @@ namespace casual
 
          namespace local
          {
-            bool wait( lifetime::Exit& exit, platform::pid_type pid, int flags = WNOHANG)
+            namespace
             {
-               exit.pid = waitpid( pid, &exit.status, flags);
-
-               if( exit.pid == -1)
+               lifetime::Exit wait( platform::pid_type pid, int flags = WNOHANG)
                {
-                  if( errno == error::cNoChildProcesses)
-                  {
+                  lifetime::Exit exit;
 
-                  }
-                  else
+                  auto result = waitpid( pid, &exit.status, flags);
+
+                  if( result == -1)
                   {
-                     logger::error << "failed to check state of pid: " << exit.pid << " - " << error::stringFromErrno();
-                     throw exception::NotReallySureWhatToNameThisException( error::stringFromErrno());
-                  }
-               }
-               else if( exit.pid != 0)
-               {
-                  if( WIFEXITED( exit.status))
-                  {
-                     exit.why = lifetime::Exit::Why::exited;
-                     exit.status = WEXITSTATUS( exit.status);
-                  }
-                  else if( WIFSIGNALED( exit.status))
-                  {
-                     if( WCOREDUMP( exit.status))
+                     switch( errno)
                      {
-                        exit.why = lifetime::Exit::Why::core;
-                        exit.status = 0;
-                     }
-                     else
-                     {
-                        exit.why = lifetime::Exit::Why::signaled;
-                        exit.status = WTERMSIG( exit.status);
+                        case ECHILD:
+                        {
+                           // no child
+                           break;
+                        }
+                        case EINTR:
+                        {
+                           signal::handle();
+                           break;
+                        }
+                        default:
+                        {
+                           log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
+                           throw exception::NotReallySureWhatToNameThisException( error::string());
+                        }
                      }
                   }
-                  else if( WIFSTOPPED( exit.status))
+                  else if( result != 0)
                   {
-                     exit.why = lifetime::Exit::Why::stopped;
-                     exit.status = WSTOPSIG( exit.status);
+                     exit.pid = result;
+
+
+                     if( WIFEXITED( exit.status))
+                     {
+                        exit.reason = lifetime::Exit::Reason::exited;
+                        exit.status = WEXITSTATUS( exit.status);
+                     }
+                     else if( WIFSIGNALED( exit.status))
+                     {
+                        if( WCOREDUMP( exit.status))
+                        {
+                           exit.reason = lifetime::Exit::Reason::core;
+                           exit.status = 0;
+                        }
+                        else
+                        {
+                           exit.reason = lifetime::Exit::Reason::signaled;
+                           exit.status = WTERMSIG( exit.status);
+                        }
+                     }
+                     else if( WIFSTOPPED( exit.status))
+                     {
+                        exit.reason = lifetime::Exit::Reason::stopped;
+                        exit.status = WSTOPSIG( exit.status);
+                     }
                   }
-                  return true;
+                  return exit;
                }
-               return false;
-            }
+
+               void wait( const std::vector< platform::pid_type> pids, std::vector< lifetime::Exit>& result)
+               {
+                  while( result.size() < pids.size())
+                  {
+                     auto exit = local::wait( -1, 0);
+
+                     if( range::find( pids, exit.pid))
+                     {
+                        result.push_back( std::move( exit));
+                     }
+                  }
+               }
+
+               void terminate( std::vector< platform::pid_type> pids, std::vector< platform::pid_type>& result)
+               {
+                  auto terminated = process::terminate( pids);
+
+                  range::append( range::difference( pids, terminated), result);
+
+                  for( const auto& exit : lifetime::wait( terminated))
+                  {
+                     result.push_back( exit.pid);
+                  }
+
+                  log::internal::debug << "terminated processes: " << range::make( result) << std::endl;
+               }
+            } // <unnamed>
+
          } // local
 
          int wait( platform::pid_type pid)
          {
-            lifetime::Exit exit;
-
-            local::wait( exit, pid, 0);
-
-            return exit.status;
+            return local::wait( pid, 0).status;
          }
 
 
 
 
-         void terminate( const std::vector< platform::pid_type>& pids)
+         std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids)
          {
+            std::vector< platform::pid_type> result;
             for( auto pid : pids)
             {
-               terminate( pid);
+               if( terminate( pid))
+               {
+                  result.push_back( pid);
+               }
             }
+            return result;
          }
 
 
 
-         void terminate( platform::pid_type pid)
+         bool terminate( platform::pid_type pid)
          {
-            signal::send( pid, platform::cSignal_Terminate);
+            return signal::send( pid, platform::cSignal_Terminate);
          }
 
-         std::vector< lifetime::Exit> lifetime::ended()
+         file::scoped::Path singleton( std::string path)
          {
-            std::vector< lifetime::Exit> result;
+            std::ifstream file( path);
 
-            Exit exit;
-
-            while( local::wait( exit, -1))
+            if( file)
             {
-               result.push_back( exit);
+               try
+               {
+
+                  common::signal::alarm::Scoped alarm{ std::chrono::seconds( 5)};
+
+                  decltype( common::ipc::receive::id()) id;
+                  std::string uuid;
+                  file >> id;
+                  file >> uuid;
+
+                  {
+                     common::queue::blocking::Writer send( id);
+                     common::message::server::ping::Request request;
+                     request.process = handle();
+                     send( request);
+                  }
+
+
+                  {
+                     common::message::server::ping::Reply reply;
+
+                     common::queue::blocking::Reader receive( common::ipc::receive::queue());
+                     receive( reply);
+
+                     if( reply.uuid == Uuid( uuid))
+                     {
+
+                        //
+                        // There are another process for this domain - abort
+                        //
+                        throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
+                     }
+
+                     common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
+                  }
+
+               }
+               catch( const common::exception::signal::Timeout&)
+               {
+                  common::log::error << "failed to get ping response from potentially running process - to risky to start - action: terminate" << std::endl;
+                  throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
+               }
+               catch( const common::exception::invalid::Argument&)
+               {
+                  common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
+               }
+            }
+
+            file::scoped::Path result( std::move( path));
+
+
+            std::ofstream output( result);
+
+            if( output)
+            {
+               output << common::ipc::receive::id() << std::endl;
+               output << uuid() << std::endl;
+            }
+            else
+            {
+               throw common::exception::invalid::File( "failed to write process singleton queue file: " + path);
             }
 
             return result;
-            //return state();
          }
 
-         /*
-         void lifetime::clear()
-         {
-            state().clear();
-            state().shrink_to_fit();
-         }
-
-         void lifetime::update()
+         namespace lifetime
          {
 
-            Exit exit;
-
-            while( local::wait( exit))
+            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
             {
-               state().push_back( exit);
+               out << "{pid: " << terminated.pid << " terminated - reason: ";
+               switch( terminated.reason)
+               {
+                  case Exit::Reason::unknown: out << "unknown"; break;
+                  case Exit::Reason::exited: out << "exited"; break;
+                  case Exit::Reason::stopped: out << "stopped"; break;
+                  case Exit::Reason::signaled: out <<  "signaled"; break;
+                  case Exit::Reason::core: out <<  "core"; break;
+               }
+               return out << '}';
             }
-         }
+
+            std::vector< lifetime::Exit> ended()
+            {
+               std::vector< lifetime::Exit> result;
+
+               Exit exit;
+
+               while( true)
+               {
+                  auto exit = local::wait( -1);
+                  if( exit)
+                  {
+                     result.push_back( exit);
+                  }
+                  else
+                  {
+                     return result;
+                  }
+               }
+               return result;
+            }
 
 
 
-         std::vector< lifetime::Exit>& lifetime::state()
-         {
-            static std::vector< Exit> state;
-            return state;
-         }
-         */
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids)
+            {
+               std::vector< Exit> result;
+
+               local::wait( pids, result);
+
+               return result;
+            }
+
+            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            {
+               if( pids.empty())
+                  return {};
+
+               std::vector< Exit> result;
+               try
+               {
+                  signal::alarm::Scoped alarm( timeout);
+
+                  local::wait( pids, result);
+
+               }
+               catch( const exception::signal::Timeout&)
+               {
+
+               }
+               return result;
+            }
+
+
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids)
+            {
+               std::vector< platform::pid_type> result;
+
+               local::terminate( pids, result);
+
+               return result;
+            }
+
+            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            {
+               if( pids.empty())
+                  return {};
+
+               std::vector< platform::pid_type> result;
+
+               try
+               {
+                  signal::alarm::Scoped alarm( timeout);
+
+                  local::terminate( pids, result);
+               }
+               catch( const exception::signal::Timeout&)
+               {
+
+               }
+               return result;
+
+            }
+
+         } // lifetime
+
 
       } // process
    } // common

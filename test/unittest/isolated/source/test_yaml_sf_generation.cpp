@@ -10,7 +10,7 @@
 #include <gtest/gtest.h>
 
 
-#include "sf/archive_yaml.h"
+#include "sf/archive/yaml.h"
 
 
 #include <sstream>

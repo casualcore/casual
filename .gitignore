@@ -2,6 +2,10 @@
 # eclipse project
 #
 .settings/org.eclipse.cdt.codan.core.prefs
+.pydevproject
+.settings/org.eclipse.cdt.ui.prefs
+
+
 
 #
 # Build directories
@@ -15,6 +19,7 @@ bin/
 #
 *.mk
 
+.unittest_domain_home/
 
 /casual.env
 /casual_build_environment

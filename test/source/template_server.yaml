@@ -1,0 +1,21 @@
+
+server:
+  type: casual-sf
+  services:
+    - name: casual_test1
+      transaction: join
+      
+      
+    - name: casual_test2
+      transaction: auto
+    
+    - name: casual-test3
+      function: casual_test3
+      transaction: join
+
+    
+  
+#    - binding: casual-test3
+#      service_function: casual_test3
+#      message_function: casual_test3
+#      transaction: none

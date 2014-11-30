@@ -6,11 +6,13 @@
 //!
 
 #include "config/domain.h"
+#include "config/file.h"
 
-#include "common/environment.h"
+
 #include "common/exception.h"
+#include "common/file.h"
 
-#include "sf/archive_maker.h"
+#include "sf/archive/maker.h"
 
 #include <algorithm>
 
@@ -37,7 +39,7 @@ namespace casual
                      void operator ()( domain::Server& server) const
                      {
                         assign_if_empty( server.instances, m_casual_default.server.instances);
-                        assign_if_empty( server.alias, nextAlias());
+                        assign_if_empty( server.alias, nextAlias( server.path));
                      }
 
                      void operator ()( domain::Service& service) const
@@ -61,10 +63,10 @@ namespace casual
                            value = def;
                      }
 
-                     static std::string nextAlias()
+                     static std::string nextAlias( const std::string& path)
                      {
                         static long index = 1;
-                        return std::to_string( index++);
+                        return common::file::basename( path) + "_" + std::to_string( index++);
                      }
                      domain::Default m_casual_default;
                   };
@@ -112,16 +114,16 @@ namespace casual
 
          Domain get()
          {
-            const std::string configFile = common::environment::file::configuration();
+            const std::string configuration = config::file::domain();
 
-            if( !configFile.empty())
+            if( ! configuration.empty())
             {
-               return get( configFile);
+               return get( configuration);
             }
             else
             {
                throw common::exception::FileNotExist(
-                     "could not find domain configuration file - should be: " + common::environment::directory::domain() + "/configuration/domain.*");
+                     "could not find domain configuration file - should be: " + config::directory::domain() + "/domain.*");
             }
          }
 

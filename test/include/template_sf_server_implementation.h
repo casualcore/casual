@@ -27,7 +27,7 @@ namespace casual
          ~ServerImplementation();
 
 
-         bool casual_sf_test1( const std::vector< vo::TestVO>& inputValues, std::vector< vo::TestVO>& outputValues);
+         bool casual_sf_test1( std::vector< vo::TestVO>& outputValues);
 
          void casual_sf_test2( bool someValue);
 

@@ -6,19 +6,25 @@
 //!
 
 #include "broker/broker.h"
-#include "broker/broker_implementation.h"
-#include "broker/action.h"
+#include "broker/handle.h"
+#include "broker/transform.h"
+
+#include "broker/admin/server.h"
 
 #include "config/domain.h"
 
 #include "common/environment.h"
-#include "common/logger.h"
+
+#include "common/internal/trace.h"
+#include "common/internal/log.h"
 
 #include "common/queue.h"
-#include "common/message_dispatch.h"
+#include "common/message/dispatch.h"
+#include "common/message/handle.h"
 #include "common/process.h"
 
-#include "sf/archive_maker.h"
+
+#include "sf/log.h"
 
 
 #include <xatmi.h>
@@ -27,18 +33,6 @@
 #include <algorithm>
 
 
-
-//temp
-//#include <iostream>
-
-
-
-extern "C"
-{
-   extern void _broker_listServers( TPSVCINFO *serviceInfo);
-   extern void _broker_listServices( TPSVCINFO *serviceInfo);
-   extern void _broker_updateInstances( TPSVCINFO *serviceInfo);
-}
 
 
 namespace casual
@@ -54,12 +48,53 @@ namespace casual
 				template< typename Q>
 				void exportBrokerQueueKey( const Q& queue, const std::string& path)
 				{
+
 					if( common::file::exists( path))
 					{
+					   std::ifstream file( path);
+
+					   if( file)
+					   {
+					      try
+					      {
+
+					         common::signal::alarm::Scoped alarm{ std::chrono::seconds( 5)};
+
+                        decltype( queue.id()) id;
+                        file >> id;
+
+                        common::queue::blocking::Writer send( id);
+                        common::message::server::ping::Request request;
+                        request.process = common::process::handle();
+                        send( request);
+
+
+                        common::message::server::ping::Request reply;
+
+                        common::queue::blocking::Reader receive( common::ipc::receive::queue());
+                        receive( reply);
+
+                        //
+                        // There are another running broker for this domain - abort
+                        //
+                        common::log::error << "Other running broker - action: terminate" << std::endl;
+                        throw common::exception::signal::Terminate( "other running broker", __FILE__, __LINE__);
+
+					      }
+					      catch( const common::exception::signal::Timeout&)
+					      {
+					         common::log::error << "failed to get ping response from potentially running broker - to risky to start - action: terminate" << std::endl;
+					         throw common::exception::signal::Terminate( "other running broker", __FILE__, __LINE__);
+					      }
+					   }
+
+					   //
+                  // TODO: ping to see if there are another broker running
+                  //
 					   common::file::remove( path);
 					}
 
-					logger::debug << "writing broker queue file: " << path;
+					log::internal::debug << "writing broker queue file: " << path << std::endl;
 
 					std::ofstream brokerQueueFile( path);
 
@@ -73,71 +108,25 @@ namespace casual
 					   throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
 					}
 				}
+
+
+
+
+
 			}
 		}
 
 
 
-		Broker::Broker()
-			: m_brokerQueueFile( common::environment::file::brokerQueue())
-		   //: m_brokerQueueFile( "/tmp/crap")
+
+		Broker::Broker( const Settings& arguments)
+		  : m_brokerQueueFile( common::process::singleton( common::environment::file::brokerQueue()))
 		{
-
-		}
-
-		Broker& Broker::instance()
-		{
-		   static Broker singleton;
-		   return singleton;
-		}
-
-		Broker::~Broker()
-		{
-
-		   try
-		   {
-		      common::trace::Exit temp( "terminate child processes");
-
-		      //
-		      // We need to terminate all children
-		      //
-
-		      /*
-		      for( auto& instance : m_state.instances)
-		      {
-		         process::terminate( instance.first);
-		      }
-		      */
-
-
-		      for( auto& death : process::lifetime::ended())
-		      {
-		         logger::information << "shutdown: " << death.string();
-		      }
-
-
-		   }
-		   catch( ...)
-		   {
-		      common::error::handler();
-		   }
-		}
-
-      void Broker::start( const Settings& arguments)
-      {
-         common::trace::Exit temp( "broker start");
-
-         broker::QueueBlockingReader blockingReader( m_receiveQueue, m_state);
-
          //
-         // Initialize configuration and such
+         // Configure
          //
          {
-
-            //
-            // Make the key public for others...
-            //
-            local::exportBrokerQueueKey( m_receiveQueue, m_brokerQueueFile);
+            common::trace::internal::Scope trace{ "broker configuration"};
 
 
             config::domain::Domain domain;
@@ -148,74 +137,135 @@ namespace casual
             }
             catch( const exception::FileNotExist& exception)
             {
-               common::logger::information << "failed to open '" << arguments.configurationfile << "' - starting anyway...";
+               common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
             }
 
+            //
+            // Set domain name
+            //
+            environment::domain::name( domain.name);
 
-            common::logger::debug << " m_state.configuration.servers.size(): " << domain.servers.size();
+            common::log::internal::debug << CASUAL_MAKE_NVP( domain);
 
-            {
-               common::trace::Exit trace( "start processes");
+            m_state = transform::configuration::Domain{}( domain);
+         }
+		}
 
 
 
-               //
-               // Start the servers...
-               //
-               handle::transaction::ManagerConnect tmConnect( m_state);
-               handle::Connect instanceConnect( m_state);
-               action::boot::domain( m_state, domain, blockingReader, tmConnect, instanceConnect);
+		Broker::~Broker()
+		{
+		   try
+		   {
+            //
+            // Terminate
+            //
+            terminate();
+		   }
+         catch( ...)
+         {
+            common::error::handler();
+         }
+		}
 
-            }
+		void Broker::terminate()
+		{
+		   common::trace::internal::Scope trace{ "Broker::terminate()"};
 
+         try
+         {
+            const auto domain = common::environment::domain::name();
+
+            common::log::information << "shutting down domain '" << domain << "'\n";
+
+            //
+            // We have to remove this process first, so we don't try to terminate our self
+            //
+            m_state.removeProcess( common::process::id());
+
+            //
+            // Terminate children
+            //
+            common::process::children::terminate( m_state);
+
+
+            common::log::information << "domain '" << domain << "' is off-line\n";
+         }
+         catch( const common::exception::signal::Timeout& exception)
+         {
+            auto pids  = m_state.processes();
+            common::log::error << "failed to get response for terminated processes in a timely manner - pids: " << range::make( pids) << " - action: abort" << std::endl;
+         }
+         catch( ...)
+         {
+            common::error::handler();
          }
 
+		}
 
-         //
-         // Prepare message-pump handlers
-         //
-
-
-         message::dispatch::Handler handler;
-
-         handler.add< handle::Connect>( m_state);
-         handler.add< handle::Disconnect>( m_state);
-         handler.add< handle::Advertise>( m_state);
-         handler.add< handle::Unadvertise>( m_state);
-         handler.add< handle::ServiceLookup>( m_state);
-         handler.add< handle::ACK>( m_state);
-         handler.add< handle::MonitorConnect>( m_state);
-         handler.add< handle::MonitorDisconnect>( m_state);
-
-         // taken care of in the startup...
-         //handler.add< handle::TransactionManagerConnect>( m_state);
-
-         //
-         // Prepare the xatmi-services
-         //
+      void Broker::start()
+      {
+         try
          {
-            common::server::Arguments arguments;
 
-            arguments.m_services.emplace_back( "_broker_listServers", &_broker_listServers);
-            arguments.m_services.emplace_back( "_broker_listServices", &_broker_listServices);
-            arguments.m_services.emplace_back( "_broker_updateInstances", &_broker_updateInstances);
+            auto start = common::platform::clock_type::now();
 
 
-            arguments.m_argc = 1;
-            const char* executable = common::environment::file::executable().c_str();
-            arguments.m_argv = &const_cast< char*&>( executable);
-
-            handler.add< handle::Call>( arguments, m_state);
-         }
-
-         while( true)
-         {
-            auto marshal = blockingReader.next();
-
-            if( ! handler.dispatch( marshal))
             {
-               common::logger::error << "message_type: " << marshal.type() << " not recognized - action: discard";
+               common::trace::internal::Scope trace( "boot domain");
+
+               //
+               // boot the domain...
+               //
+               handle::boot( m_state);
             }
+
+            //
+            // Prepare message-pump handlers
+            //
+
+            common::log::internal::debug << "prepare message-pump handlers\n";
+
+
+            message::dispatch::Handler handler{
+               //handle::Shutdown{ m_state},
+               handle::Connect{ m_state},
+               handle::Advertise{ m_state},
+               handle::Unadvertise{ m_state},
+               handle::ServiceLookup{ m_state},
+               handle::ACK{ m_state},
+               handle::MonitorConnect{ m_state},
+               handle::MonitorDisconnect{ m_state},
+               handle::transaction::client::Connect{ m_state},
+               handle::Call{ admin::Server::services( *this), m_state},
+               common::message::handle::ping( m_state),
+            };
+
+
+
+            auto end = common::platform::clock_type::now();
+
+            common::log::information << "domain: \'" << common::environment::domain::name() << "\' is on-line - " << m_state.processes().size() << " processes - boot time: "
+                  << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
+
+
+
+            common::log::internal::debug << "start message pump\n";
+
+            queue::blocking::Reader blockingReader( m_receiveQueue, m_state);
+
+            message::dispatch::pump( handler, blockingReader);
+
+
+         }
+         catch( const common::exception::signal::Terminate&)
+         {
+            // we do nothing, and let the dtor take care of business
+            common::log::internal::debug << "broker has been terminated\n";
+         }
+         catch( ...)
+         {
+            common::error::handler();
          }
 		}
 
@@ -225,18 +275,31 @@ namespace casual
 
          auto updateInstances = [&]( const admin::update::InstancesVO& value)
                {
-                  auto findIter = m_state.servers.find( value.alias);
-                  if( findIter != std::end( m_state.servers))
+                  for( auto&& server : m_state.servers)
                   {
-                     action::update::Instances{ m_state}( findIter->second, value.instances);
+                     if( server.second.alias == value.alias)
+                     {
+                        m_state.instance( server.second, value.instances);
+                     }
                   }
                };
+         common::range::for_each( instances, updateInstances);
+      }
 
-         std::for_each(
-            std::begin( instances),
-            std::end( instances),
-            updateInstances);
+      admin::ShutdownVO Broker::shutdown()
+      {
 
+         auto orginal = m_state.processes();
+
+         admin::ShutdownVO result;
+
+         handle::shutdown( m_state);
+
+         result.online = m_state.processes();
+         result.offline = range::to_vector( range::difference( orginal, result.online));
+
+
+         return result;
       }
 
 	} // broker

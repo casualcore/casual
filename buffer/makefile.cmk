@@ -1,0 +1,56 @@
+
+
+from casual.make.directive import *
+
+Include( '$(CASUAL_BUILD_ENVIRONMENT)')
+
+IncludePaths( [
+   '../common/include',
+   '../xatmi/include',
+   '$(UNITTEST_INCLUDE_PATH)',
+   ])
+
+
+LibraryPaths([
+    '../common/bin',
+    '../xatmi/bin',
+    '$(JSON_LIBRARY_PATH)',
+    ])
+
+
+install_lib = []
+
+
+
+lib_buffer = LinkLibrary( 'bin/casual-buffer',
+    [
+     Compile( 'source/string.cpp'),
+     Compile( 'source/octet.cpp'),
+     Compile( 'source/order.cpp'),
+     Compile( 'source/field.cpp'),
+    ],
+    [
+     'casual-common',
+    ])
+
+install_lib.append( lib_buffer)
+
+#
+# Unittest
+#
+LinkIsolatedUnittest( 'bin/test-buffer',
+   [
+    Compile( 'unittest/isolated/source/test_field_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_octet_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_order_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_string_buffer.cpp'),
+   ],
+   [ lib_buffer, 'casual-common', 'casual-xatmi'])  
+   
+#
+# Install
+#
+Install( install_lib, '$(CASUAL_HOME)/lib')
+
+
+

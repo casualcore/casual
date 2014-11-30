@@ -9,7 +9,7 @@
 #define MONITORDB_H_
 
 #include "database/database.hpp"
-#include "common/message.h"
+#include "common/message/monitor.h"
 #include "monitor/monitorvo.h"
 
 namespace casual
