@@ -7,7 +7,7 @@
 
 #include "queue/rm/switch.h"
 
-#include "queue/environment.h"
+#include "queue/common/environment.h"
 
 #include "common/transaction/id.h"
 #include "common/internal/log.h"

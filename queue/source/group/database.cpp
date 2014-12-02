@@ -44,11 +44,12 @@ namespace casual
                         row.get( 1, result.correlation);
                         row.get( 2, result.reply);
                         row.get( 3, result.redelivered);
-                        row.get( 4, result.type);
+                        row.get( 4, result.type.type);
+                        row.get( 5, result.type.subtype);
 
-                        result.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 5)}};
-                        result.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
-                        row.get( 7, result.payload);
+                        result.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
+                        result.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 7)}};
+                        row.get( 8, result.payload);
 
                         return result;
                      }
@@ -114,7 +115,8 @@ namespace casual
                   state         INTEGER,
                   reply         TEXT,
                   redelivered   INTEGER,
-                  type          INTEGER,
+                  type          TEXT,
+                  subtype       TEXT,
                   avalible      INTEGER,
                   timestamp     INTEGER,
                   payload       BLOB,
@@ -148,11 +150,11 @@ namespace casual
             // Precompile all other statements
             //
             {
-               m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
+               m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
 
                m_statement.dequeue = m_connection.precompile( R"( 
                      SELECT 
-                        id, correlation, reply, redelivered, type, avalible, timestamp, payload
+                        id, correlation, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         messages 
                      WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
@@ -317,7 +319,8 @@ namespace casual
                   state,
                   message.message.reply,
                   0,
-                  message.message.type,
+                  message.message.type.type,
+                  message.message.type.subtype,
                   avalible,
                   timestamp,
                   message.message.payload);
@@ -328,7 +331,7 @@ namespace casual
 
 
 
-         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
+         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::base_request& message)
          {
             common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
 

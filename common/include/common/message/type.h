@@ -86,23 +86,36 @@ namespace casual
             QUEUE_BASE = 5000,
             cQueueConnectRequest,
             cQueueConnectReply,
-            cQueueEnqueueRequest,
+            cQueueEnqueueRequest = 5100,
             cQueueEnqueueReply,
-            cQueueDequeueRequest,
+            cQueueDequeueRequest = 5200,
             cQueueDequeueReply,
-            cQueueInformation,
+            cQueueDequeueCallbackRequest,
+            cQueueDequeueCallbackReply,
+            cQueueInformation = 5300,
             cQueueQueuesInformationRequest,
             cQueueQueuesInformationReply,
             cQueueQueueInformationRequest,
             cQueueQueueInformationReply,
-            cQueueLookupRequest,
+            cQueueLookupRequest = 5400,
             cQueueLookupReply,
-            cQueueGroupInvolved,
+            cQueueGroupInvolved = 5500,
          };
 
          template< message::Type type>
          struct basic_message
          {
+            enum
+            {
+               message_type = type
+            };
+         };
+
+         template< typename M, message::Type type>
+         struct type_wrapper : public M
+         {
+            using M::M;
+
             enum
             {
                message_type = type

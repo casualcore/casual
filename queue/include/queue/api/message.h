@@ -48,7 +48,18 @@ namespace casual
 
       struct Payload
       {
-         std::size_t type = 0;
+         struct type_t
+         {
+            std::string type;
+            std::string subtype;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( type);
+               archive & CASUAL_MAKE_NVP( subtype);
+            })
+         } type;
+
          common::platform::binary_type data;
 
          CASUAL_CONST_CORRECT_SERIALIZE(

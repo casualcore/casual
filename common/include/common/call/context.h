@@ -104,6 +104,8 @@ namespace casual
 
             void getReply( int* idPtr, char** odata, long& olen, long flags);
 
+            void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
+
             int canccel( int cd);
 
             void clean();

@@ -35,8 +35,9 @@ install_bin = []
 
 common = LinkLibrary( 'bin/casual-queue-common',
    [
-    Compile( 'source/environment.cpp'),
-    Compile( 'source/transform.cpp'),
+    Compile( 'source/common/environment.cpp'),
+    Compile( 'source/common/transform.cpp'),
+    Compile( 'source/common/queue.cpp'),
    ],
    [ 'casual-common', ]);
  
@@ -160,6 +161,30 @@ server = LinkServer( 'bin/casual-queue-server',
     [ 'casual-queue-rm' ] );
 
 install_bin.append( server);
+
+
+#
+# Forward 
+#
+forward_common = LinkArchive( 'bin/casual-queue-forward-common',
+    [
+       Compile( 'source/forward/common.cpp'),
+    ])
+
+forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
+    [
+        Compile( 'source/forward/service.cpp'),
+    ],
+    [ forward_common, common, 'casual-common'])
+
+forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
+    [
+        Compile( 'source/forward/queue.cpp'),
+    ],
+    [ forward_common, common, 'casual-common'])
+
+install_bin.append( forward_service);
+install_bin.append( forward_queue);
 
 #
 # Client

@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "queue/transform.h"
+#include "queue/common/transform.h"
 #include "queue/broker/broker.h"
 
 #include "common/algorithm.h"
@@ -115,7 +115,8 @@ namespace casual
             result.attribues.available = value.avalible;
             result.attribues.properties = value.correlation;
             result.attribues.reply = value.reply;
-            result.payload.type = value.type;
+            result.payload.type.type = value.type.type;
+            result.payload.type.subtype = value.type.subtype;
             std::swap( result.payload.data, value.payload);
 
             return result;

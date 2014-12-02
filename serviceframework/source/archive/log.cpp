@@ -2,6 +2,9 @@
 
 #include "sf/archive/log.h"
 
+#include "common/transcode.h"
+
+
 #include <iostream>
 #include <iomanip>
 #include <locale>
@@ -85,7 +88,7 @@ namespace casual
 
             void Implementation::write( const platform::binary_type& value)
             {
-               m_buffer.back().value = "binary data (" + std::to_string( value.size()) + ")";
+               m_buffer.back().value = common::transcode::base64::encode( value);
             }
 
             void Implementation::flush()

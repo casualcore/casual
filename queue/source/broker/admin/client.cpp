@@ -69,7 +69,8 @@ namespace casual
          queue::Message message;
 
          message.attribues.reply = queue;
-         message.payload.type = 42;
+         message.payload.type.type = "X_OCTET";
+         message.payload.type.subtype = "binary";
 
          while( std::cin)
          {
@@ -86,8 +87,9 @@ namespace casual
 
          const auto message = queue::dequeue( queue);
 
-         //std::cout << CASUAL_MAKE_NVP( message);
+         std::cout << CASUAL_MAKE_NVP( message);
 
+         /*
          if( ! message.empty())
          {
             for( const auto& c : message.front().payload.data)
@@ -96,6 +98,7 @@ namespace casual
             }
             std::cout << std::endl;
          }
+         */
 
       }
 

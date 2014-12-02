@@ -122,8 +122,21 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  bool dispatch( common::message::queue::dequeue::base_request& message);
                };
+
+               namespace callback
+               {
+                  struct Request : dequeue::Request
+                  {
+                     using message_type = common::message::queue::dequeue::callback::Request;
+
+                     using dequeue::Request::Request;
+
+                     void dispatch( common::message::queue::dequeue::base_request& message);
+                  };
+
+               } // callback
 
             } // dequeue
 

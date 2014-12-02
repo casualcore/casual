@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "queue/transform.h"
+#include "queue/common/transform.h"
 #include "queue/broker/broker.h"
 
 #include "sf/log.h"

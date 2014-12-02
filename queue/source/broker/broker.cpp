@@ -9,7 +9,7 @@
 
 
 #include "queue/broker/handle.h"
-#include "queue/environment.h"
+#include "queue/common/environment.h"
 #include "queue/broker/admin/server.h"
 
 #include "common/server/context.h"

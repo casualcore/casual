@@ -8,7 +8,7 @@
 #include "queue/group/group.h"
 #include "queue/group/handle.h"
 
-#include "queue/environment.h"
+#include "queue/common/environment.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"

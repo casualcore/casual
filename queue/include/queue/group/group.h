@@ -44,6 +44,8 @@ namespace casual
 
             std::vector< common::message::pending::Message> persistent;
 
+            std::map< std::size_t, std::vector< common::platform::queue_id_type>> callbacks;
+
          };
 
 

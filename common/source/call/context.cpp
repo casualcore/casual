@@ -357,8 +357,15 @@ namespace casual
             {
                throw exception::xatmi::Timeout{ "descriptor " + std::to_string( *idPtr) + " reached deadline", __FILE__, __LINE__};
             }
-
          }
+
+
+         void Context::sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags)
+         {
+            auto descriptor = asyncCall( service, idata, ilen, flags);
+            getReply( &descriptor, &odata, olen, flags);
+         }
+
 
          int Context::canccel( int cd)
          {

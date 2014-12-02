@@ -7,9 +7,11 @@
 
 
 #include "queue/api/rm/queue.h"
-#include "queue/environment.h"
+#include "queue/common/queue.h"
+#include "queue/common/environment.h"
+#include "queue/common/transform.h"
 #include "queue/rm/switch.h"
-#include "queue/transform.h"
+
 
 #include "common/message/queue.h"
 #include "common/queue.h"
@@ -101,30 +103,6 @@ namespace casual
          {
             namespace
             {
-               struct Lookup
-               {
-                  Lookup( const std::string& queue)
-                  {
-                     casual::common::queue::blocking::Writer send( queue::environment::broker::queue::id());
-
-                     common::message::queue::lookup::Request request;
-                     request.process = common::process::handle();
-                     request.name = queue;
-
-                     send( request);
-                  }
-
-                  common::message::queue::lookup::Reply operator () () const
-                  {
-                     common::queue::blocking::Reader receive( common::ipc::receive::queue());
-
-                     common::message::queue::lookup::Reply reply;
-                     receive( reply);
-
-                     return reply;
-                  }
-
-               };
 
                namespace scoped
                {
@@ -161,7 +139,7 @@ namespace casual
             // Send the request
             //
             {
-               local::Lookup lookup( queue);
+               queue::Lookup lookup( queue);
 
                common::message::queue::enqueue::Request request;
                local::scoped::AX_reg ax_reg( request.trid);
@@ -169,7 +147,8 @@ namespace casual
                request.process = common::process::handle();
 
                request.message.payload = message.payload.data;
-               request.message.type = message.payload.type;
+               request.message.type.type = message.payload.type.type;
+               request.message.type.subtype = message.payload.type.subtype;
                request.message.correlation = message.attribues.properties;
                request.message.reply = message.attribues.reply;
                request.message.avalible = message.attribues.available;
@@ -212,7 +191,7 @@ namespace casual
 
             std::vector< Message> result;
 
-            local::Lookup lookup( queue);
+            queue::Lookup lookup( queue);
 
             common::message::queue::dequeue::Request request;
             local::scoped::AX_reg ax_reg( request.trid);

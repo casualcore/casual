@@ -33,49 +33,53 @@ namespace casual
       namespace transcode
       {
 
-         std::string Base64::encode( const std::vector<char>& value)
+         namespace base64
          {
-            //
-            // b64_ntop requires one extra char of some reason
-            //
-            std::string result( ((value.size() + 2) / 3) * 4 + 1, 0);
-
-            const auto length =
-               b64_ntop(
-                  reinterpret_cast<const unsigned char*>(value.data()),
-                  value.size(),
-                  &result[0],
-                  result.size());
-
-            if( length < 0)
+            std::string encode( const std::vector<char>& value)
             {
-               throw std::logic_error( "Base64-encode failed");
+               //
+               // b64_ntop requires one extra char of some reason
+               //
+               std::string result( ((value.size() + 2) / 3) * 4 + 1, 0);
+
+               const auto length =
+                  b64_ntop(
+                     reinterpret_cast<const unsigned char*>(value.data()),
+                     value.size(),
+                     &result[0],
+                     result.size());
+
+               if( length < 0)
+               {
+                  throw std::logic_error( "Base64-encode failed");
+               }
+
+               result.resize( length);
+
+               return result;
             }
 
-            result.resize( length);
-
-            return result;
-         }
-
-         std::vector<char> Base64::decode( const std::string& value)
-         {
-            std::vector<char> result( (value.size() / 4) * 3);
-
-            const auto length =
-               b64_pton(
-                  value.data(),
-                  reinterpret_cast<unsigned char*>(result.data()),
-                  result.size());
-
-            if( length < 0)
+            std::vector<char> decode( const std::string& value)
             {
-               throw std::logic_error( "Base64-decode failed");
+               std::vector<char> result( (value.size() / 4) * 3);
+
+               const auto length =
+                  b64_pton(
+                     value.data(),
+                     reinterpret_cast<unsigned char*>(result.data()),
+                     result.size());
+
+               if( length < 0)
+               {
+                  throw std::logic_error( "Base64-decode failed");
+               }
+
+               result.resize( length);
+
+               return result;
             }
 
-            result.resize( length);
-
-            return result;
-         }
+         } // base64
 
          namespace local
          {
@@ -183,29 +187,30 @@ namespace casual
 
          }
 
-
-         std::string UTF8::encode( const std::string& value)
+         namespace utf8
          {
+            std::string encode( const std::string& value)
+            {
+               return encode( value, local::info().codeset);
+            }
 
-            return encode( value, local::info().codeset);
-         }
-
-         std::string UTF8::decode( const std::string& value)
-         {
-            return decode( value, local::info().codeset);
-         }
+            std::string decode( const std::string& value)
+            {
+               return decode( value, local::info().codeset);
+            }
 
 
-         std::string UTF8::encode( const std::string& value, const std::string& codeset)
-         {
-            return local::converter( codeset, local::UTF8).transcode( value);
-         }
+            std::string encode( const std::string& value, const std::string& codeset)
+            {
+               return local::converter( codeset, local::UTF8).transcode( value);
+            }
 
-         std::string UTF8::decode( const std::string& value, const std::string& codeset)
-         {
-            return local::converter( local::UTF8, codeset).transcode( value);
-         }
+            std::string decode( const std::string& value, const std::string& codeset)
+            {
+               return local::converter( local::UTF8, codeset).transcode( value);
+            }
 
+         } // utf8
       }
 
    }

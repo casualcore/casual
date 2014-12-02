@@ -7,7 +7,7 @@
 
 #include "queue/group/handle.h"
 
-#include "queue/environment.h"
+#include "queue/common/environment.h"
 
 #include "common/internal/log.h"
 #include "common/error.h"
@@ -44,6 +44,27 @@ namespace casual
 
                      group::queue::blocking::Writer send{ environment::broker::queue::id(), state};
                      send( involved);
+                  }
+
+
+                  template< typename M>
+                  void callback( State& state, M& message)
+                  {
+                     auto found = state.callbacks.find( message.queue);
+
+                     if( found != std::end( state.callbacks))
+                     {
+                        auto callbacks = std::move( found->second);
+                        state.callbacks.erase( found);
+
+                        common::message::queue::dequeue::callback::Reply reply{ common::process::handle(), message.queue};
+                        group::queue::non_blocking::Send send{ state};
+
+                        for( auto&& callback : callbacks)
+                        {
+                           send( callback, reply);
+                        }
+                     }
                   }
 
 
@@ -95,8 +116,11 @@ namespace casual
                   try
                   {
                      auto reply = m_state.queuebase.enqueue( message);
-                     send( reply);
                      local::involved( m_state, message);
+                     send( reply);
+
+                     local::callback( m_state, message);
+
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
@@ -108,21 +132,43 @@ namespace casual
 
             namespace dequeue
             {
-               void Request::dispatch( message_type& message)
+               bool Request::dispatch( common::message::queue::dequeue::base_request& message)
                {
                   queue::blocking::Writer send{ message.process.queue, m_state};
 
                   try
                   {
                      auto reply = m_state.queuebase.dequeue( message);
-                     send( reply);
                      local::involved( m_state, message);
+                     send( reply);
+
+
+                     return ! reply.message.empty();
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
                      common::log::error << exception.what() << std::endl;
                   }
+                  return true;
                }
+
+               namespace callback
+               {
+                  void Request::dispatch( common::message::queue::dequeue::base_request& message)
+                  {
+                     if( ! dequeue::Request::dispatch( message))
+                     {
+                        //
+                        // No messages in queue, set up a call-back, that will be called
+                        // when a message is enqueued to the queue
+                        //
+                        m_state.callbacks[ message.queue].push_back( message.process.queue);
+
+                     }
+
+                  }
+               } // callback
+
             } // dequeue
 
             namespace transaction

@@ -12,6 +12,7 @@
 #include "common/platform.h"
 #include "common/uuid.h"
 #include "common/marshal.h"
+#include "common/buffer/type.h"
 
 namespace casual
 {
@@ -31,7 +32,7 @@ namespace casual
 
                common::platform::time_point avalible;
 
-               std::size_t type;
+               common::buffer::Type type;
                common::platform::binary_type payload;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -43,6 +44,38 @@ namespace casual
                   archive & payload;
                })
             };
+
+            namespace lookup
+            {
+               struct Request : basic_message< Type::cQueueLookupRequest>
+               {
+                  process::Handle process;
+                  std::string name;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & process;
+                     archive & name;
+                  })
+               };
+
+               struct base_reply
+               {
+                  base_reply() = default;
+                  base_reply( process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
+
+                  process::Handle process;
+                  std::size_t queue = 0;
+
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     archive & process;
+                     archive & queue;
+                  })
+               };
+
+               using Reply = message::type_wrapper< base_reply, Type::cQueueLookupReply>;
+
+            } // lookup
 
 
 
@@ -81,7 +114,7 @@ namespace casual
 
             namespace dequeue
             {
-               struct Request : basic_message< Type::cQueueDequeueRequest>
+               struct base_request
                {
                   process::Handle process;
                   common::transaction::ID trid;
@@ -94,6 +127,8 @@ namespace casual
                      archive & queue;
                   })
                };
+
+               using Request = message::type_wrapper< base_request, Type::cQueueDequeueRequest>;
 
                struct Reply : basic_message< Type::cQueueDequeueReply>
                {
@@ -118,6 +153,14 @@ namespace casual
                      archive & message;
                   })
                };
+
+               namespace callback
+               {
+                  using Request = message::type_wrapper< base_request, Type::cQueueDequeueCallbackRequest>;
+
+                  using Reply = message::type_wrapper< queue::lookup::base_reply, Type::cQueueDequeueCallbackReply>;
+
+               } // callback
 
             } // dequeue
 
@@ -251,35 +294,7 @@ namespace casual
             using Information = information::basic_information< Type::cQueueInformation>;
 
 
-            namespace lookup
-            {
-               struct Request : basic_message< Type::cQueueLookupRequest>
-               {
-                  process::Handle process;
-                  std::string name;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     archive & process;
-                     archive & name;
-                  })
-               };
-
-               struct Reply : basic_message< Type::cQueueLookupReply>
-               {
-                  Reply() = default;
-                  Reply( process::Handle process, std::size_t queue) : process( process), queue( queue) {}
-
-                  process::Handle process;
-                  std::size_t queue = 0;
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     archive & process;
-                     archive & queue;
-                  })
-               };
-
-            } // lookup
 
             namespace connect
             {

@@ -50,7 +50,8 @@ namespace casual
 
                result.message.id = common::Uuid::make();
                result.message.reply = "someQueue";
-               result.message.type = 42;
+               result.message.type.type = "X_OCTET";
+               result.message.type.subtype = "binary";
                result.message.payload.resize( 128);
 
                result.message.avalible = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now());
@@ -310,7 +311,7 @@ namespace casual
          while( count++ < 100)
          {
             auto m = local::message( queue);
-            m.message.type = count;
+            m.message.type.type = std::to_string( count);
             messages.push_back( std::move( m));
          }
 
@@ -524,7 +525,7 @@ namespace casual
             while( count++ < 100)
             {
                auto m = local::message( queue, xid);
-               m.message.type = count;
+               m.message.type.subtype = std::to_string( count);
                database.enqueue( m);
                messages.push_back( std::move( m));
             }
