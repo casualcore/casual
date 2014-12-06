@@ -50,6 +50,24 @@ namespace casual
             EXPECT_TRUE( transport.payload == response.at( 0).payload) << transport.payload.size() << " : "  << response.at( 0).payload.at( 2);
          }
 
+         TEST( casual_common, ipc_queue_send_receive_with_correlation)
+         {
+
+            receive::Queue receive;
+
+            send::Queue send( receive.id());
+
+
+            message::Complete transport{ 2, { 'A', 'B', 'C' } };
+
+            auto correlation = send( transport);
+
+            auto response = receive( correlation, 0);
+
+            EXPECT_TRUE( transport.payload == response.at( 0).payload) << transport.payload.size() << " : "  << response.at( 0).payload.at( 2);
+            EXPECT_TRUE( correlation == response.at( 0).correlation) << "correlation: " << correlation;
+         }
+
 
          TEST( casual_common, ipc_queue_receive_timeout_5ms)
          {
@@ -80,7 +98,11 @@ namespace casual
             transport.payload.assign( message::Transport::payload_max_size, 'A');
             transport.type = 2;
 
-            ASSERT_TRUE( send( transport, send::Queue::cNoBlocking));
+            EXPECT_TRUE( static_cast< bool>( transport.correlation));
+
+            auto correlation = send( transport, send::Queue::cNoBlocking);
+
+            ASSERT_TRUE( static_cast< bool>( correlation)) << "correlation: " << correlation;
 
 
             auto response = receive( 0);
@@ -101,7 +123,7 @@ namespace casual
             transport.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
             transport.type = 2;
 
-            ASSERT_TRUE( send( transport, send::Queue::cNoBlocking));
+            ASSERT_TRUE( static_cast< bool>( send( transport, send::Queue::cNoBlocking)));
 
 
             auto response = receive( 0);

@@ -105,29 +105,25 @@ namespace casual
                typedef platform::message_type_type message_type_type;
                typedef platform::binary_type payload_type;
 
-               Complete() = default;
+               Complete();
 
                Complete( Transport& transport);
+               Complete( message_type_type messageType, platform::binary_type&& buffer);
 
-               Complete( message_type_type messageType, platform::binary_type&& buffer)
-                  : type( messageType), correlation( Uuid::make()), payload( std::move( buffer)), complete( true)
-               {}
+               Complete( Complete&&) noexcept;
+               Complete& operator = ( Complete&&) noexcept;
 
-               Complete( Complete&&) = default;
-               Complete& operator = ( Complete&&) = default;
+               Complete( const Complete&) = delete;
+               Complete& operator = ( const Complete&) = delete;
 
                void add( Transport& transport);
 
                message_type_type type;
-               Uuid correlation;
+               Uuid correlation = uuid::make();
                payload_type payload;
                bool complete = false;
 
-               friend std::ostream& operator << ( std::ostream& out, const Complete& value)
-               {
-                  return out << "{ type: " << value.type << " correlation: " << value.correlation << " size: "
-                        << value.payload.size() << " complete: " << value.complete << '}';
-               }
+               friend std::ostream& operator << ( std::ostream& out, const Complete& value);
             };
 
          } // message
@@ -195,7 +191,7 @@ namespace casual
                //!
                //! @return true if sent, false otherwise
                //!
-               bool operator () ( const message::Complete& message) const
+               Uuid operator () ( const message::Complete& message) const
                {
                   return send( message, 0);
                }
@@ -205,7 +201,7 @@ namespace casual
                //!
                //! @return true if sent, false otherwise
                //!
-               bool operator () ( const message::Complete& message, const long flags) const
+               Uuid operator () ( const message::Complete& message, const long flags) const
                {
                   return send( message, flags);
                }
@@ -213,7 +209,7 @@ namespace casual
             private:
 
                bool send( message::Transport& message, const long flags) const;
-               bool send( const message::Complete& message, const long flags) const;
+               Uuid send( const message::Complete& message, const long flags) const;
             };
 
          }
@@ -265,6 +261,13 @@ namespace casual
                //! @return 0..1 occurrences of a logical complete message.
                //!
                std::vector< message::Complete> operator () ( const std::vector< type_type>& types, const long flags);
+
+               //!
+               //! Tries to find the logic complete message with correlation @p correlation
+               //!
+               //! @return 0..1 occurrences of a logical complete message.
+               //!
+               std::vector< message::Complete> operator () ( const Uuid& correlation, const long flags);
 
                //!
                //! Clear and discard all messages in queue.

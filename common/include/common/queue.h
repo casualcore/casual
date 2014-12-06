@@ -93,9 +93,9 @@ namespace casual
 
 
                template< typename M>
-               static void send( M&& message, ipc::send::Queue& ipc)
+               static Uuid send( M&& message, ipc::send::Queue& ipc)
                {
-                  ipc( std::forward< M>( message), flags);
+                  return ipc( std::forward< M>( message), flags);
                }
 
                static marshal::input::Binary next( ipc::receive::Queue& ipc);
@@ -125,7 +125,7 @@ namespace casual
                };
 
                template< typename M>
-               static bool send( M&& message, ipc::send::Queue& ipc)
+               static Uuid send( M&& message, ipc::send::Queue& ipc)
                {
                   return ipc( std::forward< M>( message), flags);
                }
@@ -183,7 +183,7 @@ namespace casual
                //! @return non-blocking: true if the whole message is sent. false otherwise - void on blocking
                //!
                template< typename M>
-               auto operator () ( platform::queue_id_type target, M&& message) -> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
+               Uuid operator () ( platform::queue_id_type target, M&& message) //-> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
                {
                   auto transport = prepare( std::forward< M>( message));
 
@@ -202,7 +202,7 @@ namespace casual
                //!
                //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
                //!
-               auto send( platform::queue_id_type target, const ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc::send::Queue&>()))
+               Uuid send( platform::queue_id_type target, const ipc::message::Complete& transport) // -> decltype( block_policy::send( transport, std::declval< ipc::send::Queue&>()))
                {
                   ipc::send::Queue ipc( target);
 
@@ -211,7 +211,7 @@ namespace casual
 
             private:
 
-               auto send( const ipc::message::Complete& transport, ipc::send::Queue& ipc) -> decltype( block_policy::send( transport, ipc))
+               Uuid send( const ipc::message::Complete& transport, ipc::send::Queue& ipc) // -> decltype( block_policy::send( transport, ipc))
                {
                   while( true)
                   {

@@ -48,7 +48,7 @@ namespace casual
                result.queue = queue.id;
                result.trid = trid;
 
-               result.message.id = common::Uuid::make();
+               result.message.id = common::uuid::make();
                result.message.reply = "someQueue";
                result.message.type = 42;
                result.message.payload.resize( 128);

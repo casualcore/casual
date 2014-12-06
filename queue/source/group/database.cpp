@@ -296,7 +296,7 @@ namespace casual
             //
             // We create a unique id if none is provided.
             //
-            reply.id = message.message.id ? message.message.id : common::Uuid::make();
+            reply.id = message.message.id ? message.message.id : common::uuid::make();
 
 
             common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << reply.id << " size: " << message.message.payload.size() << " trid: " << message.trid << std::endl;

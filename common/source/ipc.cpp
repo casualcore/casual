@@ -51,12 +51,20 @@ namespace casual
 
          namespace message
          {
+            Complete::Complete() = default;
 
             Complete::Complete( Transport& transport)
                : type( transport.payload.type), correlation( transport.payload.header.correlation)
             {
                add( transport);
             }
+
+            Complete::Complete( message_type_type messageType, platform::binary_type&& buffer)
+               : type( messageType), correlation( uuid::make()), payload( std::move( buffer)), complete( true)
+            {}
+
+            Complete::Complete( Complete&&) noexcept = default;
+            Complete& Complete::operator = ( Complete&&) noexcept = default;
 
             void Complete::add( Transport& transport)
             {
@@ -68,6 +76,13 @@ namespace casual
                complete = transport.payload.header.count == 0;
 
             }
+
+            std::ostream& operator << ( std::ostream& out, const Complete& value)
+            {
+               return out << "{ type: " << value.type << " correlation: " << value.correlation << " size: "
+                     << value.payload.size() << " complete: " << value.complete << '}';
+            }
+
          }// message
 
 
@@ -79,7 +94,7 @@ namespace casual
             }
 
 
-            bool Queue::send( const message::Complete& message, const long flags) const
+            Uuid Queue::send( const message::Complete& message, const long flags) const
             {
                //
                // partition the payload and send the resulting physical messages
@@ -125,7 +140,7 @@ namespace casual
                         // TODO: Partially sent message, what to do now?
                         log::internal::ipc << "TODO: Partially sent message, what to do now?\n";
                      }
-                     return false;
+                     return uuid::empty();
                   }
 
                   --transport.payload.header.count;
@@ -137,7 +152,7 @@ namespace casual
                log::internal::ipc << "ipc[" << id() << "] sent message - " << message << std::endl;
 
 
-               return true;
+               return message.correlation;
             }
 
             bool Queue::send( message::Transport& message, const long flags) const
@@ -262,6 +277,19 @@ namespace casual
                         }
                      };
 
+                     struct Correlation
+                     {
+                        Correlation( const Uuid& correlation) : m_correlation( correlation.get()) {}
+                        Correlation( const Uuid::uuid_type& correlation) : m_correlation( correlation) {}
+
+                        bool operator ()( const message::Complete& message) const
+                        {
+                           return message.correlation == m_correlation;
+                        }
+                     private:
+                        const Uuid::uuid_type& m_correlation;
+                     };
+
 
                      struct Type
                      {
@@ -297,18 +325,6 @@ namespace casual
 
                      };
 
-
-                     struct Correlation
-                     {
-                        Correlation( message::Transport::correalation_type& correlation) : m_correlation( correlation) {}
-
-                        bool operator ()( const message::Complete& complete) const
-                        {
-                           return complete.correlation == m_correlation;
-                        }
-                     private:
-                        message::Transport::correalation_type& m_correlation;
-                     };
                   } // find
                } // <unnamed>
             } // local
@@ -370,6 +386,28 @@ namespace casual
 
                return result;
             }
+
+
+            std::vector< message::Complete> Queue::operator () ( const Uuid& correlation, const long flags)
+            {
+               std::vector< message::Complete> result;
+
+               auto found = find(
+                     chain::And::link(
+                           local::find::Correlation( correlation),
+                           local::find::Complete()), flags);
+
+               if( found)
+               {
+                  result.push_back( std::move( *found));
+                  m_cache.erase( found.first);
+
+                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
+               }
+
+               return result;
+            }
+
 
             void Queue::clear()
             {
@@ -466,7 +504,7 @@ namespace casual
 
                   std::ifstream file( brokerFile.c_str());
 
-                  if( file.fail())
+                  if( ! file)
                   {
                      log::internal::ipc << "Failed to open broker queue configuration file" << std::endl;
                      throw common::exception::xatmi::SystemError( "Failed to open broker queue configuration file: " + brokerFile);
