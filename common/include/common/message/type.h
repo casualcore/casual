@@ -107,6 +107,8 @@ namespace casual
             {
                message_type = type
             };
+
+            Uuid correlation;
          };
 
 
@@ -117,6 +119,12 @@ namespace casual
          constexpr platform::message_type_type type( const M&)
          {
             return M::message_type;
+         }
+
+         template< typename M>
+         auto correlation( M& message) -> decltype( message.correlation)
+         {
+            return message.correlation;
          }
 
 

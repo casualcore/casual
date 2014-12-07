@@ -102,13 +102,8 @@ namespace casual
             struct base_message
             {
                template< typename M>
-               base_message( M&& information)
+               base_message( M&& information) : message{ common::marshal::complete( std::forward< M>( information))}
                {
-                  common::marshal::output::Binary archive;
-                  archive << information;
-
-                  auto type = common::message::type( information);
-                  message = common::ipc::message::Complete( type, archive.release());
                }
 
                base_message( base_message&&) = default;

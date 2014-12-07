@@ -106,9 +106,7 @@ namespace casual
                typedef platform::binary_type payload_type;
 
                Complete();
-
                Complete( Transport& transport);
-               Complete( message_type_type messageType, platform::binary_type&& buffer);
 
                Complete( Complete&&) noexcept;
                Complete& operator = ( Complete&&) noexcept;
@@ -119,7 +117,7 @@ namespace casual
                void add( Transport& transport);
 
                message_type_type type;
-               Uuid correlation = uuid::make();
+               Uuid correlation;
                payload_type payload;
                bool complete = false;
 

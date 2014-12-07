@@ -44,7 +44,6 @@ casual_common_objectfiles = [
     Compile( 'source/transaction/id.cpp'),
     Compile( 'source/transaction/resource.cpp'),
     Compile( 'source/ipc.cpp'),
-    Compile( 'source/queue.cpp'),
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
     

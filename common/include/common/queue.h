@@ -91,29 +91,32 @@ namespace casual
                   flags = 0
                };
 
-
-               template< typename M>
-               static Uuid send( M&& message, ipc::send::Queue& ipc)
+               struct Next
                {
-                  return ipc( std::forward< M>( message), flags);
-               }
+                  template< typename... Args>
+                  inline ipc::message::Complete operator () ( ipc::receive::Queue& ipc, Args&& ...args)
+                  {
+                     auto message = ipc( std::forward< Args>( args)..., flags);
 
-               static marshal::input::Binary next( ipc::receive::Queue& ipc);
+                     assert( ! message.empty());
 
-               static marshal::input::Binary next( ipc::receive::Queue& ipc, const std::vector< platform::message_type_type>& types);
+                     return std::move( message.front());
+                  }
+               };
 
-               template< typename M>
-               static void fetch( ipc::receive::Queue& ipc, M& message)
+               struct Fetch
                {
-                  auto type = message::type( message);
+                  template< typename M, typename... Args>
+                  inline void operator () ( ipc::receive::Queue& ipc, M& message, Args&& ...args)
+                  {
+                     auto complete = ipc( std::forward< Args>( args)..., flags);
 
-                  auto transport = ipc( type, flags);
+                     assert( ! complete.empty());
+                     assert( complete.front().type == message.message_type);
+                     complete.front() >> message;
 
-                  assert( ! transport.empty());
-
-                  marshal::input::Binary marshal( std::move( transport.front()));
-                  marshal >> message;
-               }
+                  }
+               };
 
             };
 
@@ -124,33 +127,33 @@ namespace casual
                   flags = ipc::receive::Queue::cNoBlocking
                };
 
-               template< typename M>
-               static Uuid send( M&& message, ipc::send::Queue& ipc)
+               struct Next
                {
-                  return ipc( std::forward< M>( message), flags);
-               }
-
-               static std::vector< marshal::input::Binary> next( ipc::receive::Queue& ipc);
-
-               static std::vector< marshal::input::Binary> next( ipc::receive::Queue& ipc, const std::vector< platform::message_type_type>& types);
-
-
-               template< typename M>
-               static bool fetch( ipc::receive::Queue& ipc, M& message)
-               {
-                  auto type = message::type( message);
-
-                  auto transport = ipc( type, flags);
-
-                  if( ! transport.empty())
+                  template< typename... Args>
+                  inline std::vector< ipc::message::Complete> operator () ( ipc::receive::Queue& ipc, Args&& ...args)
                   {
-                     marshal::input::Binary marshal( std::move( transport.front()));
-                     marshal >> message;
-                     return true;
+                     return ipc( std::forward< Args>( args)..., flags);
                   }
 
-                  return false;
-               }
+               };
+
+               struct Fetch
+               {
+                  template< typename M, typename... Args>
+                  inline bool operator () ( ipc::receive::Queue& ipc, M& message, Args&& ...args)
+                  {
+                     auto complete = ipc( std::forward< Args>( args)..., flags);
+
+                     if( ! complete.empty())
+                     {
+                        assert( complete.front().type == message.message_type);
+                        complete.front() >> message;
+                        return true;
+                     }
+
+                     return false;
+                  }
+               };
 
             };
 
@@ -185,11 +188,12 @@ namespace casual
                template< typename M>
                Uuid operator () ( platform::queue_id_type target, M&& message) //-> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
                {
-                  auto transport = prepare( std::forward< M>( message));
+                  ipc::message::Complete complete;
+                  complete << message;
 
                   ipc::send::Queue ipc( target);
 
-                  return send( transport, ipc);
+                  return send( complete, ipc);
                }
 
 
@@ -202,41 +206,28 @@ namespace casual
                //!
                //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
                //!
-               Uuid send( platform::queue_id_type target, const ipc::message::Complete& transport) // -> decltype( block_policy::send( transport, std::declval< ipc::send::Queue&>()))
+               Uuid send( platform::queue_id_type target, const ipc::message::Complete& complete)
                {
                   ipc::send::Queue ipc( target);
 
-                  return send( transport, ipc);
+                  return send( complete, ipc);
                }
 
             private:
 
-               Uuid send( const ipc::message::Complete& transport, ipc::send::Queue& ipc) // -> decltype( block_policy::send( transport, ipc))
+               Uuid send( const ipc::message::Complete& complete, ipc::send::Queue& ipc)
                {
                   while( true)
                   {
                      try
                      {
-                        return block_policy::send( transport, ipc);
+                        return ipc( complete, block_policy::flags);
                      }
                      catch( ...)
                      {
                         m_policy.apply();
                      }
                   }
-               }
-
-               template< typename M>
-               static ipc::message::Complete prepare( M&& message)
-               {
-                  //
-                  // Serialize the message
-                  //
-                  marshal::output::Binary archive;
-                  archive << message;
-
-                  auto type = message::type( message);
-                  return ipc::message::Complete( type, archive.release());
                }
 
                policy_type m_policy;
@@ -269,7 +260,7 @@ namespace casual
                //! @return non-blocking: true if the whole message is sent. false otherwise - void on blocking
                //!
                template< typename M>
-               auto operator () ( M&& message) -> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
+               Uuid operator () ( M&& message)
                {
                   return base_type::operator ()( m_ipc, std::forward< M>( message));
                }
@@ -281,7 +272,7 @@ namespace casual
                //!
                //! @return depending on block_policy, if blocking void, if non-blocking  true if message is sent, false otherwise
                //!
-               auto send( const ipc::message::Complete& transport) -> decltype( block_policy::send( transport, std::declval< ipc::send::Queue&>()))
+               Uuid send( const ipc::message::Complete& transport)
                {
                   return base_type::send( m_ipc, transport);
                }
@@ -299,26 +290,26 @@ namespace casual
             public:
 
                typedef BP block_policy;
+               using next_type = typename block_policy::Next;
+               using fetch_type = typename block_policy::Fetch;
                typedef P policy_type;
-               //typedef IPC ipc_value_type;
-               //using ipc_type = typename std::decay< ipc_value_type>::type;
                using type_type = platform::message_type_type;
 
                template< typename... Args>
                basic_reader( ipc::receive::Queue& ipc, Args&&... args)
                   : m_ipc( ipc), m_policy( std::forward< Args>( args)...) {}
 
-               //!
-               //! Gets the next binary-message from queue.
-               //! @return binary-marshal that can be used to deserialize an actual message.
-               //!
-               auto next() -> decltype( block_policy::next( std::declval< ipc::receive::Queue&>()))
+
+            private:
+
+               template< typename... Args>
+               auto get_next( Args&& ...args) -> decltype( next_type()( std::declval< ipc::receive::Queue&>(), std::forward< Args>( args)...))
                {
                   while( true)
                   {
                      try
                      {
-                        return block_policy::next( m_ipc);
+                        return next_type()( m_ipc, std::forward< Args>( args)...);
                      }
                      catch( ...)
                      {
@@ -327,24 +318,45 @@ namespace casual
                   }
                }
 
-
-               //!
-               //! Gets the next binary-message from queue that is any of @p types
-               //! @return binary-marshal that can be used to deserialize an actual message.
-               //!
-               auto next( const std::vector< type_type>& types) -> decltype( block_policy::next( std::declval< ipc::receive::Queue&>(), { type_type()}))
+               template< typename M, typename... Args>
+               auto fetch( M& message, Args&& ...args) -> decltype( fetch_type()( std::declval< ipc::receive::Queue&>(), message, std::forward< Args>( args)...))
                {
                   while( true)
                   {
                      try
                      {
-                        return block_policy::next( m_ipc, types);
+                        return fetch_type()( m_ipc, message, std::forward< Args>( args)...);
                      }
                      catch( ...)
                      {
                         m_policy.apply();
                      }
                   }
+               }
+
+            public:
+
+               //!
+               //! Gets the next binary-message from queue.
+               //! @return binary-marshal that can be used to deserialize an actual message.
+               //!
+               //! Depending on the block_policy, it will either block or not.
+               //!
+               auto next() -> decltype( std::declval< basic_reader>().get_next())
+               {
+                  return get_next();
+               }
+
+
+               //!
+               //! Gets the next binary-message from queue that is any of @p types
+               //! @return binary-marshal that can be used to deserialize an actual message.
+               //!
+               //! Depending on the block_policy, it will either block or not.
+               //!
+               auto next( const std::vector< type_type>& types) -> decltype( std::declval< basic_reader>().get_next( types))
+               {
+                  return get_next( types);
                }
 
 
@@ -353,28 +365,25 @@ namespace casual
                //! If other message types is consumed before the requested type
                //! they will be cached.
                //!
-               //! @attention Will block until the specific message-type can be read from the queue
+               //! Depending on the block_policy, it will either block or not.
                //!
                template< typename M>
-               auto operator () ( M& message) -> decltype( block_policy::fetch( std::declval< ipc::receive::Queue&>(), message))
+               auto operator () ( M& message) -> decltype( std::declval< basic_reader>().fetch( message))
                {
-                  while( true)
-                  {
-                     try
-                     {
-                        return block_policy::fetch( m_ipc, message);
-                     }
-                     catch( ...)
-                     {
-                        m_policy.apply();
-                     }
-                  }
+                  return fetch( message, message.message_type);
+               }
+
+               template< typename M>
+               auto operator () ( const Uuid& correlation, M& message) -> decltype( std::declval< basic_reader>().fetch( message, correlation))
+               {
+                  return fetch( message, correlation);
                }
 
                const ipc::receive::Queue& ipc() const
                {
                   return m_ipc;
                }
+
 
             private:
 

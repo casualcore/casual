@@ -12,6 +12,7 @@
 
 #include "common/signal.h"
 #include "common/exception.h"
+#include "common/message/server.h"
 
 
 //temp
@@ -24,6 +25,21 @@ namespace casual
    {
       namespace ipc
       {
+         namespace local
+         {
+            namespace
+            {
+               common::message::service::name::lookup::Request message()
+               {
+                  common::message::service::name::lookup::Request message;
+                  message.process = process::handle();
+                  message.requested = "service1";
+
+                  return message;
+               }
+
+            } // <unnamed>
+         } // local
 
          TEST( casual_common, ipc_queue_create)
          {
@@ -40,14 +56,19 @@ namespace casual
 
             send::Queue send( receive.id());
 
+            auto message = local::message();
 
-            message::Complete transport{ 2, { 'A', 'B', 'C' } };
+            message::Complete complete;
 
-            send( transport);
+            complete << message;
+
+            EXPECT_TRUE( ! complete.correlation.empty());
+
+            send( complete);
 
             auto response = receive( 0);
 
-            EXPECT_TRUE( transport.payload == response.at( 0).payload) << transport.payload.size() << " : "  << response.at( 0).payload.at( 2);
+            EXPECT_TRUE( complete.payload == response.at( 0).payload) << complete.payload.size() << " : "  << response.at( 0).payload.at( 2);
          }
 
          TEST( casual_common, ipc_queue_send_receive_with_correlation)
@@ -57,14 +78,16 @@ namespace casual
 
             send::Queue send( receive.id());
 
+            auto message = local::message();
+            message::Complete complete;
 
-            message::Complete transport{ 2, { 'A', 'B', 'C' } };
+            complete << message;
 
-            auto correlation = send( transport);
+            auto correlation = send( complete);
 
             auto response = receive( correlation, 0);
 
-            EXPECT_TRUE( transport.payload == response.at( 0).payload) << transport.payload.size() << " : "  << response.at( 0).payload.at( 2);
+            EXPECT_TRUE( complete.payload == response.at( 0).payload) << complete.payload.size() << " : "  << response.at( 0).payload.at( 2);
             EXPECT_TRUE( correlation == response.at( 0).correlation) << "correlation: " << correlation;
          }
 
@@ -94,20 +117,21 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete transport;
-            transport.payload.assign( message::Transport::payload_max_size, 'A');
-            transport.type = 2;
+            message::Complete complete;
+            complete.correlation = uuid::make();
+            complete.payload.assign( message::Transport::payload_max_size, 'A');
+            complete.type = 2;
 
-            EXPECT_TRUE( static_cast< bool>( transport.correlation));
+            EXPECT_TRUE( static_cast< bool>( complete.correlation));
 
-            auto correlation = send( transport, send::Queue::cNoBlocking);
+            auto correlation = send( complete, send::Queue::cNoBlocking);
 
             ASSERT_TRUE( static_cast< bool>( correlation)) << "correlation: " << correlation;
 
 
             auto response = receive( 0);
 
-            EXPECT_TRUE( transport.payload == response.at( 0).payload);
+            EXPECT_TRUE( complete.payload == response.at( 0).payload);
             // No more messages should be on the queue
             EXPECT_TRUE( receive( receive::Queue::cNoBlocking).empty());
          }
@@ -119,16 +143,17 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete transport;
-            transport.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
-            transport.type = 2;
+            message::Complete complete;
+            complete.correlation = uuid::make();
+            complete.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
+            complete.type = 2;
 
-            ASSERT_TRUE( static_cast< bool>( send( transport, send::Queue::cNoBlocking)));
+            ASSERT_TRUE( static_cast< bool>( send( complete, send::Queue::cNoBlocking)));
 
 
             auto response = receive( 0);
 
-            EXPECT_TRUE( transport.payload == response.at( 0).payload);
+            EXPECT_TRUE( complete.payload == response.at( 0).payload);
          }
       }
 	}

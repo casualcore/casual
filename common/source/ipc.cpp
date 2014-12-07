@@ -51,6 +51,8 @@ namespace casual
 
          namespace message
          {
+
+
             Complete::Complete() = default;
 
             Complete::Complete( Transport& transport)
@@ -59,9 +61,11 @@ namespace casual
                add( transport);
             }
 
-            Complete::Complete( message_type_type messageType, platform::binary_type&& buffer)
-               : type( messageType), correlation( uuid::make()), payload( std::move( buffer)), complete( true)
+            /*
+            Complete::Complete( message_type_type type, const Uuid& correlation, platform::binary_type&& buffer)
+               : type( type), correlation( correlation ? correlation : uuid::make()), payload( std::move( buffer)), complete( true)
             {}
+            */
 
             Complete::Complete( Complete&&) noexcept = default;
             Complete& Complete::operator = ( Complete&&) noexcept = default;
@@ -120,7 +124,7 @@ namespace casual
 
                auto partBegin = std::begin( message.payload);
 
-               while( partBegin != std::end( message.payload))
+               while( transport.payload.header.count >= 0)
                {
 
                   auto partEnd = partBegin + message::Transport::payload_max_size > std::end( message.payload) ?

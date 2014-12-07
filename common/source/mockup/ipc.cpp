@@ -90,6 +90,12 @@ namespace casual
                         {
                            message_type = type
                         };
+
+                        Uuid correlation;
+
+                        CASUAL_CONST_CORRECT_MARSHAL({
+                           // no information
+                        })
                      };
 
                      using Disconnect =  basic_messsage< cMockupDisconnect>;
@@ -164,6 +170,8 @@ namespace casual
                      // We block if the queue is empty
                      const long flags = state.cache.empty() ? 0 : common::ipc::receive::Queue::cNoBlocking;
 
+                     log::internal::ipc << "read from source: " <<  state.source.id() << " flags: " << flags << std::endl;
+
                      auto message = state.source( flags);
 
                      if( message.empty())
@@ -180,6 +188,8 @@ namespace casual
                   {
                      if( ! state.cache.empty())
                      {
+                        log::internal::ipc << "write to destination: " <<  state.destination.id() << " flags: " << common::ipc::send::Queue::cNoBlocking << std::endl;
+
                         if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
                         {
                            state.cache.erase( std::begin( state.cache));
