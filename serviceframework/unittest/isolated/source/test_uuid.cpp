@@ -20,7 +20,7 @@ namespace casual
       YAML::Emitter emitter;
       sf::archive::yaml::Writer writer( emitter);
 
-      sf::platform::Uuid uuid( sf::platform::Uuid::make());
+      sf::platform::Uuid uuid( sf::platform::uuid::make());
 
       writer << CASUAL_MAKE_NVP( uuid);
 

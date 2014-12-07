@@ -22,8 +22,8 @@ namespace casual
 
 		TEST( casual_common_uuid, two_uuid__expect_unique)
 		{
-			Uuid oneUuid = Uuid::make();
-			Uuid anotherUuid = Uuid::make();
+			Uuid oneUuid = uuid::make();
+			Uuid anotherUuid = uuid::make();
 
 			EXPECT_FALSE( oneUuid == anotherUuid);
 
@@ -31,14 +31,14 @@ namespace casual
 
 		TEST( casual_common_uuid, one_uuid__expect_equal)
       {
-         Uuid oneUuid = Uuid::make();
+         Uuid oneUuid = uuid::make();
 
          EXPECT_TRUE( oneUuid == oneUuid);
       }
 
 		TEST( casual_common_uuid, two_uuid__expect_equal)
       {
-         Uuid oneUuid = Uuid::make();
+         Uuid oneUuid = uuid::make();
          Uuid anotherUuid = oneUuid;
 
          EXPECT_TRUE( oneUuid == anotherUuid);
@@ -48,12 +48,12 @@ namespace casual
 		{
 			Uuid oneUuid;
 
-			EXPECT_TRUE( oneUuid == Uuid::empty());
+			EXPECT_TRUE( oneUuid == uuid::empty());
 		}
 
 		TEST( casual_common_uuid, getString__expect_36bytes)
 		{
-			Uuid oneUuid = Uuid::make();
+			Uuid oneUuid = uuid::make();
 
 			EXPECT_TRUE( uuid::string( oneUuid).size() == 36);
 		}
@@ -74,7 +74,7 @@ namespace casual
 
       TEST( casual_common_uuid, operator_bool_on_created__expect_true)
       {
-         Uuid oneUuid = Uuid::make();
+         Uuid oneUuid = uuid::make();
 
          EXPECT_TRUE( static_cast< bool>( oneUuid) ) << uuid::string( oneUuid);
       }

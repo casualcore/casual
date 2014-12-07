@@ -95,12 +95,12 @@ namespace casual
 
          ID ID::create( process::Handle owner)
          {
-            return ID( Uuid::make(), Uuid::make(), std::move( owner));
+            return ID( uuid::make(), uuid::make(), std::move( owner));
          }
 
          ID ID::create()
          {
-            return ID( Uuid::make(), Uuid::make(), process::handle());
+            return ID( uuid::make(), uuid::make(), process::handle());
          }
 
 
@@ -110,7 +110,7 @@ namespace casual
 
             if( result)
             {
-               Uuid bqual = Uuid::make();
+               auto bqual = uuid::make();
 
                auto size = sizeof( Uuid::uuid_type);
 

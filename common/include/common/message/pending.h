@@ -27,13 +27,9 @@ namespace casual
                using targets_type = std::vector< platform::queue_id_type>;
 
                template< typename M>
-               Message( M&& message, targets_type targets) : targets( std::move( targets))
+               Message( M&& message, targets_type targets)
+                  : targets{ std::move( targets)}, complete{ marshal::complete( std::forward< M>( message))}
                {
-                  common::marshal::output::Binary archive;
-                  archive << message;
-
-                  auto type = common::message::type( message);
-                  complete = common::ipc::message::Complete( type, archive.release());
                }
 
                Message( Message&&) = default;

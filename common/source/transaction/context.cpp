@@ -491,7 +491,7 @@ namespace casual
                //
                // Did we get commit reply directly?
                //
-               if( reply.type() == message::transaction::commit::Reply::message_type)
+               if( reply.type == message::transaction::commit::Reply::message_type)
                {
                   message::transaction::commit::Reply commitReply;
                   reply >> commitReply;

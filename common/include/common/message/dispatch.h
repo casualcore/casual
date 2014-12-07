@@ -44,10 +44,10 @@ namespace casual
                   assign( m_handlers, std::forward< Args>( handlers)...);
                }
 
-               template< typename B>
-               bool dispatch( B&& binary)
+               template< typename C>
+               bool dispatch( C&& complete)
                {
-                  return doDispatch( binary);
+                  return doDispatch( complete);
                }
 
                std::size_t size() const
@@ -61,7 +61,7 @@ namespace casual
                {
                public:
                   virtual ~base_handler() = default;
-                  virtual void marshal( marshal::input::Binary& binary) = 0;
+                  virtual void marshal( ipc::message::Complete& complete) = 0;
 
 
                };
@@ -83,10 +83,10 @@ namespace casual
                   template< typename... Arguments>
                   handle_holder( Arguments&&... arguments) : m_handler{ std::forward< Arguments>( arguments)...} {}
 
-                  void marshal( marshal::input::Binary& binary)
+                  void marshal( ipc::message::Complete& complete)
                   {
                      message_type message;
-                     binary >> message;
+                     complete >> message;
 
                      m_handler.dispatch( message);
                   }
@@ -97,31 +97,31 @@ namespace casual
 
 
 
-               bool doDispatch( marshal::input::Binary& binary)
+               bool doDispatch( ipc::message::Complete& complete)
                {
-                  auto findIter = m_handlers.find( binary.type());
+                  auto findIter = m_handlers.find( complete.type);
 
                   if( findIter != std::end( m_handlers))
                   {
-                     findIter->second->marshal( binary);
+                     findIter->second->marshal( complete);
                      return true;
                   }
                   else
                   {
-                     common::log::error << "message_type: " << binary.type() << " not recognized - action: discard" << std::endl;
+                     common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
                   }
                   return false;
                }
 
 
-               bool doDispatch( std::vector< marshal::input::Binary>& binary)
+               bool doDispatch( std::vector<ipc::message::Complete>& complete)
                {
-                  if( binary.empty())
+                  if( complete.empty())
                   {
                      return false;
                   }
 
-                  return doDispatch( binary.front());
+                  return doDispatch( complete.front());
                }
 
                typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;

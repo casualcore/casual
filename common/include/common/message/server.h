@@ -72,7 +72,9 @@ namespace casual
                   Reply( Reply&&) = default;
                   Reply& operator = ( Reply&&) = default;
 
-                  typedef platform::queue_id_type queue_id_type;
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     // no information
+                  })
                };
 
 

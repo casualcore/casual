@@ -69,15 +69,13 @@ namespace casual
 
                handler.add( local::TestHandler());
 
-               marshal::output::Binary output;
+               ipc::message::Complete complete;
                local::TestHandler::message_type message;
-               output << message;
+               complete << message;
+               complete.type = message.message_type;
 
-               marshal::input::Binary input( std::move( output));
-               // m_messageType is private, but we're good friends now...
-               input.m_messageType = local::TestHandler::message_type::message_type;
 
-               EXPECT_TRUE( handler.dispatch( input));
+               EXPECT_TRUE( handler.dispatch( complete));
             }
 
             TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
@@ -86,18 +84,16 @@ namespace casual
 
                handler.add( local::TestHandler());
 
-               marshal::output::Binary output;
+               ipc::message::Complete complete;
                message::service::ACK message;
-               output << message;
-
-               marshal::input::Binary input( std::move( output));
+               complete << message;
+               complete.type = message.message_type;
 
                //
                // We have not handler for this message-type.
                //
-               input.m_messageType = message.message_type;
 
-               EXPECT_FALSE( handler.dispatch( input));
+               EXPECT_FALSE( handler.dispatch( complete));
             }
 
          }

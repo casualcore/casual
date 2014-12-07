@@ -50,7 +50,7 @@ namespace casual
 
                auto marshal = reader.next();
 
-               EXPECT_TRUE( marshal.type() == message::service::Advertise::message_type);
+               EXPECT_TRUE( marshal.type == message::service::Advertise::message_type);
 
                message::service::Advertise message;
                marshal >> message;

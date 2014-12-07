@@ -32,21 +32,22 @@ namespace casual
          {
             return string( uuid.get());
          }
+
+         Uuid make()
+         {
+            Uuid result;
+            uuid_generate( result.get());
+            return result;
+         }
+
+         const Uuid& empty()
+         {
+            static const Uuid empty;
+            return empty;
+         }
+
       } // uuid
 
-
-	   const Uuid& Uuid::empty()
-	   {
-	      static const Uuid empty;
-	      return empty;
-	   }
-
-	   Uuid Uuid::make()
-	   {
-	      Uuid result;
-	      uuid_generate( result.m_uuid);
-	      return result;
-	   }
 
 		Uuid::Uuid()
 		{
@@ -82,9 +83,14 @@ namespace casual
 			uuid_copy( uuid, m_uuid);
 		}
 
+      bool Uuid::empty() const
+      {
+         return  *this == uuid::empty();
+      }
+
       Uuid::operator bool() const noexcept
       {
-         return  *this != empty();
+         return ! empty();
       }
 
 

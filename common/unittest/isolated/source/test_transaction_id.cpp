@@ -18,7 +18,7 @@ namespace casual
 
       TEST( casual_common_transaction_id, ostream)
       {
-         const Uuid gtrid = Uuid::make();
+         const Uuid gtrid = uuid::make();
 
          transaction::ID id{ gtrid, gtrid, { 0, 0}};
 
@@ -34,7 +34,7 @@ namespace casual
 
       TEST( casual_common_transaction_id, generic_string)
       {
-         transaction::ID id{ Uuid::make(), Uuid::make(), { 0, 0}};
+         transaction::ID id{ uuid::make(), uuid::make(), { 0, 0}};
          id.xid.gtrid_length = 8;
          id.xid.bqual_length = 8;
 
@@ -48,8 +48,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, uuid_constructor)
       {
-         auto gtrid = Uuid::make();
-         auto bqual = Uuid::make();
+         auto gtrid = uuid::make();
+         auto bqual = uuid::make();
          const transaction::ID id{ gtrid, bqual, process::handle()};
 
          auto size = sizeof( Uuid::uuid_type);
@@ -104,8 +104,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, global_id)
       {
-         auto gtrid = Uuid::make();
-         auto bqual = Uuid::make();
+         auto gtrid = uuid::make();
+         auto bqual = uuid::make();
          const transaction::ID id{ gtrid, bqual, process::handle()};
 
          char char_gtrid[ sizeof( Uuid::uuid_type)];
@@ -118,8 +118,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, branch_id)
       {
-         auto gtrid = Uuid::make();
-         auto bqual = Uuid::make();
+         auto gtrid = uuid::make();
+         auto bqual = uuid::make();
          const transaction::ID id{ gtrid, bqual, process::handle()};
 
          char char_bqual[ sizeof( Uuid::uuid_type)];

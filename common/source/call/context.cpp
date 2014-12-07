@@ -192,11 +192,11 @@ namespace casual
             return singleton;
          }
 
-         void Context::execution( const common::Uuid& uuid)
+         void Context::execution( const Uuid& uuid)
          {
-            if( uuid == common::Uuid::empty())
+            if( ! uuid)
             {
-               m_state.execution = common::Uuid::make();
+               m_state.execution = uuid::make();
             }
             else
             {

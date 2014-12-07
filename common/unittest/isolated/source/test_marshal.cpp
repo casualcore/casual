@@ -22,20 +22,21 @@ namespace casual
 
 
 
-         TEST( casual_common, archive_basic_io)
+         TEST( casual_common, marshal_basic_io)
          {
             long someLong = 3;
             std::string someString = "banan";
 
-            output::Binary output;
+            ipc::message::Complete complete;
+            output::Binary output{ complete};
 
             output << someLong;
 
-            EXPECT_TRUE( output.get().size() == sizeof( long)) <<  output.get().size();
+            EXPECT_TRUE( complete.payload.size() == sizeof( long)) <<  complete.payload.size();
 
             output << someString;
 
-            input::Binary input( std::move( output));
+            input::Binary input( complete);
 
             long resultLong;
             input >> resultLong;
@@ -47,7 +48,7 @@ namespace casual
 
          }
 
-         TEST( casual_common, archive_binary)
+         TEST( casual_common, marshal_binary)
          {
             std::vector< char> binaryInput;
 
@@ -57,12 +58,13 @@ namespace casual
 
             }
 
-            output::Binary output;
+            ipc::message::Complete complete;
+            output::Binary output( complete);
             output << binaryInput;
-            EXPECT_TRUE( output.get().size() == binaryInput.size() + sizeof( binaryInput.size())) <<  output.get().size();
+            EXPECT_TRUE( complete.payload.size() == binaryInput.size() + sizeof( binaryInput.size())) <<  complete.payload.size();
 
 
-            input::Binary input( std::move( output));
+            input::Binary input( complete);
 
             std::vector< char> binaryOutput;
             input >> binaryOutput;
@@ -70,7 +72,7 @@ namespace casual
             EXPECT_TRUE( binaryInput == binaryOutput);
          }
 
-         TEST( casual_common, archive_io)
+         TEST( casual_common, marshal_io)
          {
 
             message::service::Advertise serverConnect;
@@ -90,16 +92,13 @@ namespace casual
             serverConnect.services.push_back( service);
 
 
+            ipc::message::Complete complete;
 
-            output::Binary output;
-
-            output << serverConnect;
-
-            input::Binary input( std::move( output));
+            complete << serverConnect;
 
             message::service::Advertise result;
 
-            input >> result;
+            complete >> result;
 
             EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
@@ -108,7 +107,7 @@ namespace casual
          }
 
 
-         TEST( casual_common, archive_io_big_size)
+         TEST( casual_common, marshal_io_big_size)
          {
 
             message::service::Advertise serverConnect;
@@ -121,15 +120,13 @@ namespace casual
             service.name = "service1";
             serverConnect.services.resize( 10000, service);
 
-            output::Binary output;
+            ipc::message::Complete complete;
 
-            output << serverConnect;
-
-            input::Binary input( std::move( output));
+            complete << serverConnect;
 
             message::service::Advertise result;
 
-            input >> result;
+            complete >> result;
 
             EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
@@ -142,11 +139,12 @@ namespace casual
 
             transaction::ID xid_source;
 
-            output::Binary output;
+            ipc::message::Complete complete;
+            output::Binary output( complete);
 
             output << xid_source;
 
-            input::Binary input( std::move( output));
+            input::Binary input( complete);
 
             transaction::ID xid_target;
 
@@ -160,11 +158,12 @@ namespace casual
 
             transaction::ID xid_source = transaction::ID::create();
 
-            output::Binary output;
+            ipc::message::Complete complete;
+            output::Binary output( complete);
 
             output & xid_source;
 
-            input::Binary input( std::move( output));
+            input::Binary input( complete);
 
             transaction::ID xid_target;
 

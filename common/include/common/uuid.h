@@ -20,22 +20,21 @@ namespace casual
 	namespace common
 	{
 
+
 		struct Uuid
 		{
 			typedef platform::uuid_type uuid_type;
 
 
 			Uuid();
-			Uuid( Uuid&&) = default;
+			Uuid( Uuid&&) noexcept = default;
+			Uuid& operator = ( Uuid&&) noexcept = default;
+
 			Uuid( const Uuid&) = default;
+         Uuid& operator = ( const Uuid&) = default;
 
 			Uuid( uuid_type& uuid);
-
 			Uuid( const std::string& uuid);
-
-
-			Uuid& operator = ( const Uuid&) = default;
-
 
 
 			const uuid_type& get() const;
@@ -50,10 +49,8 @@ namespace casual
 
 			explicit operator bool() const noexcept;
 
+			bool empty() const;
 
-			static const Uuid& empty();
-
-			static Uuid make();
 
 
 			friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
@@ -80,6 +77,7 @@ namespace casual
 
 
 		private:
+
 			uuid_type m_uuid;
 
 		};
@@ -88,6 +86,12 @@ namespace casual
       {
          std::string string( const platform::uuid_type& uuid);
          std::string string( const Uuid& uuid);
+
+         Uuid make();
+
+         const Uuid& empty();
+
+
       } // uuid
 
 	} // common

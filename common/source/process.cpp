@@ -123,7 +123,7 @@ namespace casual
 
          const Uuid& uuid()
          {
-            static const Uuid singleton = Uuid::make();
+            static const Uuid singleton = uuid::make();
             return singleton;
          }
 
