@@ -47,7 +47,7 @@ namespace casual
          {
             Caller( std::string service) : m_service( std::move( service)) {}
 
-            void operator () ( common::message::queue::dequeue::Reply::Message& message)
+            void operator () ( common::message::queue::dequeue::Reply::Message&& message)
             {
                //
                // Prepare the xatmi-buffer

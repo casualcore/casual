@@ -19,7 +19,7 @@ namespace casual
    {
       namespace forward
       {
-         using dispatch_type = std::function< void( common::message::queue::dequeue::Reply::Message&)>;
+         using dispatch_type = std::function< void( common::message::queue::dequeue::Reply::Message&&)>;
 
          struct Task
          {

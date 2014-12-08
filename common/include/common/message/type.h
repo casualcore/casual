@@ -122,6 +122,8 @@ namespace casual
             {
                message_type = type
             };
+
+            Uuid correlation;
          };
 
 

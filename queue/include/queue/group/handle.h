@@ -122,7 +122,10 @@ namespace casual
 
                   using Base::Base;
 
-                  bool dispatch( common::message::queue::dequeue::base_request& message);
+                  void dispatch( message_type& message);
+
+                  template< typename M>
+                  bool do_dispatch( M& message);
                };
 
                namespace callback
@@ -133,7 +136,7 @@ namespace casual
 
                      using dequeue::Request::Request;
 
-                     void dispatch( common::message::queue::dequeue::base_request& message);
+                     void dispatch( message_type& message);
                   };
 
                } // callback

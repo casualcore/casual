@@ -181,7 +181,7 @@ forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     [
         Compile( 'source/forward/queue.cpp'),
     ],
-    [ forward_common, common, 'casual-common'])
+    [ forward_common, queue_api, common, 'casual-common'])
 
 install_bin.append( forward_service);
 install_bin.append( forward_queue);

@@ -54,15 +54,18 @@ namespace casual
 
                      if( found != std::end( state.callbacks))
                      {
-                        auto callbacks = std::move( found->second);
-                        state.callbacks.erase( found);
+                        auto& callbacks = found->second;
 
                         common::message::queue::dequeue::callback::Reply reply{ common::process::handle(), message.queue};
                         group::queue::non_blocking::Send send{ state};
 
-                        for( auto&& callback : callbacks)
+                        auto sender = std::bind( std::ref( send), std::placeholders::_1, std::ref( reply));
+
+                        auto sent = common::range::find_if( callbacks, sender);
+
+                        if( sent)
                         {
-                           send( callback, reply);
+                           callbacks.erase( sent.first);
                         }
                      }
                   }
@@ -132,13 +135,20 @@ namespace casual
 
             namespace dequeue
             {
-               bool Request::dispatch( common::message::queue::dequeue::base_request& message)
+               void Request::dispatch( message_type& message)
+               {
+                  do_dispatch( message);
+               }
+
+               template< typename M>
+               bool Request::do_dispatch( M& message)
                {
                   queue::blocking::Writer send{ message.process.queue, m_state};
 
                   try
                   {
                      auto reply = m_state.queuebase.dequeue( message);
+                     reply.correlation = message.correlation;
                      local::involved( m_state, message);
                      send( reply);
 
@@ -154,9 +164,9 @@ namespace casual
 
                namespace callback
                {
-                  void Request::dispatch( common::message::queue::dequeue::base_request& message)
+                  void Request::dispatch( message_type& message)
                   {
-                     if( ! dequeue::Request::dispatch( message))
+                     if( ! dequeue::Request::do_dispatch( message))
                      {
                         //
                         // No messages in queue, set up a call-back, that will be called

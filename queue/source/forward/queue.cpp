@@ -6,9 +6,11 @@
 //!
 
 #include "queue/forward/common.h"
+#include "queue/api/queue.h"
 
 #include "common/arguments.h"
 #include "common/exception.h"
+#include "common/trace.h"
 
 #include "common/buffer/pool.h"
 #include "common/call/context.h"
@@ -47,20 +49,16 @@ namespace casual
          {
             Enqueuer( std::string queue) : m_queue( std::move( queue)) {}
 
-            void operator () ( common::message::queue::dequeue::Reply::Message& message)
+            void operator () ( common::message::queue::dequeue::Reply::Message&& message)
             {
-               //
-               // Prepare the xatmi-buffer
-               //
-               common::buffer::Payload payload;
-               payload.type = std::move( message.type);
-               payload.memory = std::move( message.payload);
+               common::trace::Scope trace{ "queue::forward::Enqueuer::operator()", common::log::internal::queue};
 
-               long size = payload.memory.size();
+               queue::Message forward;
+               forward.payload.data = std::move( message.payload);
+               forward.payload.type.type = std::move( message.type.type);
+               forward.payload.type.subtype = std::move( message.type.subtype);
 
-               //auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
-
-               //common::call::Context::instance().sync( m_service, buffer, 0, buffer, size, 0);
+               queue::enqueue( m_queue, forward);
             }
 
          private:
