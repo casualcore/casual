@@ -58,31 +58,6 @@ namespace casual
 			void clear();
 
 
-			namespace alarm
-			{
-				class Scoped
-				{
-				public:
-
-					Scoped( std::chrono::microseconds timeout);
-
-	            template< typename R, typename P>
-	            Scoped( std::chrono::duration< R, P> timeout)
-	               : Scoped( std::chrono::duration_cast< std::chrono::microseconds>( timeout))
-	            {
-	            }
-
-					~Scoped();
-
-				private:
-					std::chrono::microseconds m_old;
-
-				};
-
-				void set( platform::time_point when);
-
-			}
-
 			namespace timer
 			{
 			   std::chrono::microseconds set( std::chrono::microseconds offset);
@@ -94,6 +69,26 @@ namespace casual
 			   }
 
 			   std::chrono::microseconds unset();
+
+
+            class Scoped
+            {
+            public:
+
+               Scoped( std::chrono::microseconds timeout, const platform::time_point& now = platform::clock_type::now());
+
+               template< typename R, typename P>
+               Scoped( std::chrono::duration< R, P> timeout)
+                  : Scoped( std::chrono::duration_cast< std::chrono::microseconds>( timeout))
+               {
+               }
+
+               ~Scoped();
+
+            private:
+               platform::time_point m_old;
+
+            };
 
 			}
 

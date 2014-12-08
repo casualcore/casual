@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/algorithm.h"
+#include "common/transaction/id.h"
 
 #include <chrono>
 
@@ -27,68 +28,90 @@ namespace casual
             using descriptor_type = platform::descriptor_type;
             using time_point = platform::time_point;
 
-            enum Type
+
+            struct base_t
             {
-               cUnset = -1, // Invalid call descriptor
-               cTransaction = 0, // to indicate that the timeout is 'global' to current transaction
+               base_t() = default;
+               base_t( time_point timeout) : timeout( timeout) {}
+
+               time_point timeout;
+
+               friend bool operator < ( const base_t& lhs, const base_t& rhs) { return lhs.timeout < rhs.timeout;}
+               friend bool operator < ( const base_t& lhs, const time_point& rhs) { return lhs.timeout < rhs;}
+               friend bool operator < ( const time_point& lhs, const base_t& rhs) { return lhs < rhs.timeout;}
             };
 
-            struct Limit
+            struct Limit : base_t
             {
-               time_point timeout;
-               descriptor_type descriptor;
+               Limit() = default;
+               Limit( time_point timeout, descriptor_type descriptor) : base_t( timeout), descriptor( descriptor) {}
 
-               friend bool operator < ( const Limit& lhs, const Limit& rhs) { return lhs.timeout < rhs.timeout;}
+               descriptor_type descriptor;
+            };
+
+            struct Transaction : base_t
+            {
+               Transaction() = default;
+               Transaction( time_point timeout, transaction::ID trid) : base_t( timeout), trid( trid) {}
+
+               transaction::ID trid;
+
+               friend bool operator == ( const Transaction& lhs, const transaction::ID& rhs) { return lhs.trid < rhs;}
             };
 
 
             static Timeout& instance();
 
-            void add( descriptor_type descriptor, std::chrono::microseconds timeout);
-            void add( descriptor_type descriptor, time_point limit);
+            void add( descriptor_type descriptor, std::chrono::microseconds timeout, const time_point& now = platform::clock_type::now());
+            void add( const transaction::ID& trid, const std::chrono::microseconds& timeout, const time_point& now = platform::clock_type::now());
+
+            void current( descriptor_type descriptor, const time_point& now = platform::clock_type::now());
+
+            void unset() noexcept;
+
 
             //!
-            //! @return the earliest deadline
+            //! Removes a timeout.
             //!
-            Limit get() const;
-
-
-            //!
-            //! @return true if timeout has passed for descriptor
-            //!
-            bool passed( descriptor_type descriptor) const;
-
-            //!
-            //! Removes the timeout.
-            //!
-            //! @return true if the timeout has passed
-            //!
-            bool remove( descriptor_type descriptor);
+            void remove( descriptor_type descriptor) noexcept;
 
 
             void clear();
 
 
 
+            struct Unset
+            {
+               using descriptor_type = platform::descriptor_type;
+
+               Unset( descriptor_type& descriptor)
+               {
+                  call::Timeout::instance().current( descriptor);
+               }
+
+               ~Unset()
+               {
+                  call::Timeout::instance().unset();
+               }
+            };
+
 
          private:
 
             Timeout() = default;
 
+
             using timeouts_type = std::vector< Limit>;
+            using transaction_timeout = std::vector< Transaction>;
 
             using range_type = decltype( range::make( timeouts_type().begin(), timeouts_type().end()));
 
 
-            void add( Limit limit, time_point now);
-
-            void set( time_point now);
-
+            std::chrono::microseconds find( descriptor_type descriptor, const time_point& now);
 
             timeouts_type m_limits;
-            descriptor_type m_current = Type::cUnset;
+            transaction_timeout m_transactions;
          };
-
 
       } // call
    } // common

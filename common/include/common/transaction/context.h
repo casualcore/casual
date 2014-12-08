@@ -81,7 +81,7 @@ namespace casual
             //!
             //! @return current transaction. 'null xid' if there are none...
             //!
-            Transaction& currentTransaction();
+            Transaction& current();
 
 
             void set( const std::vector< Resource>& resources);

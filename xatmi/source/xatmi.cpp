@@ -134,7 +134,7 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 
       auto descriptor = casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
 
-      casual::common::call::Context::instance().getReply( &descriptor, odata, *olen, flags);
+      casual::common::call::Context::instance().getReply( descriptor, odata, *olen, flags);
    }
    catch( ...)
    {
@@ -165,7 +165,7 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 {
    try
    {
-      casual::common::call::Context::instance().getReply( idPtr, odata, *olen, flags);
+      casual::common::call::Context::instance().getReply( *idPtr, odata, *olen, flags);
    }
    catch( ...)
    {

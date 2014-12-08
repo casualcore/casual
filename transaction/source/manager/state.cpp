@@ -225,20 +225,6 @@ namespace casual
          return result;
       }
 
-      namespace local
-      {
-         namespace
-         {
-            namespace remove
-            {
-               void instance( common::platform::pid_type pid, State& state)
-               {
-
-               }
-            } // remove
-         } // <unnamed>
-      } // local
-
       void State::removeProcess( common::platform::pid_type pid)
       {
 

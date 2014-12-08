@@ -40,7 +40,7 @@ namespace casual
          trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_one_message)", log::internal::ipc};
 
          // so we don't hang for ever, if something is wrong...
-         common::signal::alarm::Scoped timout( std::chrono::seconds( 5));
+         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
          mockup::ipc::Instance instance;
 
@@ -70,7 +70,7 @@ namespace casual
          trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_200_messages)",  log::internal::ipc};
 
          // so we don't hang for ever, if something is wrong...
-         common::signal::alarm::Scoped timout( std::chrono::seconds( 5));
+         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
          mockup::ipc::Instance instance;
 
@@ -114,7 +114,7 @@ namespace casual
          trace::Scope trace{ "TEST( casual_common_mockup, handle_router_one_messages)", log::internal::ipc};
 
          // so we don't hang for ever, if something is wrong...
-         common::signal::alarm::Scoped timout( std::chrono::seconds( 5));
+         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
          mockup::ipc::Router router{ ipc::receive::id()};
 
@@ -147,7 +147,7 @@ namespace casual
          trace::Scope trace{ "TEST( casual_common_mockup, handle_router_200_messages)", log::internal::ipc};
 
          // so we don't hang for ever, if something is wrong...
-         common::signal::alarm::Scoped timout( std::chrono::seconds( 5));
+         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
          mockup::ipc::Router router{ ipc::receive::id()};
 

@@ -58,7 +58,7 @@ namespace casual
 					      try
 					      {
 
-					         common::signal::alarm::Scoped alarm{ std::chrono::seconds( 5)};
+					         common::signal::timer::Scoped alarm{ std::chrono::seconds( 5)};
 
                         decltype( queue.id()) id;
                         file >> id;

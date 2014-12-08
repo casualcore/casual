@@ -98,7 +98,7 @@ namespace casual
 
             message::Transport response;
 
-            common::signal::alarm::Scoped timeout( std::chrono::milliseconds( 5));
+            common::signal::timer::Scoped timeout( std::chrono::milliseconds( 5));
 
             //
             // We don't expect to get any messages, and for the timeout to kick in

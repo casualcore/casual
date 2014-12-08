@@ -198,25 +198,6 @@ namespace casual
 
          }
 
-			namespace alarm
-			{
-				Scoped::Scoped( std::chrono::microseconds timeout) : m_old( timer::set( timeout))
-				{
-				}
-
-				Scoped::~Scoped()
-				{
-				   timer::set( m_old);
-				}
-
-				void set( platform::time_point when)
-            {
-               auto offset = when - platform::clock_type::now();
-
-               timer::set( offset);
-            }
-
-			}
 
          namespace timer
          {
@@ -224,6 +205,23 @@ namespace casual
             {
                namespace
                {
+
+                  std::chrono::microseconds convert( const itimerval& value)
+                  {
+                     return std::chrono::seconds( value.it_value.tv_sec) + std::chrono::microseconds( value.it_value.tv_usec);
+                  }
+
+                  std::chrono::microseconds get()
+                  {
+                     itimerval old;
+
+                     if( ::getitimer( ITIMER_REAL, &old) != 0)
+                     {
+                        throw exception::invalid::Argument{ "timer::get - " + error::string()};
+                     }
+                     return convert( old);
+                  }
+
                   std::chrono::microseconds set( itimerval& value)
                   {
                      itimerval old;
@@ -234,9 +232,9 @@ namespace casual
                      }
 
                      log::internal::debug << "timer set to: " << value.it_value.tv_sec << "s " << value.it_value.tv_usec << "us - old: "
-                           << old.it_value.tv_sec << "s " <<  old.it_value.tv_usec << "ms\n";
+                           << old.it_value.tv_sec << "s " <<  old.it_value.tv_usec << "us\n";
 
-                     return std::chrono::seconds( old.it_value.tv_sec) + std::chrono::microseconds( old.it_value.tv_usec);
+                     return convert( old);
                   }
                } // <unnamed>
             } // local
@@ -246,7 +244,11 @@ namespace casual
             {
                if( offset <= std::chrono::microseconds::zero())
                {
-                  return unset();
+                  //
+                  // We send the signal directly
+                  //
+                  signal::send( process::id(), signal::type::alarm);
+                  return local::get();
                }
                else
                {
@@ -268,7 +270,34 @@ namespace casual
                return local::set( value);
 
             }
-         }
+
+            Scoped::Scoped( std::chrono::microseconds timeout, const platform::time_point& now)
+            {
+               auto old = timer::set( timeout);
+
+               if( old != std::chrono::microseconds::zero())
+               {
+                  m_old = now + timeout;
+               }
+               else
+               {
+                  m_old = platform::time_point::min();
+               }
+            }
+
+            Scoped::~Scoped()
+            {
+               if( m_old == platform::time_point::min())
+               {
+                  timer::unset();
+               }
+               else
+               {
+                  timer::set( m_old - platform::clock_type::now());
+               }
+            }
+
+         } // timer
 
 
          bool send( platform::pid_type pid, type::type signal)

@@ -69,7 +69,7 @@ namespace casual
             ipc::receive::Queue receive;
             blocking::Reader reader( receive);
 
-            common::signal::alarm::Scoped timeout( std::chrono::milliseconds( 2));
+            common::signal::timer::Scoped timeout( std::chrono::milliseconds( 2));
 
             message::service::Advertise message;
 

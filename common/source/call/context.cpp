@@ -45,9 +45,6 @@ namespace casual
                {
                   struct Policy
                   {
-                     Policy( platform::descriptor_type descriptor) : m_descriptor( descriptor) {}
-                     Policy() = default;
-
                      void apply()
                      {
                         try
@@ -56,15 +53,9 @@ namespace casual
                         }
                         catch( const exception::signal::Timeout&)
                         {
-                           if( Timeout::instance().passed( m_descriptor))
-                           {
-                              Timeout::instance().remove( m_descriptor);
-                              throw exception::xatmi::Timeout{};
-                           }
+                           throw exception::xatmi::Timeout{};
                         }
                      }
-                  private:
-                     platform::descriptor_type m_descriptor = Timeout::Type::cTransaction;
                   };
 
                   namespace blocking
@@ -231,6 +222,8 @@ namespace casual
 
             local::service::lookup::request( service);
 
+            auto start = platform::clock_type::now();
+
             //
             // We do as much as possible while we wait for the broker reply
             //
@@ -240,16 +233,12 @@ namespace casual
             log::internal::debug << "cd: " << descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
 
-            //const common::platform::seconds_type time = common::environment::getTime();
-
-
             message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
             message.descriptor = descriptor;
             message.reply = process::handle();
-            message.trid = transaction::Context::instance().currentTransaction().trid;
+            message.trid = transaction::Context::instance().current().trid;
             message.execution = m_state.execution;
             message.callee = m_state.currentService;
-
 
 
             //
@@ -265,7 +254,9 @@ namespace casual
             //
             // Keep track of timeouts
             //
-            Timeout::instance().add( descriptor, lookup.service.timeout);
+            // TODO: this can cause a timeout directly - need to send ack to broker in that case...
+            //
+            Timeout::instance().add( descriptor, lookup.service.timeout, start);
 
 
             //
@@ -273,7 +264,7 @@ namespace casual
             //
             message.service = lookup.service;
 
-            local::queue::blocking::Send send{ descriptor};
+            local::queue::blocking::Send send;
             send( lookup.supplier.queue, message);
 
             return descriptor;
@@ -281,11 +272,11 @@ namespace casual
 
 
 
-         void Context::getReply( int* idPtr, char** odata, long& olen, long flags)
+         void Context::getReply( int& descriptor, char** odata, long& olen, long flags)
          {
             trace::internal::Scope trace( "calling::Context::getReply");
 
-            log::internal::debug << "cd: " << *idPtr << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+            log::internal::debug << "descriptor: " << descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
             //
             // TODO: validate input...
@@ -293,24 +284,34 @@ namespace casual
 
             if( common::flag< TPGETANY>( flags))
             {
-               *idPtr = 0;
+               descriptor = 0;
             }
-            else if( ! m_state.pending.active( *idPtr))
+            else if( ! m_state.pending.active( descriptor))
             {
                throw common::exception::xatmi::service::InvalidDescriptor();
             }
 
+            //
+            // Keep track of the current timeout for this descriptor.
+            // and make sure we unset the timer regardless
+            //
+            call::Timeout::Unset unset( descriptor);
 
 
             //
             // We fetch from cache, and if TPNOBLOCK is not set, we block
             //
-            auto found = fetch( *idPtr, flags);
+            auto found = fetch( descriptor, flags);
 
             if( ! found)
             {
                throw common::exception::xatmi::NoMessage();
             }
+
+            //
+            // This call is consumed, so we remove the timeout.
+            //
+            Timeout::instance().remove( descriptor);
 
             message::service::Reply reply = std::move( *found);
             m_state.reply.cache.erase( found);
@@ -335,13 +336,13 @@ namespace casual
             //
             // We deliver the message
             //
-            *idPtr = reply.callDescriptor;
+            descriptor = reply.callDescriptor;
             *odata = reply.buffer.memory.data();
             olen = reply.buffer.memory.size();
 
 
             // TOOD: Temp
-            log::internal::debug << "cd: " << *idPtr << " buffer: " << static_cast< void*>( *odata) << " size: " << olen << std::endl;
+            log::internal::debug << "descriptor: " << descriptor << " buffer: " << static_cast< void*>( *odata) << " size: " << olen << std::endl;
 
             //
             // Add the buffer to the pool
@@ -351,19 +352,15 @@ namespace casual
             //
             // We remove pending
             //
-            m_state.pending.unreserve( *idPtr);
+            m_state.pending.unreserve( descriptor);
 
-            if( Timeout::instance().remove( *idPtr))
-            {
-               throw exception::xatmi::Timeout{ "descriptor " + std::to_string( *idPtr) + " reached deadline", __FILE__, __LINE__};
-            }
          }
 
 
          void Context::sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags)
          {
             auto descriptor = asyncCall( service, idata, ilen, flags);
-            getReply( &descriptor, &odata, olen, flags);
+            getReply( descriptor, &odata, olen, flags);
          }
 
 
@@ -398,7 +395,7 @@ namespace casual
 
             auto found = m_state.reply.cache.search( descriptor);
 
-            local::queue::blocking::Receive receive{ ipc::receive::queue(), descriptor};
+            local::queue::blocking::Receive receive{ ipc::receive::queue()};
 
             while( ! found && ! common::flag< TPNOBLOCK>( flags))
             {

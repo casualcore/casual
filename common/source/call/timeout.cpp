@@ -9,6 +9,8 @@
 
 #include "common/signal.h"
 
+#include "common/transaction/context.h"
+
 
 
 namespace casual
@@ -18,131 +20,93 @@ namespace casual
       namespace call
       {
 
-         namespace local
-         {
-            namespace
-            {
-               template< typename L>
-               auto find( L& limits, Timeout::descriptor_type descriptor) -> decltype( range::make( limits))
-               {
-                  return range::find_if( limits,
-                     chain::Or::link(
-                        compare::equal_to( std::mem_fn( &Timeout::Limit::descriptor), bind::value( descriptor)),
-                        compare::equal_to( std::mem_fn( &Timeout::Limit::descriptor), bind::value( Timeout::Type::cTransaction))));
-
-               }
-            } // <unnamed>
-         } // local
-
          Timeout& Timeout::instance()
          {
             static Timeout singleton;
             return singleton;
          }
 
-         void Timeout::add( descriptor_type descriptor, std::chrono::microseconds timeout)
+         void Timeout::add( descriptor_type descriptor, std::chrono::microseconds timeout, const time_point& now)
          {
             if( timeout != std::chrono::microseconds::zero())
             {
-               auto now = platform::clock_type::now();
-               add( { now + timeout, descriptor}, now);
+               m_limits.emplace_back( now + timeout, descriptor);
+
+               current( descriptor, now);
+
             }
          }
 
-         void Timeout::add( descriptor_type descriptor, platform::time_point limit)
+         void Timeout::add( const transaction::ID& trid, const std::chrono::microseconds& timeout, const time_point& now)
          {
-            add( { std::move( limit), descriptor}, platform::clock_type::now());
-         }
-
-
-         Timeout::Limit Timeout::get() const
-         {
-            if( m_limits.empty())
+            if( timeout != std::chrono::microseconds::zero())
             {
-               return { time_point::max(), Type::cUnset};
+               m_transactions.emplace_back( now + timeout, trid);
             }
-            return m_limits.front();
          }
 
-         bool Timeout::passed( descriptor_type descriptor) const
+
+         void Timeout::current( descriptor_type descriptor, const time_point& now)
          {
-            auto found = local::find( m_limits, descriptor);
+            auto timeout = find( descriptor, now);
 
-            if( found)
+            if( timeout != std::chrono::microseconds::max())
             {
-               return found->timeout <= platform::clock_type::now();
+               signal::timer::set( timeout);
             }
-            return false;
          }
 
-         bool Timeout::remove( descriptor_type descriptor)
+         void Timeout::unset() noexcept
+         {
+            signal::timer::unset();
+         }
+
+         void Timeout::remove( descriptor_type descriptor) noexcept
          {
             auto found = range::find_if( m_limits,
                   compare::equal_to( std::mem_fn( &Limit::descriptor), bind::value( descriptor)));
 
             if( found)
             {
-               auto limit = *found;
                m_limits.erase( found.first);
-
-               auto now = platform::clock_type::now();
-
-               if( limit.descriptor == m_current)
-               {
-                  //
-                  // current timer is based on this descriptor, we
-                  // have to reset the alarm
-                  //
-                  set( now);
-
-               }
-               return limit.timeout <= now;
             }
-            return false;
          }
 
          void Timeout::clear()
          {
-            if( ! m_limits.empty())
-            {
-               signal::timer::unset();
-               m_limits.clear();
-            }
-            m_current = Type::cUnset;
+            signal::timer::unset();
+            m_limits.clear();
+            m_transactions.clear();
          }
 
-         void Timeout::add( Limit limit, time_point now)
+
+         std::chrono::microseconds Timeout::find( descriptor_type descriptor, const time_point& now)
          {
-            m_limits.insert(
-               std::lower_bound( std::begin( m_limits), std::end( m_limits), limit),
-               std::move( limit));
+            std::chrono::microseconds result = std::chrono::microseconds::max();
 
-            set( now);
-         }
 
-         void Timeout::set( time_point now)
-         {
-            //
-            // Set the alarm
-            //
-            auto future = std::upper_bound( std::begin( m_limits), std::end( m_limits), Limit{ now, Type::cUnset});
-
-            if( future != std::end( m_limits))
             {
-               if( future->descriptor != m_current)
+               auto found = range::find_if( m_limits,
+                     compare::equal_to( std::mem_fn( &Limit::descriptor), bind::value( descriptor)));
+
+               if( found)
                {
-                  //
-                  // We only reset the alarm if it is a new earlier one...
-                  //
-                  signal::timer::set( future->timeout - now);
-                  m_current = future->descriptor;
+                  result = std::chrono::duration_cast< std::chrono::microseconds>( found->timeout - now);
+
                }
             }
-            else
             {
-               m_current = Type::cUnset;
+               auto found = range::find( m_transactions, common::transaction::Context::instance().current().trid);
+
+               if( found && found->timeout - now < result)
+               {
+                  result = std::chrono::duration_cast< std::chrono::microseconds>( found->timeout - now);
+               }
             }
+
+            return result;
          }
+
 
       } // call
    } // common

@@ -324,7 +324,7 @@ namespace casual
                try
                {
 
-                  common::signal::alarm::Scoped alarm{ std::chrono::seconds( 5)};
+                  common::signal::timer::Scoped alarm{ std::chrono::seconds( 5)};
 
                   decltype( common::ipc::receive::id()) id;
                   std::string uuid;
@@ -444,7 +444,7 @@ namespace casual
                std::vector< Exit> result;
                try
                {
-                  signal::alarm::Scoped alarm( timeout);
+                  signal::timer::Scoped alarm( timeout);
 
                   local::wait( pids, result);
 
@@ -475,7 +475,7 @@ namespace casual
 
                try
                {
-                  signal::alarm::Scoped alarm( timeout);
+                  signal::timer::Scoped alarm( timeout);
 
                   local::terminate( pids, result);
                }

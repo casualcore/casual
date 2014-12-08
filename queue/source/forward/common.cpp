@@ -55,7 +55,7 @@ namespace casual
                   common::message::queue::dequeue::callback::Request request;
                   request.process = common::process::handle();
                   request.queue = task.queue.id;
-                  request.trid = common::transaction::Context::instance().currentTransaction().trid;
+                  request.trid = common::transaction::Context::instance().current().trid;
 
                   common::queue::blocking::Send send;
                   auto correlation = send( task.process.queue, request);

@@ -121,7 +121,7 @@ namespace casual
             return Manager::instance();
          }
 
-         Transaction& Context::currentTransaction()
+         Transaction& Context::current()
          {
             if( m_transactions.empty())
             {
@@ -330,29 +330,29 @@ namespace casual
             }
 
 
-            auto& current = currentTransaction();
+            auto& transaction = current();
 
             //
             // XA-spec - RM can't reg when it's already regged... Why?
             //
-            if( common::range::find( current.associated, rmid))
+            if( common::range::find( transaction.associated, rmid))
             {
                return TMER_PROTO;
             }
 
-            if( current.trid)
+            if( transaction.trid)
             {
                //
                // Notify TM that this RM is involved
                //
-               involved( current.trid, { rmid});
+               involved( transaction.trid, { rmid});
             }
 
-            current.associated.push_back( rmid);
+            transaction.associated.push_back( rmid);
 
-            *xid = current.trid.xid;
+            *xid = transaction.trid.xid;
 
-            switch( current.previous())
+            switch( transaction.previous())
             {
                case Transaction::State::suspended:
                {
@@ -369,19 +369,19 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::resourceUnregistration", common::log::internal::transaction};
 
-            auto&& current = currentTransaction();
+            auto&& transaction = current();
 
             //
             // RM:s can only unregister if we're outside global
             // transactions
             //
-            if( ! current.trid)
+            if( ! transaction.trid)
             {
-               auto found = common::range::find( current.associated, rmid);
+               auto found = common::range::find( transaction.associated, rmid);
 
                if( found)
                {
-                  current.associated.erase( found.begin());
+                  transaction.associated.erase( found.begin());
                   return TM_OK;
                }
             }
@@ -393,14 +393,14 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::begin", common::log::internal::transaction};
 
-            auto&& current = currentTransaction();
+            auto&& transaction = current();
 
-            if( ! current.associated.empty())
+            if( ! transaction.associated.empty())
             {
                return TX_OUTSIDE;
             }
 
-            if( current.state() != Transaction::State::inactive)
+            if( transaction.state() != Transaction::State::inactive)
             {
                return TX_PROTOCOL_ERROR;
             }
@@ -536,7 +536,7 @@ namespace casual
 
          int Context::commit()
          {
-            auto& transaction = currentTransaction();
+            auto& transaction = current();
             if( transaction)
             {
                //
@@ -630,12 +630,12 @@ namespace casual
 
          int Context::info( TXINFO& info)
          {
-            auto&& current = currentTransaction();
+            auto&& transaction = current();
 
-            info.xid = current.trid.xid;
+            info.xid = transaction.trid.xid;
 
 
-            return current ? 1 : 0;
+            return transaction ? 1 : 0;
          }
 
          void Context::start( Transaction& transaction, long flags)

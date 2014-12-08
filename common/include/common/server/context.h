@@ -248,11 +248,7 @@ namespace casual
 
                   trace::internal::Scope trace{ "callee::handle::basic_call::dispatch"};
 
-
-                  //
-                  // Set the 'global' 'transaction' timeout, if any...
-                  //
-                  call::Timeout::instance().add( call::Timeout::Type::cTransaction, message.service.timeout);
+                  auto start = platform::clock_type::now();
 
 
                   auto& state = server::Context::instance().state();
@@ -262,7 +258,7 @@ namespace casual
                   //
                   if( message.service.monitor_queue != 0)
                   {
-                     state.monitor.start = platform::clock_type::now();
+                     state.monitor.start = start;
                   }
 
 
@@ -299,8 +295,9 @@ namespace casual
                      // Do transaction stuff...
                      // - begin transaction if service has "auto-transaction"
                      // - notify TM about potentially resources involved.
+                     // - set 'global' deadline/timeout
                      //
-                     m_policy.transaction( message, service);
+                     m_policy.transaction( message, service, start);
 
 
                      call::Context::instance().currentService( message.service.name);
@@ -377,7 +374,7 @@ namespace casual
                }
             private:
 
-               using descriptor_type = int;
+               using descriptor_type = platform::descriptor_type;
 
                struct transform_t
                {
@@ -457,7 +454,7 @@ namespace casual
 
                   void statistics( platform::queue_id_type id, message::monitor::Notify& message);
 
-                  void transaction( const message::service::callee::Call& message, const server::Service& service);
+                  void transaction( const message::service::callee::Call& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::Reply& message);
 
                private:
@@ -520,7 +517,7 @@ namespace casual
                      // no-op
                   }
 
-                  void transaction( const message::service::callee::Call& message, const server::Service& service)
+                  void transaction( const message::service::callee::Call&, const server::Service&, const common::platform::time_point&)
                   {
                      // no-op
                   }

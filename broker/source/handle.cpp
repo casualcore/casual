@@ -82,7 +82,7 @@ namespace casual
                      {
                         try
                         {
-                           common::signal::alarm::Scoped timeout{ std::chrono::seconds( 10)};
+                           common::signal::timer::Scoped timeout{ std::chrono::seconds( 10)};
 
                            auto marshal = queueReader.next();
                            handler.dispatch( marshal);
@@ -159,7 +159,7 @@ namespace casual
 
             try
             {
-               signal::alarm::Scoped alarm( std::chrono::seconds( 10));
+               signal::timer::Scoped alarm( std::chrono::seconds( 10));
 
                range::for_each( shutdownOrder, local::Shutdown{ state});
             }
@@ -507,7 +507,7 @@ namespace casual
             sendACK.dispatch( ack);
          }
 
-         void Policy::transaction( const message::service::callee::Call&, const server::Service&)
+         void Policy::transaction( const message::service::callee::Call&, const server::Service&, const common::platform::time_point&)
          {
             // broker doesn't bother with transactions...
          }

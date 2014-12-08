@@ -102,7 +102,7 @@ namespace casual
 
             int asyncCall( const std::string& service, char* idata, long ilen, long flags);
 
-            void getReply( int* idPtr, char** odata, long& olen, long flags);
+            void getReply( int& descriptor, char** odata, long& olen, long flags);
 
             void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
 
