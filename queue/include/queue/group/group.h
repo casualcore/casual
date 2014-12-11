@@ -35,11 +35,9 @@ namespace casual
 
 
             template< typename M>
-            void persist( M&& message, common::platform::queue_id_type destination)
+            void persist( M&& message, std::vector< common::platform::queue_id_type> destinations)
             {
-               persistent.push_back( common::message::pending::Message{ std::forward< M>( message), { destination}});
-
-               //persistent.emplace_back( std::forward< M>( message), { destination});
+               persistent.emplace_back( std::forward< M>( message), std::move( destinations));
             }
 
             std::vector< common::message::pending::Message> persistent;

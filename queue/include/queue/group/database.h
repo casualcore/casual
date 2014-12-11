@@ -57,6 +57,12 @@ namespace casual
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
 
+            //!
+            //! @return queues that was affected of the commit
+            //!
+            std::vector< Queue::id_type> committed( const common::transaction::ID& id);
+
+
 
             std::vector< common::message::queue::information::Queue> queues();
 
@@ -77,6 +83,8 @@ namespace casual
             //! @return the number of rows affected by the last statement.
             //!
             std::size_t affected() const;
+
+
 
             void begin();
             void commit();
@@ -109,6 +117,7 @@ namespace casual
 
                sql::database::Statement commit1;
                sql::database::Statement commit2;
+               sql::database::Statement commit3;
 
                sql::database::Statement rollback1;
                sql::database::Statement rollback2;

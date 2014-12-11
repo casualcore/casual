@@ -47,25 +47,20 @@ namespace casual
                   }
 
 
-                  template< typename M>
-                  void callback( State& state, M& message)
+                  void notify( State& state, const std::vector< Queue::id_type>& queues)
                   {
-                     auto found = state.callbacks.find( message.queue);
-
-                     if( found != std::end( state.callbacks))
+                     for( auto& queue : queues)
                      {
-                        auto& callbacks = found->second;
+                        auto found = common::range::find( state.callbacks, queue);
 
-                        common::message::queue::dequeue::callback::Reply reply{ common::process::handle(), message.queue};
-                        group::queue::non_blocking::Send send{ state};
-
-                        auto sender = std::bind( std::ref( send), std::placeholders::_1, std::ref( reply));
-
-                        auto sent = common::range::find_if( callbacks, sender);
-
-                        if( sent)
+                        if( found)
                         {
-                           callbacks.erase( sent.first);
+                           decltype( found->second) notifications;
+                           std::swap( notifications, found->second);
+
+                           common::message::queue::dequeue::callback::Reply reply{ common::process::handle(), queue};
+
+                           state.persist( std::move( reply), notifications);
                         }
                      }
                   }
@@ -114,16 +109,21 @@ namespace casual
             {
                void Request::dispatch( message_type& message)
                {
-                  queue::blocking::Writer send{ message.process.queue, m_state};
-
                   try
                   {
                      auto reply = m_state.queuebase.enqueue( message);
                      local::involved( m_state, message);
-                     send( reply);
 
-                     local::callback( m_state, message);
-
+                     if( message.trid)
+                     {
+                        queue::blocking::Send send{ m_state};
+                        send( message.process.queue, reply);
+                     }
+                     else
+                     {
+                        m_state.persist( std::move( reply), { message.process.queue});
+                        local::notify( m_state, { message.queue});
+                     }
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
@@ -196,6 +196,8 @@ namespace casual
                      {
                         m_state.queuebase.commit( message.trid);
                         common::log::internal::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+
+
                      }
                      catch( ...)
                      {
@@ -203,7 +205,9 @@ namespace casual
                         reply.state = XAER_RMFAIL;
                      }
 
-                     m_state.persist( std::move( reply), message.process.queue);
+                     m_state.persist( std::move( reply), { message.process.queue});
+
+                     local::notify( m_state, m_state.queuebase.committed( message.trid));
                   }
                }
 
@@ -227,7 +231,7 @@ namespace casual
                         reply.state = XAER_RMFAIL;
                      }
 
-                     m_state.persist( std::move( reply), message.process.queue);
+                     m_state.persist( std::move( reply), { message.process.queue});
                   }
                }
             }

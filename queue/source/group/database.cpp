@@ -166,6 +166,7 @@ namespace casual
 
                m_statement.commit1 = m_connection.precompile( "UPDATE messages SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
                m_statement.commit2 = m_connection.precompile( "DELETE FROM messages WHERE gtrid = :gtrid AND state = 3;");
+               m_statement.commit3 = m_connection.precompile( "SELECT DISTINCT( queue) FROM messages WHERE gtrid = :gtrid AND state = 2;");
 
 
                /*
@@ -401,6 +402,25 @@ namespace casual
             m_statement.rollback1.execute( gtrid);
             m_statement.rollback2.execute( gtrid);
             m_statement.rollback3.execute();
+         }
+
+         std::vector< Queue::id_type> Database::committed( const common::transaction::ID& id)
+         {
+            std::vector< Queue::id_type> result;
+
+            auto gtrid = common::transaction::global( id);
+            auto resultset =  m_statement.commit3.query( gtrid);
+
+            sql::database::Row row;
+
+            while( resultset.fetch( row))
+            {
+               Queue::id_type queue;
+               row.get( 0, queue);
+               result.push_back( queue);
+            }
+
+            return result;
          }
 
 

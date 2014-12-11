@@ -26,9 +26,21 @@ namespace casual
             {
                using targets_type = std::vector< platform::queue_id_type>;
 
+               enum class Targets
+               {
+                  all,
+                  first
+               };
+
+               template< typename M>
+               Message( M&& message, targets_type targets, Targets task)
+                  : targets{ std::move( targets)}, complete{ marshal::complete( std::forward< M>( message))}, task{ task}
+               {
+               }
+
                template< typename M>
                Message( M&& message, targets_type targets)
-                  : targets{ std::move( targets)}, complete{ marshal::complete( std::forward< M>( message))}
+                  : Message( std::move( message), std::move( targets), Targets::all)
                {
                }
 
@@ -42,9 +54,15 @@ namespace casual
 
                targets_type targets;
                common::ipc::message::Complete complete;
+               Targets task;
             };
 
 
+            //!
+            //! Tries to send a message to targets.
+            //! Depending on the task it will either send to all
+            //! or stop when the first is successful.
+            //!
             template< typename Q>
             struct Send
             {
@@ -57,8 +75,18 @@ namespace casual
                      return m_queue.send( ipc, message.complete);
                   };
 
-                  message.targets = range::to_vector(
-                        range::remove_if( message.targets, send));
+                  if( message.task == Message::Targets::all)
+                  {
+                     message.targets = range::to_vector(
+                           range::remove_if( message.targets, send));
+                  }
+                  else
+                  {
+                     if( range::find_if( message.targets, send))
+                     {
+                        message.targets.clear();
+                     }
+                  }
 
                   return message.sent();
                }
@@ -66,12 +94,14 @@ namespace casual
                Q& m_queue;
             };
 
+            //!
+            //! @return a 'pending-sender' that tries to send to targets
+            //!
             template< typename Q>
             Send< Q> sender( Q& queue)
             {
                return Send< Q>( queue);
             }
-
          } // pending
 
       } // message
