@@ -206,7 +206,7 @@ namespace casual
                         m_state.persistentReplies,
                         common::negate( action::persistent::Send{ m_state}));
 
-                  common::range::trim( m_state.persistentReplies, notDone);
+                  common::range::trim( m_state.persistentReplies, std::get< 0>( notDone));
                }
 
                //
@@ -222,7 +222,7 @@ namespace casual
                   //
                   // Move the ones that did not find an idle resource to pending requests
                   //
-                  common::range::move( notDone, m_state.pendingRequests);
+                  common::range::move( std::get< 0>( notDone), m_state.pendingRequests);
 
                   m_state.persistentRequests.clear();
 

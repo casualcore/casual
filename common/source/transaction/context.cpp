@@ -173,8 +173,8 @@ namespace casual
             //
             // create the views
             //
-            m_resources.dynamic = range::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
-            m_resources.fixed = range::make(  m_resources.dynamic.last, std::end( m_resources.all));
+            std::tie( m_resources.dynamic, m_resources.fixed) =
+                  range::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
 
             common::log::internal::transaction << "static resources: " << m_resources.fixed << std::endl;
             common::log::internal::transaction << "dynamic resources: " << m_resources.dynamic << std::endl;

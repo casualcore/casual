@@ -566,11 +566,11 @@ namespace casual
          }
 
          template< typename R, typename P>
-         auto partition( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
+         auto partition( R&& range, P predicate) -> decltype( std::make_tuple( make( std::forward< R>( range)), make( std::forward< R>( range))))
          {
-            auto inputRange = make( std::forward< R>( range));
-            inputRange.last = std::partition( std::begin( inputRange), std::end( inputRange), predicate);
-            return inputRange;
+            //auto inputRange = make( std::forward< R>( range));
+            auto middle = std::partition( std::begin( range), std::end( range), predicate);
+            return std::make_tuple( make( std::begin( range), middle), make( middle, std::end( range)));
          }
 
 
@@ -810,7 +810,7 @@ namespace casual
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find( other, value);};
-            return partition( resultRange, lambda);
+            return std::get< 0>( partition( resultRange, lambda));
          }
 
          template< typename R1, typename R2, typename F>
@@ -821,7 +821,7 @@ namespace casual
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( other), std::bind( functor, value, std::placeholders::_1));};
-            return partition( resultRange, lambda);
+            return std::get< 0>( partition( resultRange, lambda));
 
          }
 

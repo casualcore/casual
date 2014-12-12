@@ -101,7 +101,7 @@ namespace casual
                         typedef Transaction::Resource resource_type;
 
                         common::range::transform(
-                           resources, request.resources,
+                           std::get< 0>( resources), request.resources,
                            std::mem_fn( &resource_type::id));
 
 
@@ -142,7 +142,7 @@ namespace casual
                               transaction.resources,
                               Transaction::Resource::state::Filter{ filter});
 
-                        for( auto& resource : resources)
+                        for( auto& resource : std::get< 0>( resources))
                         {
                            auto found = state::find::idle::instance( common::range::make( m_state.resources), resource.id);
 
@@ -164,7 +164,7 @@ namespace casual
                         // Update state on transaction-resources
                         //
                         common::range::for_each(
-                              resources,
+                              std::get< 0>( resources),
                               Transaction::Resource::state::Update{ newState});
                      }
                   };

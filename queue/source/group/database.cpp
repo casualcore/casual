@@ -275,11 +275,9 @@ namespace casual
 
             auto create = common::range::partition( update, []( const Queue& q){ return q.id == 0;});
 
-            common::range::transform( create, result, std::bind( &Database::create, this, std::placeholders::_1));
+            common::range::transform( std::get< 0>( create), result, std::bind( &Database::create, this, std::placeholders::_1));
 
-            auto toUpdate = common::range::make( update) - create;
-
-            common::range::for_each( toUpdate, std::bind( &Database::updateQueue, this, std::placeholders::_1));
+            common::range::for_each( std::get< 1>( create), std::bind( &Database::updateQueue, this, std::placeholders::_1));
 
             common::range::for_each( remove, std::bind( &Database::removeQueue, this, std::placeholders::_1));
 

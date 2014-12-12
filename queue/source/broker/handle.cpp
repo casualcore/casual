@@ -53,7 +53,7 @@ namespace casual
                      //
                      queue::blocking::Send blocking_send{ state};
 
-                     for( auto&& group : busy)
+                     for( auto&& group : std::get< 0>( busy))
                      {
                         blocking_send( group.queue, message);
                      }

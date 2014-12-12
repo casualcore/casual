@@ -126,8 +126,9 @@ namespace casual
 
          auto part = range::partition( us, []( int value) { return value == 3;});
 
-         ASSERT_TRUE( part.size() == 2);
-         EXPECT_TRUE( *part == 3);
+         ASSERT_TRUE( std::get< 0>( part).size() == 2);
+         EXPECT_TRUE( *std::get< 0>( part) == 3);
+         EXPECT_TRUE( std::get< 1>( part).size() == us.size() - 2);
       }
 
       TEST( casual_common_algorithm, partition_reverse)
@@ -136,8 +137,9 @@ namespace casual
 
          auto part = range::partition( range::make_reverse( us), []( int value) { return value == 3;});
 
-         ASSERT_TRUE( part.size() == 2);
-         EXPECT_TRUE( *part.first == 3);
+         ASSERT_TRUE( std::get< 0>( part).size() == 2);
+         EXPECT_TRUE( *std::get< 0>( part) == 3);
+         EXPECT_TRUE( std::get< 1>( part).size() == us.size() - 2);
       }
 
       TEST( casual_common_algorithm, find_value)
@@ -193,9 +195,9 @@ namespace casual
 
 
          auto found =  range::find(
-               range::partition(
+               std::get< 0>( range::partition(
                      range::sort( us),
-               []( int value) { return value == 3;}), 3);
+               []( int value) { return value == 3;})), 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found == 3);
@@ -261,7 +263,7 @@ namespace casual
 
          auto part = range::partition( range, chain::Or::link( Equal{ 2}, Equal{ 4}));
 
-         EXPECT_TRUE( part.size() == 2);
+         EXPECT_TRUE( std::get< 0>( part).size() == 2);
 
       }
 
@@ -274,7 +276,7 @@ namespace casual
 
          auto part = range::partition( range, functor);
 
-         EXPECT_TRUE( part.size() == 2);
+         EXPECT_TRUE( std::get< 0>( part).size() == 2);
       }
 
       TEST( casual_common_algorithm, chain_basic_lvalue1)
@@ -287,7 +289,7 @@ namespace casual
 
          auto part = range::partition( range, functor);
 
-         EXPECT_TRUE( part.size() == 2);
+         EXPECT_TRUE( std::get< 0>( part).size() == 2);
       }
 
       struct Value
