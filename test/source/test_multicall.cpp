@@ -45,7 +45,7 @@ struct Timeoint
 struct Settings
 {
    std::string service;
-   long calls = 0;
+   long calls = 1;
    std::string argument;
    bool transaction = false;
    long iterations = 1;

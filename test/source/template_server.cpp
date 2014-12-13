@@ -95,9 +95,12 @@ void casual_test2( TPSVCINFO *serviceContext)
 
       parser.parse( casual::common::process::path(), casual::common::string::split( argumentString));
 
-      casual::sf::log::debug << "casual_test2 called - sleep for  " << task.sleep << "ms"<< std::endl;
+      if( task.sleep > 0)
+      {
+         casual::sf::log::debug << "casual_test2 called - sleep for  " << task.sleep << "ms"<< std::endl;
 
-      casual::common::process::sleep(  std::chrono::milliseconds( task.sleep));
+         casual::common::process::sleep(  std::chrono::milliseconds( task.sleep));
+      }
    }
 
 	tpreturn( TPSUCCESS, 0, serviceContext->data, serviceContext->len, 0);
