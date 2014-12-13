@@ -29,6 +29,8 @@ namespace casual
 
          message::server::connect::Reply connect( std::vector< message::Service> services);
 
+         message::server::connect::Reply connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+
 
          template< typename P>
          struct Connect

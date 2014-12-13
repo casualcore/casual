@@ -322,14 +322,18 @@ namespace casual
 
          for( auto&& group : groups)
          {
-            auto serverBatch = range::stable_partition( serverSet, filter::group::Id{ group.id});
-            auto executableBatch = range::stable_partition( executableSet, filter::group::Id{ group.id});
+
+            auto serverPartition = range::stable_partition( serverSet, filter::group::Id{ group.id});
+            auto executablePartition = range::stable_partition( executableSet, filter::group::Id{ group.id});
+
+            auto serverBatch = std::get< 0>( serverPartition);
+            auto executableBatch = std::get< 0>( executablePartition);
 
             if( serverBatch || executableBatch)
             {
                result.push_back( { group.name, range::to_vector( serverBatch), range::to_vector( executableBatch)});
-               serverSet = serverSet - serverBatch;
-               executableSet = executableSet - executableBatch;
+               serverSet = std::get< 1>( serverPartition);
+               executableSet = std::get< 1>( executablePartition);
             }
          }
 

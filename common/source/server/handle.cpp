@@ -23,6 +23,15 @@ namespace casual
             return connect( std::move( services));
          }
 
+         message::server::connect::Reply connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+         {
+            auto reply = connect( std::move( services));
+
+            transaction::Context::instance().set( resources);
+
+            return reply;
+         }
+
          namespace handle
          {
 
@@ -34,9 +43,7 @@ namespace casual
                   //
                   // Let the broker know about us, and our services...
                   //
-                  server::connect( std::move( services));
-
-                  transaction::Context::instance().set( resources);
+                  server::connect( std::move( services), resources);
 
                }
 

@@ -568,18 +568,16 @@ namespace casual
          template< typename R, typename P>
          auto partition( R&& range, P predicate) -> decltype( std::make_tuple( make( std::forward< R>( range)), make( std::forward< R>( range))))
          {
-            //auto inputRange = make( std::forward< R>( range));
             auto middle = std::partition( std::begin( range), std::end( range), predicate);
             return std::make_tuple( make( std::begin( range), middle), make( middle, std::end( range)));
          }
 
 
          template< typename R, typename P>
-         auto stable_partition( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
+         auto stable_partition( R&& range, P predicate) -> decltype( std::make_tuple( make( std::forward< R>( range)), make( std::forward< R>( range))))
          {
-            auto inputRange = make( std::forward< R>( range));
-            inputRange.last = std::stable_partition( std::begin( inputRange), std::end( inputRange), predicate);
-            return inputRange;
+            auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
+            return std::make_tuple( make( std::begin( range), middle), make( middle, std::end( range)));
          }
 
 

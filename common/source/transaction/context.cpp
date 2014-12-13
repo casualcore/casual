@@ -139,35 +139,45 @@ namespace casual
 
 
             using RM = message::transaction::resource::Manager;
-            auto equalKey = [] ( const Resource& r, const RM& rm){ return r.key == rm.key;};
 
+            //
+            // We don't need resources from 'manager' after this, no point
+            // occupying memory -> we move it.
+            //
             auto configuration = std::move( manager().resources);
 
-            //
-            // Sanity check
-            //
-            if( ! range::uniform( resources, configuration, equalKey))
-            {
-               throw exception::invalid::Argument( "mismatch between registered/linked RM:s and configured resources", __FILE__, __LINE__);
-            }
+            auto configRange = range::make( configuration);
 
-            for( auto&& rm : configuration)
-            {
-               auto found = range::find_if( resources, [&]( const Resource& r){ return r.key == rm.key;});
 
-               if( found)
+            for( auto& resource : resources)
+            {
+               //
+               // It could be several RM-configuration for one linked RM.
+               //
+
+               auto configPartition = range::stable_partition( configRange, [&]( const RM& rm){ return resource.key == rm.key;});
+
+               if( std::get< 0>( configPartition))
                {
-                  m_resources.all.emplace_back(
-                        found->key,
-                        found->xaSwitch,
-                        rm.id,
-                        std::move( rm.openinfo),
-                        std::move( rm.closeinfo));
+                  for( auto& rm : std::get< 0>( configPartition))
+                  {
+                     m_resources.all.emplace_back(
+                           resource.key,
+                           resource.xaSwitch,
+                           rm.id,
+                           std::move( rm.openinfo),
+                           std::move( rm.closeinfo));
+                  }
                }
                else
                {
-                  throw exception::invalid::Argument( "mismatch between registered/linked RM:s and configured resources", __FILE__, __LINE__);
+                  throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships", __FILE__, __LINE__);
                }
+
+               //
+               // Continue with the rest
+               //
+               configRange = std::get< 1>( configPartition);
             }
 
             //
@@ -181,7 +191,8 @@ namespace casual
 
 
             //
-            // Open the resources... Not sure if we can do this, or if users has to call tx_open by them self...
+            // Open the resources...
+            // TODO: Not sure if we can do this, or if users has to call tx_open by them self...
             //
             open();
 
