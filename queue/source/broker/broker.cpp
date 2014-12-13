@@ -12,7 +12,7 @@
 #include "queue/common/environment.h"
 #include "queue/broker/admin/server.h"
 
-#include "common/server/context.h"
+#include "common/server/handle.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/algorithm.h"
@@ -254,7 +254,7 @@ namespace casual
             broker::handle::transaction::rollback::Request{ m_state},
             broker::handle::transaction::rollback::Reply{ m_state},
             broker::handle::peek::queue::Request{ m_state},
-            common::callee::handle::basic_admin_call< broker::State>{ broker::admin::Server::services( *this), m_state},
+            common::server::handle::basic_admin_call< broker::State>{ broker::admin::Server::services( *this), m_state},
             common::message::handle::ping( m_state),
          };
 

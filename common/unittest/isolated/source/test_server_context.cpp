@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 
-#include "common/server/context.h"
+#include "common/server/handle.h"
 #include "common/process.h"
 
 #include "common/mockup/ipc.h"
@@ -158,7 +158,7 @@ namespace casual
             local::broker::prepare( router.id());
          }
 
-         callee::handle::Call callHandler( local::arguments());
+         server::handle::Call callHandler( local::arguments());
 
          message::server::connect::Request message;
 
@@ -186,7 +186,7 @@ namespace casual
 
          {
             local::broker::prepare( router.id());
-            callee::handle::Call callHandler( local::arguments());
+            server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
             callHandler.dispatch( message);
@@ -214,7 +214,7 @@ namespace casual
 
          {
             local::broker::prepare( router.id());
-            callee::handle::Call callHandler( local::arguments());
+            server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
             callHandler.dispatch( message);
@@ -240,7 +240,7 @@ namespace casual
          mockup::ipc::Instance caller( 10);
 
          local::broker::prepare( router.id());
-         callee::handle::Call callHandler( local::arguments());
+         server::handle::Call callHandler( local::arguments());
 
          auto message = local::callMessage( caller.id());
          message.service.name = "non_existing";
@@ -268,7 +268,7 @@ namespace casual
          {
             local::broker::prepare( router.id());
 
-            callee::handle::Call callHandler( local::arguments());
+            server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
             message.service.monitor_queue = monitor.id();

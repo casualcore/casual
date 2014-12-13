@@ -11,7 +11,7 @@
 #include "transaction/manager/admin/server.h"
 
 
-#include "common/server/context.h"
+#include "common/server/handle.h"
 #include "common/server/lifetime.h"
 #include "common/trace.h"
 #include "common/queue.h"
@@ -19,6 +19,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/log.h"
+
 
 #include "config/domain.h"
 
@@ -136,7 +137,7 @@ namespace casual
                handle::domain::resource::reply::Prepare{ m_state},
                handle::domain::resource::reply::Commit{ m_state},
                handle::domain::resource::reply::Rollback{ m_state},
-               common::callee::handle::basic_admin_call< State>{ admin::Server::services( *this), m_state},
+               common::server::handle::basic_admin_call< State>{ admin::Server::services( *this), m_state},
                common::message::handle::ping( m_state),
 
                //

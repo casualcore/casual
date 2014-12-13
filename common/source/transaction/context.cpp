@@ -16,7 +16,7 @@
 #include "common/error.h"
 #include "common/exception.h"
 
-#include "xatmi.h"
+
 
 #include <map>
 #include <algorithm>
@@ -181,7 +181,7 @@ namespace casual
 
 
             //
-            // Open the resources... Not sure if we can do this, or if the user has to call tx_open by them self...
+            // Open the resources... Not sure if we can do this, or if users has to call tx_open by them self...
             //
             open();
 
@@ -198,7 +198,7 @@ namespace casual
 
                   std::stack< Transaction>& m_transactions;
                };
-            } // remove
+            } // pop
 
 
 

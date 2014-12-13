@@ -9,6 +9,8 @@
 
 #include "transaction/manager/action.h"
 
+#include "common/trace.h"
+
 
 namespace casual
 {

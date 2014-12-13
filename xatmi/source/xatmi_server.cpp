@@ -12,7 +12,7 @@
 #include <algorithm>
 
 
-#include "common/server/context.h"
+#include "common/server/handle.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 
@@ -78,7 +78,7 @@ int casual_start_server( casual_server_argument* serverArgument)
       common::process::path( serverArgument->argv[ 0]);
 
       common::message::dispatch::Handler handler{
-         common::callee::handle::Call{ local::transform::ServerArguments()( *serverArgument)},
+         common::server::handle::Call{ local::transform::ServerArguments()( *serverArgument)},
          common::message::handle::Shutdown{},
       };
 

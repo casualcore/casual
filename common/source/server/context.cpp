@@ -7,16 +7,23 @@
 
 #include "common/server/context.h"
 
+
+#include "common/message/server.h"
+#include "common/call/context.h"
+#include "common/call/timeout.h"
+
+
 #include "common/queue.h"
 #include "common/buffer/pool.h"
 #include "common/process.h"
 
 #include "common/log.h"
 #include "common/error.h"
+#include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 
 
-#include "xatmi.h"
 
 #include <algorithm>
 
@@ -145,116 +152,6 @@ namespace casual
 
       } // server
 
-      namespace callee
-      {
-         namespace handle
-         {
-            namespace policy
-            {
-               void Default::connect( message::server::connect::Request& message, const std::vector< transaction::Resource>& resources)
-               {
-
-                  //
-                  // Let the broker know about us, and our services...
-                  //
-                  message.process = process::handle();
-                  message.path = common::process::path();
-                  blocking_broker_writer brokerWriter;
-                  brokerWriter( message);
-                  //
-                  // Wait for configuration reply
-                  //
-                  queue::blocking::Reader reader( ipc::receive::queue());
-                  message::server::connect::Reply reply;
-                  reader( reply);
-
-                  transaction::Context::instance().set( resources);
-
-               }
-
-               void Default::reply( platform::queue_id_type id, message::service::Reply& message)
-               {
-                  reply_writer writer{ id };
-                  writer( message);
-               }
-
-               void Default::ack( const message::service::callee::Call& message)
-               {
-                  message::service::ACK ack;
-                  ack.process = process::handle();
-                  ack.service = message.service.name;
-                  blocking_broker_writer brokerWriter;
-                  brokerWriter( ack);
-               }
-
-
-               void Default::statistics( platform::queue_id_type id, message::monitor::Notify& message)
-               {
-                  try
-                  {
-                     monitor_writer writer{ id};
-                     writer( message);
-                  }
-                  catch( ...)
-                  {
-                     error::handler();
-                  }
-               }
-
-               void Default::transaction( const message::service::callee::Call& message, const server::Service& service, const platform::time_point& now)
-               {
-                  log::internal::debug << "service: " << service << std::endl;
-
-                  switch( service.transaction)
-                  {
-                     case server::Service::cAuto:
-                     {
-                        transaction::Context::instance().joinOrStart( message.trid);
-
-                        break;
-                     }
-                     case server::Service::cJoin:
-                     {
-                        if( message.trid)
-                        {
-                           transaction::Context::instance().joinOrStart( message.trid);
-                        }
-
-                        break;
-                     }
-                     case server::Service::cAtomic:
-                     {
-                        transaction::Context::instance().joinOrStart( common::transaction::ID::create());
-                        break;
-                     }
-                     default:
-                     {
-                        //
-                        // We don't start or join any transactions
-                        //
-                        break;
-                     }
-
-                  }
-
-                  //
-                  // Add 'global' deadline
-                  //
-                  call::Timeout::instance().add(
-                        transaction::Context::instance().current().trid,
-                        message.service.timeout,
-                        now);
-
-               }
-
-               void Default::transaction( message::service::Reply& message)
-               {
-                  transaction::Context::instance().finalize( message);
-               }
-
-            } // policy
-         } // handle
-      } // callee
    } // common
 } // casual
 

@@ -14,6 +14,8 @@
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+
+#include "common/server/handle.h"
 #include "common/server/context.h"
 
 
@@ -200,7 +202,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect(  common::message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources);
+            void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::queue_id_type id, common::message::service::Reply& message);
 
@@ -218,7 +220,7 @@ namespace casual
 
          };
 
-         typedef common::callee::handle::basic_call< broker::handle::Policy> Call;
+         typedef common::server::handle::basic_call< broker::handle::Policy> Call;
 
 
 		} // handle

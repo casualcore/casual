@@ -449,11 +449,8 @@ namespace casual
          }
 
 
-         void Policy::connect(  message::server::connect::Request& message, const std::vector< common::transaction::Resource>& resources)
+         void Policy::connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
-
-            message.process = common::process::handle();
-            message.path = common::process::path();
 
             //
             // We add the server
@@ -481,11 +478,11 @@ namespace casual
             // Add services
             //
             {
-               std::vector< state::Service> services;
+               std::vector< state::Service> brokerServices;
 
-               common::range::transform( message.services, services, transform::Service{});
+               common::range::transform( services, brokerServices, transform::Service{});
 
-               m_state.addServices( common::process::id(), std::move( services));
+               m_state.addServices( common::process::id(), std::move( brokerServices));
             }
          }
 
