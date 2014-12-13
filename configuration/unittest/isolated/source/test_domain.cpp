@@ -29,6 +29,7 @@ namespace casual
 
 	   EXPECT_TRUE( domain.name == "domain1") << "nane: " << domain.name;
 	   EXPECT_TRUE( domain.groups.size() == 5) << "size: " << domain.groups.size();
+	   EXPECT_TRUE( domain.groups.at( 2).resources.size() == 2);
 	}
 
 	TEST_P( casual_configuration_domain, read_defaul)

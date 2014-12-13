@@ -115,11 +115,7 @@ namespace casual
                result.name = group.name;
                result.note = group.note;
 
-               if( ! group.resource.key.empty())
-               {
-                  result.resource.push_back( Resource{}( group.resource));
-               }
-
+               common::range::transform( group.resources, result.resources, Resource{});
 
                return result;
             }
@@ -321,7 +317,7 @@ namespace casual
 
                for( auto& group : state.groups)
                {
-                  common::range::transform( group.resource, result.resources, Resource{});
+                  common::range::transform( group.resources, result.resources, Resource{});
                }
 
                return result;
@@ -346,7 +342,8 @@ namespace casual
                      {
                         auto& group = state.getGroup( groupId);
 
-                        common::range::transform( group.resource,
+                        common::range::transform(
+                           group.resources,
                            reply.resourceManagers,
                            transaction::Resource());
                      }

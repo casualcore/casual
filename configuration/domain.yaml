@@ -26,17 +26,20 @@ domain:
       
     - name: group1        
       note: DB connection to test
-      resource:
-        key: db2
-        instances: 3
-        openinfo: "db=test,uid=db2,pwd=db2"
+      resources:
+        - key: db2
+          instances: 3
+          openinfo: "db=test,uid=db2,pwd=db2"
         
     - name: group2
       note: DB connection to test2
-      resource:
-        key: db2
-        instances: 3
-        openinfo: "db=test2,uid=db2,pwd=db2"
+      resources:
+        - key: db2
+          instances: 3
+          openinfo: "db=test2,uid=db2,pwd=db2"
+          
+        - key: casual-queue-rm
+          instances: 3
         
    
     - name: group4

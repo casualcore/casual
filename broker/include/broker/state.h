@@ -92,14 +92,14 @@ namespace casual
             std::string name;
             std::string note;
 
-            std::vector< Resource> resource;
+            std::vector< Resource> resources;
             std::vector< id_type> dependencies;
 
             CASUAL_CONST_CORRECT_SERIALIZE({
                archive & CASUAL_MAKE_NVP( id);
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( resource);
+               archive & CASUAL_MAKE_NVP( resources);
                archive & CASUAL_MAKE_NVP( dependencies);
             })
 

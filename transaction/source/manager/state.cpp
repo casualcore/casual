@@ -30,17 +30,6 @@ namespace casual
          {
             namespace
             {
-               namespace filter
-               {
-                  struct Resource
-                  {
-                     bool operator () ( const config::domain::Group& value) const
-                     {
-                        return ! value.resource.key.empty();
-                     }
-                  };
-               } // filter
-
                namespace transform
                {
                   struct Resource
@@ -83,7 +72,7 @@ namespace casual
                {
                   if( ! state.xaConfig.emplace( resource.key, std::move( resource)).second)
                   {
-                     throw exception::NotReallySureWhatToNameThisException( "multiple keys in resource config");
+                     throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
                }
             }

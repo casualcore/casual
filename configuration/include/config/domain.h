@@ -120,7 +120,7 @@ namespace casual
             std::string name;
             std::string note;
 
-            Resource resource;
+            std::vector< Resource> resources;
             std::vector< std::string> dependencies;
 
             template< typename A>
@@ -128,7 +128,7 @@ namespace casual
             {
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( resource);
+               archive & CASUAL_MAKE_NVP( resources);
                archive & CASUAL_MAKE_NVP( dependencies);
             }
          };

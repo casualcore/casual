@@ -92,6 +92,11 @@ namespace casual
                using Base::Base;
             };
 
+            struct Configuration : Base
+            {
+               using Base::Base;
+            };
+
             struct Process : Base
             {
                using Base::Base;
