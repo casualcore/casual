@@ -9,7 +9,9 @@
 #include "common/platform.h"
 #include "common/exception.h"
 #include "common/log.h"
+#include "common/internal/trace.h"
 #include "common/process.h"
+#include "common/chronology.h"
 
 
 
@@ -21,6 +23,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <thread>
+#include <iomanip>
 
 #include <sys/time.h>
 
@@ -61,7 +64,7 @@ namespace casual
                      if( ! m_signals.empty())
                      {
                         int temp = m_signals.front();
-                        m_signals.pop_back();
+                        m_signals.pop_front();
                         return temp;
                      }
                      return 0;
@@ -80,25 +83,16 @@ namespace casual
                      //
                      // Register all the signals
                      //
-                     /*
-                     signal( casual::common::platform::cSignal_Alarm, casual_common_signal_handler);
 
-                     signal( casual::common::platform::cSignal_Terminate, casual_common_signal_handler);
-                     signal( casual::common::platform::cSignal_Kill, casual_common_signal_handler);
-                     signal( casual::common::platform::cSignal_Quit, casual_common_signal_handler);
-                     signal( casual::common::platform::cSignal_Interupt, casual_common_signal_handler);
+                     set( common::signal::Type::alarm);
 
-                     signal( casual::common::platform::cSignal_ChildTerminated, casual_common_signal_handler);
-                     */
-                     set( common::signal::type::alarm);
+                     set( common::signal::Type::terminate);
+                     set( common::signal::Type::quit);
+                     set( common::signal::Type::interupt);
 
-                     set( common::signal::type::terminate);
-                     set( common::signal::type::quit);
-                     set( common::signal::type::interupt);
+                     set( common::signal::Type::child, SA_NOCLDSTOP);
 
-                     set( common::signal::type::child, SA_NOCLDSTOP);
-
-                     set( common::signal::type::user);
+                     set( common::signal::Type::user);
                   }
 
                   void set( int signal, int flags = 0)
@@ -107,7 +101,7 @@ namespace casual
 
                      memset(&sa, 0, sizeof(sa));
                      sa.sa_handler = casual_common_signal_handler;
-                     sa.sa_flags = flags | SA_RESTART;
+                     sa.sa_flags = flags; // | SA_RESTART;
 
                      sigaction( signal, &sa, 0);
                   }
@@ -122,6 +116,45 @@ namespace casual
                // We need to instantiate to register the signals
                //
                Cache& globalCrap = Cache::instance();
+
+
+               void dispatch( platform::signal_type signal)
+               {
+                  switch( signal)
+                  {
+                     case 0:
+                        //
+                        // We do nothing for 'no signal'
+                        //
+                        break;
+                     case exception::signal::Timeout::value:
+                     {
+                        throw exception::signal::Timeout();
+                        break;
+                     }
+                     case exception::signal::child::Terminate::value:
+                     {
+                        throw exception::signal::child::Terminate();
+                        break;
+                     }
+                     case exception::signal::User::value:
+                     {
+                        throw exception::signal::User();
+                        break;
+                     }
+                     default:
+                     {
+                        //
+                        // the rest we throw on, so the rest of the application
+                        // can use RAII and other paradigms to do cleaning
+                        //
+                        throw exception::signal::Terminate( type::string( signal));
+                        break;
+                     }
+                  }
+
+
+               }
 
             } // <unnamed>
          } // local
@@ -157,43 +190,22 @@ namespace casual
 
 			void handle()
 			{
-				const int signal = local::Cache::instance().consume();
-				switch( signal)
-				{
-               case 0:
-                  //
-                  // We do nothing for 'no signal'
-                  //
-                  break;
-               case exception::signal::Timeout::value:
-               {
-                  throw exception::signal::Timeout();
-                  break;
-               }
-               case exception::signal::child::Terminate::value:
-               {
-                  throw exception::signal::child::Terminate();
-                  break;
-               }
-               case exception::signal::User::value:
-               {
-                  throw exception::signal::User();
-                  break;
-               }
-               default:
-               {
-                  //
-                  // the rest we throw on, so the rest of the application
-                  // can use RAII and other paradigms to do cleaning
-                  //
-                  throw exception::signal::Terminate( type::string( signal));
-                  break;
-               }
-				}
+				local::dispatch( local::Cache::instance().consume());
 			}
+
+         void handle( const std::vector< signal::Type>& exclude)
+         {
+            auto signal = local::Cache::instance().consume();
+
+            if( ! range::find( exclude, signal))
+            {
+               local::dispatch( signal);
+            }
+         }
 
          void clear()
          {
+            log::internal::debug << "signal clear" << std::endl;
             local::Cache::instance().clear();
 
          }
@@ -231,13 +243,15 @@ namespace casual
                         throw exception::invalid::Argument{ "timer::set - " + error::string()};
                      }
 
-                     log::internal::debug << "timer set to: " << value.it_value.tv_sec << "s " << value.it_value.tv_usec << "us - old: "
-                           << old.it_value.tv_sec << "s " <<  old.it_value.tv_usec << "us\n";
+                     log::internal::debug << "timer set: "
+                           << value.it_value.tv_sec << "." << std::setw( 6) << std::setfill( '0') << value.it_value.tv_usec << "s - was: "
+                           << old.it_value.tv_sec << "." <<  std::setw( 6) << std::setfill( '0') << old.it_value.tv_usec << "\n";
 
                      return convert( old);
                   }
                } // <unnamed>
             } // local
+
 
 
             std::chrono::microseconds set( std::chrono::microseconds offset)
@@ -247,7 +261,8 @@ namespace casual
                   //
                   // We send the signal directly
                   //
-                  signal::send( process::id(), signal::type::alarm);
+                  log::internal::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << std::endl;
+                  signal::send( process::id(), signal::Type::alarm);
                   return local::get();
                }
                else
@@ -256,10 +271,15 @@ namespace casual
                   value.it_interval.tv_sec = 0;
                   value.it_interval.tv_usec = 0;
                   value.it_value.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( offset).count();
-                  value.it_value.tv_usec = std::chrono::duration_cast< std::chrono::microseconds>( offset % std::chrono::seconds( 1)).count();
+                  value.it_value.tv_usec =  (offset % std::chrono::seconds( 1)).count();
 
                   return local::set( value);
                }
+            }
+
+            std::chrono::microseconds get()
+            {
+               return local::get();
             }
 
             std::chrono::microseconds unset()
@@ -271,18 +291,26 @@ namespace casual
 
             }
 
+
+
             Scoped::Scoped( std::chrono::microseconds timeout, const platform::time_point& now)
             {
                auto old = timer::set( timeout);
 
                if( old != std::chrono::microseconds::zero())
                {
-                  m_old = now + timeout;
+                  m_old = now + old;
+                  log::internal::debug << "old timepoint: " << chronology::local( m_old) << std::endl;
                }
                else
                {
                   m_old = platform::time_point::min();
                }
+            }
+
+            Scoped::Scoped( std::chrono::microseconds timeout)
+               : Scoped( timeout, platform::clock_type::now())
+            {
             }
 
             Scoped::~Scoped()
@@ -302,6 +330,9 @@ namespace casual
 
          bool send( platform::pid_type pid, type::type signal)
          {
+
+            log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
+
             if( ::kill( pid, signal) == -1)
             {
                switch( errno)
@@ -317,28 +348,6 @@ namespace casual
             return true;
          }
 
-         void block( type::type signal)
-         {
-            sigset_t mask;
-            sigemptyset( &mask);
-            sigaddset( &mask, signal);
-            if( sigprocmask( SIG_BLOCK, &mask, nullptr) != 0)
-            {
-               log::error << "failed to block signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
-            }
-         }
-
-
-         void unblock( type::type signal)
-         {
-            sigset_t mask;
-            sigemptyset( &mask);
-            sigaddset( &mask, signal);
-            if( sigprocmask( SIG_UNBLOCK, &mask, nullptr) != 0)
-            {
-               log::error << "failed to unblock signal (" << type::string( signal) << ")  - " << error::string() << std::endl;
-            }
-         }
 
          namespace thread
          {
@@ -347,6 +356,8 @@ namespace casual
             //!
             void send( std::thread& thread, type::type signal)
             {
+               log::internal::debug << "signal::thread::send thread: " << thread.get_id() << " signal: " << signal << std::endl;
+
                //if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
                if( pthread_kill( thread.native_handle(), signal) != 0)
                {

@@ -10,6 +10,7 @@
 
 #include "common/trace.h"
 #include "common/internal/log.h"
+#include "common/internal/trace.h"
 
 namespace casual
 {
@@ -24,6 +25,10 @@ namespace casual
             {
                std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
+                  trace::internal::Scope trace{ "common::server::lifetime::soft::shutdown"};
+
+                  log::internal::debug << "servers: " << range::make( servers) << std::endl;
+
                   std::vector< platform::pid_type> result;
 
                   for( auto& exit : process::lifetime::ended())
@@ -37,7 +42,7 @@ namespace casual
                   for( auto& handle : servers)
                   {
                      message::shutdown::Request message;
-                     queue::non_blocking::basic_send< queue::policy::Ignore> send;
+                     queue::non_blocking::basic_send< queue::policy::Timeout> send;
 
                      if( send( handle.queue, message))
                      {
@@ -59,6 +64,7 @@ namespace casual
             {
                std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
+                  trace::internal::Scope trace{ "common::server::lifetime::hard::shutdown"};
 
                   std::vector< platform::pid_type> origin;
 
@@ -71,6 +77,8 @@ namespace casual
 
 
                   auto running = range::difference( origin, result);
+
+                  log::internal::debug << "still on-line: " << range::make( running) << std::endl;
 
                   range::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
 

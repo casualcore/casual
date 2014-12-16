@@ -158,16 +158,16 @@ namespace casual
                }
             };
 
-            typedef basic_signal< common::platform::cSignal_Alarm> Timeout;
+            typedef basic_signal< common::signal::alarm> Timeout;
 
-            typedef basic_signal< common::platform::cSignal_Terminate> Terminate;
+            typedef basic_signal< common::signal::terminate> Terminate;
 
-            typedef basic_signal< common::platform::cSignal_UserDefined> User;
+            typedef basic_signal< common::signal::user> User;
 
 
             namespace child
             {
-               typedef basic_signal< common::platform::cSignal_ChildTerminated> Terminate;
+               typedef basic_signal< common::signal::child> Terminate;
             } // child
 
          } // signal

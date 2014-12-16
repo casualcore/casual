@@ -8,14 +8,54 @@
 #include <gtest/gtest.h>
 
 #include "common/signal.h"
+#include "common/process.h"
+#include "common/exception.h"
 
 namespace casual
 {
-	TEST( casual_common_signal, set_properties)
-	{
-	   //common::signal::properties::set( common::signal::properties::Option::throwOnChildDeath);
+   namespace common
+   {
 
-	   //common::signal::properties::Scoped< common::signal::properties::Option::throwOnChildDeath> properties;
-	}
+      TEST( casual_common_signal, scope_timeout)
+      {
+         EXPECT_NO_THROW( signal::handle());
+
+         signal::timer::Scoped timer{ std::chrono::milliseconds{ 1}};
+
+         process::sleep( std::chrono::milliseconds{ 2});
+
+         EXPECT_THROW(
+         {
+            signal::handle();
+
+         }, exception::signal::Timeout);
+      }
+
+      TEST( casual_common_signal, nested_timeout)
+      {
+         EXPECT_NO_THROW( signal::handle());
+
+         signal::timer::Scoped timer1{ std::chrono::milliseconds{ 5}};
+
+         {
+            signal::timer::Scoped timer2{ std::chrono::milliseconds{ 1}};
+
+            process::sleep( std::chrono::milliseconds{ 2});
+
+            EXPECT_THROW(
+            {
+               signal::handle();
+            }, exception::signal::Timeout);
+         }
+
+         process::sleep( std::chrono::milliseconds{ 4});
+
+         EXPECT_THROW(
+         {
+            signal::handle();
+         }, exception::signal::Timeout);
+      }
+
+   } // common
 
 } // casual

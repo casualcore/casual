@@ -34,6 +34,25 @@ namespace casual
                inline void apply() {}
             };
 
+            struct Timeout
+            {
+               inline void apply()
+               {
+                  try
+                  {
+
+                  }
+                  catch( const exception::signal::Timeout&)
+                  {
+                     throw;
+                  }
+                  catch( ...)
+                  {
+
+                  }
+               }
+            };
+
             struct NoAction
             {
                inline void apply()

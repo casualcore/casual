@@ -108,10 +108,6 @@ namespace casual
                start( std::move( settings));
 
             }
-            catch( const common::exception::signal::Terminate&)
-            {
-               return 0;
-            }
             catch( ...)
             {
                return common::error::handler();

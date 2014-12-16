@@ -10,6 +10,8 @@
 
 #include "common/message/queue.h"
 
+#include "common/transaction/resource.h"
+
 
 #include <functional>
 
@@ -34,6 +36,7 @@ namespace casual
          struct Dispatch
          {
             Dispatch( const std::vector< forward::Task>& tasks);
+            Dispatch( const std::vector< forward::Task>& tasks, const std::vector< common::transaction::Resource>& resources);
 
             void execute();
 

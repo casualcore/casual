@@ -100,6 +100,23 @@ namespace casual
       }
 
       /*
+       * doesnt work...
+       */
+      TEST( casual_common_process, wait_timeout_non_existing_children)
+      {
+         std::vector< platform::pid_type> pids( 10);
+
+         auto terminated = process::lifetime::wait( { 666});
+
+         EXPECT_TRUE( terminated.empty());
+
+         signal::clear();
+      }
+
+
+
+
+      /*
        * does not work right now...
       TEST( casual_common_process, spawn_non_existing_application__gives_exception)
       {

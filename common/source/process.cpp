@@ -18,6 +18,7 @@
 
 #include "common/message/server.h"
 #include "common/queue.h"
+#include "common/flag.h"
 
 //
 // std
@@ -200,60 +201,80 @@ namespace casual
             {
                lifetime::Exit wait( platform::pid_type pid, int flags = WNOHANG)
                {
+                  log::internal::debug << "wait - pid: " << pid << " flags: " << flags << std::endl;
+
+                  if( ! common::flag< WNOHANG>( flags))
+                  {
+                     log::internal::debug << "current timeout (us): " << signal::timer::get().count() << std::endl;
+                  }
+
+                  signal::handle( { signal::Type::child});
+
                   lifetime::Exit exit;
 
-                  auto result = waitpid( pid, &exit.status, flags);
-
-                  if( result == -1)
+                  auto loop = [&]()
                   {
-                     switch( errno)
+                     auto result = waitpid( pid, &exit.status, flags);
+
+                     if( result == -1)
                      {
-                        case ECHILD:
+                        switch( errno)
                         {
-                           // no child
-                           break;
-                        }
-                        case EINTR:
-                        {
-                           signal::handle();
-                           break;
-                        }
-                        default:
-                        {
-                           log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
-                           throw exception::NotReallySureWhatToNameThisException( error::string());
+                           case ECHILD:
+                           {
+                              // no child
+                              break;
+                           }
+                           case EINTR:
+                           {
+                              signal::handle( { signal::Type::child});
+
+                              //
+                              // We do another turn in the loop
+                              //
+                              return true;
+                           }
+                           default:
+                           {
+                              log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
+                              throw exception::NotReallySureWhatToNameThisException( error::string());
+                           }
                         }
                      }
-                  }
-                  else if( result != 0)
-                  {
-                     exit.pid = result;
+                     else if( result != 0)
+                     {
+                        exit.pid = result;
 
 
-                     if( WIFEXITED( exit.status))
-                     {
-                        exit.reason = lifetime::Exit::Reason::exited;
-                        exit.status = WEXITSTATUS( exit.status);
-                     }
-                     else if( WIFSIGNALED( exit.status))
-                     {
-                        if( WCOREDUMP( exit.status))
+                        if( WIFEXITED( exit.status))
                         {
-                           exit.reason = lifetime::Exit::Reason::core;
-                           exit.status = 0;
+                           exit.reason = lifetime::Exit::Reason::exited;
+                           exit.status = WEXITSTATUS( exit.status);
                         }
-                        else
+                        else if( WIFSIGNALED( exit.status))
                         {
-                           exit.reason = lifetime::Exit::Reason::signaled;
-                           exit.status = WTERMSIG( exit.status);
+                           if( WCOREDUMP( exit.status))
+                           {
+                              exit.reason = lifetime::Exit::Reason::core;
+                              exit.status = 0;
+                           }
+                           else
+                           {
+                              exit.reason = lifetime::Exit::Reason::signaled;
+                              exit.status = WTERMSIG( exit.status);
+                           }
+                        }
+                        else if( WIFSTOPPED( exit.status))
+                        {
+                           exit.reason = lifetime::Exit::Reason::stopped;
+                           exit.status = WSTOPSIG( exit.status);
                         }
                      }
-                     else if( WIFSTOPPED( exit.status))
-                     {
-                        exit.reason = lifetime::Exit::Reason::stopped;
-                        exit.status = WSTOPSIG( exit.status);
-                     }
-                  }
+                     return false;
+                  };
+
+                  while( loop());
+
                   return exit;
                }
 
@@ -266,6 +287,13 @@ namespace casual
                      if( range::find( pids, exit.pid))
                      {
                         result.push_back( std::move( exit));
+                     }
+                     else if( exit.pid == 0)
+                     {
+                        //
+                        // No children exists
+                        //
+                        return;
                      }
                   }
                }
@@ -312,7 +340,7 @@ namespace casual
 
          bool terminate( platform::pid_type pid)
          {
-            return signal::send( pid, platform::cSignal_Terminate);
+            return signal::send( pid, signal::Type::terminate);
          }
 
          file::scoped::Path singleton( std::string path)
@@ -363,7 +391,7 @@ namespace casual
                   common::log::error << "failed to get ping response from potentially running process - to risky to start - action: terminate" << std::endl;
                   throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
                }
-               catch( const common::exception::invalid::Argument&)
+               catch( const common::exception::queue::Unavailable&)
                {
                   common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
                }
@@ -438,6 +466,11 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
             {
+               trace::internal::Scope trace{ "common::process::lifetime::wait"};
+
+
+               log::internal::debug << "wait for pids: " << range::make( pids) << std::endl;
+
                if( pids.empty())
                   return {};
 

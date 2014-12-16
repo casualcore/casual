@@ -28,8 +28,7 @@
 // syslog
 #include <syslog.h>
 
-// signal
-#include <signal.h>
+
 
 // alarm
 #include <unistd.h>
@@ -134,16 +133,6 @@ namespace casual
 			};
 
 			typedef int signal_type;
-
-			static const signal_type cSignal_Alarm = SIGALRM;
-			static const signal_type cSignal_Terminate = SIGTERM;
-			static const signal_type cSignal_Kill = SIGKILL;
-			static const signal_type cSignal_Quit = SIGQUIT;
-			static const signal_type cSignal_Interupt = SIGINT;
-			static const signal_type cSignal_ChildTerminated = SIGCHLD;
-			static const signal_type cSignal_UserDefined = SIGUSR1;
-
-
 
 
 

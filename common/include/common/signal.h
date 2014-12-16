@@ -16,30 +16,35 @@
 
 #include <thread>
 
+// signal
+#include <signal.h>
+
 namespace casual
 {
 
-	namespace common
-	{
-		namespace signal
-		{
-		   using set_type = sigset_t;
+   namespace common
+   {
+      namespace signal
+      {
+         using set_type = sigset_t;
+
+         enum Type : platform::signal_type
+         {
+            alarm = SIGALRM,
+            interupt = SIGINT,
+            kill = SIGKILL,
+            quit = SIGQUIT,
+            child = SIGCHLD,
+            terminate = SIGTERM,
+            user = SIGUSR1,
+
+         };
 
 		   namespace type
-		   {
+         {
+            using type = platform::signal_type;
 
-		      static const auto alarm = platform::cSignal_Alarm;
-		      static const auto interupt = platform::cSignal_Interupt;
-		      static const auto kill = platform::cSignal_Kill;
-		      static const auto quit = platform::cSignal_Quit;
-		      static const auto child = platform::cSignal_ChildTerminated;
-		      static const auto terminate = platform::cSignal_Terminate;
-		      static const auto user = platform::cSignal_UserDefined;
-
-		      using type = decltype( terminate);
-
-
-		      std::string string( type signal);
+            std::string string( type signal);
 
          } // type
 
@@ -50,6 +55,8 @@ namespace casual
 			//! @throw subtype to exception::signal::Base
 			//!
 			void handle();
+
+         void handle( const std::vector< signal::Type>& exclude);
 
 
 			//!
@@ -63,10 +70,13 @@ namespace casual
 			   std::chrono::microseconds set( std::chrono::microseconds offset);
 
 			   template< typename R, typename P>
-			   void set( std::chrono::duration< R, P> offset)
+			   std::chrono::microseconds set( std::chrono::duration< R, P> offset)
 			   {
-			      set( std::chrono::duration_cast< std::chrono::microseconds>( offset));
+			      return set( std::chrono::duration_cast< std::chrono::microseconds>( offset));
 			   }
+
+
+			   std::chrono::microseconds get();
 
 			   std::chrono::microseconds unset();
 
@@ -75,7 +85,9 @@ namespace casual
             {
             public:
 
-               Scoped( std::chrono::microseconds timeout, const platform::time_point& now = platform::clock_type::now());
+			      Scoped( std::chrono::microseconds timeout);
+               Scoped( std::chrono::microseconds timeout, const platform::time_point& now);
+
 
                template< typename R, typename P>
                Scoped( std::chrono::duration< R, P> timeout)
@@ -103,15 +115,6 @@ namespace casual
 			//!
 			bool send( platform::pid_type pid, type::type signal);
 
-			//!
-			//! Blocks a given signal
-			//!
-			void block( type::type signal);
-
-			//!
-         //! Unblock a given signal
-         //!
-			void unblock( type::type signal);
 
 			namespace thread
          {
