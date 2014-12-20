@@ -11,7 +11,7 @@
 #include "common/message/type.h"
 #include "common/platform.h"
 #include "common/uuid.h"
-#include "common/marshal.h"
+#include "common/marshal/marshal.h"
 #include "common/buffer/type.h"
 
 namespace casual

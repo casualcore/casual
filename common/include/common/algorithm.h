@@ -284,9 +284,9 @@ namespace casual
          Range() : last( first) {}
          Range( Iter first, Iter last) : first( first), last( last) {}
 
-         auto size() const -> decltype( std::distance( Iter(), Iter()))
+         std::size_t size() const
          {
-            return std::distance( first, last);
+            return std::abs( last - first);
          }
 
          bool empty() const

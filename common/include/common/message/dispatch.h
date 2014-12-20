@@ -8,7 +8,7 @@
 #ifndef MESSAGE_DISPATCH_H_
 #define MESSAGE_DISPATCH_H_
 
-#include "common/marshal.h"
+#include "common/marshal/binary.h"
 #include "common/queue.h"
 #include "common/log.h"
 

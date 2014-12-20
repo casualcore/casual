@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "common/marshal.h"
+#include "common/marshal/binary.h"
 #include "common/message/server.h"
 
 

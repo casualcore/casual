@@ -10,7 +10,7 @@
 
 #include "common/ipc.h"
 #include "common/message/type.h"
-#include "common/marshal.h"
+#include "common/marshal/binary.h"
 #include "common/process.h"
 
 

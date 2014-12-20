@@ -1,81 +1,28 @@
 //!
-//! casual_archive.h
+//! binary.h
 //!
-//! Created on: Jun 9, 2012
+//! Created on: Dec 20, 2014
 //!     Author: Lazan
 //!
 
-#ifndef CASUAL_ARCHIVE_H_
-#define CASUAL_ARCHIVE_H_
+#ifndef CASUAL_COMMON_MARSHAL_BINARY_H_
+#define CASUAL_COMMON_MARSHAL_BINARY_H_
 
 
 
-//#include "common/message/type.h"
 #include "common/ipc.h"
-//#include "common/uuid.h"
 #include "common/algorithm.h"
-
-
+#include "common/marshal/marshal.h"
 
 #include <vector>
 #include <cassert>
 
-//
-// We need to get private stuff for unittest
-//
-#include "gtest/gtest_prod.h"
-
-
-
-#define CASUAL_CONST_CORRECT_MARSHAL( statement) \
-   template< typename A> \
-   void marshal( A& archive)  \
-   {  \
-         statement \
-   } \
-   template< typename A> \
-   void marshal( A& archive) const \
-   {  \
-         statement \
-   } \
-
-
-
-
 
 namespace casual
 {
-   template< typename T, typename M>
-   void casual_marshal_value( T& value, M& marshler)
-   {
-      value.marshal( marshler);
-   }
-
-   template< typename T, typename M>
-   void casual_unmarshal_value( T& value, M& unmarshler)
-   {
-      value.marshal( unmarshler);
-   }
-
-   /*
-   //!
-   //! Overload for Uuid
-   //!
-   template< typename M>
-   void casual_marshal_value( casual::common::Uuid& value, M& marshler)
-   {
-      marshler << value.get();
-   }
-
-   template< typename M>
-   void casual_unmarshal_value( casual::common::Uuid& value, M& unmarshler)
-   {
-      unmarshler >> value.get();
-   }
-   */
-
    namespace common
    {
+
       namespace marshal
       {
          namespace output
@@ -257,9 +204,6 @@ namespace casual
 
             private:
 
-               FRIEND_TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch);
-               FRIEND_TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler);
-
                template< typename T>
                typename std::enable_if< ! std::is_pod< T>::value>::type
                read( T& value)
@@ -324,8 +268,6 @@ namespace casual
                offest_type m_offset = 0;
             };
 
-
-
          } // input
       } // marshal
 
@@ -380,8 +322,7 @@ namespace casual
       } // marshal
 
    } // common
+
 } // casual
 
-
-
-#endif /* CASUAL_ARCHIVE_H_ */
+#endif // BINARY_H_

@@ -85,8 +85,7 @@ target = LinkExecutable( 'bin/casual-broker-admin',
     ['casual-common', 'casual-sf', 'casual-xatmi'])
 	
 
-install_bins.append( target)
-
+Install( target,'$(CASUAL_HOME)/internal/bin')
 
 
 

@@ -14,6 +14,8 @@
 #include "common/exception.h"
 #include "common/message/server.h"
 
+#include "common/marshal/binary.h"
+
 
 //temp
 

@@ -196,7 +196,7 @@ queue_client = LinkExecutable( 'bin/casual-queue-admin',
    [common, queue_api, 'casual-common', 'casual-sf'])
  
  
-install_bin.append( queue_client);
+Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 
 
 

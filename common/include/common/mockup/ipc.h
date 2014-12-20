@@ -5,13 +5,12 @@
 //!     Author: Lazan
 //!
 
-#ifndef IPC_H_
-#define IPC_H_
+#ifndef COMMON_MOCKUP_IPC_H_
+#define COMMON_MOCKUP_IPC_H_
 
 #include "common/ipc.h"
 #include "common/move.h"
 #include "common/platform.h"
-#include "common/marshal.h"
 #include "common/message/type.h"
 
 

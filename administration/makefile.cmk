@@ -1,0 +1,26 @@
+from casual.make.directive import *
+
+
+IncludePaths( [
+       '../common/include',
+       '../xatmi/include',
+    ])
+
+LibraryPaths( 
+    [
+      '../common/bin',
+    ])
+
+
+admin = LinkExecutable( 'bin/casual-admin', 
+    [ 
+        Compile( 'source/main.cpp'),
+    ], 
+    [ 'casual-common'])
+
+
+Install( admin, '$(CASUAL_HOME)/bin')
+
+
+
+

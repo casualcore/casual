@@ -9,6 +9,7 @@
 #define CASUAL_COMMON_MESSAGE_PENDING_H_
 
 #include "common/ipc.h"
+#include "common/marshal/binary.h"
 
 namespace casual
 {
