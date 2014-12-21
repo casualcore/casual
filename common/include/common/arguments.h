@@ -41,6 +41,11 @@ namespace casual
                };
             };
 
+            struct value_cardinality
+            {
+               std::size_t min;
+               std::size_t max;
+            };
 
          }
 
@@ -97,6 +102,11 @@ namespace casual
                   m_option->dispatch();
                }
 
+               bool valid() const
+               {
+                  return m_option->valid();
+               }
+
             private:
                class base_type
                {
@@ -106,6 +116,7 @@ namespace casual
                   virtual void assign( const std::string& option, std::vector< std::string>&& values) = 0;
                   virtual bool consumed() const = 0;
                   virtual void dispatch() const = 0;
+                  virtual bool valid() const = 0;
                };
 
                template< typename T>
@@ -130,6 +141,10 @@ namespace casual
                   void dispatch() const override
                   {
                      m_option_type.dispatch();
+                  }
+                  bool valid() const override
+                  {
+                     return m_option_type.valid();
                   }
                   T m_option_type;
                };
@@ -168,6 +183,7 @@ namespace casual
             struct base_dispatch
             {
                virtual ~base_dispatch() = default;
+               virtual internal::value_cardinality cardinality() const = 0;
                virtual void operator () ( const std::vector< std::string>& values) const = 0;
 
             };
@@ -211,6 +227,11 @@ namespace casual
                void operator () ( const std::vector< std::string>& values) const
                {
                   call< argument_type>( m_caller, values, cardinality_type());
+               }
+
+               internal::value_cardinality cardinality() const
+               {
+                  return { cardinality_type::min_value, cardinality_type::max_value};
                }
 
             private:
@@ -431,6 +452,12 @@ namespace casual
                }
             }
 
+            bool valid() const
+            {
+               return m_values.size() >= m_dispatch->cardinality().min &&
+                     m_values.size() <= m_dispatch->cardinality().max;
+            }
+
          private:
             const std::vector< std::string> m_options;
             const std::string m_description;
@@ -500,6 +527,10 @@ namespace casual
             }
 
 
+            bool valid() const
+            {
+               return range::all_of( m_groups, std::mem_fn( &option::Holder::valid));
+            }
 
 
             void add() {}
@@ -549,14 +580,12 @@ namespace casual
 
 
             //
-            // Find first argument that has a handler
+            // start divide and conquer the arguments and try to find handlers for'em
             //
 
-            auto argumentRange = range::find_first_of( arguments, m_groups, argument::internal::HasOption());
+            auto argumentRange = range::make( arguments);
 
-            //auto start = current;
-
-            while( ! argumentRange.empty())
+            while( argumentRange)
             {
 
                //
@@ -564,26 +593,31 @@ namespace casual
                //
                auto found = range::find_if( m_groups, argument::internal::Option{ *argumentRange});
 
-
-               if( found)
+               if( ! found)
                {
-
-                  auto argument = *argumentRange;
-                  ++argumentRange;
-
-                  //
-                  // Find the end of values associated with this option
-                  //
-                  auto assignRange  = argumentRange - range::find_first_of( argumentRange, m_groups, argument::internal::HasOption());
-
-                  found->assign( argument, { std::begin( assignRange), std::end( assignRange)});
-
+                  throw exception::invalid::Argument{ "invalid argument: " + *argumentRange};
                }
-               else
+
+               //
+               // pin the current found argument, and consume it so we can continue to
+               // search
+               //
+               auto argument = *argumentRange;
+               ++argumentRange;
+
+               //
+               // Find the end of values associated with this option
+               //
+               auto slice = range::divide_first( argumentRange, m_groups, argument::internal::HasOption());
+
+               found->assign( argument, range::to_vector( std::get< 0>( slice)));
+
+               if( ! found->valid())
                {
-                  // temp
-                  ++argumentRange;
+                  throw exception::invalid::Argument{ "invalid values for: " + argument};
                }
+
+               argumentRange = std::get< 1>( slice);
             }
 
             dispatch();

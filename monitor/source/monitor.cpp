@@ -178,9 +178,9 @@ namespace monitor
 		static const std::string cMethodname("Monitor::start");
 		Trace trace(cMethodname);
 
-		message::dispatch::Handler handler;
-
-		handler.add< handle::Notify>( m_monitordb);
+		message::dispatch::Handler handler{
+		   handle::Notify{ m_monitordb}
+		};
 
 		queue::blocking::Reader queueReader(m_receiveQueue);
 

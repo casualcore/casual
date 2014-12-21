@@ -50,7 +50,8 @@ namespace casual
                enum
                {
                   message_max_size = common::platform::message_size,
-                  payload_max_size = common::platform::message_size - sizeof( Header)
+                  payload_max_size = common::platform::message_size - sizeof( Header),
+
                };
 
                static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
@@ -75,6 +76,9 @@ namespace casual
                } payload;
 
 
+               static_assert( sizeof( Payload) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
+
+
                void* raw() { return &payload;}
 
                std::size_t size() const { return m_size; }
@@ -90,7 +94,8 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Transport& value)
                {
                   return out << "{type: " << value.payload.type << " header: {correlation: " << common::uuid::string( value.payload.header.correlation)
-                        << " count:" << value.payload.header.count << "} size: " << value.size() << "}";
+                        << ", count:" << value.payload.header.count << ", size: " << sizeof( Header) << "}, size: "
+                        << value.size() << ", max-size: " << message_max_size << "}";
                }
 
 

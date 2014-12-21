@@ -24,6 +24,7 @@ namespace casual
          {
 
             UTILITY_BASE = 500,
+            cFlushIPC, // dummy message used to flush queue (into cache)
             cShutdowndRequest,
             cShutdowndReply,
 
@@ -125,6 +126,18 @@ namespace casual
 
             Uuid correlation;
          };
+
+         namespace flush
+         {
+            struct IPC : basic_message< cFlushIPC>
+            {
+               char dummy;
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & dummy;
+               })
+            };
+         } // flush
 
 
          //!

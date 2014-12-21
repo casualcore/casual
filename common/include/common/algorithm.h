@@ -250,17 +250,33 @@ namespace casual
                template< typename V>
                value( V&& value) : m_value( std::forward< V>( value)) {}
 
-               T operator () () const { return m_value;}
+               const T& operator () () const { return m_value;}
+               T& operator () () { return m_value;}
 
             private:
                T m_value;
             };
+
+            template< typename T>
+            struct value< T&>
+            {
+               value( T& value) : m_value( value) {}
+
+               const T& operator () () const { return m_value;}
+               T& operator () () { return m_value;}
+
+               template< typename V>
+               void operator () ( V&& value) { m_value = std::forward< V>( value);}
+
+            private:
+               T& m_value;
+            };
          } // detail
 
          template< typename T>
-         auto value( T&& value) -> detail::value< T>
+         auto value( T&& value) ->  detail::value< decltype( std::forward< T>( value))>
          {
-            return detail::value< T>( std::forward< T>( value));
+            return detail::value< decltype( std::forward< T>( value))>( std::forward< T>( value));
          }
 
       } // bind
@@ -729,6 +745,14 @@ namespace casual
          }
 
 
+         template< typename R, typename F>
+         auto for_each( R&& range, F functor) -> decltype( make( std::forward< R>( range)))
+         {
+            auto resultRange = make( std::forward< R>( range));
+            std::for_each( std::begin( resultRange), std::end( resultRange), functor);
+            return resultRange;
+         }
+
 
          //!
          //! associate container specialization
@@ -740,8 +764,6 @@ namespace casual
             resultRange.first = range.find( value);
             return resultRange;
          }
-
-
 
          //!
          //! non associate container specialization
@@ -765,13 +787,36 @@ namespace casual
          }
 
 
-         template< typename R, typename F>
-         auto for_each( R&& range, F functor) -> decltype( make( std::forward< R>( range)))
+         //!
+         //! Divide @p range in two parts [range-first, divider), [divider, range-last).
+         //! where divider is the first occurrence that is equal to @p value
+         //!
+         //! @return a tuple with the two ranges
+         //!
+         template< typename R1, typename T>
+         auto divide( R1&& range, T&& value) ->  decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
          {
-            auto resultRange = make( std::forward< R>( range));
-            std::for_each( std::begin( resultRange), std::end( resultRange), functor);
-            return resultRange;
+            auto divider = std::find(
+                  std::begin( range), std::end( range),
+                  std::forward< T>( value));
+
+            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
          }
+
+         //!
+         //! Divide @p range in two parts [range-first, divider), [divider, range-last).
+         //! where divider is the first occurrence where @p predicate is true
+         //!
+         //! @return a tuple with the two ranges
+         //!
+         template< typename R1, typename P>
+         auto divide_if( R1&& range, P predicate) ->  decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
+         {
+            auto divider = std::find_if( std::begin( range), std::end( range), predicate);
+
+            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
+         }
+
 
 
          template< typename R1, typename R2, typename F>
@@ -797,6 +842,38 @@ namespace casual
                   std::begin( source), std::end( source));
 
             return resultRange;
+         }
+
+         //!
+         //! Divide @p range in two parts [range-first, divider), [divider, range-last).
+         //! where divider is the first occurrence found in @p lookup
+         //!
+         //! @return a tuple with the two ranges
+         //!
+         template< typename R1, typename R2>
+         auto divide_first( R1&& range, R2&& lookup) ->  decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
+         {
+            auto divider = std::find_first_of(
+                  std::begin( range), std::end( range),
+                  std::begin( lookup), std::end( lookup));
+
+            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
+         }
+
+         //!
+         //! Divide @p range in two parts [range-first, divider), [divider, range-last).
+         //! where divider is the first occurrence found in @p lookup
+         //!
+         //! @return a tuple with the two ranges
+         //!
+         template< typename R1, typename R2, typename F>
+         auto divide_first( R1&& range, R2&& lookup, F functor) ->  decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
+         {
+            auto divider = std::find_first_of(
+                  std::begin( range), std::end( range),
+                  std::begin( lookup), std::end( lookup), functor);
+
+            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
          }
 
 

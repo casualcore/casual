@@ -70,6 +70,11 @@ namespace casual
                return Ping< common::queue::policy::RemoveOnTerminate< S>>{ state};
             }
 
+            inline auto ping() -> Ping< common::queue::policy::NoAction>
+            {
+               return Ping< common::queue::policy::NoAction>{};
+            }
+
 
             struct Shutdown
             {

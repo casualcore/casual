@@ -153,7 +153,7 @@ namespace casual
                   partBegin = partEnd;
                }
 
-               log::internal::ipc << "ipc[" << id() << "] sent message - " << message << std::endl;
+               log::internal::ipc << "ipc > [" << id() << "] sent message - " << message << std::endl;
 
 
                return message.correlation;
@@ -345,7 +345,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
+                  log::internal::ipc << "ipc < [" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -365,7 +365,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
+                  log::internal::ipc << "ipc < [" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -385,7 +385,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
+                  log::internal::ipc << "ipc < [" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -406,7 +406,7 @@ namespace casual
                   result.push_back( std::move( *found));
                   m_cache.erase( found.first);
 
-                  log::internal::ipc << "ipc[" << id() << "] received message - " << result.back() << std::endl;
+                  log::internal::ipc << "ipc < [" << id() << "] received message - " << result.back() << std::endl;
                }
 
                return result;
@@ -446,7 +446,7 @@ namespace casual
                //
                common::signal::handle();
 
-               auto result = msgrcv( m_id, message.raw(), message.size(), 0, flags);
+               auto result = msgrcv( m_id, message.raw(), message::Transport::message_max_size, 0, flags);
 
                if( result == -1)
                {
@@ -459,13 +459,18 @@ namespace casual
                         return false;
                      }
                      case ENOMSG:
+                     case EAGAIN:
                      {
                         return false;
+                     }
+                     case EIDRM:
+                     {
+                        throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( m_id) + " - " + common::error::string()};
                      }
                      default:
                      {
                         std::ostringstream msg;
-                        msg << "ipc[" << id() << "] receive failed - message: " << message << " - " << common::error::string();
+                        msg << "ipc < [" << id() << "] receive failed - message: " << message << " - flags: " << flags << " - " << common::error::string();
                         log::internal::ipc << msg.str() << std::endl;
                         throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
                      }

@@ -9,6 +9,7 @@
 
 #include "common/arguments.h"
 
+
 #include <functional>
 
 namespace casual
@@ -59,7 +60,43 @@ namespace casual
 
 
          long globalLong = 0;
+
+         template< typename... Args>
+         constexpr std::size_t deduce( void (*function)( Args... args))
+         {
+            return sizeof...( Args);
+         }
+
+         void func1() {}
+         void func2( int a, int b, int c) {}
+         void func3( long a, std::string b, int c, char d, float e) {}
+
       }
+
+      TEST( casual_common_arguments, test_function_argument_deduction)
+      {
+
+         EXPECT_TRUE( local::deduce( &local::func1) == 0) << "value: " << local::deduce( &local::func1);
+         EXPECT_TRUE( local::deduce( &local::func2) == 3) << "value: " << local::deduce( &local::func2);
+         EXPECT_TRUE( local::deduce( &local::func3) == 5) << "value: " << local::deduce( &local::func3);
+
+      }
+
+      TEST( casual_common_arguments, test_std_bind)
+      {
+
+         long value = 0;
+
+         auto callable = std::bind( bind::value( value), std::placeholders::_1);
+
+         callable( 42);
+
+         EXPECT_TRUE( value == 42) << "value: " << value;
+         //EXPECT_TRUE( callable() == 42);
+
+      }
+
+
 
       TEST( casual_common_arguments, test_bind)
       {
@@ -288,8 +325,6 @@ namespace casual
          arguments.parse(  "processname", { "-f" ,"1", "2", "3"});
 
          EXPECT_TRUE( local::global1.size() == 3);
-
-
 
       }
 

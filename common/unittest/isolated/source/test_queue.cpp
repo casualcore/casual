@@ -9,6 +9,7 @@
 
 #include "common/queue.h"
 #include "common/ipc.h"
+#include "common/mockup/ipc.h"
 #include "common/message/server.h"
 #include "common/exception.h"
 #include "common/signal.h"
@@ -114,7 +115,6 @@ namespace casual
             ipc::receive::Queue receive;
             non_blocking::Reader reader( receive);
 
-            //ipc::send::Queue send( receive.id());
             blocking::Writer writer( receive.id());
 
             message::service::Advertise sendMessage;
@@ -128,9 +128,61 @@ namespace casual
             EXPECT_TRUE( receiveMessage.services.size() == 50);
 
          }
-      }
-   }
-}
+
+         TEST( casual_common, queue_non_blocking_reader_next_filter__no_messages)
+         {
+            {
+               non_blocking::Writer send{ ipc::receive::id()};
+               message::flush::IPC message;
+               EXPECT_FALSE( send( message).empty());
+
+            }
+
+            non_blocking::Reader reader( ipc::receive::queue());
+
+            auto result = reader.next( { message::Type::cMonitorConnect, message::Type::cMonitorNotify});
+
+            EXPECT_TRUE( result.empty());
+         }
+
+
+         TEST( casual_common, queue_non_blocking_reader_next_filter__messages)
+         {
+            mockup::ipc::Router route{ ipc::receive::id()};
+            {
+               blocking::Writer send{ route.id()};
+
+
+               {
+                  message::flush::IPC message;
+                  send( message);
+               }
+               /*
+               {
+                  message::server::connect::Request message;
+                  message.services.resize( 100);
+                  send( message);
+               }
+               */
+               {
+                  message::service::Advertise message;
+                  message.serverPath = "banan";
+                  message.services.resize( 50);
+                  send( message);
+               }
+
+            }
+
+            blocking::Reader reader( ipc::receive::queue());
+
+            auto result = reader.next( { message::Type::cMonitorConnect, message::service::Advertise::message_type});
+            EXPECT_TRUE( result.type == message::service::Advertise::message_type);
+         }
+
+
+      } // queue
+   } // common
+} // casual
 
 
 

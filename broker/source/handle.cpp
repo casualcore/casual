@@ -77,6 +77,12 @@ namespace casual
                         handle::transaction::client::Connect{ m_state},
                      };
 
+                     //
+                     // Use a filter so we don't consume any incoming messages that
+                     // we don't handle right now.
+                     //
+                     auto filter = handler.types();
+
 
                      while( ! common::range::all_of( batch.servers, filter::Booted{ m_state}))
                      {
@@ -84,7 +90,7 @@ namespace casual
                         {
                            common::signal::timer::Scoped timeout{ std::chrono::seconds( 10)};
 
-                           auto marshal = queueReader.next();
+                           auto marshal = queueReader.next( filter);
                            handler.dispatch( marshal);
                         }
                         catch( const common::exception::signal::Timeout& exception)

@@ -228,7 +228,6 @@ namespace casual
 
 
             message::dispatch::Handler handler{
-               //handle::Shutdown{ m_state},
                handle::Connect{ m_state},
                handle::Advertise{ m_state},
                handle::Unadvertise{ m_state},
@@ -239,6 +238,7 @@ namespace casual
                handle::transaction::client::Connect{ m_state},
                handle::Call{ admin::Server::services( *this), m_state},
                common::message::handle::ping( m_state),
+               common::message::handle::Shutdown{},
             };
 
 
@@ -286,7 +286,7 @@ namespace casual
          common::range::for_each( instances, updateInstances);
       }
 
-      admin::ShutdownVO Broker::shutdown()
+      admin::ShutdownVO Broker::shutdown( bool broker)
       {
 
          auto orginal = m_state.processes();
@@ -297,6 +297,22 @@ namespace casual
 
          result.online = m_state.processes();
          result.offline = range::to_vector( range::difference( orginal, result.online));
+
+         if( broker)
+         {
+            queue::non_blocking::Send send{ m_state};
+            common::message::shutdown::Request message;
+
+            while( ! send( m_receiveQueue.id(), message))
+            {
+               //
+               // Queue is full, try to read non-existent message to flush the queue
+               //
+               common::message::flush::IPC flush;
+               queue::non_blocking::Reader{ m_receiveQueue, m_state}( flush);
+            }
+
+         }
 
 
          return result;

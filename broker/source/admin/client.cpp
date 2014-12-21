@@ -97,6 +97,9 @@ namespace casual
          {
             sf::xatmi::service::binary::Sync service( ".casual.broker.shutdown");
 
+            bool broker = true;
+            service << CASUAL_MAKE_NVP( broker);
+
             auto reply = service();
 
             admin::ShutdownVO serviceReply;
@@ -105,6 +108,16 @@ namespace casual
 
             return serviceReply;
          }
+
+         std::vector< admin::ServerVO> boot()
+         {
+            common::process::spawn( common::environment::variable::get( "CASUAL_HOME") + "/bin/casual-broker", {});
+
+            common::process::sleep( std::chrono::milliseconds{ 20});
+
+            return call::servers();
+         }
+
       }
 
       void listServers()
@@ -172,8 +185,13 @@ namespace casual
 
 
          std::cout << CASUAL_MAKE_NVP( result) << std::endl;
+      }
 
+      void boot()
+      {
+         auto servers = call::boot();
 
+         std::cout << CASUAL_MAKE_NVP( servers) << std::endl;
       }
 
    } // broker
@@ -198,7 +216,8 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
          casual::common::argument::directive( {"-usi", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::updateInstances),
          casual::common::argument::directive( {"-lsvr-json", "--list-servers-json"}, "list all servers", &casual::broker::listServicesJSON),
-         casual::common::argument::directive( {"-s", "--shutdown"}, "list all servers", &casual::broker::shutdown)
+         casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &casual::broker::shutdown),
+         casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::boot)
    );
 
 
@@ -211,7 +230,7 @@ int main( int argc, char** argv)
    }
    catch( const std::exception& exception)
    {
-      std::cerr << "exception: " << exception.what() << std::endl;
+      std::cerr << exception.what() << std::endl;
    }
 
 

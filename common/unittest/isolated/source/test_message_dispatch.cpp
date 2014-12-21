@@ -43,15 +43,17 @@ namespace casual
 
       }
 
-      TEST( casual_common_message_dispatch, add)
+      TEST( casual_common_message_dispatch, construct)
       {
-         message::dispatch::Handler handler;
-
-         EXPECT_TRUE( handler.size() == 0);
-
-         handler.add( local::TestHandler());
+         message::dispatch::Handler handler{ local::TestHandler()};
 
          EXPECT_TRUE( handler.size() == 1);
+
+         auto types = handler.types();
+
+         ASSERT_TRUE( types.size() == 1);
+         EXPECT_TRUE( types.at( 0) == message::shutdown::Request::message_type);
+
       }
 
       //
@@ -65,9 +67,7 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch)
             {
-               message::dispatch::Handler handler;
-
-               handler.add( local::TestHandler());
+               message::dispatch::Handler handler{ local::TestHandler()};
 
                ipc::message::Complete complete;
                local::TestHandler::message_type message;
@@ -80,9 +80,7 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
             {
-               message::dispatch::Handler handler;
-
-               handler.add( local::TestHandler());
+               message::dispatch::Handler handler{ local::TestHandler()};
 
                ipc::message::Complete complete;
                message::service::ACK message;

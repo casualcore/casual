@@ -173,9 +173,14 @@ namespace broker
             {
                auto service_io = local::server->createService( serviceInfo);
 
+               bool broker;
+
+               service_io >> CASUAL_MAKE_NVP( broker);
+
                auto serviceReturn = service_io.call(
                   *local::implementation,
-                  &Server::shutdown);
+                  &Server::shutdown,
+                  broker);
 
                service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -257,9 +262,11 @@ namespace broker
          m_broker->serverInstances( instances);
       }
 
-      admin::ShutdownVO Server::shutdown()
+
+
+      admin::ShutdownVO Server::shutdown( bool broker)
       {
-         return m_broker->shutdown();
+         return m_broker->shutdown( broker);
       }
 
 

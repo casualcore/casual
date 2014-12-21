@@ -103,18 +103,18 @@ namespace casual
 
          common::message::dispatch::Handler handler( State& state)
          {
-            common::message::dispatch::Handler handler;
-
-            handler.add( handle::Begin{ state});
-            handler.add( handle::Commit{ state});
-            handler.add( handle::Rollback{ state});
-            handler.add( handle::resource::reply::Connect{ state});
-            handler.add( handle::resource::reply::Prepare{ state});
-            handler.add( handle::resource::reply::Commit{ state});
-            handler.add( handle::resource::reply::Rollback{ state});
-            handler.add( handle::domain::Prepare{ state});
-            handler.add( handle::domain::Commit{ state});
-            handler.add( handle::domain::Rollback{ state});
+            common::message::dispatch::Handler handler{
+               handle::Begin{ state},
+               handle::Commit{ state},
+               handle::Rollback{ state},
+               handle::resource::reply::Connect{ state},
+               handle::resource::reply::Prepare{ state},
+               handle::resource::reply::Commit{ state},
+               handle::resource::reply::Rollback{ state},
+               handle::domain::Prepare{ state},
+               handle::domain::Commit{ state},
+               handle::domain::Rollback{ state},
+            };
 
             return handler;
          }

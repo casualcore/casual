@@ -10,7 +10,6 @@
 
 #include "common/marshal/binary.h"
 #include "common/queue.h"
-#include "common/log.h"
 
 
 #include <map>
@@ -29,6 +28,8 @@ namespace casual
             {
             public:
 
+               using message_type = platform::message_type_type;
+
                Handler()  = default;
 
                template< typename... Args>
@@ -37,25 +38,30 @@ namespace casual
 
                }
 
-
-               template< typename... Args>
-               void add( Args&& ...handlers)
+               //!
+               //! Dispatch a message.
+               //!
+               //! @return true if the message was handled.
+               //!
+               template< typename M>
+               bool dispatch( M&& complete)
                {
-                  assign( m_handlers, std::forward< Args>( handlers)...);
+                  return do_dispatch( complete);
                }
 
-               template< typename C>
-               bool dispatch( C&& complete)
-               {
-                  return doDispatch( complete);
-               }
+               std::size_t size() const;
 
-               std::size_t size() const
-               {
-                  return m_handlers.size();
-               }
+               //!
+               //! @return all message-types that this instance handles
+               //!
+               std::vector< message_type> types() const;
+
 
             private:
+
+
+               bool do_dispatch( ipc::message::Complete& complete);
+               bool do_dispatch( std::vector<ipc::message::Complete>& complete);
 
                class base_handler
                {
@@ -95,34 +101,6 @@ namespace casual
                   handler_type m_handler;
                };
 
-
-
-               bool doDispatch( ipc::message::Complete& complete)
-               {
-                  auto findIter = m_handlers.find( complete.type);
-
-                  if( findIter != std::end( m_handlers))
-                  {
-                     findIter->second->marshal( complete);
-                     return true;
-                  }
-                  else
-                  {
-                     common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
-                  }
-                  return false;
-               }
-
-
-               bool doDispatch( std::vector<ipc::message::Complete>& complete)
-               {
-                  if( complete.empty())
-                  {
-                     return false;
-                  }
-
-                  return doDispatch( complete.front());
-               }
 
                typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
 

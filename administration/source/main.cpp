@@ -51,14 +51,25 @@ namespace casual
 
       int main( int argc, char **argv)
       {
-         common::Arguments arguments;
+         try
+         {
+            common::Arguments arguments;
 
-         arguments.add(
-            common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
-            common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue));
+            arguments.add(
+               common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
+               common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue));
 
-         arguments.parse( argc, argv);
+            arguments.parse( argc, argv);
 
+         }
+         catch( const common::exception::Base& exception)
+         {
+            std::cerr << exception << std::endl;
+         }
+         catch( const std::exception& exception)
+         {
+            std::cerr << exception.what() << std::endl;
+         }
          return 0;
       }
 

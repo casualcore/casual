@@ -47,6 +47,7 @@ casual_common_objectfiles = [
     Compile( 'source/ipc.cpp'),
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
+    Compile( 'source/message/dispatch.cpp'),
     
     Compile( 'source/uuid.cpp'),
     Compile( 'source/environment.cpp'),

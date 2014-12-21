@@ -9,6 +9,8 @@
 #include "queue/common/queue.h"
 
 #include "common/queue.h"
+#include "common/message/dispatch.h"
+#include "common/message/handle.h"
 #include "common/transaction/context.h"
 #include "common/server/handle.h"
 
@@ -121,8 +123,39 @@ namespace casual
 
          }
 
+
+         namespace handle
+         {
+
+            namespace callback
+            {
+
+               struct Reply
+               {
+                  using message_type = common::message::queue::dequeue::callback::Reply;
+
+                  void dispatch( message_type& message)
+                  {
+                     //
+                     // We do nothing, this just acts as a blocker, and when we get
+                     // this message, we continue
+                     //
+                  }
+               };
+
+            } // callback
+
+
+         } // handle
+
+
          void Dispatch::execute()
          {
+            common::message::dispatch::Handler handler{
+               handle::callback::Reply{},
+               common::message::handle::Shutdown{},
+               common::message::handle::ping(),
+            };
 
             while( true)
             {
@@ -130,16 +163,19 @@ namespace casual
                // Perform the task until there are no more messages
                //
                while( local::perform( m_tasks.front()))
-                  ;
+               {
+                  common::queue::non_blocking::Reader receive{ common::ipc::receive::queue()};
+                  handler.dispatch( receive.next());
+               }
+
 
 
                //
                // Wait to be notified when there are some messages on the queue.
+               // or someone wants us to shut down...
                //
                common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-               common::message::queue::dequeue::callback::Reply notify;
-               receive( notify);
-
+               handler.dispatch( receive.next());
             }
 
          }

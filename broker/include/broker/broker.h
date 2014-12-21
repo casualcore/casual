@@ -53,7 +53,7 @@ namespace casual
 			void serverInstances( const std::vector< admin::update::InstancesVO>& instances);
 
 
-			admin::ShutdownVO shutdown();
+			admin::ShutdownVO shutdown( bool broker);
 
 
 			const State& state() const
