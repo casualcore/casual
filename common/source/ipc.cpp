@@ -52,20 +52,131 @@ namespace casual
          namespace message
          {
 
+            bool send( id_type id, const Transport& transport, long flags)
+            {
+               //
+               // We have to check and process (throw) pending signals before we might block
+               //
+               common::signal::handle();
+
+               auto size = message::Transport::header_size + transport.size();
+
+               auto result = msgsnd( id, &const_cast< Transport&>( transport).message, size, flags);
+
+               if( result == -1)
+               {
+                  switch( errno)
+                  {
+                     case EINTR:
+                     {
+                        common::signal::handle();
+
+                        return false;
+                     }
+                     case EAGAIN:
+                     {
+                        return false;
+                     }
+                     case EIDRM:
+                     {
+                        throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                     }
+                     case ENOMEM:
+                     {
+                        throw exception::limit::Memory{ "id: " + std::to_string( id) + " - " + common::error::string()};
+                     }
+                     case EINVAL:
+                     {
+                        if( /* message.size() < MSGMAX  && */ transport.message.type > 0)
+                        {
+                           //
+                           // The problem is with queue-id. We guess that it has been removed.
+                           //
+                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                        }
+                        // we let it fall through to default
+                     }
+                     case EFAULT:
+                     default:
+                     {
+                        throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
+                     }
+                  }
+               }
+               return true;
+
+            }
+
+            bool receive( id_type id, Transport& message, long flags)
+            {
+               //
+               // We have to check and process (throw) pending signals before we might block
+               //
+               common::signal::handle();
+
+               auto result = msgrcv( id, &message.message, message::Transport::message_max_size, 0, flags);
+
+               if( result == -1)
+               {
+                  switch( errno)
+                  {
+                     case EINTR:
+                     {
+                        common::signal::handle();
+
+                        return false;
+                     }
+                     case ENOMSG:
+                     case EAGAIN:
+                     {
+                        return false;
+                     }
+                     case EIDRM:
+                     {
+                        throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( id) + " - " + common::error::string()};
+                     }
+                     default:
+                     {
+                        std::ostringstream msg;
+                        msg << "ipc < [" << id << "] receive failed - message: " << message << " - flags: " << flags << " - " << common::error::string();
+                        log::internal::ipc << msg.str() << std::endl;
+                        throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
+                     }
+                  }
+               }
+               message.m_size = result - Transport::header_size;
+
+               return result > 0;
+            }
+
+            Transport::Transport()
+            {
+               memset( &message, 0, sizeof( Message));
+            }
+
+            //void* Transport::raw() { return &payload;}
+
+            std::size_t Transport::size() const
+            {
+               return m_size;
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Transport& value)
+            {
+               return out << "{type: " << value.message.type << " header: {correlation: " << common::uuid::string( value.message.header.correlation)
+                     << ", count:" << value.message.header.count << "}, size: { header:" << sizeof( Transport::Header)
+                     << ", payload: " << value.m_size << ", total: " << sizeof( Transport::Header) + value.m_size << ", max:" << Transport::message_max_size << "}}";
+            }
+
 
             Complete::Complete() = default;
 
             Complete::Complete( Transport& transport)
-               : type( transport.payload.type), correlation( transport.payload.header.correlation)
+               : type( transport.message.type), correlation( transport.message.header.correlation)
             {
                add( transport);
             }
 
-            /*
-            Complete::Complete( message_type_type type, const Uuid& correlation, platform::binary_type&& buffer)
-               : type( type), correlation( correlation ? correlation : uuid::make()), payload( std::move( buffer)), complete( true)
-            {}
-            */
 
             Complete::Complete( Complete&&) noexcept = default;
             Complete& Complete::operator = ( Complete&&) noexcept = default;
@@ -74,10 +185,10 @@ namespace casual
             {
                payload.insert(
                   std::end( payload),
-                  std::begin( transport.payload.payload),
-                  std::begin( transport.payload.payload) + transport.paylodSize());
+                  std::begin( transport.message.payload),
+                  std::begin( transport.message.payload) + transport.size());
 
-               complete = transport.payload.header.count == 0;
+               complete = transport.message.header.count == 0;
 
             }
 
@@ -105,41 +216,40 @@ namespace casual
                //
 
                ipc::message::Transport transport;
-               transport.payload.type = message.type;
-               message.correlation.copy( transport.payload.header.correlation);
+               transport.message.type = message.type;
+               message.correlation.copy( transport.message.header.correlation);
 
                //
-               // This crap got to do a lot better...
+               // TODO: Redo this crap.
                //
+
                auto size = message.payload.size();
                if( size % message::Transport::payload_max_size == 0 && size > 0)
                {
-                  transport.payload.header.count = size / message::Transport::payload_max_size - 1;
+                  transport.message.header.count = size / message::Transport::payload_max_size - 1;
                }
                else
                {
-                  transport.payload.header.count = size / message::Transport::payload_max_size;
+                  transport.message.header.count = size / message::Transport::payload_max_size;
                }
 
 
                auto partBegin = std::begin( message.payload);
 
-               while( transport.payload.header.count >= 0)
+               while( transport.message.header.count >= 0)
                {
 
                   auto partEnd = partBegin + message::Transport::payload_max_size > std::end( message.payload) ?
                         std::end( message.payload) : partBegin + message::Transport::payload_max_size;
 
-                  std::copy( partBegin, partEnd, std::begin( transport.payload.payload));
-
-                  transport.paylodSize( partEnd - partBegin);
+                  transport.assign( partBegin, partEnd);
 
                   //
                   // send the physical message
                   //
-                  if( ! send( transport, flags))
+                  if( ! message::send( m_id, transport, flags))
                   {
-                     if( transport.payload.header.count > 0)
+                     if( transport.message.header.count > 0)
                      {
                         // TODO: Partially sent message, what to do now?
                         log::internal::ipc << "TODO: Partially sent message, what to do now?\n";
@@ -147,7 +257,7 @@ namespace casual
                      return uuid::empty();
                   }
 
-                  --transport.payload.header.count;
+                  --transport.message.header.count;
 
 
                   partBegin = partEnd;
@@ -159,57 +269,6 @@ namespace casual
                return message.correlation;
             }
 
-            bool Queue::send( message::Transport& message, const long flags) const
-            {
-               //
-               // We have to check and process (throw) pending signals before we might block
-               //
-               common::signal::handle();
-
-               auto result = msgsnd( m_id, message.raw(), message.size(), flags);
-
-               if( result == -1)
-               {
-                  switch( errno)
-                  {
-                     case EINTR:
-                     {
-                        common::signal::handle();
-
-                        return false;
-                     }
-                     case EAGAIN:
-                     {
-                        return false;
-                     }
-                     case EIDRM:
-                     {
-                        throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( m_id) + " - " + common::error::string()};
-                     }
-                     case ENOMEM:
-                     {
-                        throw exception::limit::Memory{ "id: " + std::to_string( m_id) + " - " + common::error::string()};
-                     }
-                     case EINVAL:
-                     {
-                        if( /* message.size() < MSGMAX  && */ message.payload.type > 0)
-                        {
-                           //
-                           // The problem is with queue-id. We guess that it has been removed.
-                           //
-                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( m_id) + " - " + common::error::string()};
-                        }
-                        // we let it fall through to default
-                     }
-                     case EFAULT:
-                     default:
-                     {
-                        throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( m_id) + " - " + common::error::string());
-                     }
-                  }
-               }
-               return true;
-            }
 
          } // send
 
@@ -429,7 +488,7 @@ namespace casual
 
                message::Transport transport;
 
-               while( ! found && receive( transport, flags))
+               while( ! found && message::receive( m_id, transport, flags))
                {
                   found = cache( transport);
                   found = range::find_if( found, predicate);
@@ -439,55 +498,11 @@ namespace casual
             }
 
 
-            bool Queue::receive( message::Transport& message, const long flags)
-            {
-               //
-               // We have to check and process (throw) pending signals before we might block
-               //
-               common::signal::handle();
-
-               auto result = msgrcv( m_id, message.raw(), message::Transport::message_max_size, 0, flags);
-
-               if( result == -1)
-               {
-                  switch( errno)
-                  {
-                     case EINTR:
-                     {
-                        common::signal::handle();
-
-                        return false;
-                     }
-                     case ENOMSG:
-                     case EAGAIN:
-                     {
-                        return false;
-                     }
-                     case EIDRM:
-                     {
-                        throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( m_id) + " - " + common::error::string()};
-                     }
-                     default:
-                     {
-                        std::ostringstream msg;
-                        msg << "ipc < [" << id() << "] receive failed - message: " << message << " - flags: " << flags << " - " << common::error::string();
-                        log::internal::ipc << msg.str() << std::endl;
-                        throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
-                     }
-                  }
-               }
-
-               message.size( result);
-
-               return result > 0;
-            }
-
-
 
             Queue::range_type Queue::cache( message::Transport& message)
             {
                auto found = range::find_if( m_cache,
-                     local::find::Correlation( message.payload.header.correlation));
+                     local::find::Correlation( message.message.header.correlation));
 
                if( found)
                {

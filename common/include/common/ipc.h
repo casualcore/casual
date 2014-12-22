@@ -32,8 +32,33 @@ namespace casual
       namespace ipc
       {
 
+         typedef platform::queue_id_type id_type;
+
+
          namespace message
          {
+
+            struct Transport;
+
+            //!
+            //! Send a @p transport message to ipc-queue with @p id
+            //!
+            //! @return true if message was sent
+            //!
+            //! @todo document semantics with flags, and what is thrown
+            //!
+            bool send( id_type id, const Transport& transport, long flags);
+
+            //!
+            //! Receive a @p transport message from ipc-queue with @p id
+            //!
+            //! @return true if message was received
+            //!
+            //! @todo document semantics with flags, and what is thrown
+            //!
+            bool receive( id_type id, Transport& transport, long flags);
+
+
             struct Transport
             {
                typedef platform::message_type_type message_type_type;
@@ -50,7 +75,8 @@ namespace casual
                enum
                {
                   message_max_size = common::platform::message_size,
-                  payload_max_size = common::platform::message_size - sizeof( Header),
+                  header_size = sizeof( Header),
+                  payload_max_size = message_max_size - header_size,
 
                };
 
@@ -58,50 +84,50 @@ namespace casual
 
                typedef std::array< char, payload_max_size> payload_type;
 
-               Transport() : m_size( message_max_size)
-               {
-                  //static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
-                  memset( &payload, 0, sizeof( Payload));
-               }
 
-               struct Payload
-               {
 
+               struct Message
+               {
+                  //
+                  // type has to be first!
+                  //
                   message_type_type type;
-
                   Header header;
-
                   payload_type payload;
 
-               } payload;
+               } message;
 
 
-               static_assert( sizeof( Payload) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
+               static_assert( std::is_pod< Message>::value, "Message has be a POD");
+               static_assert( sizeof( Message) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
 
 
-               void* raw() { return &payload;}
+               Transport();
 
-               std::size_t size() const { return m_size; }
 
-               void size( std::size_t size)
+               //!
+               //! @return payload size
+               //!
+               std::size_t size() const;
+
+
+               template< typename Iter>
+               void assign( Iter first, Iter last)
                {
-                  m_size = size;
+                  assert( first <= last && last - first <= payload_max_size);
+                  std::copy( first, last, std::begin( message.payload));
+
+                  m_size = last - first;
                }
 
-               std::size_t paylodSize() { return m_size - sizeof( Header);}
-               void paylodSize( std::size_t size) { m_size = size +  sizeof( Header);}
+               friend std::ostream& operator << ( std::ostream& out, const Transport& value);
 
-               friend std::ostream& operator << ( std::ostream& out, const Transport& value)
-               {
-                  return out << "{type: " << value.payload.type << " header: {correlation: " << common::uuid::string( value.payload.header.correlation)
-                        << ", count:" << value.payload.header.count << ", size: " << sizeof( Header) << "}, size: "
-                        << value.size() << ", max-size: " << message_max_size << "}";
-               }
-
+               friend bool send( id_type id, const Transport& transport, long flags);
+               friend bool receive( id_type id, Transport& transport, long flags);
 
             private:
 
-               std::size_t m_size;
+               std::size_t m_size = 0;
             };
 
 
@@ -211,7 +237,6 @@ namespace casual
 
             private:
 
-               bool send( message::Transport& message, const long flags) const;
                Uuid send( const message::Complete& message, const long flags) const;
             };
 
@@ -285,15 +310,13 @@ namespace casual
                template< typename P>
                range_type find( P predicate, const long flags);
 
-               bool receive( message::Transport& message, const long flags);
-
                range_type cache( message::Transport& message);
 
                common::file::scoped::Path m_path;
 
                cache_type m_cache;
             };
-         }
+         } // receive
 
          namespace broker
          {

@@ -114,6 +114,8 @@ target_simple_process = LinkExecutable( 'bin/simple_process',
 # unittest
 #
 unittest_objectfiles = [
+   Compile( 'unittest/isolated/source/test_conformance.cpp'),                     
+                        
    Compile( 'unittest/isolated/source/test_buffer.cpp'),
    Compile( 'unittest/isolated/source/test_ipc.cpp'),
    Compile( 'unittest/isolated/source/test_marshal.cpp'),
