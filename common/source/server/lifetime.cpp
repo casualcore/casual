@@ -50,7 +50,7 @@ namespace casual
                      }
                   }
 
-                  range::append( range::intersection( requested, process::lifetime::wait( requested, timeout)), result);
+                  range::append( std::get< 0>( range::intersection( requested, process::lifetime::wait( requested, timeout))), result);
 
                   log::internal::debug << "soft off-line: " << range::make( result) << std::endl;
 
@@ -82,7 +82,7 @@ namespace casual
 
                   range::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
 
-                  log::internal::debug << "hard off-line: " << range::intersection( running, result) << std::endl;
+                  log::internal::debug << "hard off-line: " << std::get< 0>( range::intersection( running, result)) << std::endl;
 
                   return result;
 

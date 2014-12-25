@@ -31,6 +31,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <iostream>
 
 
 
@@ -107,11 +108,8 @@ namespace casual
 					{
 					   throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
 					}
+
 				}
-
-
-
-
 
 			}
 		}

@@ -286,10 +286,11 @@ namespace casual
          else
          {
 
-            return getQueues( common::range::intersection(
-               m_state.groups,
-               common::range::unique( groups),
-               common::compare::equal_to( std::mem_fn( &broker::State::Group::name), common::compare::value())));
+            return getQueues(
+                  std::get< 0>( common::range::intersection(
+                     m_state.groups,
+                     common::range::unique( groups),
+                     common::compare::equal_to( std::mem_fn( &broker::State::Group::name), common::compare::value()))));
          }
       }
 

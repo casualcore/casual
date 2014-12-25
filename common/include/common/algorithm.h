@@ -16,6 +16,7 @@
 #include <iterator>
 #include <type_traits>
 #include <ostream>
+#include <sstream>
 
 #include <assert.h>
 
@@ -522,6 +523,14 @@ namespace casual
             return result;
          }
 
+         template< typename R>
+         std::string to_string( R&& range)
+         {
+            std::ostringstream out;
+            out << make( range);
+            return out.str();
+         }
+
 
          template< typename R>
          auto front( R&& range) -> decltype( make( std::forward< R>( range)))
@@ -877,39 +886,49 @@ namespace casual
          }
 
 
+         //!
+         //! Divide @p range in two parts [range-first, intersection-end), [intersection-end, range-last).
+         //! where the first range is the intersection of the @p range and @p lookup
+         //! and the second range is the complement of @range with regards to @p lookup
+         //!
+         //! @return a tuple with the two ranges
+         //!
          template< typename R1, typename R2>
-         auto intersection( R1&& source, R2&& other) -> decltype( make( std::forward< R1>( source)))
+         auto intersection( R1&& range, R2&& lookup) -> decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
          {
-            auto resultRange = make( std::forward< R1>( source));
-            using range_type = decltype( make( std::forward< R1>( source)));
+            using range_type = decltype( make( std::forward< R1>( range)));
             using value_type = typename range_type::value_type;
 
-            auto lambda = [&]( const value_type& value){ return find( other, value);};
-            return std::get< 0>( partition( resultRange, lambda));
+            auto lambda = [&]( const value_type& value){ return find( lookup, value);};
+            return partition( std::forward< R1>( range), lambda);
          }
 
+         //!
+         //! Divide @p range in two parts [range-first, intersection-end), [intersection-end, range-last).
+         //! where the first range is the intersection of the @p range and @p lookup
+         //! and the second range is the complement of @range with regards to @p lookup
+         //!
+         //! @return a tuple with the two ranges
+         //!
          template< typename R1, typename R2, typename F>
-         auto intersection( R1&& source, R2&& other, F functor) -> decltype( make( std::forward< R1>( source)))
+         auto intersection( R1&& range, R2&& lookup, F functor) -> decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
          {
-            auto resultRange = make( std::forward< R1>( source));
-            using range_type = decltype( make( std::forward< R1>( source)));
+            using range_type = decltype( make( std::forward< R1>( range)));
             using value_type = typename range_type::value_type;
 
-            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( other), std::bind( functor, value, std::placeholders::_1));};
-            return std::get< 0>( partition( resultRange, lambda));
+            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( lookup), std::bind( functor, value, std::placeholders::_1));};
+            return partition( std::forward< R1>( range), lambda);
 
          }
 
          //!
          //! @returns a range from @p source with values not found in @p other
          //!
+         //! @deprecated use intersection instead...
          template< typename R1, typename R2>
          auto difference( R1&& source, R2&& other) -> decltype( make( source))
          {
-            auto resultRange = make( std::forward< R1>( source));
-
-            resultRange.first = intersection( resultRange, std::forward< R2>( other)).last;
-            return resultRange;
+            return std::get< 1>( intersection( std::forward< R1>( source), std::forward< R2>( other)));
          }
 
          //!
@@ -918,10 +937,7 @@ namespace casual
          template< typename R1, typename R2, typename F>
          auto difference( R1&& source, R2&& other, F functor) -> decltype( make( source))
          {
-            auto resultRange = make( std::forward< R1>( source));
-
-            resultRange.first = intersection( resultRange, std::forward< R2>( other), functor).last;
-            return resultRange;
+            return std::get< 1>( intersection( std::forward< R1>( source), std::forward< R2>( other), functor));
          }
 
 
@@ -992,8 +1008,6 @@ namespace casual
                   //&& includes( std::forward< R2>( range2), std::forward< R1>( range1), comp);
                  && includes( std::forward< R2>( range2), std::forward< R1>( range1), compare::inverse( comp));
          }
-
-
 
 
 

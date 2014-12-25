@@ -5,8 +5,8 @@
  *      Author: kristian
  */
 
-#ifndef ARCHIVE_LOGGER_H_
-#define ARCHIVE_LOGGER_H_
+#ifndef CASUAL_SF_ARCHIVE_LOG_H_
+#define CASUAL_SF_ARCHIVE_LOG_H_
 
 #include "sf/archive/basic.h"
 #include "sf/platform.h"
@@ -100,7 +100,7 @@ namespace casual
             //!
             typedef basic_writer< Implementation> Writer;
 
-         } // logger
+         } // log
       } // archive
    } // sf
 } // casual

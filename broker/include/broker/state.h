@@ -143,7 +143,7 @@ namespace casual
 
                enum class State
                {
-                  absent,
+                  absent = 1,
                   prospect,
                   idle,
                   busy,
