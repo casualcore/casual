@@ -346,7 +346,7 @@ namespace casual
                // strict.
                //
 
-               common::log::error << "process " << message.process << " tried to join the domain on it's own - acion: don't allow and send terminate signal" << std::endl;
+               common::log::error << "process " << message.process << " tried to join the domain on it's own - action: don't allow and send terminate signal" << std::endl;
 
                common::process::terminate( message.process.pid);
             }

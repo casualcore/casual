@@ -81,19 +81,6 @@ namespace casual
             })
          };
 
-         std::string state( long state)
-         {
-            switch( static_cast< state::Server::Instance::State>( state))
-            {
-               case state::Server::Instance::State::absent: return "absent"; break;
-               case state::Server::Instance::State::prospect: return "prospect"; break;
-               case state::Server::Instance::State::idle: return "idle"; break;
-               case state::Server::Instance::State::busy: return "busy"; break;
-               case state::Server::Instance::State::shutdown: return "shutdown"; break;
-               default: return "off-line";
-            }
-         }
-
       } // normalized
 
       std::vector< normalized::Instance> normalize( const std::vector< admin::ServerVO>& servers)
@@ -153,66 +140,6 @@ namespace casual
       }
 
 
-      struct Print
-      {
-         Print( common::terminal::color_t& main = common::terminal::color::green) : m_main( main) {}
-
-
-
-
-
-
-
-         void operator () ( const normalized::Instance& value) const
-         {
-            std::cout << std::setfill( ' ') <<
-                  std::setw( 10) << value.pid <<
-                  std::setw( 12) << value.queue << std::setw( 8);
-
-            //std::cout << normalized::state( value.state);
-
-           std::cout << std::setw( 10) << std::right << value.invoked << std::left << "  " << common::chronology::local( value.last) <<  std::endl;
-         }
-
-
-         void operator () ( const admin::InstanceVO& value) const
-         {
-            std::cout << std::setfill( ' ') <<
-                  std::setw( 10) << value.pid <<
-                  std::setw( 12) << value.queue << std::setw( 8);
-
-            std::cout << normalized::state( value.state);
-
-           std::cout << std::setw( 10) << std::right << value.invoked << std::left << "  " << common::chronology::local( value.last) <<  std::endl;
-         }
-
-         void operator () ( const admin::ServerVO& value) const
-         {
-            std::cout <<  std::setw( 20) << std::setfill( ' ') << std::left << value.alias << " path: " << value.path << std::endl;
-
-            std::cout << "  |- PID       QUEUE       STATE      INVOKED  TIMESTAMP" << std::endl;
-            for( auto& instance : value.instances)
-            {
-               std::cout << "  |- ";
-               Print{}( instance);
-            }
-         }
-
-         void operator () ( const admin::ServiceVO& value) const
-         {
-
-            std::chrono::microseconds timeout( value.timeout);
-
-            std::cout <<  std::setw( 32) << std::setfill( ' ') << std::left << value.name <<
-                  std::setw( 12) << std::right << value.instances.size() <<
-                  std::setw( 14) << std::right << value.lookedup
-                  << std::setw( 10) << std::chrono::duration_cast< std::chrono::seconds>( timeout).count() << '.'
-                  << std::chrono::duration_cast< std::chrono::milliseconds>( timeout).count() % 1000 << std::endl;
-         }
-
-         common::terminal::color_t& m_main;
-
-      };
 
 
       namespace print
@@ -227,19 +154,6 @@ namespace casual
                      return size_member( lhs).size() < size_member( rhs).size();
             });
             return size_member( max).size();
-         }
-
-         std::ostream& state( std::ostream& out, long state)
-         {
-            switch( static_cast< state::Server::Instance::State>( state))
-            {
-               case state::Server::Instance::State::absent: return out << common::terminal::color::red << "absent"; break;
-               case state::Server::Instance::State::prospect: return out << common::terminal::color::blue << "prospect"; break;
-               case state::Server::Instance::State::idle: return out << common::terminal::color::green << "idle"; break;
-               case state::Server::Instance::State::busy: return out << common::terminal::color::yellow << "busy"; break;
-               case state::Server::Instance::State::shutdown: return out << common::terminal::color::red << "shutdown"; break;
-               default: return out << common::terminal::color::red << "off-line";
-            }
          }
 
          std::ostream& operator << ( std::ostream& out, state::Server::Instance::State state)
@@ -263,14 +177,30 @@ namespace casual
             for( auto& instance : container)
             {
                std::cout << main << std::setw( alias_column + 1) << std::setfill( ' ') << std::left << instance.alias;
-               std::cout << std::setw( 11) << std::right << terminal::color::white << instance.pid;
-               std::cout << std::setw( 11) << instance.queue;
-               std::cout << terminal::color::blue << std::setw( 11) << instance.invoked;
-               std::cout << main << std::setw( 9) << std::setfill( ' ') << static_cast< state::Server::Instance::State>( instance.state);
+               std::cout << std::setw( 11) << std::setfill( ' ') << std::right << terminal::color::white << ( instance.pid == 0 ? "---" : std::to_string( instance.pid));
+               std::cout << std::setw( 11) << ( instance.queue == 0 ? "---" : std::to_string( instance.queue));
+               std::cout << std::setw( 11) << terminal::color::blue << instance.invoked;
+               std::cout << std::setw( 9) << std::left << std::setfill( ' ') << static_cast< state::Server::Instance::State>( instance.state);
                std::cout << " " << instance.path;
                std::cout << std::endl;
             }
+         }
 
+         template< typename C>
+         void services( C&& container, common::terminal::color_t& main = common::terminal::color::yellow)
+         {
+            auto name_column = column( container, &normalized::Service::name);
+
+            for( auto& service : container)
+            {
+               using second_t = std::chrono::duration< double>;
+               std::cout << main << std::setw( name_column + 1) << std::setfill( ' ') << std::left << service.name;
+               std::cout << std::setw( 11) << std::right << terminal::color::blue << service.lookedup;
+               std::cout << std::setw( 11) << std::chrono::duration_cast< second_t>( std::chrono::microseconds{ service.timeout}).count();
+               std::cout << std::setw( 6) << std::setfill( ' ') << std::right << terminal::color::white << service.instances;
+               std::cout << " " << service.pids;
+               std::cout << std::endl;
+            }
          }
 
 
@@ -344,34 +274,33 @@ namespace casual
 
       void listServers()
       {
-         auto servers = call::servers();
+         auto instances = normalize( call::servers());
 
          if( global::porcelain)
          {
             sf::archive::terminal::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( normalize( servers));
+            writer << CASUAL_MAKE_NVP( instances);
 
          }
          else
          {
-            common::range::for_each( servers, Print());
+            print::instances( instances);
          }
       }
 
       void listServices()
       {
-         auto services = call::services();
+         auto services = normalize( call::services());
 
          if( global::porcelain)
          {
             sf::archive::terminal::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( normalize( services));
+            writer << CASUAL_MAKE_NVP( services);
 
          }
          else
          {
-            std::cout << "NAME                               INSTANCES        CALLED   TIMEOUT" << std::endl;
-            common::range::for_each( services, Print());
+            print::services( services);
          }
 
       }

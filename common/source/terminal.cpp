@@ -21,26 +21,28 @@ namespace casual
             }
 
 
-            color_t::proxy_t::proxy_t( std::ostream& out) : m_out( out) {}
+            color_t::proxy_t::proxy_t( std::ostream& out) : m_out( &out) {}
 
             color_t::proxy_t::~proxy_t()
             {
-               m_out << "\033[0m";
+               if( ! m_moved)
+               {
+                  *m_out << "\033[0m";
+               }
             }
 
-            /*
-            std::ostream& operator << ( std::ostream& out, const color_t::proxy_t& proxy)
-            {
-               return out;
-            }
-            */
-
+            color_t::proxy_t::proxy_t( proxy_t&&) = default;
+            color_t::proxy_t& color_t::proxy_t::operator = ( proxy_t&&) = default;
 
             color_t::proxy_t operator << ( std::ostream& out, const color_t& color)
             {
+               auto flags = out.flags();
+               auto width = out.width();
                out << color.m_color;
+               out.setf( flags);
+               out.width( width);
 
-               return out;
+               return color_t::proxy_t{ out};
             }
 
 

@@ -138,6 +138,27 @@ namespace casual
       {
          auto& instance = getInstance( pid);
 
+         //
+         // Check if we should filter restricted services
+         //
+         {
+            auto& server = getServer( instance.server);
+
+            if( ! server.restrictions.empty())
+            {
+               auto intersection = std::get< 0>( common::range::intersection( services, server.restrictions,
+                     []( const state::Service& s, const std::string& name)
+                     {
+                        return s.information.name == name;
+                     }));
+               //
+               // Remove
+               //
+               range::trim( services, intersection);
+            }
+         }
+
+
          for( auto& s : services)
          {
             //
