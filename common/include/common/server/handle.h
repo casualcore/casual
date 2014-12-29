@@ -19,6 +19,7 @@
 
 #include "common/call/context.h"
 #include "common/buffer/pool.h"
+#include "common/buffer/transport.h"
 
 namespace casual
 {
@@ -248,10 +249,20 @@ namespace casual
                      //
                      // Also takes care of buffer to pool
                      //
-                     TPSVCINFO serviceInformation = transformServiceInformation( message);
+                     TPSVCINFO information = transformServiceInformation( message);
 
 
-                     service.call( &serviceInformation);
+                     //
+                     // Apply pre service buffer manipulation
+                     //
+                     buffer::transport::Context::instance().dispatch(
+                           information.data,
+                           information.len,
+                           information.name,
+                           buffer::transport::Lifecycle::pre_service);
+
+
+                     service.call( &information);
 
                      //
                      // User service returned, not by tpreturn. The standard does not mention this situation, what to do?
@@ -261,6 +272,17 @@ namespace casual
                   }
                   else
                   {
+
+                     //
+                     // Apply post service buffer manipulation
+                     //
+                     buffer::transport::Context::instance().dispatch(
+                           state.jump.state.data,
+                           state.jump.state.len,
+                           message.service.name,
+                           buffer::transport::Lifecycle::post_service);
+
+
                      //
                      // Prepare reply
                      //
@@ -277,6 +299,8 @@ namespace casual
                      // Send ACK to broker
                      //
                      m_policy.ack( message);
+
+
 
                      //
                      // User has called tpreturn.

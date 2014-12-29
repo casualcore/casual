@@ -146,8 +146,8 @@ namespace casual
 
 			typedef std::vector< char> binary_type;
 
-         //typedef char* raw_buffer_type;
 			using raw_buffer_type = char*;
+			using raw_buffer_size = long;
 			using const_raw_buffer_type = const char*;
 
          inline raw_buffer_type public_buffer( const_raw_buffer_type buffer)
