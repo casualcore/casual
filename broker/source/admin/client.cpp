@@ -61,6 +61,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( last);
                archive & CASUAL_MAKE_NVP( path);
             })
+
+            friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.alias < rhs.alias;}
          };
 
          struct Service
@@ -79,6 +81,8 @@ namespace casual
                archive << CASUAL_MAKE_NVP( instances);
                archive << CASUAL_MAKE_NVP( pids);
             })
+
+            friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.name < rhs.name;}
          };
 
       } // normalized
@@ -140,6 +144,11 @@ namespace casual
       }
 
 
+      namespace global
+      {
+         bool porcelain = false;
+         bool header = false;
+      } // global
 
 
       namespace print
@@ -174,13 +183,38 @@ namespace casual
          {
             auto alias_column = column( container, &normalized::Instance::alias);
 
+            if( container.empty())
+            {
+               return;
+            }
+
+            range::sort( container);
+
+            if( global::header)
+            {
+               std::cout << terminal::color::white << std::setw( alias_column) << std::setfill( ' ') << std::left << "alias"
+                  << std::setw( 12) << std::setfill( ' ')  << std::right  << "pid"
+                  << std::setw( 11) << std::right << "queue"
+                  << std::setw( 11) << std::setfill( ' ') << std::right << "invoked"
+                  << "  " << std::setw( 9) << std::setfill( ' ') << std::left << "state"
+                  << "  " << std::setw( 24) << std::setfill( ' ') << std::left << "accessed"
+                  << "path"
+                  << std::endl;
+
+               std::cout << terminal::color::white << std::setw( alias_column + 1) << std::setfill( '-') << std::right << " "
+                  << std::setw( 11) << "----------- ---------- ----------  ---------- ----------------------- -------------------------"
+                  << std::endl;
+            }
+
+
             for( auto& instance : container)
             {
                std::cout << main << std::setw( alias_column + 1) << std::setfill( ' ') << std::left << instance.alias;
-               std::cout << std::setw( 11) << std::setfill( ' ') << std::right << terminal::color::white << ( instance.pid == 0 ? "---" : std::to_string( instance.pid));
+               std::cout << terminal::color::white << std::setw( 11) << std::setfill( ' ') << std::right << ( instance.pid == 0 ? "---" : std::to_string( instance.pid));
                std::cout << std::setw( 11) << ( instance.queue == 0 ? "---" : std::to_string( instance.queue));
-               std::cout << std::setw( 11) << terminal::color::blue << instance.invoked;
+               std::cout << terminal::color::blue << std::setw( 11) << instance.invoked;
                std::cout << std::setw( 9) << std::left << std::setfill( ' ') << static_cast< state::Server::Instance::State>( instance.state);
+               std::cout << terminal::color::blue << std::setw( 25) << std::setfill( ' ') << std::right << ( instance.last == common::platform::time_point::min() ? "---" : common::chronology::local( instance.last));
                std::cout << " " << instance.path;
                std::cout << std::endl;
             }
@@ -189,16 +223,37 @@ namespace casual
          template< typename C>
          void services( C&& container, common::terminal::color_t& main = common::terminal::color::yellow)
          {
+            if( container.empty())
+            {
+               return;
+            }
+
+            range::sort( container);
+
             auto name_column = column( container, &normalized::Service::name);
+
+            if( global::header)
+            {
+               std::cout << terminal::color::white << std::setw( name_column) << std::setfill( ' ') << std::left << "name"
+                  << std::setw( 12) << std::setfill( ' ')  << std::right  << "lookedup"
+                  << " " << std::setw( 11) << std::right << "timeout"
+                  << " " << std::setw( 6) << std::setfill( ' ') << std::right << "#"
+                  << " " << "servers"
+                  << std::endl;
+
+               std::cout << terminal::color::white << std::setw( name_column + 1) << std::setfill( '-') << " "
+                  << std::setw( 11) << "----------- ----------- ------ -------------------------"
+                  << std::endl;
+            }
 
             for( auto& service : container)
             {
                using second_t = std::chrono::duration< double>;
-               std::cout << main << std::setw( name_column + 1) << std::setfill( ' ') << std::left << service.name;
-               std::cout << std::setw( 11) << std::right << terminal::color::blue << service.lookedup;
-               std::cout << std::setw( 11) << std::chrono::duration_cast< second_t>( std::chrono::microseconds{ service.timeout}).count();
-               std::cout << std::setw( 6) << std::setfill( ' ') << std::right << terminal::color::white << service.instances;
-               std::cout << " " << service.pids;
+               std::cout << main << std::setw( name_column) << std::setfill( ' ') << std::left << service.name << " ";
+               std::cout << terminal::color::blue << std::setw( 11) << std::right  << service.lookedup << " ";
+               std::cout << std::setw( 11) << std::chrono::duration_cast< second_t>( std::chrono::microseconds{ service.timeout}).count() << " ";
+               std::cout << std::setw( 6) << std::setfill( ' ') << std::right << terminal::color::white << service.instances << " ";
+               std::cout << service.pids;
                std::cout << std::endl;
             }
          }
@@ -264,11 +319,7 @@ namespace casual
       }
 
 
-      namespace global
-      {
-         bool porcelain = false;
 
-      } // global
 
 
 
@@ -381,29 +432,17 @@ namespace casual
 
       void boot()
       {
-         auto servers =  call::boot();
+         auto instances = normalize( call::boot());
 
          if( global::porcelain)
          {
             sf::archive::terminal::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( normalize( servers));
+            writer << CASUAL_MAKE_NVP( instances);
 
          }
          else
          {
-
-            auto max = std::max_element( std::begin( servers), std::end( servers),
-                  []( const admin::ServerVO& lhs, const admin::ServerVO& rhs){
-                     return lhs.alias.size() < rhs.alias.size();
-            });
-
-
-            for( auto& server : servers)
-            {
-               std::cout << terminal::color::green << std::setw( max->alias.size() + 1) << std::setfill( ' ') << std::left << server.alias;
-               std::cout << terminal::color::white << std::setw( 6) << std::right << server.instances.size();
-               std::cout << "  " << server.path << std::endl;
-            }
+            print::instances( instances);
          }
       }
 
@@ -425,6 +464,7 @@ int main( int argc, char** argv)
 
    casual::common::Arguments parser;
    parser.add(
+         casual::common::argument::directive( {"--header"}, "descriptive header for each column", casual::broker::global::header),
          casual::common::argument::directive( {"--porcelain"}, "easy to parse format", casual::broker::global::porcelain),
          casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
          casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
