@@ -90,7 +90,11 @@ class Engine(object):
         
             cmk = StringIO.StringIO();
             
-            cmk.write( 'from casual.make.directive import *')
+            #
+            # This import is needed to be able to use internal_pre_make_rules
+            # All other imports needs to be explicit in cmk-file
+            #
+            cmk.write( 'from casual.make.dsl import internal_pre_make_rules')
             
             cmk.write( '\n' + 'internal_pre_make_rules()\n');
             
