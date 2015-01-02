@@ -77,9 +77,9 @@ namespace casual
 
                namespace service
                {
-                  namespace lookup
+                  struct Lookup
                   {
-                     void request( const std::string& service)
+                     Lookup::Lookup( const std::string& service)
                      {
                         message::service::name::lookup::Request serviceLookup;
                         serviceLookup.requested = service;
@@ -87,10 +87,9 @@ namespace casual
 
                         queue::blocking::Send send;
                         send( ipc::broker::id(), serviceLookup);
-
                      }
 
-                     message::service::name::lookup::Reply reply()
+                     message::service::name::lookup::Reply operator () () const
                      {
                         message::service::name::lookup::Reply result;
                         queue::blocking::Receive receive( ipc::receive::queue());
@@ -98,8 +97,8 @@ namespace casual
 
                         return result;
                      }
+                  };
 
-                  } // lookup
                } // service
 
             } // <unnamed>
@@ -162,7 +161,7 @@ namespace casual
          State::Reply::Cache::cache_range State::Reply::Cache::search( descriptor_type descriptor)
          {
             return range::find_if( m_cache, [=]( const cache_type::value_type& r){
-               return r.callDescriptor == descriptor;
+               return r.descriptor == descriptor;
             });
 
          }
@@ -221,7 +220,7 @@ namespace casual
 
             // TODO validate
 
-            local::service::lookup::request( service);
+            local::service::Lookup request( service);
 
             auto start = platform::clock_type::now();
 
@@ -242,15 +241,19 @@ namespace casual
             message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
             message.descriptor = descriptor;
             message.reply = process::handle();
-            message.trid = transaction::Context::instance().current().trid;
             message.execution = m_state.execution;
             message.callee = m_state.currentService;
+
+            if( ! flag< TPNOTRAN>( flags))
+            {
+               message.trid = transaction::Context::instance().current().trid;
+            }
 
 
             //
             // Get a queue corresponding to the service
             //
-            auto lookup = local::service::lookup::reply();
+            auto lookup = request();
 
             if( ! lookup.supplier)
             {
@@ -348,7 +351,7 @@ namespace casual
             // We prepare the output buffer
             //
             {
-               descriptor = reply.callDescriptor;
+               descriptor = reply.descriptor;
                *odata = reply.buffer.memory.data();
                olen = reply.buffer.memory.size();
 
@@ -422,7 +425,7 @@ namespace casual
 
                auto cached = m_state.reply.cache.add( std::move( reply));
 
-               if( cached->callDescriptor == descriptor)
+               if( cached->descriptor == descriptor)
                {
                   return cached;
                }

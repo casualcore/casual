@@ -11,6 +11,8 @@
 
 #include "common/message/type.h"
 
+#include "common/transaction/id.h"
+
 #include "common/buffer/type.h"
 #include "common/uuid.h"
 
@@ -79,15 +81,23 @@ namespace casual
 
 
             } // connect
-
-
-            //typedef basic_disconnect< cServerDisconnect> Disconnect;
-
          } // server
 
 
          namespace service
          {
+            struct Transaction
+            {
+               common::transaction::ID trid;
+               std::int64_t state;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & trid;
+                  archive & state;
+               })
+            };
+
 
             struct Advertise : basic_message< cServiceAdvertise>
             {
@@ -259,17 +269,19 @@ namespace casual
                Reply( const Reply&) = delete;
                Reply& operator = ( const Reply&) = delete;
 
-               int callDescriptor = 0;
-               int returnValue = 0;
-               long userReturnCode = 0;
+               int descriptor = 0;
+               int value = 0;
+               long code = 0;
                buffer::Payload buffer;
+               Transaction transaction;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  archive & callDescriptor;
-                  archive & returnValue;
-                  archive & userReturnCode;
+                  archive & descriptor;
+                  archive & value;
+                  archive & code;
                   archive & buffer;
+                  archive & transaction;
                })
 
             };

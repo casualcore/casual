@@ -129,7 +129,7 @@ namespace casual
                return singleton;
             }
 
-            return m_transactions.top();
+            return m_transactions.back();
          }
 
 
@@ -204,10 +204,10 @@ namespace casual
             {
                struct Guard
                {
-                  Guard( std::stack< Transaction>& transactions) : m_transactions( transactions) {}
-                  ~Guard() { m_transactions.pop();}
+                  Guard( std::vector< Transaction>& transactions) : m_transactions( transactions) {}
+                  ~Guard() { m_transactions.erase( std::end( m_transactions));}
 
-                  std::stack< Transaction>& m_transactions;
+                  std::vector< Transaction>& m_transactions;
                };
             } // pop
 
@@ -289,42 +289,99 @@ namespace casual
 
             }
 
-            m_transactions.push( std::move( trans));
+            m_transactions.push_back( std::move( trans));
          }
 
          void Context::finalize( message::service::Reply& message)
          {
             common::trace::Scope trace{ "transaction::Context::finalize", common::log::internal::transaction};
 
-            while( ! m_transactions.empty())
-            {
-               auto& transaction = m_transactions.top();
+            //
+            // Regardless, we will consume every transaction.
+            //
+            decltype( m_transactions) transactions;
+            std::swap( transactions, m_transactions);
 
-               if( message.returnValue == TPSUCCESS)
+            const auto process = process::handle();
+
+            //
+            // Try to handle as many transactions as possible
+            //
+            {
+
+               auto trans_rollback = [&]( Transaction& transaction)
                {
-                  if( transaction.trid.owner() == process::handle())
+                  if( rollback( transaction) != XA_OK)
                   {
-                     if( commit( transaction) != XA_OK)
+                     message.value = TPESVCERR;
+                     transaction.state( Transaction::State::rollback);
+                  }
+               };
+
+               auto trans_commit = [&]( Transaction& transaction)
+               {
+                  switch( transaction.state())
+                  {
+                     case Transaction::State::active:
+                     case Transaction::State::suspended:
                      {
-                        message.returnValue = TPESVCERR;
+                        if( commit( transaction) != XA_OK)
+                        {
+                           message.value = TPESVCERR;
+                           transaction.state( Transaction::State::rollback);
+                        }
+                        break;
                      }
+                     default:
+                     {
+                        trans_rollback( transaction);
+                        break;
+                     }
+                  }
+               };
+
+               auto functor = [&]( Transaction& transaction)
+               {
+                  if( transaction.trid.owner() == process)
+                  {
+                     if( message.value == TPSUCCESS)
+                     {
+                        trans_commit( transaction);
+                     }
+                     else
+                     {
+                        trans_rollback( transaction);
+                     }
+                  }
+                  else
+                  {
+                     if( message.value != TPSUCCESS)
+                     {
+                        transaction.state( Transaction::State::rollback);
+                     }
+
                   }
                   end( transaction, TMSUCCESS);
-               }
-               else
-               {
-                  if( transaction.trid.owner() == process::handle())
-                  {
-                     if( rollback( transaction) != XA_OK)
-                     {
-                        message.returnValue = TPESVCERR;
-                     }
-                  }
-                  end( transaction, TMFAIL);
-               }
+               };
 
-               m_transactions.pop();
+               common::range::for_each( common::range::make_reverse( transactions), functor);
             }
+
+            //
+            // Find first transaction that is not own by this process (can only be 0..1)
+            //
+            auto found = common::range::find_if( transactions, [&]( const Transaction& transaction)
+                  {
+                     return transaction.trid.owner() != process;
+                  });
+
+            if( found)
+            {
+               message.transaction.state = static_cast< decltype( message.transaction.state)>( found->state());
+               message.transaction.trid = found->trid;
+            }
+
+
          }
 
          int Context::resourceRegistration( int rmid, XID* xid, long flags)
@@ -425,11 +482,11 @@ namespace casual
             if( code  == XA_OK)
             {
 
-               m_transactions.push( trans);
+               m_transactions.push_back( std::move( trans));
 
-               start( trans, TMNOFLAGS);
+               start( m_transactions.back(), TMNOFLAGS);
 
-               common::log::internal::transaction << "transaction: " << trans.trid << " started\n";
+               common::log::internal::transaction << "transaction: " << m_transactions.back().trid << " started\n";
             }
 
             return code;
@@ -479,142 +536,151 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::commit", common::log::internal::transaction};
 
-            if( transaction.trid)
+            const auto process = process::handle();
+
+            if( transaction.trid.owner() != process)
             {
-               message::transaction::commit::Request request;
-               request.trid = transaction.trid;
-               request.process = process::handle();
-
-               queue::blocking::Writer writer( manager().queue);
-               writer( request);
+               log::internal::transaction << "commit - current process not owner of transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
+               return TX_PROTOCOL_ERROR;
+            }
 
 
-               queue::blocking::Reader reader( ipc::receive::queue());
+            message::transaction::commit::Request request;
+            request.trid = transaction.trid;
+            request.process = process;
 
-               //
-               // We could get commit-reply directly in an one-phase-commit
-               //
+            queue::blocking::Writer writer( manager().queue);
+            writer( request);
 
-               auto reply = reader.next( {
-                  message::transaction::prepare::Reply::message_type,
-                  message::transaction::commit::Reply::message_type});
 
-               //
-               // Did we get commit reply directly?
-               //
-               if( reply.type == message::transaction::commit::Reply::message_type)
+            queue::blocking::Reader reader( ipc::receive::queue());
+
+            //
+            // We could get commit-reply directly in an one-phase-commit
+            //
+
+            auto reply = reader.next( {
+               message::transaction::prepare::Reply::message_type,
+               message::transaction::commit::Reply::message_type});
+
+            //
+            // Did we get commit reply directly?
+            //
+            if( reply.type == message::transaction::commit::Reply::message_type)
+            {
+               message::transaction::commit::Reply commitReply;
+               reply >> commitReply;
+
+               log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
+
+               return xaTotx( commitReply.state);
+            }
+            else
+            {
+
+               message::transaction::prepare::Reply prepareReply;
+               reply >> prepareReply;
+
+               log::internal::transaction << "prepare reply: " << error::xa::error( prepareReply.state) << std::endl;
+
+
+               if( prepareReply.state == XA_OK)
                {
+                  //
+                  // Now we wait for the commit
+                  //
                   message::transaction::commit::Reply commitReply;
-                  reply >> commitReply;
+                  reader( commitReply);
 
                   log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
 
                   return xaTotx( commitReply.state);
                }
-               else
-               {
+               return xaTotx( prepareReply.state);
 
-                  message::transaction::prepare::Reply prepareReply;
-                  reply >> prepareReply;
-
-                  log::internal::transaction << "prepare reply: " << error::xa::error( prepareReply.state) << std::endl;
-
-
-                  if( prepareReply.state == XA_OK)
-                  {
-                     //
-                     // Now we wait for the commit
-                     //
-                     message::transaction::commit::Reply commitReply;
-                     reader( commitReply);
-
-                     log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
-
-                     return xaTotx( commitReply.state);
-                  }
-                  return xaTotx( prepareReply.state);
-
-               }
             }
-            else
-            {
-               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
-               return TX_NO_BEGIN;
-            }
+
+
 
             return TX_OK;
          }
 
          int Context::commit()
          {
-            auto& transaction = current();
-            if( transaction)
+            if( m_transactions.empty())
             {
-               //
-               // Regardless what happens we'll remove the current transaction
-               //
-               local::pop::Guard popGuard( m_transactions);
-
-               return commit( m_transactions.top());
-            }
-            else
-            {
-               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
-               return TX_PROTOCOL_ERROR;
+               log::internal::transaction << "commit - no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
+               return TX_NO_BEGIN;
             }
 
-            return TX_OK;
+
+            auto result = commit( m_transactions.back());
+
+            //
+            // We only remove/consume transaction if commit succeed
+            // TODO: any other situation we should remove?
+            //
+            if( result == TX_OK)
+            {
+               m_transactions.pop_back();
+            }
+
+            return result;
+
          }
 
          int Context::rollback( const Transaction& transaction)
          {
             common::trace::Scope trace{ "transaction::Context::rollback", common::log::internal::transaction};
 
-            if( transaction.trid)
+            const auto process = process::handle();
+
+            if( transaction.trid.owner() != process)
             {
-               message::transaction::rollback::Request request;
-               request.trid = transaction.trid;
-               request.process = process::handle();
-
-               queue::blocking::Writer writer( manager().queue);
-               writer( request);
-
-               queue::blocking::Reader reader( ipc::receive::queue());
-
-               message::transaction::rollback::Reply reply;
-               reader( reply);
-
-               log::internal::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
-
-               return xaTotx( reply.state);
+               log::internal::transaction << "rollback - current process not owner of transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
+               return TX_PROTOCOL_ERROR;
             }
-            else
-            {
-               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
-               return TX_NO_BEGIN;
-            }
+
+            message::transaction::rollback::Request request;
+            request.trid = transaction.trid;
+            request.process = process;
+
+            queue::blocking::Writer writer( manager().queue);
+            writer( request);
+
+            queue::blocking::Reader reader( ipc::receive::queue());
+
+            message::transaction::rollback::Reply reply;
+            reader( reply);
+
+            log::internal::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
+
+            return xaTotx( reply.state);
+
             return TX_OK;
 
          }
 
          int Context::rollback()
          {
-            if( ! m_transactions.empty())
+            if( m_transactions.empty())
             {
-               //
-               // Regardless what happens we'll remove the current transaction
-               //
-               local::pop::Guard popGuard( m_transactions);
-
-               return rollback( m_transactions.top());
-            }
-            else
-            {
-               log::internal::transaction << "no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
+               log::internal::transaction << "rollback - no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
                return TX_NO_BEGIN;
             }
 
-            return TX_OK;
+            auto result = rollback( m_transactions.back());
+
+            //
+            // We only remove/consume transaction if rollback succeed
+            // TODO: any other situation we should remove?
+            //
+            if( result == TX_OK)
+            {
+               m_transactions.pop_back();
+            }
+
+            return result;
          }
 
 
@@ -644,6 +710,7 @@ namespace casual
             auto&& transaction = current();
 
             info.xid = transaction.trid.xid;
+            info.transaction_state = static_cast< decltype( info.transaction_state)>( transaction.state());
 
 
             return transaction ? 1 : 0;

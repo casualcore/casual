@@ -349,9 +349,9 @@ namespace casual
                   {
                      message::service::Reply result;
 
-                     result.returnValue = state.value;
-                     result.userReturnCode = state.code;
-                     result.callDescriptor = descriptor;
+                     result.value = state.value;
+                     result.code = state.code;
+                     result.descriptor = descriptor;
 
                      if( state.data != nullptr)
                      {
@@ -361,7 +361,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           result.returnValue = TPESVCERR;
+                           result.value = TPESVCERR;
                         }
                      }
                      else

@@ -62,6 +62,7 @@ namespace casual
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
+            inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
 
             explicit operator bool() const

@@ -110,7 +110,7 @@ namespace casual
             } m_resources;
 
 
-            std::stack< Transaction> m_transactions;
+            std::vector< Transaction> m_transactions;
 
             //!
             //! Resources outside any global transaction

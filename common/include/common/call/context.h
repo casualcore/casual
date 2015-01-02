@@ -66,7 +66,7 @@ namespace casual
             {
                struct Cache
                {
-                  typedef std::deque< message::service::Reply> cache_type;
+                  typedef std::vector< message::service::Reply> cache_type;
                   using cache_range = decltype( range::make( cache_type::iterator(), cache_type::iterator()));
 
 
@@ -82,11 +82,13 @@ namespace casual
                   cache_type m_cache;
 
                } cache;
+
             } reply;
 
 
-            typedef std::deque< message::service::Reply> reply_cache_type;
-            using cache_range = decltype( range::make( reply_cache_type().begin(), reply_cache_type().end()));
+
+            //typedef std::deque< message::service::Reply> reply_cache_type;
+            //using cache_range = decltype( range::make( reply_cache_type().begin(), reply_cache_type().end()));
 
 
             common::Uuid execution = common::uuid::make();
@@ -121,7 +123,7 @@ namespace casual
 
 
 
-            using cache_range = State::cache_range;
+            using cache_range = State::Reply::Cache::cache_range;
 
             Context();
 
