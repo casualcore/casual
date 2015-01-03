@@ -61,7 +61,8 @@ namespace casual
                   {
                      const std::string basename{ file::basename( process::path())};
 
-                     std::lock_guard< std::mutex> lock( m_streamMutex);
+                     // We don't need this - thread::Safe proxy
+                     //std::lock_guard< std::mutex> lock( m_streamMutex);
 
                      m_output << chronology::local()
                         << '|' << environment::domain::name()

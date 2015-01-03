@@ -13,6 +13,7 @@
 #include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
+#include "common/buffer/transport.h"
 
 #include "common/environment.h"
 #include "common/flag.h"
@@ -232,6 +233,11 @@ namespace casual
 
             log::internal::debug << "cd: " << descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
+            //
+            // Invoke pre-transport buffer modifiers
+            //
+            buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
+
 
             message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
             message.descriptor = descriptor;
@@ -328,26 +334,38 @@ namespace casual
                {
                   throw exception::xatmi::buffer::TypeNotExpected{};
                }
+            }
 
+            //
+            // We always deallocate user output buffer
+            //
+            {
                buffer::pool::Holder::instance().deallocate( *odata);
                *odata = nullptr;
             }
 
             //
-            // We deliver the message
+            // We prepare the output buffer
             //
-            descriptor = reply.callDescriptor;
-            *odata = reply.buffer.memory.data();
-            olen = reply.buffer.memory.size();
+            {
+               descriptor = reply.callDescriptor;
+               *odata = reply.buffer.memory.data();
+               olen = reply.buffer.memory.size();
+
+               //
+               // Apply post transport buffer manipulation
+               // TODO: get service-name
+               //
+               buffer::transport::Context::instance().dispatch(
+                     *odata, olen, "", buffer::transport::Lifecycle::post_call, reply.buffer.type);
+
+               //
+               // Add the buffer to the pool
+               //
+               buffer::pool::Holder::instance().insert( std::move( reply.buffer));
+            }
 
 
-            // TOOD: Temp
-            log::internal::debug << "descriptor: " << descriptor << " buffer: " << static_cast< void*>( *odata) << " size: " << olen << std::endl;
-
-            //
-            // Add the buffer to the pool
-            //
-            buffer::pool::Holder::instance().insert( std::move( reply.buffer));
 
             //
             // We remove pending
