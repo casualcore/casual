@@ -1,7 +1,6 @@
 from casual.make.directive import *
 
 
-
 if sys.platform.startswith('darwin'):
     
     
@@ -9,12 +8,14 @@ if sys.platform.startswith('darwin'):
     
     platform_specific_lib_paths = [ '/opt/local/lib' ]
     
+    platform_specific_include_paths = [ '/opt/local/include' ]
     
 else:
     platform_specific_libs = ['uuid', 'resolv']
     
     platform_specific_lib_paths = []
 
+    platform_specific_include_paths = []
 
 
 IncludePaths( [ 
@@ -25,7 +26,8 @@ IncludePaths( [
     '../serviceframework/include',
     '../buffers/include',
     '$(UNITTEST_INCLUDE_PATH)'
-    ])
+    ]
+    + platform_specific_include_paths)
 
 LibraryPaths( platform_specific_lib_paths + [ '$(UNITTEST_LIBRARY_PATH)'])
 
