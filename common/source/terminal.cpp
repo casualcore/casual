@@ -38,6 +38,7 @@ namespace casual
             {
                auto flags = out.flags();
                auto width = out.width();
+               out.width( 0);
                out << color.m_color;
                out.setf( flags);
                out.width( width);
