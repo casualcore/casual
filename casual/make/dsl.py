@@ -164,66 +164,66 @@ def Compile( sourcefile, objectfile = None, directive = ''):
 
 
 
-def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
-    """
- Links a XATMI-server
-
- param: name        name of the server with out prefix or suffix.
-    
- param: objectfiles    object files that is linked
-
- param: libraries        dependent libraries
-
- param: serverdefinition  path to the server definition file that configure the public services, 
-                         and semantics.
-                         Can also be a list of public services. I e.  ["service1", "service2"]
-                    
- param: resources  optional - a list of XA resources. I e ["db2-rm"] - the names shall 
-                correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
-    """
-
-    target = Target( internal_executable_name_path( name), name)
-    
-    directive = "";
-
-    if resources:
-        directive += " -r " + ' '.join( resources)
-    
-    if isinstance( serverdefinition, basestring):
-        # We assume it is a path to a server-definition-file
-        directive += ' -p ' + serverdefinition
-        
-        print '# dependency to server definition file'
-        print target.file + ': ' + serverdefinition
-        print
-        
-        server_defintion_file = serverdefinition;
-    else:
-        directive += ' -s ' + ' '.join( serverdefinition)
-
-    
-    return internal_link( internal_platform().link_server, target, objectfiles, libraries, directive)
-    
-    
-    
-
-def LinkClient( name, objectfiles, libraries, resources=None):
-    """
- Links a XATMI client
-
- param: name        name of the binary with out prefix or suffix.
- param: objectfiles    object files that is linked
- param: libs        dependent libraries
-    """
-    
-    target = Target( internal_executable_name_path( name), name)    
-
-    if not resources:
-        directive = "";
-    else:
-        directive = " -r " + ' '.join( resources)
-        
-    internal_link( internal_platform().link_client, target, objectfiles, libraries, directive)
+# def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
+#     """
+#  Links a XATMI-server
+# 
+#  param: name        name of the server with out prefix or suffix.
+#     
+#  param: objectfiles    object files that is linked
+# 
+#  param: libraries        dependent libraries
+# 
+#  param: serverdefinition  path to the server definition file that configure the public services, 
+#                          and semantics.
+#                          Can also be a list of public services. I e.  ["service1", "service2"]
+#                     
+#  param: resources  optional - a list of XA resources. I e ["db2-rm"] - the names shall 
+#                 correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
+#     """
+# 
+#     target = Target( internal_executable_name_path( name), name)
+#     
+#     directive = "";
+# 
+#     if resources:
+#         directive += " -r " + ' '.join( resources)
+#     
+#     if isinstance( serverdefinition, basestring):
+#         # We assume it is a path to a server-definition-file
+#         directive += ' -p ' + serverdefinition
+#         
+#         print '# dependency to server definition file'
+#         print target.file + ': ' + serverdefinition
+#         print
+#         
+#         server_defintion_file = serverdefinition;
+#     else:
+#         directive += ' -s ' + ' '.join( serverdefinition)
+# 
+#     
+#     return internal_link( internal_platform().link_server, target, objectfiles, libraries, directive)
+#     
+#     
+#     
+# 
+# def LinkClient( name, objectfiles, libraries, resources=None):
+#     """
+#  Links a XATMI client
+# 
+#  param: name        name of the binary with out prefix or suffix.
+#  param: objectfiles    object files that is linked
+#  param: libs        dependent libraries
+#     """
+#     
+#     target = Target( internal_executable_name_path( name), name)    
+# 
+#     if not resources:
+#         directive = "";
+#     else:
+#         directive = " -r " + ' '.join( resources)
+#         
+#     internal_link( internal_platform().link_client, target, objectfiles, libraries, directive)
 
 
 def LinkLibrary(name,objectfiles,libs = []):
