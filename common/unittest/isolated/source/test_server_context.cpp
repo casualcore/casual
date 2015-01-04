@@ -289,8 +289,8 @@ namespace casual
       {
          call::State state;
 
-         auto first = state.pending.reserve();
-         auto second = state.pending.reserve();
+         auto first = state.pending.reserve( uuid::make());
+         auto second = state.pending.reserve( uuid::make());
 
          EXPECT_TRUE( first < second);
       }

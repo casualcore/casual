@@ -292,6 +292,23 @@ namespace casual
             m_transactions.push_back( std::move( trans));
          }
 
+         void Context::update( message::service::Reply& state)
+         {
+            if( state.transaction.trid)
+            {
+               auto found = range::find( m_transactions, state.transaction.trid);
+
+               if( ! found)
+               {
+                  throw exception::xatmi::SystemError{ "failed to find transaction", __FILE__, __LINE__};
+               }
+
+               found->state( Transaction::State( state.transaction.state));
+
+               log::internal::transaction << "updated state: " << *found << std::endl;
+            }
+         }
+
          void Context::finalize( message::service::Reply& message)
          {
             common::trace::Scope trace{ "transaction::Context::finalize", common::log::internal::transaction};
@@ -314,8 +331,8 @@ namespace casual
                   if( rollback( transaction) != XA_OK)
                   {
                      message.value = TPESVCERR;
-                     transaction.state( Transaction::State::rollback);
                   }
+                  transaction.state( Transaction::State::rollback);
                };
 
                auto trans_commit = [&]( Transaction& transaction)

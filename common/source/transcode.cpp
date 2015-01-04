@@ -95,7 +95,7 @@ namespace casual
                      {
                         switch( errno)
                         {
-                        case_EMFILE:
+                        case EMFILE:
                         case ENFILE:
                         case ENOMEM:
                            throw std::runtime_error( std::strerror( errno));
@@ -129,7 +129,7 @@ namespace casual
 
                         const auto conversions = iconv( m_descriptor, &source, &size, &target, &left);
 
-                        if( conversions == -1)
+                        if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
                            switch( errno)
                            {

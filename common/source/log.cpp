@@ -72,7 +72,7 @@ namespace casual
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
                         << "|" << category
-                        << '|' << call::Context::instance().currentService()
+                        << '|' << call::Context::instance().service()
                         << "|" << message << std::endl;
                   }
 

@@ -131,10 +131,7 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 {
    try
    {
-
-      auto descriptor = casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
-
-      casual::common::call::Context::instance().getReply( descriptor, odata, *olen, flags);
+      casual::common::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
    }
    catch( ...)
    {
@@ -152,7 +149,7 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
       // TODO: if needed size is less than current size, shall vi reduce it ?
       //
 
-      return casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
+      return casual::common::call::Context::instance().async( svc, idata, ilen, flags);
    }
    catch( ...)
    {
@@ -165,7 +162,7 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 {
    try
    {
-      casual::common::call::Context::instance().getReply( *idPtr, odata, *olen, flags);
+      casual::common::call::Context::instance().reply( *idPtr, odata, *olen, flags);
    }
    catch( ...)
    {

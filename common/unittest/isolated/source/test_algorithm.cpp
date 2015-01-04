@@ -21,11 +21,11 @@ namespace casual
          std::string test{ "0123456789"};
 
 
-         auto pred = compare::equal_to( std::mem_fn( &std::string::size), bind::value( 10));
+         auto pred = std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 10);
 
          EXPECT_TRUE( pred( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &std::string::size), bind::value( 11))( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &std::string::size), bind::value( 9))( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 11)( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 9)( test));
 
       }
 
@@ -47,11 +47,11 @@ namespace casual
          local::TestType test{ "bla bla bla", 42};
 
 
-         auto pred = compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 42));
+         auto pred = std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 42);
 
          EXPECT_TRUE( pred( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 41))( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 43))( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 41)( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 43)( test));
       }
 
 

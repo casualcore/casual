@@ -145,7 +145,7 @@ namespace casual
          {
             call::Timeout::instance().clear();
             buffer::pool::Holder::instance().clear();
-            call::Context::instance().currentService( "");
+            call::Context::instance().service( "");
          }
 
 

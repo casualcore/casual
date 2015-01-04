@@ -393,7 +393,7 @@ namespace casual
                }
 
                template< typename M>
-               auto operator () ( const Uuid& correlation, M& message) -> decltype( std::declval< basic_reader>().fetch( message, correlation))
+               auto operator () ( M& message, const Uuid& correlation) -> decltype( std::declval< basic_reader>().fetch( message, correlation))
                {
                   return fetch( message, correlation);
                }

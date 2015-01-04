@@ -93,6 +93,28 @@ namespace casual
             EXPECT_TRUE( correlation == response.at( 0).correlation) << "correlation: " << correlation;
          }
 
+         TEST( casual_common, ipc_queue_send_receive_discard_correlation__expect_no_message)
+         {
+
+            receive::Queue receive;
+
+            send::Queue send( receive.id());
+
+            auto message = local::message();
+            message::Complete complete;
+
+            complete << message;
+
+            auto correlation = send( complete);
+
+            //
+            // Discard the message
+            //
+            receive.discard( complete.correlation);
+
+            EXPECT_TRUE( receive( correlation, receive::Queue::cNoBlocking).empty());
+         }
+
 
          TEST( casual_common, ipc_queue_receive_timeout_5ms)
          {
@@ -155,7 +177,7 @@ namespace casual
 
             auto response = receive( 0);
 
-            EXPECT_TRUE( complete.payload == response.at( 0).payload);
+            EXPECT_TRUE( complete.payload == response.at( 0).payload) << "complete.payload.size(): " << complete.payload.size() << " response.at( 0).payload.size(): " << response.at( 0).payload.size();
          }
       }
 	}

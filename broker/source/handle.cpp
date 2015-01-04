@@ -378,7 +378,7 @@ namespace casual
                   message::service::name::lookup::Reply reply;
                   reply.service = service.information;
                   reply.service.monitor_queue = m_state.monitorQueue;
-                  reply.supplier = transform::Instance()( *idle);
+                  reply.process = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
                   writer( reply);

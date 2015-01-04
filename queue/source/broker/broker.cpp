@@ -285,12 +285,12 @@ namespace casual
          }
          else
          {
-
             return getQueues(
                   std::get< 0>( common::range::intersection(
                      m_state.groups,
                      common::range::unique( groups),
-                     common::compare::equal_to( std::mem_fn( &broker::State::Group::name), common::compare::value()))));
+                     std::bind( common::equal_to{},
+                           std::bind( &broker::State::Group::name, std::placeholders::_1), std::placeholders::_2))));
          }
       }
 
@@ -325,7 +325,7 @@ namespace casual
             blockedRead( reply);
 
             auto found = common::range::find_if( result,
-                  common::compare::equal_to( std::mem_fn( &broker::Queues::groupId), common::bind::value( reply.process.pid)));
+                  std::bind( common::equal_to{}, std::bind( &broker::Queues::groupId, std::placeholders::_1), reply.process.pid));
 
             if( found)
             {

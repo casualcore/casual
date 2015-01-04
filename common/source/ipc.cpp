@@ -164,7 +164,7 @@ namespace casual
             std::ostream& operator << ( std::ostream& out, const Transport& value)
             {
                return out << "{type: " << value.message.type << " header: {correlation: " << common::uuid::string( value.message.header.correlation)
-                     << ", count:" << value.message.header.count << "}, size: { header:" << sizeof( Transport::Header)
+                     << ", pending:" << value.message.header.pending << "}, size: { header:" << sizeof( Transport::Header)
                      << ", payload: " << value.m_size << ", total: " << sizeof( Transport::Header) + value.m_size << ", max:" << Transport::message_max_size << "}}";
             }
 
@@ -188,7 +188,7 @@ namespace casual
                   std::begin( transport.message.payload),
                   std::begin( transport.message.payload) + transport.size());
 
-               complete = transport.message.header.count == 0;
+               complete = transport.message.header.pending == 0;
 
             }
 
@@ -216,30 +216,29 @@ namespace casual
                //
 
                ipc::message::Transport transport;
+
                transport.message.type = message.type;
                message.correlation.copy( transport.message.header.correlation);
 
-               //
-               // TODO: Redo this crap.
-               //
 
-               auto size = message.payload.size();
-               if( size % message::Transport::payload_max_size == 0 && size > 0)
+               if( message.payload.size() > 0)
                {
-                  transport.message.header.count = size / message::Transport::payload_max_size - 1;
+                  auto chunks = std::div( message.payload.size(), message::Transport::payload_max_size);
+
+                  transport.message.header.pending = chunks.quot + ( chunks.rem == 0 ? 0 : 1);
                }
                else
                {
-                  transport.message.header.count = size / message::Transport::payload_max_size;
+                  transport.message.header.pending = 1;
                }
-
 
                auto partBegin = std::begin( message.payload);
 
-               while( transport.message.header.count >= 0)
+               while( transport.message.header.pending > 0)
                {
+                  --transport.message.header.pending;
 
-                  auto partEnd = partBegin + message::Transport::payload_max_size > std::end( message.payload) ?
+                  auto partEnd = ( partBegin + message::Transport::payload_max_size) > std::end( message.payload) ?
                         std::end( message.payload) : partBegin + message::Transport::payload_max_size;
 
                   transport.assign( partBegin, partEnd);
@@ -249,16 +248,8 @@ namespace casual
                   //
                   if( ! message::send( m_id, transport, flags))
                   {
-                     if( transport.message.header.count > 0)
-                     {
-                        // TODO: Partially sent message, what to do now?
-                        log::internal::ipc << "TODO: Partially sent message, what to do now?\n";
-                     }
                      return uuid::empty();
                   }
-
-                  --transport.message.header.count;
-
 
                   partBegin = partEnd;
                }
@@ -471,6 +462,20 @@ namespace casual
                return result;
             }
 
+            void Queue::discard( const Uuid& correlation)
+            {
+
+               auto found = find( local::find::Correlation( correlation), cNoBlocking);
+
+               if( found)
+               {
+                  m_cache.erase( found.first);
+               }
+               else if( ! range::find( m_discarded, correlation))
+               {
+                  m_discarded.push_back( correlation);
+               }
+            }
 
             void Queue::clear()
             {
@@ -490,27 +495,47 @@ namespace casual
 
                while( ! found && message::receive( m_id, transport, flags))
                {
-                  found = cache( transport);
-                  found = range::find_if( found, predicate);
+                  //
+                  // Check if the message should be discarded
+                  //
+                  if( ! discard( transport))
+                  {
+                     found = cache( transport);
+                     found = range::find_if( found, predicate);
+                  }
                }
 
                return found;
             }
 
 
-
-            Queue::range_type Queue::cache( message::Transport& message)
+            bool Queue::discard( message::Transport& transport)
             {
-               auto found = range::find_if( m_cache,
-                     local::find::Correlation( message.message.header.correlation));
+               auto found = range::find( m_discarded, transport.message.header.correlation);
 
                if( found)
                {
-                  found->add( message);
+                  if( transport.message.header.pending == 0)
+                  {
+                     m_discarded.erase( found.first);
+                  }
+                  return true;
+               }
+               return false;
+            }
+
+            Queue::range_type Queue::cache( message::Transport& transport)
+            {
+               auto found = range::find_if( m_cache,
+                     local::find::Correlation( transport.message.header.correlation));
+
+               if( found)
+               {
+                  found->add( transport);
                }
                else
                {
-                  found.first = m_cache.emplace( std::end( m_cache), message);
+                  found.first = m_cache.emplace( std::end( m_cache), transport);
                   found.last = std::end( m_cache);
                }
                return found;

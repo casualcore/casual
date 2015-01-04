@@ -64,10 +64,14 @@ namespace casual
             std::vector< int> associated;
 
 
+            friend bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
+
             friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
             {
                return out << "{trid: " << rhs.trid << ", state: " << rhs.m_state << ", previous: " << rhs.m_previous << "}";
             }
+
+
 
          private:
             State m_state = State::inactive;

@@ -2,19 +2,12 @@ from casual.make.directive import *
 
 
 if sys.platform.startswith('darwin'):
-    
-    
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
-    
     platform_specific_lib_paths = [ '/opt/local/lib' ]
-    
     platform_specific_include_paths = [ '/opt/local/include' ]
-    
 else:
     platform_specific_libs = ['uuid', 'resolv']
-    
     platform_specific_lib_paths = []
-
     platform_specific_include_paths = []
 
 

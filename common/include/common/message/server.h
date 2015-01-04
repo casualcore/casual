@@ -157,12 +157,12 @@ namespace casual
 
                      Service service;
 
-                     process::Handle supplier;
+                     process::Handle process;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & service;
-                        archive & supplier;
+                        archive & process;
                      })
                   };
                } // lookup
@@ -183,8 +183,9 @@ namespace casual
                Service service;
                process::Handle reply;
                common::Uuid execution;
-               std::string callee;
+               std::string caller;
                common::transaction::ID trid;
+               std::int64_t flags;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -192,8 +193,9 @@ namespace casual
                   archive & service;
                   archive & reply;
                   archive & execution;
-                  archive & callee;
+                  archive & caller;
                   archive & trid;
+                  archive & flags;
                })
             };
 

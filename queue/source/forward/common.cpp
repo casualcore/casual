@@ -66,7 +66,7 @@ namespace casual
 
                   common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
                   common::message::queue::dequeue::Reply reply;
-                  receive( correlation, reply);
+                  receive( reply, correlation);
 
                   if( reply.message.empty())
                   {

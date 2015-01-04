@@ -14,12 +14,15 @@
 
 #include "common/internal/trace.h"
 
+
 #include "common/transaction/context.h"
 #include "common/queue.h"
 
 #include "common/call/context.h"
 #include "common/buffer/pool.h"
 #include "common/buffer/transport.h"
+
+#include "common/flag.h"
 
 namespace casual
 {
@@ -75,7 +78,7 @@ namespace casual
             //!
             //! Handles XATMI-calls
             //!
-            //! Sematics:
+            //! Semantics:
             //! - construction
             //! -- send connect to broker - connect server - advertise all services
             //! - dispatch
@@ -244,7 +247,7 @@ namespace casual
                      m_policy.transaction( message, service, start);
 
 
-                     call::Context::instance().currentService( message.service.name);
+                     call::Context::instance().service( message.service.name);
 
                      //
                      // Also takes care of buffer to pool
@@ -272,6 +275,14 @@ namespace casual
                   }
                   else
                   {
+                     //
+                     // User has called tpreturn
+                     //
+
+
+                     // TODO: What are the semantics of 'order' of failure?
+                     //       If TM is down, should we send reply to caller?
+                     //       If broker is down, should we send reply to caller?
 
                      //
                      // Apply post service buffer manipulation
@@ -286,7 +297,7 @@ namespace casual
                      //
                      // Prepare reply
                      //
-                     message::service::Reply reply = transform.reply( state.jump.state, message.descriptor);
+                     message::service::Reply reply = transform.reply( state.jump.state, message);
 
 
                      //
@@ -302,20 +313,18 @@ namespace casual
 
 
 
-                     //
-                     // User has called tpreturn.
-                     // Send reply to caller. We previously "saved" state when the user called tpreturn.
-                     // we now use it
-                     //
-                     try
+                     if( ! flag< TPNOREPLY>( message.flags))
                      {
-                        m_policy.reply( message.reply.queue, reply);
-                     }
-                     catch( const exception::queue::Unavailable&)
-                     {
-                        // TODO: What are the semantics of 'order' of failure?
-                        //       If TM is down, should we send reply to caller?
-                        //       If broker is down, should we send reply to caller?
+                        try
+                        {
+                           //
+                           // Send reply to caller.
+                           //
+                           m_policy.reply( message.reply.queue, reply);
+                        }
+                        catch( const exception::queue::Unavailable&)
+                        {
+                        }
                      }
 
 
@@ -327,7 +336,7 @@ namespace casual
                         state.monitor.end = platform::clock_type::now();
                         state.monitor.callId = message.execution;
                         state.monitor.service = message.service.name;
-                        state.monitor.parentService = message.callee;
+                        state.monitor.parentService = message.caller;
 
                         m_policy.statistics( message.service.monitor_queue, state.monitor);
                      }
@@ -345,13 +354,14 @@ namespace casual
 
                struct transform_t
                {
-                  message::service::Reply reply( server::State::jump_t::state_t& state, descriptor_type descriptor)
+                  message::service::Reply reply( server::State::jump_t::state_t& state, const message::service::callee::Call& message)
                   {
                      message::service::Reply result;
 
+                     result.correlation = message.correlation;
                      result.value = state.value;
                      result.code = state.code;
-                     result.descriptor = descriptor;
+                     result.descriptor = message.descriptor;
 
                      if( state.data != nullptr)
                      {
@@ -385,7 +395,7 @@ namespace casual
                   strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
                   result.len = message.buffer.memory.size();
                   result.cd = message.descriptor;
-                  result.flags = 0;
+                  result.flags = message.flags;
 
                   result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));
 

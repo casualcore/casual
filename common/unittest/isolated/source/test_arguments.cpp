@@ -82,20 +82,6 @@ namespace casual
 
       }
 
-      TEST( casual_common_arguments, test_std_bind)
-      {
-
-         long value = 0;
-
-         auto callable = std::bind( bind::value( value), std::placeholders::_1);
-
-         callable( 42);
-
-         EXPECT_TRUE( value == 42) << "value: " << value;
-         //EXPECT_TRUE( callable() == 42);
-
-      }
-
 
 
       TEST( casual_common_arguments, test_bind)

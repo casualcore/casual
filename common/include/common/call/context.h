@@ -13,9 +13,10 @@
 #include "common/platform.h"
 #include "common/message/server.h"
 
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
+
+
+#include <vector>
+
 
 namespace casual
 {
@@ -30,10 +31,10 @@ namespace casual
 
       namespace call
       {
+         using descriptor_type = platform::descriptor_type;
 
          struct State
          {
-            using descriptor_type = platform::descriptor_type;
 
             struct Pending
             {
@@ -49,15 +50,67 @@ namespace casual
                   friend bool operator == ( const Descriptor& d, descriptor_type cd) { return cd == d.descriptor;}
                };
 
-               int reserve();
+               struct Transaction
+               {
+                  Transaction( const transaction::ID& trid, descriptor_type descriptor)
+                    : m_trid( trid), m_involved{ descriptor} {}
+
+
+
+                  bool remove( descriptor_type descriptor)
+                  {
+                     auto found = range::find( m_involved, descriptor);
+
+                     if( found) { m_involved.erase( found.first);}
+
+                     return m_involved.empty();
+                  }
+
+                  void add( descriptor_type descriptor) { m_involved.push_back( descriptor);}
+
+                  friend bool operator == ( const Transaction& lhs, const transaction::ID& rhs) { return lhs.m_trid == rhs;}
+                  friend bool operator == ( const Transaction& lhs, descriptor_type rhs) { return range::any_of( lhs.m_involved, std::bind( equal_to{}, std::placeholders::_1, rhs));}
+               private:
+                  transaction::ID m_trid;
+                  std::vector< descriptor_type> m_involved;
+               };
+
+               struct Correlation
+               {
+                  Correlation( descriptor_type descriptor, const Uuid& correlation)
+                   : descriptor( descriptor), correlation( correlation) {}
+
+                  descriptor_type descriptor;
+                  Uuid correlation;
+
+                  friend bool operator == ( const Correlation& lhs, descriptor_type rhs) { return lhs.descriptor == rhs;}
+               };
+
+               Pending();
+
+               //!
+               //! Reserves a descriptor and associates it to message-correlation and transaction
+               //!
+               descriptor_type reserve( const Uuid& correlation, const transaction::ID& transaction);
+
+               //!
+               //! Reserves a descriptor and associates it to message-correlation
+               //!
+               descriptor_type reserve( const Uuid& correlation);
 
                void unreserve( descriptor_type descriptor);
 
                bool active( descriptor_type descriptor) const;
 
+               const Uuid& correlation( descriptor_type descriptor) const;
+
             private:
-               typedef std::vector< Descriptor> descriptors_type;
-               descriptors_type m_descriptors;
+
+               descriptor_type reserve();
+
+               std::vector< Descriptor> m_descriptors;
+               std::vector< Transaction> m_transactions;
+               std::vector< Correlation> m_correlations;
 
             } pending;
 
@@ -85,15 +138,9 @@ namespace casual
 
             } reply;
 
-
-
-            //typedef std::deque< message::service::Reply> reply_cache_type;
-            //using cache_range = decltype( range::make( reply_cache_type().begin(), reply_cache_type().end()));
-
-
             common::Uuid execution = common::uuid::make();
 
-            std::string currentService;
+            std::string service;
          };
 
          class Context
@@ -102,33 +149,31 @@ namespace casual
             static Context& instance();
 
 
-            int asyncCall( const std::string& service, char* idata, long ilen, long flags);
+            descriptor_type async( const std::string& service, char* idata, long ilen, long flags);
 
-            void getReply( int& descriptor, char** odata, long& olen, long flags);
+            void reply( descriptor_type& descriptor, char** odata, long& olen, long flags);
 
             void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
 
-            int canccel( int cd);
+            int canccel( descriptor_type cd);
 
             void clean();
 
             void execution( const common::Uuid& uuid);
             const common::Uuid& execution() const;
 
-            void currentService( const std::string& service);
-            const std::string& currentService() const;
+            void service( const std::string& service);
+            const std::string& service() const;
 
          private:
-
-
-
 
             using cache_range = State::Reply::Cache::cache_range;
 
             Context();
 
+            bool receive( message::service::Reply& reply, descriptor_type descriptor, long flags);
 
-            cache_range fetch( int descriptor, long flags);
+            cache_range fetch( descriptor_type descriptor, long flags);
 
             void consume();
 

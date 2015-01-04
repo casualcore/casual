@@ -72,6 +72,8 @@ namespace casual
             void joinOrStart( const transaction::ID& transaction);
 
 
+            void update( message::service::Reply& state);
+
             //!
             //! commits or rollback transaction created from this server
             //!

@@ -68,7 +68,11 @@ namespace casual
                struct Header
                {
                   correalation_type correlation;
-                  long count;
+
+                  //!
+                  //! How many more transport messages until a full complete message
+                  //!
+                  std::uint64_t pending;
 
                };
 
@@ -297,6 +301,12 @@ namespace casual
                //!
                std::vector< message::Complete> operator () ( const Uuid& correlation, const long flags);
 
+
+               //!
+               //! Discards any message that correlates.
+               //!
+               void discard( const Uuid& correlation);
+
                //!
                //! Clear and discard all messages in queue.
                //!
@@ -312,9 +322,14 @@ namespace casual
 
                range_type cache( message::Transport& message);
 
+               bool discard( message::Transport& message);
+
                common::file::scoped::Path m_path;
 
                cache_type m_cache;
+
+               std::vector< Uuid> m_discarded;
+
             };
          } // receive
 
