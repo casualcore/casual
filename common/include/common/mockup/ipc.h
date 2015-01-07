@@ -24,6 +24,7 @@ namespace casual
          {
             using id_type = platform::queue_id_type;
 
+            using transform_type = std::function< common::ipc::message::Complete( common::ipc::message::Complete&)>;
 
 
             //!
@@ -33,7 +34,17 @@ namespace casual
             //!
             struct Router
             {
+               //!
+               //! @param destination where to send messages
+               //! @param transform invoked before send, hence one can transform
+               //!   complete messages (mostly to transform regest->reply and keep correlation)
+               //!
+               Router( id_type destination, transform_type transform);
                Router( id_type destination);
+
+               template< typename D, typename... Args>
+               Router( D&& destination, Args&&... args) : Router( destination.id(), std::forward< Args>( args)...) {}
+
                ~Router();
 
                id_type id() const;
@@ -86,6 +97,7 @@ namespace casual
                struct Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
+
 
             namespace broker
             {

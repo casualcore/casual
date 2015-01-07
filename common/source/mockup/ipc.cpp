@@ -104,33 +104,42 @@ namespace casual
                }
             }
 
-
-            class Router::Implementation
+            namespace implementation
             {
+
                struct Worker
                {
                   using cache_type = std::vector< common::ipc::message::Complete>;
 
+
+                  using transform_type = ipc::transform_type;
+
                   struct State
                   {
 
-                     State( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
-                        : source( std::move( source)), destination( destination) {}
+                     State( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination, transform_type transform)
+                        : source( std::move( source)), destination( destination), transform( std::move( transform)) {}
 
                      common::ipc::receive::Queue source;
                      common::ipc::send::Queue destination;
+                     transform_type transform;
 
                      cache_type cache;
                   };
 
                   void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
                   {
+                     (*this)( std::move( source), destination, nullptr);
+                  }
+
+                  void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination, transform_type transform)
+                  {
                      //!
                      //! Block all signals
                      //!
                      common::signal::thread::block();
 
-                     State state( std::move( source), destination);
+                     State state( std::move( source), destination, std::move( transform));
 
                      try
                      {
@@ -190,11 +199,19 @@ namespace casual
                      {
                         log::internal::ipc << "write to destination: " <<  state.destination.id() << " flags: " << common::ipc::send::Queue::cNoBlocking << std::endl;
 
-                        if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
+                        if( state.transform != nullptr)
                         {
-                           state.cache.erase( std::begin( state.cache));
-
-                           return;
+                           if( state.destination( state.transform( state.cache.front()), common::ipc::send::Queue::cNoBlocking))
+                           {
+                              state.cache.erase( std::begin( state.cache));
+                           }
+                        }
+                        else
+                        {
+                           if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
+                           {
+                              state.cache.erase( std::begin( state.cache));
+                           }
                         }
                      }
                   }
@@ -224,48 +241,70 @@ namespace casual
                      return true;
                   }
                };
+
+               class Router
+               {
+               public:
+
+                  Router( id_type destination, Worker::transform_type transform)
+                     : destination( destination)
+                  {
+                     //
+                     // We use an ipc-queue that does not check signals
+                     //
+                     common::ipc::receive::Queue ipc;
+                     id = ipc.id();
+
+                     m_thread = std::thread{ implementation::Worker{}, std::move( ipc), destination, std::move( transform)};
+                  }
+
+                  Router( id_type destination)
+                     : Router( destination, nullptr)
+                  {
+                  }
+
+                  ~Router()
+                  {
+                     try
+                     {
+                        common::queue::blocking::Writer send{ id};
+                        local::message::Disconnect message;
+                        send( message);
+                     }
+                     catch( const std::exception& exception)
+                     {
+                        log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                     }
+
+                     try
+                     {
+                        m_thread.join();
+                     }
+                     catch( const std::exception& exception)
+                     {
+                        log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                     }
+                  }
+
+                  id_type id;
+                  id_type destination;
+                  std::thread m_thread;
+
+               };
+
+            } // implementation
+
+            class Router::Implementation : public implementation::Router
+            {
             public:
-
-               Implementation( id_type destination) : destination( destination)
-               {
-                  //
-                  // We use an ipc-queue that does not check signals
-                  //
-                  common::ipc::receive::Queue ipc;
-                  id = ipc.id();
-
-                  m_thread = std::thread{ Worker{}, std::move( ipc), destination};
-               }
-
-               ~Implementation()
-               {
-                  try
-                  {
-                     common::queue::blocking::Writer send{ id};
-                     local::message::Disconnect message;
-                     send( message);
-                  }
-                  catch( const std::exception& exception)
-                  {
-                     log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
-                  }
-
-                  try
-                  {
-                     m_thread.join();
-                  }
-                  catch( const std::exception& exception)
-                  {
-                     log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
-                  }
-               }
-
-               id_type id;
-               id_type destination;
-               std::thread m_thread;
-
+               using implementation::Router::Router;
             };
 
+            Router::Router( id_type destination, transform_type transform)
+              : m_implementation( destination, std::move( transform))
+            {
+
+            }
             Router::Router( id_type destination) : m_implementation( destination) {}
             Router::~Router() {}
 
@@ -337,6 +376,8 @@ namespace casual
 
                log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;
             }
+
+
 
             namespace broker
             {

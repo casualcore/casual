@@ -221,12 +221,10 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
-  casual::common::log::debug << "internal tpsvrinit called" << std::endl;
   return 0;
 }
 
 void tpsvrdone()
 {
-  casual::common::log::debug << "internal tpsvrdone called" << std::endl;
 }
 

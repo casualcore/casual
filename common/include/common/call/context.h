@@ -104,6 +104,11 @@ namespace casual
 
                const Uuid& correlation( descriptor_type descriptor) const;
 
+               //!
+               //! Tries to discard descriptor, throws if fail.
+               //!
+               void discard( descriptor_type descriptor);
+
             private:
 
                descriptor_type reserve();
