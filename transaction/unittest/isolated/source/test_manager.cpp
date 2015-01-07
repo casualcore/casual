@@ -135,7 +135,7 @@ namespace casual
                if( message.empty())
                   return;
 
-               handler.dispatch( message.front());
+               handler( message.front());
             }
 
          }

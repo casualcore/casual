@@ -63,7 +63,7 @@ namespace casual
 
                using Base::Base;
 
-               void dispatch( message_type& message);
+               void operator () ( message_type& message);
             };
 
             namespace reply
@@ -76,7 +76,7 @@ namespace casual
 
                   Wrapper( State& state) : state::Base{ state}, m_handler{ state} {}
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
 
 
                private:
@@ -89,7 +89,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
 
                private:
                   bool m_connected = false;
@@ -103,7 +103,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                };
                using Prepare = Wrapper< basic_prepare>;
@@ -115,7 +115,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                };
                using Commit = Wrapper< basic_commit>;
@@ -126,7 +126,7 @@ namespace casual
 
                   using state::Base::Base;
 
-                  bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                };
 
@@ -147,7 +147,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
          struct Commit : public state::Base
@@ -157,7 +157,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -168,7 +168,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -186,7 +186,7 @@ namespace casual
 
                using Base::Base;
 
-               void dispatch( message_type& message);
+               void operator () ( message_type& message);
             };
 
             struct Commit : public state::Base
@@ -196,7 +196,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message);
+               void operator () ( message_type& message);
             };
 
             struct Rollback : public state::Base
@@ -206,7 +206,7 @@ namespace casual
 
                using state::Base::Base;
 
-               void dispatch( message_type& message);
+               void operator () ( message_type& message);
 
             };
 
@@ -224,7 +224,7 @@ namespace casual
 
                       using Base::Base;
 
-                      bool dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                      bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
                    };
 
                    using Prepare = handle::resource::reply::Wrapper< basic_prepare>;
@@ -236,7 +236,7 @@ namespace casual
 
                       using state::Base::Base;
 
-                      bool dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                      bool operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource);
                    };
 
                    using Commit = handle::resource::reply::Wrapper< basic_commit>;
@@ -248,7 +248,7 @@ namespace casual
 
                       using state::Base::Base;
 
-                      bool dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                      bool operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
                    };
 

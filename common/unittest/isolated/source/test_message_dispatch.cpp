@@ -31,7 +31,7 @@ namespace casual
 
                typedef message::shutdown::Request message_type;
 
-               void dispatch( message_type& message)
+               void operator () ( message_type& message)
                {
 
                }
@@ -72,7 +72,7 @@ namespace casual
                local::TestHandler::message_type message;
                ipc::message::Complete complete = marshal::complete( message);
 
-               EXPECT_TRUE( handler.dispatch( complete));
+               EXPECT_TRUE( handler( complete));
             }
 
             TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
@@ -86,7 +86,7 @@ namespace casual
                // We have not handler for this message-type.
                //
 
-               EXPECT_FALSE( handler.dispatch( complete));
+               EXPECT_FALSE( handler( complete));
             }
 
          }

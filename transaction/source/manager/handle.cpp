@@ -247,7 +247,7 @@ namespace casual
 
          namespace resource
          {
-            void Involved::dispatch( message_type& message)
+            void Involved::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
 
@@ -293,7 +293,7 @@ namespace casual
             {
 
                template< typename H>
-               void Wrapper< H>::dispatch( message_type& message)
+               void Wrapper< H>::operator () ( message_type& message)
                {
 
                   //
@@ -320,7 +320,7 @@ namespace casual
                         //
                         // We found all the stuff, let the real handler handle the message
                         //
-                        if( m_handler.dispatch( message, transaction, *resource.first))
+                        if( m_handler( message, transaction, *resource.first))
                         {
                            //
                            // We remove the transaction from our state
@@ -344,7 +344,7 @@ namespace casual
 
 
 
-               void Connect::dispatch( message_type& message)
+               void Connect::operator () ( message_type& message)
                {
                   common::trace::Scope trace{ "transaction::handle::resource::connect reply", common::log::internal::transaction};
 
@@ -396,7 +396,7 @@ namespace casual
                }
 
 
-               bool basic_prepare::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_prepare::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   common::trace::Scope trace{ "transaction::handle::resource::prepare reply", common::log::internal::transaction};
 
@@ -502,7 +502,7 @@ namespace casual
                }
 
 
-               bool basic_commit::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_commit::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   common::trace::Scope trace{ "transaction::handle::resource::commit reply", common::log::internal::transaction};
 
@@ -573,7 +573,7 @@ namespace casual
                   return false;
                }
 
-               bool basic_rollback::dispatch( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_rollback::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   common::trace::Scope trace{ "transaction::handle::resource::rollback reply", common::log::internal::transaction};
 
@@ -645,7 +645,7 @@ namespace casual
          } // resource
 
 
-         void Begin::dispatch( message_type& message)
+         void Begin::operator () ( message_type& message)
          {
             common::trace::Scope trace{ "transaction::handle::Begin", common::log::internal::transaction};
             ;
@@ -690,7 +690,7 @@ namespace casual
 
          }
 
-         void Commit::dispatch( message_type& message)
+         void Commit::operator () ( message_type& message)
          {
             common::trace::Scope trace{ "transaction::handle::Commit", common::log::internal::transaction};
 
@@ -776,7 +776,7 @@ namespace casual
          }
 
 
-         void Rollback::dispatch( message_type& message)
+         void Rollback::operator () ( message_type& message)
          {
             common::trace::Scope trace{ "transaction::handle::Rollback", common::log::internal::transaction};
 
@@ -834,7 +834,7 @@ namespace casual
          namespace domain
          {
 
-            void Prepare::dispatch( message_type& message)
+            void Prepare::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::domain::prepare request", common::log::internal::transaction};
 
@@ -880,7 +880,7 @@ namespace casual
                }
             }
 
-            void Commit::dispatch( message_type& message)
+            void Commit::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::domain::commit request", common::log::internal::transaction};
 
@@ -916,7 +916,7 @@ namespace casual
                }
             }
 
-            void Rollback::dispatch( message_type& message)
+            void Rollback::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::domain::rollback request", common::log::internal::transaction};
 
@@ -956,7 +956,7 @@ namespace casual
             {
                namespace reply
                {
-                  bool basic_prepare::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  bool basic_prepare::operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
                      common::trace::Scope trace{ "transaction::handle::domain::resource::prepare reply", common::log::internal::transaction};
 
@@ -995,7 +995,7 @@ namespace casual
                   }
 
 
-                  bool basic_commit::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  bool basic_commit::operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
                      common::trace::Scope trace{ "transaction::handle::domain::resource::commit reply", common::log::internal::transaction};
 
@@ -1036,7 +1036,7 @@ namespace casual
                      return false;
                   }
 
-                  bool basic_rollback::dispatch(  message_type& message, Transaction& transaction, Transaction::Resource& resource)
+                  bool basic_rollback::operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
                      common::trace::Scope trace{ "transaction::handle::domain::resource::rollback reply", common::log::internal::transaction};
 

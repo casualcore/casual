@@ -186,7 +186,7 @@ namespace casual
                //! to the registered function, and "waits" for tpreturn (long-jump)
                //! to send the reply.
                //!
-               void dispatch( message_type& message)
+               void operator () ( message_type& message)
                {
                   //
                   // Set the call-chain-id for this "chain"

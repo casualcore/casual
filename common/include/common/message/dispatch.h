@@ -44,7 +44,7 @@ namespace casual
                //! @return true if the message was handled.
                //!
                template< typename M>
-               bool dispatch( M&& complete)
+               bool operator () ( M&& complete)
                {
                   return do_dispatch( complete);
                }
@@ -94,7 +94,7 @@ namespace casual
                      message_type message;
                      complete >> message;
 
-                     m_handler.dispatch( message);
+                     m_handler( message);
                   }
 
                private:
@@ -147,7 +147,7 @@ namespace casual
                {
                   auto marshal = receiveQueue.next();
 
-                   handler.dispatch( marshal);
+                   handler( marshal);
                }
             }
          } // dispatch

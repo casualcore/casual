@@ -189,7 +189,7 @@ namespace casual
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            callHandler.dispatch( message);
+            callHandler( message);
          }
 
 
@@ -217,7 +217,7 @@ namespace casual
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            callHandler.dispatch( message);
+            callHandler( message);
          }
 
          queue::blocking::Reader broker( mockup::ipc::broker::queue().receive());
@@ -247,7 +247,7 @@ namespace casual
 
 
          EXPECT_THROW( {
-            callHandler.dispatch( message);
+            callHandler( message);
          }, exception::xatmi::SystemError);
       }
 
@@ -272,7 +272,7 @@ namespace casual
 
             auto message = local::callMessage( caller.id());
             message.service.monitor_queue = monitor.id();
-            callHandler.dispatch( message);
+            callHandler( message);
          }
 
          queue::blocking::Reader reader( monitor.receive());

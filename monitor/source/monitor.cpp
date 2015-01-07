@@ -85,7 +85,7 @@ namespace monitor
 
 	namespace handle
 	{
-		void Notify::dispatch( const message_type& message)
+		void Notify::operator () ( const message_type& message)
 		{
 			static const std::string cMethodname("Notify::dispatch");
 			common::Trace trace(cMethodname);
@@ -104,7 +104,7 @@ namespace monitor
 			message::monitor::Notify message;
 			if ( queueReader( message))
 			{
-				notifier.dispatch( message);
+				notifier( message);
 			}
 			else
 			{
@@ -192,7 +192,7 @@ namespace monitor
 
 			monitor::Transaction transaction( m_monitordb);
 
-			if( ! handler.dispatch( marshal))
+			if( ! handler( marshal))
 			{
 			   common::log::error << "message_type: " << " not recognized - action: discard" << std::endl;
 			}

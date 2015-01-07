@@ -80,7 +80,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
                   };
 
                } // queues
@@ -93,7 +93,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
                   };
 
                } // messages
@@ -109,7 +109,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
             } // enqueue
@@ -122,7 +122,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
 
                   template< typename M>
                   bool do_dispatch( M& message);
@@ -136,7 +136,7 @@ namespace casual
 
                      using dequeue::Request::Request;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
                   };
 
                } // callback
@@ -157,7 +157,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
 
                   };
                }
@@ -173,7 +173,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
 
                   };
                }

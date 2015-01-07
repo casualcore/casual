@@ -265,7 +265,7 @@ namespace casual
 
          while( true)
          {
-            handler.dispatch( blockedRead.next());
+            handler( blockedRead.next());
          }
 
       }
