@@ -181,7 +181,7 @@ namespace casual
                   // Blocking
                   //
 
-                  handler.dispatch( queueReader.next());
+                  handler( queueReader.next());
 
 
                   //
@@ -190,7 +190,7 @@ namespace casual
 
                   queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
 
-                  while( handler.dispatch( nonBlocking.next()) &&
+                  while( handler( nonBlocking.next()) &&
                         m_state.persistentReplies.size() < common::platform::transaction_batch)
                   {
                      ;

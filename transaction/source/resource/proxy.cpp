@@ -82,7 +82,7 @@ namespace casual
 
                using Base::Base;
 
-               void dispatch( message_type& message)
+               void operator () ( message_type& message)
                {
                   reply_type reply;
 

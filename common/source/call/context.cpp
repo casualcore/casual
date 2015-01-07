@@ -242,6 +242,24 @@ namespace casual
             throw exception::invalid::Argument{ "invalid call descriptor: " + std::to_string( descriptor)};
          }
 
+         void State::Pending::discard( descriptor_type descriptor)
+         {
+            //
+            // Can't be associated with a transaction
+            //
+            if( range::find( m_transactions, descriptor))
+            {
+               throw exception::xatmi::TransactionNotSupported{ "descriptor " + std::to_string( descriptor) + " is associated with a transaction"};
+            }
+
+            //
+            // Discards the correlation (directly if in cache, or later if not)
+            //
+            ipc::receive::queue().discard( correlation( descriptor));
+
+            unreserve( descriptor);
+         }
+
 
          State::Reply::Cache::cache_range State::Reply::Cache::add( message::service::Reply&& value)
          {
@@ -509,7 +527,8 @@ namespace casual
 
          int Context::canccel( descriptor_type cd)
          {
-            // TODO:
+            //for( m_state.pending.)
+
             return 0;
          }
 

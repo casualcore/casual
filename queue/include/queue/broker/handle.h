@@ -76,7 +76,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
             } // shutdown
@@ -91,7 +91,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
                   };
                }
             }
@@ -106,7 +106,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
             } // lookup
@@ -119,7 +119,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
             } // connect
@@ -132,7 +132,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
 
@@ -151,7 +151,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
 
                   };
 
@@ -164,7 +164,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
 
                   };
 
@@ -181,7 +181,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
 
                   };
 
@@ -194,7 +194,7 @@ namespace casual
 
                      using Base::Base;
 
-                     void dispatch( message_type& message);
+                     void operator () ( message_type& message);
 
                   };
 

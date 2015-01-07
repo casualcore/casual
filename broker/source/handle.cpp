@@ -91,7 +91,7 @@ namespace casual
                            common::signal::timer::Scoped timeout{ std::chrono::seconds( 10)};
 
                            auto marshal = queueReader.next( filter);
-                           handler.dispatch( marshal);
+                           handler( marshal);
                         }
                         catch( const common::exception::signal::Timeout& exception)
                         {
@@ -175,13 +175,13 @@ namespace casual
             }
          }
 
-         void MonitorConnect::dispatch( message_type& message)
+         void MonitorConnect::operator () ( message_type& message)
          {
             //TODO: Temp
             m_state.monitorQueue = message.process.queue;
          }
 
-         void MonitorDisconnect::dispatch( message_type& message)
+         void MonitorDisconnect::operator () ( message_type& message)
          {
             m_state.monitorQueue = 0;
          }
@@ -192,7 +192,7 @@ namespace casual
             namespace manager
             {
 
-               void Connect::dispatch( message_type& message)
+               void Connect::operator () ( message_type& message)
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Connect::dispatch"};
 
@@ -210,7 +210,7 @@ namespace casual
 
                }
 
-               void Ready::dispatch( message_type& message)
+               void Ready::operator () ( message_type& message)
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Ready::dispatch"};
 
@@ -236,7 +236,7 @@ namespace casual
             namespace client
             {
 
-               void Connect::dispatch( message_type& message)
+               void Connect::operator () ( message_type& message)
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::client::Connect::dispatch"};
 
@@ -275,7 +275,7 @@ namespace casual
          } // transaction
 
 
-         void Advertise::dispatch( message_type& message)
+         void Advertise::operator () ( message_type& message)
          {
 
             std::vector< state::Service> services;
@@ -286,7 +286,7 @@ namespace casual
 
          }
 
-         void Unadvertise::dispatch( message_type& message)
+         void Unadvertise::operator () ( message_type& message)
          {
             std::vector< state::Service> services;
 
@@ -296,7 +296,7 @@ namespace casual
          }
 
 
-         void Connect::dispatch( message_type& message)
+         void Connect::operator () ( message_type& message)
          {
             common::trace::internal::Scope trace{ "broker::handle::Connect::dispatch"};
 
@@ -355,7 +355,7 @@ namespace casual
          }
 
 
-         void ServiceLookup::dispatch( message_type& message)
+         void ServiceLookup::operator () ( message_type& message)
          {
 
             try
@@ -413,7 +413,7 @@ namespace casual
          }
 
 
-         void ACK::dispatch( message_type& message)
+         void ACK::operator () ( message_type& message)
          {
             try
             {
@@ -440,7 +440,7 @@ namespace casual
                      // We can use the normal request to get the response
                      //
                      ServiceLookup lookup( m_state);
-                     lookup.dispatch( *pending);
+                     lookup( *pending);
 
                      //
                      // Remove pending
@@ -509,7 +509,7 @@ namespace casual
             ack.service = message.service.name;
 
             ACK sendACK( m_state);
-            sendACK.dispatch( ack);
+            sendACK( ack);
          }
 
          void Policy::transaction( const message::service::callee::Call&, const server::Service&, const common::platform::time_point&)

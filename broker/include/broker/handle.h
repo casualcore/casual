@@ -51,7 +51,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
          //!
@@ -63,7 +63,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
          namespace transaction
@@ -81,7 +81,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
                //!
@@ -93,7 +93,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
             } // manager
@@ -111,7 +111,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
             } // client
          } // transaction
@@ -127,7 +127,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -137,7 +137,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -151,7 +151,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -164,7 +164,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
 
          };
 
@@ -181,7 +181,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 

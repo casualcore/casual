@@ -45,7 +45,7 @@ namespace casual
                   return false;
                }
 
-               return dispatch( complete.front());
+               return (*this)( complete.front());
             }
 
 

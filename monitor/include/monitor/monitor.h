@@ -61,7 +61,7 @@ namespace casual
 					{
 					};
 
-					void dispatch( const message_type& message);
+					void operator () ( const message_type& message);
 
 				private:
 					MonitorDB& monitorDB;

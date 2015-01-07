@@ -134,7 +134,7 @@ namespace casual
                {
                   using message_type = common::message::queue::dequeue::callback::Reply;
 
-                  void dispatch( message_type& message)
+                  void operator () ( message_type& message)
                   {
                      //
                      // We do nothing, this just acts as a blocker, and when we get
@@ -165,7 +165,7 @@ namespace casual
                while( local::perform( m_tasks.front()))
                {
                   common::queue::non_blocking::Reader receive{ common::ipc::receive::queue()};
-                  handler.dispatch( receive.next());
+                  handler( receive.next());
                }
 
 
@@ -175,7 +175,7 @@ namespace casual
                // or someone wants us to shut down...
                //
                common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-               handler.dispatch( receive.next());
+               handler( receive.next());
             }
 
          }

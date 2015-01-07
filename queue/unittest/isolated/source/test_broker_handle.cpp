@@ -75,7 +75,7 @@ namespace casual
             {
                while( true)
                {
-                  handler.dispatch( read.next());
+                  handler( read.next());
                }
             }
             catch( const common::exception::Shutdown&)
