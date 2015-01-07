@@ -39,7 +39,7 @@ namespace casual
 
 
 
-      TEST( casual_common_conformance, bind)
+      TEST( casual_common_conformance, bind_equal_to)
       {
          struct POD
          {
@@ -52,6 +52,7 @@ namespace casual
 
          EXPECT_TRUE( bind( pod, 42) == true);
       }
+
 
    } // common
 } // casual

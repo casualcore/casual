@@ -29,11 +29,12 @@ namespace casual
          {
             struct Binary
             {
-               typedef platform::binary_type buffer_type;
 
-               Binary( ipc::message::Complete& message)
-                  : m_message(  message)
-               {}
+               Binary( platform::binary_type& buffer)
+                  : m_buffer(  buffer)
+               {
+                  m_buffer.reserve( 128);
+               }
 
 
                template< typename T>
@@ -62,19 +63,19 @@ namespace casual
                template< typename Iter>
                void append( Iter first, Iter last)
                {
-                  const auto oldSize = expand( last - first);
+                  auto offset = expand( last - first);
 
                   std::copy(
                      first,
                      last,
-                     std::begin( m_message.payload) + oldSize);
+                     std::begin( m_buffer) + offset);
                }
 
                template< typename C>
                void append( C&& range)
                {
-                  const auto offset = expand( range.size());
-                  range::copy( std::forward< C>( range), std::begin( m_message.payload) + offset);
+                  auto offset = expand( range.size());
+                  range::copy( std::forward< C>( range), std::begin( m_buffer) + offset);
                }
 
             private:
@@ -97,9 +98,9 @@ namespace casual
                template< typename T>
                void writePod( T&& value)
                {
-                  const auto oldSize = expand( sizeof( T));
+                  auto offset = expand( sizeof( T));
 
-                  memcpy( &m_message.payload[ oldSize], &value, sizeof( T));
+                  memcpy( &m_buffer[ offset], &value, sizeof( T));
                }
 
                template< typename T>
@@ -133,18 +134,13 @@ namespace casual
 
                std::size_t expand( std::size_t size)
                {
-                  const auto oldSize = m_message.payload.size();
+                  auto offset = m_buffer.size();
 
-                  if( m_message.payload.capacity() - m_message.payload.size() < size)
-                  {
-                     m_message.payload.reserve( m_message.payload.capacity() * 2);
-                  }
+                  m_buffer.resize( m_buffer.size() + size);
 
-                  m_message.payload.resize( m_message.payload.size() + size);
-                  return oldSize;
+                  return offset;
                }
-
-               ipc::message::Complete& m_message;
+               platform::binary_type& m_buffer;
             };
 
 
@@ -156,15 +152,10 @@ namespace casual
 
             struct Binary
             {
-               typedef platform::binary_type buffer_type;
-               typedef buffer_type::size_type offest_type;
-               typedef ipc::message::Transport transport_type;
-               typedef transport_type::message_type_type message_type_type;
-
-
-               Binary( ipc::message::Complete& message)
-                  : m_message(  message)
+               Binary( platform::binary_type& buffer)
+                  : m_buffer( buffer), m_offset( 0)
                {
+
                }
 
 
@@ -192,11 +183,13 @@ namespace casual
                template< typename Iter>
                void consume( Iter out, std::size_t size)
                {
-                  assert( m_message.payload.size() >= size + m_offset);
+                  assert( m_offset + size <= m_buffer.size());
+
+                  const auto first = std::begin( m_buffer) + m_offset;
 
                   std::copy(
-                     std::begin( m_message.payload) + m_offset,
-                     std::begin( m_message.payload) + m_offset + size, out);
+                     first,
+                     first + size, out);
 
                   m_offset += size;
                }
@@ -222,7 +215,7 @@ namespace casual
                template< typename T>
                void read( std::vector< T>& value)
                {
-                  typename std::vector< T>::size_type size;
+                  decltype( value.size()) size;
                   *this >> size;
 
                   value.resize( size);
@@ -258,14 +251,14 @@ namespace casual
                {
                   const auto size = sizeof( T);
 
-                  assert( m_message.payload.size() >= size + m_offset);
+                  assert( m_offset + size <= m_buffer.size());
 
-                  memcpy( &value, &m_message.payload[ m_offset], size);
+                  memcpy( &value, &m_buffer[ m_offset], size);
                   m_offset += size;
                }
 
-               ipc::message::Complete& m_message;
-               offest_type m_offset = 0;
+               platform::binary_type& m_buffer;
+               platform::binary_type::size_type m_offset;
             };
 
          } // input
@@ -282,23 +275,8 @@ namespace casual
 
                message.correlation = complete.correlation;
 
-               marshal::input::Binary marshal{ complete};
+               marshal::input::Binary marshal{ complete.payload};
                marshal >> message;
-
-               return complete;
-            }
-
-
-            template< typename M>
-            ipc::message::Complete& operator << ( ipc::message::Complete& complete, M&& message)
-            {
-               complete.correlation = message.correlation ? message.correlation : uuid::make();
-               complete.type = message.message_type;
-
-               marshal::output::Binary marshal{ complete};
-               marshal << message;
-
-               complete.complete = true;
 
                return complete;
             }
@@ -312,9 +290,11 @@ namespace casual
          template< typename M>
          ipc::message::Complete complete( M&& message)
          {
-            ipc::message::Complete complete;
+            ipc::message::Complete complete( message.message_type, message.correlation ? message.correlation : uuid::make());
 
-            complete << message;
+            marshal::output::Binary marshal{ complete.payload};
+            marshal << message;
+
             return complete;
          }
 

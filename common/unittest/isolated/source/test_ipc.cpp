@@ -60,9 +60,7 @@ namespace casual
 
             auto message = local::message();
 
-            message::Complete complete;
-
-            complete << message;
+            message::Complete complete = marshal::complete( message);
 
             EXPECT_TRUE( ! complete.correlation.empty());
 
@@ -81,9 +79,7 @@ namespace casual
             send::Queue send( receive.id());
 
             auto message = local::message();
-            message::Complete complete;
-
-            complete << message;
+            message::Complete complete = marshal::complete( message);
 
             auto correlation = send( complete);
 
@@ -101,9 +97,7 @@ namespace casual
             send::Queue send( receive.id());
 
             auto message = local::message();
-            message::Complete complete;
-
-            complete << message;
+            message::Complete complete = marshal::complete( message);
 
             auto correlation = send( complete);
 
@@ -141,10 +135,8 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete complete;
-            complete.correlation = uuid::make();
+            message::Complete complete( 2, uuid::make());
             complete.payload.assign( message::Transport::payload_max_size, 'A');
-            complete.type = 2;
 
             EXPECT_TRUE( static_cast< bool>( complete.correlation));
 
@@ -167,10 +159,8 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete complete;
-            complete.correlation = uuid::make();
+            message::Complete complete{ 2, uuid::make()};
             complete.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
-            complete.type = 2;
 
             ASSERT_TRUE( static_cast< bool>( send( complete, send::Queue::cNoBlocking)));
 

@@ -226,6 +226,11 @@ namespace casual
          {
             auto& instance = found->second;
 
+            //
+            // Try to remove the ipc-resource
+            //
+            common::ipc::remove( instance.process);
+
             for( auto& s : instance.services)
             {
                auto& service = getService( s.get().information.name);
@@ -263,7 +268,7 @@ namespace casual
                state::Server::Instance instance;
                instance.process.pid = pid;
                instance.server = server.id;
-               instance.alterState( state::Server::Instance::State::prospect);
+               instance.alterState( state::Server::Instance::State::booted);
 
                instances.emplace( pid, std::move( instance));
             }
@@ -421,7 +426,7 @@ namespace casual
             state::Server::Instance instance;
             instance.process.pid = pid;
             instance.server = server.id;
-            instance.alterState( state::Server::Instance::State::prospect);
+            instance.alterState( state::Server::Instance::State::booted);
 
             server.instances.push_back( pid);
 

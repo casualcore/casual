@@ -473,35 +473,31 @@ namespace casual
 
 
          template< typename R, typename C>
-         auto sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
+         auto sort( R&& range, C compare) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::sort( std::begin( inputRange), std::end( inputRange), compare);
-            return inputRange;
+            std::sort( std::begin( range), std::end( range), compare);
+            return std::forward< R>( range);
          }
 
          template< typename R>
-         auto sort( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto sort( R&& range) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::sort( std::begin( inputRange), std::end( inputRange));
-            return inputRange;
+            std::sort( std::begin( range), std::end( range));
+            return std::forward< R>( range);
          }
 
          template< typename R, typename C>
-         auto stable_sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
+         auto stable_sort( R&& range, C compare) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::stable_sort( std::begin( inputRange), std::end( inputRange), compare);
-            return inputRange;
+            std::stable_sort( std::begin( range), std::end( range), compare);
+            return std::forward< R>( range);
          }
 
          template< typename R>
-         auto stable_sort( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto stable_sort( R&& range) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::stable_sort( std::begin( inputRange), std::end( inputRange));
-            return inputRange;
+            std::stable_sort( std::begin( range), std::end( range));
+            return std::forward< R>( range);
          }
 
          template< typename R, typename P>
@@ -814,7 +810,7 @@ namespace casual
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find( lookup, value);};
-            return partition( std::forward< R1>( range), lambda);
+            return stable_partition( std::forward< R1>( range), lambda);
          }
 
          //!
@@ -831,7 +827,7 @@ namespace casual
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( lookup), std::bind( functor, value, std::placeholders::_1));};
-            return partition( std::forward< R1>( range), lambda);
+            return stable_partition( std::forward< R1>( range), lambda);
 
          }
 

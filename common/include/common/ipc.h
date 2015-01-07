@@ -16,6 +16,7 @@
 #include "common/uuid.h"
 #include "common/platform.h"
 #include "common/algorithm.h"
+#include "common/process.h"
 
 
 
@@ -31,9 +32,20 @@ namespace casual
    {
       namespace ipc
       {
+         namespace receive
+         {
+            class Queue;
+
+         } // receive
+
+         namespace send
+         {
+            class Queue;
+
+         } // send
+
 
          typedef platform::queue_id_type id_type;
-
 
          namespace message
          {
@@ -65,45 +77,54 @@ namespace casual
                typedef Uuid::uuid_type correalation_type;
 
 
-               struct Header
+               struct header_t
                {
                   correalation_type correlation;
 
                   //!
-                  //! How many more transport messages until a full complete message
+                  //! Information of the complete logical message.
                   //!
-                  std::uint64_t pending;
+                  struct complete_t
+                  {
+                     //!
+                     //! index in the complete message
+                     //!
+                     std::uint64_t index;
 
+                     //!
+                     //! size of the complete message
+                     //!
+                     std::uint64_t size;
+
+                  } complete;
                };
 
                enum
                {
                   message_max_size = common::platform::message_size,
-                  header_size = sizeof( Header),
+                  header_size = sizeof( header_t),
                   payload_max_size = message_max_size - header_size,
 
                };
 
-               static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
 
-               typedef std::array< char, payload_max_size> payload_type;
-
-
-
-               struct Message
+               struct message_t
                {
+                  using payload_type = std::array< char, payload_max_size>;
+
                   //
                   // type has to be first!
                   //
                   message_type_type type;
-                  Header header;
+                  header_t header;
                   payload_type payload;
 
                } message;
 
 
-               static_assert( std::is_pod< Message>::value, "Message has be a POD");
-               static_assert( sizeof( Message) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
+               static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
+               static_assert( std::is_pod< message_t>::value, "Message has be a POD");
+               static_assert( sizeof( message_t) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
 
 
                Transport();
@@ -113,6 +134,12 @@ namespace casual
                //! @return payload size
                //!
                std::size_t size() const;
+
+
+               //!
+               //! @return true if this transport is the last of the complete message
+               //!
+               bool last() const;
 
 
                template< typename Iter>
@@ -137,11 +164,11 @@ namespace casual
 
             struct Complete
             {
-               typedef platform::message_type_type message_type_type;
-               typedef platform::binary_type payload_type;
+               using message_type_type = platform::message_type_type;
+               using payload_type = platform::binary_type;
 
-               Complete();
-               Complete( Transport& transport);
+               Complete( message_type_type type, const Uuid& correlation);
+
 
                Complete( Complete&&) noexcept;
                Complete& operator = ( Complete&&) noexcept;
@@ -149,15 +176,32 @@ namespace casual
                Complete( const Complete&) = delete;
                Complete& operator = ( const Complete&) = delete;
 
-               void add( Transport& transport);
+
+
+               bool complete() const;
 
                message_type_type type;
                Uuid correlation;
                payload_type payload;
-               bool complete = false;
+               payload_type::size_type offset = 0;
+
+               friend class receive::Queue;
+               friend class send::Queue;
 
                friend std::ostream& operator << ( std::ostream& out, const Complete& value);
+
+               //!
+               //! Only usefull to receive::Queue, and should be private.
+               //! But it's a pain in the butt to make vector and allocotor friends
+               //! in a portable way.
+               //!
+               Complete( Transport& transport);
+
+
+            private:
+               void add( Transport& transport);
             };
+
 
          } // message
 
@@ -350,12 +394,15 @@ namespace casual
 
          } // receive
 
-
-
          //!
          //! Removes an ipc-queue resource.
          //!
-         void remove( platform::queue_id_type id);
+         bool remove( platform::queue_id_type id);
+
+         //!
+         //! Removes an ipc-queue resource, if last receive is done by owner
+         //!
+         bool remove( const process::Handle& owner);
 
 
       } // ipc

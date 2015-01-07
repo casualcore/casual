@@ -347,7 +347,7 @@ namespace casual
 
          auto sorted = range::sort( values, chain::Order::link( order::name::Ascending()));
 
-         EXPECT_TRUE( sorted->name == "Charlie");
+         EXPECT_TRUE( std::begin( sorted)->name == "Charlie");
       }
 
       TEST( casual_common_algorithm, chain_order_name_desc__age_asc)
@@ -358,10 +358,10 @@ namespace casual
                order::name::Descending(),
                order::age::Ascending()));
 
-         EXPECT_TRUE( sorted->name == "Tom");
-         EXPECT_TRUE( sorted->age == 29);
-         EXPECT_TRUE( ( sorted.first + 3)->name == "Charlie");
-         EXPECT_TRUE( ( sorted.first + 3)->age == 29);
+         EXPECT_TRUE( std::begin( sorted)->name == "Tom");
+         EXPECT_TRUE( std::begin( sorted)->age == 29);
+         EXPECT_TRUE( ( std::begin( sorted) + 3)->name == "Charlie");
+         EXPECT_TRUE( ( std::begin( sorted) + 3)->age == 29);
 
       }
 
@@ -373,10 +373,10 @@ namespace casual
                order::age::Descending(),
                order::height::Ascending()));
 
-         EXPECT_TRUE( ( sorted.first + 1)->age == 29);
-         EXPECT_TRUE( ( sorted.first + 1)->height == 1.75);
-         EXPECT_TRUE( ( sorted.first + 2)->age == 29);
-         EXPECT_TRUE( ( sorted.first + 2)->height == 1.90);
+         EXPECT_TRUE( ( std::begin( sorted) + 1)->age == 29);
+         EXPECT_TRUE( ( std::begin( sorted) + 1)->height == 1.75);
+         EXPECT_TRUE( ( std::begin( sorted) + 2)->age == 29);
+         EXPECT_TRUE( ( std::begin( sorted) + 2)->height == 1.90);
 
       }
 

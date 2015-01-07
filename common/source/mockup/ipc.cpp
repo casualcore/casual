@@ -45,20 +45,20 @@ namespace casual
             template< typename M>
             void casual_marshal_value( Complete& value, M& marshler)
             {
-              marshler << value.complete;
               marshler << value.correlation;
               marshler << value.payload;
               marshler << value.type;
+              marshler << value.offset;
 
             }
 
             template< typename M>
             void casual_unmarshal_value( Complete& value, M& unmarshler)
             {
-              unmarshler >> value.complete;
               unmarshler >> value.correlation;
               unmarshler >> value.payload;
               unmarshler >> value.type;
+              unmarshler >> value.offset;
             }
          } // message
       } // ipc

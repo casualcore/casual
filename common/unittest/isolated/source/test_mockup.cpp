@@ -102,8 +102,11 @@ namespace casual
 
             for( int count = 0; count < 200; ++count)
             {
+               const auto service = temp + std::to_string( count);
+
                read( request);
-               EXPECT_TRUE( request.requested == temp + std::to_string( count));
+
+               EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
                EXPECT_TRUE( request.process.queue == ipc::receive::id());
             }
          }

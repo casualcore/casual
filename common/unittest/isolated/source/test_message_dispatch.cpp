@@ -69,11 +69,8 @@ namespace casual
             {
                message::dispatch::Handler handler{ local::TestHandler()};
 
-               ipc::message::Complete complete;
                local::TestHandler::message_type message;
-               complete << message;
-               complete.type = message.message_type;
-
+               ipc::message::Complete complete = marshal::complete( message);
 
                EXPECT_TRUE( handler.dispatch( complete));
             }
@@ -82,10 +79,8 @@ namespace casual
             {
                message::dispatch::Handler handler{ local::TestHandler()};
 
-               ipc::message::Complete complete;
                message::service::ACK message;
-               complete << message;
-               complete.type = message.message_type;
+               ipc::message::Complete complete = marshal::complete( message);
 
                //
                // We have not handler for this message-type.

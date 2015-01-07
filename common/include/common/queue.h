@@ -205,10 +205,9 @@ namespace casual
                //! @return non-blocking: true if the whole message is sent. false otherwise - void on blocking
                //!
                template< typename M>
-               Uuid operator () ( platform::queue_id_type target, M&& message) //-> decltype( block_policy::send( message, std::declval< ipc::send::Queue&>()))
+               Uuid operator () ( platform::queue_id_type target, M&& message)
                {
-                  ipc::message::Complete complete;
-                  complete << message;
+                  auto complete = marshal::complete( message);
 
                   ipc::send::Queue ipc( target);
 

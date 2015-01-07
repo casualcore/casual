@@ -304,20 +304,12 @@ namespace casual
 
             try
             {
+               //
+               // Instance is started for the first time.
+               //
 
                auto& instance = m_state.getInstance( message.process.pid);
                instance.process.queue = message.process.queue;
-
-               //
-               // Instance is started for the first time.
-               // Send some configuration
-               //
-               message::server::connect::Reply reply;
-
-               common::log::internal::debug << "connect reply: " << message.process << std::endl;
-
-               queue::blocking::Writer writer( message.process.queue, m_state);
-               writer( reply);
 
 
                //
@@ -335,6 +327,16 @@ namespace casual
                // Set the instance to idle state
                //
                instance.alterState( state::Server::Instance::State::idle);
+
+               //
+               // Send some configuration
+               //
+               message::server::connect::Reply reply;
+
+               common::log::internal::debug << "connect reply: " << message.process << std::endl;
+
+               queue::blocking::Writer writer( message.process.queue, m_state);
+               writer( reply);
 
             }
             catch( const state::exception::Missing& exception)
