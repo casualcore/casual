@@ -9,12 +9,12 @@
 #include <gtest/gtest.h>
 
 #include "buffer/field.h"
+#include "common/environment.h"
 
 #include "xatmi.h"
 
 
 #include <string>
-
 
 
 namespace casual
@@ -25,33 +25,34 @@ namespace casual
       namespace
       {
 
-         const auto FLD_SHORT1 = CASUAL_FIELD_SHORT * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_SHORT2 = CASUAL_FIELD_SHORT * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_SHORT3 = CASUAL_FIELD_SHORT * CASUAL_FIELD_TYPE_BASE + 3;
+         const auto FLD_SHORT1 = CASUAL_FIELD_SHORT * CASUAL_FIELD_TYPE_BASE + 1000 + 1;
+         const auto FLD_SHORT2 = CASUAL_FIELD_SHORT * CASUAL_FIELD_TYPE_BASE + 1000 + 2;
+         const auto FLD_SHORT3 = CASUAL_FIELD_SHORT * CASUAL_FIELD_TYPE_BASE + 1000 + 3;
 
-         const auto FLD_LONG1 = CASUAL_FIELD_LONG * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_LONG2 = CASUAL_FIELD_LONG * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_LONG3 = CASUAL_FIELD_LONG * CASUAL_FIELD_TYPE_BASE + 3;
+         const auto FLD_LONG1 = CASUAL_FIELD_LONG * CASUAL_FIELD_TYPE_BASE + 1000 + 1;
+         const auto FLD_LONG2 = CASUAL_FIELD_LONG * CASUAL_FIELD_TYPE_BASE + 1000 + 2;
+         const auto FLD_LONG3 = CASUAL_FIELD_LONG * CASUAL_FIELD_TYPE_BASE + 1000 + 3;
 
-         const auto FLD_CHAR1 = CASUAL_FIELD_CHAR * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_CHAR2 = CASUAL_FIELD_CHAR * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_CHAR3 = CASUAL_FIELD_CHAR * CASUAL_FIELD_TYPE_BASE + 3;
+         const auto FLD_CHAR1 = CASUAL_FIELD_CHAR * CASUAL_FIELD_TYPE_BASE + 1000 + 1;
+         const auto FLD_CHAR2 = CASUAL_FIELD_CHAR * CASUAL_FIELD_TYPE_BASE + 1000 + 2;
+         const auto FLD_CHAR3 = CASUAL_FIELD_CHAR * CASUAL_FIELD_TYPE_BASE + 1000 + 3;
 
-         const auto FLD_FLOAT1 = CASUAL_FIELD_FLOAT * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_FLOAT2 = CASUAL_FIELD_FLOAT * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_FLOAT3 = CASUAL_FIELD_FLOAT * CASUAL_FIELD_TYPE_BASE + 3;
 
-         const auto FLD_DOUBLE1 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_DOUBLE2 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_DOUBLE3 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 3;
+         const auto FLD_FLOAT1 = CASUAL_FIELD_FLOAT * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
+         const auto FLD_FLOAT2 = CASUAL_FIELD_FLOAT * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
+         const auto FLD_FLOAT3 = CASUAL_FIELD_FLOAT * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
 
-         const auto FLD_STRING1 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_STRING2 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_STRING3 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 3;
+         const auto FLD_DOUBLE1 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
+         const auto FLD_DOUBLE2 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
+         const auto FLD_DOUBLE3 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
 
-         const auto FLD_BINARY1 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 1;
-         const auto FLD_BINARY2 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2;
-         const auto FLD_BINARY3 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 3;
+         const auto FLD_STRING1 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
+         const auto FLD_STRING2 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
+         const auto FLD_STRING3 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
+
+         const auto FLD_BINARY1 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
+         const auto FLD_BINARY2 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
+         const auto FLD_BINARY3 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
       }
 
       /*
@@ -332,9 +333,150 @@ namespace casual
          EXPECT_TRUE( occurrence == 1);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
 
-
       }
 
+      namespace
+      {
+         class casual_field_buffer_repository : public ::testing::Test
+         {
+         protected:
+
+            void SetUp() override
+            {
+               /* This is a semi-isolated-unittest */
+               casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "CASUAL_FIELD_TABLE.json");
+            }
+
+            void TearDown() override
+            {
+               //casual::common::environment::variable::unset( "CASUAL_FIELD_TABLE");
+            }
+
+         };
+      }
+
+
+      TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_one__expecting_success)
+      {
+         const char* name;
+         ASSERT_TRUE( CasualFieldNameOfId( FLD_SHORT1, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "FLD_SHORT1");
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_from_id_to_null__expecting_success_and_no_crasch)
+      {
+         ASSERT_TRUE( CasualFieldNameOfId( FLD_SHORT1, nullptr) == CASUAL_FIELD_SUCCESS);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_two__expecting_success)
+      {
+         const char* name;
+         ASSERT_TRUE( CasualFieldNameOfId( FLD_DOUBLE2, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "FLD_DOUBLE2");
+      }
+
+      TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_one__expecting_success)
+      {
+         long id;
+         ASSERT_TRUE( CasualFieldIdOfName( "FLD_SHORT2", &id) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( id, FLD_SHORT2);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_id_from_name_to_null__expecting_success_and_no_crasch)
+      {
+         ASSERT_TRUE( CasualFieldIdOfName( "FLD_SHORT2", nullptr) == CASUAL_FIELD_SUCCESS);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_two__expecting_success)
+      {
+         long id;
+         ASSERT_TRUE( CasualFieldIdOfName( "FLD_DOUBLE3", &id) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( id, FLD_DOUBLE3);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_from_non_existing_id__expecting_unkown_id)
+      {
+         const char* name;
+         ASSERT_TRUE( CasualFieldNameOfId( 666, &name) == CASUAL_FIELD_UNKNOWN_ID);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_id_from_non_existing_name__expecting_unknown_id)
+      {
+         long id;
+         ASSERT_TRUE( CasualFieldIdOfName( "NON_EXISTING_NAME", &id) == CASUAL_FIELD_UNKNOWN_ID);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_from_invalid_id__expecting_invalid_id)
+      {
+         const char* name;
+         ASSERT_TRUE( CasualFieldNameOfId( -666, &name) == CASUAL_FIELD_INVALID_ID);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_id)
+      {
+         long id;
+         ASSERT_TRUE( CasualFieldIdOfName( nullptr, &id) == CASUAL_FIELD_INVALID_ID);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_of_type__expecting_success)
+      {
+         const char* name = nullptr;
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_SHORT, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "short");
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_LONG, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "long");
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_CHAR, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "char");
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_FLOAT, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "float");
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_DOUBLE, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "double");
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_STRING, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "string");
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_BINARY, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_STREQ( name, "binary");
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_of_invalid_type__expecting_invalid_type)
+      {
+         const char* name = nullptr;
+         EXPECT_TRUE( CasualFieldNameOfType( 666, &name) == CASUAL_FIELD_INVALID_TYPE);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_name_of_type_to_null__expecting_success_and_no_crasch)
+      {
+         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_STRING, nullptr) == CASUAL_FIELD_SUCCESS);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_type_of_name__expecting_success)
+      {
+         int type = -1;
+         EXPECT_TRUE( CasualFieldTypeOfName( "short", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_SHORT);
+         EXPECT_TRUE( CasualFieldTypeOfName( "long", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_LONG);
+         EXPECT_TRUE( CasualFieldTypeOfName( "char", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_CHAR);
+         EXPECT_TRUE( CasualFieldTypeOfName( "float", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_FLOAT);
+         EXPECT_TRUE( CasualFieldTypeOfName( "double", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_DOUBLE);
+         EXPECT_TRUE( CasualFieldTypeOfName( "string", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_STRING);
+         EXPECT_TRUE( CasualFieldTypeOfName( "binary", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_EQ( type, CASUAL_FIELD_BINARY);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_type_of_invalid_name__expecting_invalid_type)
+      {
+         int type = -1;
+         EXPECT_TRUE( CasualFieldTypeOfName( "666", &type) == CASUAL_FIELD_INVALID_TYPE);
+      }
+
+      TEST_F( casual_field_buffer_repository, get_type_of_name_to_null__expecting_success_and_no_crasch)
+      {
+         EXPECT_TRUE( CasualFieldTypeOfName( "string", nullptr) == CASUAL_FIELD_SUCCESS);
+      }
 
    }
 
