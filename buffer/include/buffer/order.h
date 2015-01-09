@@ -19,12 +19,16 @@
 
 /* success */
 #define CASUAL_ORDER_SUCCESS 0
-/* reallocation needed */
+/* reallocation needed (normal behaviour) */
 #define CASUAL_ORDER_NO_SPACE 1
 /* detection of possible producer/consumer mismatch */
 #define CASUAL_ORDER_NO_PLACE 2
+/* the provided buffer is invalid (application/logic error) */
+#define CASUAL_ORDER_INVALID_BUFFER 3
+/* some argument is invalid (application/logic error) */
+#define CASUAL_ORDER_INVALID_ARGUMENT 4
 /* internal casual defect */
-#define CASUAL_ORDER_INTERNAL_FAILURE 3
+#define CASUAL_ORDER_INTERNAL_FAILURE 9
 
 
 #ifdef __cplusplus
@@ -32,6 +36,11 @@ extern "C" {
 #endif
 
 const char* CasualOrderDescription( int code);
+
+
+/* get allocated - and used bytes */
+int CasualOrderExploreBuffer( const char* buffer, long* size, long* used);
+
 
 int CasualOrderAddPrepare( char* buffer);
 
@@ -60,8 +69,6 @@ int CasualOrderGetString(  char* buffer, const char** value);
 int CasualOrderGetBinary(  char* buffer, const char** data, long* size);
 
 int CasualOrderCopyBuffer( char* target, const char* source);
-
-int CasualOrderUsed( const char* buffer, long* length);
 
 
 #ifdef __cplusplus

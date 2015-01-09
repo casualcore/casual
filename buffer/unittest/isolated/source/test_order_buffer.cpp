@@ -19,46 +19,53 @@
 
 
 
-/*
 TEST( casual_order_buffer, allocate_with_enough_size__expecting_success)
 {
-   char buffer[512];
-   EXPECT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
+   auto buffer = tpalloc( CASUAL_ORDER, "", 512);
+   ASSERT_TRUE( buffer != nullptr);
+
+   tpfree( buffer);
 }
+
+TEST( casual_order_buffer, allocate_with_zero_size__expecting_success)
+{
+   auto buffer = tpalloc( CASUAL_ORDER, "", 0);
+   ASSERT_TRUE( buffer != nullptr);
+
+   long size = 0;
+   long used = 0;
+   EXPECT_TRUE( CasualOrderExploreBuffer( buffer, &size, &used) == CASUAL_ORDER_SUCCESS);
+   EXPECT_TRUE( size > 0);
+   EXPECT_TRUE( used > 0);
+
+   tpfree( buffer);
+}
+
 
 TEST( casual_order_buffer, reallocate_with_bigger_size__expecting_success)
 {
-   char buffer[64];
-   ASSERT_TRUE( CasualOrderCreate( buffer, sizeof(buffer) / 2) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderExpand( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
+   auto buffer = tpalloc( CASUAL_ORDER, "", 64);
+   EXPECT_TRUE( buffer != nullptr);
+
+   buffer = tprealloc( buffer, 128);
+
+   EXPECT_TRUE( buffer != nullptr);
+
+   tpfree( buffer);
 }
 
 TEST( casual_order_buffer, reallocate_with_smaller_size__expecting_success)
 {
-   char buffer[64];
-   ASSERT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderReduce( buffer, 32) == CASUAL_ORDER_SUCCESS);
+   auto buffer = tpalloc( CASUAL_ORDER, "", 128);
+   EXPECT_TRUE( buffer != nullptr);
+
+   buffer = tprealloc( buffer, 64);
+
+   EXPECT_TRUE( buffer != nullptr);
+
+   tpfree( buffer);
 }
 
-TEST( casual_order_buffer, reallocate_with_smaller_size__expecting_failure)
-{
-   char buffer[64];
-   ASSERT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_SUCCESS);
-   ASSERT_TRUE( CasualOrderAddString( buffer, "goin' casual today!") == CASUAL_ORDER_SUCCESS);
-
-   long used = 0;
-   ASSERT_TRUE( CasualOrderUsed( buffer, &used) == CASUAL_ORDER_SUCCESS);
-
-   EXPECT_TRUE( CasualOrderReduce( buffer, used - 1) == CASUAL_ORDER_NO_SPACE);
-}
-
-
-TEST( casual_order_buffer, allocate_with_insufficient_size__expecting_failure)
-{
-   char buffer[5];
-   EXPECT_TRUE( CasualOrderCreate( buffer, sizeof(buffer)) == CASUAL_ORDER_NO_SPACE);
-}
-*/
 
 TEST( casual_order_buffer, add_and_get)
 {
@@ -101,16 +108,18 @@ TEST( casual_order_buffer, add_and_get)
    EXPECT_TRUE( long_decimal > 987.6 && long_decimal < 987.7);
 
 
-   const char* string;
+   const char* string = nullptr;
    EXPECT_TRUE( CasualOrderGetString( buffer, &string) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( std::string( string) == "Hello!") << std::string( string);
+   EXPECT_STREQ( string, "Hello!") << string;
 
-   const char* binary;
+   const char* binary = nullptr;
    long size;
-   EXPECT_TRUE( CasualOrderGetBinary( buffer, &binary, &size) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size);
+   EXPECT_TRUE( CasualOrderGetBinary( buffer, &binary, &size) == CASUAL_ORDER_SUCCESS) << CasualOrderGetBinary( buffer, &binary, &size);
+   EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size) << binary << " " << size << std::endl;
    EXPECT_TRUE( size == 9);
 
+
+   tpfree( buffer);
 }
 
 TEST( casual_order_buffer, detect_out_of_space)
@@ -122,12 +131,13 @@ TEST( casual_order_buffer, detect_out_of_space)
    EXPECT_TRUE( CasualOrderAddLong( buffer, 123456) == CASUAL_ORDER_SUCCESS);
    EXPECT_TRUE( CasualOrderAddString( buffer, std::string( 'a', 64).c_str()) == CASUAL_ORDER_NO_SPACE);
 
+   tpfree( buffer);
 }
 
 TEST( casual_order_buffer, detect_out_of_place)
 {
    auto buffer = tpalloc( CASUAL_ORDER, "", 64);
-      ASSERT_TRUE( buffer != nullptr);
+   ASSERT_TRUE( buffer != nullptr);
 
 
    EXPECT_TRUE( CasualOrderAddLong( buffer, 123456) == CASUAL_ORDER_SUCCESS);
@@ -135,6 +145,7 @@ TEST( casual_order_buffer, detect_out_of_place)
    EXPECT_TRUE( CasualOrderGetLong( buffer, &integer) == CASUAL_ORDER_SUCCESS);
    EXPECT_TRUE( CasualOrderGetLong( buffer, &integer) == CASUAL_ORDER_NO_PLACE);
 
+   tpfree( buffer);
 }
 
 
@@ -160,5 +171,7 @@ TEST( casual_order_buffer, copy_buffer__expecting_success)
    EXPECT_TRUE( CasualOrderGetLong( target, &long_integer) == CASUAL_ORDER_SUCCESS);
    EXPECT_TRUE( long_integer == 654321);
 
+   tpfree( source);
+   tpfree( target);
 }
 

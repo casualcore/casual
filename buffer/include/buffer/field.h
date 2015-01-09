@@ -15,19 +15,19 @@
 
 /* success */
 #define CASUAL_FIELD_SUCCESS 0
-/* the provided buffer is invalid */
-#define CASUAL_FIELD_INVALID_BUFFER 1
 /* reallocation needed (normal behaviour) */
-#define CASUAL_FIELD_NO_SPACE 2
+#define CASUAL_FIELD_NO_SPACE 1
 /* id does not exist in buffer (perhaps normal behaviour) */
-#define CASUAL_FIELD_NO_OCCURRENCE 3
+#define CASUAL_FIELD_NO_OCCURRENCE 2
 /* id unknown by the system (system/runtime failure) */
-#define CASUAL_FIELD_UNKNOWN_ID 4
-/* id does not represent supplied type (application/logic error*/
+#define CASUAL_FIELD_UNKNOWN_ID 3
+/* the provided buffer is invalid (application/logic error) */
+#define CASUAL_FIELD_INVALID_BUFFER 4
+/* id does not represent supplied type (application/logic error) */
 #define CASUAL_FIELD_INVALID_ID 5
-/* type does not represent any known type (application/logic error*/
+/* type does not represent any known type (application/logic error) */
 #define CASUAL_FIELD_INVALID_TYPE 6
-/* some argument is invalid (application/logic error*/
+/* some argument is invalid (application/logic error) */
 #define CASUAL_FIELD_INVALID_ARGUMENT 7
 /* internal casual defect */
 #define CASUAL_FIELD_INTERNAL_FAILURE 9

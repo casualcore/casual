@@ -85,6 +85,10 @@ namespace casual
             typedef common::platform::raw_buffer_type data_type;
             typedef common::platform::raw_buffer_size size_type;
 
+            // A thing to make stuff less bloaty ... not so good though
+            constexpr auto size_size = common::network::bytes<size_type>();
+
+
             //! Transform a value in place from network to host
             template<typename T>
             void parse( const_data_type where, T& value)
@@ -124,9 +128,6 @@ namespace casual
             class Buffer
             {
             public:
-
-               // Something to make other things less bloaty
-               static constexpr auto size_size = common::network::bytes<size_type>();
 
                template<typename type, size_type offset>
                class Data
@@ -200,12 +201,12 @@ namespace casual
                Data<data_type, size_size * 2> data;
 
                // TODO: Make this more generic
-               static constexpr auto header() -> decltype(size_size)
+               static constexpr size_type header()
                {return size_size + size_size;}
 
                //! @return Whether this buffer is valid or not
                explicit operator bool () const
-               {return data ? true : false;}
+               {return size ? true : false;}
 
                //! @return A 'handle' to "begin"
                Value first() const
@@ -647,14 +648,14 @@ const char* CasualFieldDescription( const int code)
    {
       case CASUAL_FIELD_SUCCESS:
          return "Success";
-      case CASUAL_FIELD_INVALID_BUFFER:
-         return "Invalid buffer";
       case CASUAL_FIELD_NO_SPACE:
          return "No space";
       case CASUAL_FIELD_NO_OCCURRENCE:
          return "No occurrence";
       case CASUAL_FIELD_UNKNOWN_ID:
          return "Unknown id";
+      case CASUAL_FIELD_INVALID_BUFFER:
+         return "Invalid buffer";
       case CASUAL_FIELD_INVALID_ID:
          return "Invalid id";
       case CASUAL_FIELD_INVALID_TYPE:
@@ -1095,8 +1096,8 @@ int CasualFieldCopyBuffer( char* target, const char* source)
    //
    // This is to make sure the size-portion is not blown away
    //
-   target += casual::buffer::field::Buffer::size_size;
-   source += casual::buffer::field::Buffer::size_size;
+   target += casual::buffer::field::size_size;
+   source += casual::buffer::field::size_size;
 
    casual::buffer::field::write( target, source, used);
 
