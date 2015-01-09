@@ -23,6 +23,8 @@
 
 #include <algorithm>
 
+#include <type_traits>
+
 
 namespace casual
 {
@@ -31,84 +33,146 @@ namespace casual
       namespace field
       {
 
+         /*
+          * This implementation contain a C-interface that offers functionality
+          * for a replacement to FML32 (non-standard compared to XATMI)
+          *
+          * The implementation is quite cumbersome since the user-handle is the
+          * actual underlying buffer which is a std::vector<char>::data() so we
+          * cannot just use append data which might imply reallocation since
+          * this is a "stateless" interface and thus search from start is done
+          * all the time
+          *
+          * The main idea is to keep the buffer "ready to go" without the need
+          * for extra marshalling when transported and thus data is stored in
+          * network byteorder etc from start
+          *
+          * One doubtful decision is to (redundantly) store the allocated size
+          * in the buffer as well that indeed simplifies a few things
+          *
+          * The buffer layout is |size|used|values ...|
+          *
+          * The values layout is |id|size|data...|
+          *
+          * Some things that might be explained that perhaps is not so obvious
+          * with FML32; The type (FLD_SHORT/CASUAL_FIELD_SHORT etc) can be
+          * deduced from the id, i.e. every id for 'short' must be between 0x0
+          * and 0x1FFFFFF and every id for 'long' must be between 0x2000000 and
+          * 0x3FFFFFF etc. In this implementation no validation of whether the
+          * id exists in the repository-table occurs but just from the type.
+          * For now there's no proper error-handling while handling the table-
+          * repository and that has to improve ...
+          *
+          * ... and many other things can be improved as well. There's a lot of
+          * semi-redundant functions for finding a certain occurrence which is
+          * made by searching from start every time since we do not have any
+          * index or such but some (perhaps naive) benchmarks shows that that
+          * doesn't give isn't so slow after all ... future will show
+          *
+          * Removal of occurrences doesn't actually remove them but just make
+          * them invisible by nullify it and thus the buffer doesn't collapse
+          *
+          * The repository-implementation is a bit comme ci comme ça and to
+          * provide something like 'mkfldhdr32' the functionality has to be
+          * accessible from there (or vice versa)
+          */
+
+
+
          namespace
          {
+            typedef common::platform::const_raw_buffer_type const_data_type;
+            typedef common::platform::raw_buffer_type data_type;
+            typedef common::platform::raw_buffer_size size_type;
 
+            //! Transform a value in place from network to host
             template<typename T>
-            T parse( const char* const where)
+            void parse( const_data_type where, T& value)
             {
+               // Cast to network version
                const auto encoded = *reinterpret_cast< const common::network::type<T>*>( where);
-               return common::network::byteorder<T>::decode( encoded);
+               // Decode to host version
+               value = common::network::byteorder<T>::decode( encoded);
             }
 
-            template<typename T>
-            void write( char* const where, const T value)
+            // TODO: We should remove this
+            void parse( data_type where, data_type& value)
             {
+               value = where;
+            }
+
+            //! Transform a value in place from host to network
+            template<typename T>
+            void write( data_type where, const T value)
+            {
+               // Encode to network version
                const auto encoded = common::network::byteorder<T>::encode( value);
+               // Write it to buffer
                std::memcpy( where, &encoded, sizeof( encoded));
             }
 
+            // TODO: Perhaps useless
+            void write( data_type where, const_data_type value, const size_type count)
+            {
+               std::memcpy( where, value, count);
+            }
+
+
+            //!
+            //! Helper-class to manage the buffer
+            //!
             class Buffer
             {
             public:
 
-               typedef long meta_type;
+               // Something to make other things less bloaty
+               static constexpr auto size_size = common::network::bytes<size_type>();
 
-               static constexpr auto meta_size = common::network::bytes<meta_type>();
-
-               template<std::size_t offset>
-               class Meta
-               {
-               public:
-
-                  Meta( char* const where) : m_where( where ? where + offset : nullptr) {}
-
-                  explicit operator bool () const
-                  {return m_where != nullptr;}
-
-                  meta_type operator() () const
-                  {return parse<meta_type>( m_where);}
-
-                  void operator() ( const meta_type value)
-                  {write<meta_type>( m_where, value);}
-
-               private:
-                  char* m_where;
-               };
-
-               template<std::size_t offset>
+               template<typename type, size_type offset>
                class Data
                {
                public:
 
-                  Data( char* const where) : m_where( where ? where + offset : nullptr) {}
+                  Data( data_type where) : m_where( where ? where + offset : nullptr) {}
 
+                  //! @return Whether this is valid or not
                   explicit operator bool () const
                   {return m_where != nullptr;}
 
-                  char* operator() () const
-                  {return m_where;}
+                  type operator() () const
+                  {
+                     type result;
+                     parse( m_where, result);
+                     return result;
+                  }
+
+                  void operator() ( const type value)
+                  {
+                     write( m_where, value);
+                  }
 
                private:
-                  char* m_where;
+                  data_type m_where;
                };
 
                class Value
                {
                public:
 
-                  Value( char* const buffer) :
+                  Value( data_type buffer) :
                      id( buffer),
                      size( buffer),
                      data( buffer)
                   {}
 
-                  static constexpr auto header() -> decltype(meta_size)
-                  {return meta_size + meta_size;}
 
-                  Meta<meta_size * 0> id;
-                  Meta<meta_size * 1> size;
-                  Data<meta_size * 2> data;
+                  // TODO: Make this more generic
+                  static constexpr size_type header()
+                  {return size_size + size_size;}
+
+                  Data<size_type, size_size * 0> id;
+                  Data<size_type, size_size * 1> size;
+                  Data<data_type, size_size * 2> data;
 
                   bool operator == ( const Value& other) const
                   {return this->data() == other.data();}
@@ -116,6 +180,7 @@ namespace casual
                   bool operator != ( const Value& other) const
                   {return this->data() != other.data();}
 
+                  //! @return A 'handle' to next 'iterator'
                   Value next() const
                   {
                      return Value( data ? data() + size() : nullptr);
@@ -123,27 +188,32 @@ namespace casual
 
                };
 
-               Buffer( char* const buffer) :
+               Buffer( data_type buffer) :
                   size( buffer),
                   used( buffer),
                   data( buffer)
                {}
 
-               Meta<meta_size * 0> size;
-               Meta<meta_size * 1> used;
-               Data<meta_size * 2> data;
+               // TODO: Can we make this more generic ?
+               Data<size_type, size_size * 0> size;
+               Data<size_type, size_size * 1> used;
+               Data<data_type, size_size * 2> data;
 
-               static constexpr auto header() -> decltype(meta_size)
-               {return meta_size + meta_size;}
+               // TODO: Make this more generic
+               static constexpr auto header() -> decltype(size_size)
+               {return size_size + size_size;}
 
+               //! @return Whether this buffer is valid or not
                explicit operator bool () const
                {return data ? true : false;}
 
+               //! @return A 'handle' to "begin"
                Value first() const
                {
                   return Value( data ? data() : nullptr);
                }
 
+               //! @return A 'handle' to "end"
                Value beyond() const
                {
                   return Value( data ? data() + used() - header() : nullptr);
@@ -262,7 +332,7 @@ namespace casual
                return CASUAL_FIELD_INVALID_ID;
             }
 
-            int erase( const char* const handle, const long id)
+            int remove( const char* const handle, const long id)
             {
                if( !(id > CASUAL_FIELD_NO_ID))
                {
@@ -299,7 +369,7 @@ namespace casual
             }
 
 
-            int erase( const char* const handle, const long id, long index)
+            int remove( const char* const handle, const long id, long index)
             {
                if( !(id > CASUAL_FIELD_NO_ID))
                {
@@ -337,7 +407,6 @@ namespace casual
             }
 
 
-
             int add( const char* const handle, const long id, const int type, const char* const data, const long size)
             {
                if( const auto result = validate_id( id, type))
@@ -352,6 +421,12 @@ namespace casual
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
 
+               if( !data)
+               {
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+               }
+
+
                const auto total = buffer.used() + Buffer::Value::header() + size;
 
                if( total > buffer.size())
@@ -363,7 +438,7 @@ namespace casual
 
                value.id( id);
                value.size( size);
-               std::memcpy( value.data(), data, size);
+               write( value.data(), data, size);
 
                buffer.used( total);
 
@@ -384,12 +459,19 @@ namespace casual
                   return result;
                }
 
+
                Buffer buffer = find_buffer( handle);
 
                if( !buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
+
+               //if( !data || !size)
+               //{
+               //   return CASUAL_FIELD_INVALID_ARGUMENT;
+               //}
+
 
                const Buffer::Value beyond = buffer.beyond();
                Buffer::Value value = buffer.first();
@@ -416,7 +498,7 @@ namespace casual
             }
 
             template<typename T>
-            int get( const char* const handle, const long id, const long index, const int type, T& value)
+            int get( const char* const handle, const long id, const long index, const int type, T* const value)
             {
                const char* data = nullptr;
 
@@ -425,13 +507,13 @@ namespace casual
                   return result;
                }
 
-               value = common::network::byteorder<T>::decode( *reinterpret_cast< const common::network::type<T>*>( data));
+               if( value) parse( data, *value);
 
                return CASUAL_FIELD_SUCCESS;
             }
 
 
-            int first( const char* const handle, long* const id, long* const index)
+            int first( const char* const handle, long& id, long& index)
             {
                const Buffer buffer = find_buffer( handle);
 
@@ -440,13 +522,13 @@ namespace casual
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
 
-               const Buffer::Value beyond = buffer.beyond();
                const Buffer::Value value = buffer.first();
+               const Buffer::Value beyond = buffer.beyond();
 
                if( value != beyond)
                {
-                  *id = value.id();
-                  *index = 0;
+                  id = value.id();
+                  index = 0;
                }
                else
                {
@@ -457,7 +539,7 @@ namespace casual
 
             }
 
-            int next( const char* const handle, long* const id, long* const index)
+            int next( const char* const handle, long& id, long& index)
             {
                //
                // This may be inefficient for large buffers
@@ -475,9 +557,8 @@ namespace casual
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
 
-
                //
-               // Store all found id's to estimate index
+               // Store all found id's to estimate index later
                //
                std::vector<decltype(Buffer::Value::id())> values;
 
@@ -490,14 +571,14 @@ namespace casual
 
                   value = value.next();
 
-                  if( values.back() == *id)
+                  if( values.back() == id)
                   {
-                     if( !(*index)--)
+                     if( !index--)
                      {
                         if( value != beyond)
                         {
-                           *id = value.id();
-                           *index = std::count( values.begin(), values.end(), *id);
+                           id = value.id();
+                           index = std::count( values.begin(), values.end(), id);
 
                            return CASUAL_FIELD_SUCCESS;
                         }
@@ -578,6 +659,8 @@ const char* CasualFieldDescription( const int code)
          return "Invalid id";
       case CASUAL_FIELD_INVALID_TYPE:
          return "Invalid type";
+      case CASUAL_FIELD_INVALID_ARGUMENT:
+         return "Invalid argument";
       case CASUAL_FIELD_INTERNAL_FAILURE:
          return "Internal failure";
       default:
@@ -625,36 +708,29 @@ int CasualFieldAddBinary( char* const buffer, const long id, const char* const v
    return casual::buffer::field::add( buffer, id, CASUAL_FIELD_BINARY, value, count);
 }
 
-int CasualFieldAddField( char* const buffer, const long id, const void* const value, const long count)
-{
-   const int type = id / CASUAL_FIELD_TYPE_BASE;
-   return casual::buffer::field::add( buffer, id, type, reinterpret_cast<const char*>(value), count);
-}
-
-
 int CasualFieldGetChar( const char* const buffer, const long id, const long index, char* const value)
 {
-   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_CHAR, *value);
+   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_CHAR, value);
 }
 
 int CasualFieldGetShort( const char* const buffer, const long id, const long index, short* const value)
 {
-   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_SHORT, *value);
+   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_SHORT, value);
 }
 
 int CasualFieldGetLong( const char* const buffer, const long id, const long index, long* const value)
 {
-   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_LONG, *value);
+   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_LONG, value);
 }
 
 int CasualFieldGetFloat( const char* const buffer, const long id, const long index, float* const value)
 {
-   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_FLOAT, *value);
+   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_FLOAT, value);
 }
 
 int CasualFieldGetDouble( const char* const buffer, const long id, const long index, double* const value)
 {
-   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_DOUBLE, *value);
+   return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_DOUBLE, value);
 }
 
 int CasualFieldGetString( const char* const buffer, const long id, const long index, const char** value)
@@ -667,11 +743,6 @@ int CasualFieldGetBinary( const char* const buffer, const long id, const long in
    return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_BINARY, value, count);
 }
 
-int CasualFieldGetField( const char* buffer, long id, long index, const void** value, long* count)
-{
-   const int type = id / CASUAL_FIELD_TYPE_BASE;
-   return casual::buffer::field::get( buffer, id, index, type, reinterpret_cast<const char**>(value), count);
-}
 
 namespace casual
 {
@@ -992,15 +1063,15 @@ int CasualFieldRemoveAll( char* const buffer)
 
 int CasualFieldRemoveId( char* buffer, const long id)
 {
-   return casual::buffer::field::erase( buffer, id);
+   return casual::buffer::field::remove( buffer, id);
 }
 
 int CasualFieldRemoveOccurrence( char* const buffer, const long id, long index)
 {
-   return casual::buffer::field::erase( buffer, id, index);
+   return casual::buffer::field::remove( buffer, id, index);
 }
 
-int CasualFieldCopyBuffer( char* const target, const char* const source)
+int CasualFieldCopyBuffer( char* target, const char* source)
 {
    long used;
    if( const auto result = casual::buffer::field::explore( source, nullptr, &used))
@@ -1019,26 +1090,33 @@ int CasualFieldCopyBuffer( char* const target, const char* const source)
       return CASUAL_FIELD_NO_SPACE;
    }
 
-   std::memcpy( target, source, used);
+   //
+   // TODO: This is a little bit too much knowledge 'bout internal stuff
+   //
+   // This is to make sure the size-portion is not blown away
+   //
+   target += casual::buffer::field::Buffer::size_size;
+   source += casual::buffer::field::Buffer::size_size;
+
+   casual::buffer::field::write( target, source, used);
 
    return CASUAL_FIELD_SUCCESS;
 }
 
-int CasualFieldFirst( const char* const buffer, long* const id, long* const index)
-{
-   return casual::buffer::field::first( buffer, id, index);
-}
-
 int CasualFieldNext( const char* const buffer, long* const id, long* const index)
 {
+   if( !id || !index)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
 
    if( *id == CASUAL_FIELD_NO_ID)
    {
-      return casual::buffer::field::first( buffer, id, index);
+      return casual::buffer::field::first( buffer, *id, *index);
    }
    else
    {
-      return casual::buffer::field::next( buffer, id, index);
+      return casual::buffer::field::next( buffer, *id, *index);
    }
 
 }

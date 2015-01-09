@@ -27,6 +27,8 @@
 #define CASUAL_FIELD_INVALID_ID 5
 /* type does not represent any known type (application/logic error*/
 #define CASUAL_FIELD_INVALID_TYPE 6
+/* some argument is invalid (application/logic error*/
+#define CASUAL_FIELD_INVALID_ARGUMENT 7
 /* internal casual defect */
 #define CASUAL_FIELD_INTERNAL_FAILURE 9
 
@@ -77,7 +79,7 @@ int CasualFieldAddFloat(   char* buffer, long id, float value);
 int CasualFieldAddDouble(  char* buffer, long id, double value);
 int CasualFieldAddString(  char* buffer, long id, const char* value);
 int CasualFieldAddBinary(  char* buffer, long id, const char* value, long count);
-int CasualFieldAddField(   char* buffer, long id, const void* value, long count);
+//int CasualFieldAddField(   char* buffer, long id, const void* value, long count);
 
 int CasualFieldGetChar(    const char* buffer, long id, long index, char* value);
 int CasualFieldGetShort(   const char* buffer, long id, long index, short* value);
@@ -86,7 +88,7 @@ int CasualFieldGetFloat(   const char* buffer, long id, long index, float* value
 int CasualFieldGetDouble(  const char* buffer, long id, long index, double* value);
 int CasualFieldGetString(  const char* buffer, long id, long index, const char** value);
 int CasualFieldGetBinary(  const char* buffer, long id, long index, const char** value, long* count);
-int CasualFieldGetField(   const char* buffer, long id, long index, const void** value, long* count);
+//int CasualFieldGetField(   const char* buffer, long id, long index, const void** value, long* count);
 
 
 int CasualFieldExist( const char* buffer, long id, long index);
@@ -94,20 +96,17 @@ int CasualFieldExist( const char* buffer, long id, long index);
 /* remove all content */
 int CasualFieldRemoveAll( char* buffer);
 
-/* removes all occurrences with supplied id but more space will not be available */
+/* removes all occurrences with supplied id */
 int CasualFieldRemoveId( char* buffer, long id);
 
-/* removes supplied occurrence with supplied id and collapses possible sequential occurrences but more space will not be available */
+/* removes supplied occurrence with supplied id and collapses possible sequential occurrences */
 int CasualFieldRemoveOccurrence( char* buffer, long id, long index);
 
 /* copies content from 'source' to 'target' */
 int CasualFieldCopyBuffer( char* target, const char* source);
 
 
-
-/* gives a "handle" to the first occurrence in a buffer */
-int CasualFieldFirst( const char* buffer, long* id, long* index);
-/* gives a "handle" to the next (or first) occurrence in a buffer (id and index is therefore relevant) */
+/* gives a "handle" to the next (or first) occurrence in a buffer */
 int CasualFieldNext( const char* buffer, long* id, long* index);
 
 
