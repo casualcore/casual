@@ -222,7 +222,7 @@ namespace casual
             };
 
             // TODO: Doesn't have to inherit from anything, but has to implement a set of functions (like pool::basic)
-            class Allocator : public common::buffer::pool::basic_pool< common::buffer::Buffer>
+            class Allocator : public common::buffer::pool::default_pool
             {
             public:
 
