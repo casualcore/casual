@@ -8,51 +8,15 @@
 #include <gtest/gtest.h>
 
 #include "buffer/string.h"
+#include "xatmi.h"
 
-#include <cstring>
 
-
-/*
 TEST( casual_string_buffer, allocate_with_normal_size__expecting_success)
 {
-   char buffer[64];
-   EXPECT_TRUE( CasualStringCreate( buffer, sizeof(buffer)) == CASUAL_STRING_SUCCESS);
-}
+   auto buffer = tpalloc( CASUAL_STRING, "", 32);
+   ASSERT_TRUE( buffer != nullptr);
 
-TEST( casual_string_buffer, allocate_with_normal_size__expecting_size_zero)
-{
-   char buffer[64];
-   EXPECT_TRUE( CasualStringCreate( buffer, sizeof(buffer)) == CASUAL_STRING_SUCCESS);
-   EXPECT_TRUE( std::strlen(buffer) == 0);
+   tpfree( buffer);
 }
-
-TEST( casual_string_buffer, allocate_with_zero_size__expecting_failure)
-{
-   char buffer[0];
-   EXPECT_TRUE( CasualStringCreate( buffer, sizeof(buffer)) == CASUAL_STRING_NO_SPACE);
-}
-
-TEST( casual_string_buffer, reallocate_with_less_size__expecting_success)
-{
-   char buffer[64];
-   EXPECT_TRUE( CasualStringCreate( buffer, sizeof(buffer)) == CASUAL_STRING_SUCCESS);
-   EXPECT_TRUE( CasualStringReduce( buffer, sizeof(buffer) / 2) == CASUAL_STRING_SUCCESS);
-}
-
-TEST( casual_string_buffer, reallocate_with_greater_size__expecting_success)
-{
-   char buffer[64];
-   EXPECT_TRUE( CasualStringCreate( buffer, sizeof(buffer) / 2) == CASUAL_STRING_SUCCESS);
-   EXPECT_TRUE( CasualStringExpand( buffer, sizeof(buffer)) == CASUAL_STRING_SUCCESS);
-}
-
-TEST( casual_string_buffer, allocate_and_write_and_reallocate_with_size_too_small__expecting_failure)
-{
-   char buffer[32];
-   EXPECT_TRUE( CasualStringCreate( buffer, sizeof(buffer)) == CASUAL_STRING_SUCCESS);
-   std::strcpy( buffer, "let's go bananas someday");
-   EXPECT_TRUE( CasualStringReduce( buffer, sizeof(buffer) / 2) == CASUAL_STRING_NO_SPACE);
-}
-*/
 
 
