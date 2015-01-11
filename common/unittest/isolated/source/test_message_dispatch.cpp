@@ -31,7 +31,7 @@ namespace casual
 
                typedef message::shutdown::Request message_type;
 
-               void operator () ( message_type& message)
+               void operator () ( message_type message)
                {
 
                }

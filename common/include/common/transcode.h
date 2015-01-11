@@ -81,6 +81,23 @@ namespace casual
 
          } // utf8
 
+         namespace hex
+         {
+            std::string encode( const void* data, std::size_t bytes);
+
+            template< typename Iter>
+            std::string encode( Iter first, Iter last)
+            {
+               return encode( &(*first), last - first);
+            }
+
+            template< typename C>
+            std::string encode( C&& container)
+            {
+               return encode( std::begin( container), std::end( container));
+            }
+
+         } // hex
       } // transcode
    } // common
 } // casual

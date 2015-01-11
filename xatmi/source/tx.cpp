@@ -16,7 +16,7 @@ int tx_begin(void)
 {
    try
    {
-      casual::common::transaction::Context::instance().begin();
+      return casual::common::transaction::Context::instance().begin();
    }
    catch( ...)
    {
@@ -42,7 +42,7 @@ int tx_commit(void)
 {
   try
   {
-     casual::common::transaction::Context::instance().commit();
+     return casual::common::transaction::Context::instance().commit();
   }
   catch( ...)
   {
@@ -55,7 +55,7 @@ int tx_open(void)
 {
   try
   {
-     casual::common::transaction::Context::instance().open();
+     return casual::common::transaction::Context::instance().open();
   }
   catch( ...)
   {
@@ -68,7 +68,7 @@ int tx_rollback(void)
 {
   try
   {
-     casual::common::transaction::Context::instance().rollback();
+     return casual::common::transaction::Context::instance().rollback();
   }
   catch( ...)
   {
@@ -82,7 +82,7 @@ int tx_set_commit_return(COMMIT_RETURN value)
 
    try
    {
-      casual::common::transaction::Context::instance().setCommitReturn( value);
+      return casual::common::transaction::Context::instance().setCommitReturn( value);
    }
    catch( ...)
    {
@@ -96,7 +96,7 @@ int tx_set_transaction_control(TRANSACTION_CONTROL control)
 {
   try
   {
-     casual::common::transaction::Context::instance().setTransactionControl( control);
+     return casual::common::transaction::Context::instance().setTransactionControl( control);
   }
   catch( ...)
   {
@@ -109,7 +109,7 @@ int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
 {
   try
   {
-     casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
+     return casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
   }
   catch( ...)
   {

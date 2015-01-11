@@ -6,6 +6,7 @@
 //!
 
 #include "common/transaction/context.h"
+#include "common/call/context.h"
 
 #include "common/queue.h"
 #include "common/environment.h"
@@ -133,6 +134,18 @@ namespace casual
          }
 
 
+         bool Context::associated( platform::descriptor_type descriptor)
+         {
+            for( auto& transaction : m_transactions)
+            {
+               if( transaction.state == Transaction::State::active && range::find( transaction.descriptors, descriptor))
+               {
+                  return true;
+               }
+            }
+            return false;
+         }
+
          void Context::set( const std::vector< Resource>& resources)
          {
             common::trace::Scope trace{ "transaction::Context::set", common::log::internal::transaction};
@@ -226,7 +239,8 @@ namespace casual
 
                if( reply.state == XA_OK)
                {
-                  trans.state( Transaction::State::active);
+                  trans.state = Transaction::State::active;
+                  trans.suspended = false;
                   trans.trid = std::move( reply.trid);
                }
 
@@ -256,11 +270,10 @@ namespace casual
 
             Transaction trans;
 
-
             if( transaction)
             {
                trans.trid = transaction;
-               trans.state( Transaction::State::active);
+               trans.state = Transaction::State::active;
 
                //auto code = local::startTransaction( writer, reader, trans);
             }
@@ -292,20 +305,32 @@ namespace casual
             m_transactions.push_back( std::move( trans));
          }
 
-         void Context::update( message::service::Reply& state)
+         void Context::update( message::service::Reply& reply)
          {
-            if( state.transaction.trid)
+            if( reply.transaction.trid)
             {
-               auto found = range::find( m_transactions, state.transaction.trid);
+               auto found = range::find( m_transactions, reply.transaction.trid);
 
                if( ! found)
                {
                   throw exception::xatmi::SystemError{ "failed to find transaction", __FILE__, __LINE__};
                }
 
-               found->state( Transaction::State( state.transaction.state));
+               auto& transaction = *found;
 
-               log::internal::transaction << "updated state: " << *found << std::endl;
+               auto state = Transaction::State( reply.transaction.state);
+
+               if( transaction.state < state)
+               {
+                  transaction.state = state;
+               }
+
+               //
+               // this descriptor is done, and we can remove the association to the transaction
+               //
+               transaction.discard( reply.descriptor);
+
+               log::internal::transaction << "updated state: " << transaction << std::endl;
             }
          }
 
@@ -324,6 +349,7 @@ namespace casual
             //
             // Try to handle as many transactions as possible
             //
+
             {
 
                auto trans_rollback = [&]( Transaction& transaction)
@@ -332,29 +358,24 @@ namespace casual
                   {
                      message.value = TPESVCERR;
                   }
-                  transaction.state( Transaction::State::rollback);
+                  transaction.state = Transaction::State::rollback;
                };
 
                auto trans_commit = [&]( Transaction& transaction)
                {
-                  switch( transaction.state())
+                  if( transaction.state == Transaction::State::active)
                   {
-                     case Transaction::State::active:
-                     case Transaction::State::suspended:
+                     if( commit( transaction) != XA_OK)
                      {
-                        if( commit( transaction) != XA_OK)
-                        {
-                           message.value = TPESVCERR;
-                           transaction.state( Transaction::State::rollback);
-                        }
-                        break;
-                     }
-                     default:
-                     {
-                        trans_rollback( transaction);
-                        break;
+                        message.value = TPESVCERR;
+                        transaction.state = Transaction::State::rollback;
                      }
                   }
+                  else
+                  {
+                     trans_rollback( transaction);
+                  }
+
                };
 
                auto functor = [&]( Transaction& transaction)
@@ -374,7 +395,7 @@ namespace casual
                   {
                      if( message.value != TPSUCCESS)
                      {
-                        transaction.state( Transaction::State::rollback);
+                        transaction.state = Transaction::State::rollback;
                      }
 
                   }
@@ -394,7 +415,7 @@ namespace casual
 
             if( found)
             {
-               message.transaction.state = static_cast< decltype( message.transaction.state)>( found->state());
+               message.transaction.state = static_cast< decltype( message.transaction.state)>( found->state);
                message.transaction.trid = found->trid;
             }
 
@@ -420,7 +441,7 @@ namespace casual
             //
             // XA-spec - RM can't reg when it's already regged... Why?
             //
-            if( common::range::find( transaction.associated, rmid))
+            if( common::range::find( transaction.resources, rmid))
             {
                return TMER_PROTO;
             }
@@ -433,21 +454,17 @@ namespace casual
                involved( transaction.trid, { rmid});
             }
 
-            transaction.associated.push_back( rmid);
+            transaction.resources.push_back( rmid);
 
             *xid = transaction.trid.xid;
 
-            switch( transaction.previous())
+            if( transaction.suspended)
             {
-               case Transaction::State::suspended:
-               {
-                  return TM_RESUME;
-               }
-               default:
-               {
-                  return TM_OK;
-               }
+               return TM_RESUME;
             }
+
+            return TM_OK;
+
          }
 
          int Context::resourceUnregistration( int rmid, long flags)
@@ -462,11 +479,11 @@ namespace casual
             //
             if( ! transaction.trid)
             {
-               auto found = common::range::find( transaction.associated, rmid);
+               auto found = common::range::find( transaction.resources, rmid);
 
                if( found)
                {
-                  transaction.associated.erase( found.begin());
+                  transaction.resources.erase( found.begin());
                   return TM_OK;
                }
             }
@@ -480,12 +497,12 @@ namespace casual
 
             auto&& transaction = current();
 
-            if( ! transaction.associated.empty())
+            if( ! transaction.resources.empty())
             {
                return TX_OUTSIDE;
             }
 
-            if( transaction.state() != Transaction::State::inactive)
+            if( ! transaction.suspended)
             {
                return TX_PROTOCOL_ERROR;
             }
@@ -509,7 +526,7 @@ namespace casual
             return code;
          }
 
-         void Context::open()
+         int Context::open()
          {
             common::trace::Scope trace{ "transaction::Context::open", common::log::internal::transaction};
 
@@ -524,6 +541,7 @@ namespace casual
             {
                //throw exception::tx::Error( "failed to open resources");
             }
+            return TX_OK;
          }
 
          void Context::close()
@@ -558,6 +576,12 @@ namespace casual
             if( transaction.trid.owner() != process)
             {
                log::internal::transaction << "commit - current process not owner of transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
+               return TX_PROTOCOL_ERROR;
+            }
+
+            if( ! transaction.descriptors.empty())
+            {
+               log::error << "commit - pending replies " << range::make( transaction.descriptors) << " associated with transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
                return TX_PROTOCOL_ERROR;
             }
 
@@ -650,6 +674,12 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::rollback", common::log::internal::transaction};
 
+            if( ! transaction)
+            {
+               log::error << "rollback - no ongoing transaction: " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
+               return TX_PROTOCOL_ERROR;
+            }
+
             const auto process = process::handle();
 
             if( transaction.trid.owner() != process)
@@ -680,19 +710,11 @@ namespace casual
 
          int Context::rollback()
          {
-            if( m_transactions.empty())
-            {
-               log::internal::transaction << "rollback - no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
-               return TX_NO_BEGIN;
-            }
+            auto& transaction = current();
 
-            auto result = rollback( m_transactions.back());
+            auto result = rollback( transaction);
 
-            //
-            // We only remove/consume transaction if rollback succeed
-            // TODO: any other situation we should remove?
-            //
-            if( result == TX_OK)
+            if( transaction)
             {
                m_transactions.pop_back();
             }
@@ -712,14 +734,16 @@ namespace casual
             return TX_NOT_SUPPORTED;
          }
 
-         void Context::setTransactionControl(TRANSACTION_CONTROL control)
+         int Context::setTransactionControl(TRANSACTION_CONTROL control)
          {
-
+            // TODO:
+            return TX_OK;
          }
 
-         void Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
+         int Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
          {
-
+            // TODO:
+            return TX_OK;
          }
 
          int Context::info( TXINFO& info)
@@ -727,7 +751,7 @@ namespace casual
             auto&& transaction = current();
 
             info.xid = transaction.trid.xid;
-            info.transaction_state = static_cast< decltype( info.transaction_state)>( transaction.state());
+            info.transaction_state = static_cast< decltype( info.transaction_state)>( transaction.state);
 
 
             return transaction ? 1 : 0;

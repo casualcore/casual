@@ -105,7 +105,7 @@ namespace casual
                   }
                }
 
-               log::internal::ipc << "ipc > [" << id << "] sent transport - " << transport << std::endl;
+               // log::internal::ipc << "ipc > [" << id << "] sent transport - " << transport << std::endl;
 
                return true;
 
@@ -150,7 +150,7 @@ namespace casual
                }
                transport.m_size = result - Transport::header_size;
 
-               log::internal::ipc << "ipc < [" << id << "] received transport - " << transport << std::endl;
+               // log::internal::ipc << "ipc < [" << id << "] received transport - " << transport << std::endl;
 
                return result > 0;
             }

@@ -10,6 +10,7 @@
 
 
 #include "common/traits.h"
+#include "common/error.h"
 
 #include <algorithm>
 #include <numeric>
@@ -24,6 +25,35 @@ namespace casual
 {
    namespace common
    {
+      namespace scope
+      {
+         struct Execute
+         {
+            Execute( std::function< void()> executer) : m_execute( std::move( executer)) {}
+
+            ~Execute()
+            {
+               if( m_execute)
+               {
+                  try
+                  {
+                     m_execute();
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
+                  }
+               }
+            }
+
+            void release()
+            {
+               m_execute = nullptr;
+            }
+
+            std::function< void()> m_execute;
+         };
+      } // scope
 
       namespace chain
       {

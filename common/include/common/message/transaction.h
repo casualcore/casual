@@ -151,13 +151,13 @@ namespace casual
             {
                struct Request : public basic_request< cTransactionBeginRequest>
                {
+                  common::platform::time_point start;
+
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & start;
                   })
-
-                  common::platform::time_point start;
                };
 
                typedef basic_reply< cTransactionBeginReply> Reply;

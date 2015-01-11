@@ -96,6 +96,7 @@ void run( Settings settings)
 
          Transaction transaction( settings, timepoints);
 
+
          using Async = casual::sf::xatmi::service::binary::Async;
          Async caller{ settings.service};
 

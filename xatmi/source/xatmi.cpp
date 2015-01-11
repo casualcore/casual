@@ -129,6 +129,12 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
 
 int tpcall( const char* const svc, char* idata, const long ilen, char** odata, long* olen, const long flags)
 {
+   if( svc == nullptr)
+   {
+      tperrno = TPEINVAL;
+      return -1;
+   }
+
    try
    {
       casual::common::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
@@ -143,6 +149,12 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 
 int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
 {
+   if( svc == nullptr)
+   {
+      tperrno = TPEINVAL;
+      return -1;
+   }
+
    try
    {
       //
@@ -176,13 +188,14 @@ int tpcancel( int id)
 {
    try
    {
-      return casual::common::call::Context::instance().canccel( id);
+      casual::common::call::Context::instance().canccel( id);
    }
    catch( ...)
    {
       tperrno = casual::common::error::handler();
       return -1;
    }
+   return 0;
 }
 
 

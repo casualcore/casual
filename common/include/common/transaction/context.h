@@ -40,7 +40,7 @@ namespace casual
             //! Correspond to the tx API
             //!
             //! @{
-            void open();
+            int open();
             void close();
 
             int begin();
@@ -50,8 +50,8 @@ namespace casual
 
 
             int setCommitReturn( COMMIT_RETURN value);
-            void setTransactionControl(TRANSACTION_CONTROL control);
-            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            int setTransactionControl(TRANSACTION_CONTROL control);
+            int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
             int info( TXINFO& info);
             //! @}
 
@@ -84,6 +84,12 @@ namespace casual
             //! @return current transaction. 'null xid' if there are none...
             //!
             Transaction& current();
+
+
+            //!
+            //! @return true if @p descriptor is associated with an active transaction
+            //!
+            bool associated( platform::descriptor_type descriptor);
 
 
             void set( const std::vector< Resource>& resources);
