@@ -9,6 +9,7 @@
 #include "common/platform.h"
 #include "common/exception.h"
 #include "common/log.h"
+#include "common/flag.h"
 #include "common/internal/trace.h"
 #include "common/process.h"
 #include "common/chronology.h"
@@ -29,7 +30,10 @@
 
 extern "C"
 {
-	void casual_common_signal_handler( int signal);
+
+	void casual_child_terminate_signal_handler( int signal);
+	void casual_alarm_signal_handler( int signal);
+	void casual_terminate_signal_handler( int signal);
 }
 
 namespace casual
@@ -50,65 +54,99 @@ namespace casual
                      return singleton;
                   }
 
-                  void add( int signal)
-                  {
-                     std::unique_lock< std::mutex> lock( m_mutex);
+                  //!
+                  //! Indicate if a signal is present, and how many is "stacked".
+                  //! in the normal flow (signals are rare) we only check one atomic.
+                  //!
+                  std::atomic< long> signal_count;
 
-                     m_signals.push_back( signal);
-                  }
+                  std::atomic< long> alarm_count;
+                  std::atomic< long> child_terminate_count;
+                  std::atomic< long> terminate_count;
 
-                  int consume()
-                  {
-                     std::unique_lock< std::mutex> lock( m_mutex);
-
-                     if( ! m_signals.empty())
-                     {
-                        int temp = m_signals.front();
-                        m_signals.pop_front();
-                        return temp;
-                     }
-                     return 0;
-                  }
 
                   void clear()
                   {
-                     std::unique_lock< std::mutex> lock( m_mutex);
+                     alarm_count = 0;
+                     child_terminate_count = 0;
+                     terminate_count = 0;
+                  }
 
-                     m_signals.clear();
+
+                  void consume( Filter filter)
+                  {
+                     auto count = signal_count.load(std::memory_order_relaxed);
+                     if( count > 0)
+                     {
+                        if( child_terminate_count > 0)
+                        {
+                           --child_terminate_count;
+                           --signal_count;
+
+                           if( ! flag< Filter::exclude_child_terminate>( filter))
+                           {
+                              throw exception::signal::child::Terminate();
+                           }
+                        }
+                        else if( alarm_count > 0)
+                        {
+                           --alarm_count;
+                           --signal_count;
+
+                           if( ! flag< Filter::exclude_alarm>( filter))
+                           {
+                              throw exception::signal::Timeout();
+                           }
+                        }
+                        else if( terminate_count > 0)
+                        {
+                           --terminate_count;
+                           --signal_count;
+
+                           if( ! flag< Filter::exclude_terminate>( filter))
+                           {
+                              throw exception::signal::Terminate();
+                           }
+                        }
+                     }
                   }
 
                private:
+
+
                   Cache()
+                   : alarm_count( 0), child_terminate_count( 0), terminate_count( 0)
                   {
+
                      //
                      // Register all the signals
                      //
 
-                     set( common::signal::Type::alarm);
 
-                     set( common::signal::Type::terminate);
-                     set( common::signal::Type::quit);
-                     set( common::signal::Type::interupt);
+                     resgistration( &casual_child_terminate_signal_handler, common::signal::Type::child, SA_NOCLDSTOP);
 
-                     set( common::signal::Type::child, SA_NOCLDSTOP);
+                     resgistration( &casual_alarm_signal_handler, common::signal::Type::alarm);
 
-                     set( common::signal::Type::user);
+                     //
+                     // These we terminate on...
+                     //
+                     resgistration( &casual_terminate_signal_handler, common::signal::Type::terminate);
+                     resgistration( &casual_terminate_signal_handler, common::signal::Type::quit);
+                     resgistration( &casual_terminate_signal_handler, common::signal::Type::interupt);
+                     resgistration( &casual_terminate_signal_handler, common::signal::Type::user);
                   }
 
-                  void set( int signal, int flags = 0)
+                  template< typename F>
+                  void resgistration( F function, int signal, int flags = 0)
                   {
                      struct sigaction sa;
 
                      memset(&sa, 0, sizeof(sa));
-                     sa.sa_handler = casual_common_signal_handler;
+                     sa.sa_handler = function;
                      sa.sa_flags = flags; // | SA_RESTART;
 
                      sigaction( signal, &sa, 0);
                   }
-
-
-                  std::deque< int> m_signals;
-                  std::mutex m_mutex;
                };
 
 
@@ -118,44 +156,6 @@ namespace casual
                Cache& globalCrap = Cache::instance();
 
 
-               void dispatch( platform::signal_type signal)
-               {
-                  switch( signal)
-                  {
-                     case 0:
-                        //
-                        // We do nothing for 'no signal'
-                        //
-                        break;
-                     case exception::signal::Timeout::value:
-                     {
-                        throw exception::signal::Timeout();
-                        break;
-                     }
-                     case exception::signal::child::Terminate::value:
-                     {
-                        throw exception::signal::child::Terminate();
-                        break;
-                     }
-                     case exception::signal::User::value:
-                     {
-                        throw exception::signal::User();
-                        break;
-                     }
-                     default:
-                     {
-                        //
-                        // the rest we throw on, so the rest of the application
-                        // can use RAII and other paradigms to do cleaning
-                        //
-                        throw exception::signal::Terminate( type::string( signal));
-                        break;
-                     }
-                  }
-
-
-               }
-
             } // <unnamed>
          } // local
       } // signal
@@ -164,11 +164,22 @@ namespace casual
 
 
 
-void casual_common_signal_handler( int signal)
+void casual_child_terminate_signal_handler( int signal)
 {
-	casual::common::signal::local::globalCrap.add( signal);
+   ++casual::common::signal::local::globalCrap.child_terminate_count;
+   ++casual::common::signal::local::globalCrap.signal_count;
+}
+void casual_alarm_signal_handler( int signal)
+{
+   ++casual::common::signal::local::globalCrap.alarm_count;
+   ++casual::common::signal::local::globalCrap.signal_count;
 }
 
+void casual_terminate_signal_handler( int signal)
+{
+   ++casual::common::signal::local::globalCrap.terminate_count;
+   ++casual::common::signal::local::globalCrap.signal_count;
+}
 
 namespace casual
 {
@@ -190,17 +201,12 @@ namespace casual
 
 			void handle()
 			{
-				local::dispatch( local::Cache::instance().consume());
+				local::Cache::instance().consume( Filter::exclude_none);
 			}
 
-         void handle( const std::vector< signal::Type>& exclude)
+         void handle( Filter exclude)
          {
-            auto signal = local::Cache::instance().consume();
-
-            if( ! range::find( exclude, signal))
-            {
-               local::dispatch( signal);
-            }
+            local::Cache::instance().consume( exclude);
          }
 
          void clear()

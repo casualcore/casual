@@ -393,14 +393,6 @@ namespace casual
             }
 
 
-
-
-            //
-            // If some thing goes wrong we discard the descriptor
-            //
-            unreserve.release();
-            common::scope::Execute discard{ [&](){ m_state.pending.discard( message.descriptor);}};
-
             //
             // Call the service
             //
@@ -409,7 +401,7 @@ namespace casual
             local::queue::blocking::Send send;
             send( target.process.queue, message);
 
-            discard.release();
+            unreserve.release();
             return message.descriptor;
          }
 

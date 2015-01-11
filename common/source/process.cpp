@@ -208,7 +208,7 @@ namespace casual
                      log::internal::debug << "current timeout (us): " << signal::timer::get().count() << std::endl;
                   }
 
-                  signal::handle( { signal::Type::child});
+                  signal::handle( signal::Filter::exclude_child_terminate);
 
                   lifetime::Exit exit;
 
@@ -227,7 +227,7 @@ namespace casual
                            }
                            case EINTR:
                            {
-                              signal::handle( { signal::Type::child});
+                              signal::handle( signal::Filter::exclude_child_terminate);
 
                               //
                               // We do another turn in the loop
