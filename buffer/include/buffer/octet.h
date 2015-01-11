@@ -10,7 +10,10 @@
 
 
 /* used as type with tpalloc */
-#define CASUAL_OCTET "COCTET"
+#define CASUAL_OCTET       "COCTET"
+#define CASUAL_OCTET_XML   "XML"
+#define CASUAL_OCTET_JSON  "JSON"
+#define CASUAL_OCTET_YAML  "YAML"
 
 #define CASUAL_OCTET_SUCCESS 0
 
