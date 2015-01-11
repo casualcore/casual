@@ -119,6 +119,24 @@ namespace casual
                void startup( State& state, config::queue::Domain config)
                {
                   casual::common::range::transform( config.groups, state.groups, Startup( state));
+
+                  //
+                  // Make sure all groups are up and running before we continue
+                  //
+                  {
+                     casual::common::message::dispatch::Handler handler{
+                        broker::handle::connect::Request{ state}};
+
+                     broker::queue::blocking::Reader read( casual::common::ipc::receive::queue(), state);
+
+                     auto filter = handler.types();
+
+                     while( ! common::range::all_of( state.groups, std::mem_fn(&State::Group::connected)))
+                     {
+                        handler( read.next( filter));
+                     }
+
+                  }
                }
 
             } // <unnamed>
