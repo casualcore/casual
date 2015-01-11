@@ -15,6 +15,7 @@
 
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
+#include "common/move.h"
 
 //
 // xatmi
@@ -191,11 +192,14 @@ namespace casual
 
                   ~basic_receive()
                   {
-                     if( m_callDescriptor != 0)
+                     if( ! m_moved && m_callDescriptor != 0)
                      {
                         m_caller.cancel( m_callDescriptor);
                      }
                   }
+
+                  basic_receive( basic_receive&&) = default;
+                  basic_receive& operator = ( basic_receive&&) = default;
 
 
                   //!
@@ -246,6 +250,9 @@ namespace casual
                   call_descriptor_type m_callDescriptor;
                   long m_flags;
                   caller_type m_caller;
+
+                  common::move::Moved m_moved;
+
                };
 
 

@@ -7,6 +7,7 @@
 
 
 #include "common/uuid.h"
+#include "common/transcode.h"
 
 #include <cassert>
 #include <ostream>
@@ -122,10 +123,7 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
       {
-         platform::uuid_string_type buffer;
-         uuid_unparse_lower( uuid.m_uuid, buffer);
-         out.write( buffer, sizeof( buffer) - 1);
-         return out;
+         return out << transcode::hex::encode( uuid.m_uuid);
       }
 
    } // common

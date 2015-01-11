@@ -95,8 +95,8 @@ namespace casual
             //! @}
 
 
-            Payload( const Payload&)  = delete;
-            Payload& operator = ( const Payload&) = delete;
+            Payload( const Payload&)  = default;
+            Payload& operator = ( const Payload&) = default;
 
             Type type;
             platform::binary_type memory;

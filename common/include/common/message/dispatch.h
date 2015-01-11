@@ -93,11 +93,28 @@ namespace casual
                   {
                      message_type message;
                      complete >> message;
-
                      m_handler( message);
+                     //Transform transform( complete);
+                     //m_handler( transform);
                   }
 
                private:
+
+                  struct Transform
+                  {
+                     Transform( ipc::message::Complete& complete) : complete( complete) {}
+
+                     template< typename M>
+                     operator M ()
+                     {
+                        M message;
+                        complete >> message;
+                        return message;
+                     }
+
+                     ipc::message::Complete& complete;
+                  };
+
                   handler_type m_handler;
                };
 

@@ -266,10 +266,8 @@ namespace casual
                Reply() = default;
                Reply( Reply&&) noexcept = default;
                Reply& operator = ( Reply&&) noexcept = default;
-
-
-               Reply( const Reply&) = delete;
-               Reply& operator = ( const Reply&) = delete;
+               Reply( const Reply&) = default;
+               Reply& operator = ( const Reply&) = default;
 
                int descriptor = 0;
                int value = 0;

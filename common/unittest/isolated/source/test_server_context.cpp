@@ -290,9 +290,12 @@ namespace casual
          call::State state;
 
          auto first = state.pending.reserve( uuid::make());
+         EXPECT_TRUE( first == 1);
          auto second = state.pending.reserve( uuid::make());
+         EXPECT_TRUE( second == 2);
 
-         EXPECT_TRUE( first < second);
+         state.pending.unreserve( first);
+         state.pending.unreserve( second);
       }
 
    } // common

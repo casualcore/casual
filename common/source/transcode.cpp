@@ -211,10 +211,52 @@ namespace casual
             }
 
          } // utf8
-      }
 
-   }
-}
+         namespace hex
+         {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename InIter, typename OutIter>
+                  void encode( InIter first, InIter last, OutIter out)
+                  {
+                     while( first != last)
+                     {
+                        auto hex = []( decltype( *first) value){
+                           if( value < 10)
+                           {
+                              return value + 48;
+                           }
+                           return value + 87;
+                        };
+
+                        *out++ = hex( ( 0xf0 & *first) >> 4);
+                        *out++ = hex( 0x0f & *first);
+
+                        ++first;
+                     }
+                  }
+               } // <unnamed>
+            } // local
+            std::string encode( const void* data, std::size_t bytes)
+            {
+               std::string result;
+               result.reserve( bytes * 2);
+
+               const char* first = static_cast< const char*>( data);
+               auto last = first + bytes;
+
+               local::encode( first, last, std::back_inserter( result));
+
+               return result;
+            }
+
+         } // hex
+
+      } // transcode
+   } // common
+} // casual
 
 
 

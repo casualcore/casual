@@ -90,6 +90,12 @@ namespace casual
       }
       */
 
+      TEST( casual_common_transcode, hex_encode)
+      {
+         std::vector< std::uint8_t> binary{ 255, 0, 240, 10};
+
+         EXPECT_TRUE( transcode::hex::encode( binary) == "ff00f00a") << "hex: " << transcode::hex::encode( binary);
+      }
 
    }
 }

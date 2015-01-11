@@ -52,6 +52,11 @@ namespace casual
 
             struct Transport;
 
+            enum Flags
+            {
+               cNoBlocking = common::platform::cIPC_NO_WAIT
+            };
+
             //!
             //! Send a @p transport message to ipc-queue with @p id
             //!

@@ -29,53 +29,49 @@ namespace casual
             typedef TRANSACTION_STATE state_type;
             enum class State : state_type
             {
+               //suspended = - 1,
                active = TX_ACTIVE,
-               rollback = TX_ROLLBACK_ONLY,
                timeout = TX_TIMEOUT_ROLLBACK_ONLY,
-               suspended,
-               inactive,
+               rollback = TX_ROLLBACK_ONLY,
             };
 
 
-            inline void state( State state)
-            {
-               m_previous = m_state;
-               m_state = state;
-
-            }
-
-            inline State state() const
-            {
-               return m_state;
-            }
-
-            inline State previous() const
-            {
-               return m_previous;
-            }
-
-            explicit operator bool() const { return trid && m_state != State::suspended;}
+            explicit operator bool() const { return trid && ! suspended;}
 
             ID trid;
 
             //!
             //! associated rm:s to this transaction
             //!
-            std::vector< int> associated;
+            std::vector< platform::resource::id_type> resources;
+
+            //!
+            //! associated descriptors to this transaction
+            //!
+            std::vector< platform::descriptor_type> descriptors;
+
+            State state = State::active;
+            bool suspended = true;
+
+
+            void discard( platform::descriptor_type descriptor)
+            {
+               descriptors.erase(
+                     std::remove( std::begin( descriptors), std::end( descriptors), descriptor),
+                     std::end( descriptors)
+               );
+            }
 
 
             friend bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
 
             friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
             {
-               return out << "{trid: " << rhs.trid << ", state: " << rhs.m_state << ", previous: " << rhs.m_previous << "}";
+               return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<
+                     ", suspended: " << std::boolalpha << rhs.suspended <<
+                     ", resources: " << range::make( rhs.resources) <<
+                     ", descriptors: " << range::make( rhs.descriptors) << "}";
             }
-
-
-
-         private:
-            State m_state = State::inactive;
-            State m_previous = State::inactive;
          };
       }
    }

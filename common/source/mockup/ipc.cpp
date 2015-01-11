@@ -109,8 +109,8 @@ namespace casual
 
                struct Worker
                {
-                  using cache_type = std::vector< common::ipc::message::Complete>;
 
+                  using cache_type = std::deque< common::ipc::message::Complete>;
 
                   using transform_type = ipc::transform_type;
 
@@ -188,7 +188,17 @@ namespace casual
 
                      if( check( state, message.front()))
                      {
-                        state.cache.push_back( std::move( message.front()));
+                        if( state.transform)
+                        {
+                           for( auto& complete : state.transform( message.front()))
+                           {
+                              state.cache.push_back( std::move( complete));
+                           }
+                        }
+                        else
+                        {
+                           state.cache.push_back( std::move( message.front()));
+                        }
                      }
 
                   }
@@ -199,19 +209,9 @@ namespace casual
                      {
                         log::internal::ipc << "write to destination: " <<  state.destination.id() << " flags: " << common::ipc::send::Queue::cNoBlocking << std::endl;
 
-                        if( state.transform != nullptr)
+                        if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
                         {
-                           if( state.destination( state.transform( state.cache.front()), common::ipc::send::Queue::cNoBlocking))
-                           {
-                              state.cache.erase( std::begin( state.cache));
-                           }
-                        }
-                        else
-                        {
-                           if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
-                           {
-                              state.cache.erase( std::begin( state.cache));
-                           }
+                           state.cache.pop_front();
                         }
                      }
                   }
@@ -269,7 +269,19 @@ namespace casual
                      {
                         common::queue::blocking::Writer send{ id};
                         local::message::Disconnect message;
-                        send( message);
+
+                        bool resend = true;
+
+                        while( resend)
+                        {
+                           try
+                           {
+                              send( message);
+                              resend = false;
+                           }
+                           catch( const exception::signal::Base&) {}
+                        }
+
                      }
                      catch( const std::exception& exception)
                      {
@@ -308,15 +320,124 @@ namespace casual
             Router::Router( id_type destination) : m_implementation( destination) {}
             Router::~Router() {}
 
+            Router::Router( Router&&) noexcept = default;
+            Router& Router::operator = ( Router&&) noexcept = default;
 
             id_type Router::id() const { return m_implementation->id;}
 
             id_type Router::destination() const { return m_implementation->destination;}
 
 
+
+            class Link::Implementation
+            {
+            public:
+               Implementation( id_type source, id_type destination)
+                 : source( source), destination( destination)
+               {
+
+                  m_thread = std::thread{ []( id_type source, id_type destination)
+                  {
+                     std::deque< common::ipc::message::Transport> cache;
+
+                     common::ipc::message::Transport transport;
+
+                     while( true)
+                     {
+                        if( cache.empty())
+                        {
+                           //
+                           // We block
+                           //
+                           common::ipc::message::receive( source, transport, 0);
+                           cache.push_back( transport);
+                        }
+                        else if( common::ipc::message::receive( source, transport, common::ipc::message::Flags::cNoBlocking))
+                        {
+                           cache.push_back( transport);
+                        }
+                        else
+                        {
+                           common::process::sleep( std::chrono::microseconds{ 10});
+                        }
+
+                        if( transport.message.type == local::message::Disconnect::message_type)
+                        {
+                           common::ipc::message::send( destination, transport, common::ipc::message::Flags::cNoBlocking);
+                           return;
+                        }
+
+                        if( ! cache.empty() && common::ipc::message::send( destination, cache.front(), common::ipc::message::Flags::cNoBlocking))
+                        {
+                           cache.pop_front();
+                        }
+                     }
+                  }, source, destination};
+               }
+
+               ~Implementation()
+               {
+                  try
+                  {
+                     common::ipc::message::Transport transport;
+                     transport.message.type = local::message::Disconnect::message_type;
+
+                     bool resend = true;
+
+                     while( resend)
+                     {
+                        try
+                        {
+                           common::ipc::message::send( source, transport, 0);
+                           resend = false;
+                        }
+                        catch( const exception::signal::Base&) {}
+                     }
+
+
+                  }
+                  catch( const std::exception& exception)
+                  {
+                     log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                  }
+
+                  try
+                  {
+                     m_thread.join();
+                  }
+                  catch( const std::exception& exception)
+                  {
+                     log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                  }
+               }
+
+               id_type source;
+               id_type destination;
+               std::thread m_thread;
+
+            };
+
+            Link::Link( id_type source, id_type destination)
+            : m_implementation( source, destination)
+            {}
+
+            Link::~Link() = default;
+
+            Link::Link( Link&&) noexcept = default;
+            Link& Link::operator = ( Link&&) noexcept = default;
+
+            id_type Link::source() const { return m_implementation->source;}
+            id_type Link::destination() const { return m_implementation->destination;}
+
+
+
+
+
+
+
             struct Instance::Implementation
             {
-               Implementation( platform::pid_type pid) : pid( pid), router( receive.id())
+               Implementation( platform::pid_type pid, transform_type transform) : pid( pid), router( receive.id(), std::move( transform))
                {
                }
 
@@ -325,12 +446,12 @@ namespace casual
                Router router;
             };
 
-            Instance::Instance( platform::pid_type pid) : m_implementation( pid)
-            {
+            Instance::Instance( platform::pid_type pid, transform_type transform) : m_implementation( pid, std::move( transform)) {}
+            Instance::Instance( platform::pid_type pid) : Instance( pid, nullptr) {}
 
-            }
 
-            Instance::Instance() : m_implementation( process::id()) {}
+            Instance::Instance( transform_type transform) : Instance( process::id(), std::move( transform)) {}
+            Instance::Instance() : Instance( process::id(), nullptr) {}
 
             Instance::~Instance() {}
 

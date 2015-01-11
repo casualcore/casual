@@ -109,39 +109,15 @@ namespace casual
                //!
                void discard( descriptor_type descriptor);
 
+
             private:
 
                descriptor_type reserve();
 
                std::vector< Descriptor> m_descriptors;
-               std::vector< Transaction> m_transactions;
                std::vector< Correlation> m_correlations;
 
             } pending;
-
-
-            struct Reply
-            {
-               struct Cache
-               {
-                  typedef std::vector< message::service::Reply> cache_type;
-                  using cache_range = decltype( range::make( cache_type::iterator(), cache_type::iterator()));
-
-
-                  cache_range add( message::service::Reply&& value);
-
-                  cache_range search( descriptor_type descriptor);
-
-                  void erase( cache_range range);
-
-
-               private:
-
-                  cache_type m_cache;
-
-               } cache;
-
-            } reply;
 
             common::Uuid execution = common::uuid::make();
 
@@ -160,7 +136,7 @@ namespace casual
 
             void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
 
-            int canccel( descriptor_type cd);
+            void canccel( descriptor_type cd);
 
             void clean();
 
@@ -170,17 +146,13 @@ namespace casual
             void service( const std::string& service);
             const std::string& service() const;
 
+
          private:
 
-            using cache_range = State::Reply::Cache::cache_range;
 
             Context();
 
             bool receive( message::service::Reply& reply, descriptor_type descriptor, long flags);
-
-            cache_range fetch( descriptor_type descriptor, long flags);
-
-            void consume();
 
             State m_state;
 

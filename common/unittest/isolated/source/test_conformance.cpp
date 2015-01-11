@@ -10,6 +10,7 @@
 
 
 #include "common/algorithm.h"
+#include "common/traits.h"
 
 #include <type_traits>
 
@@ -52,6 +53,7 @@ namespace casual
 
          EXPECT_TRUE( bind( pod, 42) == true);
       }
+
 
 
    } // common
