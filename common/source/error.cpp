@@ -57,17 +57,22 @@ namespace casual
             {
                log::error << exception << std::endl;
             }
-            catch( const exception::xatmi::severity::Error& exception)
+            catch( const exception::xatmi::category::Error& exception)
             {
                log::error << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
-            catch( const exception::xatmi::severity::Information& exception)
+            catch( const exception::xatmi::category::Warning& exception)
+            {
+               log::warning << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
+               return exception.code();
+            }
+            catch( const exception::xatmi::category::Information& exception)
             {
                log::information << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
-            catch( const exception::xatmi::severity::User& exception)
+            catch( const exception::xatmi::category::User& exception)
             {
                log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();

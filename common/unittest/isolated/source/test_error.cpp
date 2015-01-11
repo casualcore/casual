@@ -16,19 +16,14 @@
 namespace casual
 {
 
-   enum class Severity : int
-   {
-      error = common::platform::cLOG_error,
-      information = common::platform::cLOG_info,
-      user = common::platform::cLOG_debug
-   };
 
-   template< typename E, int code, Severity severity>
+
+   template< typename E, int code, common::log::category::Type category>
    struct holder
    {
       typedef E exception_type;
       static int getCode() { return code;}
-      static int getSeverity() { return static_cast< int>( severity);}
+      static int getGategory() { return static_cast< int>( category);}
       //static const char* getString() { return string;}
 
    };
@@ -43,22 +38,22 @@ namespace casual
 
 
    typedef ::testing::Types<
-         holder< common::exception::xatmi::NoMessage, TPEBLOCK, Severity::user>,
-         holder< common::exception::xatmi::LimitReached, TPELIMIT, Severity::information>,
-         holder< common::exception::xatmi::InvalidArguments, TPEINVAL, Severity::user>,
-         holder< common::exception::xatmi::OperatingSystemError, TPEOS, Severity::error>,
-         holder< common::exception::xatmi::ProtocollError, TPEPROTO, Severity::error>,
-         holder< common::exception::xatmi::service::InvalidDescriptor, TPEBADDESC, Severity::user>,
-         holder< common::exception::xatmi::service::Error, TPESVCERR, Severity::error>,
-         holder< common::exception::xatmi::service::Fail, TPESVCFAIL, Severity::user>,
-         holder< common::exception::xatmi::service::NoEntry, TPENOENT, Severity::user>,
-         holder< common::exception::xatmi::service::AllreadyAdvertised, TPEMATCH, Severity::user>,
-         holder< common::exception::xatmi::SystemError, TPESYSTEM, Severity::error>,
-         holder< common::exception::xatmi::Timeout, TPETIME, Severity::user>,
-         holder< common::exception::xatmi::TransactionNotSupported, TPETRAN, Severity::user>,
-         holder< common::exception::xatmi::Signal, TPGOTSIG, Severity::information>,
-         holder< common::exception::xatmi::buffer::TypeNotSupported, TPEITYPE, Severity::user>,
-         holder< common::exception::xatmi::buffer::TypeNotExpected, TPEOTYPE, Severity::user>
+         holder< common::exception::xatmi::NoMessage, TPEBLOCK, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::LimitReached, TPELIMIT, common::log::category::Type::information>,
+         holder< common::exception::xatmi::InvalidArguments, TPEINVAL, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::OperatingSystemError, TPEOS, common::log::category::Type::error>,
+         holder< common::exception::xatmi::ProtocollError, TPEPROTO, common::log::category::Type::error>,
+         holder< common::exception::xatmi::service::InvalidDescriptor, TPEBADDESC, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::service::Error, TPESVCERR, common::log::category::Type::error>,
+         holder< common::exception::xatmi::service::Fail, TPESVCFAIL, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::service::NoEntry, TPENOENT, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::service::AllreadyAdvertised, TPEMATCH, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::SystemError, TPESYSTEM, common::log::category::Type::error>,
+         holder< common::exception::xatmi::Timeout, TPETIME, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::TransactionNotSupported, TPETRAN, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::Signal, TPGOTSIG, common::log::category::Type::information>,
+         holder< common::exception::xatmi::buffer::TypeNotSupported, TPEITYPE, common::log::category::Type::debug>,
+         holder< common::exception::xatmi::buffer::TypeNotExpected, TPEOTYPE, common::log::category::Type::debug>
     > xatmi_exceptions;
 
    TYPED_TEST_CASE(casual_common_error_xatmi, xatmi_exceptions);
@@ -77,13 +72,13 @@ namespace casual
       }
 	}
 
-   TYPED_TEST( casual_common_error_xatmi, xatmi__expect_severity)
+   TYPED_TEST( casual_common_error_xatmi, xatmi__expect_category)
    {
       typedef typename TestFixture::exception_type exception_type;
 
-      exception_type exception( "some string");
+      //exception_type exception( "some string");
 
-      EXPECT_TRUE( exception.severity() == TestFixture::getSeverity());
+      EXPECT_TRUE( exception_type::category_value == TestFixture::getGategory());
 
    }
 
