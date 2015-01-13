@@ -100,6 +100,16 @@ namespace casual
 
       }
 
+      TEST( casual_field_buffer, use_with_wrong_buffer__expecting_invalid_buffer)
+      {
+         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         ASSERT_TRUE( buffer != nullptr);
+
+         EXPECT_TRUE( CasualFieldAddChar( buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_BUFFER);
+
+         tpfree( buffer);
+      }
+
 
       TEST( casual_field_buffer, allocate_with_zero_size__expecting_success)
       {
