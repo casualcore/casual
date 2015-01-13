@@ -165,6 +165,7 @@ namespace casual
                void remove( const Service& service);
 
                friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
+               friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
 
             //private:
                State state = State::booted;
