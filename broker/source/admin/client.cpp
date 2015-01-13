@@ -77,7 +77,12 @@ namespace casual
                archive & CASUAL_MAKE_NVP( path);
             })
 
-            friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.server < rhs.server;}
+            friend bool operator < ( const Instance& lhs, const Instance& rhs)
+            {
+               if( lhs.server < rhs.server) return true;
+               if( lhs.server > rhs.server) return false;
+               return lhs.pid < rhs.pid;
+            }
 
             static std::vector< sf::archive::terminal::Directive> directive()
             {
@@ -288,11 +293,33 @@ namespace casual
          }
 
 
+         std::vector< admin::InstanceVO> filterInstances(
+               const std::vector< admin::InstanceVO>& instances,
+               const std::vector< platform::pid_type>& pids)
+         {
+            std::vector< admin::InstanceVO> result;
+
+            result.reserve( pids.size());
+
+            //
+            // We have to keep the order of the servers instances. We don't have an algorithm
+            // that keep order in that way...
+            //
+            for( auto pid : pids)
+            {
+               auto found = range::find_if( instances, [=]( const admin::InstanceVO& inst)
+               {
+                  return inst.pid == pid;
+               });
+               result.push_back( *found);
+            }
+
+            return result;
+         }
+
          std::vector< normalized::Server> servers( admin::StateVO state)
          {
             std::vector< normalized::Server> result;
-
-            auto instances = range::make( state.instances);
 
             for( auto& server : state.servers)
             {
@@ -300,22 +327,12 @@ namespace casual
 
                value.alias = server.alias;
                value.path = server.path;
-
-               {
-
-                  auto parts = common::range::intersection( instances, server.instances,
-                     std::bind( common::equal_to{}, std::bind( &admin::InstanceVO::pid, std::placeholders::_1), std::placeholders::_2));
-
-                  value.state = normalize::state( std::get< 0>( parts));
-                  instances = std::get< 1>( parts);
-               }
+               value.state = normalize::state( filterInstances( state.instances, server.instances));
 
                result.push_back( std::move( value));
             }
 
-            range::sort( result);
-
-            return result;
+            return range::sort( result);
          }
 
 
@@ -337,10 +354,7 @@ namespace casual
                   value.timeout = out.str();
                }
 
-               auto parts = common::range::intersection( state.instances, service.instances,
-                  std::bind( common::equal_to{}, std::bind( &admin::InstanceVO::pid, std::placeholders::_1), std::placeholders::_2));
-
-               value.state = normalize::state( std::get< 0>( parts));
+               value.state = normalize::state( filterInstances( state.instances, service.instances));
 
                //value.instances = service.instances.size();
                //value.pids = common::range::to_string( service.instances);

@@ -181,6 +181,7 @@ namespace casual
             }
 
             service.instances.push_back( instance);
+            range::sort( service.instances);
             instance.services.push_back( service);
          }
       }

@@ -546,10 +546,16 @@ namespace casual
          }
 
 
-         template< typename R, typename Iter2>
-         void copy( R&& range, Iter2 output)
+         template< typename R, typename OutIter>
+         OutIter copy( R&& range, OutIter output)
          {
-            std::copy( std::begin( range), std::end( range), output);
+            return std::copy( std::begin( range), std::end( range), output);
+         }
+
+         template< typename R, typename OutIter, typename P>
+         OutIter copy_if( R&& range, OutIter output, P predicate)
+         {
+            return std::copy_if( std::begin( range), std::end( range), output, predicate);
          }
 
          template< typename R, typename O>
