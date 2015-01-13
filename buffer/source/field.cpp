@@ -304,7 +304,20 @@ namespace casual
                try
                {
                   auto& buffer = pool_type::pool.get( handle);
-                  return Buffer( buffer.payload.memory.data());
+
+                  if( buffer.payload.type.type != CASUAL_FIELD)
+                  {
+                     //
+                     // TODO: This should be some generic check
+                     //
+                     // TODO: Shall this be logged ?
+                     //
+                  }
+                  else
+                  {
+                     return Buffer( buffer.payload.memory.data());
+                  }
+
                }
                catch( ...)
                {
@@ -312,8 +325,10 @@ namespace casual
                   // TODO: Perhaps have some dedicated field-logging ?
                   //
                   common::error::handler();
-                  return Buffer( nullptr);
                }
+
+               return Buffer( nullptr);
+
             }
 
             int validate_id( const long id, const int type)

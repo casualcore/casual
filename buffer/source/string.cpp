@@ -120,7 +120,20 @@ namespace casual
                try
                {
                   auto& buffer = pool_type::pool.get( handle);
-                  return Buffer( buffer.payload.memory.data(), buffer.payload.memory.size());
+
+                  if( buffer.payload.type.type != CASUAL_STRING)
+                  {
+                     //
+                     // TODO: This should be some generic check
+                     //
+                     // TODO: Shall this be logged ?
+                     //
+                  }
+                  else
+                  {
+                     return Buffer( buffer.payload.memory.data(), buffer.payload.memory.size());
+                  }
+
                }
                catch( ...)
                {
@@ -128,8 +141,9 @@ namespace casual
                   // TODO: Perhaps have some dedicated string-logging ?
                   //
                   common::error::handler();
-                  return Buffer( nullptr, 0);
                }
+
+               return Buffer( nullptr, 0);
 
             }
          }
@@ -169,8 +183,18 @@ int CasualStringExploreBuffer( const char* const handle, long* const size, long*
 
    if( buffer)
    {
-      if( size) *size = buffer.size();
-      if( used) *used = std::strlen( buffer.data()) + 1;
+      const auto reserved = buffer.size();
+      const auto utilized = std::strlen( buffer.data()) + 1;
+
+      if( size) *size = reserved;
+      if( used) *used = utilized;
+
+      if( utilized > reserved)
+      {
+         // We need to report this
+         return CASUAL_STRING_NO_PLACE;
+      }
+
    }
    else
    {

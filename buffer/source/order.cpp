@@ -254,7 +254,20 @@ namespace casual
                try
                {
                   auto& buffer = pool_type::pool.get( handle);
-                  return Buffer( buffer.payload.memory.data());
+
+                  if( buffer.payload.type.type != CASUAL_ORDER)
+                  {
+                     //
+                     // TODO: This should be some generic check
+                     //
+                     // TODO: Shall this be logged ?
+                     //
+                  }
+                  else
+                  {
+                     return Buffer( buffer.payload.memory.data());
+                  }
+
                }
                catch( ...)
                {
@@ -262,8 +275,10 @@ namespace casual
                   // TODO: Perhaps have some dedicated order-logging ?
                   //
                   common::error::handler();
-                  return Buffer( nullptr);
                }
+
+               return Buffer( nullptr);
+
             }
 
             int explore( const char* const handle, long* const size, long* const used)
@@ -374,7 +389,7 @@ namespace casual
                return CASUAL_ORDER_SUCCESS;
             }
 
-            int add( const char* const handle, const char* const value, const long count)
+            int add( const char* const handle, const char* const value, const size_type count)
             {
                Buffer buffer = find_buffer( handle);
 
@@ -426,32 +441,6 @@ namespace casual
 
             }
 
-            int get( const char* const handle, const char*& value, long& count)
-            {
-               Buffer buffer = find_buffer( handle);
-
-               if( !buffer)
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               // We start by reading the size (unconditionally)
-               parse( buffer.selector(), count);
-
-               const auto total = buffer.pick() + size_size + count;
-
-               if( total > buffer.used())
-               {
-                  return CASUAL_ORDER_NO_PLACE;
-               }
-
-               parse( buffer.selector() + size_size, value);
-
-               buffer.pick( total);
-
-               return CASUAL_ORDER_SUCCESS;
-
-            }
 
             int get( const char* const handle, const char*& value)
             {
@@ -478,6 +467,34 @@ namespace casual
                return CASUAL_ORDER_SUCCESS;
 
             }
+
+            int get( const char* const handle, const char*& value, size_type& count)
+            {
+               Buffer buffer = find_buffer( handle);
+
+               if( !buffer)
+               {
+                  return CASUAL_ORDER_INVALID_BUFFER;
+               }
+
+               // We start by reading the size (unconditionally)
+               parse( buffer.selector(), count);
+
+               const auto total = buffer.pick() + size_size + count;
+
+               if( total > buffer.used())
+               {
+                  return CASUAL_ORDER_NO_PLACE;
+               }
+
+               parse( buffer.selector() + size_size, value);
+
+               buffer.pick( total);
+
+               return CASUAL_ORDER_SUCCESS;
+
+            }
+
 
          } //
 
