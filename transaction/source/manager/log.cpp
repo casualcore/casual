@@ -69,6 +69,7 @@ namespace casual
       Log::Log( const std::string& database)
             : m_connection( database)
       {
+         //m_connection.execute( "PRAGMA journal_mode = WAL;");
 
          m_connection.execute(
             R"( CREATE TABLE IF NOT EXISTS trans (
