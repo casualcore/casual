@@ -78,6 +78,18 @@ value:
 )";
          }
 
+         static std::string xml()
+         {
+            return R"(<?xml version="1.0"?>
+<value>
+   <m_long>234</m_long>
+   <m_string>bla bla bla bla</m_string>
+   <m_short>23</m_short>
+   <m_longlong>1234567890123456789</m_longlong>
+   <m_time>1234567890</m_time>
+</value>
+)";
+         }
 
 
 

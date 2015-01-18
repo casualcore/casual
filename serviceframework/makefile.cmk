@@ -10,6 +10,7 @@ IncludePaths([
     '../xatmi/include',
     '$(YAML_INCLUDE_PATH)',
     '$(JSON_INCLUDE_PATH)',
+    '$(XML_INCLUDE_PATH)',
 	'$(UNITTEST_INCLUDE_PATH)',
     ])
 	
@@ -18,6 +19,7 @@ LibraryPaths([
     '../xatmi/bin',
     '$(YAML_LIBRARY_PATH)',
     '$(JSON_LIBRARY_PATH)',
+    '$(XML_LIBRARY_PATH)',
     ])
 
 install_lib = []
@@ -39,7 +41,7 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         
         Compile( 'source/trace.cpp', 'obj/trace.o'),
     ],
-    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c'])
+    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c', 'pugixml'])
 
 install_lib.append( lib_sf)
 
@@ -55,13 +57,14 @@ LinkIsolatedUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/test_traits.cpp'),
         Compile( 'unittest/isolated/source/test_yaml_archive.cpp'),
         Compile( 'unittest/isolated/source/test_json_archive.cpp'),
+        Compile( 'unittest/isolated/source/test_xml_archive.cpp'),
         Compile( 'unittest/isolated/source/test_buffer.cpp'),
         Compile( 'unittest/isolated/source/test_service.cpp'),
         Compile( 'unittest/isolated/source/test_uuid.cpp'),
         Compile( 'unittest/isolated/source/test_xatmi_call.cpp'),
         Compile( 'unittest/isolated/source/test_vo.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'json-c', 'yaml-cpp'])
+	[ lib_sf, 'casual-xatmi', 'casual-common', 'json-c', 'yaml-cpp', 'pugixml'])
 
 #
 # Install

@@ -10,6 +10,11 @@ package { 'json':
 	name => 'libjson-c-dev',
 	ensure => installed
 }
+package { 'xml':
+	name => 'libpugixml-dev',
+	ensure => installed
+}
+
 package { 'sqlite3':
 	name => 'libsqlite3-dev',
 	ensure => installed
