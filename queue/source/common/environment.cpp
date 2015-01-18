@@ -10,6 +10,7 @@
 #include "common/environment.h"
 #include "common/internal/log.h"
 #include "common/exception.h"
+#include "common/process.h"
 
 
 
@@ -33,18 +34,34 @@ namespace casual
                   {
                      common::platform::queue_id_type initializeBrokerQueueId()
                      {
-                        std::ifstream file( path());
+                        std::ifstream file;
 
-                        if( ! file)
+                        //
+                        // Not sure if the queue-broker is up and running, we need try a few times
+                        // TODO: Should we implement some functionality in the real broker that can act like a
+                        // dispatch for queries like these? Not sure what we will use as a key in that case though...
+                        //
+
+                        auto sleep = std::chrono::milliseconds{ 2};
+
+                        while( sleep < std::chrono::seconds{ 10})
                         {
-                           common::log::internal::ipc << "failed to open queue-broker queue-key-file" << std::endl;
-                           throw common::exception::xatmi::SystemError( "failed to open queue-broker queue-key-file: " + path());
+                           file.open( path());
+
+                           if( file)
+                           {
+                              common::platform::queue_id_type id{ 0};
+                              file >> id;
+
+                              return id;
+                           }
+                           common::process::sleep( sleep);
+                           sleep *= 2;
                         }
 
-                        common::platform::queue_id_type id{ 0};
-                        file >> id;
 
-                        return id;
+                        common::log::internal::queue << "failed to open queue-broker queue-key-file" << std::endl;
+                        throw common::exception::xatmi::SystemError( "failed to open queue-broker queue-key-file: " + path());
                      }
                   }
                }

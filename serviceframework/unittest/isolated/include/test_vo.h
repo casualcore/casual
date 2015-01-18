@@ -87,13 +87,15 @@ value:
       {
          std::string m_string;
          std::vector< SimpleVO> m_values;
+         std::tuple< int, std::string, SimpleVO> m_tuple;
+
 
          template< typename A>
          void serialize( A& archive)
          {
             archive & CASUAL_MAKE_NVP( m_string);
             archive & CASUAL_MAKE_NVP( m_values);
-
+            archive & CASUAL_MAKE_NVP( m_tuple);
          }
       };
 

@@ -320,6 +320,8 @@ namespace sql
 
             m_handle = std::shared_ptr< sqlite3>( handle, sqlite3_close);
 
+            //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
+
          }
 
 

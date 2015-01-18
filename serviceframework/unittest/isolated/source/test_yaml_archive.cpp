@@ -12,6 +12,10 @@
 
 #include "sf/archive/yaml.h"
 #include "sf/exception.h"
+#include "sf/log.h"
+
+
+#include "common/algorithm.h"
 
 
 namespace casual
@@ -107,7 +111,7 @@ value:
       EXPECT_THROW(
       {
          reader >> CASUAL_MAKE_NVP( wrongRoleName);
-      }, sf::exception::Validation);
+      }, sf::exception::archive::invalid::Node);
 
    }
 
@@ -134,7 +138,7 @@ value:
 
       ASSERT_TRUE( values.size() == 7) << "size: " << values.size() << output.c_str();
       EXPECT_TRUE( values.at( 0) == 1);
-      EXPECT_TRUE( values.at( 1) == 2);
+      EXPECT_TRUE( values.at( 1) == 2) << "values: " << common::range::make( values);
       EXPECT_TRUE( values.at( 2) == 34) << "values.at( 2): " << values.at( 2);
       EXPECT_TRUE( values.at( 3) == 45);
       EXPECT_TRUE( values.at( 4) == 34);
@@ -186,14 +190,17 @@ value:
       }
 
 
+
       std::istringstream stream( output.c_str());
       sf::archive::yaml::relaxed::Reader reader( stream);
+
+      //std::cerr << "output:\n" << stream.str() << std::endl;
 
       std::map< long, test::Composite> values;
       reader >> CASUAL_MAKE_NVP( values);
 
 
-      ASSERT_TRUE( values.size() == 2) << output.c_str();
+      ASSERT_TRUE( values.size() == 2) << CASUAL_MAKE_NVP( values);
       EXPECT_TRUE( values.at( 10).m_string == "kalle");
       EXPECT_TRUE( values.at( 10).m_values.at( 0).m_short == 1);
       EXPECT_TRUE( values.at( 10).m_values.at( 0).m_string == "one");

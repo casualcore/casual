@@ -14,6 +14,9 @@
 #include "common/transaction/context.h"
 #include "common/server/handle.h"
 
+
+#include "tx.h"
+
 namespace casual
 {
    namespace queue
@@ -53,39 +56,47 @@ namespace casual
 
                bool perform( const Dispatch::Task& task)
                {
-                  common::transaction::Context::instance().begin();
-
-                  common::message::queue::dequeue::callback::Request request;
-                  request.process = common::process::handle();
-                  request.queue = task.queue.id;
-                  request.trid = common::transaction::Context::instance().current().trid;
-
-                  common::queue::blocking::Send send;
-                  auto correlation = send( task.process.queue, request);
-
-
-                  common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-                  common::message::queue::dequeue::Reply reply;
-                  receive( reply, correlation);
-
-                  if( reply.message.empty())
-                  {
-                     common::log::internal::queue << "message empty - rollback and wait for notification" << std::endl;
-                     common::transaction::Context::instance().rollback();
-                     return false;
-                  }
-
                   try
                   {
+                     if( tx_begin() != TX_OK)
+                     {
+                        return false;
+                     }
+
+
+                     TXINFO info;
+                     tx_info( &info);
+
+                     common::message::queue::dequeue::callback::Request request;
+                     request.process = common::process::handle();
+                     request.queue = task.queue.id;
+                     request.trid.xid = info.xid;
+
+                     common::queue::blocking::Send send;
+                     auto correlation = send( task.process.queue, request);
+
+
+                     common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
+                     common::message::queue::dequeue::Reply reply;
+                     receive( reply, correlation);
+
+                     if( reply.message.empty())
+                     {
+                        common::log::internal::queue << "message empty - rollback and wait for notification" << std::endl;
+                        common::transaction::Context::instance().rollback();
+                        return false;
+                     }
+
                      common::log::internal::queue << "message not empty - call dispatch" << std::endl;
 
                      task.dispatch( std::move( reply.message.front()));
-                     common::transaction::Context::instance().commit();
+
+                     tx_commit();
                   }
                   catch( ...)
                   {
                      common::error::handler();
-                     common::transaction::Context::instance().rollback();
+                     tx_rollback();
                   }
 
                   return true;

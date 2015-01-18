@@ -20,7 +20,7 @@ namespace casual
       {
          namespace binary
          {
-            namespace policy
+            namespace implementation
             {
                class Writer
                {
@@ -32,23 +32,21 @@ namespace casual
 
                   //! @{
                   //! No op
-                  void handle_start( const char* name) { /*no op*/}
-                  void handle_end( const char* name) {  /*no op*/}
-                  void handle_container_end() { /*no op*/}
-                  void handle_serialtype_start() {  /*no op*/}
-                  void handle_serialtype_end() { /*no op*/}
+                  void container_end( const char*) { /*no op*/}
+                  void serialtype_start( const char*) {  /*no op*/}
+                  void serialtype_end( const char*) { /*no op*/}
                   //! @}
 
 
-                  std::size_t handle_container_start( std::size_t size)
+                  std::size_t container_start( std::size_t size, const char*)
                   {
-                     write( size);
+                     write( size, nullptr);
                      return size;
                   }
 
 
                   template< typename T>
-                  void write( T&& value)
+                  void write( T&& value, const char*)
                   {
                      m_buffer << std::forward< T>( value);
                   }
@@ -67,33 +65,32 @@ namespace casual
 
                   //! @{
                   //! No op
-                  void handle_start( const char* name) { /*no op*/}
-                  void handle_end( const char* name) {  /*no op*/}
-                  void handle_container_end() { /*no op*/}
-                  void handle_serialtype_start() {  /*no op*/}
-                  void handle_serialtype_end() { /*no op*/}
+                  void container_end( const char*) { /*no op*/}
+                  void serialtype_end( const char*) { /*no op*/}
                   //! @}
 
+                  bool serialtype_start( const char*) { return true;}
 
-                  std::size_t handle_container_start( std::size_t size)
+                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char*)
                   {
-                     read( size);
-                     return size;
+                     read( size, nullptr);
+                     return std::make_tuple( size, true);
                   }
 
 
                   template< typename T>
-                  void read( T& value)
+                  bool read( T& value, const char*)
                   {
                      m_buffer >> value;
+                     return true;
                   }
                private:
                   buffer_type& m_buffer;
                };
             } // policy
 
-            typedef basic_reader< policy::Reader> Reader;
-            typedef basic_writer< policy::Writer> Writer;
+            typedef basic_reader< implementation::Reader, policy::Relaxed> Reader;
+            typedef basic_writer< implementation::Writer> Writer;
 
 
          } // binary

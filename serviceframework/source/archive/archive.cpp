@@ -20,34 +20,25 @@ namespace casual
 
          }
 
-         void Base::handleStart( const char* name)
+
+         std::size_t Base::containerStart( std::size_t size, const char* name)
          {
-            handle_start( name);
+            return container_start( size, name);
          }
 
-         void Base::handleEnd( const char* name)
+         void Base::containerEnd( const char* name)
          {
-            handle_end( name);
+            container_end( name);
          }
 
-         std::size_t Base::handleContainerStart( std::size_t size)
+         void Base::serialtypeStart( const char* name)
          {
-            return handle_container_start( size);
+            serialtype_start( name);
          }
 
-         void Base::handleContainerEnd()
+         void Base::serialtypeEnd( const char* name)
          {
-            handle_container_end();
-         }
-
-         void Base::handleSerialtypeStart()
-         {
-            handle_serialtype_start();
-         }
-
-         void Base::handleSerialtypeEnd()
-         {
-            handle_serialtype_end();
+            serialtype_end( name);
          }
 
 
@@ -62,65 +53,65 @@ namespace casual
 
          }
 
-         void Reader::read( bool& value)
+         void Reader::read( bool& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( char& value)
+         void Reader::read( char& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( short& value)
+         void Reader::read( short& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( int& value)
+         void Reader::read( int& value, const char* name)
          {
             long temp;
-            readPOD( temp);
+            pod( temp, name);
             value = temp;
          }
 
          //void read (const unsigned int& value);
 
-         void Reader::read( long& value)
+         void Reader::read( long& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( long long& value)
+         void Reader::read( long long& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read (unsigned long& value)
+         void Reader::read (unsigned long& value, const char* name)
          {
             long temp;
-            readPOD( temp);
+            pod( temp, name);
             value = temp;
          }
 
-         void Reader::read( float& value)
+         void Reader::read( float& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( double& value)
+         void Reader::read( double& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( std::string& value)
+         void Reader::read( std::string& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
-         void Reader::read( platform::binary_type& value)
+         void Reader::read( platform::binary_type& value, const char* name)
          {
-            readPOD( value);
+            pod( value, name);
          }
 
 
@@ -135,61 +126,61 @@ namespace casual
 
          }
 
-         void Writer::write( const bool value)
+         void Writer::write( const bool value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const char value)
+         void Writer::write( const char value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const short value)
+         void Writer::write( const short value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const int value)
+         void Writer::write( const int value, const char* name)
          {
-            writePOD( static_cast< long>( value));
+            pod( static_cast< long>( value), name);
          }
 
          //void write (const unsigned int& value);
 
-         void Writer::write( const long value)
+         void Writer::write( const long value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const long long value)
+         void Writer::write( const long long value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write (const unsigned long value)
+         void Writer::write (const unsigned long value, const char* name)
          {
-            writePOD( static_cast< long>( value));
+            pod( static_cast< long>( value), name);
          }
 
-         void Writer::write( const float value)
+         void Writer::write( const float value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const double value)
+         void Writer::write( const double value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const std::string& value)
+         void Writer::write( const std::string& value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
-         void Writer::write( const platform::binary_type& value)
+         void Writer::write( const platform::binary_type& value, const char* name)
          {
-            writePOD( value);
+            pod( value, name);
          }
 
 

@@ -36,31 +36,27 @@ namespace casual
 
                ~Implementation();
 
-               void handle_start( const char* const name);
+               std::size_t container_start( const std::size_t size, const char* name);
+               void container_end( const char*);
 
-               void handle_end( const char* const name);
-
-               std::size_t handle_container_start( const std::size_t size);
-
-               void handle_container_end();
-
-               void handle_serialtype_start();
-
-               void handle_serialtype_end();
+               void serialtype_start( const char* name);
+               void serialtype_end( const char*);
 
                template<typename T>
-               void write( const T& value)
+               void write( const T& value, const char* name)
                {
-                  write( std::to_string( value));
+                  write( std::to_string( value), name);
                }
 
-               void write( std::string&& value);
-               void write( const std::string& value);
-               void write( const std::wstring& value);
-               void write( const platform::binary_type& value);
+               void write( std::string&& value, const char* name);
+               void write( const std::string& value, const char* name);
+               void write( const std::wstring& value, const char* name);
+               void write( const platform::binary_type& value, const char* name);
 
 
             private:
+
+               void add( const char* name);
 
                void flush();
 

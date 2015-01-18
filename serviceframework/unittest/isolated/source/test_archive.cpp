@@ -181,6 +181,10 @@ namespace casual
          test::Composite value;
          value.m_string = "test";
          value.m_values = { 1, 2, 3, 4};
+         std::get< 0>( value.m_tuple) = 10;
+         std::get< 1>( value.m_tuple) = "poop";
+         std::get< 2>( value.m_tuple).m_short = 42;
+
 
          std::vector< test::Composite> range{ value, value, value, value};
 
@@ -201,6 +205,8 @@ namespace casual
          EXPECT_TRUE( range.at( 0).m_values.at( 1).m_long == 2);
          EXPECT_TRUE( range.at( 0).m_values.at( 2).m_long == 3);
          EXPECT_TRUE( range.at( 0).m_values.at( 3).m_long == 4);
+         EXPECT_TRUE( std::get< 2>( range.at( 0).m_tuple).m_short == 42);
+         EXPECT_TRUE( std::get< 2>( range.at( 3).m_tuple).m_short == 42);
       }
 
    }

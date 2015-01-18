@@ -7,14 +7,17 @@ IncludePaths( ['include',
     '../configuration/include',
     '../serviceframework/include',
     '../thirdparty/database/include',
-    '$(UNITTEST_INCLUDE_PATH)'])
+    '$(UNITTEST_INCLUDE_PATH)',
+    '/opt/local/include'
+    ])
 
 LibraryPaths( ['bin',
     '../common/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../serviceframework/bin',
-    '../xatmi/bin'])
+    '../xatmi/bin',
+    '/opt/local/lib'])
 
 #    $(IBM_DB_LIB)
 

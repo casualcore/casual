@@ -75,6 +75,23 @@ namespace casual
 
          } // memory
 
+         namespace archive
+         {
+            namespace invalid
+            {
+               struct Document : Base
+               {
+                  using Base::Base;
+               };
+
+               struct Node : Base
+               {
+                  using Base::Base;
+               };
+
+            } // invalid
+         } // archive
+
          namespace xatmi
          {
             struct Timeout : Base

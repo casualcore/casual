@@ -47,21 +47,19 @@ namespace casual
                   Implementation( Implementation&&);
                   ~Implementation();
 
-                  void handle_start( const char* const name);
-                  void handle_end( const char* const name);
-                  std::size_t handle_container_start( const std::size_t size);
-                  void handle_container_end();
-                  void handle_serialtype_start();
-                  void handle_serialtype_end();
+                  std::size_t container_start( const std::size_t size, const char* name);
+                  void container_end( const char* name);
+                  void serialtype_start( const char* name);
+                  void serialtype_end( const char* name);
 
                   template<typename T>
-                  void write( const T& value)
+                  void write( const T& value, const char*)
                   {
                      handleState();
                      m_output << value;
                   }
 
-                  void write( const platform::binary_type& value);
+                  void write( const platform::binary_type& value, const char*);
 
                private:
 
@@ -124,17 +122,15 @@ namespace casual
                Implementation( Implementation&&);
                ~Implementation();
 
-               void handle_start( const char* const name);
-               void handle_end( const char* const name);
-               std::size_t handle_container_start( const std::size_t size);
-               void handle_container_end();
-               void handle_serialtype_start();
-               void handle_serialtype_end();
+               std::size_t container_start( const std::size_t size, const char* name);
+               void container_end( const char* name);
+               void serialtype_start( const char* name);
+               void serialtype_end( const char* name);
 
                template<typename T>
-               void write( const T& value)
+               void write( const T& value, const char* name)
                {
-                  handleState();
+                  handleState( name);
 
                   write_value( value);
                   ++m_current;
@@ -143,7 +139,7 @@ namespace casual
 
             private:
 
-               void handleState();
+               void handleState( const char* name);
 
                template<typename T>
                std::string to_string( const T& value)
@@ -181,7 +177,6 @@ namespace casual
                void finilize();
 
 
-               const char* m_name = nullptr;
                std::ostream& m_output;
                bool m_header;
                bool m_colors;

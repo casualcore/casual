@@ -47,14 +47,14 @@ namespace casual
          class Reader;
          class Writer;
 
-         void serialize( Reader& archive, const char* name, platform::Uuid& value);
+         void serialize( Reader& archive, platform::Uuid& value, const char* name);
 
-         void serialize( Writer& archive, const char* name, const platform::Uuid& value);
+         void serialize( Writer& archive, const platform::Uuid& value, const char* name);
 
 
-         void serialize( Reader& archive, const char* name, platform::time_type& value);
+         void serialize( Reader& archive, platform::time_type& value, const char* name);
 
-         void serialize( Writer& archive, const char* name, const platform::time_type& value);
+         void serialize( Writer& archive, const platform::time_type& value, const char* name);
 
       } // archive
    } // sf

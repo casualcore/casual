@@ -32,17 +32,11 @@ namespace casual
                flush();
             }
 
-            void Implementation::handle_start( const char* const name)
-            {
-               m_buffer.emplace_back( m_indent, name);
-            }
 
-            void Implementation::handle_end( const char* const name)
+            std::size_t Implementation::container_start( const std::size_t size, const char* name)
             {
-            }
+               add( name);
 
-            std::size_t Implementation::handle_container_start( const std::size_t size)
-            {
                ++m_indent;
 
                m_buffer.back().type = Type::container;
@@ -51,44 +45,58 @@ namespace casual
                return size;
             }
 
-            void Implementation::handle_container_end()
+            void Implementation::container_end( const char*)
             {
                --m_indent;
                flush();
             }
 
-            void Implementation::handle_serialtype_start()
+            void Implementation::serialtype_start( const char* name)
             {
+               add( name);
                ++m_indent;
                m_buffer.back().type = Type::composite;
                flush();
             }
 
-            void Implementation::handle_serialtype_end()
+            void Implementation::serialtype_end( const char*)
             {
                --m_indent;
                flush();
             }
 
 
-            void Implementation::write( std::string&& value)
+            void Implementation::write( std::string&& value, const char* name)
             {
+               add( name);
                m_buffer.back().value = std::move( value);
             }
 
-            void Implementation::write( const std::string& value)
+            void Implementation::write( const std::string& value, const char* name)
             {
+               add( name);
                m_buffer.back().value = value;
             }
 
-            void Implementation::write( const std::wstring& value)
+            void Implementation::write( const std::wstring& value, const char* name)
             {
+               add( name);
                m_buffer.back().value = "wide string (" + std::to_string( value.size()) + ")";
             }
 
-            void Implementation::write( const platform::binary_type& value)
+            void Implementation::write( const platform::binary_type& value, const char* name)
             {
+               add( name);
                m_buffer.back().value = common::transcode::base64::encode( value);
+            }
+
+            void Implementation::add( const char* name)
+            {
+               if( ! name)
+               {
+                  name = "element";
+               }
+               m_buffer.emplace_back( m_indent, name);
             }
 
             void Implementation::flush()

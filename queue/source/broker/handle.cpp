@@ -145,6 +145,14 @@ namespace casual
                         common::log::error << "multiple instances of queue: " << queue.name << " - action: keeping the first one" << std::endl;
                      }
                   }
+
+                  auto found = common::range::find( m_state.groups, message.process);
+
+                  if( found)
+                  {
+                     found->connected = true;
+                  }
+
                }
             } // connect
 
