@@ -39,33 +39,30 @@ namespace casual
                   m_output.flush();
                }
 
-               void Implementation::handle_start( const char* const name) { /* no-op */;}
 
-               void Implementation::handle_end( const char* const name) { /* no-op */;}
-
-               std::size_t Implementation::handle_container_start( const std::size_t size)
+               std::size_t Implementation::container_start( const std::size_t size, const char* name)
                {
                   ++m_depth;
                   return size;
                }
 
-               void Implementation::handle_container_end()
+               void Implementation::container_end( const char* name)
                {
                   decrement();
                }
 
-               void Implementation::handle_serialtype_start()
+               void Implementation::serialtype_start( const char* name)
                {
                   ++m_depth;
                }
 
-               void Implementation::handle_serialtype_end()
+               void Implementation::serialtype_end( const char* name)
                {
                   decrement();
                }
 
 
-               void Implementation::write( const platform::binary_type& value)
+               void Implementation::write( const platform::binary_type& value, const char*)
                {
                   m_output << common::transcode::base64::encode( value);
                }
@@ -131,17 +128,15 @@ namespace casual
 
             Implementation::~Implementation() { m_output.flush();}
 
-            void Implementation::handle_start( const char* const name) { m_name = name; ++m_depth;}
 
-            void Implementation::handle_end( const char* const name) { decrement();}
-            std::size_t Implementation::handle_container_start( const std::size_t size) { return size;}
-            void Implementation::handle_container_end() { /* no-op */;}
-            void Implementation::handle_serialtype_start() { /* no-op */;}
-            void Implementation::handle_serialtype_end() { /* no-op */;}
+            std::size_t Implementation::container_start( const std::size_t size, const char* name) { return size;}
+            void Implementation::container_end( const char* name) { /* no-op */;}
+            void Implementation::serialtype_start( const char* name) { /* no-op */;}
+            void Implementation::serialtype_end( const char* name) { /* no-op */;}
 
 
 
-            void Implementation::handleState()
+            void Implementation::handleState( const char* name)
             {
                switch( m_state)
                {
@@ -150,7 +145,7 @@ namespace casual
                      m_rows.push_back( {});
                      m_state = State::first;
                   case State::first:
-                     m_columns.emplace_back( m_name);
+                     m_columns.emplace_back( name);
                      m_current = std::end( m_columns) - 1;
 
                      break;
@@ -288,8 +283,6 @@ namespace casual
 
                   m_output << std::endl;
                }
-
-               m_name = nullptr;
                m_depth = 0;
                m_row_start_depth = 0;
                m_state = State::initializing;

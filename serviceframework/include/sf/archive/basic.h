@@ -9,6 +9,7 @@
 #define CASUAL_BASIC_WRITER_H_
 
 #include "sf/archive/archive.h"
+#include "sf/exception.h"
 
 #include <utility>
 
@@ -19,19 +20,44 @@ namespace casual
       namespace archive
       {
 
-         template< typename I>
+         namespace policy
+         {
+            struct Strict
+            {
+               inline static constexpr bool check() { return true;}
+               inline static void apply( bool exist, const char* role)
+               {
+                  if( ! exist)
+                  {
+                     throw exception::archive::invalid::Node{ "archive - failed to find role '" + std::string{ role} + "' in document"};
+                  }
+               }
+            };
+
+            struct Relaxed
+            {
+               inline static constexpr bool check() { return false;}
+               inline static void apply( bool exist, const char* role) {}
+            };
+
+         } // policy
+
+
+         template< typename I, typename P>
          class basic_reader : public Reader
          {
 
          public:
 
-            typedef I implementation_type;
+            using implementation_type = I;
+            using policy_type = P;
+
 
 
 
             template< typename... Arguments>
             basic_reader( Arguments&&... arguments)
-             : m_readerImplementation( std::forward< Arguments>( arguments)...)
+             : m_implementation( std::forward< Arguments>( arguments)...)
                {
 
                }
@@ -40,158 +66,56 @@ namespace casual
 
             const implementation_type& implemenation() const
             {
-               return m_readerImplementation;
+               return m_implementation;
             }
 
 
          private:
 
 
-            void handle_start( const char* name) { m_readerImplementation.handle_start( name);}
+            std::size_t container_start( std::size_t size, const char* name)
+            {
+               auto result = m_implementation.container_start( size, name);
+               policy_type::apply( std::get< 1>( result), name);
+               return std::get< 0>( result);
+            }
 
-            void handle_end( const char* name) { m_readerImplementation.handle_end( name); }
+            void container_end( const char* name)
+            {
+               m_implementation.container_end( name);
+            }
 
-            std::size_t handle_container_start( std::size_t size) { return m_readerImplementation.handle_container_start( size); }
-
-            void handle_container_end() {m_readerImplementation.handle_container_end();}
-
-            void handle_serialtype_start() { m_readerImplementation.handle_serialtype_start();}
-
-            void handle_serialtype_end() {m_readerImplementation.handle_serialtype_end();}
+            void serialtype_start( const char* name)
+            {
+               policy_type::apply( m_implementation.serialtype_start( name), name);
+            }
 
 
+            void serialtype_end( const char* name)
+            {
+               m_implementation.serialtype_end( name);
+            }
 
-            void readPOD( bool& value) { m_readerImplementation.read( value);}
 
-            void readPOD( char& value) { m_readerImplementation.read( value);}
 
-            void readPOD( short& value) { m_readerImplementation.read( value);}
+            template< typename T>
+            void handle_pod( T& value, const char* name)
+            {
+               policy_type::apply( m_implementation.read( value, name), name);
+            }
 
-            void readPOD( long& value) { m_readerImplementation.read( value);}
+            void pod( bool& value, const char* name) { handle_pod( value, name);}
+            void pod( char& value, const char* name) { handle_pod( value, name);}
+            void pod( short& value, const char* name) { handle_pod( value, name);}
+            void pod( long& value, const char* name) { handle_pod( value, name);}
+            void pod( long long& value, const char* name) { handle_pod( value, name);}
+            void pod( float& value, const char* name) { handle_pod( value, name);}
+            void pod( double& value, const char* name) { handle_pod( value, name);}
+            void pod( std::string& value, const char* name) { handle_pod( value, name);}
+            void pod( platform::binary_type& value, const char* name) { handle_pod( value, name);}
 
-            void readPOD( long long& value) { m_readerImplementation.read( value);}
-
-            void readPOD( float& value) { m_readerImplementation.read( value);}
-
-            void readPOD ( double& value) { m_readerImplementation.read( value);}
-
-            void readPOD ( std::string& value) { m_readerImplementation.read( value);}
-
-            void readPOD( platform::binary_type& value) { m_readerImplementation.read( value);}
-
-            implementation_type m_readerImplementation;
+            implementation_type m_implementation;
          };
-
-
-         template< typename I, typename RP>
-         class basic_reader_node : public Reader
-         {
-
-         public:
-
-            typedef I implementation_type;
-            typedef RP relaxed_policy;
-
-            template< typename... Arguments>
-            basic_reader_node( Arguments&&... arguments)
-             : m_readerImplementation( std::forward< Arguments>( arguments)...)
-               {
-
-               }
-
-            basic_reader_node( basic_reader_node&&) = default;
-
-         private:
-
-
-            void handle_start( const char* name) { m_name = name; m_readerImplementation.handle_start( name);}
-
-            void handle_end( const char* name) { m_readerImplementation.handle_end( name); }
-
-            std::size_t handle_container_start( std::size_t size)
-            {
-               if( m_ignoreScope == 0)
-               {
-                  if( m_readerImplementation.has_node( m_name))
-                  {
-                     return m_readerImplementation.handle_container_start( size);
-                  }
-
-                  //
-                  // Throws or not. name is to provide better messages
-                  //
-                  m_policy.apply( m_name);
-               }
-               ++m_ignoreScope;
-               return 0;
-            }
-
-            void handle_container_end()
-            {
-               if( m_ignoreScope == 0)
-                  m_readerImplementation.handle_container_end();
-               else
-                  --m_ignoreScope;
-            }
-
-            void handle_serialtype_start()
-            {
-               if( m_ignoreScope == 0)
-               {
-                  if( m_readerImplementation.has_node( m_name))
-                  {
-                     m_readerImplementation.handle_serialtype_start();
-                  }
-                  else
-                  {
-
-                     //
-                     // Throws or not. name is to provide better messages
-                     //
-                     m_policy.apply( m_name);
-                     ++m_ignoreScope;
-                  }
-               }
-               else
-               {
-                  ++m_ignoreScope;
-               }
-            }
-
-            void handle_serialtype_end()
-            {
-               if( m_ignoreScope == 0)
-                  m_readerImplementation.handle_serialtype_end();
-               else
-                  --m_ignoreScope;
-            }
-
-            void readPOD( bool& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD( char& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD( short& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD( long& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD( long long& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD( float& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD ( double& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD ( std::string& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            void readPOD( platform::binary_type& value) { if( m_ignoreScope == 0) if( ! m_readerImplementation.read( value)) m_policy.apply( m_name);}
-
-            implementation_type m_readerImplementation;
-            relaxed_policy m_policy;
-            const char* m_name = nullptr;
-            std::size_t m_ignoreScope = 0;
-
-         };
-
-
 
 
          template< typename I>
@@ -200,11 +124,11 @@ namespace casual
 
          public:
 
-            typedef I implementation_type;
+            using implementation_type = I;
 
             template< typename... Arguments>
             basic_writer( Arguments&&... arguments)
-             : m_writerImplementation( std::forward< Arguments>( arguments)...)
+             : m_implementation( std::forward< Arguments>( arguments)...)
                {
 
                }
@@ -213,44 +137,49 @@ namespace casual
 
             const implementation_type& implementation() const
             {
-               return m_writerImplementation;
+               return m_implementation;
             }
 
          private:
 
-            void handle_start( const char* name) { m_writerImplementation.handle_start( name); }
+            std::size_t container_start( std::size_t size, const char* name)
+            {
+               return m_implementation.container_start( size, name);
+            }
 
-            void handle_end( const char* name) { m_writerImplementation.handle_end( name); }
+            void container_end( const char* name)
+            {
+               m_implementation.container_end( name);
+            }
 
-            std::size_t handle_container_start( std::size_t size) { return m_writerImplementation.handle_container_start( size); }
+            void serialtype_start( const char* name)
+            {
+               m_implementation.serialtype_start( name);
+            }
 
-            void handle_container_end() { m_writerImplementation.handle_container_end();}
-
-            void handle_serialtype_start() { m_writerImplementation.handle_serialtype_start();}
-
-            void handle_serialtype_end() { m_writerImplementation.handle_serialtype_end();}
-
+            void serialtype_end( const char* name)
+            {
+               m_implementation.serialtype_end( name);
+            }
 
 
-            void writePOD (const bool value) { m_writerImplementation.write( value);}
+            template< typename T>
+            void handle_pod( const T& value, const char* name)
+            {
+               m_implementation.write( value, name);
+            }
 
-            void writePOD (const char value) { m_writerImplementation.write( value);}
+            void pod( const bool value, const char* name) { handle_pod( value, name);}
+            void pod( const char value, const char* name) { handle_pod( value, name);}
+            void pod( const short value, const char* name) { handle_pod( value, name);}
+            void pod( const long value, const char* name) { handle_pod( value, name);}
+            void pod( const long long value, const char* name) { handle_pod( value, name);}
+            void pod( const float value, const char* name) { handle_pod( value, name);}
+            void pod( const double value, const char* name) { handle_pod( value, name);}
+            void pod( const std::string& value, const char* name) { handle_pod( value, name);}
+            void pod( const platform::binary_type& value, const char* name) { handle_pod( value, name);}
 
-            void writePOD (const short value) { m_writerImplementation.write( value);}
-
-            void writePOD (const long value) { m_writerImplementation.write( value);}
-
-            void writePOD( const long long value) { m_writerImplementation.write( value);}
-
-            void writePOD (const float value) { m_writerImplementation.write( value);}
-
-            void writePOD (const double value) { m_writerImplementation.write( value);}
-
-            void writePOD (const std::string& value) { m_writerImplementation.write( value);}
-
-            void writePOD (const platform::binary_type& value) { m_writerImplementation.write( value);}
-
-            implementation_type m_writerImplementation;
+            implementation_type m_implementation;
 
          };
 
