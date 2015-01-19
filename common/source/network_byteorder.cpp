@@ -165,6 +165,16 @@ namespace casual
             return BE64TOH( value);
          }
 
+         uint64_t byteorder< long long>::encode( const long long value) noexcept
+         {
+            return HTOBE64( value);
+         }
+         long long byteorder< long long>::decode( const uint64_t value) noexcept
+         {
+            return BE64TOH( value);
+         }
+
+
          //
          // we assume IEEE 754 and that float is 32 bits
          //

@@ -62,6 +62,15 @@ namespace casual
          };
 
          template< >
+         struct byteorder< long long>
+         {
+            static uint64_t encode( long long value) noexcept;
+            static long long decode( uint64_t value) noexcept;
+         };
+
+
+
+         template< >
          struct byteorder< float>
          {
             static uint32_t encode( float value) noexcept;
