@@ -148,6 +148,17 @@ TEST( casual_order_buffer, detect_out_of_place)
    tpfree( buffer);
 }
 
+TEST( casual_order_buffer, add_binary_data_with_negative_size__expecting_invalid_argument)
+{
+   auto buffer = tpalloc( CASUAL_ORDER, "", 0);
+   ASSERT_TRUE( buffer != nullptr);
+
+   EXPECT_TRUE( CasualOrderAddBinary( buffer, "some data", -123) == CASUAL_ORDER_INVALID_ARGUMENT);
+
+   tpfree( buffer);
+}
+
+
 
 TEST( casual_order_buffer, copy_buffer__expecting_success)
 {

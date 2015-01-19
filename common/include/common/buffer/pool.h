@@ -43,8 +43,8 @@ namespace casual
                {
                   virtual ~Base() = default;
 
-                  virtual platform::raw_buffer_type allocate( const Type& type, std::size_t size) = 0;
-                  virtual platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, std::size_t size) = 0;
+                  virtual platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size) = 0;
+                  virtual platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size) = 0;
 
 
                   virtual bool manage( platform::const_raw_buffer_type handle) = 0;
@@ -82,11 +82,11 @@ namespace casual
 
                private:
 
-                  platform::raw_buffer_type allocate( const Type& type, std::size_t size) override
+                  platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size) override
                   {
                      return m_pool.allocate( type, size);
                   }
-                  platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, std::size_t size) override
+                  platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size) override
                   {
                      return m_pool.reallocate( handle, size);
                   }
@@ -189,9 +189,9 @@ namespace casual
                   return singleton;
                }
 
-               platform::raw_buffer_type allocate( const Type& type, std::size_t size);
+               platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size);
 
-               platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, std::size_t size);
+               platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size);
 
                const Type& type( platform::const_raw_buffer_type handle);
 
@@ -216,13 +216,13 @@ namespace casual
 
                using types_type = std::vector< Type>;
 
-               platform::raw_buffer_type allocate( const Type& type, std::size_t size)
+               platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, size);
                   return m_pool.back().payload.memory.data();
                }
 
-               platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, std::size_t size)
+               platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size)
                {
                   auto buffer = find( handle);
 

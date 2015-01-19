@@ -16,6 +16,10 @@
 // size_t
 #include <cstddef>
 
+// uint64_t
+#include <cstdint>
+
+
 //uuid
 #include <uuid/uuid.h>
 
@@ -54,6 +58,13 @@ namespace casual
 		   //
 		   // Some sizes
 		   //
+
+
+         //!
+         //! The common type used to represent sizes (especially in buffers)
+         //!
+		   typedef uint64_t binary_size_type;
+
 
 
 		   //!

@@ -9,6 +9,7 @@
 
 #include "common/buffer/pool.h"
 #include "common/network_byteorder.h"
+#include "common/platform.h"
 
 #include "common/log.h"
 
@@ -50,16 +51,20 @@ namespace casual
           * The inserted-parameter is offset to where data was inserted
           * The selected-parameter is offset to where data was consumed
           *
+          * The size, inserted, selected types are network-uint64_t
+          *
           * String is stored with null-termination
           *
-          * Binary is stored with a size and then it's data
+          * Binary is stored with a size (network-long) and then it's data
+          *
           */
 
          namespace
          {
             typedef common::platform::const_raw_buffer_type const_data_type;
             typedef common::platform::raw_buffer_type data_type;
-            typedef common::platform::raw_buffer_size size_type;
+
+            typedef common::platform::binary_size_type size_type;
 
             // A thing to make stuff less bloaty ... not so good though
             constexpr auto size_size = common::network::bytes<size_type>();
@@ -188,7 +193,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const std::size_t size)
+               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
                {
                   constexpr auto header = Buffer::header();
 
@@ -206,7 +211,7 @@ namespace casual
                   return data;
                }
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const std::size_t size)
+               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
 
@@ -287,8 +292,8 @@ namespace casual
 
                if( buffer)
                {
-                  if( size) *size = buffer.size();
-                  if( used) *used = buffer.used();
+                  if( size) *size = static_cast<long>(buffer.size());
+                  if( used) *used = static_cast<long>(buffer.used());
                }
                else
                {
@@ -389,7 +394,7 @@ namespace casual
                return CASUAL_ORDER_SUCCESS;
             }
 
-            int add( const char* const handle, const char* const value, const size_type count)
+            int add( const char* const handle, const char* const value, const long count)
             {
                Buffer buffer = find_buffer( handle);
 
@@ -468,7 +473,7 @@ namespace casual
 
             }
 
-            int get( const char* const handle, const char*& value, size_type& count)
+            int get( const char* const handle, const char*& value, long& count)
             {
                Buffer buffer = find_buffer( handle);
 
@@ -577,6 +582,11 @@ int CasualOrderAddString( char* const buffer, const char* const value)
 
 int CasualOrderAddBinary( char* const buffer, const char* const data, const long size)
 {
+   if( size < 0)
+   {
+      return CASUAL_ORDER_INVALID_ARGUMENT;
+   }
+
    return casual::buffer::order::add( buffer, data, size);
 }
 

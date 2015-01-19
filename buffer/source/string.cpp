@@ -35,7 +35,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const std::size_t size)
+               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, size > 0 ? size : 1);
 
@@ -44,7 +44,7 @@ namespace casual
                   return m_pool.back().payload.memory.data();
                }
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const std::size_t size)
+               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
 
@@ -86,8 +86,8 @@ namespace casual
          namespace
          {
             typedef common::platform::raw_buffer_type data_type;
-            typedef common::platform::raw_buffer_size size_type;
-
+            //typedef common::platform::raw_buffer_size size_type;
+            typedef common::platform::binary_size_type size_type;
 
             class Buffer
             {
@@ -186,8 +186,8 @@ int CasualStringExploreBuffer( const char* const handle, long* const size, long*
       const auto reserved = buffer.size();
       const auto utilized = std::strlen( buffer.data()) + 1;
 
-      if( size) *size = reserved;
-      if( used) *used = utilized;
+      if( size) *size = static_cast<long>(reserved);
+      if( used) *used = static_cast<long>(utilized);
 
       if( utilized > reserved)
       {

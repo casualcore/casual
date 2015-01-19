@@ -11,6 +11,7 @@
 #include "common/network_byteorder.h"
 #include "common/buffer/pool.h"
 #include "common/log.h"
+#include "common/platform.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/maker.h"
@@ -54,6 +55,9 @@ namespace casual
           *
           * The values layout is |id|size|data...|
           *
+          * The size and used types are network-uint64_t
+          * The id type is network-long
+          *
           * Some things that might be explained that perhaps is not so obvious
           * with FML32; The type (FLD_SHORT/CASUAL_FIELD_SHORT etc) can be
           * deduced from the id, i.e. every id for 'short' must be between 0x0
@@ -83,7 +87,8 @@ namespace casual
          {
             typedef common::platform::const_raw_buffer_type const_data_type;
             typedef common::platform::raw_buffer_type data_type;
-            typedef common::platform::raw_buffer_size size_type;
+
+            typedef common::platform::binary_size_type size_type;
 
             // A thing to make stuff less bloaty ... not so good though
             constexpr auto size_size = common::network::bytes<size_type>();
@@ -129,7 +134,7 @@ namespace casual
             {
             public:
 
-               template<typename type, size_type offset>
+               template<typename type, std::size_t offset>
                class Data
                {
                public:
@@ -153,7 +158,9 @@ namespace casual
                   }
 
                private:
+
                   data_type m_where;
+
                };
 
                class Value
@@ -235,7 +242,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const std::size_t size)
+               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
                {
                   constexpr auto header = Buffer::header();
 
@@ -252,7 +259,7 @@ namespace casual
                   return data;
                }
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const std::size_t size)
+               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
 
@@ -465,16 +472,16 @@ namespace casual
             int add( const char* const handle, const long id, const int type, const T data)
             {
                const auto encoded = common::network::byteorder<T>::encode( data);
-               return add( handle, id, type, reinterpret_cast<const char*>( &encoded), sizeof encoded);
+               return add( handle, id, type, reinterpret_cast<const char*>( &encoded), sizeof (encoded));
             }
 
             int get( const char* const handle, const long id, long index, const int type, const char** data, long* size)
             {
+
                if( const auto result = validate_id( id, type))
                {
                   return result;
                }
-
 
                Buffer buffer = find_buffer( handle);
 
@@ -721,6 +728,11 @@ int CasualFieldAddString( char* const buffer, const long id, const char* const v
 
 int CasualFieldAddBinary( char* const buffer, const long id, const char* const value, const long count)
 {
+   if( count < 0)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
    return casual::buffer::field::add( buffer, id, CASUAL_FIELD_BINARY, value, count);
 }
 
