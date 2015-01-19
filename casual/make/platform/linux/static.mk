@@ -49,9 +49,9 @@ ifdef DEBUG
    endif
 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++11
-   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic
-   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic 
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++11 -Wall -pedantic
+   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic -Wall -pedantic
+   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic -Wall -pedantic
    LINK_DIRECTIVES_ARCHIVE = 
 endif
 
