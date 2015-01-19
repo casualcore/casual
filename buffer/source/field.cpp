@@ -89,9 +89,11 @@ namespace casual
             typedef common::platform::raw_buffer_type data_type;
 
             typedef common::platform::binary_size_type size_type;
+            typedef long id_type;
 
             // A thing to make stuff less bloaty ... not so good though
             constexpr auto size_size = common::network::bytes<size_type>();
+            constexpr auto id_size = common::network::bytes<id_type>();
 
 
             //! Transform a value in place from network to host
@@ -174,13 +176,18 @@ namespace casual
                   {}
 
 
+                  //
                   // TODO: Make this more generic
+                  //
                   static constexpr size_type header()
-                  {return size_size + size_size;}
+                  {return id_size + size_size;}
 
-                  Data<size_type, size_size * 0> id;
-                  Data<size_type, size_size * 1> size;
-                  Data<data_type, size_size * 2> data;
+                  //
+                  // TODO: Make this more generic
+                  //
+                  Data<id_type, 0> id;
+                  Data<size_type, id_size> size;
+                  Data<data_type, id_size + size_size> data;
 
                   bool operator == ( const Value& other) const
                   {return this->data() == other.data();}
@@ -202,14 +209,20 @@ namespace casual
                   data( buffer)
                {}
 
-               // TODO: Can we make this more generic ?
+               //
+               // TODO: Make this more generic
+               //
+               static constexpr size_type header()
+               {return size_size + size_size;}
+
+               //
+               // TODO: Make this more generic
+               //
+
                Data<size_type, size_size * 0> size;
                Data<size_type, size_size * 1> used;
                Data<data_type, size_size * 2> data;
 
-               // TODO: Make this more generic
-               static constexpr size_type header()
-               {return size_size + size_size;}
 
                //! @return Whether this buffer is valid or not
                explicit operator bool () const
