@@ -13,15 +13,16 @@
 #include <locale>
 #include <algorithm>
 #include <iterator>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 // codecvt is not part of GCC yet ...
 //#include <codecvt>
 // ... so we have to use the cumbersome iconv instead
 #include <iconv.h>
+#include <clocale>
 #include <cerrno>
 #include <cstring>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 #include <cstdlib>
 //#include <langinfo.h>
 
@@ -154,7 +155,6 @@ namespace casual
                   const iconv_t m_descriptor;
                };
 
-               const std::string UTF8( "UTF-8");
             }
          }
 
@@ -170,9 +170,9 @@ namespace casual
                   std::string modifier;
                };
 
-               locale info()
+               locale parse( const std::string& name)
                {
-                  std::istringstream stream( std::locale().name());
+                  std::istringstream stream( name);
 
                   locale result;
 
@@ -183,31 +183,40 @@ namespace casual
 
                   return result;
                }
+
+               locale info()
+               {
+                  //return parse( std::locale( "").name());
+                  return parse( std::setlocale( LC_CTYPE, ""));
+               }
             }
 
          }
 
          namespace utf8
          {
+            const std::string cUTF8( "UTF-8");
+
             std::string encode( const std::string& value)
             {
+               //return encode( value, "");
                return encode( value, local::info().codeset);
             }
 
             std::string decode( const std::string& value)
             {
+               //return decode( value, "");
                return decode( value, local::info().codeset);
             }
 
-
             std::string encode( const std::string& value, const std::string& codeset)
             {
-               return local::converter( codeset, local::UTF8).transcode( value);
+               return local::converter( codeset, cUTF8).transcode( value);
             }
 
             std::string decode( const std::string& value, const std::string& codeset)
             {
-               return local::converter( local::UTF8, codeset).transcode( value);
+               return local::converter( cUTF8, codeset).transcode( value);
             }
 
          } // utf8

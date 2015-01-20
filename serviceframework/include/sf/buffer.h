@@ -15,19 +15,17 @@
 #include "common/algorithm.h"
 #include "common/internal/log.h"
 #include "common/string.h"
+#include "common/network_byteorder.h"
 
 //
 // std
 //
 #include <memory>
 #include <string>
-#include <typeinfo>
+#include <iosfwd>
+
 
 #include <cstring>
-
-
-// TODO: temp
-#include <iostream>
 
 
 #include <xatmi.h>
@@ -211,17 +209,29 @@ namespace casual
                template< typename T>
                void write( const T& value)
                {
-                  append( &value, sizeof( T));
+                  //append( &value, sizeof( T));
+                  const auto encoded = common::network::byteorder<T>::encode( value);
+                  append( &encoded, sizeof( encoded));
                }
 
                void write( const platform::binary_type& value)
                {
+                  //
+                  // TODO: Write the size as some-common_size_type
+                  //
                   write( value.size());
                   append( value.data(), value.size());
                }
 
                void write( const std::string& value)
                {
+                  //
+                  // TODO: Write the size as some-common_size_type or just
+                  // write the string null-terminated that will save us a few
+                  // bytes that might be substantial
+                  //
+                  // append( value.c_str(), value.size() + 1)
+                  //
                   write( value.size());
                   append( value.data(), value.size());
                }
@@ -230,11 +240,24 @@ namespace casual
                template< typename T>
                void read( T& value)
                {
-                  consume( &value, sizeof( T));
+                  //consume( &value, sizeof( T));
+                  common::network::type<T> encoded;
+                  consume( &encoded, sizeof( encoded));
+                  value = common::network::byteorder<T>::decode( encoded);
                }
 
                void read( std::string& value)
                {
+                  //
+                  // TODO: Read the size as some-common_size_type or just read
+                  // until first null-termination and then advance the cursor
+                  // that might save us a few bytes per string that might be
+                  // substantial
+                  //
+                  // pseudo-code
+                  // value = buffer + offset;
+                  // advance( value.size() + 1);
+                  //
                   auto size = value.size();
                   read( size);
                   value.resize( size);
@@ -243,6 +266,9 @@ namespace casual
 
                void read( platform::binary_type& value)
                {
+                  //
+                  // TODO: Read the size as some-common_size_type
+                  //
                   auto size = value.size();
                   read( size);
                   value.resize( size);

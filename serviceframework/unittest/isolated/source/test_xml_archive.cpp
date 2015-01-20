@@ -54,9 +54,9 @@ namespace casual
 
       reader >> CASUAL_MAKE_NVP( value);
 
-      EXPECT_TRUE( value.m_long == 234) << "value.m_long: " << value.m_long;
-      EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.m_string: " << value.m_long;
-      EXPECT_TRUE( value.m_longlong == 1234567890123456789) << " value.m_longlong: " <<  value.m_longlong;
+      EXPECT_TRUE( value.m_long == 234) << value.m_long;
+      EXPECT_TRUE( value.m_string == "bla bla bla bla") << value.m_long;
+      EXPECT_TRUE( value.m_longlong == 1234567890123456789) <<  value.m_longlong;
 
    }
 
@@ -99,12 +99,13 @@ namespace casual
          test::SimpleVO value;
          local::string_to_value( xml, value);
 
-         EXPECT_TRUE( value.m_long == 666);
-         EXPECT_TRUE( value.m_short == 42);
-         EXPECT_TRUE( value.m_string == "bla bla bla");
+         EXPECT_TRUE( value.m_long == 666) << value.m_long;
+         EXPECT_TRUE( value.m_short == 42) << value.m_short;
+         EXPECT_TRUE( value.m_string == "bla bla bla") << value.m_string;
       }
 
    }
+
 
    TEST( casual_sf_xml_archive, complex_write_read)
    {
@@ -127,6 +128,29 @@ namespace casual
          EXPECT_TRUE( value.at( 1).m_values.front().m_string == "foo");
 
       }
+   }
+
+   TEST( casual_sf_xml_archive, write_and_read_negative_long_and_empty_string__expecting_equality)
+   {
+      std::string xml;
+
+      {
+         test::SimpleVO value;
+         value.m_long = -123;
+         value.m_string = "";
+
+         local::value_to_string( value, xml);
+      }
+
+      {
+
+         test::SimpleVO value;
+         local::string_to_value( xml, value);
+
+         EXPECT_TRUE( value.m_long == -123) << value.m_long;
+         EXPECT_TRUE( value.m_string.empty()) << value.m_string;
+      }
+
    }
 
 

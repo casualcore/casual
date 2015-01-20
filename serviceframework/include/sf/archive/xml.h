@@ -9,10 +9,12 @@
 #define CASUAL_SF_ARCHIVE_XML_H_
 
 #include <iosfwd>
+#include <sstream>
 #include <vector>
 #include <iterator>
 #include <algorithm>
 #include <utility>
+#include <type_traits>
 #include <tuple>
 
 #include "sf/archive/basic.h"
@@ -119,7 +121,6 @@ namespace casual
                            return false;
                         }
                      }
-
                      read( value);
 
                      m_stack.pop_back();
@@ -130,45 +131,27 @@ namespace casual
 
                private:
 
+                  //
+                  // TODO: Add some error handling
+                  //
+
+                  template<typename T>
+                  void read( T& value) const
+                  {
+                     std::istringstream stream( m_stack.back().text().get());
+                     stream >> value;
+                  }
+
                   void read( bool& value) const
                   {
-                     value = m_stack.back().text().as_bool();
+                     std::istringstream stream( m_stack.back().text().get());
+                     stream >> std::boolalpha >> value;
                   }
 
                   void read( char& value) const
                   {
-                     //value = m_stack.back().text.get()[0];
                      const auto string = common::transcode::utf8::decode( m_stack.back().text().get());
                      value = string.empty() ? '\0' : string.front();
-                  }
-
-                  void read( short& value) const
-                  {
-                     value = m_stack.back().text().as_int();
-                  }
-
-                  void read( long& value) const
-                  {
-                     value = m_stack.back().text().as_int();
-                  }
-
-                  void read( long long& value) const
-                  {
-                     // 1.2
-                     std::istringstream converter( m_stack.back().text().get());
-                     converter >> value;
-                     // 1.4
-                     //value = m_stack.back().text().as_llong();
-                  }
-
-                  void read( float& value) const
-                  {
-                     value = m_stack.back().text().as_float();
-                  }
-
-                  void read( double& value) const
-                  {
-                     value = m_stack.back().text().as_double();
                   }
 
                   void read( std::string& value) const
@@ -259,34 +242,24 @@ namespace casual
                private:
 
                   template<typename T>
+                  //typename std::enabe_if<std::is_floating_point<T>::value, void>::type
                   void write( const T& value)
                   {
-                     m_stack.top().text().set( value);
+                     std::ostringstream stream;
+                     stream << std::fixed << value;
+                     m_stack.top().text().set( stream.str().c_str());
+                  }
+
+                  void write( const bool& value)
+                  {
+                     std::ostringstream stream;
+                     stream << std::boolalpha << value;
+                     m_stack.top().text().set( stream.str().c_str());
                   }
 
                   void write( const char& value)
                   {
-                     m_stack.top().text().set( common::transcode::utf8::encode( {1, value}).c_str());
-                  }
-
-                  void write( const long& value)
-                  {
-                     // 1.2
-                     std::ostringstream stream;
-                     stream << value;
-                     m_stack.top().text().set( stream.str().c_str());
-                     // 1.4
-                     //m_stack.top().text().set( value);
-                  }
-
-                  void write( const long long& value)
-                  {
-                     // 1.2
-                     std::ostringstream stream;
-                     stream << value;
-                     m_stack.top().text().set( stream.str().c_str());
-                     // 1.4
-                     //m_stack.top().text().set( value);
+                     m_stack.top().text().set( common::transcode::utf8::encode( std::string( 1, value)).c_str());
                   }
 
                   void write( const std::string& value)
@@ -326,25 +299,25 @@ namespace casual
             //typedef pugi::xml_document reader_type;
             typedef pugi::xml_document source_type;
 
-            void load( pugi::xml_document& document, std::istream& xml)
+            static void load( pugi::xml_document& document, std::istream& xml)
             {
                const auto result = document.load( xml);
                if( !result) throw exception::archive::invalid::Document{ result.description()};
             }
 
-            void load( pugi::xml_document& document, const std::vector<char>& xml)
+            static void load( pugi::xml_document& document, const std::vector<char>& xml)
             {
                const auto result = document.load_buffer( xml.data(), xml.size());
                if( !result) throw exception::archive::invalid::Document{ result.description()};
             }
 
-            void load( pugi::xml_document& document, const std::string& xml)
+            static void load( pugi::xml_document& document, const std::string& xml)
             {
                const auto result = document.load_buffer( xml.data(), xml.size());
                if( !result) throw exception::archive::invalid::Document{ result.description()};
             }
 
-            void load( pugi::xml_document& document, const char* const xml)
+            static void load( pugi::xml_document& document, const char* const xml)
             {
                const auto result = document.load( xml);
                if( !result) throw exception::archive::invalid::Document{ result.description()};
