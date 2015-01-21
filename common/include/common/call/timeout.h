@@ -13,6 +13,7 @@
 #include "common/transaction/id.h"
 
 #include <chrono>
+#include <functional>
 
 namespace casual
 {
