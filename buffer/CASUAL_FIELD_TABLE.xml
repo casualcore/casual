@@ -3,7 +3,7 @@
    <element>
       <base>1000</base>
       <fields>
-         <element>         <element>
+         <element>
             <id>1</id>
             <name>FLD_SHORT1</name>
             <type>short</type>
