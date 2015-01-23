@@ -43,16 +43,23 @@ namespace casual
             static T write_read( const T& value)
             {
                std::string data;
+
                {
-                  json_object* root = nullptr;
-                  sf::archive::json::Writer writer( root);
+                  sf::archive::json::Save target;
+
+                  sf::archive::json::Writer writer( target());
 
                   writer << CASUAL_MAKE_NVP( value);
-                  data = json_object_to_json_string( root);
+
+                  target( data);
+
                }
+
                {
-                  //std::cerr << "json data: " << data << std::endl;
-                  archive::json::basic_reader< policy_type> reader( data.c_str());
+                  sf::archive::json::Load source;
+                  source( data);
+
+                  archive::json::basic_reader< policy_type> reader( source());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -68,16 +75,22 @@ namespace casual
             template< typename T>
             static T write_read( const T& value)
             {
-               YAML::Emitter output;
+
+               archive::yaml::Save target;
 
                {
-                  archive::yaml::Writer writer( output);
+                  archive::yaml::Writer writer( target());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
+               std::string yaml;
+               target( yaml);
+
+               archive::yaml::Load source;
+               source( yaml);
+
                {
-                  std::istringstream stream( output.c_str());
-                  sf::archive::yaml::basic_reader< policy_type> reader( stream);
+                  sf::archive::yaml::basic_reader< policy_type> reader( source());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -93,19 +106,21 @@ namespace casual
             template< typename T>
             static T write_read( const T& value)
             {
-               archive::xml::target_type output;
+               archive::xml::Save target;
 
                {
-                  archive::xml::Writer writer( output);
+                  archive::xml::Writer writer( target());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
-               //
-               // TODO: Perhaps serialize to neutral format first ?
-               //
+               std::string xml;
+               target( xml);
+
+               archive::xml::Load source;
+               source( xml);
 
                {
-                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( output);
+                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( source());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
 

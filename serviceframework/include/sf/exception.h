@@ -56,6 +56,11 @@ namespace casual
             using Base::Base;
          };
 
+         struct FileNotFound : public Base
+         {
+            using Base::Base;
+         };
+
 
 
 

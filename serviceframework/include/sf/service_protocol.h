@@ -14,8 +14,11 @@
 #include "sf/archive/yaml.h"
 #include "sf/archive/binary.h"
 #include "sf/archive/json.h"
+#include "sf/archive/xml.h"
 #include "sf/archive/log.h"
 #include "sf/log.h"
+
+#include <memory>
 
 namespace casual
 {
@@ -71,7 +74,6 @@ namespace casual
                buffer::binary::Stream m_writerBuffer;
                archive::binary::Writer m_writer;
 
-
             };
 
             class Yaml : public Base
@@ -84,10 +86,10 @@ namespace casual
 
             private:
 
-               std::istringstream m_inputstream;
-               archive::yaml::Reader m_reader;
-               YAML::Emitter m_outputstream;
-               archive::yaml::Writer m_writer;
+               archive::yaml::Load m_load;
+               std::unique_ptr< archive::yaml::Reader> m_reader;
+               archive::yaml::Save m_save;
+               std::unique_ptr< archive::yaml::Writer> m_writer;
             };
 
             class Json : public Base
@@ -100,9 +102,26 @@ namespace casual
 
             private:
 
-               archive::json::Reader m_reader;
-               json_object* m_root = nullptr;
-               archive::json::Writer m_writer;
+               archive::json::Load m_load;
+               std::unique_ptr< archive::json::Reader> m_reader;
+               archive::json::Save m_save;
+               std::unique_ptr< archive::json::Writer> m_writer;
+            };
+
+            class Xml : public Base
+            {
+            public:
+
+               Xml( TPSVCINFO* serviceInfo);
+
+               reply::State doFinalize() override;
+
+            private:
+
+               archive::xml::Load m_load;
+               std::unique_ptr< archive::xml::Reader> m_reader;
+               archive::xml::Save m_save;
+               std::unique_ptr< archive::xml::Writer> m_writer;
             };
 
 
@@ -122,6 +141,7 @@ namespace casual
                   }
 
                private:
+
                   archive::log::Writer m_writer;
 
                };

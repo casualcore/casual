@@ -16,10 +16,9 @@
 #include "json-c/json.h"
 
 
-#include <iostream>
-#include <fstream>
-#include <iterator>
+#include <iosfwd>
 #include <string>
+#include <memory>
 
 namespace casual
 {
@@ -29,39 +28,52 @@ namespace casual
       {
          namespace json
          {
-            namespace reader
+
+            class Load
             {
 
-               struct Buffer
-               {
-                  Buffer( const std::string& file)
-                  {
-                     std::ifstream in( file);
-                     m_string.assign( std::istream_iterator< char>( in), std::istream_iterator< char>());
-                  }
+            public:
 
-                  const char* archiveBuffer()
-                  {
-                     return m_string.c_str();
-                  }
+               typedef json_object* source_type;
 
-               private:
-                  std::string m_string;
-               };
+               Load();
+               ~Load();
+
+               void serialize( std::istream& stream);
+               void serialize( const std::string& json);
+               // TODO: make this a binary::Stream instead
+               void serialize( const char* json);
+               json_object* source() const;
+
+
+               void operator() ( std::istream& stream)
+               {serialize( stream);}
+               void operator() ( const std::string& json)
+               {serialize( json);}
+               void operator() ( const char* json)
+               {serialize( json);}
+               json_object* operator() () const
+               {return source();}
+
+            private:
+
+               //
+               // TODO: Do we need to keep the string-buffer somehow ?
+               //
+
+               std::unique_ptr<json_object,std::function<void(json_object*)>> m_object;
+
+            };
+
+
+            namespace reader
+            {
 
                class Implementation
                {
                public:
 
-                  enum class State
-                  {
-                     unknown,
-                     container,
-                     serializable,
-                     missing,
-                  };
-
-                  Implementation( const char* buffer);
+                  explicit Implementation( json_object* object);
                   ~Implementation();
 
                   std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
@@ -104,7 +116,6 @@ namespace casual
 
                private:
 
-
                   void set( json_object* object, bool& value);
                   void set( json_object* object, short& value);
                   void set( json_object* object, long& value);
@@ -115,11 +126,41 @@ namespace casual
                   void set( json_object* object, char& value);
                   void set( json_object* object, platform::binary_type& value);
 
+               private:
 
-                  json_object* m_root;
                   std::vector< json_object*> m_stack;
                };
             } // reader
+
+            class Save
+            {
+
+            public:
+
+               typedef json_object* target_type;
+
+               Save();
+               ~Save();
+
+               void serialize( std::ostream& stream) const;
+               void serialize( std::string& json) const;
+               // TODO: make a binary::Stream overload
+
+               json_object* target() const;
+
+               void operator() ( std::ostream& stream) const
+               {serialize( stream);}
+               void operator() ( std::string& json) const
+               {serialize( json);}
+               json_object* operator() () const
+               {return target();}
+
+            private:
+
+               std::unique_ptr<json_object,std::function<void(json_object*)>> m_object;
+
+            };
+
 
             namespace writer
             {
@@ -127,7 +168,7 @@ namespace casual
                {
                public:
 
-                  Implementation( json_object*& root);
+                  Implementation( json_object* root);
                   ~Implementation();
 
                   std::size_t container_start( std::size_t size, const char* name);
@@ -159,7 +200,8 @@ namespace casual
                   void writeValue( const platform::binary_type& value, const char* name);
 
 
-                  json_object*& m_root;
+               private:
+
                   std::vector< json_object*> m_stack;
                };
 

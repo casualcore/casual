@@ -22,20 +22,20 @@ namespace casual
       namespace
       {
          template<typename T>
-         void value_to_string( T&& value, std::string& string)
+         void value_to_string( const T& value, std::string& string)
          {
-            sf::archive::xml::target_type target;
-            sf::archive::xml::Writer writer( target);
+            sf::archive::xml::Save target;
+            sf::archive::xml::Writer writer( target());
             writer << CASUAL_MAKE_NVP( value);
-            sf::archive::xml::save( target, string);
+            target( string);
          }
 
          template<typename T>
          void string_to_value( const std::string& string, T& value)
          {
-            sf::archive::xml::source_type source;
-            sf::archive::xml::load( source, string);
-            sf::archive::xml::Reader reader( source);
+            sf::archive::xml::Load source;
+            source( string);
+            sf::archive::xml::Reader reader( source());
             reader >> CASUAL_MAKE_NVP( value);
          }
 
@@ -45,10 +45,10 @@ namespace casual
 
    TEST( casual_sf_xml_archive, relaxed_read_serializible)
    {
-      sf::archive::xml::source_type source;
-      sf::archive::xml::load( source, test::SimpleVO::xml());
+      sf::archive::xml::Load source;
+      source( test::SimpleVO::xml());
 
-      sf::archive::xml::relaxed::Reader reader( source);
+      sf::archive::xml::relaxed::Reader reader( source());
 
       test::SimpleVO value;
 

@@ -8,21 +8,18 @@
 #ifndef CASUAL_SF_ARCHIVE_XML_H_
 #define CASUAL_SF_ARCHIVE_XML_H_
 
+#include "sf/archive/basic.h"
+
+#include <pugixml.hpp>
+
+
 #include <iosfwd>
 #include <sstream>
 #include <vector>
 #include <iterator>
 #include <algorithm>
 #include <utility>
-#include <type_traits>
 #include <tuple>
-
-#include "sf/archive/basic.h"
-#include "sf/exception.h"
-
-#include "common/transcode.h"
-
-#include <pugixml.hpp>
 
 
 namespace casual
@@ -43,6 +40,38 @@ namespace casual
             // to it to fix the flaws
             //
 
+
+            class Load
+            {
+            public:
+
+               typedef pugi::xml_document source_type;
+
+               Load();
+               ~Load();
+
+               void serialize( std::istream& stream);
+               void serialize( const std::string& xml);
+               // TODO: make this a binary::Stream instead
+               void serialize( const char* xml);
+               const pugi::xml_document& source() const;
+
+               void operator() ( std::istream& stream)
+               {serialize( stream);}
+               void operator() ( const std::string& xml)
+               {serialize( xml);}
+               void operator() ( const char* xml)
+               {serialize( xml);}
+               const pugi::xml_document& operator() () const
+               {return source();}
+
+            private:
+
+               pugi::xml_document m_document;
+
+            };
+
+
             namespace reader
             {
 
@@ -50,89 +79,45 @@ namespace casual
                {
                public:
 
-
                   //!
-                  //! @param node Normally an pugi::xml_document
+                  //! @param node Normally a pugi::xml_document
                   //!
-                  explicit Implementation( pugi::xml_node node ) : m_stack{ std::move( node)} {}
+                  explicit Implementation( pugi::xml_node node );
 
-                  inline std::tuple< std::size_t, bool> container_start( const std::size_t size, const char* const name)
-                  {
-                     if( name)
-                     {
-                        m_stack.push_back( m_stack.back().child( name));
+                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
 
-                        if( ! m_stack.back())
-                        {
-                           return std::make_tuple( 0, false);
-                        }
+                  void container_end( const char* name);
 
-                     }
+                  bool serialtype_start( const char* name);
 
-                     //
-                     // TODO: We need to filter elements not named 'element',
-                     // but with 1.4 that is really simple, so we just wait
-                     //
-
-
-                     // 1.2
-                     const auto content = m_stack.back().children();
-                     // 1.4 (with bidirectional xml_named_node_iterator)
-                     //const auto content = m_stack.back().children( "element");
-                     std::reverse_copy( std::begin( content), std::end( content), std::back_inserter( m_stack));
-
-                     return std::make_tuple( std::distance( std::begin( content), std::end( content)), true);
-
-                  }
-
-                  inline void container_end( const char* const name)
-                  {
-                     m_stack.pop_back();
-                  }
-
-                  inline bool serialtype_start( const char* const name)
-                  {
-                     if( name)
-                     {
-                        m_stack.push_back( m_stack.back().child( name));
-                     }
-
-                     return m_stack.back();
-
-                  }
-
-                  inline void serialtype_end( const char* const name)
-                  {
-                     m_stack.pop_back();
-                  }
+                  void serialtype_end( const char* name);
 
 
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     if( name)
+                     const bool result = start( name);
+
+                     if( result)
                      {
-                        if( const auto element = m_stack.back().child( name))
-                        {
-                           m_stack.push_back( element);
-                        }
-                        else
-                        {
-                           return false;
-                        }
+                        read( value);
                      }
-                     read( value);
 
-                     m_stack.pop_back();
+                     end( name);
 
-                     return true;
+                     return result;
 
                   }
 
                private:
 
+                  bool start( const char* name);
+                  void end( const char* name);
+
                   //
                   // TODO: Add some error handling
+                  //
+                  // TODO: Move overloads to TU
                   //
 
                   template<typename T>
@@ -142,28 +127,10 @@ namespace casual
                      stream >> value;
                   }
 
-                  void read( bool& value) const
-                  {
-                     std::istringstream stream( m_stack.back().text().get());
-                     stream >> std::boolalpha >> value;
-                  }
-
-                  void read( char& value) const
-                  {
-                     const auto string = common::transcode::utf8::decode( m_stack.back().text().get());
-                     value = string.empty() ? '\0' : string.front();
-                  }
-
-                  void read( std::string& value) const
-                  {
-                     value = common::transcode::utf8::decode( m_stack.back().text().get());
-                  }
-
-                  void read( std::vector<char>& value) const
-                  {
-                     value = common::transcode::base64::decode( m_stack.back().text().get());
-                  }
-
+                  void read( bool& value) const;
+                  void read( char& value) const;
+                  void read( std::string& value) const;
+                  void read( std::vector<char>& value) const;
 
                private:
 
@@ -174,6 +141,37 @@ namespace casual
 
             } // reader
 
+
+            class Save
+            {
+
+            public:
+
+               typedef pugi::xml_document target_type;
+
+               Save();
+               ~Save();
+
+               void serialize( std::ostream& stream) const;
+               void serialize( std::string& xml) const;
+               // TODO: make a binary::Stream overload
+
+               const pugi::xml_document& target() const;
+
+               void operator() ( std::ostream& stream) const
+               {serialize( stream);}
+               void operator() ( std::string& xml) const
+               {serialize( xml);}
+               const pugi::xml_document& operator() () const
+               {return target();}
+
+            private:
+
+               pugi::xml_document m_document;
+
+            };
+
+
             namespace writer
             {
 
@@ -183,63 +181,34 @@ namespace casual
                public:
 
                   //!
-                  //! @param node Normally an xml_document
+                  //! @param node Normally a pugi::xml_document
                   //!
-                  Implementation( pugi::xml_node node)
-                  {
-                     m_stack.push( std::move( node));
-                  }
+                  explicit Implementation( pugi::xml_node node);
 
-                  inline std::size_t container_start( const std::size_t size, const char* const name)
-                  {
-                     if( name)
-                     {
-                        m_stack.push( m_stack.top().append_child( name));
-                     }
+                  std::size_t container_start( const std::size_t size, const char* name);
 
-                     auto element = m_stack.top();
+                  void container_end( const char* name);
 
-                     for( std::size_t idx = 0; idx < size; ++idx)
-                     {
-                        m_stack.push( element.prepend_child( "element"));
-                     }
+                  void serialtype_start( const char* name);
 
-                     return size;
-                  }
-
-                  inline void container_end( const char* const name)
-                  {
-                     m_stack.pop();
-                  }
-
-                  inline void serialtype_start( const char* const name)
-                  {
-                     if( name)
-                     {
-                        m_stack.push( m_stack.top().append_child( name));
-                     }
-                  }
-
-                  inline void serialtype_end( const char* const name)
-                  {
-                     m_stack.pop();
-                  }
+                  void serialtype_end( const char* name);
 
                   template< typename T>
                   void write( const T& value, const char* const name)
                   {
-                     if( name)
-                     {
-                        m_stack.push( m_stack.top().append_child( name));
-                     }
-
+                     start( name);
                      write( value);
-
-                     m_stack.pop();
+                     end( name);
                   }
 
-
                private:
+
+                  void start( const char* name);
+                  void end( const char* name);
+
+                  //
+                  // TODO: Move overloads to TU
+                  //
 
                   template<typename T>
                   //typename std::enabe_if<std::is_floating_point<T>::value, void>::type
@@ -247,34 +216,17 @@ namespace casual
                   {
                      std::ostringstream stream;
                      stream << std::fixed << value;
-                     m_stack.top().text().set( stream.str().c_str());
+                     m_stack.back().text().set( stream.str().c_str());
                   }
 
-                  void write( const bool& value)
-                  {
-                     std::ostringstream stream;
-                     stream << std::boolalpha << value;
-                     m_stack.top().text().set( stream.str().c_str());
-                  }
-
-                  void write( const char& value)
-                  {
-                     m_stack.top().text().set( common::transcode::utf8::encode( std::string( 1, value)).c_str());
-                  }
-
-                  void write( const std::string& value)
-                  {
-                     m_stack.top().text().set( common::transcode::utf8::encode( value).c_str());
-                  }
-
-                  void write( const std::vector<char>& value)
-                  {
-                     m_stack.top().text().set( common::transcode::base64::encode( value).c_str());
-                  }
+                  void write( const bool& value);
+                  void write( const char& value);
+                  void write( const std::string& value);
+                  void write( const std::vector<char>& value);
 
                private:
 
-                  std::stack<pugi::xml_node> m_stack;
+                  std::vector<pugi::xml_node> m_stack;
 
                }; // Implementation
 
@@ -289,65 +241,6 @@ namespace casual
 
             typedef basic_writer< writer::Implementation> Writer;
 
-
-            //
-            // Load
-            //
-            // TODO: Better
-            //
-
-            //typedef pugi::xml_document reader_type;
-            typedef pugi::xml_document source_type;
-
-            static void load( pugi::xml_document& document, std::istream& xml)
-            {
-               const auto result = document.load( xml);
-               if( !result) throw exception::archive::invalid::Document{ result.description()};
-            }
-
-            static void load( pugi::xml_document& document, const std::vector<char>& xml)
-            {
-               const auto result = document.load_buffer( xml.data(), xml.size());
-               if( !result) throw exception::archive::invalid::Document{ result.description()};
-            }
-
-            static void load( pugi::xml_document& document, const std::string& xml)
-            {
-               const auto result = document.load_buffer( xml.data(), xml.size());
-               if( !result) throw exception::archive::invalid::Document{ result.description()};
-            }
-
-            static void load( pugi::xml_document& document, const char* const xml)
-            {
-               const auto result = document.load( xml);
-               if( !result) throw exception::archive::invalid::Document{ result.description()};
-            }
-
-
-            //
-            // Save
-            //
-            // TODO: Better
-            //
-
-            //typedef pugi::xml_document writer_type;
-            typedef pugi::xml_document target_type;
-
-            static void save( const pugi::xml_document& document, std::ostream& xml)
-            {
-               document.save( xml, " ");
-            }
-
-            static void save( const pugi::xml_document& document, std::string& xml)
-            {
-               //
-               // TODO: Implement the xml_writer-interface
-               //
-
-               std::ostringstream stream;
-               document.save( stream, " ");
-               xml = stream.str();
-            }
 
 
          } // xml

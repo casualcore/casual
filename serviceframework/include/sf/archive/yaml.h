@@ -9,13 +9,12 @@
 #define CASUAL_ARCHIVE_YAML_POLICY_H_
 
 #include "sf/archive/basic.h"
-#include "sf/exception.h"
 //#include "sf/reader_policy.h"
 
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>
 
-#include <fstream>
+#include <iosfwd>
 #include <stack>
 
 namespace casual
@@ -26,101 +25,57 @@ namespace casual
       {
          namespace yaml
          {
+
+            class Load
+            {
+            public:
+
+               typedef YAML::Node source_type;
+
+               Load();
+               ~Load();
+
+               void serialize( std::istream& stream);
+               void serialize( const std::string& yaml);
+               // TODO: make this a binary::Stream instead
+               void serialize( const char* yaml);
+               const YAML::Node& source() const;
+
+               void operator() ( std::istream& stream)
+               {serialize( stream);}
+               void operator() ( const std::string& yaml)
+               {serialize( yaml);}
+               void operator() ( const char* yaml)
+               {serialize( yaml);}
+               const YAML::Node& operator() () const
+               {return source();}
+
+            private:
+
+               YAML::Node m_document;
+
+            };
+
+
             namespace reader
             {
-
-               struct Buffer
-               {
-                  //typedef S stream_type;
-
-                  Buffer( const std::string& file) : m_stream( file) {}
-
-                  std::istream& archiveBuffer()
-                  {
-                     return m_stream;
-                  }
-
-               private:
-                  std::ifstream m_stream;
-               };
 
                class Implementation
                {
                public:
 
-                  Implementation( std::istream& input)
-                  {
-                     YAML::Parser parser( input);
+                  Implementation( const YAML::Node& node);
 
-                     if( ! parser.GetNextDocument( m_document))
-                     {
-                        throw exception::archive::invalid::Document{ "invalid yaml document"};
-                     }
+                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
 
-                     m_nodeStack.push_back( &m_document);
-                  }
+                  void container_end( const char* name);
 
-                  inline std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name)
-                  {
-                     const YAML::Node* node =  m_nodeStack.back();
+                  bool serialtype_start( const char* name);
 
-                     if( node)
-                     {
-                        if( name)
-                        {
-                           node = node->FindValue( name);
-                        }
-                        else
-                        {
-                           //
-                           // Indicates that we're in a container
-                           //
-                           m_nodeStack.pop_back();
-                        }
-                     }
-
-                     if( ! node)
-                     {
-                        return std::make_tuple( 0, false);
-                     }
-
-
-                     //
-                     // We stack'em i reverse order
-                     //
-
-                     size = node->size();
-
-                     for( auto index = size; index > 0; --index)
-                     {
-                        m_nodeStack.push_back( &(*node)[ index - 1] );
-                     }
-
-                     return std::make_tuple( size, true);
-                  }
-
-                  inline void container_end( const char* name)
-                  {
-
-                  }
-
-                  inline bool serialtype_start( const char* name)
-                  {
-                     if( name)
-                     {
-                        m_nodeStack.push_back( m_nodeStack.back()->FindValue( name));
-                     }
-
-                     return m_nodeStack.back() != nullptr;
-                  }
-
-                  inline void serialtype_end( const char* name)
-                  {
-                     m_nodeStack.pop_back();
-                  }
+                  void serialtype_end( const char* name);
 
                   template< typename T>
-                  bool read( T& value, const char* name)
+                  bool read( T& value, const char* const name)
                   {
                      const YAML::Node* node = m_nodeStack.back();
 
@@ -177,33 +132,50 @@ namespace casual
                      YAML::Binary binary;
                      node >> binary;
                      copyBinary( binary, value);
-
                   }
 
-                  YAML::Node m_document;
+
+               private:
+
                   std::vector< const YAML::Node*> m_nodeStack;
+
                };
 
             } // reader
 
+
+            class Save
+            {
+            public:
+
+               typedef YAML::Emitter target_type;
+
+               Save();
+               ~Save();
+
+               void serialize( std::ostream& stream) const;
+               void serialize( std::string& yaml) const;
+               // TODO: make a binary::Stream overload
+
+               YAML::Emitter& target();
+
+               void operator() ( std::ostream& stream) const
+               {serialize( stream);}
+               void operator() ( std::string& yaml) const
+               {serialize( yaml);}
+               YAML::Emitter& operator() ()
+               {return target();}
+
+            private:
+
+               YAML::Emitter m_emitter;
+
+            };
+
+
+
             namespace writer
             {
-               struct Buffer
-               {
-                  //typedef S stream_type;
-
-                  Buffer( const std::string& file) : m_stream( file) {}
-
-                  std::istream& archiveBuffer()
-                  {
-                     return m_stream;
-                  }
-
-               private:
-                  std::ifstream m_stream;
-               };
-
-
 
                class Implementation
                {
@@ -212,45 +184,13 @@ namespace casual
 
                   typedef YAML::Emitter buffer_type;
 
-                  Implementation( YAML::Emitter& output) : m_output( output)
-                  {
-                     m_output << YAML::BeginMap;
-                  }
+                  Implementation( YAML::Emitter& output);
 
+                  std::size_t container_start( std::size_t size, const char* name);
+                  void container_end( const char* name);
 
-                  inline std::size_t container_start( std::size_t size, const char* name)
-                  {
-                     if( name)
-                     {
-                        m_output << YAML::Key << name;
-                        m_output << YAML::Value;
-                     }
-                     m_output << YAML::BeginSeq;
-
-                     return size;
-                  }
-
-                  inline void container_end( const char* name)
-                  {
-                     m_output << YAML::EndSeq;
-                     m_output << YAML::Newline;
-                  }
-
-                  inline void serialtype_start( const char* name)
-                  {
-                     if( name)
-                     {
-                        m_output << YAML::Key << name;
-                        m_output << YAML::Value;
-                     }
-                     m_output << YAML::BeginMap;
-                  }
-
-                  inline void serialtype_end( const char* name)
-                  {
-                     m_output << YAML::EndMap;
-                     m_output << YAML::Newline;
-                  }
+                  void serialtype_start( const char* name);
+                  void serialtype_end( const char* name);
 
                   template< typename T>
                   void write( const T& value, const char* name)
@@ -278,6 +218,8 @@ namespace casual
                      YAML::Binary binary( data, value.size());
                      m_output << binary;
                   }
+
+               private:
 
                   YAML::Emitter& m_output;
                };
