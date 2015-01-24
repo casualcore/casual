@@ -18,8 +18,6 @@
 #include "sf/archive/log.h"
 #include "sf/log.h"
 
-#include <memory>
-
 namespace casual
 {
    namespace sf
@@ -87,9 +85,9 @@ namespace casual
             private:
 
                archive::yaml::Load m_load;
-               std::unique_ptr< archive::yaml::Reader> m_reader;
+               archive::yaml::Reader m_reader;
                archive::yaml::Save m_save;
-               std::unique_ptr< archive::yaml::Writer> m_writer;
+               archive::yaml::Writer m_writer;
             };
 
             class Json : public Base
@@ -103,9 +101,9 @@ namespace casual
             private:
 
                archive::json::Load m_load;
-               std::unique_ptr< archive::json::Reader> m_reader;
+               archive::json::Reader m_reader;
                archive::json::Save m_save;
-               std::unique_ptr< archive::json::Writer> m_writer;
+               archive::json::Writer m_writer;
             };
 
             class Xml : public Base
@@ -119,9 +117,9 @@ namespace casual
             private:
 
                archive::xml::Load m_load;
-               std::unique_ptr< archive::xml::Reader> m_reader;
+               archive::xml::Reader m_reader;
                archive::xml::Save m_save;
-               std::unique_ptr< archive::xml::Writer> m_writer;
+               archive::xml::Writer m_writer;
             };
 
 

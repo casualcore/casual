@@ -75,20 +75,13 @@ namespace casual
             }
 
 
-            Yaml::Yaml( TPSVCINFO* serviceInfo) : Base( serviceInfo)
+            Yaml::Yaml( TPSVCINFO* serviceInfo)
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Yaml::doYaml"};
 
-               //
-               // TODO: Let yaml::Load know about X_Octet (or binary::Stream)
-               //
-
-               m_load.serialize( serviceInfo->data);
-               m_reader.reset( new archive::yaml::Reader( m_load.source()));
-               m_input.readers.push_back( m_reader.get());
-
-               m_writer.reset( new archive::yaml::Writer( m_save.target()));
-               m_output.writers.push_back( m_writer.get());
+               m_input.readers.push_back( &m_reader);
+               m_output.writers.push_back( &m_writer);
 
                //
                // We don't need the request-buffer any more
@@ -120,20 +113,13 @@ namespace casual
                return m_state;
             }
 
-            Json::Json( TPSVCINFO* serviceInfo) : Base( serviceInfo)
+            Json::Json( TPSVCINFO* serviceInfo)
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Json::Json"};
 
-               //
-               // TODO: Let json::Load know about X_Octet (or binary::Stream)
-               //
-
-               m_load.serialize( serviceInfo->data);
-               m_reader.reset( new archive::json::Reader( m_load.source()));
-               m_input.readers.push_back( m_reader.get());
-
-               m_writer.reset( new archive::json::Writer( m_save.target()));
-               m_output.writers.push_back( m_writer.get());
+               m_input.readers.push_back( &m_reader);
+               m_output.writers.push_back( &m_writer);
 
                //
                // We don't need the request-buffer any more
@@ -165,20 +151,13 @@ namespace casual
             }
 
 
-            Xml::Xml( TPSVCINFO* serviceInfo) : Base( serviceInfo)
+            Xml::Xml( TPSVCINFO* serviceInfo)
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Xml::Xml"};
 
-               //
-               // TODO: Let xml::Load know about X_Octet (or binary::Stream)
-               //
-
-               m_load.serialize( serviceInfo->data);
-               m_reader.reset( new archive::xml::Reader( m_load.source()));
-               m_input.readers.push_back( m_reader.get());
-
-               m_writer.reset( new archive::xml::Writer( m_save.target()));
-               m_output.writers.push_back( m_writer.get());
+               m_input.readers.push_back( &m_reader);
+               m_output.writers.push_back( &m_writer);
 
                //
                // We don't need the request-buffer any more

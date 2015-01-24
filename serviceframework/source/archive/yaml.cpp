@@ -24,7 +24,7 @@ namespace casual
             Load::Load() = default;
             Load::~Load() = default;
 
-            void Load::serialize( std::istream& stream)
+            const YAML::Node& Load::serialize( std::istream& stream)
             {
                YAML::Parser parser( stream);
 
@@ -32,18 +32,20 @@ namespace casual
                {
                   throw exception::archive::invalid::Document{ "invalid yaml document"};
                }
+
+               return source();
             }
 
-            void Load::serialize( const std::string& yaml)
+            const YAML::Node& Load::serialize( const std::string& yaml)
             {
                std::istringstream stream( yaml);
-               serialize( stream);
+               return serialize( stream);
             }
 
-            void Load::serialize( const char* const yaml)
+            const YAML::Node& Load::serialize( const char* const yaml)
             {
                std::istringstream stream( yaml);
-               serialize( stream);
+               return serialize( stream);
             }
 
             const YAML::Node& Load::source() const

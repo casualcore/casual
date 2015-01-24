@@ -45,21 +45,21 @@ namespace casual
                std::string data;
 
                {
-                  sf::archive::json::Save target;
+                  sf::archive::json::Save save;
 
-                  sf::archive::json::Writer writer( target());
+                  sf::archive::json::Writer writer( save.target());
 
                   writer << CASUAL_MAKE_NVP( value);
 
-                  target( data);
+                  save.serialize( data);
 
                }
 
                {
-                  sf::archive::json::Load source;
-                  source( data);
+                  sf::archive::json::Load load;
+                  load.serialize( data);
 
-                  archive::json::basic_reader< policy_type> reader( source());
+                  archive::json::basic_reader< policy_type> reader( load.source());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -76,21 +76,21 @@ namespace casual
             static T write_read( const T& value)
             {
 
-               archive::yaml::Save target;
+               archive::yaml::Save save;
 
                {
-                  archive::yaml::Writer writer( target());
+                  archive::yaml::Writer writer( save.target());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
                std::string yaml;
-               target( yaml);
+               save.serialize( yaml);
 
-               archive::yaml::Load source;
-               source( yaml);
+               archive::yaml::Load load;
+               load.serialize( yaml);
 
                {
-                  sf::archive::yaml::basic_reader< policy_type> reader( source());
+                  sf::archive::yaml::basic_reader< policy_type> reader( load.source());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -106,21 +106,21 @@ namespace casual
             template< typename T>
             static T write_read( const T& value)
             {
-               archive::xml::Save target;
+               archive::xml::Save save;
 
                {
-                  archive::xml::Writer writer( target());
+                  archive::xml::Writer writer( save.target());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
                std::string xml;
-               target( xml);
+               save.serialize( xml);
 
-               archive::xml::Load source;
-               source( xml);
+               archive::xml::Load load;
+               load.serialize( xml);
 
                {
-                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( source());
+                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( load.source());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
 

@@ -13,7 +13,6 @@
 #include "common/file.h"
 
 #include <fstream>
-#include <memory>
 
 namespace casual
 {
@@ -35,19 +34,19 @@ namespace casual
 
                template< typename... Arguments>
                basic( Arguments&&... arguments)
+                  : m_archive( m_source( std::forward< Arguments>( arguments)...))
                {
-                  m_source.serialize( std::forward< Arguments>( arguments)...);
-                  m_archive.reset( new archive_type( m_source.source()));
                }
 
                virtual archive_type& archive() override
                {
-                  return *m_archive;
+                  return m_archive;
                }
 
             private:
+
                source_type m_source;
-               std::unique_ptr< archive_type> m_archive;
+               archive_type m_archive;
 
             };
 
@@ -66,7 +65,7 @@ namespace casual
 
                if( ! file.is_open())
                {
-                  throw exception::FileNotFound( "could not find file " + filename);
+                  throw exception::FileNotFound( filename);
                }
 
                const auto extension = common::file::extension( filename);

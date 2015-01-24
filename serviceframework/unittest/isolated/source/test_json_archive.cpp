@@ -26,21 +26,20 @@ namespace casual
          template< typename T>
          void value_to_string( T&& value, std::string& string)
          {
-            sf::archive::json::Save target;
-            sf::archive::json::Writer writer( target());
+            sf::archive::json::Save save;
+            sf::archive::json::Writer writer( save.target());
 
             writer << CASUAL_MAKE_NVP( value);
 
-            target( string);
+            save.serialize( string);
          }
 
          template< typename T>
          void string_to_strict_value( const std::string& string, T&& value)
          {
-            sf::archive::json::Load source;
-            source( string);
+            sf::archive::json::Load load;
 
-            sf::archive::json::Reader reader( source());
+            sf::archive::json::Reader reader( load.serialize( string));
 
             reader >> CASUAL_MAKE_NVP( value);
          }
@@ -48,10 +47,9 @@ namespace casual
          template< typename T>
          void string_to_relaxed_value( const std::string& string, T&& value)
          {
-            sf::archive::json::Load source;
-            source( string);
+            sf::archive::json::Load load;
 
-            sf::archive::json::relaxed::Reader reader( source());
+            sf::archive::json::relaxed::Reader reader( load.serialize( string));
 
             reader >> CASUAL_MAKE_NVP( value);
          }

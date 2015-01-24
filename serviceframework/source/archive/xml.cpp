@@ -31,23 +31,24 @@ namespace casual
             Load::Load() = default;
             Load::~Load() = default;
 
-            void Load::serialize( std::istream& stream)
+            const pugi::xml_document& Load::serialize( std::istream& stream)
             {
                check( m_document.load( stream));
+               return source();
             }
 
-            void Load::serialize( const std::string& xml)
+            const pugi::xml_document& Load::serialize( const std::string& xml)
             {
                check( m_document.load_buffer( xml.data(), xml.size()));
+               return source();
             }
 
-            void Load::serialize( const char* const xml)
+            const pugi::xml_document& Load::serialize( const char* const xml)
             {
                //check( m_document.load_string( xml));
                check( m_document.load( xml));
+               return source();
             }
-
-
 
             const pugi::xml_document& Load::source() const
             {

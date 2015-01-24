@@ -58,7 +58,7 @@ namespace casual
 
          struct FileNotFound : public Base
          {
-            using Base::Base;
+            FileNotFound( const std::string& file) : Base( "could not find " + file) {}
          };
 
 

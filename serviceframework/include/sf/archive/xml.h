@@ -50,20 +50,19 @@ namespace casual
                Load();
                ~Load();
 
-               void serialize( std::istream& stream);
-               void serialize( const std::string& xml);
+               const pugi::xml_document& serialize( std::istream& stream);
+               const pugi::xml_document& serialize( const std::string& xml);
                // TODO: make this a binary::Stream instead
-               void serialize( const char* xml);
+               const pugi::xml_document& serialize( const char* xml);
+
                const pugi::xml_document& source() const;
 
-               void operator() ( std::istream& stream)
-               {serialize( stream);}
-               void operator() ( const std::string& xml)
-               {serialize( xml);}
-               void operator() ( const char* xml)
-               {serialize( xml);}
-               const pugi::xml_document& operator() () const
-               {return source();}
+
+               template<typename T>
+               const pugi::xml_document& operator() ( T&& xml)
+               {
+                  return serialize( std::forward<T>( xml));
+               }
 
             private:
 
@@ -158,12 +157,11 @@ namespace casual
 
                const pugi::xml_document& target() const;
 
-               void operator() ( std::ostream& stream) const
-               {serialize( stream);}
-               void operator() ( std::string& xml) const
-               {serialize( xml);}
                const pugi::xml_document& operator() () const
-               {return target();}
+               {
+                  return target();
+               }
+
 
             private:
 

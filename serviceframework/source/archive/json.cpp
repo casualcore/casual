@@ -25,18 +25,18 @@ namespace casual
             Load::Load() : m_object( nullptr, json_object_put) {}
             Load::~Load() = default;
 
-            void Load::serialize( std::istream& stream)
+            json_object* Load::serialize( std::istream& stream)
             {
                const std::string json{ std::istream_iterator< char>( stream), std::istream_iterator< char>()};
-               serialize( json);
+               return serialize( json);
             }
 
-            void Load::serialize( const std::string& json)
+            json_object* Load::serialize( const std::string& json)
             {
-               serialize( json.c_str());
+               return serialize( json.c_str());
             }
 
-            void Load::serialize( const char* const json)
+            json_object* Load::serialize( const char* const json)
             {
                json_tokener_error result{ json_tokener_success};
                m_object.reset( json_tokener_parse_verbose( json, &result));
@@ -45,6 +45,8 @@ namespace casual
                {
                   throw exception::archive::invalid::Document{ json_tokener_error_desc( result)};
                }
+
+               return source();
             }
 
             json_object* Load::source() const

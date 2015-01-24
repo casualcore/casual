@@ -35,20 +35,19 @@ namespace casual
                Load();
                ~Load();
 
-               void serialize( std::istream& stream);
-               void serialize( const std::string& yaml);
+               const YAML::Node& serialize( std::istream& stream);
+               const YAML::Node& serialize( const std::string& yaml);
                // TODO: make this a binary::Stream instead
-               void serialize( const char* yaml);
+               const YAML::Node& serialize( const char* yaml);
+
                const YAML::Node& source() const;
 
-               void operator() ( std::istream& stream)
-               {serialize( stream);}
-               void operator() ( const std::string& yaml)
-               {serialize( yaml);}
-               void operator() ( const char* yaml)
-               {serialize( yaml);}
-               const YAML::Node& operator() () const
-               {return source();}
+               template<typename T>
+               const YAML::Node& operator() ( T&& yaml)
+               {
+                  return serialize( std::forward<T>( yaml));
+               }
+
 
             private:
 
@@ -159,12 +158,11 @@ namespace casual
 
                YAML::Emitter& target();
 
-               void operator() ( std::ostream& stream) const
-               {serialize( stream);}
-               void operator() ( std::string& yaml) const
-               {serialize( yaml);}
                YAML::Emitter& operator() ()
-               {return target();}
+               {
+                  return target();
+               }
+
 
             private:
 

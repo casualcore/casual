@@ -39,21 +39,20 @@ namespace casual
                Load();
                ~Load();
 
-               void serialize( std::istream& stream);
-               void serialize( const std::string& json);
+               json_object* serialize( std::istream& stream);
+               json_object* serialize( const std::string& json);
                // TODO: make this a binary::Stream instead
-               void serialize( const char* json);
+               json_object* serialize( const char* json);
+
                json_object* source() const;
 
 
-               void operator() ( std::istream& stream)
-               {serialize( stream);}
-               void operator() ( const std::string& json)
-               {serialize( json);}
-               void operator() ( const char* json)
-               {serialize( json);}
-               json_object* operator() () const
-               {return source();}
+               template<typename T>
+               json_object* operator() ( T&& json)
+               {
+                  return serialize( std::forward<T>( json));
+               }
+
 
             private:
 
@@ -148,12 +147,11 @@ namespace casual
 
                json_object* target() const;
 
-               void operator() ( std::ostream& stream) const
-               {serialize( stream);}
-               void operator() ( std::string& json) const
-               {serialize( json);}
                json_object* operator() () const
-               {return target();}
+               {
+                  return target();
+               }
+
 
             private:
 
