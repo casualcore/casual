@@ -176,29 +176,33 @@ namespace casual
 
 
          //
-         // we assume IEEE 754 and that float is 32 bits
+         // We assume IEEE 754 and that float is 32 bits
          //
          uint32_t byteorder< float>::encode( const float value) noexcept
          {
-            return HTOBE32( *reinterpret_cast<const uint32_t*>(&value));
+            const auto aliasing = reinterpret_cast<const char*>(&value);
+            return HTOBE32( *reinterpret_cast<const uint32_t*>(aliasing));
          }
          float byteorder< float>::decode( const uint32_t value) noexcept
          {
-            const uint32_t result = BE32TOH(value);
-            return *reinterpret_cast< const float*>( &result);
+            const auto host = BE32TOH(value);
+            const auto aliasing = reinterpret_cast<const char*>(&host);
+            return *reinterpret_cast< const float*>( aliasing);
          }
 
          //
-         // we assume IEEE 754 and that double is 64 bits
+         // We assume IEEE 754 and that double is 64 bits
          //
          uint64_t byteorder< double>::encode( const double value) noexcept
          {
-            return HTOBE64(*reinterpret_cast<const uint64_t*>(&value));
+            const auto aliasing = reinterpret_cast<const char*>(&value);
+            return HTOBE64(*reinterpret_cast<const uint64_t*>(aliasing));
          }
          double byteorder< double>::decode( const uint64_t value) noexcept
          {
-            const uint64_t result = BE64TOH(value);
-            return *reinterpret_cast< const double*>( &result);
+            const auto host = BE64TOH(value);
+            const auto aliasing = reinterpret_cast<const char*>(&host);
+            return *reinterpret_cast< const double*>( aliasing);
          }
 
 
