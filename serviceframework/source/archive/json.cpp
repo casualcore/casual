@@ -11,6 +11,8 @@
 #include "common/transcode.h"
 
 #include <iterator>
+#include <istream>
+#include <string>
 
 namespace casual
 {
@@ -22,12 +24,15 @@ namespace casual
          namespace json
          {
 
-            Load::Load() : m_object( nullptr, json_object_put) {}
+            Load::Load() : m_object( nullptr, &json_object_put) {}
             Load::~Load() = default;
 
             json_object* Load::serialize( std::istream& stream)
             {
-               const std::string json{ std::istream_iterator< char>( stream), std::istream_iterator< char>()};
+               const std::string json{
+                  std::istream_iterator< char>( stream),
+                  std::istream_iterator< char>()};
+
                return serialize( json);
             }
 
@@ -143,7 +148,7 @@ namespace casual
             } // reader
 
 
-            Save::Save() : m_object( json_object_new_object(), json_object_put) {}
+            Save::Save() : m_object( json_object_new_object(), &json_object_put) {}
             Save::~Save() = default;
 
             void Save::serialize( std::ostream& stream) const

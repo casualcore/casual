@@ -67,16 +67,16 @@ namespace casual
             typedef common::platform::binary_size_type size_type;
 
             // A thing to make stuff less bloaty ... not so good though
-            constexpr auto size_size = common::network::bytes<size_type>();
+            constexpr auto size_size = common::network::byteorder::bytes<size_type>();
 
             //! Transform a value in place from network to host
             template<typename T>
             void parse( const_data_type where, T& value)
             {
                // Cast to network version
-               const auto encoded = *reinterpret_cast< const common::network::type<T>*>( where);
+               const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
                // Decode to host version
-               value = common::network::byteorder<T>::decode( encoded);
+               value = common::network::byteorder::decode<T>( encoded);
             }
 
             // TODO: We should remove this
@@ -96,7 +96,7 @@ namespace casual
             void write( data_type where, const T value)
             {
                // Encode to network version
-               const auto encoded = common::network::byteorder<T>::encode( value);
+               const auto encoded = common::network::byteorder::encode( value);
                // Write it to buffer
                std::memcpy( where, &encoded, sizeof( encoded));
             }
@@ -115,7 +115,7 @@ namespace casual
             public:
 
                // Something to make other things less bloaty
-               static constexpr auto size_size = common::network::bytes<size_type>();
+               static constexpr auto size_size = common::network::byteorder::bytes<size_type>();
 
                template<typename type, size_type offset>
                class Data
@@ -354,7 +354,7 @@ namespace casual
                   return CASUAL_ORDER_INVALID_BUFFER;
                }
 
-               const auto count = common::network::bytes<T>();
+               const auto count = common::network::byteorder::bytes<T>();
                const auto total = buffer.used() + count;
 
                if( total > buffer.size())
@@ -429,7 +429,7 @@ namespace casual
                   return CASUAL_ORDER_INVALID_BUFFER;
                }
 
-               const auto count = common::network::bytes<T>();
+               const auto count = common::network::byteorder::bytes<T>();
 
                const auto total = buffer.pick() + count;
 

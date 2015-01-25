@@ -54,6 +54,16 @@ namespace casual
          EXPECT_TRUE( bind( pod, 42) == true);
       }
 
+      TEST( casual_common_conformance, is_floating_point__is_signed)
+      {
+
+         EXPECT_TRUE( std::is_signed< float>::value);
+         EXPECT_TRUE( std::is_floating_point< float>::value);
+
+         EXPECT_TRUE( std::is_signed< double>::value);
+         EXPECT_TRUE( std::is_floating_point< double>::value);
+
+      }
 
 
    } // common

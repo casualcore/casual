@@ -209,8 +209,7 @@ namespace casual
                template< typename T>
                void write( const T& value)
                {
-                  //append( &value, sizeof( T));
-                  const auto encoded = common::network::byteorder<T>::encode( value);
+                  const auto encoded = common::network::byteorder::encode( value);
                   append( &encoded, sizeof( encoded));
                }
 
@@ -241,9 +240,9 @@ namespace casual
                void read( T& value)
                {
                   //consume( &value, sizeof( T));
-                  common::network::type<T> encoded;
+                  common::network::byteorder::type<T> encoded;
                   consume( &encoded, sizeof( encoded));
-                  value = common::network::byteorder<T>::decode( encoded);
+                  value = common::network::byteorder::decode< T>( encoded);
                }
 
                void read( std::string& value)

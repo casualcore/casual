@@ -92,8 +92,8 @@ namespace casual
             typedef long id_type;
 
             // A thing to make stuff less bloaty ... not so good though
-            constexpr auto size_size = common::network::bytes<size_type>();
-            constexpr auto id_size = common::network::bytes<id_type>();
+            constexpr auto size_size = common::network::byteorder::bytes<size_type>();
+            constexpr auto id_size = common::network::byteorder::bytes<id_type>();
 
 
             //! Transform a value in place from network to host
@@ -101,9 +101,9 @@ namespace casual
             void parse( const_data_type where, T& value)
             {
                // Cast to network version
-               const auto encoded = *reinterpret_cast< const common::network::type<T>*>( where);
+               const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
                // Decode to host version
-               value = common::network::byteorder<T>::decode( encoded);
+               value = common::network::byteorder::decode< T>( encoded);
             }
 
             // TODO: We should remove this
@@ -117,7 +117,7 @@ namespace casual
             void write( data_type where, const T value)
             {
                // Encode to network version
-               const auto encoded = common::network::byteorder<T>::encode( value);
+               const auto encoded = common::network::byteorder::encode( value);
                // Write it to buffer
                std::memcpy( where, &encoded, sizeof( encoded));
             }
@@ -484,7 +484,7 @@ namespace casual
             template<typename T>
             int add( const char* const handle, const long id, const int type, const T data)
             {
-               const auto encoded = common::network::byteorder<T>::encode( data);
+               const auto encoded = common::network::byteorder::encode( data);
                return add( handle, id, type, reinterpret_cast<const char*>( &encoded), sizeof (encoded));
             }
 
