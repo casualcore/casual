@@ -18,7 +18,7 @@ namespace casual
       namespace network
       {
 
-         template< typename T, typename = typename std::enable_if< std::is_arithmetic< T>::value, T>::type>
+         template< typename T, typename enable = void>
          struct byteorder
          {
          };
@@ -85,12 +85,7 @@ namespace casual
          };
 
 
-         template< >
-         struct byteorder< unsigned long>
-         {
-            static uint64_t encode( unsigned long value) noexcept;
-            static unsigned long decode( uint64_t value) noexcept;
-         };
+
 
          //
          // Fixed width unsigned integer types
@@ -124,6 +119,13 @@ namespace casual
          {
             static uint64_t encode( uint64_t value) noexcept;
             static uint64_t decode( uint64_t value) noexcept;
+         };
+
+         template< >
+         struct byteorder< unsigned long, typename std::enable_if< ! std::is_same< unsigned long, uint64_t>::value >::type>
+         {
+            static uint64_t encode( unsigned long value) noexcept;
+            static unsigned long decode( uint64_t value) noexcept;
          };
 
       }
