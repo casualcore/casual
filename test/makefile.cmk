@@ -1,14 +1,11 @@
 from casual.make.directive import *
 
-Include( '$(CASUAL_BUILD_ENVIRONMENT)')
-
 IncludePaths( ['include',
 	'../common/include',
 	'../serviceframework/include',
 	'../xatmi/include',
 	'../queue/include',
-	'$(YAML_INCLUDE_PATH)',
-    '$(UNITTEST_INCLUDE_PATH)'
+	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 LibraryPaths( [ 'bin',
 	'../xatmi/bin',
@@ -16,9 +13,7 @@ LibraryPaths( [ 'bin',
 	'../queue/bin',
 	'../buffer/bin',
 	'../serviceframework/bin',
-	'$(YAML_LIBRARY_PATH)',
-	'$(JSON_LIBRARY_PATH)',
-	'$(IBM_DB_LIB)'
+	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 	])
 
 

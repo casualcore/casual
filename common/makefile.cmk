@@ -18,11 +18,11 @@ IncludePaths( [
     '../transaction/include',
     '../serviceframework/include',
     '../buffers/include',
-    '$(UNITTEST_INCLUDE_PATH)'
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)'
     ]
     + platform_specific_include_paths)
 
-LibraryPaths( platform_specific_lib_paths + [ '$(UNITTEST_LIBRARY_PATH)'])
+LibraryPaths( platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 
 install_libs = []

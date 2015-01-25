@@ -1,5 +1,5 @@
 from casual.make.directive import *
-import sys; 
+
     
 IncludePaths( ['include',
     '../common/include',
@@ -7,8 +7,7 @@ IncludePaths( ['include',
     '../configuration/include',
     '../serviceframework/include',
     '../thirdparty/database/include',
-    '$(UNITTEST_INCLUDE_PATH)',
-    '/opt/local/include'
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 
 LibraryPaths( ['bin',
@@ -17,7 +16,8 @@ LibraryPaths( ['bin',
     '../configuration/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
-    '/opt/local/lib'])
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+     ])
 
 #    $(IBM_DB_LIB)
 

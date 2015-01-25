@@ -1,10 +1,9 @@
 #
 # eclipse project
 #
-.settings/org.eclipse.cdt.codan.core.prefs
+.settings/
 .pydevproject
-.settings/org.eclipse.cdt.ui.prefs
-
+.cproject
 
 
 #
