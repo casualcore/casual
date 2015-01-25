@@ -57,7 +57,12 @@ namespace casual
 
             Path::Path( Path&&) noexcept = default;
 
-            Path& Path::operator = ( Path&&) noexcept = default;
+
+            Path& Path::operator = ( Path&& rhs) noexcept
+            {
+               m_path = std::move( rhs.m_path);
+               return *this;
+            }
 
             Path::operator const std::string&() const
             {
