@@ -7,6 +7,8 @@
 
 #include "common/network_byteorder.h"
 
+#include <memory>
+
 #include <unistd.h>
 
 #if defined (__linux__)
@@ -165,6 +167,9 @@ namespace casual
             return BE64TOH( value);
          }
 
+
+         static_assert( sizeof( long long) == 8, "Unexpected size of long long");
+
          uint64_t byteorder< long long>::encode( const long long value) noexcept
          {
             return HTOBE64( value);
@@ -178,31 +183,32 @@ namespace casual
          //
          // We assume IEEE 754 and that float is 32 bits
          //
+         static_assert( sizeof( float) == 4, "Unexpected size of float");
+
          uint32_t byteorder< float>::encode( const float value) noexcept
          {
-            const auto aliasing = reinterpret_cast<const char*>(&value);
-            return HTOBE32( *reinterpret_cast<const uint32_t*>(aliasing));
+            return HTOBE32( *reinterpret_cast<const uint32_t*>(std::addressof( value)));
          }
          float byteorder< float>::decode( const uint32_t value) noexcept
          {
             const auto host = BE32TOH(value);
-            const auto aliasing = reinterpret_cast<const char*>(&host);
-            return *reinterpret_cast< const float*>( aliasing);
+            return *reinterpret_cast< const float*>(std::addressof( host));
          }
+
 
          //
          // We assume IEEE 754 and that double is 64 bits
          //
+         static_assert( sizeof( double) == 8, "Unexpected size of double");
+
          uint64_t byteorder< double>::encode( const double value) noexcept
          {
-            const auto aliasing = reinterpret_cast<const char*>(&value);
-            return HTOBE64(*reinterpret_cast<const uint64_t*>(aliasing));
+            return HTOBE64(*reinterpret_cast<const uint64_t*>(std::addressof( value)));
          }
          double byteorder< double>::decode( const uint64_t value) noexcept
          {
             const auto host = BE64TOH(value);
-            const auto aliasing = reinterpret_cast<const char*>(&host);
-            return *reinterpret_cast< const double*>( aliasing);
+            return *reinterpret_cast< const double*>( std::addressof( host));
          }
 
 
