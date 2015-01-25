@@ -7,6 +7,8 @@
 
 #include "common/network_byteorder.h"
 
+#include <memory>
+
 #include <unistd.h>
 
 #if defined (__linux__)
@@ -141,7 +143,6 @@ namespace casual
                   return BE16TOH(value);
                }
 
-
                std::uint32_t transcode< 4, false, false>::encode( std::uint32_t value) noexcept
                {
                   return HTOBE32(value);
@@ -165,33 +166,41 @@ namespace casual
 
 
 
+               //
+               // We assume IEEE 754 and that float is 32 bits
+               //
+               static_assert( sizeof( float) == 4, "Unexpected size of float");
+
+               std::uint32_t transcode< 4, true, true>::encode( float value) noexcept
+               {
+                  return HTOBE32( *reinterpret_cast<const uint32_t*>(std::addressof( value)));
+               }
+
+               float transcode< 4, true, true>::decode( std::uint32_t value) noexcept
+               {
+                  const auto host = BE32TOH(value);
+                  return *reinterpret_cast< const float*>(std::addressof( host));
+               }
+
+
+               //
+               // We assume IEEE 754 and that double is 64 bits
+               //
+               static_assert( sizeof( double) == 8, "Unexpected size of double");
+
                std::uint64_t transcode< 8, true, true>::encode( double value) noexcept
                {
-                  const auto aliasing = reinterpret_cast<const char*>(&value);
-                  return HTOBE64(*reinterpret_cast<const uint64_t*>(aliasing));
+                  return HTOBE64(*reinterpret_cast<const uint64_t*>(std::addressof( value)));
                }
 
                double transcode< 8, true, true>::decode( std::uint64_t value) noexcept
                {
                   const auto host = BE64TOH(value);
-                  const auto aliasing = reinterpret_cast<const char*>(&host);
-                  return *reinterpret_cast< const double*>( aliasing);
+                  return *reinterpret_cast< const double*>( std::addressof( host));
                }
 
 
-               std::uint32_t transcode< 4, true, true>::encode( float value) noexcept
-               {
-                  const auto aliasing = reinterpret_cast<const char*>(&value);
-                  return HTOBE32( *reinterpret_cast< const std::uint32_t*>(aliasing));
-               }
 
-
-               float transcode< 4, true, true>::decode( std::uint32_t value) noexcept
-               {
-                  const auto host = BE32TOH( value);
-                  const auto aliasing = reinterpret_cast<const char*>( &host);
-                  return *reinterpret_cast< const float*>( aliasing);
-               }
 
             } // detail
          } // byteorder
