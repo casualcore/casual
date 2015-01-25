@@ -60,7 +60,7 @@ namespace casual
                // TODO: Do we need to keep the string-buffer somehow ?
                //
 
-               std::unique_ptr<json_object,std::function<void(json_object*)>> m_object;
+               std::unique_ptr<json_object,std::function<int(json_object*)>> m_object;
 
             };
 
@@ -155,7 +155,7 @@ namespace casual
 
             private:
 
-               std::unique_ptr<json_object,std::function<void(json_object*)>> m_object;
+               std::unique_ptr<json_object,std::function<int(json_object*)>> m_object;
 
             };
 

@@ -126,137 +126,75 @@ namespace casual
       namespace network
       {
 
-         uint8_t byteorder< bool>::encode( const bool value) noexcept
+         namespace byteorder
          {
-            return value;
-         }
-         bool byteorder< bool>::decode( const uint8_t value) noexcept
-         {
-            return value;
-         }
+            namespace detail
+            {
 
-         uint8_t byteorder< char>::encode( const char value) noexcept
-         {
-            return value;
-         }
-         char byteorder< char>::decode( const uint8_t value) noexcept
-         {
-            return value;
-         }
+               std::uint16_t transcode< 2, false, false>::encode( std::uint16_t value) noexcept
+               {
+                  return HTOBE16(value);
+               }
 
-         //
-         // short is 16 bit on every 32/64 bit systems except SILP64 systems
-         //
-         uint16_t byteorder< short>::encode( const short value) noexcept
-         {
-            return HTOBE16(value);
-         }
-         short byteorder< short>::decode( const uint16_t value) noexcept
-         {
-            return BE16TOH(value);
-         }
-
-         uint64_t byteorder< long>::encode( const long value) noexcept
-         {
-            return HTOBE64( value);
-         }
-         long byteorder< long>::decode( const uint64_t value) noexcept
-         {
-            return BE64TOH( value);
-         }
-
-         uint64_t byteorder< long long>::encode( const long long value) noexcept
-         {
-            return HTOBE64( value);
-         }
-         long long byteorder< long long>::decode( const uint64_t value) noexcept
-         {
-            return BE64TOH( value);
-         }
+               std::uint16_t transcode< 2, false, false>::decode( std::uint16_t value) noexcept
+               {
+                  return BE16TOH(value);
+               }
 
 
-         //
-         // We assume IEEE 754 and that float is 32 bits
-         //
-         uint32_t byteorder< float>::encode( const float value) noexcept
-         {
-            const auto aliasing = reinterpret_cast<const char*>(&value);
-            return HTOBE32( *reinterpret_cast<const uint32_t*>(aliasing));
-         }
-         float byteorder< float>::decode( const uint32_t value) noexcept
-         {
-            const auto host = BE32TOH(value);
-            const auto aliasing = reinterpret_cast<const char*>(&host);
-            return *reinterpret_cast< const float*>( aliasing);
-         }
+               std::uint32_t transcode< 4, false, false>::encode( std::uint32_t value) noexcept
+               {
+                  return HTOBE32(value);
+               }
 
-         //
-         // We assume IEEE 754 and that double is 64 bits
-         //
-         uint64_t byteorder< double>::encode( const double value) noexcept
-         {
-            const auto aliasing = reinterpret_cast<const char*>(&value);
-            return HTOBE64(*reinterpret_cast<const uint64_t*>(aliasing));
-         }
-         double byteorder< double>::decode( const uint64_t value) noexcept
-         {
-            const auto host = BE64TOH(value);
-            const auto aliasing = reinterpret_cast<const char*>(&host);
-            return *reinterpret_cast< const double*>( aliasing);
-         }
+               std::uint32_t transcode< 4, false, false>::decode( std::uint32_t value) noexcept
+               {
+                  return BE32TOH( value);
+               }
+
+
+               std::uint64_t transcode< 8, false, false>::encode( std::uint64_t value) noexcept
+               {
+                  return HTOBE64( value);
+               }
+
+               std::uint64_t transcode< 8, false, false>::decode( std::uint64_t value) noexcept
+               {
+                  return BE64TOH( value);
+               }
 
 
 
+               std::uint64_t transcode< 8, true, true>::encode( double value) noexcept
+               {
+                  const auto aliasing = reinterpret_cast<const char*>(&value);
+                  return HTOBE64(*reinterpret_cast<const uint64_t*>(aliasing));
+               }
 
-         uint8_t byteorder< uint8_t>::encode( const uint8_t value) noexcept
-         {
-            return value;
-         }
-         uint8_t byteorder< uint8_t>::decode( const uint8_t value) noexcept
-         {
-            return value;
-         }
-
-         uint16_t byteorder< uint16_t>::encode( const uint16_t value) noexcept
-         {
-            return HTOBE16(value);
-         }
-         uint16_t byteorder< uint16_t>::decode( const uint16_t value) noexcept
-         {
-            return BE16TOH( value);
-         }
+               double transcode< 8, true, true>::decode( std::uint64_t value) noexcept
+               {
+                  const auto host = BE64TOH(value);
+                  const auto aliasing = reinterpret_cast<const char*>(&host);
+                  return *reinterpret_cast< const double*>( aliasing);
+               }
 
 
-         uint32_t byteorder< uint32_t>::encode( const uint32_t value) noexcept
-         {
-            return HTOBE32(value);
-         }
-         uint32_t byteorder< uint32_t>::decode( const uint32_t value) noexcept
-         {
-            return BE32TOH( value);
-         }
-
-         uint64_t byteorder< uint64_t>::encode( const uint64_t value) noexcept
-         {
-            return HTOBE64(value);
-         }
-         uint64_t byteorder< uint64_t>::decode( const uint64_t value) noexcept
-         {
-            return BE64TOH( value);
-         }
+               std::uint32_t transcode< 4, true, true>::encode( float value) noexcept
+               {
+                  const auto aliasing = reinterpret_cast<const char*>(&value);
+                  return HTOBE32( *reinterpret_cast< const std::uint32_t*>(aliasing));
+               }
 
 
-         uint64_t byteorder< unsigned long, typename std::enable_if< ! std::is_same< unsigned long, uint64_t>::value >::type>::encode( const unsigned long value) noexcept
-         {
-            return HTOBE64( value);
-         }
+               float transcode< 4, true, true>::decode( std::uint32_t value) noexcept
+               {
+                  const auto host = BE32TOH( value);
+                  const auto aliasing = reinterpret_cast<const char*>( &host);
+                  return *reinterpret_cast< const float*>( aliasing);
+               }
 
-         unsigned long byteorder< unsigned long, typename std::enable_if< ! std::is_same< unsigned long, uint64_t>::value >::type>::decode( const uint64_t value) noexcept
-         {
-            return BE64TOH( value);
-         }
-
-      }
-   }
-
-}
+            } // detail
+         } // byteorder
+      } // nework
+   } // common
+} // casual
