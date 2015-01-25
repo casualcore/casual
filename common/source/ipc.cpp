@@ -200,7 +200,21 @@ namespace casual
 
 
             Complete::Complete( Complete&&) noexcept = default;
-            Complete& Complete::operator = ( Complete&&) noexcept = default;
+
+
+            Complete& Complete::operator = ( Complete&& rhs) noexcept
+            {
+               //
+               // vector::operator = (vector&&) only support noexecpt if
+               // allocator support it. It seems that it's not supported on our
+               // target platform currently...
+               //
+               type = std::move( rhs.type);
+               correlation = std::move( rhs.correlation);
+               payload = std::move( rhs.payload);
+               offset = std::move( rhs.offset);
+               return *this;
+            }
 
 
 
