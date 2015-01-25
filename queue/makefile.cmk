@@ -10,7 +10,7 @@ IncludePaths( [
     '../thirdparty/database/include',
     '../xatmi/include',
     '../transaction/include',
-    '$(UNITTEST_INCLUDE_PATH)'
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ]);
 
 
@@ -21,6 +21,7 @@ LibraryPaths( [
         '../serviceframework/bin',
         '../common/bin',
         '../xatmi/bin',
+        '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ]);
     
 

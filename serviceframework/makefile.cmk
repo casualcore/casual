@@ -1,25 +1,18 @@
 from casual.make.directive import *
 
 
-Include( '$(CASUAL_BUILD_ENVIRONMENT)')
-
 
 IncludePaths([
     'include',
     '../common/include',
     '../xatmi/include',
-    '$(YAML_INCLUDE_PATH)',
-    '$(JSON_INCLUDE_PATH)',
-    '$(XML_INCLUDE_PATH)',
-	'$(UNITTEST_INCLUDE_PATH)',
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 	
 LibraryPaths([
     '../common/bin',
     '../xatmi/bin',
-    '$(YAML_LIBRARY_PATH)',
-    '$(JSON_LIBRARY_PATH)',
-    '$(XML_LIBRARY_PATH)',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
 install_lib = []

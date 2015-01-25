@@ -2,11 +2,12 @@ from casual.make.directive import *
 
 IncludePaths([ 
 	'../common/include', 
-	'$(UNITTEST_INCLUDE_PATH)',
+	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
 	])
 
 LibraryPaths([ 
     '../common/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
 

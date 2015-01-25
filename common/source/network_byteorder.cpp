@@ -208,7 +208,15 @@ namespace casual
 
 
 
+         uint64_t byteorder< unsigned long>::encode( const unsigned long value) noexcept
+         {
+            return HTOBE64( value);
+         }
 
+         unsigned long byteorder< unsigned long>::decode( const uint64_t value) noexcept
+         {
+            return BE64TOH( value);
+         }
 
 
          uint8_t byteorder< uint8_t>::encode( const uint8_t value) noexcept

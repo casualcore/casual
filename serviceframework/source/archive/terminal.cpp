@@ -129,10 +129,10 @@ namespace casual
             Implementation::~Implementation() { m_output.flush();}
 
 
-            std::size_t Implementation::container_start( const std::size_t size, const char* name) { return size;}
-            void Implementation::container_end( const char* name) { /* no-op */;}
-            void Implementation::serialtype_start( const char* name) { /* no-op */;}
-            void Implementation::serialtype_end( const char* name) { /* no-op */;}
+            std::size_t Implementation::container_start( const std::size_t size, const char* name) { ++m_depth; return size;}
+            void Implementation::container_end( const char* name) { decrement();;}
+            void Implementation::serialtype_start( const char* name) { ++m_depth;}
+            void Implementation::serialtype_end( const char* name) { decrement();;}
 
 
 
@@ -141,7 +141,7 @@ namespace casual
                switch( m_state)
                {
                   case State::initializing:
-                     m_row_start_depth = m_depth - 2;
+                     m_row_start_depth = m_depth - 1;
                      m_rows.push_back( {});
                      m_state = State::first;
                   case State::first:

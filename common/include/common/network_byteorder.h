@@ -84,6 +84,14 @@ namespace casual
             static double decode( uint64_t value) noexcept;
          };
 
+
+         template< >
+         struct byteorder< unsigned long>
+         {
+            static uint64_t encode( unsigned long value) noexcept;
+            static unsigned long decode( uint64_t value) noexcept;
+         };
+
          //
          // Fixed width unsigned integer types
          //

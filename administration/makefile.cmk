@@ -4,11 +4,13 @@ from casual.make.directive import *
 IncludePaths( [
        '../common/include',
        '../xatmi/include',
+       '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 
 LibraryPaths( 
     [
       '../common/bin',
+      '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
 
