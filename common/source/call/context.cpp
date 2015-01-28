@@ -513,7 +513,7 @@ namespace casual
          }
 
 
-         void Context::canccel( descriptor_type descriptor)
+         void Context::cancel( descriptor_type descriptor)
          {
             m_state.pending.discard( descriptor);
          }

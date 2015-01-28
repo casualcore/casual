@@ -194,7 +194,7 @@ int tpcancel( int id)
 {
    try
    {
-      casual::common::call::Context::instance().canccel( id);
+      casual::common::call::Context::instance().cancel( id);
    }
    catch( ...)
    {

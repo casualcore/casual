@@ -136,7 +136,7 @@ namespace casual
 
             void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
 
-            void canccel( descriptor_type cd);
+            void cancel( descriptor_type cd);
 
             void clean();
 
