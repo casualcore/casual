@@ -1,10 +1,9 @@
 
 
 #
-# Unittest
-UNITTEST_INCLUDE_PATH = $(CASUALMAKE_PATH)/unittest/gtest/include
-UNITTEST_LIBRARY_PATH = $(CASUALMAKE_PATH)/unittest/gtest/bin
-ISOLATED_UNITTEST_LIB = $(UNITTEST_LIBRARY_PATH)/libgtest.a
+# Unittest lib, probably only work for gtest.
+#
+ISOLATED_UNITTEST_LIB = gtest 
 
 ISOLATED_UNITTEST_DIRECTIVES := $(ISOLATED_UNITTEST_DIRECTIVES) --gtest_color=yes
 
