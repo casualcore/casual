@@ -400,10 +400,7 @@ def LinkDependentUnittest( name, objectfiles, libraries, resources = None):
 
 def Install( target, destination):
     
-    if isinstance( target, basestring):
-        internal_install( Target( target), destination)
-    else:
-        internal_install( target, destination)
+    internal_install( target, destination)
     
 
 def Include( filename):

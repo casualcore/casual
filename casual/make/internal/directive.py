@@ -693,6 +693,8 @@ def internal_install(target, destination):
         for t in target:
             internal_install( t, destination)
     
+    elif isinstance( target, basestring):
+        internal_install( Target( target), destination)
     else:
         target.name = 'install_' + target.name
         
