@@ -84,7 +84,7 @@ DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 #
 # Header dependency stuff
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -M -std=c++11
 
 
 

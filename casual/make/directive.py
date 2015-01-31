@@ -355,7 +355,7 @@ def LinkIsolatedUnittest(name,objectfiles,libraries):
     #
     # We add the unittest lib for the user...
     #
-    internal_link( internal_platform().link_executable, target, objectfiles, libraries + ['$(ISOLATED_UNITTEST_LIB)'])
+    internal_link( internal_platform().link_executable, target, objectfiles, libraries + internal_platform().unittest_libraries)
     
     internal_deploy( target, 'client')
 

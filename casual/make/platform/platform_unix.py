@@ -4,6 +4,11 @@ from casual.make.platform.factory import *
 
 
 class CommonUNIX( Platform):
+    
+    def __init__(self):
+        
+        self.unittest_libraries = [ 'gtest', 'gtest_main' ]
+        
         
 
     def link_directive(self, libs):            
