@@ -248,6 +248,20 @@ value:
       EXPECT_TRUE( value.m_binary.at( 4) == 58);
    }
 
-}
+
+   TEST( casual_sf_yaml_archive, read_invalid_document__expecting_exception)
+   {
+      const std::string yaml{ "   " };
+
+      EXPECT_THROW
+      ({
+         sf::archive::yaml::Load().serialize( yaml);
+      }, sf::exception::archive::invalid::Document);
+
+   }
+
+
+
+} // casual
 
 

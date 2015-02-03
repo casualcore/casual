@@ -152,6 +152,18 @@ namespace casual
 
    }
 
+   TEST( casual_sf_xml_archive, read_invalid_document__expecting_exception)
+   {
+      const std::string xml{ "<?xml version='1.0'?><root>" };
+
+      EXPECT_THROW
+      ({
+         sf::archive::xml::Load().serialize( xml);
+      }, sf::exception::archive::invalid::Document);
+
+   }
+
+
 
 
 

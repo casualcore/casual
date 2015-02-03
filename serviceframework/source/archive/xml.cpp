@@ -11,6 +11,9 @@
 
 #include "common/transcode.h"
 
+#include <iterator>
+#include <algorithm>
+
 namespace casual
 {
    namespace sf
@@ -70,10 +73,13 @@ namespace casual
                   }
 
                   //
+                  // Stack 'em backwards
+                  //
+
+                  //
                   // TODO: We need to filter elements not named 'element',
                   // but with 1.4 that is really simple, so we just wait
                   //
-
 
                   // 1.2
                   const auto content = m_stack.back().children();
@@ -151,14 +157,37 @@ namespace casual
 
             void Save::serialize( std::ostream& stream) const
             {
-               m_document.save( stream);
+               m_document.save( stream, " ");
             }
+
+/*
+            namespace
+            {
+               struct string_writer : pugi::xml_writer
+               {
+                  std::string& string;
+                  string_writer( std::string& string) : string( string) {}
+                  void save( const void* const data, const std::size_t size) override
+                  {
+                     string.append( static_cast<const char*>( data), size);
+                  }
+               };
+            }
+*/
 
             void Save::serialize( std::string& xml) const
             {
-               // TODO: implement the xml_writer-interface
+               //
+               // The pugi::xml_writer-interface actually seems to be slower
+               //
+               //string_writer writer( xml);
+               //m_document.save( writer, " ");
+               //
+               // so we're doin' it in a simpler way instead
+               //
+
                std::ostringstream stream;
-               m_document.save( stream);
+               serialize( stream);
                xml.assign( stream.str());
             }
 
@@ -178,6 +207,10 @@ namespace casual
                   start( name);
 
                   auto element = m_stack.back();
+
+                  //
+                  // Stack 'em backwards
+                  //
 
                   for( std::size_t idx = 0; idx < size; ++idx)
                   {
@@ -224,7 +257,7 @@ namespace casual
 
                void Implementation::write( const char& value)
                {
-                  write( std::string( 1, value));
+                  write( std::string{ value});
                }
 
                void Implementation::write( const std::string& value)

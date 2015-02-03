@@ -13,11 +13,8 @@
 #include <pugixml.hpp>
 
 
-#include <iosfwd>
 #include <sstream>
 #include <vector>
-#include <iterator>
-#include <algorithm>
 #include <utility>
 #include <tuple>
 
@@ -81,6 +78,8 @@ namespace casual
                   //!
                   //! @param node Normally a pugi::xml_document
                   //!
+                  //! @note Any possible document has to outlive the reader
+                  //!
                   explicit Implementation( pugi::xml_node node );
 
                   std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
@@ -105,7 +104,6 @@ namespace casual
                      end( name);
 
                      return result;
-
                   }
 
                private:
@@ -116,8 +114,6 @@ namespace casual
                   //
                   // TODO: Add some error handling
                   //
-                  // TODO: Move overloads to TU
-                  //
 
                   template<typename T>
                   void read( T& value) const
@@ -125,6 +121,10 @@ namespace casual
                      std::istringstream stream( m_stack.back().text().get());
                      stream >> value;
                   }
+
+                  //
+                  // A few overloads
+                  //
 
                   void read( bool& value) const;
                   void read( char& value) const;
@@ -181,6 +181,8 @@ namespace casual
                   //!
                   //! @param node Normally a pugi::xml_document
                   //!
+                  //! @note Any possible document has to outlive the reader
+                  //!
                   explicit Implementation( pugi::xml_node node);
 
                   std::size_t container_start( const std::size_t size, const char* name);
@@ -204,10 +206,6 @@ namespace casual
                   void start( const char* name);
                   void end( const char* name);
 
-                  //
-                  // TODO: Move overloads to TU
-                  //
-
                   template<typename T>
                   //typename std::enabe_if<std::is_floating_point<T>::value, void>::type
                   void write( const T& value)
@@ -216,6 +214,10 @@ namespace casual
                      stream << std::fixed << value;
                      m_stack.back().text().set( stream.str().c_str());
                   }
+
+                  //
+                  // A few overloads
+                  //
 
                   void write( const bool& value);
                   void write( const char& value);
@@ -238,7 +240,6 @@ namespace casual
             typedef basic_reader< reader::Implementation, policy::Strict > Reader;
 
             typedef basic_writer< writer::Implementation> Writer;
-
 
 
          } // xml

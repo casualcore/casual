@@ -26,11 +26,17 @@ namespace casual
 
             const YAML::Node& Load::serialize( std::istream& stream)
             {
-               YAML::Parser parser( stream);
-
-               if( ! parser.GetNextDocument( m_document))
+               try
                {
-                  throw exception::archive::invalid::Document{ "invalid yaml document"};
+                  YAML::Parser parser( stream);
+                  if( ! parser.GetNextDocument( m_document))
+                  {
+                     throw exception::archive::invalid::Document{ "no document"};
+                  }
+               }
+               catch( const YAML::ParserException& e)
+               {
+                  throw exception::archive::invalid::Document{ e.what()};
                }
 
                return source();
