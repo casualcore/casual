@@ -548,33 +548,6 @@ namespace casual
                return CASUAL_FIELD_SUCCESS;
             }
 
-
-            int first( const char* const handle, long& id, long& index)
-            {
-               const Buffer buffer = find_buffer( handle);
-
-               if( !buffer)
-               {
-                  return CASUAL_FIELD_INVALID_BUFFER;
-               }
-
-               const Buffer::Value value = buffer.first();
-               const Buffer::Value beyond = buffer.beyond();
-
-               if( value != beyond)
-               {
-                  id = value.id();
-                  index = 0;
-               }
-               else
-               {
-                  return CASUAL_FIELD_NO_OCCURRENCE;
-               }
-
-               return CASUAL_FIELD_SUCCESS;
-
-            }
-
             int next( const char* const handle, long& id, long& index)
             {
                //
@@ -616,6 +589,12 @@ namespace casual
                            id = value.id();
                            index = std::count( values.begin(), values.end(), id);
 
+                           if( id == CASUAL_FIELD_NO_ID)
+                           {
+                              // We have encountered a removed occurrence
+                              return next( handle, id, index);
+                           }
+
                            return CASUAL_FIELD_SUCCESS;
                         }
                         else
@@ -633,6 +612,38 @@ namespace casual
                //
                return CASUAL_FIELD_INVALID_ID;
 
+            }
+
+            int first( const char* const handle, long& id, long& index)
+            {
+               const Buffer buffer = find_buffer( handle);
+
+               if( !buffer)
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               const Buffer::Value value = buffer.first();
+               const Buffer::Value beyond = buffer.beyond();
+
+               if( value != beyond)
+               {
+                  id = value.id();
+                  index = 0;
+
+                  if( id == CASUAL_FIELD_NO_ID)
+                  {
+                     // The first field was removed
+                     return next( handle, id, index);
+                  }
+
+               }
+               else
+               {
+                  return CASUAL_FIELD_NO_OCCURRENCE;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
             }
 
 

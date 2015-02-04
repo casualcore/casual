@@ -374,7 +374,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_twp_and_remove_first_occurrence_and_get_second_as_first__expecting_success)
+      TEST( casual_field_buffer, add_two_and_remove_first_occurrence_and_get_second_as_first__expecting_success)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
@@ -387,7 +387,6 @@ namespace casual
          EXPECT_TRUE( short_integer == 321);
 
          tpfree( buffer);
-
       }
 
       TEST( casual_field_buffer, add_twp_and_remove_second_occurrence_and_first_second_as_first__expecting_success)
@@ -632,6 +631,57 @@ namespace casual
       {
          EXPECT_TRUE( CasualFieldTypeOfName( "string", nullptr) == CASUAL_FIELD_SUCCESS);
       }
+
+      TEST( casual_field_buffer, add_three_remove_two_field_and_then_iterate__expecting_third_as_first)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
+
+         long id = CASUAL_FIELD_NO_ID;
+         long occurrence;
+
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_FLOAT1);
+         EXPECT_TRUE( occurrence == 0);
+
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
+
+         tpfree( buffer);
+      }
+
+
+      TEST( casual_field_buffer, add_three_remove_middle_field_and_then_iterate__expecting_third_as_second)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
+
+         long id = CASUAL_FIELD_NO_ID;
+         long occurrence;
+
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_SHORT1);
+         EXPECT_TRUE( occurrence == 0);
+
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_FLOAT1);
+         EXPECT_TRUE( occurrence == 0);
+
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
+
+         tpfree( buffer);
+      }
+
 
    }
 
