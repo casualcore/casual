@@ -26,6 +26,8 @@
 
 #include <type_traits>
 
+#include <iostream>
+
 
 namespace casual
 {
@@ -675,7 +677,6 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
          } //
@@ -720,6 +721,35 @@ int CasualFieldExploreBuffer( const char* buffer, long* const size, long* const 
    return casual::buffer::field::explore( buffer, size, used);
 }
 
+int CasualFieldExploreValue( const char* const buffer, const long id, const long index, long* const count)
+{
+   //
+   // Perhaps we can use casual::buffer::field::next, but not yet
+   //
+   const int type = id / CASUAL_FIELD_TYPE_BASE;
+
+   if( const auto result = casual::buffer::field::get( buffer, id, index, type, nullptr, count))
+   {
+      return result;
+   }
+
+   if( count)
+   {
+      switch( type)
+      {
+      case CASUAL_FIELD_STRING:
+      case CASUAL_FIELD_BINARY:
+         break;
+      default:
+         return CasualFieldPlainTypeHostSize( type, count);
+      }
+   }
+
+   return CASUAL_FIELD_SUCCESS;
+
+}
+
+
 int CasualFieldAddChar( char* const buffer, const long id, const char value)
 {
    return casual::buffer::field::add( buffer, id, CASUAL_FIELD_CHAR, value);
@@ -760,6 +790,38 @@ int CasualFieldAddBinary( char* const buffer, const long id, const char* const v
    return casual::buffer::field::add( buffer, id, CASUAL_FIELD_BINARY, value, count);
 }
 
+int CasualFieldAddValue( char* buffer, long id, const void* const value, const long count)
+{
+   if( !value)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
+
+   switch( id / CASUAL_FIELD_TYPE_BASE)
+   {
+   case CASUAL_FIELD_SHORT:
+      return CasualFieldAddShort ( buffer, id, *static_cast<const short*>( value));
+   case CASUAL_FIELD_LONG:
+      return CasualFieldAddLong  ( buffer, id, *static_cast<const long*>( value));
+   case CASUAL_FIELD_CHAR:
+      return CasualFieldAddChar  ( buffer, id, *static_cast<const char*>( value));
+   case CASUAL_FIELD_FLOAT:
+      return CasualFieldAddFloat ( buffer, id, *static_cast<const float*>( value));
+   case CASUAL_FIELD_DOUBLE:
+      return CasualFieldAddDouble( buffer, id, *static_cast<const double*>( value));
+   case CASUAL_FIELD_STRING:
+      return CasualFieldAddString( buffer, id, static_cast<const char*>( value));
+   case CASUAL_FIELD_BINARY:
+      return CasualFieldAddBinary( buffer, id, static_cast<const char*>( value), count);
+   default:
+      return CASUAL_FIELD_INVALID_ID;
+   }
+
+
+}
+
+
 int CasualFieldGetChar( const char* const buffer, const long id, const long index, char* const value)
 {
    return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_CHAR, value);
@@ -793,6 +855,67 @@ int CasualFieldGetString( const char* const buffer, const long id, const long in
 int CasualFieldGetBinary( const char* const buffer, const long id, const long index, const char** value, long* const count)
 {
    return casual::buffer::field::get( buffer, id, index, CASUAL_FIELD_BINARY, value, count);
+}
+
+int CasualFieldGetValue( const char* const buffer, const long id, const long index, void* const value, long* const count)
+{
+   if( ! value)
+   {
+      return CasualFieldExploreValue( buffer, id, index, count);
+   }
+
+   const int type = id / CASUAL_FIELD_TYPE_BASE;
+
+   const char* data = nullptr;
+   long size = 0;
+
+   switch( type)
+   {
+   case CASUAL_FIELD_STRING:
+   case CASUAL_FIELD_BINARY:
+      if( const auto result = casual::buffer::field::get( buffer, id, index, type, &data, &size))
+         return result;
+      break;
+   default:
+      if( const auto result = CasualFieldPlainTypeHostSize( type, &size))
+         return result;
+      break;
+   }
+
+   if( count)
+   {
+      if( *count < size)
+      {
+         return CASUAL_FIELD_NO_SPACE;
+      }
+
+      //
+      // This is perhaps not Fget32-compatible if field is invalid
+      //
+      *count = size;
+   }
+
+   switch( type)
+   {
+   case CASUAL_FIELD_SHORT:
+      return CasualFieldGetShort( buffer, id, index, static_cast<short*>( value));
+   case CASUAL_FIELD_LONG:
+      return CasualFieldGetLong( buffer, id, index, static_cast<long*>( value));
+   case CASUAL_FIELD_CHAR:
+      return CasualFieldGetChar( buffer, id, index, static_cast<char*>( value));
+   case CASUAL_FIELD_FLOAT:
+      return CasualFieldGetFloat( buffer, id, index, static_cast<float*>( value));
+   case CASUAL_FIELD_DOUBLE:
+      return CasualFieldGetDouble( buffer, id, index, static_cast<double*>( value));
+   default:
+      break;
+   }
+
+   std::memcpy( value, data, size);
+
+   return CASUAL_FIELD_SUCCESS;
+
+
 }
 
 
@@ -1098,14 +1221,39 @@ int CasualFieldTypeOfName( const char* const name, int* const type)
    return CASUAL_FIELD_SUCCESS;
 }
 
-
-int CasualFieldExist( const char* const buffer, const long id, const long index)
+int CasualFieldPlainTypeHostSize( const int type, long* const count)
 {
-   //
-   // Perhaps we can use casual::buffer::field::next, but not yet
-   //
-   const int type = id / CASUAL_FIELD_TYPE_BASE;
-   return casual::buffer::field::get( buffer, id, index, type, nullptr, nullptr);
+
+   if( count)
+   {
+      switch( type)
+      {
+      case CASUAL_FIELD_SHORT:
+         *count = sizeof( short);
+         break;
+      case CASUAL_FIELD_LONG:
+         *count = sizeof( long);
+         break;
+      case CASUAL_FIELD_CHAR:
+         *count = sizeof( char);
+         break;
+      case CASUAL_FIELD_FLOAT:
+         *count = sizeof( float);
+         break;
+      case CASUAL_FIELD_DOUBLE:
+         *count = sizeof( double);
+         break;
+      default:
+         //return CASUAL_FIELD_INVALID_ARGUMENT;
+         return CASUAL_FIELD_INVALID_TYPE;
+      }
+   }
+   else
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
+   return CASUAL_FIELD_SUCCESS;
 }
 
 int CasualFieldRemoveAll( char* const buffer)
