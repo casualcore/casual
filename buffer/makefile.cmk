@@ -34,6 +34,25 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
 
 install_lib.append( lib_buffer)
 
+
+install_bin = []
+
+casual_field_make_header = LinkExecutable( 'bin/casual_field_make_header', 
+    [
+     Compile( 'source/tools/field.cpp'),
+    ], 
+    [ 
+     'casual-common', 
+     'casual-sf', 
+     'casual-buffer',
+    ])
+
+
+install_bin.append( casual_field_make_header)
+
+
+
+
 #
 # Unittest
 #

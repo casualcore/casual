@@ -1,12 +1,12 @@
 //
-// casual_field_buffer.h
+// field.h
 //
 //  Created on: 3 nov 2013
 //      Author: Kristone
 //
 
-#ifndef CASUAL_FIELD_BUFFER_H
-#define CASUAL_FIELD_BUFFER_H
+#ifndef CASUAL_BUFFER_FIELD_H
+#define CASUAL_BUFFER_FIELD_H
 
 
 /* used as type with tpalloc */
@@ -132,4 +132,4 @@ int CasualFieldNext( const char* buffer, long* id, long* index);
 }
 #endif
 
-#endif /* CASUAL_FIELD_BUFFER_H_ */
+#endif /* CASUAL_BUFFER_FIELD_H */

@@ -5,7 +5,7 @@
 //      Author: Kristone
 //
 
-#include "common/network_byteorder.h"
+#include "common/network/byteorder.h"
 
 #include <memory>
 

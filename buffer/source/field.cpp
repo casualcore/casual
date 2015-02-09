@@ -1,5 +1,5 @@
 //
-// casual_field_buffer.cpp
+// field.cpp
 //
 //  Created on: 3 nov 2013
 //      Author: Kristone
@@ -8,7 +8,8 @@
 #include "buffer/field.h"
 
 #include "common/environment.h"
-#include "common/network_byteorder.h"
+#include "common/exception.h"
+#include "common/network/byteorder.h"
 #include "common/buffer/pool.h"
 #include "common/log.h"
 #include "common/platform.h"
@@ -925,44 +926,38 @@ namespace casual
    {
       namespace field
       {
-         namespace
+         namespace repository
          {
-            //
-            // TODO: Much better
-            //
-            // This functionality might be used by some tooling as well
-            //
-
-            namespace repository
+            std::map<std::string,int> name_to_type()
             {
-               std::map<std::string,int> name_to_type()
+               return decltype(name_to_type())
                {
-                  return decltype(name_to_type())
-                  {
-                     {"short",   CASUAL_FIELD_SHORT},
-                     {"long",    CASUAL_FIELD_LONG},
-                     {"char",    CASUAL_FIELD_CHAR},
-                     {"float",   CASUAL_FIELD_FLOAT},
-                     {"double",  CASUAL_FIELD_DOUBLE},
-                     {"string",  CASUAL_FIELD_STRING},
-                     {"binary",  CASUAL_FIELD_BINARY},
-                  };
-               }
+                  {"short",   CASUAL_FIELD_SHORT},
+                  {"long",    CASUAL_FIELD_LONG},
+                  {"char",    CASUAL_FIELD_CHAR},
+                  {"float",   CASUAL_FIELD_FLOAT},
+                  {"double",  CASUAL_FIELD_DOUBLE},
+                  {"string",  CASUAL_FIELD_STRING},
+                  {"binary",  CASUAL_FIELD_BINARY},
+               };
+            }
 
-
-               std::map<int,std::string> type_to_name()
+            std::map<int,std::string> type_to_name()
+            {
+               return decltype(type_to_name())
                {
-                  return decltype(type_to_name())
-                  {
-                     {CASUAL_FIELD_SHORT,    "short"},
-                     {CASUAL_FIELD_LONG,     "long"},
-                     {CASUAL_FIELD_CHAR,     "char"},
-                     {CASUAL_FIELD_FLOAT,    "float"},
-                     {CASUAL_FIELD_DOUBLE,   "double"},
-                     {CASUAL_FIELD_STRING,   "string"},
-                     {CASUAL_FIELD_BINARY,   "binary"},
-                  };
-               }
+                  {CASUAL_FIELD_SHORT,    "short"},
+                  {CASUAL_FIELD_LONG,     "long"},
+                  {CASUAL_FIELD_CHAR,     "char"},
+                  {CASUAL_FIELD_FLOAT,    "float"},
+                  {CASUAL_FIELD_DOUBLE,   "double"},
+                  {CASUAL_FIELD_STRING,   "string"},
+                  {CASUAL_FIELD_BINARY,   "binary"},
+               };
+            }
+
+            namespace
+            {
 
                struct field
                {
@@ -1002,19 +997,11 @@ namespace casual
                {
                   decltype(fetch_groups()) groups;
 
-                  try
-                  {
-                     const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
+                  const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
 
-                     auto archive = sf::archive::reader::makeFromFile( file);
+                  auto archive = sf::archive::reader::makeFromFile( file);
 
-                     archive >> CASUAL_MAKE_NVP( groups);
-                  }
-                  catch( ...)
-                  {
-                     // Make sure this is logged once
-                     common::error::handler();
-                  }
+                  archive >> CASUAL_MAKE_NVP( groups);
 
                   return groups;
 
@@ -1042,13 +1029,13 @@ namespace casual
                            else
                            {
                               // TODO: Much better
-                              common::log::error << "id for " << field.name << " is invalid" << std::endl;
+                              throw common::exception::Base( "id for " + field.name + " is invalid");
                            }
                         }
                         catch( const std::out_of_range&)
                         {
                            // TODO: Much better
-                           common::log::error << "type for " << field.name << " is invalid" << std::endl;
+                           throw common::exception::Base( "type for " + field.name + " is invalid");
                         }
                      }
                   }
@@ -1057,69 +1044,83 @@ namespace casual
 
                }
 
-               std::map<std::string,long> name_to_id()
+            } //
+
+            std::map<std::string,long> name_to_id()
+            {
+               const auto fields = fetch_fields();
+
+               decltype( name_to_id()) result;
+
+               for( const auto& field : fields)
                {
-                  const auto fields = fetch_fields();
-
-                  decltype( name_to_id()) result;
-
-                  for( const auto& field : fields)
+                  if( !result.emplace( field.name, field.id).second)
                   {
-                     if( !result.emplace( field.name, field.id).second)
-                     {
-                        // TODO: Much better
-                        common::log::error << "name for " << field.name << " is not unique" << std::endl;
-                     }
+                     // TODO: Much better
+                     throw common::exception::Base( "name for " + field.name + " is not unique");
                   }
-
-                  return result;
                }
 
-               std::map<long,std::string> id_to_name()
+               return result;
+            }
+
+            std::map<long,std::string> id_to_name()
+            {
+               const auto fields = fetch_fields();
+
+               decltype( id_to_name()) result;
+
+               for( const auto& field : fields)
                {
-                  const auto fields = fetch_fields();
-
-                  decltype( id_to_name()) result;
-
-                  for( const auto& field : fields)
+                  if( !result.emplace( field.id, field.name).second)
                   {
-                     if( !result.emplace( field.id, field.name).second)
-                     {
-                        // TODO: Much better
-                        common::log::error << "id for " << field.name << " is not unique" << std::endl;
-                     }
+                     // TODO: Much better
+                     throw common::exception::Base( "id for " + field.name + " is not unique");
                   }
-
-                  return result;
-
                }
 
-            } // repository
-         } //
+               return result;
+
+            }
+
+         } // repository
+
       } // field
+
    } // buffer
+
 } // casual
 
 
 int CasualFieldNameOfId( const long id, const char** name)
 {
-   static const auto mapping = casual::buffer::field::repository::id_to_name();
-
-   if( id > CASUAL_FIELD_NO_ID)
+   try
    {
-      try
+      static const auto mapping = casual::buffer::field::repository::id_to_name();
+
+      if( id > CASUAL_FIELD_NO_ID)
       {
-         const auto& result = mapping.at( id);
-         if( name) *name = result.c_str();
+         try
+         {
+            const auto& result = mapping.at( id);
+            if( name) *name = result.c_str();
+         }
+         catch( const std::out_of_range&)
+         {
+            return CASUAL_FIELD_UNKNOWN_ID;
+         }
       }
-      catch( const std::out_of_range&)
+      else
       {
-         return CASUAL_FIELD_UNKNOWN_ID;
+         return CASUAL_FIELD_INVALID_ID;
       }
    }
-   else
+   catch( ...)
    {
-      return CASUAL_FIELD_INVALID_ID;
+      // TODO: Handle this in an other way ?
+      casual::common::error::handler();
+      // TODO: Return something else ?
+      return CASUAL_FIELD_INTERNAL_FAILURE;
    }
 
    return CASUAL_FIELD_SUCCESS;
@@ -1127,23 +1128,33 @@ int CasualFieldNameOfId( const long id, const char** name)
 
 int CasualFieldIdOfName( const char* const name, long* const id)
 {
-   static const auto mapping = casual::buffer::field::repository::name_to_id();
-
-   if( name)
+   try
    {
-      try
+      static const auto mapping = casual::buffer::field::repository::name_to_id();
+
+      if( name)
       {
-         const auto& result = mapping.at( name);
-         if( id) *id = result;
+         try
+         {
+            const auto& result = mapping.at( name);
+            if( id) *id = result;
+         }
+         catch( const std::out_of_range&)
+         {
+            return CASUAL_FIELD_UNKNOWN_ID;
+         }
       }
-      catch( const std::out_of_range&)
+      else
       {
-         return CASUAL_FIELD_UNKNOWN_ID;
+         return CASUAL_FIELD_INVALID_ID;
       }
    }
-   else
+   catch( ...)
    {
-      return CASUAL_FIELD_INVALID_ID;
+      // TODO: Handle this in an other way ?
+      casual::common::error::handler();
+      // TODO: Return something else ?
+      return CASUAL_FIELD_INTERNAL_FAILURE;
    }
 
    return CASUAL_FIELD_SUCCESS;
