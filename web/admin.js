@@ -10,6 +10,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	$scope.servers = [];
 	$scope.services = [];
 	$scope.instances = [];
+	$scope.selectedInstances = [];
 	$scope.buttonlabel = "edit";
 	$scope.editing = false;
 	$scope.buttonclass = "btn btn-sm btn-success";
@@ -21,14 +22,11 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	}
 	
 	$scope.submit = function() {
-		$log.info("submit");
-		doGetCasualServerInfo();
-		doGetCasualServiceInfo();
-		promise = $timeout( $scope.submit, 30000, false )
+		doGetCasualStateInfo();
+		promise = $timeout( $scope.submit, 500, false )
 	}
 	
 	$scope.commit = function() {
-		$log.info("commit");
 		if ($scope.buttonlabel == "edit")
 		{
 			$scope.buttonlabel = "commit";
@@ -63,13 +61,27 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 			//
 			// start timeout again
 			//
-			promise = $timeout( $scope.submit, 2000, false );
+			promise = $timeout( $scope.submit, 500, false );
 		}
 	}
 	
-	$scope.showInstance = function( instances)
+	$scope.showInstance = function( serverInstances)
 	{
-		$scope.instances = instances;
+	   $scope.selectedInstances = [];
+	   for (var i=0; i < serverInstances.length; i++)
+	   {
+            for (var j = 0; j < $scope.instances.length; j++)
+            {
+               var instance = $scope.instances[j]
+               if ( serverInstances[i] == instance.pid )
+               {
+                  $scope.selectedInstances.push(instance)
+                  break
+               }
+            }
+
+	   }
+		$scope.selectedInstances = instances;
 	}
 	
 	$scope.getServer = function( pid)
@@ -86,19 +98,20 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 		// TODO: Create map
 		//
         if (state == 2)
-			return "IDLE"
+			 return "IDLE"
         else
-            return "unknown"
+          return "BUSY"
     }
 	
     function uppdateInstances( instanceArr)
     {
     	var jsonstring = angular.toJson( instanceArr)
     	$scope.instances = [];
+    	$scope.selectedInstances = [];
     	$log.log(jsonstring)
 		$http.defaults.headers.common.Accept = 'application/json';
 		$http
-				.post('http://casual.laz.se/test1/casual/casual?service=_broker_updateInstances&protocol=JSON', '{"instances":' + jsonstring + '}')
+				.post('http://localhost/casual/casual?service=.casual.broker.update.instances&protocol=json', '{"instances":' + jsonstring + '}')
 				.success(uppdateInstancesCallback)
 				.error(errorCallback);   	
     }
@@ -108,46 +121,64 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 		$log.log(reply);
 	}
     
-	function doGetCasualServerInfo() {
+	function doGetCasualStateInfo() {
 		$http.defaults.headers.common.Accept = 'application/json';
 		$http
-				.post('http://casual.laz.se/test1/casual/casual?service=_broker_listServers&protocol=JSON','{}')
-				.success(getCasualServerInfoCallback)
+				.post('http://localhost/casual/casual?service=.casual.broker.state&protocol=json','{}')
+				.success(getCasualStateInfoCallback)
 				.error(errorCallback);
 	}
 
-	function getCasualServerInfoCallback(reply) {
+	function getCasualStateInfoCallback(reply) 
+	{
 		
-		$scope.servers = reply.serviceReturn;
-		$log.log($scope.servers);
-		
-		for (var i = 0; i < $scope.servers.length; i++) {
-  			var element = $scope.servers[i];
-  			var servername = element.alias;
-  			for (var j = 0; j < element.instances.length; j++)
-  			{
-  				element.instances[j].alias = servername;
-  				$scope.serverMap[element.instances[j].pid] = servername;
-  			}
-  			element.instances.newlength = element.instances.length
- 		}
-		$log.log( $scope.serverMap)
-	}
+		$scope.state = reply.serviceReturn;
+      $scope.servers = $scope.state.servers;
+      $scope.services = $scope.state.services;
+      $scope.instances = $scope.state.instances;
 
-	function doGetCasualServiceInfo() {
-		$http.defaults.headers.common.Accept = 'application/json';
-		$http
-				.post('http://casual.laz.se/test1/casual/casual?service=_broker_listServices&protocol=JSON','{}')
-				.success(getCasualServiceInfoCallback)
-				.error(errorCallback);
-	}
+      for (var i = 0; i < $scope.servers.length; i++) 
+      {
+         var element = $scope.servers[i];
+         var servername = element.alias;
+         for (var j = 0; j < element.instances.length; j++)
+         {
+            $scope.serverMap[element.instances[j]] = servername;
+            $scope.instances[j].alias = servername;
+         }
+         element.instances.newlength = element.instances.length
+         
+      }
+      
+      for (var i = 0; i < $scope.instances.length; i++) 
+      {
+         $scope.instances[i].alias = $scope.getServer( $scope.instances[i].pid)
+      }
+      
+      if ($scope.selectedInstances.length == 0)
+      {
+         $scope.selectedInstances = $scope.instances;
+      }
+      else
+      {
+         for (var i = 0; i < $scope.selectedInstances.length; i++)
+         {
+            var selectedInstance = $scope.selectedInstances[i]
+            for (var j = 0; j < $scope.instances.length; j++)
+            {
+               var instance = $scope.instances[j]
+               if ( selectedInstance.pid == instance.pid )
+               {
+                  $scope.selectedInstances[i] = $scope.instances[j]
+                  break
+               }
+            }
+ 
+         }
+      
+      }
 
-	function getCasualServiceInfoCallback(reply) {
-		
-		$scope.services = reply.serviceReturn;
-		$log.log($scope.services);
 	}
-
 
 
 	function errorCallback(reply) {
