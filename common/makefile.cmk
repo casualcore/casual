@@ -55,7 +55,7 @@ casual_common_objectfiles = [
     Compile( 'source/error.cpp'),
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
-    Compile( 'source/network_byteorder.cpp'),
+    Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
    
 ]

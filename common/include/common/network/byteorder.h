@@ -5,8 +5,8 @@
 //      Author: Kristone
 //
 
-#ifndef NETWORK_BYTEORDER_H_
-#define NETWORK_BYTEORDER_H_
+#ifndef CASUAL_COMMON_NETWORK_BYTEORDER_H_
+#define CASUAL_COMMON_NETWORK_BYTEORDER_H_
 
 #include <type_traits>
 #include <cstdint>
@@ -197,4 +197,4 @@ namespace casual
    }
 }
 
-#endif /* NETWORK_BYTEORDER_H_ */
+#endif /* CASUAL_COMMON_NETWORK_BYTEORDER_H_ */

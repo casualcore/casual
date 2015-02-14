@@ -1,12 +1,12 @@
 //
-// casual_field_buffer.h
+// field.h
 //
 //  Created on: 3 nov 2013
 //      Author: Kristone
 //
 
-#ifndef CASUAL_FIELD_BUFFER_H
-#define CASUAL_FIELD_BUFFER_H
+#ifndef CASUAL_BUFFER_FIELD_H
+#define CASUAL_BUFFER_FIELD_H
 
 
 /* used as type with tpalloc */
@@ -15,7 +15,7 @@
 
 /* success */
 #define CASUAL_FIELD_SUCCESS 0
-/* reallocation needed (normal behaviour) */
+/* reallocation needed (normal behavior) */
 #define CASUAL_FIELD_NO_SPACE 1
 /* id does not exist in buffer (perhaps normal behaviour) */
 #define CASUAL_FIELD_NO_OCCURRENCE 2
@@ -57,6 +57,40 @@ extern "C" {
 const char* CasualFieldDescription( int code);
 
 
+/* value is encoded and added to buffer */
+int CasualFieldAddChar(    char* buffer, long id, char value);
+/* value is encoded and added to buffer */
+int CasualFieldAddShort(   char* buffer, long id, short value);
+/* value is encoded and added to buffer */
+int CasualFieldAddLong(    char* buffer, long id, long value);
+/* value is encoded and added to buffer */
+int CasualFieldAddFloat(   char* buffer, long id, float value);
+/* value is encoded and added to buffer */
+int CasualFieldAddDouble(  char* buffer, long id, double value);
+/* value is null-terminated added to buffer */
+int CasualFieldAddString(  char* buffer, long id, const char* value);
+/* value is added to buffer */
+int CasualFieldAddBinary(  char* buffer, long id, const char* value, long count);
+/* value is (perhaps encoded and) added to buffer where count is relevant only for CASUAL_FIELD_BINARY */
+int CasualFieldAddValue(   char* buffer, long id, const void* value, long count);
+
+/* data is decoded and stored into value */
+int CasualFieldGetChar(    const char* buffer, long id, long index, char* value);
+/* data is decoded and stored into value */
+int CasualFieldGetShort(   const char* buffer, long id, long index, short* value);
+/* data is decoded and stored into value */
+int CasualFieldGetLong(    const char* buffer, long id, long index, long* value);
+/* data is decoded and stored into value */
+int CasualFieldGetFloat(   const char* buffer, long id, long index, float* value);
+/* data is decoded and stored into value */
+int CasualFieldGetDouble(  const char* buffer, long id, long index, double* value);
+/* value points to internal (null-terminated) buffer */
+int CasualFieldGetString(  const char* buffer, long id, long index, const char** value);
+/* value points to internal buffer and size is decoded and stored into count */
+int CasualFieldGetBinary(  const char* buffer, long id, long index, const char** value, long* count);
+/* data is (perhaps decoded and) copied into value if (any) count is large enough and (perhaps) updates count */
+int CasualFieldGetValue(   const char* buffer, long id, long index, void* value, long* count);
+
 /* get the textual name from id from repository-table */
 int CasualFieldNameOfId( long id, const char** name);
 /* get the id from textual name from repository-table */
@@ -67,31 +101,15 @@ int CasualFieldTypeOfId( long id, int* type);
 int CasualFieldNameOfType( int type, const char** name);
 /* get the type from name */
 int CasualFieldTypeOfName( const char* name, int* type);
+/* get the host-size of a pod (actually an internal helper function) */
+int CasualFieldPlainTypeHostSize( int type, long* count);
 
 
 /* get allocated - and used bytes */
 int CasualFieldExploreBuffer( const char* buffer, long* size, long* used);
+/* get (host) size of any value if existing */
+int CasualFieldExploreValue( const char* buffer, long id, long index, long* count);
 
-int CasualFieldAddChar(    char* buffer, long id, char value);
-int CasualFieldAddShort(   char* buffer, long id, short value);
-int CasualFieldAddLong(    char* buffer, long id, long value);
-int CasualFieldAddFloat(   char* buffer, long id, float value);
-int CasualFieldAddDouble(  char* buffer, long id, double value);
-int CasualFieldAddString(  char* buffer, long id, const char* value);
-int CasualFieldAddBinary(  char* buffer, long id, const char* value, long count);
-//int CasualFieldAddField(   char* buffer, long id, const void* value, long count);
-
-int CasualFieldGetChar(    const char* buffer, long id, long index, char* value);
-int CasualFieldGetShort(   const char* buffer, long id, long index, short* value);
-int CasualFieldGetLong(    const char* buffer, long id, long index, long* value);
-int CasualFieldGetFloat(   const char* buffer, long id, long index, float* value);
-int CasualFieldGetDouble(  const char* buffer, long id, long index, double* value);
-int CasualFieldGetString(  const char* buffer, long id, long index, const char** value);
-int CasualFieldGetBinary(  const char* buffer, long id, long index, const char** value, long* count);
-//int CasualFieldGetField(   const char* buffer, long id, long index, const void** value, long* count);
-
-
-int CasualFieldExist( const char* buffer, long id, long index);
 
 /* remove all content */
 int CasualFieldRemoveAll( char* buffer);
@@ -114,4 +132,4 @@ int CasualFieldNext( const char* buffer, long* id, long* index);
 }
 #endif
 
-#endif /* CASUAL_FIELD_BUFFER_H_ */
+#endif /* CASUAL_BUFFER_FIELD_H */

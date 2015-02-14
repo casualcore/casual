@@ -8,7 +8,7 @@
 #include "buffer/order.h"
 
 #include "common/buffer/pool.h"
-#include "common/network_byteorder.h"
+#include "common/network/byteorder.h"
 #include "common/platform.h"
 
 #include "common/log.h"
