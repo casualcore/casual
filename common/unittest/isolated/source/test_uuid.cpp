@@ -51,19 +51,33 @@ namespace casual
 			EXPECT_TRUE( oneUuid == uuid::empty());
 		}
 
-		TEST( casual_common_uuid, getString__expect_36bytes)
+		TEST( casual_common_uuid, getString__expect_32B)
 		{
 			Uuid oneUuid = uuid::make();
 
-			EXPECT_TRUE( uuid::string( oneUuid).size() == 36);
+			EXPECT_TRUE( uuid::string( oneUuid).size() == 32);
 		}
 
-		TEST( casual_common_uuid, default_constructed_getString__expect_00000000_0000_0000_0000_000000000000)
+		TEST( casual_common_uuid, default_constructed__uuid_string__expect_00000000000000000000000000000000)
       {
          Uuid oneUuid;
 
-         EXPECT_TRUE( uuid::string( oneUuid) == "00000000-0000-0000-0000-000000000000") << uuid::string( oneUuid);
+         EXPECT_TRUE( uuid::string( oneUuid) == "00000000000000000000000000000000") << uuid::string( oneUuid);
       }
+
+      TEST( casual_common_uuid, ctor_55d9d19db80b49ac98188deef6fa0d4a__copy_ctor__expect_equal_string)
+      {
+         Uuid uuid1{ "55d9d19db80b49ac98188deef6fa0d4a"};
+
+         EXPECT_TRUE( uuid::string( uuid1) == "55d9d19db80b49ac98188deef6fa0d4a") << uuid::string( uuid1);
+
+         Uuid uuid2{ uuid1};
+
+         EXPECT_TRUE( uuid1 == uuid2) << uuid::string( uuid1);
+      }
+
+
+
 
       TEST( casual_common_uuid, operator_bool_on_default_constructed__expect_false)
       {
@@ -71,6 +85,7 @@ namespace casual
 
          EXPECT_FALSE( oneUuid) << uuid::string( oneUuid);
       }
+
 
       TEST( casual_common_uuid, operator_bool_on_created__expect_true)
       {

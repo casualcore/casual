@@ -24,6 +24,7 @@
 #include <cerrno>
 #include <cstring>
 #include <cstdlib>
+#include <cassert>
 //#include <langinfo.h>
 
 
@@ -246,17 +247,59 @@ namespace casual
                         ++first;
                      }
                   }
+
+                  template< typename InIter, typename OutIter>
+                  void decode( InIter first, InIter last, OutIter out)
+                  {
+                     assert( ( last - first) % 2 == 0);
+
+                     while( first != last)
+                     {
+                        auto hex = []( decltype( *first) value){
+                           if( value >= 87)
+                           {
+                              return value - 87;
+                           }
+                           return value - 48;
+                        };
+
+                        *out = ( 0x0f & hex( *first++)) << 4;
+                        *out += 0x0f & hex( *first++);
+
+                        ++out;
+                     }
+                  }
+
                } // <unnamed>
             } // local
-            std::string encode( const void* data, std::size_t bytes)
+
+            namespace detail
             {
-               std::string result;
-               result.reserve( bytes * 2);
+               std::string encode( const void* data, std::size_t bytes)
+               {
+                  std::string result( bytes * 2, 0);
 
-               const char* first = static_cast< const char*>( data);
-               auto last = first + bytes;
+                  const char* first = static_cast< const char*>( data);
+                  auto last = first + bytes;
 
-               local::encode( first, last, std::back_inserter( result));
+                  local::encode( first, last, result.begin());
+
+                  return result;
+               }
+
+               void decode( const std::string& value, void* data)
+               {
+                  local::decode( std::begin( value), std::end( value), static_cast< std::uint8_t*>( data));
+               }
+
+            } // detail
+
+
+            platform::binary_type decode( const std::string& value)
+            {
+               platform::binary_type result( value.size() / 2);
+
+               local::decode( value.begin(), value.end(), result.begin());
 
                return result;
             }
