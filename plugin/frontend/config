@@ -1,9 +1,0 @@
-ngx_addon_name=ngx_casual_frontend_module
-HTTP_MODULES="$HTTP_MODULES ngx_casual_frontend_module"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_ddebug.c"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_util.c"
-#NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_upstream.c"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_module.c"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_handler.c"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_processor.c"
-#NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_casual_frontend_output.c"
