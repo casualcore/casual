@@ -42,6 +42,9 @@ namespace casual
 
                std::string name;
                id_type process;
+               bool connected = false;
+
+               friend bool operator == ( const Group& lhs, id_type process) { return lhs.process == process;}
 
             };
 

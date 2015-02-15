@@ -74,12 +74,21 @@ namespace casual
 
       }
 
+      TEST( casual_common_transcode, UT8_encode_exotic_characters)
+      {
+         const std::string source( u8"Bängen Trålar");
+         const std::string result = transcode::utf8::encode( source);
+         EXPECT_TRUE( result == source);
+      }
+
+
+
       /*
       TEST( casual_common_transcode, UT8_encode_decode)
       {
          //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
 
-         const std::string source( u8"Casual är det bästa valet för låga kostnader");
+         const std::string source( u8"Bängen Trålar");
          //const std::string target = transcode::utf8::encode( source, "ISO-8859-1");
          //const std::string result = transcode::utf8::decode( target, "ISO-8859-1");
          const std::string target = transcode::utf8::encode( source, "en_US.utf88");
@@ -90,6 +99,19 @@ namespace casual
       }
       */
 
+      TEST( casual_common_transcode, hex_encode)
+      {
+         std::vector< std::uint8_t> binary{ 255, 0, 240, 10};
+
+         EXPECT_TRUE( transcode::hex::encode( binary) == "ff00f00a") << "hex: " << transcode::hex::encode( binary);
+      }
+
+      TEST( casual_common_transcode, hex_decode)
+      {
+         auto binary = transcode::hex::decode( "ff00f00a");
+
+         EXPECT_TRUE( transcode::hex::encode( binary) == "ff00f00a") << "hex: " << transcode::hex::encode( binary);
+      }
 
    }
 }

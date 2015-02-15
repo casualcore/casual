@@ -19,7 +19,6 @@ namespace casual
          namespace protocol
          {
 
-
             Base::Base( TPSVCINFO* serviceInfo)
                : m_info( serviceInfo)
             {
@@ -54,11 +53,10 @@ namespace casual
                return m_output;
             }
 
-
             Binary::Binary( TPSVCINFO* serviceInfo) : Base( serviceInfo),
                   m_readerBuffer( buffer::raw( serviceInfo)), m_reader( m_readerBuffer), m_writer( m_writerBuffer)
             {
-               common::trace::internal::Scope trace{ "Binary::Binary"};
+               const common::trace::internal::Scope trace{ "Binary::Binary"};
 
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
@@ -67,7 +65,7 @@ namespace casual
 
             reply::State Binary::doFinalize()
             {
-               common::trace::internal::Scope trace{ "Binary::doFinalize"};
+               const common::trace::internal::Scope trace{ "Binary::doFinalize"};
 
                auto raw = m_writerBuffer.release();
                m_state.data = raw.buffer;
@@ -77,26 +75,36 @@ namespace casual
             }
 
 
-            Yaml::Yaml( TPSVCINFO* serviceInfo) : Base( serviceInfo),
-               m_inputstream( serviceInfo->data), m_reader( m_inputstream), m_writer( m_outputstream)
+            Yaml::Yaml( TPSVCINFO* serviceInfo)
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
             {
-               //
-               // We don't need the request-buffer no more
-               //
-               tpfree( serviceInfo->data);
-               serviceInfo->len = 0;
-
+               const common::trace::internal::Scope trace{ "Yaml::doYaml"};
 
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
+
+               //
+               // We don't need the request-buffer any more
+               //
+               tpfree( serviceInfo->data);
+               serviceInfo->len = 0;
 
             }
 
             reply::State Yaml::doFinalize()
             {
-               buffer::X_Octet buffer{ "yaml", m_outputstream.size() };
+               const common::trace::internal::Scope trace{ "Yaml::doFinalize"};
 
-               buffer.str( m_outputstream.c_str());
+               //
+               // TODO: Let yaml::Save know about X_Octet (or binary::Stream)
+               //
+
+
+               std::string yaml;
+               m_save.serialize( yaml);
+
+               buffer::X_Octet buffer{ "yaml", yaml.size()};
+               buffer.str( yaml);
 
                auto raw = buffer.release();
                m_state.data = raw.buffer;
@@ -105,30 +113,77 @@ namespace casual
                return m_state;
             }
 
-            Json::Json( TPSVCINFO* serviceInfo) : Base( serviceInfo),
-                  m_reader( serviceInfo->data), m_writer( m_root)
+            Json::Json( TPSVCINFO* serviceInfo)
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
             {
-               common::trace::internal::Scope trace{ "Json::Json"};
+               const common::trace::internal::Scope trace{ "Json::Json"};
+
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
+
+               //
+               // We don't need the request-buffer any more
+               //
+               tpfree( serviceInfo->data);
+               serviceInfo->len = 0;
+
             }
 
             reply::State Json::doFinalize()
             {
-               common::trace::internal::Scope trace{ "Json::doFinalize"};
-               const std::string json{ json_object_to_json_string( m_root) };
+               const common::trace::internal::Scope trace{ "Json::doFinalize"};
 
-               buffer::X_Octet buffer{ "json", json.size() };
+               //
+               // TODO: Let json::Save know about X_Octet (or binary::Stream)
+               //
+
+               std::string json;
+               m_save.serialize( json);
+
+               buffer::X_Octet buffer{ "json", json.size()};
                buffer.str( json);
 
                auto raw = buffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
 
+               return m_state;
+            }
+
+
+            Xml::Xml( TPSVCINFO* serviceInfo)
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+            {
+               const common::trace::internal::Scope trace{ "Xml::Xml"};
+
+               m_input.readers.push_back( &m_reader);
+               m_output.writers.push_back( &m_writer);
+
                //
-               // Free buffer
+               // We don't need the request-buffer any more
                //
-               tpfree( m_info->data);
+               tpfree( serviceInfo->data);
+               serviceInfo->len = 0;
+
+            }
+
+            reply::State Xml::doFinalize()
+            {
+               const common::trace::internal::Scope trace{ "Xml::doFinalize"};
+
+               //
+               // TODO: Let xml::Save know about X_Octet (or binary::Stream)
+               //
+
+               std::string xml;
+               m_save.serialize( xml);
+
+               buffer::X_Octet buffer{ "xml", xml.size()};
+               buffer.str( xml);
+
+               auto raw = buffer.release();
+               m_state.data = raw.buffer;
+               m_state.size = raw.size;
 
                return m_state;
             }

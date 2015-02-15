@@ -24,14 +24,34 @@ namespace casual
       {
 
          template< typename T>
-         std::string json_serialize( T&& value)
+         void value_to_string( T&& value, std::string& string)
          {
-            json_object* root = nullptr;
-            sf::archive::json::Writer writer( root);
+            sf::archive::json::Save save;
+            sf::archive::json::Writer writer( save.target());
 
             writer << CASUAL_MAKE_NVP( value);
 
-            return json_object_to_json_string( root);
+            save.serialize( string);
+         }
+
+         template< typename T>
+         void string_to_strict_value( const std::string& string, T&& value)
+         {
+            sf::archive::json::Load load;
+
+            sf::archive::json::Reader reader( load.serialize( string));
+
+            reader >> CASUAL_MAKE_NVP( value);
+         }
+
+         template< typename T>
+         void string_to_relaxed_value( const std::string& string, T&& value)
+         {
+            sf::archive::json::Load load;
+
+            sf::archive::json::relaxed::Reader reader( load.serialize( string));
+
+            reader >> CASUAL_MAKE_NVP( value);
          }
 
       }
@@ -43,11 +63,9 @@ namespace casual
    {
       //const std::string json = test::SimpleVO::json();
 
-      sf::archive::json::relaxed::Reader reader( test::SimpleVO::json());
-
       test::SimpleVO value;
 
-      reader >> CASUAL_MAKE_NVP( value);
+      local::string_to_relaxed_value( test::SimpleVO::json(), value);
 
       EXPECT_TRUE( value.m_long == 234) << "value.m_long: " << value.m_long;
       EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.m_long: " << value.m_long;
@@ -61,16 +79,14 @@ namespace casual
 
       {
          std::vector< long> value{ 1, 2, 3, 4, 5, 6, 7, 8};
-
-         json = local::json_serialize( value);
+         local::value_to_string( value, json);
       }
 
       {
-         sf::archive::json::relaxed::Reader reader( json.c_str());
          std::vector< long> value;
-         reader >> CASUAL_MAKE_NVP( value);
+         local::string_to_relaxed_value( json, value);
 
-         ASSERT_TRUE( value.size() == 8) << "json: " << local::json_serialize( value);
+         ASSERT_TRUE( value.size() == 8);
          EXPECT_TRUE( value.at( 7) == 8);
       }
 
@@ -86,13 +102,12 @@ namespace casual
          value.m_short = 42;
          value.m_string = "bla bla bla";
 
-         json = local::json_serialize( value);
+         local::value_to_string( value, json);
       }
 
       {
-         sf::archive::json::relaxed::Reader reader( json.c_str());
          test::SimpleVO value;
-         reader >> CASUAL_MAKE_NVP( value);
+         local::string_to_relaxed_value( json, value);
 
          EXPECT_TRUE( value.m_long == 666);
          EXPECT_TRUE( value.m_short == 42);
@@ -109,14 +124,12 @@ namespace casual
          test::Composite composite;
          composite.m_values.resize( 3);
          std::map< long, test::Composite> value { { 1, composite}, { 2, composite}};
-
-         json = local::json_serialize( value);
+         local::value_to_string( value, json);
       }
 
       {
-         sf::archive::json::Reader reader( json.c_str());
          std::map< long, test::Composite> value;
-         reader >> CASUAL_MAKE_NVP( value);
+         local::string_to_strict_value( json, value);
 
          ASSERT_TRUE( value.size() == 2);
 

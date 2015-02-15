@@ -13,34 +13,43 @@ namespace casual
 {
    namespace buffer
    {
-      namespace implementation
+      namespace octet
       {
-
-         class Octet : public common::buffer::pool::default_pool
+         namespace
          {
-         public:
-
-            using types_type = common::buffer::pool::default_pool::types_type;
-
-            static const types_type& types()
+            class Allocator : public common::buffer::pool::default_pool
             {
-               static const types_type result{ { CASUAL_OCTET, ""}};
-               return result;
-            }
+            public:
 
-            //
-            // We rely on x_octet implementation
-            //
-         };
+               using types_type = common::buffer::pool::default_pool::types_type;
 
+               static const types_type& types()
+               {
+                  static const types_type result
+                  {
+                     { CASUAL_OCTET, ""},
+                     { CASUAL_OCTET, CASUAL_OCTET_XML},
+                     { CASUAL_OCTET, CASUAL_OCTET_JSON},
+                     { CASUAL_OCTET, CASUAL_OCTET_YAML},
+                  };
 
+                  return result;
+               }
 
-      } // implementation
+               //
+               // We rely on x_octet implementation
+               //
+            };
+
+         } //
+
+      } // octet
 
 
    } // buffer
 
-   template class common::buffer::pool::Registration< buffer::implementation::Octet>;
+   template class common::buffer::pool::Registration< buffer::octet::Allocator>;
+
 
 } // casual
 

@@ -60,9 +60,7 @@ namespace casual
 
             auto message = local::message();
 
-            message::Complete complete;
-
-            complete << message;
+            message::Complete complete = marshal::complete( message);
 
             EXPECT_TRUE( ! complete.correlation.empty());
 
@@ -81,9 +79,7 @@ namespace casual
             send::Queue send( receive.id());
 
             auto message = local::message();
-            message::Complete complete;
-
-            complete << message;
+            message::Complete complete = marshal::complete( message);
 
             auto correlation = send( complete);
 
@@ -91,6 +87,26 @@ namespace casual
 
             EXPECT_TRUE( complete.payload == response.at( 0).payload) << complete.payload.size() << " : "  << response.at( 0).payload.at( 2);
             EXPECT_TRUE( correlation == response.at( 0).correlation) << "correlation: " << correlation;
+         }
+
+         TEST( casual_common, ipc_queue_send_receive_discard_correlation__expect_no_message)
+         {
+
+            receive::Queue receive;
+
+            send::Queue send( receive.id());
+
+            auto message = local::message();
+            message::Complete complete = marshal::complete( message);
+
+            auto correlation = send( complete);
+
+            //
+            // Discard the message
+            //
+            receive.discard( complete.correlation);
+
+            EXPECT_TRUE( receive( correlation, receive::Queue::cNoBlocking).empty());
          }
 
 
@@ -119,10 +135,8 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete complete;
-            complete.correlation = uuid::make();
+            message::Complete complete( 2, uuid::make());
             complete.payload.assign( message::Transport::payload_max_size, 'A');
-            complete.type = 2;
 
             EXPECT_TRUE( static_cast< bool>( complete.correlation));
 
@@ -145,17 +159,15 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete complete;
-            complete.correlation = uuid::make();
+            message::Complete complete{ 2, uuid::make()};
             complete.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
-            complete.type = 2;
 
             ASSERT_TRUE( static_cast< bool>( send( complete, send::Queue::cNoBlocking)));
 
 
             auto response = receive( 0);
 
-            EXPECT_TRUE( complete.payload == response.at( 0).payload);
+            EXPECT_TRUE( complete.payload == response.at( 0).payload) << "complete.payload.size(): " << complete.payload.size() << " response.at( 0).payload.size(): " << response.at( 0).payload.size();
          }
       }
 	}

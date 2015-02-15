@@ -16,6 +16,10 @@
 // size_t
 #include <cstddef>
 
+// uint64_t
+#include <cstdint>
+
+
 //uuid
 #include <uuid/uuid.h>
 
@@ -54,6 +58,13 @@ namespace casual
 		   //
 		   // Some sizes
 		   //
+
+
+         //!
+         //! The common type used to represent sizes (especially in buffers)
+         //!
+		   typedef uint64_t binary_size_type;
+
 
 
 		   //!
@@ -111,26 +122,6 @@ namespace casual
 				cIPC_NO_WAIT = IPC_NOWAIT
 			};
 
-
-			enum log_category
-			{
-				//! system is unusable
-				cLOG_emergency = LOG_EMERG,
-				//! action must be taken immediately
-				cLOG_alert = LOG_ALERT,
-				//! critical conditions
-				cLOG_critical = LOG_CRIT,
-				//! error conditions
-				cLOG_error= LOG_ERR,
-				//! warning conditions
-				cLOG_warning = LOG_WARNING,
-				//! normal, but significant, condition
-				cLOG_notice = LOG_NOTICE,
-				//! informational message
-				cLOG_info = LOG_INFO,
-				//! debug-level message
-				cLOG_debug = LOG_DEBUG
-			};
 
 			typedef int signal_type;
 

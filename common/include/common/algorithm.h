@@ -10,6 +10,7 @@
 
 
 #include "common/traits.h"
+#include "common/error.h"
 
 #include <algorithm>
 #include <numeric>
@@ -19,11 +20,41 @@
 #include <sstream>
 
 #include <assert.h>
+#include <functional>
 
 namespace casual
 {
    namespace common
    {
+      namespace scope
+      {
+         struct Execute
+         {
+            Execute( std::function< void()> executer) : m_execute( std::move( executer)) {}
+
+            ~Execute()
+            {
+               if( m_execute)
+               {
+                  try
+                  {
+                     m_execute();
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
+                  }
+               }
+            }
+
+            void release()
+            {
+               m_execute = nullptr;
+            }
+
+            std::function< void()> m_execute;
+         };
+      } // scope
 
       namespace chain
       {
@@ -182,107 +213,17 @@ namespace casual
             T m_functor;
          };
 
-         namespace detail
-         {
-            template< typename F1, typename F2>
-            struct equal_to
-            {
-               equal_to( F1&& functor1, F2&& functor2)
-                  : m_functor1( std::forward< F1>( functor1)),
-                    m_functor2( std::forward< F2>( functor2)){}
-
-               template< typename T>
-               bool operator () ( T&& value)
-               {
-                  return m_functor1( value) == m_functor2();
-               }
-
-               template< typename T>
-               bool operator () ( T&& value) const
-               {
-                  return m_functor1( value) == m_functor2();
-               }
-
-               template< typename T1, typename T2>
-               bool operator () ( T1&& value1, T2&& value2)
-               {
-                  return m_functor1( value1) == m_functor2( value2);
-               }
-
-               template< typename T1, typename T2>
-               bool operator () ( T1&& value1, T2&& value2) const
-               {
-                  return m_functor1( value1) == m_functor2( value2);
-               }
-
-               F1 m_functor1;
-               F2 m_functor2;
-            };
-         }
-
-         template< typename F1, typename F2>
-         auto equal_to( F1&& functor1, F2&& functor2) -> detail::equal_to< F1, F2>
-         {
-            return detail::equal_to< F1, F2>{ std::forward< F1>( functor1), std::forward< F2>( functor2)};
-         }
-
-         struct value
-         {
-            template< typename V>
-            auto operator () ( V&& value) const -> decltype( std::forward< V>( value))
-            {
-               return std::forward< V>( value);
-            }
-         };
-
       } // compare
 
 
-
-
-
-      namespace bind
+      struct equal_to
       {
-         namespace detail
+         template< typename T1, typename T2>
+         constexpr auto operator()( const T1& lhs, const T2& rhs ) const -> decltype( lhs == rhs)
          {
-            template< typename T>
-            struct value
-            {
-               template< typename V>
-               value( V&& value) : m_value( std::forward< V>( value)) {}
-
-               const T& operator () () const { return m_value;}
-               T& operator () () { return m_value;}
-
-            private:
-               T m_value;
-            };
-
-            template< typename T>
-            struct value< T&>
-            {
-               value( T& value) : m_value( value) {}
-
-               const T& operator () () const { return m_value;}
-               T& operator () () { return m_value;}
-
-               template< typename V>
-               void operator () ( V&& value) { m_value = std::forward< V>( value);}
-
-            private:
-               T& m_value;
-            };
-         } // detail
-
-         template< typename T>
-         auto value( T&& value) ->  detail::value< decltype( std::forward< T>( value))>
-         {
-            return detail::value< decltype( std::forward< T>( value))>( std::forward< T>( value));
+            return lhs == rhs;
          }
-
-      } // bind
-
-
+      };
 
 
       template< typename Enum>
@@ -439,37 +380,41 @@ namespace casual
 
 
 
-      template< typename T>
-      struct Negate
+      namespace detail
       {
-         /*
-         template< typename F>
-         Negate( F&& functor) : m_functor{ std::forward< F>( functor)}
+         template< typename T>
+         struct negate
          {
 
-         }
-         */
+            negate( T&& functor) : m_functor{ std::move( functor)}
+            {
 
-         Negate( T&& functor) : m_functor{ std::move( functor)}
-         {
+            }
 
-         }
+            template< typename... Args>
+            bool operator () ( Args&& ...args) const
+            {
+               return ! m_functor( std::forward< Args>( args)...);
+            }
 
-         template< typename... Args>
-         bool operator () ( Args&& ...args) const
-         {
-            return ! m_functor( std::forward< Args>( args)...);
-         }
+            template< typename... Args>
+            bool operator () ( Args&& ...args)
+            {
+               return ! m_functor( std::forward< Args>( args)...);
+            }
 
-      private:
-         T m_functor;
-      };
+         private:
+            T m_functor;
+         };
+
+      } // detail
+
 
 
       template< typename T>
-      Negate< T> negate( T&& functor)
+      detail::negate< T> negate( T&& functor)
       {
-         return Negate< T>{ std::forward< T>( functor)};
+         return detail::negate< T>{ std::forward< T>( functor)};
       }
 
 
@@ -497,6 +442,12 @@ namespace casual
          auto make_reverse( C&& container) -> decltype( make( container.rbegin(), container.rend()))
          {
             return make( container.rbegin(), container.rend());
+         }
+
+         template< typename Iter>
+         auto make_reverse( Range< Iter> range) -> decltype( make( std::reverse_iterator< Iter>( range.last), std::reverse_iterator< Iter>( range.first)))
+         {
+            return make( std::reverse_iterator< Iter>( range.last), std::reverse_iterator< Iter>( range.first));
          }
 
          template< typename Iter>
@@ -559,35 +510,31 @@ namespace casual
 
 
          template< typename R, typename C>
-         auto sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
+         auto sort( R&& range, C compare) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::sort( std::begin( inputRange), std::end( inputRange), compare);
-            return inputRange;
+            std::sort( std::begin( range), std::end( range), compare);
+            return std::forward< R>( range);
          }
 
          template< typename R>
-         auto sort( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto sort( R&& range) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::sort( std::begin( inputRange), std::end( inputRange));
-            return inputRange;
+            std::sort( std::begin( range), std::end( range));
+            return std::forward< R>( range);
          }
 
          template< typename R, typename C>
-         auto stable_sort( R&& range, C compare) -> decltype( make( std::forward< R>( range)))
+         auto stable_sort( R&& range, C compare) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::stable_sort( std::begin( inputRange), std::end( inputRange), compare);
-            return inputRange;
+            std::stable_sort( std::begin( range), std::end( range), compare);
+            return std::forward< R>( range);
          }
 
          template< typename R>
-         auto stable_sort( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto stable_sort( R&& range) -> decltype( std::forward< R>( range))
          {
-            auto inputRange = make( std::forward< R>( range));
-            std::stable_sort( std::begin( inputRange), std::end( inputRange));
-            return inputRange;
+            std::stable_sort( std::begin( range), std::end( range));
+            return std::forward< R>( range);
          }
 
          template< typename R, typename P>
@@ -606,10 +553,16 @@ namespace casual
          }
 
 
-         template< typename R, typename Iter2>
-         void copy( R&& range, Iter2 output)
+         template< typename R, typename OutIter>
+         OutIter copy( R&& range, OutIter output)
          {
-            std::copy( std::begin( range), std::end( range), output);
+            return std::copy( std::begin( range), std::end( range), output);
+         }
+
+         template< typename R, typename OutIter, typename P>
+         OutIter copy_if( R&& range, OutIter output, P predicate)
+         {
+            return std::copy_if( std::begin( range), std::end( range), output, predicate);
          }
 
          template< typename R, typename O>
@@ -900,7 +853,7 @@ namespace casual
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find( lookup, value);};
-            return partition( std::forward< R1>( range), lambda);
+            return stable_partition( std::forward< R1>( range), lambda);
          }
 
          //!
@@ -917,7 +870,7 @@ namespace casual
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( lookup), std::bind( functor, value, std::placeholders::_1));};
-            return partition( std::forward< R1>( range), lambda);
+            return stable_partition( std::forward< R1>( range), lambda);
 
          }
 

@@ -56,7 +56,16 @@ namespace casual
 			//!
 			void handle();
 
-         void handle( const std::vector< signal::Type>& exclude);
+
+			enum Filter
+			{
+			   exclude_none = 0,
+			   exclude_alarm = 1,
+			   exclude_child_terminate = 2,
+			   exclude_terminate = 4
+			};
+
+         void handle( Filter exclude);
 
 
 			//!

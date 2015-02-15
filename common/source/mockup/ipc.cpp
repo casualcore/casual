@@ -45,20 +45,20 @@ namespace casual
             template< typename M>
             void casual_marshal_value( Complete& value, M& marshler)
             {
-              marshler << value.complete;
               marshler << value.correlation;
               marshler << value.payload;
               marshler << value.type;
+              marshler << value.offset;
 
             }
 
             template< typename M>
             void casual_unmarshal_value( Complete& value, M& unmarshler)
             {
-              unmarshler >> value.complete;
               unmarshler >> value.correlation;
               unmarshler >> value.payload;
               unmarshler >> value.type;
+              unmarshler >> value.offset;
             }
          } // message
       } // ipc
@@ -104,33 +104,42 @@ namespace casual
                }
             }
 
-
-            class Router::Implementation
+            namespace implementation
             {
+
                struct Worker
                {
-                  using cache_type = std::vector< common::ipc::message::Complete>;
+
+                  using cache_type = std::deque< common::ipc::message::Complete>;
+
+                  using transform_type = ipc::transform_type;
 
                   struct State
                   {
 
-                     State( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
-                        : source( std::move( source)), destination( destination) {}
+                     State( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination, transform_type transform)
+                        : source( std::move( source)), destination( destination), transform( std::move( transform)) {}
 
                      common::ipc::receive::Queue source;
                      common::ipc::send::Queue destination;
+                     transform_type transform;
 
                      cache_type cache;
                   };
 
                   void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
                   {
+                     (*this)( std::move( source), destination, nullptr);
+                  }
+
+                  void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination, transform_type transform)
+                  {
                      //!
                      //! Block all signals
                      //!
                      common::signal::thread::block();
 
-                     State state( std::move( source), destination);
+                     State state( std::move( source), destination, std::move( transform));
 
                      try
                      {
@@ -179,7 +188,27 @@ namespace casual
 
                      if( check( state, message.front()))
                      {
-                        state.cache.push_back( std::move( message.front()));
+                        if( state.transform)
+                        {
+                           auto transformed = state.transform( message.front());
+
+                           if( transformed.empty())
+                           {
+                              state.cache.push_back( std::move( message.front()));
+                           }
+                           else
+                           {
+                              for( auto& complete : state.transform( message.front()))
+                              {
+                                 state.cache.push_back( std::move( complete));
+                              }
+                           }
+
+                        }
+                        else
+                        {
+                           state.cache.push_back( std::move( message.front()));
+                        }
                      }
 
                   }
@@ -192,9 +221,7 @@ namespace casual
 
                         if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
                         {
-                           state.cache.erase( std::begin( state.cache));
-
-                           return;
+                           state.cache.pop_front();
                         }
                      }
                   }
@@ -224,26 +251,160 @@ namespace casual
                      return true;
                   }
                };
-            public:
 
-               Implementation( id_type destination) : destination( destination)
+               class Router
                {
-                  //
-                  // We use an ipc-queue that does not check signals
-                  //
-                  common::ipc::receive::Queue ipc;
-                  id = ipc.id();
+               public:
 
-                  m_thread = std::thread{ Worker{}, std::move( ipc), destination};
+                  Router( id_type destination, Worker::transform_type transform)
+                     : destination( destination)
+                  {
+                     //
+                     // We use an ipc-queue that does not check signals
+                     //
+                     common::ipc::receive::Queue ipc;
+                     id = ipc.id();
+
+                     m_thread = std::thread{ implementation::Worker{}, std::move( ipc), destination, std::move( transform)};
+                  }
+
+                  Router( id_type destination)
+                     : Router( destination, nullptr)
+                  {
+                  }
+
+                  ~Router()
+                  {
+                     try
+                     {
+                        common::queue::blocking::Writer send{ id};
+                        local::message::Disconnect message;
+
+                        bool resend = true;
+
+                        while( resend)
+                        {
+                           try
+                           {
+                              send( message);
+                              resend = false;
+                           }
+                           catch( const exception::signal::Base&) {}
+                        }
+
+                     }
+                     catch( const std::exception& exception)
+                     {
+                        log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                     }
+
+                     try
+                     {
+                        m_thread.join();
+                     }
+                     catch( const std::exception& exception)
+                     {
+                        log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
+                     }
+                  }
+
+                  id_type id;
+                  id_type destination;
+                  std::thread m_thread;
+
+               };
+
+            } // implementation
+
+            class Router::Implementation : public implementation::Router
+            {
+            public:
+               using implementation::Router::Router;
+            };
+
+            Router::Router( id_type destination, transform_type transform)
+              : m_implementation( destination, std::move( transform))
+            {
+
+            }
+            Router::Router( id_type destination) : m_implementation( destination) {}
+            Router::~Router() {}
+
+            Router::Router( Router&&) noexcept = default;
+            Router& Router::operator = ( Router&&) noexcept = default;
+
+            id_type Router::id() const { return m_implementation->id;}
+
+            id_type Router::destination() const { return m_implementation->destination;}
+
+
+
+            class Link::Implementation
+            {
+            public:
+               Implementation( id_type source, id_type destination)
+                 : source( source), destination( destination)
+               {
+
+                  m_thread = std::thread{ []( id_type source, id_type destination)
+                  {
+                     std::deque< common::ipc::message::Transport> cache;
+
+                     common::ipc::message::Transport transport;
+
+                     while( true)
+                     {
+                        if( cache.empty())
+                        {
+                           //
+                           // We block
+                           //
+                           common::ipc::message::receive( source, transport, 0);
+                           cache.push_back( transport);
+                        }
+                        else if( common::ipc::message::receive( source, transport, common::ipc::message::Flags::cNoBlocking))
+                        {
+                           cache.push_back( transport);
+                        }
+                        else
+                        {
+                           common::process::sleep( std::chrono::microseconds{ 10});
+                        }
+
+                        if( transport.message.type == local::message::Disconnect::message_type)
+                        {
+                           common::ipc::message::send( destination, transport, common::ipc::message::Flags::cNoBlocking);
+                           return;
+                        }
+
+                        if( ! cache.empty() && common::ipc::message::send( destination, cache.front(), common::ipc::message::Flags::cNoBlocking))
+                        {
+                           cache.pop_front();
+                        }
+                     }
+                  }, source, destination};
                }
 
                ~Implementation()
                {
                   try
                   {
-                     common::queue::blocking::Writer send{ id};
-                     local::message::Disconnect message;
-                     send( message);
+                     common::ipc::message::Transport transport;
+                     transport.message.type = local::message::Disconnect::message_type;
+
+                     bool resend = true;
+
+                     while( resend)
+                     {
+                        try
+                        {
+                           common::ipc::message::send( source, transport, 0);
+                           resend = false;
+                        }
+                        catch( const exception::signal::Base&) {}
+                     }
+
+
                   }
                   catch( const std::exception& exception)
                   {
@@ -260,24 +421,33 @@ namespace casual
                   }
                }
 
-               id_type id;
+               id_type source;
                id_type destination;
                std::thread m_thread;
 
             };
 
-            Router::Router( id_type destination) : m_implementation( destination) {}
-            Router::~Router() {}
+            Link::Link( id_type source, id_type destination)
+            : m_implementation( source, destination)
+            {}
+
+            Link::~Link() = default;
+
+            Link::Link( Link&&) noexcept = default;
+            Link& Link::operator = ( Link&&) noexcept = default;
+
+            id_type Link::source() const { return m_implementation->source;}
+            id_type Link::destination() const { return m_implementation->destination;}
 
 
-            id_type Router::id() const { return m_implementation->id;}
 
-            id_type Router::destination() const { return m_implementation->destination;}
+
+
 
 
             struct Instance::Implementation
             {
-               Implementation( platform::pid_type pid) : pid( pid), router( receive.id())
+               Implementation( platform::pid_type pid, transform_type transform) : pid( pid), router( receive.id(), std::move( transform))
                {
                }
 
@@ -286,12 +456,12 @@ namespace casual
                Router router;
             };
 
-            Instance::Instance( platform::pid_type pid) : m_implementation( pid)
-            {
+            Instance::Instance( platform::pid_type pid, transform_type transform) : m_implementation( pid, std::move( transform)) {}
+            Instance::Instance( platform::pid_type pid) : Instance( pid, nullptr) {}
 
-            }
 
-            Instance::Instance() : m_implementation( process::id()) {}
+            Instance::Instance( transform_type transform) : Instance( process::id(), std::move( transform)) {}
+            Instance::Instance() : Instance( process::id(), nullptr) {}
 
             Instance::~Instance() {}
 
@@ -337,6 +507,8 @@ namespace casual
 
                log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;
             }
+
+
 
             namespace broker
             {

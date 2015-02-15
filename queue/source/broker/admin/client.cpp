@@ -16,6 +16,8 @@
 
 #include "xatmi.h"
 
+#include <iostream>
+
 namespace casual
 {
    namespace queue

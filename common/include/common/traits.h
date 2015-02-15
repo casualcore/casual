@@ -109,6 +109,7 @@ namespace casual
          struct is_container : public std::integral_constant< bool,
             is_sequence_container< T>::value || is_associative_container< T>::value || is_container_adaptor< T>::value > {};
 
+
       } // traits
    } // common
 } // casual

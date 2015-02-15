@@ -15,6 +15,7 @@
 
 #include "common/string.h"
 #include "common/signal.h"
+#include "common/log.h"
 
 #include <stdexcept>
 #include <string>
@@ -179,13 +180,18 @@ namespace casual
                using common::exception::Base::Base;
 
                virtual int code() const noexcept = 0;
-               virtual int severity() const noexcept = 0;
+               virtual log::category::Type category() const noexcept = 0;
             };
 
 
             template< int value, typename base_type>
             struct basic_exeption : public base_type
             {
+               enum
+               {
+                  code_value = value
+               };
+
                basic_exeption( const std::string& description)
                   : base_type( description) {}
 
@@ -195,30 +201,39 @@ namespace casual
                basic_exeption()
                   : base_type( "No additional information") {}
 
-               int code() const noexcept { return value;}
+               int code() const noexcept { return code_value;}
             };
          } // code
 
-         namespace severity
+         namespace category
          {
-            template< int value, typename base>
-            struct basic_severity : public base
+            template< log::category::Type value, typename base>
+            struct basic_category : public base
             {
                using base::base;
 
-               int severity() const noexcept { return value;}
+               enum
+               {
+                  category_value = static_cast< long>( value)
+               };
+
+               log::category::Type category() const noexcept { return value;}
             };
 
-            template< typename base>
-            using Error = basic_severity< common::platform::cLOG_error, base>;
 
             template< typename base>
-            using Information = basic_severity< common::platform::cLOG_info, base>;
+            using Error = basic_category< log::category::Type::error, base>;
 
             template< typename base>
-            using User = basic_severity< common::platform::cLOG_debug, base>;
+            using Warning = basic_category< log::category::Type::warning, base>;
 
-         } // severity
+            template< typename base>
+            using Information = basic_category< log::category::Type::information, base>;
+
+            template< typename base>
+            using User = basic_category< log::category::Type::debug, base>;
+
+         } // category
 
          namespace xatmi
          {
@@ -227,52 +242,53 @@ namespace casual
                using code::Base::Base;
             };
 
-            namespace severity
+            namespace category
             {
-               using Error = exception::severity::Error< Base>;
-               using Information = exception::severity::Information< Base>;
-               using User = exception::severity::User< Base>;
+               using Error = exception::category::Error< Base>;
+               using Warning = exception::category::Warning< Base>;
+               using Information = exception::category::Information< Base>;
+               using User = exception::category::User< Base>;
             }
 
 
 
-            typedef code::basic_exeption< TPEBLOCK, severity::User> NoMessage;
+            typedef code::basic_exeption< TPEBLOCK, category::User> NoMessage;
 
-            typedef code::basic_exeption< TPELIMIT, severity::Information> LimitReached;
+            typedef code::basic_exeption< TPELIMIT, category::Information> LimitReached;
 
-            typedef code::basic_exeption< TPEINVAL, severity::User> InvalidArguments;
+            typedef code::basic_exeption< TPEINVAL, category::User> InvalidArguments;
 
-            typedef code::basic_exeption< TPEOS, severity::Error> OperatingSystemError;
+            typedef code::basic_exeption< TPEOS, category::Error> OperatingSystemError;
 
-            typedef code::basic_exeption< TPEPROTO, severity::Error> ProtocollError;
+            typedef code::basic_exeption< TPEPROTO, category::Error> ProtocollError;
 
             namespace service
             {
-               typedef code::basic_exeption< TPEBADDESC, severity::User> InvalidDescriptor;
+               typedef code::basic_exeption< TPEBADDESC, category::User> InvalidDescriptor;
 
-               typedef code::basic_exeption< TPESVCERR, severity::Error> Error;
+               typedef code::basic_exeption< TPESVCERR, category::Error> Error;
 
-               typedef code::basic_exeption< TPESVCFAIL, severity::User> Fail;
+               typedef code::basic_exeption< TPESVCFAIL, category::User> Fail;
 
-               typedef code::basic_exeption< TPENOENT, severity::User> NoEntry;
+               typedef code::basic_exeption< TPENOENT, category::User> NoEntry;
 
-               typedef code::basic_exeption< TPEMATCH, severity::User> AllreadyAdvertised;
+               typedef code::basic_exeption< TPEMATCH, category::User> AllreadyAdvertised;
             }
 
-            typedef code::basic_exeption< TPESYSTEM, severity::Error> SystemError;
+            typedef code::basic_exeption< TPESYSTEM, category::Error> SystemError;
 
-            typedef code::basic_exeption< TPETIME, severity::User> Timeout;
+            typedef code::basic_exeption< TPETIME, category::User> Timeout;
 
-            typedef code::basic_exeption< TPETRAN, severity::User> TransactionNotSupported;
+            typedef code::basic_exeption< TPETRAN, category::User> TransactionNotSupported;
 
-            typedef code::basic_exeption< TPGOTSIG, severity::Information> Signal;
+            typedef code::basic_exeption< TPGOTSIG, category::Information> Signal;
 
             namespace buffer
             {
 
-               typedef code::basic_exeption< TPEITYPE, severity::User> TypeNotSupported;
+               typedef code::basic_exeption< TPEITYPE, category::User> TypeNotSupported;
 
-               typedef code::basic_exeption< TPEOTYPE, severity::User> TypeNotExpected;
+               typedef code::basic_exeption< TPEOTYPE, category::User> TypeNotExpected;
 
             }
 
@@ -285,9 +301,22 @@ namespace casual
             }
          } // xatmi
 
+         namespace tx
+         {
+            struct Base : public common::exception::Base
+            {
+               using common::exception::Base::Base;
+            };
+
+            struct Fail : Base
+            {
+               using Base::Base;
+            };
+         }
+
          /*
           * No point using exception for XA - TX stuff, to much return values that needs to be
-          * mapped to conform to the standard...
+          * mapped to conform to the spec...
           *
          namespace tx
          {

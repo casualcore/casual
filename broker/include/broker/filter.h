@@ -96,14 +96,14 @@ namespace casual
 
             bool operator () ( const state::Server::Instance& instance) const
             {
-               return instance.state != state::Server::Instance::State::prospect;
+               return instance.state != state::Server::Instance::State::booted;
             }
 
             bool operator () ( const state::Server& server) const
             {
                for( auto&& pid : server.instances)
                {
-                  if( ! operator()( m_state.getInstance( pid)))
+                  if( ! (*this)( m_state.getInstance( pid)))
                   {
                      return false;
                   }

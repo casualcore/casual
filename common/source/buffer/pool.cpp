@@ -49,7 +49,7 @@ namespace casual
                return **pool;
             }
 
-            platform::raw_buffer_type Holder::allocate( const Type& type, std::size_t size)
+            platform::raw_buffer_type Holder::allocate( const Type& type, platform::binary_size_type size)
             {
                auto buffer = find( type).allocate( type, size);
 
@@ -60,7 +60,7 @@ namespace casual
                return buffer;
             }
 
-            platform::raw_buffer_type Holder::reallocate( platform::const_raw_buffer_type handle, std::size_t size)
+            platform::raw_buffer_type Holder::reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size)
             {
                auto buffer = find( handle).reallocate( handle, size);
 

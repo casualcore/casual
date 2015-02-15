@@ -6,12 +6,15 @@
 //!
 
 #include <gtest/gtest.h>
-#include <yaml-cpp/yaml.h>
 
 #include "../include/test_vo.h"
 
 #include "sf/archive/yaml.h"
 #include "sf/exception.h"
+#include "sf/log.h"
+
+
+#include "common/algorithm.h"
 
 
 namespace casual
@@ -63,16 +66,46 @@ value:
    }
    */
 
+   namespace local
+   {
+      namespace
+      {
+         template<typename T>
+         void string_to_strict_value( const std::string& string, T&& value)
+         {
+            sf::archive::yaml::Load load;
+            load.serialize( string);
+            sf::archive::yaml::Reader reader( load.source());
+            reader >> CASUAL_MAKE_NVP( value);
+         }
+
+         template<typename T>
+         void string_to_relaxed_value( const std::string& string, T&& value)
+         {
+            sf::archive::yaml::Load load;
+            load.serialize( string);
+            sf::archive::yaml::relaxed::Reader reader( load.source());
+            reader >> CASUAL_MAKE_NVP( value);
+         }
+
+         template<typename T>
+         void value_to_string( T&& value, std::string& string)
+         {
+            sf::archive::yaml::Save save;
+            sf::archive::yaml::Writer writer( save.target());
+            writer << CASUAL_MAKE_NVP( value);
+            save.serialize( string);
+         }
+
+      }
+   }
+
 
    TEST( casual_sf_yaml_archive, relaxed_read_serializible)
    {
-      std::istringstream stream( test::SimpleVO::yaml());
-
-      sf::archive::yaml::relaxed::Reader reader( stream);
-
       test::SimpleVO value;
 
-      reader >> CASUAL_MAKE_NVP( value);
+      local::string_to_relaxed_value( test::SimpleVO::yaml(), value);
 
       EXPECT_TRUE( value.m_long == 234) << "value.m_long: " << value.m_long;
       EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.m_long: " << value.m_long;
@@ -82,60 +115,50 @@ value:
 
    TEST( casual_sf_yaml_archive, strict_read_serializible__gives_ok)
    {
-      std::istringstream stream( test::SimpleVO::yaml());
-
-      sf::archive::yaml::Reader reader( stream);
-
       test::SimpleVO value;
 
-      reader >> CASUAL_MAKE_NVP( value);
+      local::string_to_strict_value( test::SimpleVO::yaml(), value);
 
       EXPECT_TRUE( value.m_long == 234) << "value.someLong: " << value.m_long;
       EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.someLong: " << value.m_string;
       EXPECT_TRUE( value.m_longlong == 1234567890123456789) << "value.someLongLong: " << value.m_longlong;
-
    }
 
    TEST( casual_sf_yaml_archive, strict_read_not_in_document__gives_throws)
    {
-      std::istringstream stream( test::SimpleVO::yaml());
-
-      sf::archive::yaml::Reader reader( stream);
+      sf::archive::yaml::Load load;
+      load.serialize( test::SimpleVO::yaml());
+      sf::archive::yaml::Reader reader( load.source());
 
       test::SimpleVO wrongRoleName;
 
       EXPECT_THROW(
       {
          reader >> CASUAL_MAKE_NVP( wrongRoleName);
-      }, sf::exception::Validation);
+      }, sf::exception::archive::invalid::Node);
 
    }
 
 
    TEST( casual_sf_yaml_archive, write_read_vector_pod)
    {
-      YAML::Emitter output;
-
-      sf::archive::yaml::Writer writer( output);
+      std::string yaml;
 
       {
          std::vector< long> values = { 1, 2, 34, 45, 34, 34, 23};
-         writer << CASUAL_MAKE_NVP( values);
+         local::value_to_string( values, yaml);
       }
 
-      std::istringstream stream( output.c_str());
-      sf::archive::yaml::relaxed::Reader reader( stream);
 
 
       std::vector< long> values;
-      reader >> CASUAL_MAKE_NVP( values);
+      local::string_to_relaxed_value( yaml, values);
 
 
-
-      ASSERT_TRUE( values.size() == 7) << "size: " << values.size() << output.c_str();
+      ASSERT_TRUE( values.size() == 7) << values.size();
       EXPECT_TRUE( values.at( 0) == 1);
-      EXPECT_TRUE( values.at( 1) == 2);
-      EXPECT_TRUE( values.at( 2) == 34) << "values.at( 2): " << values.at( 2);
+      EXPECT_TRUE( values.at( 1) == 2) << common::range::make( values);
+      EXPECT_TRUE( values.at( 2) == 34) << values.at( 2);
       EXPECT_TRUE( values.at( 3) == 45);
       EXPECT_TRUE( values.at( 4) == 34);
       EXPECT_TRUE( values.at( 5) == 34);
@@ -144,20 +167,15 @@ value:
 
    TEST( casual_sf_yaml_archive, write_read_vector_serializible)
    {
-      YAML::Emitter output;
-
-      sf::archive::yaml::Writer writer( output);
+      std::string yaml;
 
       {
          std::vector< test::SimpleVO> values = { { 2342342, "one two three", 123 }, { 234234, "four five six", 456}};
-         writer << CASUAL_MAKE_NVP( values);
+         local::value_to_string( values, yaml);
       }
 
-      std::istringstream stream( output.c_str());
-      sf::archive::yaml::relaxed::Reader reader( stream);
-
       std::vector< test::SimpleVO> values;
-      reader >> CASUAL_MAKE_NVP( values);
+      local::string_to_relaxed_value( yaml, values);
 
       ASSERT_TRUE( values.size() == 2);
       EXPECT_TRUE( values.at( 0).m_short == 123);
@@ -171,9 +189,7 @@ value:
 
    TEST( casual_sf_yaml_archive, write_read_map_complex)
    {
-      YAML::Emitter output;
-
-      sf::archive::yaml::Writer writer( output);
+      std::string yaml;
 
       {
          std::map< long, test::Composite> values;
@@ -182,18 +198,14 @@ value:
          values[ 2342].m_string = "Charlie";
          values[ 2342].m_values = { { 33333, "three", 3}, { 444444, "four", 4}};
 
-         writer << CASUAL_MAKE_NVP( values);
+         local::value_to_string( values, yaml);
       }
 
-
-      std::istringstream stream( output.c_str());
-      sf::archive::yaml::relaxed::Reader reader( stream);
-
       std::map< long, test::Composite> values;
-      reader >> CASUAL_MAKE_NVP( values);
+      local::string_to_relaxed_value( yaml, values);
 
 
-      ASSERT_TRUE( values.size() == 2) << output.c_str();
+      ASSERT_TRUE( values.size() == 2) << CASUAL_MAKE_NVP( values);
       EXPECT_TRUE( values.at( 10).m_string == "kalle");
       EXPECT_TRUE( values.at( 10).m_values.at( 0).m_short == 1);
       EXPECT_TRUE( values.at( 10).m_values.at( 0).m_string == "one");
@@ -210,8 +222,8 @@ value:
 
    TEST( casual_sf_yaml_archive, write_read_binary)
    {
-      YAML::Emitter output;
-      sf::archive::yaml::Writer writer( output);
+
+      std::string yaml;
 
       {
          test::Binary value;
@@ -220,25 +232,36 @@ value:
          value.m_string = "Charlie";
          value.m_binary = { 1, 2, 56, 57, 58 };
 
-         writer << CASUAL_MAKE_NVP( value);
+         local::value_to_string( value, yaml);
       }
 
-      std::istringstream stream( output.c_str());
-      sf::archive::yaml::relaxed::Reader reader( stream);
-
       test::Binary value;
-      reader >> CASUAL_MAKE_NVP( value);
+      local::string_to_relaxed_value( yaml, value);
 
 
 
-      ASSERT_TRUE( value.m_binary.size() == 5) << "size: " << value.m_binary.size() << output.c_str();
+      ASSERT_TRUE( value.m_binary.size() == 5) << value.m_binary.size();
       EXPECT_TRUE( value.m_binary.at( 0) == 1);
       EXPECT_TRUE( value.m_binary.at( 1) == 2);
-      EXPECT_TRUE( value.m_binary.at( 2) == 56) << "values.at( 2): " << value.m_binary.at( 2);
+      EXPECT_TRUE( value.m_binary.at( 2) == 56) << value.m_binary.at( 2);
       EXPECT_TRUE( value.m_binary.at( 3) == 57);
       EXPECT_TRUE( value.m_binary.at( 4) == 58);
    }
 
-}
+
+   TEST( casual_sf_yaml_archive, read_invalid_document__expecting_exception)
+   {
+      const std::string yaml{ "   " };
+
+      EXPECT_THROW
+      ({
+         sf::archive::yaml::Load().serialize( yaml);
+      }, sf::exception::archive::invalid::Document);
+
+   }
+
+
+
+} // casual
 
 

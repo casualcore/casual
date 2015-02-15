@@ -27,16 +27,16 @@ namespace casual
             long someLong = 3;
             std::string someString = "banan";
 
-            ipc::message::Complete complete;
-            output::Binary output{ complete};
+            platform::binary_type buffer;
+            output::Binary output{ buffer};
 
             output << someLong;
 
-            EXPECT_TRUE( complete.payload.size() == sizeof( long)) <<  complete.payload.size();
+            EXPECT_TRUE( buffer.size() == sizeof( long)) <<  buffer.size();
 
             output << someString;
 
-            input::Binary input( complete);
+            input::Binary input( buffer);
 
             long resultLong;
             input >> resultLong;
@@ -45,7 +45,6 @@ namespace casual
             std::string resultString;
             input >> resultString;
             EXPECT_TRUE( resultString == someString) << resultString;
-
          }
 
          TEST( casual_common, marshal_binary)
@@ -58,13 +57,13 @@ namespace casual
 
             }
 
-            ipc::message::Complete complete;
-            output::Binary output( complete);
+            platform::binary_type buffer;
+            output::Binary output( buffer);
             output << binaryInput;
-            EXPECT_TRUE( complete.payload.size() == binaryInput.size() + sizeof( binaryInput.size())) <<  complete.payload.size();
 
+            EXPECT_TRUE( buffer.size() == binaryInput.size() + sizeof( binaryInput.size())) <<  buffer.size();
 
-            input::Binary input( complete);
+            input::Binary input( buffer);
 
             std::vector< char> binaryOutput;
             input >> binaryOutput;
@@ -92,9 +91,7 @@ namespace casual
             serverConnect.services.push_back( service);
 
 
-            ipc::message::Complete complete;
-
-            complete << serverConnect;
+            ipc::message::Complete complete = marshal::complete( serverConnect);
 
             message::service::Advertise result;
 
@@ -120,9 +117,7 @@ namespace casual
             service.name = "service1";
             serverConnect.services.resize( 10000, service);
 
-            ipc::message::Complete complete;
-
-            complete << serverConnect;
+            ipc::message::Complete complete = marshal::complete( serverConnect);
 
             message::service::Advertise result;
 
@@ -139,12 +134,12 @@ namespace casual
 
             transaction::ID xid_source;
 
-            ipc::message::Complete complete;
-            output::Binary output( complete);
+            platform::binary_type buffer;
+            output::Binary output( buffer);
 
             output << xid_source;
 
-            input::Binary input( complete);
+            input::Binary input( buffer);
 
             transaction::ID xid_target;
 
@@ -158,12 +153,12 @@ namespace casual
 
             transaction::ID xid_source = transaction::ID::create();
 
-            ipc::message::Complete complete;
-            output::Binary output( complete);
+            platform::binary_type buffer;
+            output::Binary output( buffer);
 
             output & xid_source;
 
-            input::Binary input( complete);
+            input::Binary input( buffer);
 
             transaction::ID xid_target;
 

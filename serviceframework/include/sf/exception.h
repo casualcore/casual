@@ -56,6 +56,11 @@ namespace casual
             using Base::Base;
          };
 
+         struct FileNotFound : public Base
+         {
+            FileNotFound( const std::string& file) : Base( "could not find " + file) {}
+         };
+
 
 
 
@@ -74,6 +79,23 @@ namespace casual
             };
 
          } // memory
+
+         namespace archive
+         {
+            namespace invalid
+            {
+               struct Document : Base
+               {
+                  using Base::Base;
+               };
+
+               struct Node : Base
+               {
+                  using Base::Base;
+               };
+
+            } // invalid
+         } // archive
 
          namespace xatmi
          {

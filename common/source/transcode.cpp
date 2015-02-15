@@ -13,16 +13,18 @@
 #include <locale>
 #include <algorithm>
 #include <iterator>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 // codecvt is not part of GCC yet ...
 //#include <codecvt>
 // ... so we have to use the cumbersome iconv instead
 #include <iconv.h>
+#include <clocale>
 #include <cerrno>
 #include <cstring>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 #include <cstdlib>
+#include <cassert>
 //#include <langinfo.h>
 
 
@@ -95,7 +97,7 @@ namespace casual
                      {
                         switch( errno)
                         {
-                        case_EMFILE:
+                        case EMFILE:
                         case ENFILE:
                         case ENOMEM:
                            throw std::runtime_error( std::strerror( errno));
@@ -129,7 +131,7 @@ namespace casual
 
                         const auto conversions = iconv( m_descriptor, &source, &size, &target, &left);
 
-                        if( conversions == -1)
+                        if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
                            switch( errno)
                            {
@@ -154,7 +156,6 @@ namespace casual
                   const iconv_t m_descriptor;
                };
 
-               const std::string UTF8( "UTF-8");
             }
          }
 
@@ -170,9 +171,9 @@ namespace casual
                   std::string modifier;
                };
 
-               locale info()
+               locale parse( const std::string& name)
                {
-                  std::istringstream stream( std::locale().name());
+                  std::istringstream stream( name);
 
                   locale result;
 
@@ -183,38 +184,131 @@ namespace casual
 
                   return result;
                }
+
+               locale info()
+               {
+                  //return parse( std::locale( "").name());
+                  return parse( std::setlocale( LC_CTYPE, ""));
+               }
             }
 
          }
 
          namespace utf8
          {
+            const std::string cUTF8( "UTF-8");
+
             std::string encode( const std::string& value)
             {
+               //return encode( value, "");
                return encode( value, local::info().codeset);
             }
 
             std::string decode( const std::string& value)
             {
+               //return decode( value, "");
                return decode( value, local::info().codeset);
             }
 
-
             std::string encode( const std::string& value, const std::string& codeset)
             {
-               return local::converter( codeset, local::UTF8).transcode( value);
+               return local::converter( codeset, cUTF8).transcode( value);
             }
 
             std::string decode( const std::string& value, const std::string& codeset)
             {
-               return local::converter( local::UTF8, codeset).transcode( value);
+               return local::converter( cUTF8, codeset).transcode( value);
             }
 
          } // utf8
-      }
 
-   }
-}
+         namespace hex
+         {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename InIter, typename OutIter>
+                  void encode( InIter first, InIter last, OutIter out)
+                  {
+                     while( first != last)
+                     {
+                        auto hex = []( decltype( *first) value){
+                           if( value < 10)
+                           {
+                              return value + 48;
+                           }
+                           return value + 87;
+                        };
+
+                        *out++ = hex( ( 0xf0 & *first) >> 4);
+                        *out++ = hex( 0x0f & *first);
+
+                        ++first;
+                     }
+                  }
+
+                  template< typename InIter, typename OutIter>
+                  void decode( InIter first, InIter last, OutIter out)
+                  {
+                     assert( ( last - first) % 2 == 0);
+
+                     while( first != last)
+                     {
+                        auto hex = []( decltype( *first) value){
+                           if( value >= 87)
+                           {
+                              return value - 87;
+                           }
+                           return value - 48;
+                        };
+
+                        *out = ( 0x0f & hex( *first++)) << 4;
+                        *out += 0x0f & hex( *first++);
+
+                        ++out;
+                     }
+                  }
+
+               } // <unnamed>
+            } // local
+
+            namespace detail
+            {
+               std::string encode( const void* data, std::size_t bytes)
+               {
+                  std::string result( bytes * 2, 0);
+
+                  const char* first = static_cast< const char*>( data);
+                  auto last = first + bytes;
+
+                  local::encode( first, last, result.begin());
+
+                  return result;
+               }
+
+               void decode( const std::string& value, void* data)
+               {
+                  local::decode( std::begin( value), std::end( value), static_cast< std::uint8_t*>( data));
+               }
+
+            } // detail
+
+
+            platform::binary_type decode( const std::string& value)
+            {
+               platform::binary_type result( value.size() / 2);
+
+               local::decode( value.begin(), value.end(), result.begin());
+
+               return result;
+            }
+
+         } // hex
+
+      } // transcode
+   } // common
+} // casual
 
 
 

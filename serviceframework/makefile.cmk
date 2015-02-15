@@ -1,23 +1,18 @@
 from casual.make.directive import *
 
 
-Include( '$(CASUAL_BUILD_ENVIRONMENT)')
-
 
 IncludePaths([
     'include',
     '../common/include',
     '../xatmi/include',
-    '$(YAML_INCLUDE_PATH)',
-    '$(JSON_INCLUDE_PATH)',
-	'$(UNITTEST_INCLUDE_PATH)',
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 	
 LibraryPaths([
     '../common/bin',
     '../xatmi/bin',
-    '$(YAML_LIBRARY_PATH)',
-    '$(JSON_LIBRARY_PATH)',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
 install_lib = []
@@ -26,6 +21,9 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
     [
         Compile( 'source/archive/archive.cpp'),
         Compile( 'source/archive/maker.cpp'),
+        Compile( 'source/archive/json.cpp'),
+        Compile( 'source/archive/xml.cpp'),
+        Compile( 'source/archive/yaml.cpp'),
         Compile( 'source/archive/log.cpp'),
         Compile( 'source/archive/terminal.cpp'),
         Compile( 'source/buffer.cpp'),
@@ -38,7 +36,7 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         
         Compile( 'source/trace.cpp', 'obj/trace.o'),
     ],
-    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c'])
+    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c', 'pugixml'])
 
 install_lib.append( lib_sf)
 
@@ -50,16 +48,18 @@ LinkIsolatedUnittest( 'bin/test-casual-sf',
 	[
         Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
         Compile( 'unittest/isolated/source/test_archive.cpp'),
+        Compile( 'unittest/isolated/source/test_archive_write_read.cpp'),
         Compile( 'unittest/isolated/source/test_traits.cpp'),
         Compile( 'unittest/isolated/source/test_yaml_archive.cpp'),
         Compile( 'unittest/isolated/source/test_json_archive.cpp'),
+        Compile( 'unittest/isolated/source/test_xml_archive.cpp'),
         Compile( 'unittest/isolated/source/test_buffer.cpp'),
         Compile( 'unittest/isolated/source/test_service.cpp'),
         Compile( 'unittest/isolated/source/test_uuid.cpp'),
         Compile( 'unittest/isolated/source/test_xatmi_call.cpp'),
         Compile( 'unittest/isolated/source/test_vo.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'json-c', 'yaml-cpp'])
+	[ lib_sf, 'casual-xatmi', 'casual-common', 'json-c', 'yaml-cpp', 'pugixml'])
 
 #
 # Install

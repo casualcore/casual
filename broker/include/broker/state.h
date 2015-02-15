@@ -143,8 +143,7 @@ namespace casual
 
                enum class State
                {
-                  absent = 1,
-                  prospect,
+                  booted = 1,
                   idle,
                   busy,
                   shutdown
@@ -166,9 +165,10 @@ namespace casual
                void remove( const Service& service);
 
                friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
+               friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
 
             //private:
-               State state = State::absent;
+               State state = State::booted;
             };
 
             using Executable::Executable;

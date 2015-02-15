@@ -21,11 +21,11 @@ namespace casual
          std::string test{ "0123456789"};
 
 
-         auto pred = compare::equal_to( std::mem_fn( &std::string::size), bind::value( 10));
+         auto pred = std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 10);
 
          EXPECT_TRUE( pred( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &std::string::size), bind::value( 11))( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &std::string::size), bind::value( 9))( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 11)( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 9)( test));
 
       }
 
@@ -47,11 +47,11 @@ namespace casual
          local::TestType test{ "bla bla bla", 42};
 
 
-         auto pred = compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 42));
+         auto pred = std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 42);
 
          EXPECT_TRUE( pred( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 41))( test));
-         EXPECT_FALSE( compare::equal_to( std::mem_fn( &local::TestType::someSize), bind::value( 43))( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 41)( test));
+         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 43)( test));
       }
 
 
@@ -347,7 +347,7 @@ namespace casual
 
          auto sorted = range::sort( values, chain::Order::link( order::name::Ascending()));
 
-         EXPECT_TRUE( sorted->name == "Charlie");
+         EXPECT_TRUE( std::begin( sorted)->name == "Charlie");
       }
 
       TEST( casual_common_algorithm, chain_order_name_desc__age_asc)
@@ -358,10 +358,10 @@ namespace casual
                order::name::Descending(),
                order::age::Ascending()));
 
-         EXPECT_TRUE( sorted->name == "Tom");
-         EXPECT_TRUE( sorted->age == 29);
-         EXPECT_TRUE( ( sorted.first + 3)->name == "Charlie");
-         EXPECT_TRUE( ( sorted.first + 3)->age == 29);
+         EXPECT_TRUE( std::begin( sorted)->name == "Tom");
+         EXPECT_TRUE( std::begin( sorted)->age == 29);
+         EXPECT_TRUE( ( std::begin( sorted) + 3)->name == "Charlie");
+         EXPECT_TRUE( ( std::begin( sorted) + 3)->age == 29);
 
       }
 
@@ -373,10 +373,10 @@ namespace casual
                order::age::Descending(),
                order::height::Ascending()));
 
-         EXPECT_TRUE( ( sorted.first + 1)->age == 29);
-         EXPECT_TRUE( ( sorted.first + 1)->height == 1.75);
-         EXPECT_TRUE( ( sorted.first + 2)->age == 29);
-         EXPECT_TRUE( ( sorted.first + 2)->height == 1.90);
+         EXPECT_TRUE( ( std::begin( sorted) + 1)->age == 29);
+         EXPECT_TRUE( ( std::begin( sorted) + 1)->height == 1.75);
+         EXPECT_TRUE( ( std::begin( sorted) + 2)->age == 29);
+         EXPECT_TRUE( ( std::begin( sorted) + 2)->height == 1.90);
 
       }
 

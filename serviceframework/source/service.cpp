@@ -80,8 +80,6 @@ namespace casual
          }
 
 
-
-
          Factory& Factory::instance()
          {
             static Factory singleton;
@@ -104,7 +102,7 @@ namespace casual
 
          std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
          {
-            common::trace::internal::Scope trace( "sf::service::Factory::create");
+            const common::trace::internal::Scope trace( "sf::service::Factory::create");
 
             sf::buffer::Type type = sf::buffer::type( serviceInfo->data);
 
@@ -122,11 +120,12 @@ namespace casual
 
          Factory::Factory()
          {
-            common::trace::internal::Scope trace( "sf::service::Factory::Factory");
+            const common::trace::internal::Scope trace( "sf::service::Factory::Factory");
 
             registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "yaml"));
             registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));
             registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "json"));
+            registrate< service::protocol::Xml>( buffer::Type( "X_OCTET", "xml"));
          }
 
 

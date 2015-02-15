@@ -80,32 +80,44 @@ namespace casual
                {
                   log::internal::debug << "service: " << service << std::endl;
 
+                  //
+                  // We add callers transaction (can be null-trid).
+                  //
+                  transaction::Context::instance().caller = message.trid;
+
                   switch( service.transaction)
                   {
                      case server::Service::cAuto:
                      {
-                        transaction::Context::instance().joinOrStart( message.trid);
-
+                        if( message.trid)
+                        {
+                           transaction::Context::instance().join( message.trid);
+                        }
+                        else
+                        {
+                           transaction::Context::instance().start();
+                        }
                         break;
                      }
                      case server::Service::cJoin:
                      {
                         if( message.trid)
                         {
-                           transaction::Context::instance().joinOrStart( message.trid);
+                           transaction::Context::instance().join( message.trid);
                         }
-
                         break;
                      }
                      case server::Service::cAtomic:
                      {
-                        transaction::Context::instance().joinOrStart( common::transaction::ID::create());
+                        transaction::Context::instance().start();
                         break;
                      }
+                     case server::Service::cNone:
                      default:
                      {
                         //
                         // We don't start or join any transactions
+                        // (technically we join a null-trid)
                         //
                         break;
                      }
@@ -122,9 +134,9 @@ namespace casual
 
                }
 
-               void Default::transaction( message::service::Reply& message)
+               void Default::transaction( message::service::Reply& message, int return_state)
                {
-                  transaction::Context::instance().finalize( message);
+                  transaction::Context::instance().finalize( message, return_state);
                }
 
             } // policy

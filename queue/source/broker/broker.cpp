@@ -119,6 +119,24 @@ namespace casual
                void startup( State& state, config::queue::Domain config)
                {
                   casual::common::range::transform( config.groups, state.groups, Startup( state));
+
+                  //
+                  // Make sure all groups are up and running before we continue
+                  //
+                  {
+                     casual::common::message::dispatch::Handler handler{
+                        broker::handle::connect::Request{ state}};
+
+                     broker::queue::blocking::Reader read( casual::common::ipc::receive::queue(), state);
+
+                     auto filter = handler.types();
+
+                     while( ! common::range::all_of( state.groups, std::mem_fn(&State::Group::connected)))
+                     {
+                        handler( read.next( filter));
+                     }
+
+                  }
                }
 
             } // <unnamed>
@@ -265,7 +283,7 @@ namespace casual
 
          while( true)
          {
-            handler.dispatch( blockedRead.next());
+            handler( blockedRead.next());
          }
 
       }
@@ -285,12 +303,12 @@ namespace casual
          }
          else
          {
-
             return getQueues(
                   std::get< 0>( common::range::intersection(
                      m_state.groups,
                      common::range::unique( groups),
-                     common::compare::equal_to( std::mem_fn( &broker::State::Group::name), common::compare::value()))));
+                     std::bind( common::equal_to{},
+                           std::bind( &broker::State::Group::name, std::placeholders::_1), std::placeholders::_2))));
          }
       }
 
@@ -325,7 +343,7 @@ namespace casual
             blockedRead( reply);
 
             auto found = common::range::find_if( result,
-                  common::compare::equal_to( std::mem_fn( &broker::Queues::groupId), common::bind::value( reply.process.pid)));
+                  std::bind( common::equal_to{}, std::bind( &broker::Queues::groupId, std::placeholders::_1), reply.process.pid));
 
             if( found)
             {

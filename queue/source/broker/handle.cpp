@@ -66,7 +66,7 @@ namespace casual
 
             namespace shutdown
             {
-               void Request::dispatch( message_type& message)
+               void Request::operator () ( message_type& message)
                {
                   std::vector< common::process::Handle> groups;
                   common::range::transform( m_state.groups, groups, std::mem_fn( &broker::State::Group::process));
@@ -85,7 +85,7 @@ namespace casual
             {
                namespace queue
                {
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      auto found =  common::range::find( m_state.queues, message.qname);
 
@@ -114,7 +114,7 @@ namespace casual
             namespace lookup
             {
 
-               void Request::dispatch( message_type& message)
+               void Request::operator () ( message_type& message)
                {
                   queue::blocking::Writer write{ message.process.queue, m_state};
 
@@ -135,7 +135,7 @@ namespace casual
 
             namespace connect
             {
-               void Request::dispatch( message_type& message)
+               void Request::operator () ( message_type& message)
                {
 
                   for( auto&& queue : message.queues)
@@ -145,12 +145,20 @@ namespace casual
                         common::log::error << "multiple instances of queue: " << queue.name << " - action: keeping the first one" << std::endl;
                      }
                   }
+
+                  auto found = common::range::find( m_state.groups, message.process);
+
+                  if( found)
+                  {
+                     found->connected = true;
+                  }
+
                }
             } // connect
 
             namespace group
             {
-               void Involved::dispatch( message_type& message)
+               void Involved::operator () ( message_type& message)
                {
                   auto& involved = m_state.involved[ message.trid];
 
@@ -265,14 +273,14 @@ namespace casual
 
                namespace commit
                {
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
 
                      request( m_state, message);
 
                   }
 
-                  void Reply::dispatch( message_type& message)
+                  void Reply::operator () ( message_type& message)
                   {
                      reply( m_state, message);
                   }
@@ -281,13 +289,13 @@ namespace casual
 
                namespace rollback
                {
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      request( m_state, message);
 
                   }
 
-                  void Reply::dispatch( message_type& message)
+                  void Reply::operator () ( message_type& message)
                   {
                      reply( m_state, message);
                   }

@@ -51,7 +51,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
          //!
@@ -63,7 +63,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
          namespace transaction
@@ -81,7 +81,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
                //!
@@ -93,7 +93,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
 
             } // manager
@@ -111,7 +111,7 @@ namespace casual
 
                   using Base::Base;
 
-                  void dispatch( message_type& message);
+                  void operator () ( message_type& message);
                };
             } // client
          } // transaction
@@ -127,7 +127,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -137,7 +137,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -151,7 +151,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -164,7 +164,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
 
          };
 
@@ -181,7 +181,7 @@ namespace casual
 
             using Base::Base;
 
-            void dispatch( message_type& message);
+            void operator () ( message_type& message);
          };
 
 
@@ -210,7 +210,7 @@ namespace casual
 
             void transaction( const common::message::service::callee::Call&, const common::server::Service&, const common::platform::time_point&);
 
-            void transaction( const common::message::service::Reply& message);
+            void transaction( const common::message::service::Reply& message, int return_state);
 
             void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message);
 

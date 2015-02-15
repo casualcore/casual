@@ -44,6 +44,9 @@ namespace casual
                move::Moved m_moved;
             };
 
+            const std::string& escape() const;
+            std::string reset() const;
+
             friend proxy_t operator << ( std::ostream& out, const color_t& color);
 
          private:

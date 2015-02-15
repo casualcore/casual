@@ -57,27 +57,37 @@ namespace casual
             {
                log::error << exception << std::endl;
             }
-            catch( const exception::xatmi::severity::Error& exception)
+            catch( const exception::xatmi::category::Error& exception)
             {
                log::error << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
-            catch( const exception::xatmi::severity::Information& exception)
+            catch( const exception::xatmi::category::Warning& exception)
+            {
+               log::warning << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
+               return exception.code();
+            }
+            catch( const exception::xatmi::category::Information& exception)
             {
                log::information << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
-            catch( const exception::xatmi::severity::User& exception)
+            catch( const exception::xatmi::category::User& exception)
             {
                log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
-            /*
-            catch( const exception::tx::severity::Error& exception)
+
+            //
+            // tx stuff
+            //
+            catch( const exception::tx::Fail& exception)
             {
-               log::error << transaction::txError( exception.code()) << " - " << exception.what();
-               return exception.code();
+               log::error << exception.what() << std::endl;
+               return TX_FAIL;
             }
+
+            /*
             catch( const exception::tx::severity::Information& exception)
             {
                log::information << transaction::txError( exception.code()) << " - " << exception.what();

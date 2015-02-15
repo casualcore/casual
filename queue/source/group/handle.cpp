@@ -75,7 +75,7 @@ namespace casual
                namespace queues
                {
 
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      common::message::queue::information::queues::Reply reply;
                      reply.process = common::process::handle();
@@ -89,7 +89,7 @@ namespace casual
                namespace messages
                {
 
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      common::message::queue::information::queue::Reply reply;
                      reply.process = common::process::handle();
@@ -107,7 +107,7 @@ namespace casual
 
             namespace enqueue
             {
-               void Request::dispatch( message_type& message)
+               void Request::operator () ( message_type& message)
                {
                   try
                   {
@@ -135,7 +135,7 @@ namespace casual
 
             namespace dequeue
             {
-               void Request::dispatch( message_type& message)
+               void Request::operator () ( message_type& message)
                {
                   do_dispatch( message);
                }
@@ -164,7 +164,7 @@ namespace casual
 
                namespace callback
                {
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      if( ! dequeue::Request::do_dispatch( message))
                      {
@@ -185,7 +185,7 @@ namespace casual
             {
                namespace commit
                {
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      common::message::transaction::resource::commit::Reply reply;
                      reply.process = common::process::handle();
@@ -213,7 +213,7 @@ namespace casual
 
                namespace rollback
                {
-                  void Request::dispatch( message_type& message)
+                  void Request::operator () ( message_type& message)
                   {
                      common::message::transaction::resource::rollback::Reply reply;
                      reply.process = common::process::handle();

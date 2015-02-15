@@ -102,11 +102,6 @@ namespace casual
          }
 
 
-			platform::seconds_type getTime()
-			{
-				return time( 0);
-			}
-
 			namespace local
          {
             namespace

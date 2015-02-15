@@ -35,15 +35,13 @@ namespace casual
       TEST( casual_common_transaction_id, generic_string)
       {
          transaction::ID id{ uuid::make(), uuid::make(), { 0, 0}};
-         id.xid.gtrid_length = 8;
-         id.xid.bqual_length = 8;
 
          std::ostringstream stream;
          stream << id;
 
          auto gtrid = stream.str();
 
-         EXPECT_TRUE( gtrid.size() == 17 * 2 + 1 + 4) << "id: " << id << std::endl;
+         EXPECT_TRUE( gtrid.size() == 32 * 2 + 1 + 4) << "id: " << id << std::endl;
       }
 
       TEST( casual_common_transaction_id, uuid_constructor)

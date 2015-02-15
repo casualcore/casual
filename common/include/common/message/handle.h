@@ -31,7 +31,7 @@ namespace casual
 
                using message_type = M;
 
-               void dispatch( message_type& message)
+               void operator () ( message_type& message)
                {
                   // no op
                }
@@ -50,7 +50,7 @@ namespace casual
                Ping( Args&&... args)
                   :  m_send( std::forward< Args>( args)...) {}
 
-               void dispatch( message_type& message)
+               void operator () ( message_type& message)
                {
                   server::ping::Reply reply;
 
@@ -80,7 +80,7 @@ namespace casual
             {
                using message_type = message::shutdown::Request;
 
-               void dispatch( message_type& message);
+               void operator () ( message_type& message);
             };
 
 

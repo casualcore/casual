@@ -31,7 +31,10 @@ char* tpalloc( const char* type, const char* subtype, long size)
 {
    try
    {
-      return casual::common::buffer::pool::Holder::instance().allocate( { type, subtype}, size);
+      //
+      // TODO: Shall we report size less than zero ?
+      //
+      return casual::common::buffer::pool::Holder::instance().allocate( { type, subtype}, size < 0 ? 0 : size);
    }
    catch( ...)
    {
@@ -45,7 +48,10 @@ char* tprealloc( const char* ptr, long size)
 
    try
    {
-      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size);
+      //
+      // TODO: Shall we report size less than zero ?
+      //
+      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size < 0 ? 0 : size);
    }
    catch( ...)
    {
@@ -129,12 +135,15 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
 
 int tpcall( const char* const svc, char* idata, const long ilen, char** odata, long* olen, const long flags)
 {
+   if( svc == nullptr)
+   {
+      tperrno = TPEINVAL;
+      return -1;
+   }
+
    try
    {
-
-      auto descriptor = casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
-
-      casual::common::call::Context::instance().getReply( descriptor, odata, *olen, flags);
+      casual::common::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
    }
    catch( ...)
    {
@@ -146,13 +155,19 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 
 int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
 {
+   if( svc == nullptr)
+   {
+      tperrno = TPEINVAL;
+      return -1;
+   }
+
    try
    {
       //
       // TODO: if needed size is less than current size, shall vi reduce it ?
       //
 
-      return casual::common::call::Context::instance().asyncCall( svc, idata, ilen, flags);
+      return casual::common::call::Context::instance().async( svc, idata, ilen, flags);
    }
    catch( ...)
    {
@@ -165,7 +180,7 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 {
    try
    {
-      casual::common::call::Context::instance().getReply( *idPtr, odata, *olen, flags);
+      casual::common::call::Context::instance().reply( *idPtr, odata, *olen, flags);
    }
    catch( ...)
    {
@@ -179,13 +194,14 @@ int tpcancel( int id)
 {
    try
    {
-      return casual::common::call::Context::instance().canccel( id);
+      casual::common::call::Context::instance().cancel( id);
    }
    catch( ...)
    {
       tperrno = casual::common::error::handler();
       return -1;
    }
+   return 0;
 }
 
 
@@ -224,12 +240,10 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
-  casual::common::log::debug << "internal tpsvrinit called" << std::endl;
   return 0;
 }
 
 void tpsvrdone()
 {
-  casual::common::log::debug << "internal tpsvrdone called" << std::endl;
 }
 

@@ -10,22 +10,24 @@
 #include "sf/platform.h"
 #include "sf/archive/yaml.h"
 
-
-#include <yaml-cpp/yaml.h>
-
 namespace casual
 {
    TEST( casual_sf_uuid, serialize)
    {
-      YAML::Emitter emitter;
-      sf::archive::yaml::Writer writer( emitter);
+
+      sf::archive::yaml::Save save;
+      sf::archive::yaml::Writer writer( save.target());
 
       sf::platform::Uuid uuid( sf::platform::uuid::make());
 
       writer << CASUAL_MAKE_NVP( uuid);
 
-      std::istringstream stream( emitter.c_str());
-      sf::archive::yaml::Reader reader( stream);
+      std::string yaml;
+      save.serialize( yaml);
+
+      sf::archive::yaml::Load load;
+      load.serialize( yaml);
+      sf::archive::yaml::Reader reader( load.source());
 
       sf::platform::Uuid out;
       reader >> sf::makeNameValuePair( "uuid", out);

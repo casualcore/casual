@@ -12,7 +12,10 @@
 #include "common/process.h"
 
 #include "common/mockup/ipc.h"
+#include "common/mockup/domain.h"
+
 #include "common/buffer/pool.h"
+
 
 
 // we need some values
@@ -66,11 +69,31 @@ namespace casual
                server::Context::instance().longJumpReturn( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
             }
 
+            void test_service_TPFAIL( TPSVCINFO *serviceInfo)
+            {
+               server::Context::instance().longJumpReturn( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
+            }
+
+            void test_service_TPSUCCESS( TPSVCINFO *serviceInfo)
+            {
+               server::Context::instance().longJumpReturn( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
+            }
+
             server::Arguments arguments()
             {
                server::Arguments arguments{ { "/test/path"}};
 
                arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::cNone);
+
+               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cNone);
+               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAtomic);
+               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cJoin);
+               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAuto);
+
+               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::cNone);
+               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAtomic);
+               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::cJoin);
+               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAuto);
 
                return arguments;
             }
@@ -116,7 +139,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_common_service_context, arguments)
+      TEST( casual_common_server_context, arguments)
       {
          server::Arguments arguments{ { "arg1", "arg2"}};
 
@@ -128,7 +151,7 @@ namespace casual
          EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
       }
 
-      TEST( casual_common_service_context, arguments_move)
+      TEST( casual_common_server_context, arguments_move)
       {
          server::Arguments origin{ { "arg1", "arg2"}};
 
@@ -145,7 +168,7 @@ namespace casual
 
 
 
-      TEST( casual_common_service_context, connect)
+      TEST( casual_common_server_context, connect)
       {
          mockup::ipc::clear();
 
@@ -167,14 +190,14 @@ namespace casual
 
          EXPECT_TRUE( message.process == process::handle());
 
-         ASSERT_TRUE( message.services.size() == 1);
+         ASSERT_TRUE( message.services.size() > 1);
          EXPECT_TRUE( message.services.at( 0).name == "test_service");
 
       }
 
 
 
-      TEST( casual_common_service_context, call_service__gives_reply)
+      TEST( casual_common_server_context, call_service__gives_reply)
       {
          mockup::ipc::clear();
 
@@ -189,7 +212,7 @@ namespace casual
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            callHandler.dispatch( message);
+            callHandler( message);
          }
 
 
@@ -202,7 +225,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_service_context, call_service__gives_broker_ack)
+      TEST( casual_common_server_context, call_service__gives_broker_ack)
       {
          mockup::ipc::clear();
 
@@ -217,7 +240,7 @@ namespace casual
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            callHandler.dispatch( message);
+            callHandler( message);
          }
 
          queue::blocking::Reader broker( mockup::ipc::broker::queue().receive());
@@ -229,7 +252,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_service_context, call_non_existing_service__throws)
+      TEST( casual_common_server_context, call_non_existing_service__throws)
       {
          mockup::ipc::clear();
 
@@ -247,13 +270,13 @@ namespace casual
 
 
          EXPECT_THROW( {
-            callHandler.dispatch( message);
+            callHandler( message);
          }, exception::xatmi::SystemError);
       }
 
 
 
-      TEST( casual_common_service_context, call_service__gives_monitor_notify)
+      TEST( casual_common_server_context, call_service__gives_monitor_notify)
       {
          mockup::ipc::clear();
 
@@ -272,7 +295,7 @@ namespace casual
 
             auto message = local::callMessage( caller.id());
             message.service.monitor_queue = monitor.id();
-            callHandler.dispatch( message);
+            callHandler( message);
          }
 
          queue::blocking::Reader reader( monitor.receive());
@@ -285,14 +308,410 @@ namespace casual
          ipc::receive::queue().clear();
       }
 
-      TEST( casual_common_service_context, state_call_descriptor_reserver)
+
+      namespace local
+      {
+         namespace
+         {
+
+            struct Domain
+            {
+               //
+               // Set up a 'domain'
+               //
+               Domain()
+                  :
+                  broker{ ipc::receive::id(), mockup::create::broker()},
+                  // link the global mockup-broker-queue's output to 'our' broker
+                  link_broker_reply{ mockup::ipc::broker::queue().receive().id(), broker.id()},
+
+                  tm{ ipc::receive::id(), mockup::create::transaction::manager()},
+                  // link the global mockup-transaction-manager-queue's output to 'our' tm
+                  link_tm_reply{ mockup::ipc::transaction::manager::queue().receive().id(), tm.id()}
+               {
+
+               }
+
+               mockup::ipc::Router broker;
+               mockup::ipc::Link link_broker_reply;
+               mockup::ipc::Router tm;
+               mockup::ipc::Link link_tm_reply;
+
+            };
+
+            namespace call
+            {
+               message::service::callee::Call request( platform::queue_id_type queue, std::string service, transaction::ID trid = transaction::ID{})
+               {
+                  message::service::callee::Call message;
+
+                  message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
+                  message.descriptor = 10;
+                  message.service.name = std::move( service);
+                  message.reply.queue = queue;
+                  message.trid = std::move( trid);
+
+                  return message;
+               }
+
+               template< typename R>
+               message::service::Reply reply( R& receive)
+               {
+                  queue::blocking::Reader reader( receive);
+                  message::service::Reply message;
+                  reader( message);
+
+                  return message;
+               }
+
+
+            } // call
+
+
+            namespace transaction
+            {
+               const common::transaction::ID& ongoing()
+               {
+                  static auto singleton = common::transaction::ID::create(
+                        process::Handle{ process::handle().pid + 1, process::handle().queue});
+
+                  return singleton;
+               }
+
+
+            } // transaction
+
+
+            /*
+               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cNone);
+               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAtomic);
+               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cJoin);
+               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAuto);
+
+               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::cNone);
+               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAtomic);
+               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::cJoin);
+               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAuto);
+             */
+
+
+
+         } // <unnamed>
+      } // local
+
+
+      TEST( casual_common_server_context, connect_server)
+      {
+         local::Domain domain;
+
+         server::handle::Call server( local::arguments());
+      }
+
+
+      TEST( casual_common_server_context, call_server__test_service_none_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0);
+      }
+
+      TEST( casual_common_server_context, call_server__test_service_atomic_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
+      }
+
+      TEST( casual_common_server_context, call_server__test_service_join_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_join_TPSUCCESS");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0);
+      }
+
+      TEST( casual_common_server_context, call_server__test_service_auto_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_auto_TPSUCCESS");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0);
+      }
+
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_none_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_atomic_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_join_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_join_TPSUCCESS", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_auto_TPSUCCESS)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_auto_TPSUCCESS", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+
+      TEST( casual_common_server_context, call_server__test_service_none_TPFAIL)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_none_TPFAIL");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL);
+      }
+
+      TEST( casual_common_server_context, call_server__test_service_atomic_TPFAIL)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_atomic_TPFAIL");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
+      }
+
+      TEST( casual_common_server_context, call_server__test_service_join_TPFAIL)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_join_TPFAIL");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL);
+      }
+
+      TEST( casual_common_server_context, call_server__test_service_auto_TPFAIL)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL);
+      }
+
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_none_TPFAIL)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_none_TPFAIL", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_atomic_TPFAIL)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_atomic_TPFAIL", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_join_TPFAIL__expect_rollback)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_join_TPFAIL", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+      TEST( casual_common_server_context, call_server_in_transaction__test_service_auto_TPFAIL__expect_rollback)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL", local::transaction::ongoing());
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
+         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
+      }
+
+
+
+      TEST( casual_common_server_context, state_call_descriptor_reserver)
       {
          call::State state;
 
-         auto first = state.pending.reserve();
-         auto second = state.pending.reserve();
+         auto first = state.pending.reserve( uuid::make());
+         EXPECT_TRUE( first == 1);
+         auto second = state.pending.reserve( uuid::make());
+         EXPECT_TRUE( second == 2);
 
-         EXPECT_TRUE( first < second);
+         state.pending.unreserve( first);
+         state.pending.unreserve( second);
       }
 
    } // common

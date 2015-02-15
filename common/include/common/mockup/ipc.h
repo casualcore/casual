@@ -24,6 +24,9 @@ namespace casual
          {
             using id_type = platform::queue_id_type;
 
+            using transform_type = std::function< std::vector< common::ipc::message::Complete>( common::ipc::message::Complete&)>;
+
+
 
 
             //!
@@ -33,8 +36,24 @@ namespace casual
             //!
             struct Router
             {
+               //!
+               //! @param destination where to send messages
+               //! @param transform invoked before send, hence one can transform
+               //!   complete messages (mostly to transform regest->reply and keep correlation)
+               //!
+               Router( id_type destination, transform_type transform);
                Router( id_type destination);
+
                ~Router();
+
+               //template< typename D, typename... Args>
+               //Router( D&& destination, Args&&... args) : Router( destination.id(), std::forward< Args>( args)...) {}
+
+               Router( Router&&) noexcept;
+               Router& operator = ( Router&&) noexcept;
+
+
+
 
                id_type id() const;
                id_type destination() const;
@@ -43,6 +62,30 @@ namespace casual
                class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
+
+            //!
+            //! Links one queue to another.
+            //!
+            //! Reads transport-messages from source and writes them to
+            //! destination. Caches transport if we can't write.
+            //!
+            struct Link
+            {
+               Link( id_type source, id_type destination);
+               ~Link();
+
+               Link( Link&&) noexcept;
+               Link& operator = ( Link&&) noexcept;
+
+               id_type source() const;
+               id_type destination() const;
+
+            private:
+               struct Implementation;
+               move::basic_pimpl< Implementation> m_implementation;
+            };
+
+
 
 
             //!
@@ -58,12 +101,14 @@ namespace casual
             //!
             struct Instance
             {
+               Instance( platform::pid_type pid, transform_type transform);
                Instance( platform::pid_type pid);
 
                //!
                //! sets current process pid
                //!
                Instance();
+               Instance( transform_type transform);
                ~Instance();
 
                Instance( Instance&&) noexcept;
@@ -86,6 +131,10 @@ namespace casual
                struct Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
+
+
+
+
 
             namespace broker
             {

@@ -58,7 +58,7 @@ namespace casual
 
          struct Instance
          {
-            std::string alias;
+            std::string server;
             std::string path;
             sf::platform::pid_type pid = 0;
             sf::platform::queue_id_type queue = 0;
@@ -68,7 +68,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
-               archive & CASUAL_MAKE_NVP( alias);
+               archive & CASUAL_MAKE_NVP( server);
                archive & CASUAL_MAKE_NVP( pid);
                archive & CASUAL_MAKE_NVP( queue);
                archive & CASUAL_MAKE_NVP( state);
@@ -77,7 +77,12 @@ namespace casual
                archive & CASUAL_MAKE_NVP( path);
             })
 
-            friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.alias < rhs.alias;}
+            friend bool operator < ( const Instance& lhs, const Instance& rhs)
+            {
+               if( lhs.server < rhs.server) return true;
+               if( lhs.server > rhs.server) return false;
+               return lhs.pid < rhs.pid;
+            }
 
             static std::vector< sf::archive::terminal::Directive> directive()
             {
@@ -91,7 +96,7 @@ namespace casual
                };
 
                return {
-                  { "alias", color::Solid{ common::terminal::color::green}},
+                  //{ "server", color::Solid{ common::terminal::color::green}},
                   { "pid", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
                   { "queue", sf::archive::terminal::Directive::Align::right},
                   { "state", sf::archive::terminal::Directive::Align::left, state_color},
@@ -99,24 +104,88 @@ namespace casual
                   { "last", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
                };
             }
+         };
 
+
+         struct Server
+         {
+            struct State
+            {
+               long invoked = 0;
+               std::string last;
+               long instances = 0;
+               std::string state;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( invoked);
+                  archive & CASUAL_MAKE_NVP( last);
+                  archive & sf::makeNameValuePair( "#", instances);
+                  archive & CASUAL_MAKE_NVP( state);
+               })
+
+               struct state_color_directive
+               {
+                  void operator()( std::ostream& out, const std::string& value)
+                  {
+                     auto padding = out.width( 0) - value.size();
+
+                     for( auto& c : value)
+                     {
+                        switch( c)
+                        {
+                           case '*': out << common::terminal::color::yellow << c; break;
+                           case '+': out << common::terminal::color::green << c; break;
+                           default: out << common::terminal::color::red << c; break;
+                        }
+                     }
+                     out << std::string( padding, ' ');
+                  }
+               };
+
+            };
+
+            std::string alias;
+            State state;
+            std::string path;
+
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( alias);
+               archive & CASUAL_MAKE_NVP( state);
+               archive & CASUAL_MAKE_NVP( path);
+            })
+
+            friend bool operator < ( const Server& lhs, const Server& rhs) { return lhs.alias < rhs.alias;}
+
+            static std::vector< sf::archive::terminal::Directive> directive()
+            {
+               return {
+                  { "alias", color::Solid{ common::terminal::color::green}},
+                  { "invoked", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
+                  { "last", sf::archive::terminal::Directive::Align::left, color::Solid{ common::terminal::color::blue}},
+                  { "#", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
+                  { "state", sf::archive::terminal::Directive::Align::left, State::state_color_directive{}},
+               };
+            }
          };
 
          struct Service
          {
             std::string name;
             std::string timeout;
-            long instances = 0;
-            std::string pids;
-            long lookedup = 0;
+            long requested = 0;
+            Server::State state;
+
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive << CASUAL_MAKE_NVP( name);
                archive << CASUAL_MAKE_NVP( timeout);
-               archive << CASUAL_MAKE_NVP( lookedup);
-               archive << CASUAL_MAKE_NVP( instances);
-               archive << CASUAL_MAKE_NVP( pids);
+               archive << CASUAL_MAKE_NVP( requested);
+               archive & sf::makeNameValuePair( "#", state.instances);
+               archive & sf::makeNameValuePair( "state", state.state);
             })
 
             friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.name < rhs.name;}
@@ -126,101 +195,178 @@ namespace casual
                return {
                   { "name", color::Solid{ common::terminal::color::yellow}},
                   { "timeout", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-                  { "lookedup", sf::archive::terminal::Directive::Align::right},
-                  { "instances", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
-                  //{ "pids", common::terminal::color::blue},
+                  { "requested", sf::archive::terminal::Directive::Align::right},
+                  { "#", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
+                  { "state", sf::archive::terminal::Directive::Align::left, Server::State::state_color_directive{}},
                };
             }
          };
 
       } // normalized
 
-      std::vector< normalized::Instance> normalize( const std::vector< admin::ServerVO>& servers)
+      namespace normalize
       {
-         std::vector< normalized::Instance> result;
-
-         for( auto& server : servers)
+         std::vector< normalized::Instance> instances( const admin::StateVO& state)
          {
-            if( server.instances.empty())
+            std::vector< normalized::Instance> result;
+
+            for( auto& instance : state.instances)
             {
                normalized::Instance value;
 
-               value.alias = server.alias;
-               value.path = server.path;
+               auto server = range::find_if( state.servers, std::bind( equal_to{},
+                     std::bind( &admin::ServerVO::id, std::placeholders::_1), instance.server));
+
+               if( server)
+               {
+                  value.server = server->alias;
+                  value.path = server->path;
+               }
+               value.pid = instance.pid;
+               value.queue = instance.queue;
+
+
+               value.invoked = instance.invoked;
+
+               if( instance.last != sf::platform::time_type::min())
+               {
+                  value.last = common::chronology::local( instance.last);
+               }
+
+               auto state = []( long state){
+                  switch( static_cast< state::Server::Instance::State>( state))
+                  {
+                     case state::Server::Instance::State::booted: return "booted"; break;
+                     case state::Server::Instance::State::idle: return "idle"; break;
+                     case state::Server::Instance::State::busy: return "busy"; break;
+                     case state::Server::Instance::State::shutdown: return "shutdown"; break;
+                     default: return "off-line";
+                  }
+               };
+
+               value.state = state( instance.state);
 
                result.push_back( std::move( value));
             }
-            else
-            {
-               for( auto& instance : server.instances)
-               {
-                  normalized::Instance value;
 
-                  value.alias = server.alias;
-                  value.path = server.path;
-                  value.pid = instance.pid;
-                  value.queue = instance.queue;
+            range::sort( result);
 
-
-                  value.invoked = instance.invoked;
-
-                  if( instance.last != sf::platform::time_type::min())
-                  {
-                     value.last = common::chronology::local( instance.last);
-                  }
-
-                  auto state = []( long state){
-                     switch( static_cast< state::Server::Instance::State>( state))
-                     {
-                        case state::Server::Instance::State::absent: return "absent"; break;
-                        case state::Server::Instance::State::prospect: return "prospect"; break;
-                        case state::Server::Instance::State::idle: return "idle"; break;
-                        case state::Server::Instance::State::busy: return "busy"; break;
-                        case state::Server::Instance::State::shutdown: return "shutdown"; break;
-                        default: return "off-line";
-                     }
-                  };
-
-                  value.state = state( instance.state);
-
-                  result.push_back( std::move( value));
-               }
-            }
+            return result;
          }
 
-         range::sort( result);
-
-         return result;
-      }
-
-      std::vector< normalized::Service> normalize( const std::vector< admin::ServiceVO>& services)
-      {
-         std::vector< normalized::Service> result;
-
-         for( auto& service : services)
+         template< typename R>
+         normalized::Server::State state( R&& instances)
          {
-            normalized::Service value;
+            normalized::Server::State result;
 
-            value.name = service.name;
-            value.lookedup = service.lookedup;
+            result.instances = instances.size();
 
+            auto latest = sf::platform::time_type::min();
+
+            for( auto& instance : instances)
             {
-               using second_t = std::chrono::duration< double>;
-               std::stringstream out;
-               out << std::chrono::duration_cast< second_t>( std::chrono::microseconds{ service.timeout}).count();
-               value.timeout = out.str();
+
+               result.invoked += instance.invoked;
+
+               latest = std::max( latest, instance.last);
+
+               auto state = []( long state){
+                  switch( static_cast< state::Server::Instance::State>( state))
+                  {
+                     case state::Server::Instance::State::booted: return '^'; break;
+                     case state::Server::Instance::State::idle: return '+'; break;
+                     case state::Server::Instance::State::busy: return '*'; break;
+                     case state::Server::Instance::State::shutdown: return 'x'; break;
+                     default: return '-';
+                  }
+               };
+
+               result.state.push_back( state( instance.state));
             }
 
-            value.instances = service.instances.size();
-            value.pids = common::range::to_string( service.instances);
+            if( latest != sf::platform::time_type::min())
+            {
+               result.last = common::chronology::local( latest);
+            }
 
-            result.push_back( std::move( value));
+            return result;
          }
 
-         range::sort( result);
 
-         return result;
-      }
+         std::vector< admin::InstanceVO> filterInstances(
+               const std::vector< admin::InstanceVO>& instances,
+               const std::vector< platform::pid_type>& pids)
+         {
+            std::vector< admin::InstanceVO> result;
+
+            result.reserve( pids.size());
+
+            //
+            // We have to keep the order of the servers instances. We don't have an algorithm
+            // that keep order in that way...
+            //
+            for( auto pid : pids)
+            {
+               auto found = range::find_if( instances, [=]( const admin::InstanceVO& inst)
+               {
+                  return inst.pid == pid;
+               });
+               result.push_back( *found);
+            }
+
+            return result;
+         }
+
+         std::vector< normalized::Server> servers( admin::StateVO state)
+         {
+            std::vector< normalized::Server> result;
+
+            for( auto& server : state.servers)
+            {
+               normalized::Server value;
+
+               value.alias = server.alias;
+               value.path = server.path;
+               value.state = normalize::state( filterInstances( state.instances, server.instances));
+
+               result.push_back( std::move( value));
+            }
+
+            return range::sort( result);
+         }
+
+
+         std::vector< normalized::Service> services( admin::StateVO state)
+         {
+            std::vector< normalized::Service> result;
+
+            for( auto& service : state.services)
+            {
+               normalized::Service value;
+
+               value.name = service.name;
+               value.requested = service.lookedup;
+
+               {
+                  using second_t = std::chrono::duration< double>;
+                  std::stringstream out;
+                  out << std::chrono::duration_cast< second_t>( std::chrono::microseconds{ service.timeout}).count();
+                  value.timeout = out.str();
+               }
+
+               value.state = normalize::state( filterInstances( state.instances, service.instances));
+
+               //value.instances = service.instances.size();
+               //value.pids = common::range::to_string( service.instances);
+
+               result.push_back( std::move( value));
+            }
+
+            range::sort( result);
+
+            return result;
+         }
+      } // normalize
 
 
       namespace global
@@ -240,25 +386,13 @@ namespace casual
 
       namespace call
       {
-         std::vector< admin::ServerVO> servers()
-         {
 
-            sf::xatmi::service::binary::Sync service( ".casual.broker.list.servers");
+         admin::StateVO state()
+         {
+            sf::xatmi::service::binary::Sync service( ".casual.broker.state");
             auto reply = service();
 
-            std::vector< admin::ServerVO> serviceReply;
-
-            reply >> CASUAL_MAKE_NVP( serviceReply);
-
-            return serviceReply;
-         }
-
-         std::vector< admin::ServiceVO> services()
-         {
-            sf::xatmi::service::binary::Sync service( ".casual.broker.list.services");
-            auto reply = service();
-
-            std::vector< admin::ServiceVO> serviceReply;
+            admin::StateVO serviceReply;
 
             reply >> CASUAL_MAKE_NVP( serviceReply);
 
@@ -281,16 +415,16 @@ namespace casual
             return serviceReply;
          }
 
-         std::vector< admin::ServerVO> boot()
+         admin::StateVO boot()
          {
             common::process::spawn( common::environment::variable::get( "CASUAL_HOME") + "/bin/casual-broker", {});
 
             common::process::sleep( std::chrono::milliseconds{ 20});
 
-            return call::servers();
+            return call::state();
          }
 
-      }
+      } // call
 
 
 
@@ -299,24 +433,24 @@ namespace casual
 
       void listServers()
       {
-         auto instances = normalize( call::servers());
+         auto servers = normalize::servers( call::state());
 
          if( global::porcelain)
          {
             sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( instances);
+            writer << CASUAL_MAKE_NVP( servers);
 
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), global::header, global::colors};
-            writer << CASUAL_MAKE_NVP( instances);
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), global::header, global::colors};
+            writer << CASUAL_MAKE_NVP( servers);
          }
       }
 
       void listServices()
       {
-         auto services = normalize( call::services());
+         auto services = normalize::services( call::state());
 
          if( global::porcelain)
          {
@@ -328,6 +462,23 @@ namespace casual
          {
             sf::archive::terminal::Writer writer{ std::cout, normalized::Service::directive(), global::header, global::colors};
             writer << CASUAL_MAKE_NVP( services);
+         }
+      }
+
+      void listInstances()
+      {
+         auto instances = normalize::instances( call::state());
+
+         if( global::porcelain)
+         {
+            sf::archive::terminal::percelain::Writer writer{ std::cout};
+            writer << CASUAL_MAKE_NVP( instances);
+
+         }
+         else
+         {
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), global::header, global::colors};
+            writer << CASUAL_MAKE_NVP( instances);
          }
       }
 
@@ -353,74 +504,50 @@ namespace casual
 
       void shutdown()
       {
-         auto instances = normalize( call::servers());
+         auto state = call::state();
 
          auto result = call::shutdown();
 
-         auto parts = common::range::intersection( instances, result.offline,
-               []( const normalized::Instance& inst, common::platform::pid_type pid) {
-                  return inst.pid == pid;
-         });
+         {
+            auto parts = common::range::intersection( state.instances, result.offline,
+                  std::bind( common::equal_to{}, std::bind( &admin::InstanceVO::pid, std::placeholders::_1), std::placeholders::_2));
 
+            for( auto& instance : std::get< 0>( parts))
+            {
+               instance.state = static_cast< long>( state::Server::Instance::State::shutdown);
+            }
+         }
 
-         auto offline = std::get< 0>( parts);
-
-         //
-         // Set these to off-line
-         //
-         common::range::for_each( offline, []( normalized::Instance& inst){
-            inst.state = "shutdown";
-         });
-
-         auto online = std::get< 0>( common::range::intersection( std::get< 1>( parts), result.online,
-               []( const normalized::Instance& inst, common::platform::pid_type pid) {
-                  return inst.pid == pid;
-         }));
-
-         //
-         // Remove casual-broker, since it always will be online when it replied this information,
-         // Though, it will probably be offline by now anyway.
-         //
-         online = std::get< 0>( common::range::partition( online,
-               []( const normalized::Instance& inst){
-                  return inst.alias != "casual-broker";
-         }));
+         auto output = normalize::servers( state);
+         range::sort( output);
 
          if( global::porcelain)
          {
-            {
-               sf::archive::terminal::percelain::Writer writer{ std::cout};
-               writer << CASUAL_MAKE_NVP( common::range::to_vector( range::sort( offline)));
-            }
-
-            {
-               sf::archive::terminal::percelain::Writer writer{ std::cerr};
-               writer << CASUAL_MAKE_NVP( common::range::to_vector( range::sort( online)));
-            }
+            sf::archive::terminal::percelain::Writer writer{ std::cout};
+            writer << CASUAL_MAKE_NVP( output);
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), global::header, global::colors};
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), global::header, global::colors};
 
-            writer << CASUAL_MAKE_NVP( common::range::to_vector( range::sort( online)));
-            writer << CASUAL_MAKE_NVP( common::range::to_vector( range::sort( offline)));
+            writer << CASUAL_MAKE_NVP( output);
          }
       }
 
       void boot()
       {
-         auto instances = normalize( call::boot());
+         auto servers = normalize::servers( call::boot());
 
          if( global::porcelain)
          {
             sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( instances);
+            writer << CASUAL_MAKE_NVP( servers);
 
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), global::header, global::colors};
-            writer << CASUAL_MAKE_NVP( instances);
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), global::header, global::colors};
+            writer << CASUAL_MAKE_NVP( servers);
          }
       }
 
@@ -447,6 +574,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"--no-color"}, "no color will be used", &casual::broker::global::no_colors),
          casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
          casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
+         casual::common::argument::directive( {"-li", "--list-instances"}, "list all instances", &casual::broker::listInstances),
          casual::common::argument::directive( {"-ui", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::updateInstances),
          casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &casual::broker::shutdown),
          casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::boot)

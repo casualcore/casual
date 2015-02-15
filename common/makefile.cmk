@@ -2,19 +2,12 @@ from casual.make.directive import *
 
 
 if sys.platform.startswith('darwin'):
-    
-    
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
-    
     platform_specific_lib_paths = [ '/opt/local/lib' ]
-    
     platform_specific_include_paths = [ '/opt/local/include' ]
-    
 else:
     platform_specific_libs = ['uuid', 'resolv']
-    
     platform_specific_lib_paths = []
-
     platform_specific_include_paths = []
 
 
@@ -25,11 +18,11 @@ IncludePaths( [
     '../transaction/include',
     '../serviceframework/include',
     '../buffers/include',
-    '$(UNITTEST_INCLUDE_PATH)'
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)'
     ]
     + platform_specific_include_paths)
 
-LibraryPaths( platform_specific_lib_paths + [ '$(UNITTEST_LIBRARY_PATH)'])
+LibraryPaths( platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 
 install_libs = []
@@ -44,9 +37,12 @@ casual_common_objectfiles = [
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),
     Compile( 'source/buffer/transport.cpp'),
+    
     Compile( 'source/transaction/context.cpp'),
     Compile( 'source/transaction/id.cpp'),
     Compile( 'source/transaction/resource.cpp'),
+    Compile( 'source/transaction/transaction.cpp'),
+    
     Compile( 'source/ipc.cpp'),
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
@@ -62,7 +58,7 @@ casual_common_objectfiles = [
     Compile( 'source/error.cpp'),
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
-    Compile( 'source/network_byteorder.cpp'),
+    Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
    
 ]
@@ -86,8 +82,8 @@ install_libs.append( lib_terminal)
 #
 mockup = LinkLibrary( 'bin/casual-mockup', 
      [
-       #Compile( 'source/mockup.cpp', 'obj/mockup.o'),
        Compile( 'source/mockup/ipc.cpp'),
+       Compile( 'source/mockup/domain.cpp'),
      ],
      [ common])
 
@@ -128,8 +124,8 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_conformance.cpp'),                     
                         
    Compile( 'unittest/isolated/source/test_buffer.cpp'),
-   Compile( 'unittest/isolated/source/test_ipc.cpp'),
    Compile( 'unittest/isolated/source/test_marshal.cpp'),
+   Compile( 'unittest/isolated/source/test_ipc.cpp'),
    Compile( 'unittest/isolated/source/test_queue.cpp'),
    Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
    Compile( 'unittest/isolated/source/test_server_context.cpp'),

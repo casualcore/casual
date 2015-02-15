@@ -17,7 +17,7 @@ namespace casual
       namespace archive
       {
 
-         void serialize( Reader& archive, const char* name, platform::Uuid& value)
+         void serialize( Reader& archive, platform::Uuid& value, const char* name)
          {
             std::string uuid;
             archive >> sf::makeNameValuePair( name, uuid);
@@ -25,20 +25,20 @@ namespace casual
             value = platform::Uuid{ uuid};
          }
 
-         void serialize( Writer& archive, const char* name, const platform::Uuid& value)
+         void serialize( Writer& archive, const platform::Uuid& value, const char* name)
          {
             archive << sf::makeNameValuePair( name, common::uuid::string( value));
          }
 
 
-         void serialize( Reader& archive, const char* name, platform::time_type& value)
+         void serialize( Reader& archive, platform::time_type& value, const char* name)
          {
             platform::time_type::rep representation;
             archive >> sf::makeNameValuePair( name, representation);
             value = platform::time_type( platform::time_type::duration( representation));
          }
 
-         void serialize( Writer& archive, const char* name, const platform::time_type& value)
+         void serialize( Writer& archive, const platform::time_type& value, const char* name)
          {
             archive << sf::makeNameValuePair( name, value.time_since_epoch().count());
          }

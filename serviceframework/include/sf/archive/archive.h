@@ -10,11 +10,15 @@
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/traits.h"
+#include "sf/exception.h"
 
 #include "sf/platform.h"
 
 
 #include <utility>
+
+// temp
+//#include <iostream>
 
 
 namespace casual
@@ -36,31 +40,19 @@ namespace casual
 
          //protected:
 
-            void handleStart( const char* name);
+            std::size_t containerStart( std::size_t size, const char* name);
+            void containerEnd( const char* name);
 
-            void handleEnd( const char* name);
-
-            std::size_t handleContainerStart( std::size_t size);
-
-            void handleContainerEnd();
-
-            void handleSerialtypeStart();
-
-            void handleSerialtypeEnd();
+            void serialtypeStart( const char* name);
+            void serialtypeEnd( const char* name);
 
          private:
 
-            virtual void handle_start( const char* name) = 0;
+            virtual std::size_t container_start( std::size_t size, const char* name) = 0;
+            virtual void container_end( const char* name) = 0;
 
-            virtual void handle_end( const char* name) = 0;
-
-            virtual std::size_t handle_container_start( std::size_t size) = 0;
-
-            virtual void handle_container_end() = 0;
-
-            virtual void handle_serialtype_start() = 0;
-
-            virtual void handle_serialtype_end() = 0;
+            virtual void serialtype_start( const char* name) = 0;
+            virtual void serialtype_end( const char* name) = 0;
 
          };
 
@@ -79,54 +71,28 @@ namespace casual
 
          private:
 
-            virtual void readPOD( bool& value) = 0;
-
-            virtual void readPOD( char& value) = 0;
-
-            virtual void readPOD( short& value) = 0;
-
-            virtual void readPOD( long& value) = 0;
-
-            virtual void readPOD( long long& value) = 0;
-
-            virtual void readPOD( float& value) = 0;
-
-            virtual void readPOD( double& value) = 0;
-
-            virtual void readPOD( std::string& value) = 0;
-
-            virtual void readPOD( platform::binary_type& value) = 0;
+            virtual void pod( bool& value, const char* name) = 0;
+            virtual void pod( char& value, const char* name) = 0;
+            virtual void pod( short& value, const char* name) = 0;
+            virtual void pod( long& value, const char* name) = 0;
+            virtual void pod( long long& value, const char* name) = 0;
+            virtual void pod( float& value, const char* name) = 0;
+            virtual void pod( double& value, const char* name) = 0;
+            virtual void pod( std::string& value, const char* name) = 0;
+            virtual void pod( platform::binary_type& value, const char* name) = 0;
 
          public:
-            void read( bool& value);
-
-            //void write (const signed char& value);
-
-            void read( char& value);
-
-            //void write (const unsigned char& value);
-
-            void read( short& value);
-
-            //void write (const unsigned short& value);
-
-            void read( int& value);
-
-            //void write (const unsigned int& value);
-
-            void read( long& value);
-
-            void read( unsigned long& value);
-
-            void read( long long& value);
-
-            void read( float& value);
-
-            void read( double& value);
-
-            void read( std::string& value);
-
-            void read( platform::binary_type& value);
+            void read( bool& value, const char* name);
+            void read( char& value, const char* name);
+            void read( short& value, const char* name);
+            void read( int& value, const char* name);
+            void read( long& value, const char* name);
+            void read( unsigned long& value, const char* name);
+            void read( long long& value, const char* name);
+            void read( float& value, const char* name);
+            void read( double& value, const char* name);
+            void read( std::string& value, const char* name);
+            void read( platform::binary_type& value, const char* name);
 
          };
 
@@ -137,103 +103,123 @@ namespace casual
 
          template< typename T>
          typename std::enable_if< traits::is_pod< T>::value, void>::type
-         serialize( Reader& archive, T& value)
+         serialize( Reader& archive, T& value, const char* name)
          {
-            archive.read( value);
+            archive.read( value, name);
          }
 
 
          template< typename T>
          typename std::enable_if< traits::is_serializible< T>::value, void>::type
-         serialize( Reader& archive, T& value)
+         serialize( Reader& archive, T& value, const char* name)
          {
-            archive.handleSerialtypeStart();
+            archive.serialtypeStart( name);
 
             value.serialize( archive);
 
-            archive.handleSerialtypeEnd();
+            archive.serialtypeEnd( name);
          }
 
+         namespace detail
+         {
+            template< std::size_t index>
+            struct tuple_read
+            {
+               template< typename T>
+               static void serialize( Reader& archive, T& value)
+               {
+                  archive >> makeNameValuePair( nullptr, std::get< std::tuple_size< T>::value - index>( value));
+                  tuple_read< index - 1>::serialize( archive, value);
+               }
+            };
+
+            template<>
+            struct tuple_read< 0>
+            {
+               template< typename T>
+               static void serialize( Reader& archive, T& value) {}
+            };
+
+            template< typename T>
+            void serialize_tuple( Reader& archive, T& value, const char* name)
+            {
+               const auto expected_size = std::tuple_size< T>::value;
+               const auto size = archive.containerStart( expected_size, name);
+               if( expected_size != size)
+               {
+                  throw exception::archive::invalid::Node{ "expected tuple size: " + std::to_string( expected_size) + " got: " + std::to_string( size)};
+               }
+
+               tuple_read< std::tuple_size< T>::value>::serialize( archive, value);
+
+               archive.containerEnd( name);
+            }
+         } // detail
+
+         template< typename... T>
+         void serialize( Reader& archive, std::tuple< T...>& value, const char* name)
+         {
+            detail::serialize_tuple( archive, value, name);
+         }
 
          template< typename K, typename V>
-         void serialize( Reader& archive, std::pair< K, V>& value)
+         void serialize( Reader& archive, std::pair< K, V>& value, const char* name)
          {
-            //typedef typename std::remove_const< K>::type key_type;
-
-            archive.handleSerialtypeStart();
-
-            archive >> makeNameValuePair( "key", value.first);
-            archive >> makeNameValuePair( "value", value.second);
-
-            archive.handleSerialtypeEnd();
+            detail::serialize_tuple( archive, value, name);
          }
 
 
 
          template< typename T>
          typename std::enable_if< traits::is_sequence_container< T >::value, void>::type
-         serialize( Reader& archive, T& container)
+         serialize( Reader& archive, T& container, const char* name)
          {
-            container.resize( archive.handleContainerStart( 0));
+            container.resize( archive.containerStart( 0, name));
 
             for( auto& element : container)
             {
-               archive >> CASUAL_MAKE_NVP( element);
+               archive >> makeNameValuePair( nullptr, element);
             }
 
-            archive.handleContainerEnd();
+            archive.containerEnd( name);
          }
 
-
-         /*
-         template< typename T>
-         typename std::enable_if< traits::is_associative_container< T >::value, void>::type
-         serialize( Reader& archive, T& container)
-         {
-            std::size_t size = archive.handleContainerStart( 0);
-
-            for( std::size_t index = 0; index < size; ++index)
-            {
-               typename T::value_type element;
-               archive >> CASUAL_MAKE_NVP( element);
-
-               container.insert( std::move( element));
-            }
-
-            archive.handleContainerEnd();
-         }
-         */
 
          template< typename T>
          typename std::enable_if< traits::is_associative_map_container< T >::value, void>::type
-         serialize( Reader& archive, T& container)
+         serialize( Reader& archive, T& container, const char* name)
          {
-            auto count = archive.handleContainerStart( 0);
+            auto count = archive.containerStart( 0, name);
 
             while( count-- > 0)
             {
-               //decltype( *std::begin( container)) element;
                std::pair< typename T::key_type, typename T::mapped_type> element;
-               //typename T::value_type element;
-               archive >> CASUAL_MAKE_NVP( element);
+               archive >> makeNameValuePair( nullptr, element);
 
                container.insert( std::move( element));
             }
 
-            archive.handleContainerEnd();
+            archive.containerEnd( name);
          }
-
 
 
          template< typename T>
-         inline void serialize( Reader& archive, const char* name, T& value)
+         typename std::enable_if< traits::is_associative_set_container< T >::value, void>::type
+         serialize( Reader& archive, T& container, const char* name)
          {
-            archive.handleStart( name);
+            auto count = archive.containerStart( 0, name);
 
-            serialize( archive, value);
+            while( count-- > 0)
+            {
+               typename T::value_type element;
+               archive >> makeNameValuePair( nullptr, element);
 
-            archive.handleEnd( name);
+               container.insert( std::move( element));
+            }
+
+            archive.containerEnd( name);
          }
+
 
          template< typename T>
          Reader& operator &( Reader& archive, T&& nameValuePair)
@@ -245,7 +231,7 @@ namespace casual
          template< typename T, typename RV>
          Reader& operator >>( Reader& archive, const NameValuePair< T, RV>& nameValuePair)
          {
-            serialize( archive, nameValuePair.getName(), nameValuePair.getValue());
+            serialize( archive, nameValuePair.getValue(), nameValuePair.getName());
 
             return archive;
          }
@@ -253,7 +239,7 @@ namespace casual
          template< typename T, typename RV>
          Reader& operator >>( Reader& archive, NameValuePair< T, RV>&& nameValuePair)
          {
-            serialize( archive, nameValuePair.getName(), nameValuePair.getValue());
+            serialize( archive, nameValuePair.getValue(), nameValuePair.getName());
 
             return archive;
          }
@@ -273,54 +259,28 @@ namespace casual
 
          private:
 
-            virtual void writePOD( const bool value) = 0;
-
-            virtual void writePOD( const char value) = 0;
-
-            virtual void writePOD( const short value) = 0;
-
-            virtual void writePOD( const long value) = 0;
-
-            virtual void writePOD( const long long value) = 0;
-
-            virtual void writePOD( const float value) = 0;
-
-            virtual void writePOD( const double value) = 0;
-
-            virtual void writePOD( const std::string& value) = 0;
-
-            virtual void writePOD( const platform::binary_type& value) = 0;
+            virtual void pod( const bool value, const char* name) = 0;
+            virtual void pod( const char value, const char* name) = 0;
+            virtual void pod( const short value, const char* name) = 0;
+            virtual void pod( const long value, const char* name) = 0;
+            virtual void pod( const long long value, const char* name) = 0;
+            virtual void pod( const float value, const char* name) = 0;
+            virtual void pod( const double value, const char* name) = 0;
+            virtual void pod( const std::string& value, const char* name) = 0;
+            virtual void pod( const platform::binary_type& value, const char* name) = 0;
 
          public:
-            void write( const bool value);
-
-            //void write (const signed char& value);
-
-            void write( const char value);
-
-            //void write (const unsigned char& value);
-
-            void write( const short value);
-
-            //void write (const unsigned short& value);
-
-            void write( const int value);
-
-            //void write (const unsigned int& value);
-
-            void write( const long value);
-
-            void write( const unsigned long value);
-
-            void write( const long long value);
-
-            void write( const float value);
-
-            void write( const double value);
-
-            void write( const std::string& value);
-
-            void write( const platform::binary_type& value);
+            void write( const bool value, const char* name);
+            void write( const char value, const char* name);
+            void write( const short value, const char* name);
+            void write( const int value, const char* name);
+            void write( const long value, const char* name);
+            void write( const unsigned long value, const char* name);
+            void write( const long long value, const char* name);
+            void write( const float value, const char* name);
+            void write( const double value, const char* name);
+            void write( const std::string& value, const char* name);
+            void write( const platform::binary_type& value, const char* name);
 
          };
 
@@ -330,81 +290,102 @@ namespace casual
 
          template< typename T>
          typename std::enable_if< traits::is_pod< T>::value, void>::type
-         serialize( Writer& archive, const T& value)
+         serialize( Writer& archive, const T& value, const char* name)
          {
-            archive.write( value);
+            archive.write( value, name);
          }
 
 
          template< typename T>
          typename std::enable_if< traits::is_serializible< T>::value, void>::type
-         serialize( Writer& archive, const T& value)
+         serialize( Writer& archive, const T& value, const char* name)
          {
-            archive.handleSerialtypeStart();
+            archive.serialtypeStart( name);
 
             // TODO: Can we get rid of const-cast?
             const_cast< T&>( value).serialize( archive);
 
-            archive.handleSerialtypeEnd();
+            archive.serialtypeEnd( name);
+         }
+
+
+         namespace detail
+         {
+            template< std::size_t index>
+            struct tuple_write
+            {
+               template< typename T>
+               static void serialize( Writer& archive, const T& value)
+               {
+                  archive << makeNameValuePair( nullptr, std::get< std::tuple_size< T>::value - index>( value));
+                  tuple_write< index - 1>::serialize( archive, value);
+               }
+            };
+
+            template<>
+            struct tuple_write< 0>
+            {
+               template< typename T>
+               static void serialize( Writer& archive, const T& value) {}
+            };
+
+            template< typename T>
+            void serialize_tuple( Writer& archive, const T& value, const char* name)
+            {
+               archive.containerStart( std::tuple_size< T>::value, name);
+               tuple_write< std::tuple_size< T>::value>::serialize( archive, value);
+               archive.containerEnd( name);
+            }
+         } // detail
+
+         template< typename... T>
+         void serialize( Writer& archive, const std::tuple< T...>& value, const char* name)
+         {
+            detail::serialize_tuple( archive, value, name);
          }
 
          template< typename K, typename V>
-         void serialize( Writer& archive, const std::pair< K, V>& value)
+         void serialize( Writer& archive, const std::pair< K, V>& value, const char* name)
          {
-            archive.handleSerialtypeStart();
-
-            archive << makeNameValuePair( "key", value.first);
-            archive << makeNameValuePair( "value", value.second);
-
-            archive.handleSerialtypeEnd();
+            detail::serialize_tuple( archive, value, name);
          }
 
 
          template< typename T>
          typename std::enable_if< traits::is_container< T >::value, void>::type
-         serialize( Writer& archive, const T& container)
+         serialize( Writer& archive, const T& container, const char* name)
          {
-            archive.handleContainerStart( container.size());
+            archive.containerStart( container.size(), name);
 
             for( auto& element : container)
             {
-               archive << CASUAL_MAKE_NVP( element);
+               archive << makeNameValuePair( nullptr, element);
             }
 
-            archive.handleContainerEnd();
+            archive.containerEnd( name);
          }
 
 
 
          template< typename T>
-         inline void serialize( Writer& archive, const char* name, const T& value)
-         {
-            archive.handleStart( name);
-
-            serialize( archive, value);
-
-            archive.handleEnd( name);
-         }
-
-         template< typename T>
-         Writer& operator &( Writer& archive, T&& nameValuePair)
+         Writer& operator & ( Writer& archive, T&& nameValuePair)
          {
             return operator << ( archive, std::forward< T>( nameValuePair));
          }
 
 
          template< typename T, typename RV>
-         Writer& operator <<( Writer& archive, const NameValuePair< T, RV>& nameValuePair)
+         Writer& operator << ( Writer& archive, const NameValuePair< T, RV>& nameValuePair)
          {
-            serialize( archive, nameValuePair.getName(), nameValuePair.getConstValue());
+            serialize( archive, nameValuePair.getConstValue(), nameValuePair.getName());
 
             return archive;
          }
 
          template< typename T, typename RV>
-         Writer& operator <<( Writer& archive, NameValuePair< T, RV>&& nameValuePair)
+         Writer& operator << ( Writer& archive, NameValuePair< T, RV>&& nameValuePair)
          {
-            serialize( archive, nameValuePair.getName(), nameValuePair.getConstValue());
+            serialize( archive, nameValuePair.getConstValue(), nameValuePair.getName());
 
             return archive;
          }

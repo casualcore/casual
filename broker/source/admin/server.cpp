@@ -69,17 +69,20 @@ namespace broker
 
       extern "C"
       {
-         void listServers_( TPSVCINFO *serviceInfo)
+
+         void admin_state( TPSVCINFO *serviceInfo)
          {
             casual::sf::service::reply::State reply;
 
             try
             {
+
                auto service_io = local::server->createService( serviceInfo);
 
-               std::vector< admin::ServerVO> serviceReturn = service_io.call(
+
+               auto serviceReturn = service_io.call(
                   *local::implementation,
-                  &Server::listServers);
+                  &Server::state);
 
                service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -98,38 +101,7 @@ namespace broker
                reply.flags);
          }
 
-         void listServices_( TPSVCINFO *serviceInfo)
-         {
-            casual::sf::service::reply::State reply;
-
-            try
-            {
-
-               auto service_io = local::server->createService( serviceInfo);
-
-
-               std::vector< admin::ServiceVO> serviceReturn = service_io.call(
-                  *local::implementation,
-                  &Server::listServices);
-
-               service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-               reply = service_io.finalize();
-            }
-            catch( ...)
-            {
-               local::server->handleException( serviceInfo, reply);
-            }
-
-            tpreturn(
-               reply.value,
-               reply.code,
-               reply.data,
-               reply.size,
-               reply.flags);
-         }
-
-         void updateInstances_( TPSVCINFO *serviceInfo)
+         void admin_updateInstances( TPSVCINFO *serviceInfo)
          {
             casual::sf::service::reply::State reply;
 
@@ -165,7 +137,7 @@ namespace broker
          }
 
 
-         void shutdown_( TPSVCINFO *serviceInfo)
+         void admin_shutdown( TPSVCINFO *serviceInfo)
          {
             casual::sf::service::reply::State reply;
 
@@ -215,41 +187,44 @@ namespace broker
 
          common::server::Arguments result{ { common::process::path()}};
 
-         result.services.emplace_back( ".casual.broker.list.servers", &listServers_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.list.services", &listServices_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.update.instances", &updateInstances_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.shutdown", &shutdown_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.state", &admin_state, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.update.instances", &admin_updateInstances, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.shutdown", &admin_shutdown, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
 
          return result;
       }
 
 
-      std::vector< admin::ServerVO> Server::listServers( )
+
+
+      admin::StateVO Server::state()
       {
+         admin::StateVO result;
 
          auto& state = m_broker->state();
 
-         std::vector< admin::ServerVO> result;
-
-         common::range::transform( state.servers, result,
-            common::chain::Nested::link(
-               admin::transform::Server( state),
-               common::extract::Second()));
-
-         return result;
-      }
-
-      std::vector< admin::ServiceVO> Server::listServices( )
-      {
-
-         auto& state = m_broker->state();
-
-         std::vector< admin::ServiceVO> result;
-
-         common::range::transform( state.services, result,
+         {
+            common::range::transform( state.servers, result.servers,
                common::chain::Nested::link(
-                  admin::transform::Service(),
+                  admin::transform::Server(),
                   common::extract::Second()));
+         }
+
+         {
+            common::range::transform( state.services, result.services,
+                  common::chain::Nested::link(
+                     admin::transform::Service(),
+                     common::extract::Second()));
+         }
+
+
+         {
+            common::range::transform( state.instances, result.instances,
+                  common::chain::Nested::link(
+                     admin::transform::Instance(),
+                     common::extract::Second()));
+         }
+
 
          return result;
       }

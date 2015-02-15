@@ -8,6 +8,7 @@
 #include "common/transaction/id.h"
 #include "common/uuid.h"
 #include "common/process.h"
+#include "common/transcode.h"
 
 
 
@@ -43,7 +44,11 @@ namespace casual
          } // local
 
 
-         ID::ID()
+         ID::ID() : ID( process::Handle{})
+         {
+         }
+
+         ID::ID( process::Handle owner) : m_owner( std::move( owner))
          {
             xid.formatID = Format::cNull;
             xid.gtrid_length = 0;
@@ -147,76 +152,12 @@ namespace casual
          }
 
 
-         namespace local
-         {
-            namespace
-            {
-               namespace stream
-               {
-
-                  inline char hex( char value)
-                  {
-                     if( value < 10)
-                     {
-                        return value + 48;
-                     }
-                     return value + 87;
-                  }
-
-
-                  inline std::ostream& generic_hex( std::ostream& out, const char* first, const char* last)
-                  {
-                     while( first != last)
-                     {
-                        out << hex( ( 0xf0 & *first) >> 4);
-                        out << hex( 0x0f & *first);
-
-                        ++first;
-                     }
-                     return out;
-                  }
-
-                  inline std::ostream& generic( std::ostream& out, const char* first, const char* last)
-                  {
-                     auto size = last - first;
-
-                     switch( size)
-                     {
-                        case 16:
-                        {
-                           generic_hex( out, first, first + 4) << '-';
-                           first += 4;
-                        }
-                        case 12:
-                        {
-                           generic_hex( out, first, first + 2) << '-';
-                           generic( out, first + 2, first + 4) << '-';
-                           first += 4;
-                        }
-                        case 8:
-                        {
-                           generic_hex( out, first, first + 2) << '-';
-                           first += 2;
-                        }
-                        default:
-                        {
-                           generic_hex( out, first, last);
-                           break;
-                        }
-                     }
-                     return out;
-                  }
-               } // stream
-            } // <unnamed>
-         } // local
-
-
          std::ostream& operator << ( std::ostream& out, const ID& id)
          {
             if( out && id)
             {
-               local::stream::generic( out, id.xid.data, id.xid.data + id.xid.gtrid_length) << ':';
-               local::stream::generic( out, id.xid.data + id.xid.gtrid_length, id.xid.data + id.xid.gtrid_length + id.xid.bqual_length)
+               out << transcode::hex::encode( id.xid.data, id.xid.data + id.xid.gtrid_length) << ':'
+                   << transcode::hex::encode( id.xid.data + id.xid.gtrid_length, id.xid.data + id.xid.gtrid_length + id.xid.bqual_length)
                   << ':' << id.m_owner.pid << ':' << id.m_owner.queue;
             }
             return out;

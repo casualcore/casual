@@ -51,6 +51,8 @@ namespace broker
          //!
          std::vector< admin::ServiceVO> listServices();
 
+         admin::StateVO state();
+
          //!
          //!
          //!

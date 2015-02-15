@@ -99,7 +99,7 @@ namespace casual
 
 
 
-			platform::seconds_type getTime();
+			//platform::seconds_type getTime();
 
 			namespace domain
          {

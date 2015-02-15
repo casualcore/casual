@@ -40,7 +40,7 @@ namespace casual
             //! Correspond to the tx API
             //!
             //! @{
-            void open();
+            int open();
             void close();
 
             int begin();
@@ -50,8 +50,8 @@ namespace casual
 
 
             int setCommitReturn( COMMIT_RETURN value);
-            void setTransactionControl(TRANSACTION_CONTROL control);
-            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            int setTransactionControl(TRANSACTION_CONTROL control);
+            int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
             int info( TXINFO& info);
             //! @}
 
@@ -66,22 +66,48 @@ namespace casual
             int suspend();
             int resume();
 
-            //!
-            //! Associate ongoing transaction, or start a new one if XID is null
-            //!
-            void joinOrStart( const transaction::ID& transaction);
 
+
+            //!
+            //! @ingroup service-start
+            //!
+            //! Join transaction. could be a null xid.
+            //!
+            void join( const transaction::ID& trid);
+
+            //!
+            //! @ingroup service-start
+            //!
+            //! Start a new transaction
+            //!
+            void start();
+
+            //!
+            //! trid server is invoked with
+            //!
+            //! @{
+            transaction::ID caller;
+            //! @}
+
+
+            void update( message::service::Reply& state);
 
             //!
             //! commits or rollback transaction created from this server
             //!
-            void finalize( message::service::Reply& message);
+            void finalize( message::service::Reply& message, int return_state);
 
 
             //!
             //! @return current transaction. 'null xid' if there are none...
             //!
             Transaction& current();
+
+
+            //!
+            //! @return true if @p descriptor is associated with an active transaction
+            //!
+            bool associated( platform::descriptor_type descriptor);
 
 
             void set( const std::vector< Resource>& resources);
@@ -110,13 +136,15 @@ namespace casual
             } m_resources;
 
 
-            std::stack< Transaction> m_transactions;
+            std::vector< Transaction> m_transactions;
 
             //!
             //! Resources outside any global transaction
             //! (this could only be dynamic rm:s)
             //!
             std::vector< int> m_outside;
+
+            transaction::ID m_caller;
 
             //!
             //! Attributes that is initialized from "manager"
@@ -133,7 +161,7 @@ namespace casual
 
             const Manager& manager();
 
-            void involved( transaction::ID& xid, std::vector< int> resources);
+            void involved( const transaction::ID& xid, std::vector< int> resources);
 
             void apply( const message::transaction::client::connect::Reply& configuration);
 
@@ -144,8 +172,8 @@ namespace casual
             int rollback( const Transaction& transaction);
 
 
-            void start( Transaction& transaction, long flags);
-            void end( const Transaction& transaction, long flags);
+            void resources_start( const Transaction& transaction, long flags);
+            void resources_end( const Transaction& transaction, long flags);
 
 
 

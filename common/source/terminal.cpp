@@ -7,6 +7,9 @@
 
 #include "common/terminal.h"
 
+
+#include <iomanip>
+
 namespace casual
 {
    namespace common
@@ -27,12 +30,27 @@ namespace casual
             {
                if( ! m_moved)
                {
+                 // auto flags = m_out->flags();
+                  //auto width = m_out->width( 0);
                   *m_out << "\033[0m";
+                 // m_out->setf( flags);
+                 // m_out->width( width);
                }
             }
 
             color_t::proxy_t::proxy_t( proxy_t&&) = default;
             color_t::proxy_t& color_t::proxy_t::operator = ( proxy_t&&) = default;
+
+
+            const std::string& color_t::escape() const
+            {
+               return m_color;
+            }
+
+            std::string color_t::reset() const
+            {
+               return "\033[0m";
+            }
 
             color_t::proxy_t operator << ( std::ostream& out, const color_t& color)
             {
@@ -40,8 +58,8 @@ namespace casual
                auto width = out.width();
                out.width( 0);
                out << color.m_color;
+               out << std::setw( width);
                out.setf( flags);
-               out.width( width);
 
                return color_t::proxy_t{ out};
             }

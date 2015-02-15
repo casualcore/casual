@@ -106,7 +106,7 @@ namespace casual
                   auto persistent = sql::database::scoped::write( m_state.queuebase);
 
 
-                  handler.dispatch( blockedRead.next());
+                  handler( blockedRead.next());
 
                   //
                   // Consume until the queue is empty or we've got pending replies equal to transaction_batch
@@ -114,7 +114,7 @@ namespace casual
 
                   group::queue::non_blocking::Reader nonBlocking( common::ipc::receive::queue(), m_state);
 
-                  while( handler.dispatch( nonBlocking.next()) &&
+                  while( handler( nonBlocking.next()) &&
                         m_state.persistent.size() < common::platform::transaction_batch)
                   {
                      ;

@@ -11,6 +11,8 @@
 
 #include "common/message/type.h"
 
+#include "common/transaction/id.h"
+
 #include "common/buffer/type.h"
 #include "common/uuid.h"
 
@@ -79,15 +81,23 @@ namespace casual
 
 
             } // connect
-
-
-            //typedef basic_disconnect< cServerDisconnect> Disconnect;
-
          } // server
 
 
          namespace service
          {
+            struct Transaction
+            {
+               common::transaction::ID trid;
+               std::int64_t state = 0;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & trid;
+                  archive & state;
+               })
+            };
+
 
             struct Advertise : basic_message< cServiceAdvertise>
             {
@@ -147,12 +157,12 @@ namespace casual
 
                      Service service;
 
-                     process::Handle supplier;
+                     process::Handle process;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & service;
-                        archive & supplier;
+                        archive & process;
                      })
                   };
                } // lookup
@@ -173,8 +183,9 @@ namespace casual
                Service service;
                process::Handle reply;
                common::Uuid execution;
-               std::string callee;
+               std::string caller;
                common::transaction::ID trid;
+               std::int64_t flags;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -182,8 +193,9 @@ namespace casual
                   archive & service;
                   archive & reply;
                   archive & execution;
-                  archive & callee;
+                  archive & caller;
                   archive & trid;
+                  archive & flags;
                })
             };
 
@@ -192,6 +204,7 @@ namespace casual
 
                //!
                //! Represents a service call. via tp(a)call, from the callee's perspective
+               //! @todo: change to service::call::callee::Request
                //!
                struct Call: public base_call
                {
@@ -219,7 +232,7 @@ namespace casual
             {
                //!
                //! Represents a service call. via tp(a)call, from the callers perspective
-               //!
+               //! @todo: change to service::call::caller::Request
                struct Call: public base_call
                {
 
@@ -247,6 +260,7 @@ namespace casual
 
             //!
             //! Represent service reply.
+            //! @todo: change to service::call::Reply
             //!
             struct Reply :  basic_message< cServiceReply>
             {
@@ -254,22 +268,22 @@ namespace casual
                Reply() = default;
                Reply( Reply&&) noexcept = default;
                Reply& operator = ( Reply&&) noexcept = default;
+               Reply( const Reply&) = default;
+               Reply& operator = ( const Reply&) = default;
 
-
-               Reply( const Reply&) = delete;
-               Reply& operator = ( const Reply&) = delete;
-
-               int callDescriptor = 0;
-               int returnValue = 0;
-               long userReturnCode = 0;
+               int descriptor = 0;
+               int error = 0;
+               long code = 0;
                buffer::Payload buffer;
+               Transaction transaction;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  archive & callDescriptor;
-                  archive & returnValue;
-                  archive & userReturnCode;
+                  archive & descriptor;
+                  archive & error;
+                  archive & code;
                   archive & buffer;
+                  archive & transaction;
                })
 
             };

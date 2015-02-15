@@ -28,7 +28,7 @@ namespace casual
 
          void Timeout::add( descriptor_type descriptor, std::chrono::microseconds timeout, const time_point& now)
          {
-            if( timeout != std::chrono::microseconds::zero())
+            if( timeout != std::chrono::microseconds::zero() && descriptor != 0)
             {
                m_limits.emplace_back( now + timeout, descriptor);
 
@@ -64,7 +64,7 @@ namespace casual
          void Timeout::remove( descriptor_type descriptor) noexcept
          {
             auto found = range::find_if( m_limits,
-                  compare::equal_to( std::mem_fn( &Limit::descriptor), bind::value( descriptor)));
+                  std::bind( equal_to{}, std::bind( &Limit::descriptor, std::placeholders::_1), descriptor));
 
             if( found)
             {
@@ -87,7 +87,7 @@ namespace casual
 
             {
                auto found = range::find_if( m_limits,
-                     compare::equal_to( std::mem_fn( &Limit::descriptor), bind::value( descriptor)));
+                     std::bind( equal_to{}, std::bind( &Limit::descriptor, std::placeholders::_1), descriptor));
 
                if( found)
                {

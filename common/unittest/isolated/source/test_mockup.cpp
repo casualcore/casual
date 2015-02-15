@@ -65,6 +65,44 @@ namespace casual
          }
       }
 
+
+      TEST( casual_common_mockup, ipc_link_2_instances__send_one_message)
+      {
+         trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_one_message)", log::internal::ipc};
+
+         // so we don't hang for ever, if something is wrong...
+         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
+
+         mockup::ipc::Instance source;
+         mockup::ipc::Instance destination;
+
+         //
+         // Link "output" of source to "input" of destination
+         //
+         mockup::ipc::Link link{ source.receive().id(), destination.id()};
+
+         {
+            message::service::name::lookup::Request request;
+            request.requested = "someService";
+            request.process = process::handle();
+
+            queue::blocking::Writer write( source.id());
+
+            write( request);
+         }
+
+         {
+            queue::blocking::Reader read( destination.receive());
+            message::service::name::lookup::Request request;
+            read( request);
+
+            EXPECT_TRUE( request.requested == "someService");
+            EXPECT_TRUE( request.process.queue == ipc::receive::id());
+
+         }
+      }
+
+
       TEST( casual_common_mockup, ipc_Instance_200_messages)
       {
          trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_200_messages)",  log::internal::ipc};
@@ -102,8 +140,62 @@ namespace casual
 
             for( int count = 0; count < 200; ++count)
             {
+               const auto service = temp + std::to_string( count);
+
                read( request);
-               EXPECT_TRUE( request.requested == temp + std::to_string( count));
+
+               EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
+               EXPECT_TRUE( request.process.queue == ipc::receive::id());
+            }
+         }
+      }
+
+      TEST( casual_common_mockup, ipc_link_2_instances__send_200_messages)
+      {
+
+         // so we don't hang for ever, if something is wrong...
+         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
+
+         mockup::ipc::Instance source;
+         mockup::ipc::Instance destination;
+
+         //
+         // Link "output" of source to "input" of destination
+         //
+         mockup::ipc::Link link{ source.receive().id(), destination.id()};
+
+
+         {
+            message::service::name::lookup::Request request;
+            request.requested = "someService";
+            request.process = process::handle();
+
+            queue::blocking::Writer write( source.id());
+
+            const std::string temp = "service_";
+
+            for( int count = 0; count < 200; ++count)
+            {
+               request.requested = temp + std::to_string( count);
+               write( request);
+            }
+         }
+
+         {
+            trace::Scope trace( "read( ipc::receive::queue())  200");
+
+            queue::blocking::Reader read( destination.receive());
+            message::service::name::lookup::Request request;
+
+            const std::string temp = "service_";
+
+            for( int count = 0; count < 200; ++count)
+            {
+               const auto service = temp + std::to_string( count);
+
+               read( request);
+
+               EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
                EXPECT_TRUE( request.process.queue == ipc::receive::id());
             }
          }
