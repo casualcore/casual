@@ -176,7 +176,7 @@ forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
     [
         Compile( 'source/forward/service.cpp'),
     ],
-    [ forward_common, common, 'casual-xatmi', 'casual-common'])
+    [ forward_common, queue_api, common, 'casual-xatmi', 'casual-common'])
 
 forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     [
