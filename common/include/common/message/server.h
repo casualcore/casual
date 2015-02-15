@@ -89,7 +89,7 @@ namespace casual
             struct Transaction
             {
                common::transaction::ID trid;
-               std::int64_t state;
+               std::int64_t state = 0;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -204,6 +204,7 @@ namespace casual
 
                //!
                //! Represents a service call. via tp(a)call, from the callee's perspective
+               //! @todo: change to service::call::callee::Request
                //!
                struct Call: public base_call
                {
@@ -231,7 +232,7 @@ namespace casual
             {
                //!
                //! Represents a service call. via tp(a)call, from the callers perspective
-               //!
+               //! @todo: change to service::call::caller::Request
                struct Call: public base_call
                {
 
@@ -259,6 +260,7 @@ namespace casual
 
             //!
             //! Represent service reply.
+            //! @todo: change to service::call::Reply
             //!
             struct Reply :  basic_message< cServiceReply>
             {
@@ -270,7 +272,7 @@ namespace casual
                Reply& operator = ( const Reply&) = default;
 
                int descriptor = 0;
-               int value = 0;
+               int error = 0;
                long code = 0;
                buffer::Payload buffer;
                Transaction transaction;
@@ -278,7 +280,7 @@ namespace casual
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & descriptor;
-                  archive & value;
+                  archive & error;
                   archive & code;
                   archive & buffer;
                   archive & transaction;

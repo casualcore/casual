@@ -304,7 +304,7 @@ namespace casual
                      // Do transaction stuff...
                      // - commit/rollback transaction if service has "auto-transaction"
                      //
-                     m_policy.transaction( reply);
+                     m_policy.transaction( reply, state.jump.state.value);
 
                      //
                      // Send ACK to broker
@@ -359,7 +359,6 @@ namespace casual
                      message::service::Reply result;
 
                      result.correlation = message.correlation;
-                     result.value = state.value;
                      result.code = state.code;
                      result.descriptor = message.descriptor;
 
@@ -371,7 +370,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           result.value = TPESVCERR;
+                           result.error = TPESVCERR;
                         }
                      }
                      else
@@ -432,7 +431,7 @@ namespace casual
                   void statistics( platform::queue_id_type id, message::monitor::Notify& message);
 
                   void transaction( const message::service::callee::Call& message, const server::Service& service, const platform::time_point& now);
-                  void transaction( message::service::Reply& message);
+                  void transaction( message::service::Reply& message, int return_state);
 
                private:
                   typedef queue::blocking::Writer reply_writer;
@@ -490,7 +489,7 @@ namespace casual
                   {
                      // no-op
                   }
-                  void transaction( message::service::Reply& message)
+                  void transaction( message::service::Reply& message, int return_state)
                   {
                      // no-op
                   }

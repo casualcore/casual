@@ -13,7 +13,7 @@
 
 #include "tx.h"
 
-#include <ostream>
+#include <iosfwd>
 #include <vector>
 
 namespace casual
@@ -36,7 +36,9 @@ namespace casual
             };
 
 
-            explicit operator bool() const { return trid && ! suspended;}
+            Transaction();
+            Transaction( ID trid);
+
 
             ID trid;
 
@@ -54,24 +56,16 @@ namespace casual
             bool suspended = true;
 
 
-            void discard( platform::descriptor_type descriptor)
-            {
-               descriptors.erase(
-                     std::remove( std::begin( descriptors), std::end( descriptors), descriptor),
-                     std::end( descriptors)
-               );
-            }
+            explicit operator bool() const;
+
+            //!
+            //! discards a descriptor from this transaction
+            //!
+            void discard( platform::descriptor_type descriptor);
 
 
-            friend bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
-
-            friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
-            {
-               return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<
-                     ", suspended: " << std::boolalpha << rhs.suspended <<
-                     ", resources: " << range::make( rhs.resources) <<
-                     ", descriptors: " << range::make( rhs.descriptors) << "}";
-            }
+            friend bool operator == ( const Transaction& lhs, const ID& rhs);
+            friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs);
          };
       }
    }

@@ -77,12 +77,17 @@ namespace casual
                log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
                return exception.code();
             }
-            /*
-            catch( const exception::tx::severity::Error& exception)
+
+            //
+            // tx stuff
+            //
+            catch( const exception::tx::Fail& exception)
             {
-               log::error << transaction::txError( exception.code()) << " - " << exception.what();
-               return exception.code();
+               log::error << exception.what() << std::endl;
+               return TX_FAIL;
             }
+
+            /*
             catch( const exception::tx::severity::Information& exception)
             {
                log::information << transaction::txError( exception.code()) << " - " << exception.what();

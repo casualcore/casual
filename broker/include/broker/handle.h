@@ -210,7 +210,7 @@ namespace casual
 
             void transaction( const common::message::service::callee::Call&, const common::server::Service&, const common::platform::time_point&);
 
-            void transaction( const common::message::service::Reply& message);
+            void transaction( const common::message::service::Reply& message, int return_state);
 
             void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message);
 

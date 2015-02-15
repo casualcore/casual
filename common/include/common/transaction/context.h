@@ -66,10 +66,28 @@ namespace casual
             int suspend();
             int resume();
 
+
+
             //!
-            //! Associate ongoing transaction, or start a new one if XID is null
+            //! @ingroup service-start
             //!
-            void joinOrStart( const transaction::ID& transaction);
+            //! Join transaction. could be a null xid.
+            //!
+            void join( const transaction::ID& trid);
+
+            //!
+            //! @ingroup service-start
+            //!
+            //! Start a new transaction
+            //!
+            void start();
+
+            //!
+            //! trid server is invoked with
+            //!
+            //! @{
+            transaction::ID caller;
+            //! @}
 
 
             void update( message::service::Reply& state);
@@ -77,7 +95,7 @@ namespace casual
             //!
             //! commits or rollback transaction created from this server
             //!
-            void finalize( message::service::Reply& message);
+            void finalize( message::service::Reply& message, int return_state);
 
 
             //!
@@ -126,6 +144,8 @@ namespace casual
             //!
             std::vector< int> m_outside;
 
+            transaction::ID m_caller;
+
             //!
             //! Attributes that is initialized from "manager"
             //!
@@ -141,7 +161,7 @@ namespace casual
 
             const Manager& manager();
 
-            void involved( transaction::ID& xid, std::vector< int> resources);
+            void involved( const transaction::ID& xid, std::vector< int> resources);
 
             void apply( const message::transaction::client::connect::Reply& configuration);
 
@@ -152,8 +172,8 @@ namespace casual
             int rollback( const Transaction& transaction);
 
 
-            void start( Transaction& transaction, long flags);
-            void end( const Transaction& transaction, long flags);
+            void resources_start( const Transaction& transaction, long flags);
+            void resources_end( const Transaction& transaction, long flags);
 
 
 

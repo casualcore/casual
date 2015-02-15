@@ -301,9 +301,22 @@ namespace casual
             }
          } // xatmi
 
+         namespace tx
+         {
+            struct Base : public common::exception::Base
+            {
+               using common::exception::Base::Base;
+            };
+
+            struct Fail : Base
+            {
+               using Base::Base;
+            };
+         }
+
          /*
           * No point using exception for XA - TX stuff, to much return values that needs to be
-          * mapped to conform to the standard...
+          * mapped to conform to the spec...
           *
          namespace tx
          {

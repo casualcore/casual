@@ -50,8 +50,10 @@ namespace casual
 
             //!
             //! Initialize with null-xid
-            //!
+            //! @{
             ID();
+            ID( process::Handle owner);
+            //! @}
 
             ID( const XID& xid);
 

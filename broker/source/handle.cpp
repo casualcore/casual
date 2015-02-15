@@ -517,7 +517,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::transaction( const message::service::Reply& message)
+         void Policy::transaction( const message::service::Reply& message, int return_state)
          {
             // broker doesn't bother with transactions...
          }
