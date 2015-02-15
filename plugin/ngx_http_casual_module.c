@@ -155,8 +155,8 @@ static ngx_int_t bufferhandler( ngx_http_request_t *r, ngx_str_t* body)
       ngx_chain_t* bufs = r->request_body->bufs;
 
       u_char* p = body->data;
-      bool fileReading = true;
-      while ( true)
+      ngx_int_t fileReading = 0;
+      while ( 1)
       {
          u_int buffer_length = bufs->buf->last - bufs->buf->pos;
          ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: buffer_length: %d", buffer_length);
@@ -174,6 +174,7 @@ static ngx_int_t bufferhandler( ngx_http_request_t *r, ngx_str_t* body)
             //
             if (bufs->buf->file_last > 0)
             {
+               fileReading = 1;
                ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "casual: reading from file");
                ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: bufs->buf->file_pos=%d", bufs->buf->file_pos);
                ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: bufs->buf->file_last=%d", bufs->buf->file_last);
