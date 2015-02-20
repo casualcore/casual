@@ -3,9 +3,13 @@ var app = angular.module('myCasualAdminApp', []);
 function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	
 	var promise;
+	var host="http://localhost"
 	
+	var timeout=1000;
+		
 	$http.defaults.cache = false;
 	
+	$scope.serverInstancesMap = {};
 	$scope.serverMap = {};
 	$scope.servers = [];
 	$scope.services = [];
@@ -23,46 +27,37 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	
 	$scope.submit = function() {
 		doGetCasualStateInfo();
-		promise = $timeout( $scope.submit, 500, false )
+		promise = $timeout( $scope.submit, timeout, false )
+	}
+		
+	$scope.update = function() {
+		$scope.commit();
+		$log.log("update");
+	}
+
+	$scope.cancelTimeout = function() {
+		$timeout.cancel(promise)
 	}
 	
 	$scope.commit = function() {
-		if ($scope.buttonlabel == "edit")
-		{
-			$scope.buttonlabel = "commit";
-			$scope.buttonclass = "btn btn-sm btn-danger";
-			$scope.editing = true;
-			//
-			// cancel timeout to be able to edit
-			//
-			$timeout.cancel( promise);
-		}
-		else
-		{
-			$scope.buttonlabel = "edit";
-			$scope.buttonclass = "btn btn-sm btn-success";
-			$scope.editing = false;
-			//
-			// do some updating
-			//
-			var myInstanceArr = new Array();
-			for (var i = 0; i < $scope.servers.length; i++) {
-	  			var element = $scope.servers[i];
-	  			var servername = element.alias;
-	  			if (element.instances.length != element.instances.newlength)
-	  			{
-	  				$log.info("updating: servername=" + servername + ", instances=" + element.instances.newlength);
-	  				var aInstance = new Instance( servername, element.instances.newlength)
-	  				myInstanceArr.push( aInstance)
-	  				uppdateInstances( myInstanceArr)
-	  			}
-	 		}
-			
-			//
-			// start timeout again
-			//
-			promise = $timeout( $scope.submit, 500, false );
-		}
+		//
+		// do some updating
+		//
+		$log.log("updating...");
+		var myInstanceArr = new Array();
+		for (var i = 0; i < $scope.servers.length; i++) {
+  			var element = $scope.servers[i];
+  			var servername = element.alias;
+  			if (element.instances.length != element.instances.viewlength)
+  			{
+  				$log.info("updating: servername=" + servername + ", instances=" + element.instances.viewlength);
+  				var aInstance = new Instance( servername, element.instances.viewlength)
+  				myInstanceArr.push( aInstance)
+  				uppdateInstances( myInstanceArr)
+  			}
+  			element.editing = false
+ 		}
+		$scope.submit();
 	}
 	
 	$scope.showInstance = function( serverInstances)
@@ -79,9 +74,8 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
                   break
                }
             }
-
 	   }
-		$scope.selectedInstances = instances;
+	   $scope.selectedInstances = instances;
 	}
 	
 	$scope.getServer = function( pid)
@@ -111,7 +105,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
     	$log.log(jsonstring)
 		$http.defaults.headers.common.Accept = 'application/json';
 		$http
-				.post('http://localhost/casual/casual?service=.casual.broker.update.instances&protocol=json', '{"instances":' + jsonstring + '}')
+				.post(host + '/casual/casual?service=.casual.broker.update.instances&protocol=json', '{"instances":' + jsonstring + '}')
 				.success(uppdateInstancesCallback)
 				.error(errorCallback);   	
     }
@@ -124,15 +118,14 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	function doGetCasualStateInfo() {
 		$http.defaults.headers.common.Accept = 'application/json';
 		$http
-				.post('http://localhost/casual/casual?service=.casual.broker.state&protocol=json','{}')
+				.post(host + '/casual/casual?service=.casual.broker.state&protocol=json','{}')
 				.success(getCasualStateInfoCallback)
 				.error(errorCallback);
 	}
 
 	function getCasualStateInfoCallback(reply) 
-	{
-		
-		$scope.state = reply.serviceReturn;
+	{	
+	  $scope.state = reply.serviceReturn;
       $scope.servers = $scope.state.servers;
       $scope.services = $scope.state.services;
       $scope.instances = $scope.state.instances;
@@ -146,8 +139,17 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
             $scope.serverMap[element.instances[j]] = servername;
             $scope.instances[j].alias = servername;
          }
-         element.instances.newlength = element.instances.length
          
+         if (! element.editing)
+         {
+        	 $scope.serverInstancesMap[servername] = element.instances.length;
+        	 element.instances.viewlength = element.instances.length;
+         }
+         else
+         {
+        	 element.instances.viewlength = $scope.serverInstancesMap[servername]
+         }
+      
       }
       
       for (var i = 0; i < $scope.instances.length; i++) 
@@ -194,3 +196,16 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 
 }
 
+app.directive('ngEnter', function () {
+    return function (scope, element, attrs) {
+        element.bind("keydown keypress", function (event) {
+            if(event.which === 13) {
+                scope.$apply(function (){
+                    scope.$eval(attrs.ngEnter);
+                });
+
+                event.preventDefault();
+            }
+        });
+    };
+});
