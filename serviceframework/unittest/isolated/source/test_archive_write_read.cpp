@@ -13,6 +13,7 @@
 #include "sf/archive/json.h"
 #include "sf/archive/yaml.h"
 #include "sf/archive/xml.h"
+#include "sf/archive/ini.h"
 #include "sf/archive/binary.h"
 
 #include "common/log.h"
@@ -130,6 +131,40 @@ namespace casual
          };
 
 
+         template< typename P>
+         struct ini
+         {
+            using policy_type = P;
+
+            template< typename T>
+            static T write_read( const T& value)
+            {
+               archive::ini::Save save;
+
+               {
+                  archive::ini::Writer writer( save.target());
+                  writer << CASUAL_MAKE_NVP( value);
+               }
+
+               std::string ini;
+               save.serialize( ini);
+
+               std::cout << ini << std::endl;
+
+               archive::ini::Load load;
+               load.serialize( ini);
+
+               {
+                  archive::basic_reader< archive::ini::reader::Implementation, P> reader( load.source());
+                  T value;
+                  reader >> CASUAL_MAKE_NVP( value);
+
+                  return value;
+               }
+            }
+         };
+
+
 
          struct binary
          {
@@ -168,6 +203,8 @@ namespace casual
             holder::yaml< archive::policy::Relaxed>,
             holder::xml< archive::policy::Strict>,
             holder::xml< archive::policy::Relaxed>,
+            //holder::ini< archive::policy::Strict>,  // cannot handle nested containers yet
+            //holder::ini< archive::policy::Relaxed>, // cannot handle nested containers yet
             holder::binary
        > archive_types;
 
@@ -226,6 +263,12 @@ namespace casual
       {
          std::string value = "value 42";
          EXPECT_TRUE( TestFixture::write_read( value) == "value 42");
+      }
+
+      TYPED_TEST( casual_sf_archive_write_read, type_string_with_new_line)
+      {
+         std::string value = "first\nother";
+         EXPECT_TRUE( TestFixture::write_read( value) == "first\nother");
       }
 
       TYPED_TEST( casual_sf_archive_write_read, type_extended_string)

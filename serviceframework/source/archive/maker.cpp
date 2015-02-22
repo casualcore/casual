@@ -9,6 +9,7 @@
 #include "sf/archive/yaml.h"
 #include "sf/archive/json.h"
 #include "sf/archive/xml.h"
+#include "sf/archive/ini.h"
 
 #include "common/file.h"
 
@@ -85,8 +86,6 @@ namespace casual
                   return Holder( Holder::base_value_type( new JsonRelaxedHolder( file)));
                }
 
-
-
                if( extension == "xml")
                {
                   typedef basic_holder< xml::relaxed::Reader, xml::Load > XmlRelaxedHolder;
@@ -94,8 +93,14 @@ namespace casual
                   return Holder( Holder::base_value_type( new XmlRelaxedHolder( file)));
                }
 
+               if( extension == "ini")
+               {
+                  typedef basic_holder< ini::relaxed::Reader, ini::Load > IniRelaxedHolder;
 
-               throw exception::Validation( "could not deduce protocol for file " + filename);
+                  return Holder( Holder::base_value_type( new IniRelaxedHolder( file)));
+               }
+
+               throw exception::Validation( "Could not deduce protocol for file " + filename);
             }
 
          } // reader

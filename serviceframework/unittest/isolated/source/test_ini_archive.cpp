@@ -43,133 +43,150 @@ namespace casual
       } // local
    } //
 
+
+
+   TEST( casual_sf_ini_archive, write_read_string_with_new_line)
+   {
+      std::string ini;
+      std::string source = "foo\nbar";
+      local::value_to_string( source, ini);
+      std::string target;
+      local::string_to_value( ini, target);
+
+      EXPECT_TRUE( source == target);
+   }
+
+   TEST( casual_sf_ini_archive, write_read_boolean)
+   {
+      std::string ini;
+      bool source = true;
+      local::value_to_string( source, ini);
+      bool target = false;
+      local::string_to_value( ini, target);
+      EXPECT_TRUE( source == target);
+   }
+
+   TEST( casual_sf_ini_archive, write_read_decimal)
+   {
+      std::string ini;
+      float source = 3.14;
+      local::value_to_string( source, ini);
+      float target = 0.0;
+      local::string_to_value( ini, target);
+      EXPECT_TRUE( source == target);
+   }
+
+   TEST( casual_sf_ini_archive, write_read_container)
+   {
+      std::string ini;
+      std::vector<long> source{ 1, 3, 5, 7 };
+      local::value_to_string( source, ini);
+      std::vector<long> target;
+      local::string_to_value( ini, target);
+      EXPECT_TRUE( source == target);
+   }
+
    namespace
    {
-      struct CompositeVO
+      struct SomeVO
       {
-         struct SomeFirstVO
+         struct FirstVO
          {
-            bool first_boolean = true;
-            long first_integer = 123456;
+            long integer;
+            std::string string;
 
-            std::vector< std::vector<short>> first_nested{ { 1, 2, 3}, { 4, 5, 6}};
-            std::vector< char> first_binary{ 'a', 'b', 'c'};
-
-            template< typename A>
+            template<typename A>
             void serialize( A& archive)
             {
-               archive & CASUAL_MAKE_NVP( first_boolean);
-               archive & CASUAL_MAKE_NVP( first_integer);
-               //archive & CASUAL_MAKE_NVP( first_nested);
-               //archive & CASUAL_MAKE_NVP( first_binary);
-            }
-         };
-
-         struct SomeOtherVO
-         {
-            std::vector<long> other_large_ones{ 777, 888, 999};
-            std::string other_string = "some text";
-            char other_character = 'c';
-
-            template< typename A>
-            void serialize( A& archive)
-            {
-               archive & CASUAL_MAKE_NVP( other_large_ones);
-               archive & CASUAL_MAKE_NVP( other_string);
-               archive & CASUAL_MAKE_NVP( other_character);
-            }
-         };
-
-         struct SomeThirdVO
-         {
-            std::vector<long> third_large_ones{ 7, 8, 9};
-            double third_decimal = 123.456;
-            std::vector<short> third_small_ones{ 1, 2, 3};
-
-            template< typename A>
-            void serialize( A& archive)
-            {
-               archive & CASUAL_MAKE_NVP( third_large_ones);
-               archive & CASUAL_MAKE_NVP( third_decimal);
-               archive & CASUAL_MAKE_NVP( third_small_ones);
+               archive & CASUAL_MAKE_NVP( integer);
+               archive & CASUAL_MAKE_NVP( string);
             }
          };
 
 
+         struct OtherVO
+         {
+            struct InnerVO
+            {
+               long long huge;
 
-         SomeFirstVO composite_first;
-         bool composite_boolean = false;
-         std::vector<SomeOtherVO> composite_other{ SomeOtherVO(), SomeOtherVO()};
-         std::string composite_string = "ok?";
-         SomeThirdVO composite_third;
-         std::vector<long> composite_integers{ 1, 2, 3};
+               template<typename A>
+               void serialize( A& archive)
+               {
+                  archive & CASUAL_MAKE_NVP( huge);
+               }
 
-         template< typename A>
+            };
+
+            InnerVO first_inner;
+            InnerVO other_inner;
+
+
+            template<typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( first_inner);
+               archive & CASUAL_MAKE_NVP( other_inner);
+            }
+         };
+
+         bool boolean;
+         FirstVO first;
+         short tiny;
+         std::vector<OtherVO> others;
+
+         template<typename A>
          void serialize( A& archive)
          {
-            archive & CASUAL_MAKE_NVP( composite_first);
-            archive & CASUAL_MAKE_NVP( composite_boolean);
-            archive & CASUAL_MAKE_NVP( composite_other);
-            archive & CASUAL_MAKE_NVP( composite_string);
-            archive & CASUAL_MAKE_NVP( composite_third);
-            archive & CASUAL_MAKE_NVP( composite_integers);
-
+            archive & CASUAL_MAKE_NVP( boolean);
+            archive & CASUAL_MAKE_NVP( first);
+            archive & CASUAL_MAKE_NVP( tiny);
+            archive & CASUAL_MAKE_NVP( others);
          }
 
       };
-   }
 
-
-   TEST( casual_sf_ini_archive, test_some)
-   {
-/*
-      std::string ini;
-
-      {
-         CompositeVO value;
-
-         local::value_to_string( value, ini);
-
-         std::cout << ini << std::endl;
-      }
-
-      std::cout << std::endl;
-
-      {
-         CompositeVO value;
-
-         local::string_to_value( ini, value);
-
-         value.composite_integers.clear();
-         value.composite_string = "no original";
-
-         local::value_to_string( value, ini);
-
-         std::cout << ini << std::endl;
-      }
-
-      std::cout << std::endl;
-
-*/
+      TEST( casual_sf_ini_archive, write_read_serializable)
       {
          std::string ini;
-         std::vector<std::vector<std::vector<long>>> source{ {{1, 3, 5}, {2, 4, 6}}, {{5, 3, 1}, {6, 4, 2}} };
-         local::value_to_string( source, ini);
-         std::cout << ini << std::endl;
+         SomeVO source;
+         source.boolean = true;
+         source.first.integer = 654321;
+         source.first.string = "foo";
+         source.tiny = 123;
+         {
+            SomeVO::OtherVO other;
+            other.first_inner.huge = 123456789;
+            other.other_inner.huge = 987654321;
+            source.others.push_back( other);
+         }
+         {
+            SomeVO::OtherVO other;
+            other.first_inner.huge = 13579;
+            other.other_inner.huge = 97531;
+            source.others.push_back( other);
+         }
 
-         std::vector<std::vector<std::vector<long>>> target;
+
+         local::value_to_string( source, ini);
+         SomeVO target;
          local::string_to_value( ini, target);
 
-         std::cout << std::boolalpha << (source == target) << std::noboolalpha << std::endl;
-
-         local::value_to_string( target, ini);
-         std::cout << ini << std::endl;
-
-         //local::string_to_value( ini, integers);
-         //local::value_to_string( integers, ini);
-         //std::cout << ini << std::endl;
+         EXPECT_TRUE( source.boolean == target.boolean);
+         EXPECT_TRUE( source.first.integer == target.first.integer);
+         EXPECT_TRUE( source.first.string == target.first.string);
+         EXPECT_TRUE( source.tiny == target.tiny);
+         ASSERT_TRUE( target.others.size() == 2);
+         EXPECT_TRUE( source.others.at( 0).first_inner.huge == target.others.at( 0).first_inner.huge);
+         EXPECT_TRUE( source.others.at( 0).other_inner.huge == target.others.at( 0).other_inner.huge);
+         EXPECT_TRUE( source.others.at( 1).first_inner.huge == target.others.at( 1).first_inner.huge);
+         EXPECT_TRUE( source.others.at( 1).other_inner.huge == target.others.at( 1).other_inner.huge);
       }
 
+
    }
+
+
+
 
 } // casual

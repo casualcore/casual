@@ -100,23 +100,34 @@ namespace casual
 
                         if( candidate.empty())
                         {
+                           //
+                           // Found nothing and we just ignore it
+                           //
                            continue;
                         }
 
                         if( candidate.find_first_of( "#;") == 0)
                         {
+                           //
+                           // Found a comment and we just ignore it
+                           //
                            continue;
                         }
-
 
                         const auto separator = line.find_first_of( '=');
 
                         if( separator != std::string::npos)
                         {
+                           //
+                           // We found a (potential) value and some data
+                           //
+
                            auto name = trim( line.substr( 0, separator));
                            auto data = line.substr( separator + 1);
 
-                           // TODO: Handle escaping
+                           //
+                           // Add it to the tree after some unmarshalling
+                           //
                            composite->values.emplace( std::move( name), decode( data));
 
                            continue;
@@ -125,7 +136,14 @@ namespace casual
 
                         if( candidate.front() == '[' && candidate.back() == ']')
                         {
+                           //
+                           // Found a potential section (a.k.a. composite a.k.a. serializable)
+                           //
 
+
+                           //
+                           // An internal lambda-helper to split a qualified name
+                           //
                            const auto splitter = [] ( std::string qualified)
                            {
                               std::vector<std::string> result;
@@ -156,6 +174,9 @@ namespace casual
 
                            };
 
+                           //
+                           // An internal lambda-helper to help out where to add this section
+                           //
                            const auto finder = [] ( const std::vector<std::string>& last, const std::vector<std::string>& next)
                            {
                               if( next.size() > last.size())
@@ -169,6 +190,9 @@ namespace casual
                            };
 
 
+                           //
+                           // First we split the string (e.g. 'foo.bar' into 'foo' and 'bar')
+                           //
                            auto next = splitter( { candidate.begin() + 1, candidate.end() - 1 } );
 
 
@@ -176,16 +200,25 @@ namespace casual
 
                            composite = &document;
 
+                           //
+                           // Search from root to find out where this should be added
+                           //
                            for( auto name = next.begin(); name != inserter; ++name)
                            {
                               composite = &std::prev( composite->children.upper_bound( *name))->second;
                            }
 
+                           //
+                           // Add all names where they should be added
+                           //
                            for( auto name = inserter; name != next.end(); ++name)
                            {
                               composite = &composite->children.emplace( *name, tree())->second;
                            }
 
+                           //
+                           // Keep this qualified name until next time
+                           //
                            std::swap( last, next);
 
                            continue;
@@ -202,7 +235,10 @@ namespace casual
                         }
 
 
-                        throw std::logic_error( "Invalid document");
+                        //
+                        // Unknown content
+                        //
+                        exception::archive::invalid::Document( "Invalid document");
 
                      }
 
@@ -232,7 +268,6 @@ namespace casual
             }
 
 
-
             namespace reader
             {
 
@@ -258,6 +293,7 @@ namespace casual
                         {
                            m_node_stack.push_back( &std::prev( iterator)->second);
                         }
+
                         return std::make_tuple( std::distance( node.first, node.second), true);
                      }
 
@@ -272,12 +308,18 @@ namespace casual
                         {
                            m_data_stack.push_back( &std::prev( iterator)->second);
                         }
+
                         return std::make_tuple( std::distance( data.first, data.second), true);
                      }
 
                   }
                   else
                   {
+                     //
+                     // An idea to handle this is by creating fake serializable
+                     //
+                     // E.g. [@name], [@name.@name], etc or something
+                     //
                      throw exception::archive::invalid::Node{ "Nested containers not supported (yet)"};
                   }
 
@@ -362,7 +404,9 @@ namespace casual
 
                void Implementation::decode( const std::string& data, std::vector<char>& value) const
                {
-                  //throw exception::archive::invalid::Node{ "Binary data not supported (yet)"};
+                  //
+                  // Binary data might be double-decoded
+                  //
                   value = common::transcode::base64::decode( data);
                }
 
@@ -407,6 +451,10 @@ namespace casual
                      {
                         const auto qualified = name.empty() ? child.first : name + '.' + child.first;
 
+                        //
+                        // Let's print useless empty sections anyway ('cause
+                        // reading need 'em as of today
+                        //
                         //if( ! child.second.values.empty())
                         {
                            stream << '\n' << '[' << qualified << ']' << '\n';
@@ -487,7 +535,6 @@ namespace casual
 
                void Implementation::container_end( const char* const name)
                {
-
                   if( name)
                   {
                      m_name_stack.pop_back();
@@ -529,13 +576,13 @@ namespace casual
 
                std::string Implementation::encode( const std::vector<char>& value) const
                {
-                  //throw exception::archive::invalid::Node{ "Binary data not supported (yet)"};
+                  //
+                  // Binary data might be double-encoded
+                  //
                   return common::transcode::base64::encode( value);
                }
 
-
             } // writer
-
 
          } // xml
 
