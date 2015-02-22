@@ -70,14 +70,6 @@ namespace casual
                return result;
             }
 
-            void print( const std::vector< common::message::queue::information::Queue>& queues)
-            {
-               for( auto& q : queues)
-               {
-                  std::cerr << "queue - id: " << q.id << " error: " << q.error << " retries: " << q.retries << " #messages: " << q.messages << " name: " << q.name << std::endl;
-               }
-            }
-
          } // <unnamed>
       } // local
 

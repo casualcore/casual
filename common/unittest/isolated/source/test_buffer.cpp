@@ -10,6 +10,9 @@
 
 #include "common/buffer/pool.h"
 
+#include "common/message/server.h"
+#include "common/marshal/binary.h"
+
 
 namespace casual
 {
@@ -103,9 +106,67 @@ namespace casual
             pool::Holder::instance().clear();
 
          }
-      }
-	}
-}
+
+         TEST( casual_common_buffer, pool_get_user_size)
+         {
+            const Type type{ "X_OCTET", "binary"};
+            const std::string info( "test string");
+
+            auto handle = pool::Holder::instance().allocate( type, 128);
+            range::copy( info, handle);
+
+            auto holder = buffer::pool::Holder::instance().get( handle, 100);
+
+            EXPECT_TRUE( holder.transport == 100);
+            EXPECT_TRUE( holder.payload.memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload.memory.size();
+            EXPECT_TRUE( holder.payload.memory.data() == info);
+
+            buffer::pool::Holder::instance().deallocate( handle);
+         }
+
+         TEST( casual_common_buffer, message_call)
+         {
+
+            platform::binary_type marshal_buffer;
+
+            const std::string info( "test string");
+            const buffer::Type type{ "X_OCTET", "binary"};
+
+            // marshal
+            {
+               auto handle = pool::Holder::instance().allocate( type, 128);
+               range::copy( info, handle);
+
+               message::service::caller::Call message( buffer::pool::Holder::instance().get( handle, 100));
+
+               EXPECT_TRUE( message.buffer.transport == 100);
+               EXPECT_TRUE( message.buffer.payload.memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload.memory.size();
+               EXPECT_TRUE( message.buffer.payload.memory.data() == info);
+
+               marshal::output::Binary output( marshal_buffer);
+               output << message;
+
+               buffer::pool::Holder::instance().deallocate( handle);
+
+            }
+
+            // unmarshal
+            {
+
+               message::service::callee::Call message;
+
+               marshal::input::Binary input( marshal_buffer);
+               input >> message;
+
+               EXPECT_TRUE( message.buffer.type == type);
+               EXPECT_TRUE( message.buffer.memory.size() == 100);
+               EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
+            }
+         }
+
+      } // buffer
+	} // common
+} // casual
 
 
 

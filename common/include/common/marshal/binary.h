@@ -45,7 +45,7 @@ namespace casual
                }
 
                template< typename T>
-               Binary& operator << ( T& value)
+               Binary& operator << ( const T& value)
                {
                   write( value);
                   return *this;
@@ -104,7 +104,7 @@ namespace casual
                }
 
                template< typename T>
-               void write( std::vector< T>& value)
+               void write( const std::vector< T>& value)
                {
                   writePod( value.size());
 
@@ -114,7 +114,7 @@ namespace casual
                   }
                }
 
-               void write( std::string& value)
+               void write( const std::string& value)
                {
                   writePod( value.size());
 
@@ -123,7 +123,7 @@ namespace casual
                      std::end( value));
                }
 
-               void write( platform::binary_type& value)
+               void write( const platform::binary_type& value)
                {
                   writePod( value.size());
 

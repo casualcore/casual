@@ -66,13 +66,13 @@ namespace casual
 
                auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
 
-               common::call::Context::instance().sync( m_service, buffer, 0, buffer, size, 0);
+               common::call::Context::instance().sync( m_service, buffer, size, buffer, size, 0);
 
                const auto& replyqueue = m_reply.empty() ? message.reply : m_reply;
 
                if( ! replyqueue.empty())
                {
-                  auto data = common::buffer::pool::Holder::instance().extract( buffer);
+                  auto data = common::buffer::pool::Holder::instance().release( buffer);
 
                   queue::Message reply;
                   reply.payload.data = std::move( data.memory);

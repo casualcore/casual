@@ -101,7 +101,7 @@ private:
    //## additional private declarations protected section begin [200.200]
    //## additional private declarations protected section end   [200.200]
 
-   class Implementation;
+   struct Implementation;
    std::unique_ptr< Implementation> pimpl;
 
 

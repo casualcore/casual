@@ -305,7 +305,7 @@ namespace casual
 
          descriptor_type Context::async( const std::string& service, char* idata, long ilen, long flags)
          {
-            trace::internal::Scope trace( "calling::Context::asyncCall");
+            trace::internal::Scope trace( "calling::Context::async");
 
             local::validate::input( idata, ilen, flags);
 
@@ -322,7 +322,7 @@ namespace casual
             //
             buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
-            message::service::caller::Call message( buffer::pool::Holder::instance().get( idata));
+            message::service::caller::Call message( buffer::pool::Holder::instance().get( idata, ilen));
 
             //
             // Prepare message

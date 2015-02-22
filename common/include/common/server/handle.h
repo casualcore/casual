@@ -366,7 +366,7 @@ namespace casual
                      {
                         try
                         {
-                           result.buffer = buffer::pool::Holder::instance().extract( state.data);
+                           result.buffer = buffer::pool::Holder::instance().release( state.data, state.len);
                         }
                         catch( ...)
                         {

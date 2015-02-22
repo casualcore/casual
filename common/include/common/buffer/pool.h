@@ -57,8 +57,10 @@ namespace casual
                   virtual platform::raw_buffer_type insert( Payload payload) = 0;
 
                   virtual Payload& get( platform::const_raw_buffer_type handle) = 0;
+                  virtual payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
 
-                  virtual Payload extract( platform::const_raw_buffer_type handle) = 0;
+                  virtual Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
+                  virtual Payload release( platform::const_raw_buffer_type handle) = 0;
 
                   virtual void clear() = 0;
 
@@ -125,9 +127,27 @@ namespace casual
                      return m_pool.get( handle).payload;
                   }
 
-                  Payload extract( platform::const_raw_buffer_type handle) override
+                  payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
                   {
-                     return m_pool.extract( handle);
+                     auto& buffer = m_pool.get( handle);
+
+                     return { buffer.payload, buffer.size( user_size)};
+                  }
+
+                  Payload release( platform::const_raw_buffer_type handle) override
+                  {
+                     return m_pool.release( handle).payload;
+                  }
+
+                  Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
+                  {
+                     auto buffer = m_pool.release( handle);
+
+                     //
+                     // Adjust the buffer size, with regards to the user size
+                     //
+                     buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.size( user_size), std::end( buffer.payload.memory));
+                     return std::move( buffer.payload);
                   }
 
                   void clear() override
@@ -201,7 +221,10 @@ namespace casual
 
                Payload& get( platform::const_raw_buffer_type handle);
 
-               Payload extract( platform::const_raw_buffer_type handle);
+               payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size);
+
+               Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size);
+               Payload release( platform::const_raw_buffer_type handle);
 
                void clear();
 
@@ -259,19 +282,6 @@ namespace casual
                   return m_pool.back().payload.memory.data();
                }
 
-               Payload extract( platform::const_raw_buffer_type handle)
-               {
-                  auto buffer = find( handle);
-
-                  if( buffer != std::end( m_pool))
-                  {
-                     Payload result{ std::move( buffer->payload)};
-                     m_pool.erase( buffer);
-                     return result;
-                  }
-                  throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
-               }
-
                buffer_type& get( platform::const_raw_buffer_type handle)
                {
                   auto buffer = find( handle);
@@ -282,6 +292,22 @@ namespace casual
                   }
                   throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
                }
+
+
+               buffer_type release( platform::const_raw_buffer_type handle)
+               {
+                  auto buffer = find( handle);
+
+                  if( buffer != std::end( m_pool))
+                  {
+                     buffer_type result{ std::move( buffer->payload)};
+                     m_pool.erase( buffer);
+
+                     return result;
+                  }
+                  throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
+               }
+
 
                void clear()
                {
@@ -308,6 +334,8 @@ namespace casual
                   return std::find_if( std::begin( m_pool), std::end( m_pool),
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});
                }
+
+
 
                pool_type m_pool;
             };

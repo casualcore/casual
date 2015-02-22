@@ -84,23 +84,25 @@ namespace casual
                {
                   find( handle).deallocate( handle);
 
-                  if( log::internal::buffer)
-                  {
-                     log::internal::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
-                  }
+                   log::internal::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
+
                }
             }
 
             platform::raw_buffer_type Holder::insert( Payload&& payload)
             {
-               if( log::internal::buffer)
-               {
-                  log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size() << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
-               }
+               log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
+                     << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
+
 
                auto buffer = find( payload.type).insert( std::move( payload));
 
                return buffer;
+            }
+
+            payload::Send Holder::get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size)
+            {
+               return find( handle).get( handle, user_size);
             }
 
             Payload& Holder::get( platform::const_raw_buffer_type handle)
@@ -108,14 +110,22 @@ namespace casual
                return find( handle).get( handle);
             }
 
-            Payload Holder::extract( platform::const_raw_buffer_type handle)
-            {
-               auto result = find( handle).extract( handle);
 
-               if( log::internal::buffer)
-               {
-                  log::internal::buffer << "extract type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
-               }
+            Payload Holder::release( platform::const_raw_buffer_type handle)
+            {
+               auto result = find( handle).release( handle);
+
+               log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+
+               return result;
+            }
+
+            Payload Holder::release( platform::const_raw_buffer_type handle, platform::binary_size_type size)
+            {
+               auto result = find( handle).release( handle, size);
+
+               log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+
                return result;
             }
 
