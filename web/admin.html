@@ -28,7 +28,6 @@
                     <ul class="nav navbar-nav navbar-right">
                         <li ><input class="form-control" type="text" ng-model="searchText" placeholder="filter"/></li>
                         <li >&nbsp;&nbsp;&nbsp; </li>
-                        <li ng-class="buttonclass"><a href="" ng-click="commit()">{{buttonlabel}}</a></li>
                     </ul>
                 </div>
             </div>
@@ -48,8 +47,8 @@
                                <tr ng-repeat="server in servers | filter:searchText"/>
                                   <td><a href ng-click='showInstance( server.instances)'>{{server.alias}}</a></td>
                                   <td>{{server.path}}</td>
-                                  <td ng-show="editing"><input type="number" name="input" ng-model="server.instances.newlength"/></td>
-                                  <td ng-show="!editing">{{server.instances.length}}</td>
+                                  <td ng-show="server.editing"><input type="text" size="4" name="instanceLength" ng-enter="update()" ng-model="server.instances.viewlength"/></td>
+                                  <td ng-show="!server.editing" ng-click="server.editing=true; cancelTimeout()">{{server.instances.length}}</td>
                                </tr>
                             </table>
                          </div>
