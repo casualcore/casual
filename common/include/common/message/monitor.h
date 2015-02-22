@@ -46,16 +46,15 @@ namespace casual
                common::platform::time_point start;
                common::platform::time_point end;
 
-               template< typename A>
-               void marshal( A& archive)
-               {
+               CASUAL_CONST_CORRECT_MARSHAL
+               (
                   archive & parentService;
                   archive & service;
                   archive & callId;
                   archive & transactionId;
                   archive & start;
                   archive & end;
-               }
+               )
             };
          } // monitor
 

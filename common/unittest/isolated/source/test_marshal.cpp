@@ -22,7 +22,7 @@ namespace casual
 
 
 
-         TEST( casual_common, marshal_basic_io)
+         TEST( casual_common_marshal, basic_io)
          {
             long someLong = 3;
             std::string someString = "banan";
@@ -47,7 +47,7 @@ namespace casual
             EXPECT_TRUE( resultString == someString) << resultString;
          }
 
-         TEST( casual_common, marshal_binary)
+         TEST( casual_common_marshal, binary)
          {
             std::vector< char> binaryInput;
 
@@ -71,7 +71,7 @@ namespace casual
             EXPECT_TRUE( binaryInput == binaryOutput);
          }
 
-         TEST( casual_common, marshal_io)
+         TEST( casual_common_marshal, io)
          {
 
             message::service::Advertise serverConnect;
@@ -104,7 +104,7 @@ namespace casual
          }
 
 
-         TEST( casual_common, marshal_io_big_size)
+         TEST( casual_common_marshal, io_big_size)
          {
 
             message::service::Advertise serverConnect;
@@ -129,7 +129,7 @@ namespace casual
 
          }
 
-         TEST( casual_common, marshal_transaction_id_null)
+         TEST( casual_common_marshal, transaction_id_null)
          {
 
             transaction::ID xid_source;
@@ -148,7 +148,7 @@ namespace casual
             EXPECT_TRUE( xid_target.null());
          }
 
-         TEST( casual_common, marshal_transaction_id)
+         TEST( casual_common_marshal, transaction_id)
          {
 
             transaction::ID xid_source = transaction::ID::create();
@@ -169,6 +169,46 @@ namespace casual
 
          }
 
+
+         TEST( casual_common_marshal, message_call)
+         {
+
+            platform::binary_type buffer;
+
+            const std::string info( "test string");
+            const buffer::Type type{ "X_OCTET", "binary"};
+
+            // marshal
+            {
+
+               buffer::Payload payload{ type, 128};
+               range::copy( info, std::begin( payload.memory));
+
+               EXPECT_TRUE( payload.memory.size() == 128) << " payload.memory.size(): " <<  payload.memory.size();
+               EXPECT_TRUE( payload.memory.data() == info) << "payload.memory.data(): " <<  payload.memory.data();
+
+               message::service::caller::Call message{ buffer::payload::Send{ payload, 100}};
+
+               output::Binary output( buffer);
+               output << message;
+
+            }
+
+            // unmarshal
+            {
+
+               message::service::callee::Call message;
+
+               input::Binary input( buffer);
+               input >> message;
+
+               EXPECT_TRUE( message.buffer.type == type);
+               EXPECT_TRUE( message.buffer.memory.size() == 100);
+               EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
+
+            }
+
+         }
       }
 
    }

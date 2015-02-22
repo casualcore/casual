@@ -170,7 +170,7 @@ namespace casual
    //!
    //! @{
    template< typename M>
-   void casual_marshal_value( common::platform::time_point& value, M& marshler)
+   void casual_marshal_value( const common::platform::time_point& value, M& marshler)
    {
       auto time = value.time_since_epoch().count();
       marshler << time;
