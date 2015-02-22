@@ -8,6 +8,9 @@
 #ifndef CASUAL_COMMON_TRANSCODE_H_
 #define CASUAL_COMMON_TRANSCODE_H_
 
+
+#include "common/platform.h"
+
 #include <string>
 #include <vector>
 
@@ -83,12 +86,17 @@ namespace casual
 
          namespace hex
          {
-            std::string encode( const void* data, std::size_t bytes);
+            namespace detail
+            {
+               std::string encode( const void* data, std::size_t bytes);
+               void decode( const std::string& value, void* data);
+            } // detail
+
 
             template< typename Iter>
             std::string encode( Iter first, Iter last)
             {
-               return encode( &(*first), last - first);
+               return detail::encode( &(*first), last - first);
             }
 
             template< typename C>
@@ -96,6 +104,19 @@ namespace casual
             {
                return encode( std::begin( container), std::end( container));
             }
+
+
+            platform::binary_type decode( const std::string& value);
+
+
+            template< typename C>
+            void decode( const std::string& value, C&& container)
+            {
+               return detail::decode( value, &( *std::begin( container)));
+            }
+
+
+
 
          } // hex
       } // transcode

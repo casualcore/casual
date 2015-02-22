@@ -1,4 +1,4 @@
-1. Edit config with correct path on environment variable CASUAL_XATMI_ROOT
+1. Set environment for casual. i.e CASUAL_BUILD_HOME
 
 2. Download current version of nginx from http://nginx.org/download/ and build it.
 
@@ -7,7 +7,7 @@ Example:
 prompt$ wget http://nginx.org/download/nginx-1.5.2.tar.gz
 prompt$ tar xvf nginx-1.5.2.tar.gz
 prompt$ cd nginx-1.5.2/
-prompt$ ./configure --add-module=/Users/myname/git/casual/plugin [perhaps also with --without-http_rewrite_module]
+prompt$ ./configure --with-cc-opt=-Wno-deprecated --add-module=$CASUAL_BUILD_HOME/plugin [perhaps also with --without-http_rewrite_module]
 prompt$ make
 prompt$ sudo make install
 
@@ -24,7 +24,7 @@ user  myuser staff;
 Add location /casual to appropriate server entry.
 Ex.
         location /casual {
-                casual;
+                casual_pass;
         }
         
         

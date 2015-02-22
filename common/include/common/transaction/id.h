@@ -119,7 +119,7 @@ namespace casual
             }
 
             template< typename M>
-            friend void casual_marshal_value( ID& value, M& marshler);
+            friend void casual_marshal_value( const ID& value, M& marshler);
 
             template< typename M>
             friend void casual_unmarshal_value( ID& value, M& unmarshler);
@@ -157,7 +157,7 @@ namespace casual
          //!
          //! @{
          template< typename M>
-         void casual_marshal_value( ID& value, M& marshler)
+         void casual_marshal_value( const ID& value, M& marshler)
          {
             marshler << value.xid.formatID;
 

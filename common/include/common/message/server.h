@@ -219,11 +219,15 @@ namespace casual
 
                   buffer::Payload buffer;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  //
+                  // Only for input
+                  //
+                  template< typename A>
+                  void marshal( A& archive)
                   {
                      base_call::marshal( archive);
-                     archive & buffer;
-                  })
+                     archive >> buffer;
+                  }
                };
 
             } // callee
@@ -236,8 +240,8 @@ namespace casual
                struct Call: public base_call
                {
 
-                  Call( buffer::Payload& buffer)
-                        : buffer( buffer)
+                  Call( buffer::payload::Send&& buffer)
+                        : buffer( std::move( buffer))
                   {
                   }
 
@@ -247,13 +251,17 @@ namespace casual
                   Call( const Call&) = delete;
                   Call& operator = ( const Call&) = delete;
 
-                  buffer::Payload& buffer;
+                  buffer::payload::Send buffer;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  //
+                  // Only for output
+                  //
+                  template< typename A>
+                  void marshal( A& archive) const
                   {
                      base_call::marshal( archive);
-                     archive & buffer;
-                  })
+                     archive << buffer;
+                  }
                };
 
             }
