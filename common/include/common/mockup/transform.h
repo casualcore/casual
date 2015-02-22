@@ -65,24 +65,18 @@ namespace casual
                transformers_type m_transformers;
 
 
-
-               template< typename H>
-               static ipc::transform_type assign_helper( H&& handler)
-               {
-                  return basic_transform< typename std::decay< H>::type>{ std::forward< H>( handler)};
-               }
-
-
                template< typename H>
                void assign( H&& handler)
                {
-                  m_transformers.emplace( H::message_type::message_type, assign_helper( std::forward< H>( handler)));
+                  m_transformers.emplace(
+                        H::message_type::message_type,
+                        basic_transform< typename std::decay< H>::type>{ std::forward< H>( handler)});
                }
 
                template< typename H, typename... Hs>
                void assign( H&& handler, Hs&&... handlers)
                {
-                  m_transformers.emplace( H::message_type::message_type, assign_helper( std::forward< H>( handler)));
+                  assign( std::forward< H>( handler));
                   assign( std::forward< Hs>( handlers)...);
                }
 
@@ -107,7 +101,13 @@ namespace casual
 
                std::vector< common::ipc::message::Complete> operator () ( common::ipc::message::Complete& message)
                {
-                  return m_transformers.at( message.type)( message);
+                  auto found = range::find( m_transformers, message.type);
+
+                  if( found)
+                  {
+                     return found->second( message);
+                  }
+                  return {};
                }
 
 

@@ -13,6 +13,7 @@
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
+#include "common/mockup/domain.h"
 
 #include "common/flag.h"
 
@@ -32,211 +33,6 @@ namespace casual
       {
          namespace
          {
-            namespace transform
-            {
-               struct Lookup
-               {
-                  Lookup( std::vector< common::message::service::name::lookup::Reply> replies)
-                  {
-                     for( auto& reply : replies)
-                     {
-                        m_broker.emplace( reply.service.name, std::move( reply));
-                     }
-                  }
-
-                  using message_type = common::message::service::name::lookup::Request;
-                  using reply_type = common::message::service::name::lookup::Reply;
-
-                  std::vector< ipc::message::Complete> operator () ( message_type message)
-                  {
-                     common::message::service::name::lookup::Reply reply;
-
-                     auto found = range::find( m_broker, message.requested);
-
-                     if( found)
-                     {
-                        reply = found->second;
-                     }
-
-                     reply.correlation = message.correlation;
-
-                     std::vector< ipc::message::Complete> result;
-                     result.emplace_back( marshal::complete( reply));
-                     return result;
-                  }
-
-                  std::map< std::string, common::message::service::name::lookup::Reply> m_broker;
-               };
-
-               namespace transaction
-               {
-
-                  struct ClientConnect
-                  {
-                     using message_type = common::message::transaction::client::connect::Request;
-                     using reply_type = common::message::transaction::client::connect::Reply;
-
-                     std::vector< ipc::message::Complete> operator () ( message_type message)
-                     {
-                        reply_type reply;
-
-                        reply.correlation = message.correlation;
-                        reply.domain = "unittest-domain";
-                        reply.transactionManagerQueue = common::mockup::ipc::transaction::manager::id();
-
-                        {
-                           common::message::transaction::resource::Manager rm;
-                           rm.key = "rm-mockup";
-                           reply.resourceManagers.push_back( std::move( rm));
-                        }
-
-                        std::vector< ipc::message::Complete> result;
-                        result.emplace_back( marshal::complete( reply));
-                        return result;
-                     }
-                  };
-
-                  struct Begin
-                  {
-                     using message_type = common::message::transaction::begin::Request;
-                     using reply_type = common::message::transaction::begin::Reply;
-
-                     std::vector< ipc::message::Complete> operator () ( message_type message)
-                     {
-                        reply_type reply;
-
-                        reply.correlation = message.correlation;
-                        reply.process = common::mockup::ipc::transaction::manager::queue().server();
-                        reply.state = XA_OK;
-                        reply.trid = message.trid;
-
-                        std::vector< ipc::message::Complete> result;
-                        result.emplace_back( marshal::complete( reply));
-                        return result;
-                     }
-                  };
-
-                  struct Commit
-                  {
-                     using message_type = common::message::transaction::commit::Request;
-                     using reply_type = common::message::transaction::commit::Reply;
-
-                     std::vector< ipc::message::Complete> operator () ( message_type message)
-                     {
-                        std::vector< ipc::message::Complete> result;
-
-                        {
-                           common::message::transaction::prepare::Reply reply;
-                           reply.correlation = message.correlation;
-                           reply.resource = 42;
-                           reply.state = TX_OK;
-                           reply.trid = message.trid;
-
-                           result.emplace_back( marshal::complete( reply));
-                        }
-
-                        {
-                           common::message::transaction::commit::Reply reply;
-
-                           reply.correlation = message.correlation;
-                           reply.process = common::mockup::ipc::transaction::manager::queue().server();
-                           reply.state = XA_OK;
-                           reply.trid = message.trid;
-
-                           result.emplace_back( marshal::complete( reply));
-                        }
-                        return result;
-                     }
-                  };
-
-                  struct Rollback
-                  {
-                     using message_type = common::message::transaction::rollback::Request;
-                     using reply_type = common::message::transaction::rollback::Reply;
-
-                     std::vector< ipc::message::Complete> operator () ( message_type message)
-                     {
-                        reply_type reply;
-
-                        reply.correlation = message.correlation;
-                        reply.process = common::mockup::ipc::transaction::manager::queue().server();
-                        reply.state = XA_OK;
-                        reply.trid = message.trid;
-
-                        std::vector< ipc::message::Complete> result;
-                        result.emplace_back( marshal::complete( reply));
-                        return result;
-                     }
-                  };
-
-               } // transaction
-
-
-               struct ServiceCall
-               {
-                  using message_type = common::message::service::callee::Call;
-                  using reply_type = common::message::service::Reply;
-
-                  ServiceCall( std::vector< std::pair< std::string, reply_type>> replies)
-                  {
-                     for( auto& reply : replies)
-                     {
-                        m_server.emplace( reply.first, std::move( reply.second));
-                     }
-                  }
-
-                  std::vector< ipc::message::Complete> operator () ( message_type message)
-                  {
-                     if( common::flag< TPNOREPLY>( message.flags))
-                     {
-                        //common::log::error << "message.descriptor: " << message.descriptor << " correlation: " << message.correlation << std::endl;
-                        return {};
-                     }
-
-                     common::message::service::Reply reply;
-                     auto found = range::find( m_server, message.service.name);
-
-                     if( found)
-                     {
-                        reply = found->second;
-                     }
-
-                     reply.buffer.memory = message.buffer.memory;
-                     reply.buffer.type = message.buffer.type;
-                     reply.correlation = message.correlation;
-                     reply.transaction.trid = message.trid;
-                     reply.descriptor = message.descriptor;
-
-
-                     std::vector< ipc::message::Complete> result;
-                     result.emplace_back( marshal::complete( reply));
-                     return result;
-                  }
-
-                  std::map< std::string, reply_type> m_server;
-               };
-
-
-
-
-
-               common::mockup::transform::Handler broker( std::vector< common::message::service::name::lookup::Reply> replies)
-               {
-                  return common::mockup::transform::Handler{ Lookup{ std::move( replies)}, transaction::ClientConnect{}};
-               }
-
-               common::mockup::transform::Handler server( std::vector< std::pair< std::string, common::message::service::Reply>> replies)
-               {
-                  return common::mockup::transform::Handler{ ServiceCall{ std::move( replies)}};
-               }
-
-               common::mockup::transform::Handler tm()
-               {
-                  return common::mockup::transform::Handler{ transaction::Begin{}, transaction::Commit{}, transaction::Rollback{}};
-               }
-
-            } // transform
-
 
             struct Domain
             {
@@ -246,16 +42,16 @@ namespace casual
                // Link 'output' from mockup-broker-queue to our "broker"
                //
                Domain()
-                  : server{ ipc::receive::id(), transform::server({
+                  : server{ ipc::receive::id(), mockup::create::server({
                      createService( "service_1"),
                      createService( "timeout_2", TPESVCFAIL)
                   })},
-                  broker{ ipc::receive::id(), transform::broker({
-                     createName( "service_1", server.id()),
-                     createName( "timeout_2", server.id(), std::chrono::milliseconds{ 2})
+                  broker{ ipc::receive::id(), mockup::create::broker({
+                     mockup::create::lookup::reply( "service_1", server.id()),
+                     mockup::create::lookup::reply( "timeout_2", server.id(), std::chrono::milliseconds{ 2})
                   })},
                   link_broker_reply{ mockup::ipc::broker::queue().receive().id(), broker.id()},
-                  tm{ ipc::receive::id(), transform::tm()},
+                  tm{ ipc::receive::id(), mockup::create::transaction::manager()},
                   // link the global mockup-transaction-manager-queue's output to 'our' tm
                   link_tm_reply{ mockup::ipc::transaction::manager::queue().receive().id(), tm.id()}
                {
@@ -269,26 +65,13 @@ namespace casual
                mockup::ipc::Link link_tm_reply;
 
             private:
-               static common::message::service::name::lookup::Reply createName(
-                     const std::string& service,
-                     common::platform::queue_id_type queue,
-                     std::chrono::microseconds timeout = std::chrono::microseconds::zero())
-               {
-                  common::message::service::name::lookup::Reply reply;
-                  reply.process.queue = queue;
-                  reply.process.pid = common::process::id();
-                  reply.service.name = service;
-                  reply.service.timeout = timeout;
 
-                  return reply;
-               }
-
-               static std::pair< std::string, common::message::service::Reply> createService(
+               static std::pair< std::string, common::message::service::call::Reply> createService(
                      const std::string& service,
-                     int value = TPSUCCESS)
+                     int error = 0)
                {
-                  common::message::service::Reply reply;
-                  reply.value = value;
+                  common::message::service::call::Reply reply;
+                  reply.error = error;
 
                   return std::make_pair( service, std::move( reply));
                }

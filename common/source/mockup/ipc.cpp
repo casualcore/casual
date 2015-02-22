@@ -190,10 +190,20 @@ namespace casual
                      {
                         if( state.transform)
                         {
-                           for( auto& complete : state.transform( message.front()))
+                           auto transformed = state.transform( message.front());
+
+                           if( transformed.empty())
                            {
-                              state.cache.push_back( std::move( complete));
+                              state.cache.push_back( std::move( message.front()));
                            }
+                           else
+                           {
+                              for( auto& complete : state.transform( message.front()))
+                              {
+                                 state.cache.push_back( std::move( complete));
+                              }
+                           }
+
                         }
                         else
                         {

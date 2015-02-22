@@ -47,15 +47,15 @@ namespace casual
 
                }
 
-               void Default::reply( platform::queue_id_type id, message::service::Reply& message)
+               void Default::reply( platform::queue_id_type id, message::service::call::Reply& message)
                {
                   reply_writer writer{ id };
                   writer( message);
                }
 
-               void Default::ack( const message::service::callee::Call& message)
+               void Default::ack( const message::service::call::callee::Request& message)
                {
-                  message::service::ACK ack;
+                  message::service::call::ACK ack;
                   ack.process = process::handle();
                   ack.service = message.service.name;
                   blocking_broker_writer brokerWriter;
@@ -76,36 +76,48 @@ namespace casual
                   }
                }
 
-               void Default::transaction( const message::service::callee::Call& message, const server::Service& service, const platform::time_point& now)
+               void Default::transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now)
                {
                   log::internal::debug << "service: " << service << std::endl;
+
+                  //
+                  // We add callers transaction (can be null-trid).
+                  //
+                  transaction::Context::instance().caller = message.trid;
 
                   switch( service.transaction)
                   {
                      case server::Service::cAuto:
                      {
-                        transaction::Context::instance().joinOrStart( message.trid);
-
+                        if( message.trid)
+                        {
+                           transaction::Context::instance().join( message.trid);
+                        }
+                        else
+                        {
+                           transaction::Context::instance().start();
+                        }
                         break;
                      }
                      case server::Service::cJoin:
                      {
                         if( message.trid)
                         {
-                           transaction::Context::instance().joinOrStart( message.trid);
+                           transaction::Context::instance().join( message.trid);
                         }
-
                         break;
                      }
                      case server::Service::cAtomic:
                      {
-                        transaction::Context::instance().joinOrStart( common::transaction::ID::create());
+                        transaction::Context::instance().start();
                         break;
                      }
+                     case server::Service::cNone:
                      default:
                      {
                         //
                         // We don't start or join any transactions
+                        // (technically we join a null-trid)
                         //
                         break;
                      }
@@ -122,9 +134,9 @@ namespace casual
 
                }
 
-               void Default::transaction( message::service::Reply& message)
+               void Default::transaction( message::service::call::Reply& message, int return_state)
                {
-                  transaction::Context::instance().finalize( message);
+                  transaction::Context::instance().finalize( message, return_state);
                }
 
             } // policy

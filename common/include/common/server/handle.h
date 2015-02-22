@@ -100,7 +100,7 @@ namespace casual
             {
                typedef P policy_type;
 
-               typedef message::service::callee::Call message_type;
+               typedef message::service::call::callee::Request message_type;
 
                basic_call( basic_call&&) = default;
                basic_call& operator = ( basic_call&&) = default;
@@ -297,14 +297,14 @@ namespace casual
                      //
                      // Prepare reply
                      //
-                     message::service::Reply reply = transform.reply( state.jump.state, message);
+                     auto reply = transform.reply( state.jump.state, message);
 
 
                      //
                      // Do transaction stuff...
                      // - commit/rollback transaction if service has "auto-transaction"
                      //
-                     m_policy.transaction( reply);
+                     m_policy.transaction( reply, state.jump.state.value);
 
                      //
                      // Send ACK to broker
@@ -354,12 +354,11 @@ namespace casual
 
                struct transform_t
                {
-                  message::service::Reply reply( server::State::jump_t::state_t& state, const message::service::callee::Call& message)
+                  message::service::call::Reply reply( server::State::jump_t::state_t& state, const message::service::call::callee::Request& message)
                   {
-                     message::service::Reply result;
+                     message::service::call::Reply result;
 
                      result.correlation = message.correlation;
-                     result.value = state.value;
                      result.code = state.code;
                      result.descriptor = message.descriptor;
 
@@ -367,11 +366,11 @@ namespace casual
                      {
                         try
                         {
-                           result.buffer = buffer::pool::Holder::instance().extract( state.data);
+                           result.buffer = buffer::pool::Holder::instance().release( state.data, state.len);
                         }
                         catch( ...)
                         {
-                           result.value = TPESVCERR;
+                           result.error = TPESVCERR;
                         }
                      }
                      else
@@ -384,7 +383,7 @@ namespace casual
 
                } transform;
 
-               TPSVCINFO transformServiceInformation( message::service::callee::Call& message) const
+               TPSVCINFO transformServiceInformation( message::service::call::callee::Request& message) const
                {
                   TPSVCINFO result;
 
@@ -425,14 +424,14 @@ namespace casual
 
                   void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
-                  void reply( platform::queue_id_type id, message::service::Reply& message);
+                  void reply( platform::queue_id_type id, message::service::call::Reply& message);
 
-                  void ack( const message::service::callee::Call& message);
+                  void ack( const message::service::call::callee::Request& message);
 
                   void statistics( platform::queue_id_type id, message::monitor::Notify& message);
 
-                  void transaction( const message::service::callee::Call& message, const server::Service& service, const platform::time_point& now);
-                  void transaction( message::service::Reply& message);
+                  void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
+                  void transaction( message::service::call::Reply& message, int return_state);
 
                private:
                   typedef queue::blocking::Writer reply_writer;
@@ -464,16 +463,16 @@ namespace casual
                      connect( std::move( services), m_state);
                   }
 
-                  void reply( platform::queue_id_type id, message::service::Reply& message)
+                  void reply( platform::queue_id_type id, message::service::call::Reply& message)
                   {
                      queue_writer writer{ id, m_state};
                      writer( message);
 
                   }
 
-                  void ack( const message::service::callee::Call& message)
+                  void ack( const message::service::call::callee::Request& message)
                   {
-                     message::service::ACK ack;
+                     message::service::call::ACK ack;
                      ack.process = common::process::handle();
                      ack.service = message.service.name;
                      queue_writer brokerWriter( ipc::broker::id(), m_state);
@@ -486,11 +485,11 @@ namespace casual
                      // no-op
                   }
 
-                  void transaction( const message::service::callee::Call&, const server::Service&, const common::platform::time_point&)
+                  void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
                   {
                      // no-op
                   }
-                  void transaction( message::service::Reply& message)
+                  void transaction( message::service::call::Reply& message, int return_state)
                   {
                      // no-op
                   }

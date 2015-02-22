@@ -445,6 +445,12 @@ namespace casual
          }
 
          template< typename Iter>
+         auto make_reverse( Range< Iter> range) -> decltype( make( std::reverse_iterator< Iter>( range.last), std::reverse_iterator< Iter>( range.first)))
+         {
+            return make( std::reverse_iterator< Iter>( range.last), std::reverse_iterator< Iter>( range.first));
+         }
+
+         template< typename Iter>
          Range< Iter> make( Range< Iter> range)
          {
             return range;

@@ -106,6 +106,13 @@ namespace casual
          EXPECT_TRUE( transcode::hex::encode( binary) == "ff00f00a") << "hex: " << transcode::hex::encode( binary);
       }
 
+      TEST( casual_common_transcode, hex_decode)
+      {
+         auto binary = transcode::hex::decode( "ff00f00a");
+
+         EXPECT_TRUE( transcode::hex::encode( binary) == "ff00f00a") << "hex: " << transcode::hex::encode( binary);
+      }
+
    }
 }
 

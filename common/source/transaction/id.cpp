@@ -44,7 +44,11 @@ namespace casual
          } // local
 
 
-         ID::ID()
+         ID::ID() : ID( process::Handle{})
+         {
+         }
+
+         ID::ID( process::Handle owner) : m_owner( std::move( owner))
          {
             xid.formatID = Format::cNull;
             xid.gtrid_length = 0;

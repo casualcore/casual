@@ -23,10 +23,7 @@ namespace casual
       {
          std::string string( const platform::uuid_type& uuid)
          {
-            platform::uuid_string_type buffer;
-            uuid_unparse_lower( uuid, buffer);
-
-            return buffer;
+            return transcode::hex::encode( uuid);
          }
 
          std::string string( const Uuid& uuid)
@@ -62,9 +59,9 @@ namespace casual
 
 		Uuid::Uuid( const std::string& uuid)
 		{
-		   assert( uuid.size() + 1 == sizeof( platform::uuid_string_type));
+		   assert( uuid.size() == sizeof( uuid_type) * 2);
 
-		   assert( uuid_parse( uuid.c_str(), m_uuid) == 0);
+		   transcode::hex::decode( uuid, m_uuid);
 		}
 
 

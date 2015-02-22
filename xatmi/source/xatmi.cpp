@@ -61,22 +61,6 @@ char* tprealloc( const char* ptr, long size)
 
 }
 
-namespace local
-{
-   namespace
-   {
-      template< typename Iter, typename Out>
-      void copy_max( const Iter start, Iter end, typename std::iterator_traits< Iter>::difference_type max, Out out)
-      {
-         if( end - start > max)
-            end = start + max;
-
-         std::copy( start, end, out);
-      }
-
-   }
-
-}
 
 long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
@@ -163,10 +147,6 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
 
    try
    {
-      //
-      // TODO: if needed size is less than current size, shall vi reduce it ?
-      //
-
       return casual::common::call::Context::instance().async( svc, idata, ilen, flags);
    }
    catch( ...)

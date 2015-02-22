@@ -81,7 +81,7 @@ namespace casual
                id_type destination() const;
 
             private:
-               struct Implementation;
+               class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
 

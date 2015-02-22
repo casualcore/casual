@@ -68,8 +68,6 @@ namespace casual
                public:
                   virtual ~base_handler() = default;
                   virtual void marshal( ipc::message::Complete& complete) = 0;
-
-
                };
 
                template< typename H>
@@ -99,7 +97,7 @@ namespace casual
                   }
 
                private:
-
+                  /*
                   struct Transform
                   {
                      Transform( ipc::message::Complete& complete) : complete( complete) {}
@@ -114,32 +112,27 @@ namespace casual
 
                      ipc::message::Complete& complete;
                   };
+                  */
 
                   handler_type m_handler;
                };
 
-
                typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
-
-               template< typename H>
-               static std::unique_ptr< base_handler> assign_helper( H&& handler)
-               {
-                  // TODO: change to std::make_unique
-                  return std::unique_ptr< base_handler>(
-                        new handle_holder< H>{ std::forward< H>( handler)});
-
-               }
 
                template< typename H>
                static void assign( handlers_type& result, H&& handler)
                {
-                  result.emplace( H::message_type::message_type, assign_helper( std::forward< H>( handler)));
+                  assert( result.count( H::message_type::message_type) == 0);
+
+                  result.emplace( H::message_type::message_type,
+                        std::unique_ptr< base_handler>(
+                              new handle_holder< H>{ std::forward< H>( handler)}));
                }
 
                template< typename H, typename... Args>
                static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
                {
-                  result.emplace( H::message_type::message_type, assign_helper( std::forward< H>( handler)));
+                  assign( result, std::forward< H>( handler));
                   assign( result, std::forward< Args>( handlers)...);
                }
 

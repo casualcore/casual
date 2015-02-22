@@ -132,6 +132,7 @@ namespace casual
 
             descriptor_type async( const std::string& service, char* idata, long ilen, long flags);
 
+
             void reply( descriptor_type& descriptor, char** odata, long& olen, long flags);
 
             void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
@@ -152,7 +153,7 @@ namespace casual
 
             Context();
 
-            bool receive( message::service::Reply& reply, descriptor_type descriptor, long flags);
+            bool receive( message::service::call::Reply& reply, descriptor_type descriptor, long flags);
 
             State m_state;
 

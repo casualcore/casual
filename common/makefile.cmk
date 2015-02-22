@@ -32,14 +32,20 @@ casual_common_objectfiles = [
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/handle.cpp'),
+    
     Compile( 'source/call/context.cpp'),
     Compile( 'source/call/timeout.cpp'),
+    
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),
     Compile( 'source/buffer/transport.cpp'),
+    Compile( 'source/buffer/type.cpp'),
+    
     Compile( 'source/transaction/context.cpp'),
     Compile( 'source/transaction/id.cpp'),
     Compile( 'source/transaction/resource.cpp'),
+    Compile( 'source/transaction/transaction.cpp'),
+    
     Compile( 'source/ipc.cpp'),
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
@@ -79,8 +85,8 @@ install_libs.append( lib_terminal)
 #
 mockup = LinkLibrary( 'bin/casual-mockup', 
      [
-       #Compile( 'source/mockup.cpp', 'obj/mockup.o'),
        Compile( 'source/mockup/ipc.cpp'),
+       Compile( 'source/mockup/domain.cpp'),
      ],
      [ common])
 
