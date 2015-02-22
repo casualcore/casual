@@ -72,8 +72,8 @@ namespace casual
 
             struct Call
             {
-               using message_type = common::message::service::callee::Call;
-               using reply_type = common::message::service::Reply;
+               using message_type = common::message::service::call::callee::Request;
+               using reply_type = common::message::service::call::Reply;
 
                Call( std::vector< std::pair< std::string, reply_type>> replies);
 
@@ -131,7 +131,7 @@ namespace casual
             transform::Handler broker();
 
 
-            transform::Handler server( std::vector< std::pair< std::string, message::service::Reply>> replies);
+            transform::Handler server( std::vector< std::pair< std::string, message::service::call::Reply>> replies);
 
             namespace transaction
             {

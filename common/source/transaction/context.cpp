@@ -294,7 +294,7 @@ namespace casual
          }
 
 
-         void Context::update( message::service::Reply& reply)
+         void Context::update( message::service::call::Reply& reply)
          {
             if( reply.transaction.trid)
             {
@@ -323,7 +323,7 @@ namespace casual
             }
          }
 
-         void Context::finalize( message::service::Reply& message, int return_state)
+         void Context::finalize( message::service::call::Reply& message, int return_state)
          {
             common::trace::Scope trace{ "transaction::Context::finalize", common::log::internal::transaction};
 

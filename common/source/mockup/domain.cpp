@@ -106,7 +106,7 @@ namespace casual
                   return {};
                }
 
-               common::message::service::Reply reply;
+               common::message::service::call::Reply reply;
                auto found = range::find( m_server, message.service.name);
 
                if( found)
@@ -223,7 +223,7 @@ namespace casual
                return transform::Handler{ broker::server::Connect{}, broker::client::Connect{}};
             }
 
-            common::mockup::transform::Handler server( std::vector< std::pair< std::string, message::service::Reply>> replies)
+            common::mockup::transform::Handler server( std::vector< std::pair< std::string, message::service::call::Reply>> replies)
             {
                return transform::Handler{ service::Call{ std::move( replies)}};
             }

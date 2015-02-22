@@ -168,150 +168,156 @@ namespace casual
                } // lookup
             } // name
 
-            struct base_call : basic_message< cServiceCall>
+
+            namespace call
             {
 
-               base_call() = default;
-
-               base_call( base_call&&) = default;
-               base_call& operator = ( base_call&&) = default;
-
-               base_call( const base_call&) = delete;
-               base_call& operator = ( const base_call&) = delete;
-
-               platform::descriptor_type descriptor = 0;
-               Service service;
-               process::Handle reply;
-               common::Uuid execution;
-               std::string caller;
-               common::transaction::ID trid;
-               std::int64_t flags;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  archive & descriptor;
-                  archive & service;
-                  archive & reply;
-                  archive & execution;
-                  archive & caller;
-                  archive & trid;
-                  archive & flags;
-               })
-            };
-
-            namespace callee
-            {
-
-               //!
-               //! Represents a service call. via tp(a)call, from the callee's perspective
-               //! @todo: change to service::call::callee::Request
-               //!
-               struct Call: public base_call
+               struct base_call : basic_message< cServiceCall>
                {
 
-                  Call() = default;
+                  base_call() = default;
 
-                  Call( Call&&) = default;
-                  Call& operator = ( Call&&) = default;
+                  base_call( base_call&&) = default;
+                  base_call& operator = ( base_call&&) = default;
 
-                  Call( const Call&) = delete;
-                  Call& operator = ( const Call&) = delete;
+                  base_call( const base_call&) = delete;
+                  base_call& operator = ( const base_call&) = delete;
 
+                  platform::descriptor_type descriptor = 0;
+                  Service service;
+                  process::Handle reply;
+                  common::Uuid execution;
+                  std::string caller;
+                  common::transaction::ID trid;
+                  std::int64_t flags;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & descriptor;
+                     archive & service;
+                     archive & reply;
+                     archive & execution;
+                     archive & caller;
+                     archive & trid;
+                     archive & flags;
+                  })
+               };
+
+               namespace callee
+               {
+
+                  //!
+                  //! Represents a service call. via tp(a)call, from the callee's perspective
+                  //!
+                  struct Request : public base_call
+                  {
+
+                     Request() = default;
+
+                     Request( Request&&) = default;
+                     Request& operator = ( Request&&) = default;
+
+                     Request( const Request&) = delete;
+                     Request& operator = ( const Request&) = delete;
+
+                     buffer::Payload buffer;
+
+                     //
+                     // Only for input
+                     //
+                     template< typename A>
+                     void marshal( A& archive)
+                     {
+                        base_call::marshal( archive);
+                        archive >> buffer;
+                     }
+                  };
+
+               } // callee
+
+               namespace caller
+               {
+                  //!
+                  //! Represents a service call. via tp(a)call, from the callers perspective
+                  //!
+                  struct Request : public base_call
+                  {
+
+                     Request( buffer::payload::Send&& buffer)
+                           : buffer( std::move( buffer))
+                     {
+                     }
+
+                     Request( Request&&) = default;
+                     Request& operator = ( Request&&) = default;
+
+                     Request( const Request&) = delete;
+                     Request& operator = ( const Request&) = delete;
+
+                     buffer::payload::Send buffer;
+
+                     //
+                     // Only for output
+                     //
+                     template< typename A>
+                     void marshal( A& archive) const
+                     {
+                        base_call::marshal( archive);
+                        archive << buffer;
+                     }
+                  };
+
+               }
+
+               //!
+               //! Represent service reply.
+               //! @todo: change to service::call::Reply
+               //!
+               struct Reply :  basic_message< cServiceReply>
+               {
+
+                  Reply() = default;
+                  Reply( Reply&&) noexcept = default;
+                  Reply& operator = ( Reply&&) noexcept = default;
+                  Reply( const Reply&) = default;
+                  Reply& operator = ( const Reply&) = default;
+
+                  int descriptor = 0;
+                  int error = 0;
+                  long code = 0;
                   buffer::Payload buffer;
+                  Transaction transaction;
 
-                  //
-                  // Only for input
-                  //
-                  template< typename A>
-                  void marshal( A& archive)
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     base_call::marshal( archive);
-                     archive >> buffer;
-                  }
+                     archive & descriptor;
+                     archive & error;
+                     archive & code;
+                     archive & buffer;
+                     archive & transaction;
+                  })
+
                };
 
-            } // callee
-
-            namespace caller
-            {
                //!
-               //! Represents a service call. via tp(a)call, from the callers perspective
-               //! @todo: change to service::call::caller::Request
-               struct Call: public base_call
+               //! Represent the reply to the broker when a server is done handling
+               //! a service-call and is ready for new calls
+               //!
+               struct ACK : basic_message< cServiceAcknowledge>
                {
 
-                  Call( buffer::payload::Send&& buffer)
-                        : buffer( std::move( buffer))
+                  std::string service;
+                  process::Handle process;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                  }
-
-                  Call( Call&&) = default;
-                  Call& operator = ( Call&&) = default;
-
-                  Call( const Call&) = delete;
-                  Call& operator = ( const Call&) = delete;
-
-                  buffer::payload::Send buffer;
-
-                  //
-                  // Only for output
-                  //
-                  template< typename A>
-                  void marshal( A& archive) const
-                  {
-                     base_call::marshal( archive);
-                     archive << buffer;
-                  }
+                     archive & service;
+                     archive & process;
+                  })
                };
 
-            }
+            } // call
 
-            //!
-            //! Represent service reply.
-            //! @todo: change to service::call::Reply
-            //!
-            struct Reply :  basic_message< cServiceReply>
-            {
-
-               Reply() = default;
-               Reply( Reply&&) noexcept = default;
-               Reply& operator = ( Reply&&) noexcept = default;
-               Reply( const Reply&) = default;
-               Reply& operator = ( const Reply&) = default;
-
-               int descriptor = 0;
-               int error = 0;
-               long code = 0;
-               buffer::Payload buffer;
-               Transaction transaction;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  archive & descriptor;
-                  archive & error;
-                  archive & code;
-                  archive & buffer;
-                  archive & transaction;
-               })
-
-            };
-
-            //!
-            //! Represent the reply to the broker when a server is done handling
-            //! a service-call and is ready for new calls
-            //!
-            struct ACK : basic_message< cServiceAcknowledge>
-            {
-
-               std::string service;
-               process::Handle process;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  archive & service;
-                  archive & process;
-               })
-            };
          } // service
       } // message
    } //common

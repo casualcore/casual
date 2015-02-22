@@ -99,9 +99,9 @@ namespace casual
             }
 
 
-            message::service::callee::Call callMessage( platform::queue_id_type id)
+            message::service::call::callee::Request callMessage( platform::queue_id_type id)
             {
-               message::service::callee::Call message;
+               message::service::call::callee::Request message;
 
                message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
                message.descriptor = 10;
@@ -217,7 +217,7 @@ namespace casual
 
 
          queue::blocking::Reader reader( caller.receive());
-         message::service::Reply message;
+         message::service::call::Reply message;
 
          reader( message);
          EXPECT_TRUE( message.buffer.memory.data() == local::replyMessage());
@@ -244,7 +244,7 @@ namespace casual
          }
 
          queue::blocking::Reader broker( mockup::ipc::broker::queue().receive());
-         message::service::ACK message;
+         message::service::call::ACK message;
 
          broker( message);
          EXPECT_TRUE( message.service == "test_service");
@@ -341,9 +341,9 @@ namespace casual
 
             namespace call
             {
-               message::service::callee::Call request( platform::queue_id_type queue, std::string service, transaction::ID trid = transaction::ID{})
+               message::service::call::callee::Request request( platform::queue_id_type queue, std::string service, common::transaction::ID trid = common::transaction::ID{})
                {
-                  message::service::callee::Call message;
+                  message::service::call::callee::Request message;
 
                   message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
                   message.descriptor = 10;
@@ -355,10 +355,10 @@ namespace casual
                }
 
                template< typename R>
-               message::service::Reply reply( R& receive)
+               message::service::call::Reply reply( R& receive)
                {
                   queue::blocking::Reader reader( receive);
-                  message::service::Reply message;
+                  message::service::call::Reply message;
                   reader( message);
 
                   return message;

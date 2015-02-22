@@ -177,7 +177,7 @@ namespace casual
          struct ACK : public Base
          {
 
-            typedef common::message::service::ACK message_type;
+            typedef common::message::service::call::ACK message_type;
 
             using Base::Base;
 
@@ -204,13 +204,13 @@ namespace casual
 
             void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
-            void reply( common::platform::queue_id_type id, common::message::service::Reply& message);
+            void reply( common::platform::queue_id_type id, common::message::service::call::Reply& message);
 
-            void ack( const common::message::service::callee::Call& message);
+            void ack( const common::message::service::call::callee::Request& message);
 
-            void transaction( const common::message::service::callee::Call&, const common::server::Service&, const common::platform::time_point&);
+            void transaction( const common::message::service::call::callee::Request&, const common::server::Service&, const common::platform::time_point&);
 
-            void transaction( const common::message::service::Reply& message, int return_state);
+            void transaction( const common::message::service::call::Reply& message, int return_state);
 
             void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message);
 

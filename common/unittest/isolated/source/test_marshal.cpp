@@ -187,7 +187,7 @@ namespace casual
                EXPECT_TRUE( payload.memory.size() == 128) << " payload.memory.size(): " <<  payload.memory.size();
                EXPECT_TRUE( payload.memory.data() == info) << "payload.memory.data(): " <<  payload.memory.data();
 
-               message::service::caller::Call message{ buffer::payload::Send{ payload, 100}};
+               message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100}};
 
                output::Binary output( buffer);
                output << message;
@@ -197,7 +197,7 @@ namespace casual
             // unmarshal
             {
 
-               message::service::callee::Call message;
+               message::service::call::callee::Request message;
 
                input::Binary input( buffer);
                input >> message;
