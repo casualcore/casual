@@ -46,9 +46,9 @@ namespace casual
             Moved& operator = ( const Moved&) = delete;
 
 
-            explicit operator bool () { return m_moved;}
+            explicit operator bool () const noexcept { return m_moved;}
 
-            void release() { m_moved = true;}
+            void release() noexcept { m_moved = true;}
 
          private:
             bool m_moved = false;
