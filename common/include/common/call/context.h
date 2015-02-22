@@ -153,7 +153,7 @@ namespace casual
 
             Context();
 
-            bool receive( message::service::Reply& reply, descriptor_type descriptor, long flags);
+            bool receive( message::service::call::Reply& reply, descriptor_type descriptor, long flags);
 
             State m_state;
 

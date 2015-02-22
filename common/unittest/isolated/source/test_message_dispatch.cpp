@@ -79,7 +79,7 @@ namespace casual
             {
                message::dispatch::Handler handler{ local::TestHandler()};
 
-               message::service::ACK message;
+               message::service::call::ACK message;
                ipc::message::Complete complete = marshal::complete( message);
 
                //

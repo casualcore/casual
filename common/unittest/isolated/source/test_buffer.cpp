@@ -137,7 +137,7 @@ namespace casual
                auto handle = pool::Holder::instance().allocate( type, 128);
                range::copy( info, handle);
 
-               message::service::caller::Call message( buffer::pool::Holder::instance().get( handle, 100));
+               message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
 
                EXPECT_TRUE( message.buffer.transport == 100);
                EXPECT_TRUE( message.buffer.payload.memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload.memory.size();
@@ -153,7 +153,7 @@ namespace casual
             // unmarshal
             {
 
-               message::service::callee::Call message;
+               message::service::call::callee::Request message;
 
                marshal::input::Binary input( marshal_buffer);
                input >> message;

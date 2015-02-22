@@ -495,15 +495,15 @@ namespace casual
          }
 
 
-         void Policy::reply( platform::queue_id_type id, message::service::Reply& message)
+         void Policy::reply( platform::queue_id_type id, message::service::call::Reply& message)
          {
             queue::blocking::Writer writer( id, m_state);
             writer( message);
          }
 
-         void Policy::ack( const message::service::callee::Call& message)
+         void Policy::ack( const message::service::call::callee::Request& message)
          {
-            message::service::ACK ack;
+            message::service::call::ACK ack;
 
             ack.process = common::process::handle();
             ack.service = message.service.name;
@@ -512,12 +512,12 @@ namespace casual
             sendACK( ack);
          }
 
-         void Policy::transaction( const message::service::callee::Call&, const server::Service&, const common::platform::time_point&)
+         void Policy::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
          {
             // broker doesn't bother with transactions...
          }
 
-         void Policy::transaction( const message::service::Reply& message, int return_state)
+         void Policy::transaction( const message::service::call::Reply& message, int return_state)
          {
             // broker doesn't bother with transactions...
          }

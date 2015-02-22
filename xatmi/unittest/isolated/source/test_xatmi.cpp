@@ -66,11 +66,11 @@ namespace casual
 
             private:
 
-               static std::pair< std::string, common::message::service::Reply> createService(
+               static std::pair< std::string, common::message::service::call::Reply> createService(
                      const std::string& service,
                      int error = 0)
                {
-                  common::message::service::Reply reply;
+                  common::message::service::call::Reply reply;
                   reply.error = error;
 
                   return std::make_pair( service, std::move( reply));

@@ -322,7 +322,7 @@ namespace casual
             //
             buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
-            message::service::caller::Call message( buffer::pool::Holder::instance().get( idata, ilen));
+            message::service::call::caller::Request message( buffer::pool::Holder::instance().get( idata, ilen));
 
             //
             // Prepare message
@@ -436,7 +436,7 @@ namespace casual
             //
             // We fetch, and if TPNOBLOCK is not set, we block
             //
-            message::service::Reply reply;
+            message::service::call::Reply reply;
 
             if( ! receive( reply, descriptor, flags))
             {
@@ -538,7 +538,7 @@ namespace casual
             namespace
             {
                template< typename... Args>
-               bool receive( message::service::Reply& reply, long flags, Args&... args)
+               bool receive( message::service::call::Reply& reply, long flags, Args&... args)
                {
                   if( common::flag< TPNOBLOCK>( flags))
                   {
@@ -555,7 +555,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         bool Context::receive( message::service::Reply& reply, descriptor_type descriptor, long flags)
+         bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, long flags)
          {
             if( descriptor == 0)
             {
