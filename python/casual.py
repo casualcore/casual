@@ -138,7 +138,7 @@ def call( service, input, flags=0):
     
     return outputbuffer.data()
 
-def acall( service, input, flags=0):
+def send( service, input, flags=0):
     """
     Use function to asynchronous call casual service
     """
@@ -154,7 +154,7 @@ def acall( service, input, flags=0):
     
     return id
       
-def getReply( id, flags=0):
+def receive( id, flags=0):
     """
     Use function to get reply from service
     """

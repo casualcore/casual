@@ -23,11 +23,11 @@ print casual.call( "casual_test1", "echo echo echo")
 #
 # Async call
 #
-id = casual.acall( "casual_test1", "async echo async echo async echo")
-print casual.getReply( id)
+id = casual.send( "casual_test1", "async echo async echo async echo")
+print casual.receive( id)
 
 #
 # Cancel async call
 #
-id = casual.acall( "casual_test1", "async echo async echo async echo")
+id = casual.send( "casual_test1", "async echo async echo async echo")
 casual.cancel( id)
