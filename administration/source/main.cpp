@@ -46,6 +46,8 @@ namespace casual
             execute( "casual-queue-admin", arguments);
          }
 
+
+
       } // dispatch
 
 
@@ -53,7 +55,18 @@ namespace casual
       {
          try
          {
-            common::Arguments arguments;
+
+            common::Arguments arguments{ R"(
+usage: 
+
+casual-admin [<category> [<category-specific-directives].. ]..
+
+To get help for a specific category use: 
+   casual-admin <category> --help
+
+The following categories are supported:   
+  
+)", { "help"}};
 
             arguments.add(
                common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),

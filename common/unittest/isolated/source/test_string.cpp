@@ -22,6 +22,13 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 3);
       }
 
+      TEST( casual_common_string, adjacant_split__bla_bla_bla___gives_3_occurencies)
+      {
+         auto splittet = string::adjacent::split( "bla bla bla");
+
+         EXPECT_TRUE( splittet.size() == 3) << "splittet.size(): " << splittet.size();
+      }
+
       TEST( casual_common_string, split_oneword__gives_1_occurencies)
       {
          auto splittet = string::split( "oneword");
@@ -29,16 +36,16 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 1);
       }
 
-      TEST( casual_common_string, split_bla___bla_bla__gives_3_occurencies)
+      TEST( casual_common_string, adjacent_split_bla___bla_bla__gives_3_occurencies)
       {
-         auto splittet = string::split( "bla    bla bla");
+         auto splittet = string::adjacent::split( "bla    bla bla");
 
          EXPECT_TRUE( splittet.size() == 3);
       }
 
-      TEST( casual_common_string, split_bla___bla_bla__traling_ws__gives_3_occurencies)
+      TEST( casual_common_string, adjacent_split_bla___bla_bla__traling_ws__gives_3_occurencies)
       {
-         auto splittet = string::split( "  bla    bla bla  ");
+         auto splittet = string::adjacent::split( "  bla    bla bla  ");
 
          EXPECT_TRUE( splittet.size() == 3);
       }
@@ -47,7 +54,7 @@ namespace casual
       {
          auto splittet = string::split( "error,warning,debug,information,casual.debug,casual.trace,casual.transaction", ',');
 
-         ASSERT_TRUE( splittet.size() == 7);
+         ASSERT_TRUE( splittet.size() == 7) << "splittet.size(): " << splittet.size();
          EXPECT_TRUE( splittet.back() == "casual.transaction");
       }
 
