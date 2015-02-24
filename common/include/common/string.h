@@ -35,35 +35,26 @@ namespace casual
 			//!
 			//! @param line line to be splittet
 			//! @param delimiter the value to use as a splitter
-			//! @param adjacent if true adjacent found delimiters are ignored
 			//!
 			//! @return the splitted range.
 			//!
-			inline std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ',  bool adjacent = true)
+			std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
+
+
+			namespace adjacent
          {
-			   typedef typename std::string::value_type value_type;
+	         //!
+	         //! splits a range, and ignores adjacent delimiters
+	         //!
+	         //! @param line line to be splittet
+	         //! @param delimiter the value to use as a splitter
+	         //!
+	         //! @return the splitted range.
+	         //!
+	         std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
 
-            std::vector< std::string> result;
+         } // adjacent
 
-            auto found = std::begin( line);
-            auto current = std::begin( line);
-
-            while( current != std::end( line))
-            {
-               if( adjacent)
-               {
-                  current = std::find_if( current, std::end( line), [=]( value_type value) { return value != delimiter;});
-               }
-               found = std::find( current,  std::end( line), delimiter);
-
-               if( found != current)
-               {
-                  result.emplace_back( current, found);
-               }
-               current = found;
-            }
-            return result;
-         }
 
 			/*
 			 * regex not implemented in gcc 4.7.2...

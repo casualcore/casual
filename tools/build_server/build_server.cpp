@@ -160,7 +160,7 @@ private:
 
       for( auto& resource : source)
       {
-         auto splitted = common::string::split( resource, delimiter);
+         auto splitted = common::string::adjacent::split( resource, delimiter);
          result.insert( std::end( result), std::begin( splitted), std::end( splitted));
       }
 

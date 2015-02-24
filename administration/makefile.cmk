@@ -18,7 +18,7 @@ admin = LinkExecutable( 'bin/casual-admin',
     [ 
         Compile( 'source/main.cpp'),
     ], 
-    [ 'casual-common'])
+    [ 'casual-common', 'casual-common-terminal'])
 
 
 Install( admin, '$(CASUAL_HOME)/bin')

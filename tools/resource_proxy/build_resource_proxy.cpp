@@ -169,7 +169,7 @@ int build( const std::string& c_file, const config::xa::Switch& xa_switch, const
       arguments.emplace_back( "-l" + lib);
    }
 
-   auto linkDirective = common::string::split( settings.linkDirectives);
+   auto linkDirective = common::string::adjacent::split( settings.linkDirectives);
    arguments.insert( std::end( arguments), std::begin( linkDirective), std::end( linkDirective));
 
    arguments.emplace_back( "-lcasual-resource-proxy-server");

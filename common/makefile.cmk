@@ -63,6 +63,9 @@ casual_common_objectfiles = [
     Compile( 'source/process.cpp'),
     Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
+    
+    
+    Compile( 'source/terminal.cpp'),
    
 ]
 
@@ -73,12 +76,12 @@ common = LinkLibrary( 'bin/casual-common',
 
 install_libs.append( common)
 
-lib_terminal = LinkLibrary( 
-   'bin/casual-common-terminal', 
-   [ Compile( 'source/terminal.cpp'),], 
-   [ common])
-
-install_libs.append( lib_terminal)
+# lib_terminal = LinkLibrary( 
+#    'bin/casual-common-terminal', 
+#    [ Compile( 'source/terminal.cpp'),], 
+#    [ common])
+# 
+# install_libs.append( lib_terminal)
 
 #
 # Mockup stuff, only for unittest

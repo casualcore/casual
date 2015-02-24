@@ -16,10 +16,14 @@
 #include <functional>
 #include <sstream>
 #include <type_traits>
+#include <iostream>
+#include <iomanip>
 
 
 #include "common/process.h"
 #include "common/algorithm.h"
+#include "common/terminal.h"
+#include "common/string.h"
 
 
 namespace casual
@@ -43,6 +47,9 @@ namespace casual
 
             struct value_cardinality
             {
+               value_cardinality() = default;
+               value_cardinality( std::size_t min, std::size_t max) : min( min), max( max) {}
+
                std::size_t min;
                std::size_t max;
             };
@@ -107,6 +114,11 @@ namespace casual
                   return m_option->valid();
                }
 
+               void information( std::ostream& out) const
+               {
+                  m_option->information( out);
+               }
+
             private:
                class base_type
                {
@@ -117,6 +129,7 @@ namespace casual
                   virtual bool consumed() const = 0;
                   virtual void dispatch() const = 0;
                   virtual bool valid() const = 0;
+                  virtual void information( std::ostream& out) const = 0;
                };
 
                template< typename T>
@@ -146,6 +159,12 @@ namespace casual
                   {
                      return m_option_type.valid();
                   }
+
+                  void information( std::ostream& out) const override
+                  {
+                     m_option_type.information( out);
+                  }
+
                   T m_option_type;
                };
 
@@ -409,6 +428,75 @@ namespace casual
                   return holder.option( option);
                }
             };
+
+
+            namespace format
+            {
+               std::ostream& cardinality( std::ostream& out, internal::value_cardinality cardinality)
+               {
+                  if( cardinality.min == cardinality.max)
+                  {
+                     if( cardinality.min == 1)
+                     {
+                        out << " <value>";
+                     }
+                     else if( cardinality.min > 1 && cardinality.min <= 3)
+                     {
+                        for( auto count = cardinality.min; count > 0; --count)
+                        {
+                           out << " <value>";
+                        }
+                     }
+                     else if( cardinality.min > 3)
+                     {
+                        out << " <value>..{ " << cardinality.min << "}";
+                     }
+                  }
+                  else
+                  {
+                     out << " <value> " << cardinality.min << "..";
+                     if( cardinality.max == std::numeric_limits< std::size_t>::max())
+                     {
+                        out << '*';
+                     }
+                     else
+                     {
+                        out << cardinality.max;
+                     }
+                  }
+                  return out;
+               }
+
+
+               std::ostream& description( std::ostream& out, const std::string& description, int indent = 6)
+               {
+                  for( auto& row : string::split( description, '\n'))
+                  {
+                     out << std::string( indent, ' ') << row << "\n";
+                  }
+                  return out;
+               }
+
+               template< typename T>
+               void help( std::ostream& out, const T& directive)
+               {
+
+                  auto option_string = string::join( directive.options(), ", ");
+
+                  if( option_string.empty())
+                  {
+                     option_string == "<empty>";
+                  }
+
+                  out << "   " << terminal::color::white << option_string;
+                  format::cardinality( out, directive.cardinality()) << std::endl;
+
+                  format::description( out, directive.description()) << std::endl;
+               }
+
+            } // format
+
+
          } // internal
 
 
@@ -458,6 +546,17 @@ namespace casual
                      m_values.size() <= m_dispatch->cardinality().max;
             }
 
+
+            void information( std::ostream& out) const
+            {
+               internal::format::help( out, *this);
+            }
+
+
+            const std::vector< std::string> options() const { return m_options;}
+            const std::string& description() const { return m_description;}
+            internal::value_cardinality cardinality() const { return m_dispatch->cardinality();}
+
          private:
             const std::vector< std::string> m_options;
             const std::string m_description;
@@ -497,6 +596,12 @@ namespace casual
                add( std::forward< Args>(args)...);
             }
 
+
+            void information( std::ostream& out) const
+            {
+               range::for_each( m_groups, std::bind( &option::Holder::information, std::placeholders::_1, std::ref( out)));
+            }
+
          protected:
 
             friend struct option::Holder;
@@ -533,10 +638,104 @@ namespace casual
             }
 
 
+
             void add() {}
 
             groups_type m_groups;
          };
+
+
+
+         class Help
+         {
+         public:
+
+            Help( const Group* group, std::string description, std::vector< std::string> options, std::ostream& out = std::cout)
+               : m_group( group), m_description( std::move( description)),
+                 m_options{ std::move( options)}, m_out( out)
+            {
+
+            }
+
+            Help( const Group* group, std::string description) : Help( group, std::move( description), { "--help"})
+            {
+
+            }
+
+            Help( const Group* group) : Help( group, "")
+            {
+
+            }
+
+            bool option( const std::string& option) const
+            {
+               return ! range::find( range::make( m_options), option).empty();
+            }
+
+            void assign( const std::string& option, std::vector< std::string>&& values)
+            {
+               m_invoked = true;
+            }
+
+            bool consumed() const
+            {
+               return false; //m_assigned;
+            }
+
+            void dispatch() const
+            {
+               if( m_invoked)
+               {
+                  m_out << "NAME\n   ";
+                  m_out << terminal::color::white << file::basename( process::path());
+
+                  m_out << "\n\nDESCRIPTION\n";
+
+                  internal::format::description( m_out, m_description, 3) << "\nOPTIONS\n";
+
+                  if( m_group)
+                  {
+                     m_group->information( m_out);
+                  }
+
+                  internal::format::help( m_out, *this);
+               }
+            }
+
+            bool valid() const
+            {
+               return true;
+            }
+
+
+            void information( std::ostream& out) const
+            {
+               // no-op
+            }
+
+            const std::vector< std::string> options() const { return m_options;}
+            std::string description() const { return "shows this help information";}
+            internal::value_cardinality cardinality() const { return {0, 0};}
+
+         private:
+
+            const Group* m_group = nullptr;
+            std::string m_description;
+            std::vector< std::string> m_options;
+            std::ostream& m_out;
+            bool m_invoked = false;
+
+         };
+
+         namespace no
+         {
+            struct Help
+            {
+
+            };
+
+            Help help() { return Help{};}
+         } // no
 
       } // argument
 
@@ -544,8 +743,27 @@ namespace casual
       {
       public:
 
-         Arguments() = default;
-         Arguments( const std::string& description) : m_description( description) {}
+
+
+         Arguments()
+         {
+            argument::Group::add( argument::Help{ this});
+         }
+
+         Arguments( const std::string& description)
+         {
+            argument::Group::add( argument::Help{ this, description});
+         }
+
+         Arguments( const std::string& description, std::vector< std::string> help_option)
+         {
+            argument::Group::add( argument::Help{ this, description, std::move( help_option)});
+         }
+
+
+         Arguments( argument::no::Help)
+         {
+         }
 
 
          template< typename... Args>
@@ -574,9 +792,9 @@ namespace casual
          }
 
 
-         bool parse( const std::string& processName, const std::vector< std::string>& arguments)
+         bool parse( const std::string& process, const std::vector< std::string>& arguments)
          {
-            m_processName = processName;
+            process::path( process);
 
 
             //
@@ -625,11 +843,7 @@ namespace casual
             return true;
          }
 
-         const std::string& processName() { return m_processName;}
-
-      private:
-         std::string m_description;
-         std::string m_processName;
+         const std::string& processName() { return process::path();}
       };
 
 
