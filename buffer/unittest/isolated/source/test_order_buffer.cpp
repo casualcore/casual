@@ -32,11 +32,9 @@ TEST( casual_order_buffer, allocate_with_zero_size__expecting_success)
    auto buffer = tpalloc( CASUAL_ORDER, "", 0);
    ASSERT_TRUE( buffer != nullptr);
 
-   long size = 0;
    long used = 0;
-   EXPECT_TRUE( CasualOrderExploreBuffer( buffer, &size, &used) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( size > 0);
-   EXPECT_TRUE( used > 0);
+   EXPECT_TRUE( CasualOrderExploreBuffer( buffer, nullptr, &used) == CASUAL_ORDER_SUCCESS);
+   EXPECT_TRUE( used == 0);
 
    tpfree( buffer);
 }

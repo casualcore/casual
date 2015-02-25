@@ -125,11 +125,9 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 0);
          ASSERT_TRUE( buffer != nullptr);
 
-         long size = 0;
          long used = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, &size, &used) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( size > 0);
-         EXPECT_TRUE( used > 0);
+         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, nullptr, &used) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( used == 0);
          tpfree( buffer);
       }
 

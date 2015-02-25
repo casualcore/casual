@@ -8,6 +8,7 @@
 #include "buffer/string.h"
 
 #include "common/buffer/pool.h"
+#include "common/buffer/type.h"
 
 #include <cstring>
 
@@ -21,8 +22,25 @@ namespace casual
          namespace
          {
 
-            // TODO: Doesn't have to inherit from anything, but has to implement a set of functions (like pool::basic)
-            class Allocator : public common::buffer::pool::default_pool
+            struct Buffer : common::buffer::Buffer
+            {
+               using common::buffer::Buffer::Buffer;
+
+               typedef common::platform::binary_type::size_type size_type;
+
+               size_type size( const size_type user_size) const
+               {
+                  //
+                  // Ignore user provided size and return size of string + null
+                  //
+                  return std::strlen( payload.memory.data()) + 1;
+               }
+
+            };
+
+
+
+            class Allocator : public common::buffer::pool::basic_pool<Buffer>
             {
             public:
 
@@ -54,9 +72,6 @@ namespace casual
                      return nullptr;
                   }
 
-                  //const auto count = std::strlen( result->payload.memory.data()) + 1;
-                  //result->payload.memory.resize( size > count ? size : count);
-
                   result->payload.memory.resize( size > 0 ? size : 1);
 
                   result->payload.memory.back() = '\0';
@@ -85,37 +100,8 @@ namespace casual
 
          namespace
          {
-            typedef common::platform::raw_buffer_type data_type;
-            //typedef common::platform::raw_buffer_size size_type;
-            typedef common::platform::binary_size_type size_type;
 
-            class Buffer
-            {
-            public:
-
-               Buffer( data_type data, size_type size) : m_data( data), m_size( size) {}
-
-               explicit operator bool() const
-               {
-                  return m_data != nullptr;
-               }
-
-               const data_type data() const
-               {return m_data;}
-
-               data_type data()
-               {return m_data;}
-
-               size_type size() const
-               {return m_size;}
-
-            private:
-               data_type m_data;
-               size_type m_size;
-
-            };
-
-            Buffer find_buffer( const char* const handle)
+            Buffer* find_buffer( const char* const handle)
             {
                try
                {
@@ -131,7 +117,7 @@ namespace casual
                   }
                   else
                   {
-                     return Buffer( buffer.payload.memory.data(), buffer.payload.memory.size());
+                     return &buffer;
                   }
 
                }
@@ -143,7 +129,7 @@ namespace casual
                   common::error::handler();
                }
 
-               return Buffer( nullptr, 0);
+               return nullptr;
 
             }
          }
@@ -183,8 +169,8 @@ int CasualStringExploreBuffer( const char* const handle, long* const size, long*
 
    if( buffer)
    {
-      const auto reserved = buffer.size();
-      const auto utilized = std::strlen( buffer.data()) + 1;
+      const auto reserved = buffer->payload.memory.size();
+      const auto utilized = std::strlen( buffer->payload.memory.data()) + 1;
 
       if( size) *size = static_cast<long>(reserved);
       if( used) *used = static_cast<long>(utilized);
@@ -214,13 +200,13 @@ int CasualStringWriteString( char* const handle, const char* const value)
       {
          const auto count = std::strlen( value) + 1;
 
-         if( count > buffer.size())
+         if( count > buffer->payload.memory.size())
          {
             return CASUAL_STRING_NO_SPACE;
          }
          else
          {
-            std::memcpy( buffer.data(), value, count);
+            std::memcpy( buffer->payload.memory.data(), value, count);
          }
 
       }
@@ -247,15 +233,15 @@ int CasualStringParseString( const char* handle, const char** value)
    {
       if( value)
       {
-         const auto count = std::strlen( buffer.data()) + 1;
+         const auto count = std::strlen( buffer->payload.memory.data()) + 1;
 
-         if( count > buffer.size())
+         if( count > buffer->payload.memory.size())
          {
             return CASUAL_STRING_NO_PLACE;
          }
          else
          {
-            *value = buffer.data();
+            *value = buffer->payload.memory.data();
          }
 
       }
