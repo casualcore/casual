@@ -40,6 +40,9 @@ namespace casual
 
             Queue create( Queue queue);
 
+
+            std::string file() const;
+
             //!
             //! @return the created queues
             //!
@@ -90,14 +93,14 @@ namespace casual
             void commit();
             void rollback();
 
-
-
          private:
 
             void updateQueue( const Queue& queue);
             void removeQueue( Queue::id_type id);
 
             std::vector< Queue> queue( Queue::id_type id);
+
+
 
             sql::database::Connection m_connection;
             Queue::id_type m_errorQueue;

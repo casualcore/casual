@@ -82,10 +82,10 @@ namespace casual
 
          auto queues = database.queues();
 
-         // there is always a error-queue, and a global error-queue
+         // there is always an error-queue, and a global error-queue
          ASSERT_TRUE( queues.size() == 3);
          EXPECT_TRUE( queues.at( 0).name == "error-queue") << "queues.at( 0).name: " << queues.at( 0).name;
-         EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
+         EXPECT_TRUE( queues.at( 1).name == "unittest_queue.error");
          EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
       }
 
@@ -146,7 +146,7 @@ namespace casual
             // there is always a error-queue, and a global error-queue
             ASSERT_TRUE( queues.size() == 3);
             //EXPECT_TRUE( queues.at( 0).name == "unittest_queue_server_database-error-queue") << queues.at( 0).name;
-            EXPECT_TRUE( queues.at( 1).name == "unittest_queue_error");
+            EXPECT_TRUE( queues.at( 1).name == "unittest_queue.error");
             EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
          }
 
@@ -180,7 +180,7 @@ namespace casual
             // there is always a error-queue, and a global error-queue
             ASSERT_TRUE( queues.size() == 5 * 2 + 1);
             //EXPECT_TRUE( queues.at( 0).name == "unittest_queue_server_database-error-queue") << queues.at( 0).name;
-            EXPECT_TRUE( queues.at( 1).name == "unittest_queue_1_error") << queues.at( 1).name;
+            EXPECT_TRUE( queues.at( 1).name == "unittest_queue_1.error") << queues.at( 1).name;
             EXPECT_TRUE( queues.at( 2).name == "unittest_queue_1") << queues.at( 2).name;
          }
 
@@ -207,7 +207,7 @@ namespace casual
 
          // there is always an error-queue for each queue, and a global error-queue
          ASSERT_TRUE( queues.size() == 201) << "size: " << queues.size();
-         EXPECT_TRUE( queues.at( 1).name == "unittest_queue1_error") << queues.at( 200).name;
+         EXPECT_TRUE( queues.at( 1).name == "unittest_queue1.error") << queues.at( 200).name;
       }
 
 
@@ -242,7 +242,7 @@ namespace casual
 
          ASSERT_TRUE( queues.size() == 3);
          EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
-         EXPECT_TRUE( queues.at( 2).messages == 1) << " queues.at( 2).messages: " <<  queues.at( 2).messages;
+         EXPECT_TRUE( queues.at( 2).message.counts == 1) << " queues.at( 2).messages: " <<  queues.at( 2).message.counts;
 
       }
 

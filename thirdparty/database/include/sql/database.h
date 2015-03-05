@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <chrono>
 
 
 #include <cstring>
@@ -93,6 +94,8 @@ namespace sql
       }
 
 
+
+
       inline bool parameter_bind( sqlite3_stmt* statement, int index, int value)
       {
          return sqlite3_bind_int( statement, index, value) == SQLITE_OK;
@@ -114,6 +117,14 @@ namespace sql
       {
          return sqlite3_bind_int64( statement, index, value) == SQLITE_OK;
       }
+
+      template< typename system_clock, typename duration>
+      inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::time_point< system_clock, duration>& value)
+      {
+         long long time = std::chrono::time_point_cast< std::chrono::microseconds>( value).time_since_epoch().count();
+         return parameter_bind( statement, index, time);
+      }
+
 
 
       inline void column_get( sqlite3_stmt* statement, int column, long& value)
@@ -164,6 +175,17 @@ namespace sql
          memcpy( value, blob, value_size > blob_size ? blob_size : value_size);
       }
 
+
+      template< typename system_clock, typename duration>
+      inline void column_get( sqlite3_stmt* statement, int column, std::chrono::time_point< system_clock, duration>& value)
+      {
+         if( sqlite3_column_type( statement, column) != SQLITE_NULL)
+         {
+            using time_point = std::chrono::time_point< system_clock, duration>;
+            std::chrono::microseconds ms{ sqlite3_column_int64( statement, column)};
+            value = time_point( ms);
+         }
+      }
 
       struct Row
       {
@@ -322,6 +344,16 @@ namespace sql
 
             //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
 
+         }
+
+         std::string file() const
+         {
+            auto path = sqlite3_db_filename( m_handle.get(), "main");
+            if( ! path)
+            {
+               return {};
+            }
+            return path;
          }
 
 

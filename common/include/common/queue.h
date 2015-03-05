@@ -500,6 +500,39 @@ namespace casual
          };
 
 
+         template< typename QS, typename QR, typename I, typename O>
+         void batch( QS&& send, I&& input, QR&& receive, O& output)
+         {
+            for( auto& message : input)
+            {
+               std::get< 1>( message).correlation = send( std::get< 0>( message), std::get< 1>( message));
+            }
+
+            for( auto& holder : input)
+            {
+               auto& message = std::get< 1>( holder);
+               if( message.correlation)
+               {
+                  typename std::decay< decltype( output.front())>::type reply;
+
+                  receive( reply, message.correlation);
+                  output.push_back( std::move( reply));
+               }
+            }
+         }
+
+         template< typename QS, typename QR, typename I, typename O, typename T>
+         void batch( QS&& send, I&& input, QR&& receive, O& output, T transform)
+         {
+            std::vector< typename std::decay< decltype( transform( input.front()))>::type> requests;
+
+            range::transform( input, requests, transform);
+
+            batch( send, requests, receive, output);
+
+         }
+
+
       } // queue
    } // common
 } // casual

@@ -68,7 +68,8 @@ namespace casual
 
             extern "C"
             {
-               void listGroups_( TPSVCINFO *serviceInfo)
+
+               void list_queues( TPSVCINFO *serviceInfo)
                {
                   casual::sf::service::reply::State reply;
 
@@ -76,41 +77,10 @@ namespace casual
                   {
                      auto service_io = local::server->createService( serviceInfo);
 
-                     std::vector< admin::GroupVO> serviceReturn = service_io.call(
-                        *local::implementation,
-                        &Server::listGroups);
-
-                     service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                     reply = service_io.finalize();
-                  }
-                  catch( ...)
-                  {
-                     local::server->handleException( serviceInfo, reply);
-                  }
-
-                  tpreturn(
-                     reply.value,
-                     reply.code,
-                     reply.data,
-                     reply.size,
-                     reply.flags);
-               }
-
-               void listQueues_( TPSVCINFO *serviceInfo)
-               {
-                  casual::sf::service::reply::State reply;
-
-                  try
-                  {
-                     auto service_io = local::server->createService( serviceInfo);
-
-                     std::vector< std::string> groups;
-                     service_io >> CASUAL_MAKE_NVP( groups);
 
                      auto serviceReturn = service_io.call(
                         *local::implementation,
-                        &Server::listQueues, groups);
+                        &Server::listQueues);
 
                      service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -137,8 +107,7 @@ namespace casual
 
                common::server::Arguments result{ { common::process::path()}};
 
-               result.services.emplace_back( ".casual.queue.list.groups", &listGroups_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
-               result.services.emplace_back( ".casual.queue.list.queues", &listQueues_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+               result.services.emplace_back( ".casual.queue.list.queues", &list_queues, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
 
                return result;
             }
@@ -149,16 +118,12 @@ namespace casual
             }
 
 
-            std::vector< admin::GroupVO> Server::listGroups()
+            admin::State Server::listQueues()
             {
-               return transform::groups( m_broker->state());
-            }
+               admin::State result;
 
-            std::vector< admin::verbose::GroupVO> Server::listQueues( std::vector< std::string> groups)
-            {
-               std::vector< admin::verbose::GroupVO> result;
-
-               common::range::transform( m_broker->queues( groups), result, transform::Group{});
+               result.queues = transform::queues( m_broker->queues());
+               result.groups = transform::groups( m_broker->state());
 
                return result;
             }

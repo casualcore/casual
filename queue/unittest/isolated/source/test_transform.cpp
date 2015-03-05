@@ -69,15 +69,6 @@ namespace casual
       }
 
 
-      TEST( casual_queue_transform, groups_expect_2_groups_with_3_queues)
-      {
-         auto groups = transform::groups( local::state());
-
-         ASSERT_TRUE( groups.size() == 2) << CASUAL_MAKE_NVP( groups);
-         EXPECT_TRUE( groups.at( 0).queues.size() == 3) << CASUAL_MAKE_NVP( groups);
-         EXPECT_TRUE( groups.at( 1).queues.size() == 3) << CASUAL_MAKE_NVP( groups);
-
-      }
 
    } // queue
 } // casual

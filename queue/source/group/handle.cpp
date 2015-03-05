@@ -78,6 +78,7 @@ namespace casual
                   void Request::operator () ( message_type& message)
                   {
                      common::message::queue::information::queues::Reply reply;
+                     reply.correlation = message.correlation;
                      reply.process = common::process::handle();
                      reply.queues = m_state.queuebase.queues();
 
@@ -92,6 +93,7 @@ namespace casual
                   void Request::operator () ( message_type& message)
                   {
                      common::message::queue::information::queue::Reply reply;
+                     reply.correlation = message.correlation;
                      reply.process = common::process::handle();
                      reply.messages = m_state.queuebase.messages( message.qid);
 

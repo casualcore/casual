@@ -30,20 +30,15 @@ namespace casual
       namespace transform
       {
 
-         std::vector< broker::admin::GroupVO> groups( const broker::State& state);
+         std::vector< broker::admin::Group> groups( const broker::State& state);
 
 
          struct Queue
          {
-            broker::admin::QueueVO operator () ( const common::message::queue::Queue& queue) const;
+            broker::admin::Queue operator () ( const common::message::queue::information::Queue& queue) const;
          };
 
-         struct Group
-         {
-            broker::admin::verbose::GroupVO operator () ( const broker::Queues& queues) const;
-         };
-
-
+         std::vector< broker::admin::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values);
 
          struct Message
          {
