@@ -207,12 +207,40 @@ namespace casual
 
                struct Queue : message::queue::Queue
                {
-                  std::size_t messages;
+                  struct message_t
+                  {
+                     std::size_t counts;
+                     platform::time_point timestamp = platform::time_point::min();
+
+                     struct size_t
+                     {
+                        std::size_t min;
+                        std::size_t max;
+                        std::size_t average;
+                        std::size_t total;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           archive & min;
+                           archive & max;
+                           archive & average;
+                           archive & total;
+                        })
+                     } size;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & counts;
+                        archive & timestamp;
+                        archive & size;
+                     })
+
+                  } message;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      message::queue::Queue::marshal( archive);
-                     archive & messages;
+                     archive & message;
                   })
                };
 
@@ -234,14 +262,34 @@ namespace casual
                struct Message
                {
                   common::Uuid id;
-                  std::size_t type;
+                  std::size_t queue;
+                  std::size_t origin;
+                  platform::binary_type trid;
                   std::size_t state;
+                  std::string reply;
+                  std::size_t redelivered;
+
+                  buffer::Type type;
+
+                  platform::time_point avalible;
+                  platform::time_point timestamp;
+
+                  std::size_t size;
+
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & id;
-                     archive & type;
+                     archive & queue;
+                     archive & origin;
+                     archive & trid;
                      archive & state;
+                     archive & reply;
+                     archive & redelivered;
+                     archive & type;
+                     archive & avalible;
+                     archive & timestamp;
+                     archive & size;
                   })
                };
 

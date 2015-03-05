@@ -42,17 +42,7 @@ namespace casual
       {
          namespace color
          {
-            struct Solid
-            {
-               Solid( common::terminal::color_t& color) : m_color( color) {}
-
-               void operator () ( std::ostream& out, const std::string& value)
-               {
-                  out << m_color << value;
-               }
-               common::terminal::color_t m_color;
-            };
-
+            using Solid = terminal::color::Solid;
          } // color
 
 
@@ -96,7 +86,7 @@ namespace casual
                };
 
                return {
-                  //{ "server", color::Solid{ common::terminal::color::green}},
+                  { "server", color::Solid{ common::terminal::color::yellow}},
                   { "pid", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
                   { "queue", sf::archive::terminal::Directive::Align::right},
                   { "state", sf::archive::terminal::Directive::Align::left, state_color},
@@ -162,7 +152,7 @@ namespace casual
             static std::vector< sf::archive::terminal::Directive> directive()
             {
                return {
-                  { "alias", color::Solid{ common::terminal::color::green}},
+                  { "alias", color::Solid{ common::terminal::color::yellow}},
                   { "invoked", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
                   { "last", sf::archive::terminal::Directive::Align::left, color::Solid{ common::terminal::color::blue}},
                   { "#", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
@@ -372,11 +362,9 @@ namespace casual
       namespace global
       {
          bool porcelain = false;
-         bool header = false;
 
-         bool colors = true;
-
-         void no_colors() { colors = false;}
+         bool no_colors = false;
+         bool no_header = false;
 
       } // global
 
@@ -443,7 +431,7 @@ namespace casual
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), global::header, global::colors};
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), ! global::no_header, ! global::no_colors};
             writer << CASUAL_MAKE_NVP( servers);
          }
       }
@@ -460,7 +448,7 @@ namespace casual
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Service::directive(), global::header, global::colors};
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Service::directive(), ! global::no_header, ! global::no_colors};
             writer << CASUAL_MAKE_NVP( services);
          }
       }
@@ -477,7 +465,7 @@ namespace casual
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), global::header, global::colors};
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), ! global::no_header, ! global::no_colors};
             writer << CASUAL_MAKE_NVP( instances);
          }
       }
@@ -528,7 +516,7 @@ namespace casual
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), global::header, global::colors};
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), ! global::no_header, ! global::no_colors};
 
             writer << CASUAL_MAKE_NVP( output);
          }
@@ -546,7 +534,7 @@ namespace casual
          }
          else
          {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), global::header, global::colors};
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), ! global::no_header, ! global::no_colors};
             writer << CASUAL_MAKE_NVP( servers);
          }
       }
@@ -556,22 +544,15 @@ namespace casual
 
 
 
-int usage( int argc, char** argv)
-{
-   std::cerr << "usage:\n  " << argv[ 0] << " (--list-servers | --list-services | -update-instances)" << std::endl;
-   return 2;
-}
-
-
-
 int main( int argc, char** argv)
 {
 
    casual::common::Arguments parser;
    parser.add(
-         casual::common::argument::directive( {"--header"}, "descriptive header for each column", casual::broker::global::header),
+
          casual::common::argument::directive( {"--porcelain"}, "easy to parse format", casual::broker::global::porcelain),
-         casual::common::argument::directive( {"--no-color"}, "no color will be used", &casual::broker::global::no_colors),
+         casual::common::argument::directive( {"--no-color"}, "no color will be used", casual::broker::global::no_colors),
+         casual::common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", casual::broker::global::no_header),
          casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
          casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
          casual::common::argument::directive( {"-li", "--list-instances"}, "list all instances", &casual::broker::listInstances),

@@ -23,36 +23,21 @@ namespace casual
          {
             namespace
             {
-               template< typename G>
-               void group( const broker::State::Group& group, G& result)
-               {
-                  result.pid = group.process.pid;
-                  result.queue_id = group.process.queue;
-
-                  result.name = group.name;
-
-               }
 
                struct Group
                {
-                  broker::admin::GroupVO operator () ( const broker::State::Group& group) const
+                  broker::admin::Group operator () ( const broker::State::Group& group) const
                   {
-                     broker::admin::GroupVO result;
+                     broker::admin::Group result;
 
-                     local::group( group, result);
+                     result.id.pid = group.process.pid;
+                     result.id.queue = group.process.queue;
+
+                     result.name = group.name;
+                     result.queuebase = group.queuebase;
 
                      return result;
                   }
-
-                  broker::admin::verbose::GroupVO operator () ( const broker::Queues& queues) const
-                  {
-                     broker::admin::verbose::GroupVO result;
-
-                     local::group( queues.group, result);
-
-                     return result;
-                  }
-
                };
 
             } // <unnamed>
@@ -61,29 +46,18 @@ namespace casual
 
 
 
-         std::vector< broker::admin::GroupVO> groups( const broker::State& state)
+         std::vector< broker::admin::Group> groups( const broker::State& state)
          {
-            std::vector< broker::admin::GroupVO> result;
+            std::vector< broker::admin::Group> result;
 
             common::range::transform( state.groups, result, local::Group{});
 
-            std::map< common::platform::pid_type, std::vector< std::string>> groupQeues;
-
-            for( auto&& touple : state.queues)
-            {
-               groupQeues[ touple.second.process.pid].push_back( touple.first);
-            }
-
-            for( auto& group : result)
-            {
-               group.queues = std::move( groupQeues[ group.pid]);
-            }
             return result;
          }
 
-         broker::admin::QueueVO Queue::operator () ( const common::message::queue::Queue& queue) const
+         broker::admin::Queue Queue::operator () ( const common::message::queue::information::Queue& queue) const
          {
-            broker::admin::QueueVO result;
+            broker::admin::Queue result;
 
             result.id = queue.id;
             result.name = queue.name;
@@ -91,20 +65,34 @@ namespace casual
             result.type = queue.type;
             result.error = queue.error;
 
+            result.message.counts = queue.message.counts;
+            result.message.timestamp = queue.message.timestamp;
+            result.message.size.min = queue.message.size.min;
+            result.message.size.max = queue.message.size.max;
+            result.message.size.average = queue.message.size.average;
+            result.message.size.total = queue.message.size.total;
+
 
             return result;
          }
 
-
-         broker::admin::verbose::GroupVO Group::operator () ( const broker::Queues& queues) const
+         std::vector< broker::admin::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values)
          {
-            broker::admin::verbose::GroupVO result = local::Group()( queues);
+            std::vector< broker::admin::Queue> result;
 
-            common::range::transform( queues.queues, result.queues, Queue());
+            for( auto& value : values)
+            {
+               auto range = common::range::transform( value.queues, result, transform::Queue{});
 
+               common::range::for_each( range, [&]( broker::admin::Queue& q){
+                  q.group = value.process.pid;
+               });
+            }
 
             return result;
          }
+
+
 
 
          queue::Message Message::operator () ( common::message::queue::dequeue::Reply::Message& value) const

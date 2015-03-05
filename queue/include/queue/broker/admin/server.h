@@ -34,13 +34,8 @@ namespace casual
                Server( int argc, char **argv);
 
 
-               //!
-               //! @return a list of all servers
-               //!
-               std::vector< admin::GroupVO> listGroups();
 
-
-               std::vector< admin::verbose::GroupVO> listQueues( std::vector< std::string> groups);
+               admin::State listQueues();
 
 
 

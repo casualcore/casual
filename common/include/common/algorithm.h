@@ -237,7 +237,10 @@ namespace casual
       struct Range
       {
          using iterator = Iter;
-         using value_type = typename std::iterator_traits< Iter>::value_type;
+         using value_type = typename std::iterator_traits< iterator>::value_type;
+         using pointer = typename std::iterator_traits< iterator>::pointer;
+         using reference = typename std::iterator_traits< iterator>::reference;
+         using difference_type = typename std::iterator_traits< iterator>::difference_type;
 
          Range() : last( first) {}
          Range( Iter first, Iter last) : first( first), last( last) {}
@@ -282,7 +285,7 @@ namespace casual
          iterator end() const { return last;}
 
 
-         value_type* data()
+         pointer data()
          {
             if( ! empty())
             {
@@ -291,13 +294,27 @@ namespace casual
             return nullptr;
          }
 
-         const value_type* data() const
+         const pointer data() const
          {
             if( ! empty())
             {
                return &( *first);
             }
             return nullptr;
+         }
+
+         reference at( difference_type index)
+         {
+            if( std::distance( first, last) <= index){ throw std::out_of_range{ "range out of bounds"};}
+
+            return *( first + index);
+         }
+
+         const reference at( difference_type index) const
+         {
+            if( std::distance( first, last) <= index){ throw std::out_of_range{ "range out of bounds"};}
+
+            return *( first + index);
          }
 
          iterator first;
@@ -596,11 +613,19 @@ namespace casual
          }
 
 
+         //!
+         //! Transform @p range to @p container, using @p transform
+         //!
+         //! @param range source range/container
+         //! @param container output/holder container
+         //!
+         //! @return range containing the inserted transformed values, previous values in @p container is excluded.
+         //!
          template< typename R, typename C, typename T>
          auto transform( R&& range, C& container, T transform) -> decltype( make( container))
          {
             std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
-            return make( container);
+            return make( std::end( container) - range.size(), std::end( container));
          }
 
          template< typename InputIter1, typename InputIter2, typename outputIter, typename T>

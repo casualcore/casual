@@ -42,6 +42,9 @@ namespace casual
 
                std::string name;
                id_type process;
+
+               std::string queuebase;
+
                bool connected = false;
 
                friend bool operator == ( const Group& lhs, id_type process) { return lhs.process == process;}
@@ -146,12 +149,10 @@ namespace casual
 
          const broker::State& state() const;
 
-         std::vector< broker::Queues> queues( std::vector< std::string> groups);
+         std::vector< common::message::queue::information::queues::Reply> queues();
 
       private:
 
-         template< typename R>
-         std::vector< broker::Queues> getQueues( R&& range);
 
          casual::common::file::scoped::Path m_queueFilePath;
          broker::State m_state;
