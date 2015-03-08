@@ -159,7 +159,7 @@ unittest_objectfiles = [
 
 
 
-target_test_common = LinkIsolatedUnittest( 'bin/test-casual-common-isolated', 
+target_test_common = LinkUnittest( 'bin/test-casual-common-isolated', 
 	unittest_objectfiles,
 	[
      common,

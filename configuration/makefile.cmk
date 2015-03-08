@@ -38,7 +38,7 @@ intall_libs.append( lib_configuration)
 # Unittest
 #
 
-LinkIsolatedUnittest( 'bin/test-casual-configuration',
+LinkUnittest( 'bin/test-casual-configuration',
    [
         Compile( 'unittest/isolated/source/test_domain.cpp'),
         Compile( 'unittest/isolated/source/test_xa_switch.cpp'),

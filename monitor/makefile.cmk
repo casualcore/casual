@@ -71,7 +71,7 @@ install_bin.append( target)
 #
 # unittest
 #
-LinkIsolatedUnittest( 'bin/test-casual-monitor',
+LinkUnittest( 'bin/test-casual-monitor',
 	[ Compile( 'unittest/isolated/source/test_monitor.cpp')],
 	[
 	archive_monitor_db,

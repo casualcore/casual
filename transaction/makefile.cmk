@@ -75,7 +75,7 @@ install_lib.append( target)
 # unittest
 #
  
-LinkIsolatedUnittest( 'bin/test-casual-transaction',
+LinkUnittest( 'bin/test-casual-transaction',
     [
         Compile( 'unittest/isolated/source/test_configuration.cpp'),
         Compile( 'unittest/isolated/source/test_transactionlog.cpp'),

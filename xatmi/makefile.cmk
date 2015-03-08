@@ -29,7 +29,7 @@ install_lib.append( lib_xatmi)
 # unittest
 #
 
-LinkIsolatedUnittest( 'bin/test-casual-xatmi',
+LinkUnittest( 'bin/test-casual-xatmi',
     [
        Compile( 'unittest/isolated/source/test_buffer.cpp'),
        Compile( 'unittest/isolated/source/test_xatmi.cpp'),
