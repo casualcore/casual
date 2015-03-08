@@ -65,6 +65,7 @@ namespace casual
 
 
             friend bool operator == ( const Transaction& lhs, const ID& rhs);
+            friend bool operator == ( const Transaction& lhs, const XID& rhs);
             friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs);
          };
       }

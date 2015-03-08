@@ -101,10 +101,7 @@ namespace casual
                      }
                      case server::Service::cJoin:
                      {
-                        if( message.trid)
-                        {
-                           transaction::Context::instance().join( message.trid);
-                        }
+                        transaction::Context::instance().join( message.trid);
                         break;
                      }
                      case server::Service::cAtomic:
@@ -119,6 +116,7 @@ namespace casual
                         // We don't start or join any transactions
                         // (technically we join a null-trid)
                         //
+                        transaction::Context::instance().join( transaction::ID{ process::handle()});
                         break;
                      }
 

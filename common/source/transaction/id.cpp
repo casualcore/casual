@@ -16,6 +16,41 @@
 #include <sstream>
 #include <iomanip>
 
+#include <cstring>
+
+
+
+
+bool operator == ( const XID& lhs, const XID& rhs)
+{
+   if( lhs.formatID != rhs.formatID) return false;
+   if( lhs.formatID == casual::common::transaction::ID::Format::cNull) return true;
+   return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) == 0;
+}
+
+bool operator < ( const XID& lhs, const XID& rhs)
+{
+   if( lhs.formatID != rhs.formatID) return lhs.formatID < rhs.formatID;
+   if( lhs.formatID == casual::common::transaction::ID::Format::cNull) return false;
+   return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) < 0;
+}
+
+bool operator != ( const XID& lhs, const XID& rhs)
+{
+   return ! ( lhs == rhs);
+}
+
+std::ostream& operator << ( std::ostream& out, const XID& xid)
+{
+   if( out && ! casual::common::transaction::null( xid))
+   {
+      out << casual::common::transcode::hex::encode( xid.data, xid.data + xid.gtrid_length) << ':'
+          << casual::common::transcode::hex::encode( xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length);
+   }
+   return out;
+}
+
+
 namespace casual
 {
    namespace common
@@ -135,7 +170,7 @@ namespace casual
 
          ID::operator bool() const
          {
-            return ! null();
+            return ! transaction::null( xid);
          }
 
 
@@ -152,43 +187,61 @@ namespace casual
          }
 
 
-         std::ostream& operator << ( std::ostream& out, const ID& id)
-         {
-            if( out && id)
-            {
-               out << transcode::hex::encode( id.xid.data, id.xid.data + id.xid.gtrid_length) << ':'
-                   << transcode::hex::encode( id.xid.data + id.xid.gtrid_length, id.xid.data + id.xid.gtrid_length + id.xid.bqual_length)
-                  << ':' << id.m_owner.pid << ':' << id.m_owner.queue;
-            }
-            return out;
-         }
-
 
          bool operator < ( const ID& lhs, const ID& rhs)
          {
-            return std::lexicographical_compare(
-               std::begin( lhs.xid.data), std::begin( lhs.xid.data) + lhs.xid.gtrid_length + lhs.xid.bqual_length,
-               std::begin( rhs.xid.data), std::begin( rhs.xid.data) + rhs.xid.gtrid_length + rhs.xid.bqual_length);
+            return lhs.xid < rhs.xid;
          }
 
          bool operator == ( const ID& lhs, const ID& rhs)
          {
-            return lhs.xid.gtrid_length == rhs.xid.gtrid_length && lhs.xid.bqual_length == rhs.xid.bqual_length &&
-               std::equal(
-                 std::begin( lhs.xid.data), std::begin( lhs.xid.data) + lhs.xid.gtrid_length + lhs.xid.bqual_length,
-                 std::begin( rhs.xid.data));
+            return lhs.xid == rhs.xid;
+         }
+
+         bool operator == ( const ID& lhs, const XID& rhs)
+         {
+            return lhs.xid == rhs;
          }
 
 
+         std::ostream& operator << ( std::ostream& out, const ID& id)
+         {
+            if( out && id)
+            {
+               out << id.xid << ':' << id.m_owner.pid << ':' << id.m_owner.queue;
+            }
+            return out;
+         }
+
+         xid_range_type global( const XID& xid)
+         {
+            return { xid.data, xid.data + xid.gtrid_length};
+         }
+
+         xid_range_type branch( const XID& xid)
+         {
+            return { xid.data + xid.gtrid_length,
+                  xid.data + xid.gtrid_length + xid.bqual_length};
+         }
+
+         bool null( const ID& id)
+         {
+            return null( id.xid);
+         }
+
+         bool null( const XID& id)
+         {
+            return id.formatID == ID::Format::cNull;
+         }
+
          xid_range_type global( const ID& id)
          {
-            return { id.xid.data, id.xid.data + id.xid.gtrid_length};
+            return global( id.xid);
          }
 
          xid_range_type branch( const ID& id)
          {
-            return { id.xid.data + id.xid.gtrid_length,
-                  id.xid.data + id.xid.gtrid_length + id.xid.bqual_length};
+            return branch( id.xid);
          }
 
 

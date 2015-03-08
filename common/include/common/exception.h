@@ -21,6 +21,7 @@
 #include <string>
 #include <ostream>
 
+
 #include <xatmi.h>
 #include <tx.h>
 
@@ -30,6 +31,61 @@ namespace casual
    {
       namespace exception
       {
+         template< typename T>
+         std::tuple< std::string, std::string> make_nip( std::string name, T&& information)
+         {
+            return std::make_tuple( std::move( name), to_string( std::forward< T>( information)));
+         }
+
+         struct base : std::exception
+         {
+
+
+            base( std::string description);
+
+            template< typename... Args>
+            base( std::string description, Args&&... information)
+               : base( std::move( description), construct( {}, std::forward<Args>( information)...)) {}
+
+
+            const char* what() const noexcept override;
+            const std::string& description() const noexcept;
+
+
+            friend std::ostream& operator << ( std::ostream& out, const base& exception);
+
+         private:
+            using nip_type = std::tuple< std::string, std::string>;
+
+            base( std::string description, std::vector< nip_type> information);
+
+            static std::vector< nip_type> construct( std::vector< nip_type> nips)
+            {
+               return nips;
+            }
+
+            template< typename I, typename... Args>
+            static std::vector< nip_type> construct( std::vector< nip_type> nips, I&& infomation, Args&&... args)
+            {
+               nips.push_back( std::forward< I>( infomation));
+               return construct( std::move( nips), std::forward< Args>( args)...);
+            }
+
+            std::string m_description;
+         };
+
+         //!
+         //! something has gone wrong internally in casual.
+         //!
+         //! @todo another name?
+         //!
+         struct Casual : base
+         {
+            using base::base;
+         };
+
+
+
 
          struct Base : public std::runtime_error
          {
@@ -303,65 +359,59 @@ namespace casual
 
          namespace tx
          {
-            struct Base : public common::exception::Base
+            struct base : public common::exception::base
             {
-               using common::exception::Base::Base;
+               using common::exception::base::base;
             };
 
-            struct Fail : Base
+            struct Fail : base
             {
-               using Base::Base;
+               using base::base;
             };
+
+            struct Protocoll : base
+            {
+               using base::base;
+            };
+
+            struct Argument : base
+            {
+               using base::base;
+            };
+
+            struct Outside : base
+            {
+               using base::base;
+            };
+
+            struct Error : base
+            {
+               using base::base;
+            };
+
+
+            namespace no
+            {
+               struct Begin : base
+               {
+                  using base::base;
+               };
+
+               struct Support : base
+               {
+                  using base::base;
+               };
+            } // no
          }
 
-         /*
-          * No point using exception for XA - TX stuff, to much return values that needs to be
-          * mapped to conform to the spec...
-          *
-         namespace tx
-         {
-            struct Base : public code::Base
-            {
-               using code::Base::Base;
-            };
-
-            namespace severity
-            {
-               using Error = exception::severity::Error< Base>;
-               using Information = exception::severity::Information< Base>;
-               using User = exception::severity::User< Base>;
-            }
-
-            using OutsideTransaction = code::basic_exeption< TX_OUTSIDE, severity::User>;
-            using RolledBack = code::basic_exeption< TX_ROLLBACK, severity::Information>;
-            using HeuristicallyCommitted = code::basic_exeption< TX_COMMITTED, severity::Information>;
-
-            using Mixed = code::basic_exeption< TX_MIXED, severity::Information>;
-
-            using Hazard = code::basic_exeption< TX_HAZARD, severity::Error>;
-
-            using ProtocollError = code::basic_exeption< TX_PROTOCOL_ERROR, severity::User>;
-
-            using Error = code::basic_exeption< TX_ERROR, severity::Error>;
-
-            using Fail = code::basic_exeption< TX_FAIL, severity::Error>;
-
-            using InvalidArguments = code::basic_exeption< TX_EINVAL, severity::User>;
-
-            namespace no_begin
-            {
-               using RolledBack = code::basic_exeption< TX_ROLLBACK_NO_BEGIN, severity::User>;
-               using Mixed = code::basic_exeption< TX_MIXED_NO_BEGIN, severity::Information>;
-               using Haxard = code::basic_exeption< TX_HAZARD_NO_BEGIN, severity::Error>;
-               using Committed = code::basic_exeption< TX_COMMITTED_NO_BEGIN, severity::User>;
-
-            } // no_begin
-         } // tx
-         */
 
 		} // exception
-	} // utility
+	} // common
 } // casual
+
+
+#define CASUAL_NIP( information) \
+   casual::common::exception::make_nip( #information, information)
 
 
 

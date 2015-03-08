@@ -144,8 +144,12 @@ namespace casual
             //
             // group error queue
             //
-            auto groupname = common::file::removeExtension( common::file::basename( database));
-            m_connection.execute( "INSERT OR IGNORE INTO queues VALUES ( 1, \"" + groupname + ".group.error\", 0, 1, 1); ");
+            auto groupname = common::file::removeExtension( common::file::basename( m_connection.file()));
+            if( groupname.empty())
+            {
+               groupname = common::uuid::string( common::uuid::make());
+            }
+            m_connection.execute( "INSERT OR REPLACE INTO queues VALUES ( 1, \"" + groupname + ".group.error\", 0, 1, 1); ");
             m_errorQueue = 1;
 
 
@@ -262,7 +266,7 @@ namespace casual
             if( ! existing.empty())
             {
                m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id);
-               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name + "_error", queue.retries, existing.front().error);
+               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error);
 
             }
          }
