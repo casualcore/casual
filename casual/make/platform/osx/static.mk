@@ -66,9 +66,7 @@ CROSS_COMPILE_DIRECTIVES = -c -g -Wall -pedantic -fcolor-diagnostics -DNOWHAT -s
 # VALGRIND
 #
 ifdef VALGRIND
-VALGRIND_CONFIG=valgrind --xml=yes --xml-file=valgrind.xml
-else
-VALGRIND_CONFIG=
+PRE_UNITTEST_DIRECTIVE=valgrind --xml=yes --xml-file=valgrind.xml
 endif
 
 
