@@ -84,7 +84,7 @@ namespace casual
 
          // there is always an error-queue, and a global error-queue
          ASSERT_TRUE( queues.size() == 3);
-         EXPECT_TRUE( queues.at( 0).name == "error-queue") << "queues.at( 0).name: " << queues.at( 0).name;
+         EXPECT_TRUE( queues.at( 0).name.find_first_of( ".group.error") != std::string::npos) << "queues.at( 0).name: " << queues.at( 0).name;
          EXPECT_TRUE( queues.at( 1).name == "unittest_queue.error");
          EXPECT_TRUE( queues.at( 2).name == "unittest_queue");
       }
@@ -115,8 +115,8 @@ namespace casual
          auto queues = database.queues();
 
          ASSERT_TRUE( queues.size() == 3) << queues.size();
-         EXPECT_TRUE( queues.at( 0).name == "error-queue");
-         EXPECT_TRUE( queues.at( 1).name == "foo-bar_error");
+         EXPECT_TRUE( queues.at( 0).name.find_first_of( ".group.error") != std::string::npos);
+         EXPECT_TRUE( queues.at( 1).name == "foo-bar.error");
          EXPECT_TRUE( queues.at( 2).name == "foo-bar");
       }
 

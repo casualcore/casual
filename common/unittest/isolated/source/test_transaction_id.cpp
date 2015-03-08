@@ -70,6 +70,13 @@ namespace casual
 
       }
 
+      TEST( casual_common_transaction_id, equal_to_xid__expect_true)
+      {
+         auto trid = transaction::ID::create();
+
+         EXPECT_TRUE( trid.xid == trid.xid) << "trid: " << trid << std::endl;
+      }
+
       TEST( casual_common_transaction_id, owner)
       {
          auto trid = transaction::ID::create();

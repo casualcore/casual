@@ -21,6 +21,19 @@
 #include <ostream>
 
 
+//!
+//! Global scope compare operations for XID
+//!
+//! @{
+bool operator == ( const XID& lhs, const XID& rhs);
+bool operator < ( const XID& lhs, const XID& rhs);
+bool operator != ( const XID& lhs, const XID& rhs);
+//! @}
+
+//!
+//! Global stream opaerator for XID
+//!
+std::ostream& operator << ( std::ostream& out, const XID& xid);
 
 namespace casual
 {
@@ -55,7 +68,7 @@ namespace casual
             ID( process::Handle owner);
             //! @}
 
-            ID( const XID& xid);
+            explicit ID( const XID& xid);
 
 
             //!
@@ -107,13 +120,12 @@ namespace casual
 
 
 
-            friend std::ostream& operator << ( std::ostream& out, const ID& id);
+
 
             friend bool operator < ( const ID& lhs, const ID& rhs);
-
             friend bool operator == ( const ID& lhs, const ID& rhs);
-
-            friend bool operator != ( const ID& lhs, const ID& rhs)
+            friend bool operator == ( const ID& lhs, const XID& rhs);
+            inline friend bool operator != ( const ID& lhs, const ID& rhs)
             {
                return ! ( lhs == rhs);
             }
@@ -133,6 +145,9 @@ namespace casual
             //!
             XID xid;
 
+
+            friend std::ostream& operator << ( std::ostream& out, const ID& id);
+
          private:
 
             process::Handle m_owner;
@@ -143,13 +158,26 @@ namespace casual
          //!
          //! @return a (binary) range that represent the global part of the xid
          //!
+         //! @{
          xid_range_type global( const ID& id);
+         xid_range_type global( const XID& id);
+         //! @}
 
          //!
          //! @return a (binary) range that represent the branch part of the xid
          //!
+         //! @{
          xid_range_type branch( const ID& id);
+         xid_range_type branch( const XID& id);
+         //! @}
 
+         //!
+         //! @return true if trid is null, false otherwise
+         //!
+         //! @{
+         bool null( const ID& id);
+         bool null( const XID& id);
+         //! @}
 
 
          //!

@@ -20,7 +20,7 @@ int tx_begin(void)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::error::tx::handler();
    }
    return TX_OK;
 }
@@ -33,7 +33,7 @@ int tx_close(void)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::error::tx::handler();
    }
    return TX_OK;
 }
@@ -46,7 +46,7 @@ int tx_commit(void)
   }
   catch( ...)
   {
-     return casual::common::error::handler();
+     return casual::common::error::tx::handler();
   }
   return TX_OK;
 }
@@ -55,11 +55,11 @@ int tx_open(void)
 {
   try
   {
-     return casual::common::transaction::Context::instance().open();
+     casual::common::transaction::Context::instance().open();
   }
   catch( ...)
   {
-     return casual::common::error::handler();
+     return casual::common::error::tx::handler();
   }
   return TX_OK;
 }
@@ -72,7 +72,7 @@ int tx_rollback(void)
   }
   catch( ...)
   {
-     return casual::common::error::handler();
+     return casual::common::error::tx::handler();
   }
   return TX_OK;
 }
@@ -86,7 +86,7 @@ int tx_set_commit_return(COMMIT_RETURN value)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::error::tx::handler();
    }
    return TX_OK;
 
@@ -100,7 +100,7 @@ int tx_set_transaction_control(TRANSACTION_CONTROL control)
   }
   catch( ...)
   {
-     return casual::common::error::handler();
+     return casual::common::error::tx::handler();
   }
   return TX_OK;
 }
@@ -109,11 +109,11 @@ int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
 {
   try
   {
-     return casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
+     casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
   }
   catch( ...)
   {
-     return casual::common::error::handler();
+     return casual::common::error::tx::handler();
   }
   return TX_OK;
 }
@@ -122,14 +122,43 @@ int tx_info( TXINFO* info)
 {
    try
    {
-      return casual::common::transaction::Context::instance().info( *info);
+      return casual::common::transaction::Context::instance().info( info) ? 1 : 0;
    }
    catch( ...)
    {
-      casual::common::error::handler();
+      return casual::common::error::tx::handler();
    }
-   return 0;
+   return TX_OK;
 }
+
+/* casual extension */
+int tx_suspend( XID* xid)
+{
+   try
+   {
+      casual::common::transaction::Context::instance().suspend( xid);
+   }
+   catch( ...)
+   {
+      return casual::common::error::tx::handler();
+   }
+   return TX_OK;
+}
+
+int tx_resume( const XID* xid)
+{
+   try
+   {
+      casual::common::transaction::Context::instance().resume( xid);
+   }
+   catch( ...)
+   {
+      return casual::common::error::tx::handler();
+   }
+   return TX_OK;
+}
+
+
 
 
 

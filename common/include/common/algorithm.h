@@ -374,15 +374,16 @@ namespace casual
 
 
          //template< typename Iter>
-         friend std::ostream& operator << ( std::ostream& out, Range range)
+         friend std::ostream& operator << ( std::ostream& out, const Range& range)
          {
             if( out)
             {
+               auto current = range.first;
                out << "[";
-               while( range.first != range.last)
+               while( current != range.last)
                {
-                  out << *range.first++;
-                  if( range.first != range.last)
+                  out << *current++;
+                  if( current != range.last)
                      out << ",";
                }
                out << "]";
@@ -729,6 +730,12 @@ namespace casual
          bool any_of( R&& range, P predicate)
          {
             return std::any_of( std::begin( range), std::end( range), predicate);
+         }
+
+         template< typename R, typename P>
+         bool none_of( R&& range, P predicate)
+         {
+            return std::none_of( std::begin( range), std::end( range), predicate);
          }
 
 

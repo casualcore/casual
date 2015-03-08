@@ -43,6 +43,8 @@ namespace casual
 
          namespace tx
          {
+            int handler();
+
             const char* error( int code);
          } // tx
 

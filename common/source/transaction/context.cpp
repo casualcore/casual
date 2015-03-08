@@ -101,6 +101,7 @@ namespace casual
             message::transaction::client::connect::Reply reply;
             reader( reply);
 
+
             queue = reply.transactionManagerQueue;
             common::environment::domain::name( reply.domain);
             std::swap( resources, reply.resourceManagers);
@@ -274,7 +275,10 @@ namespace casual
 
             Transaction transaction( trid);
 
-            resources_start( transaction, TMNOFLAGS);
+            if( trid)
+            {
+               resources_start( transaction, TMNOFLAGS);
+            }
 
             m_transactions.push_back( std::move( transaction));
          }
@@ -341,11 +345,14 @@ namespace casual
             {
                if( ! transaction.descriptors.empty())
                {
-                  log::error << "pending replies associated with transaction - action: transaction state to rollback only\n";
-                  log::internal::transaction << transaction << std::endl;
+                  if( transaction.trid)
+                  {
+                     log::error << "pending replies associated with transaction - action: transaction state to rollback only\n";
+                     log::internal::transaction << transaction << std::endl;
 
-                  transaction.state = Transaction::State::rollback;
-                  message.error = TPESVCERR;
+                     transaction.state = Transaction::State::rollback;
+                     message.error = TPESVCERR;
+                  }
 
                   //
                   // Discard pending
@@ -398,9 +405,15 @@ namespace casual
             //
             range::for_each( transactions, pending_check);
 
+            //
+            // Ignore 'null trid':s
+            //
+            auto actual_transactions = std::get< 0>( range::stable_partition( transactions, [&]( const Transaction& transaction){
+               return ! transaction.trid.null();
+            }));
 
 
-            auto owner_split = range::stable_partition( transactions, [&]( const Transaction& transaction){
+            auto owner_split = range::stable_partition( actual_transactions, [&]( const Transaction& transaction){
                return transaction.trid.owner() != process;
             });
 
@@ -521,15 +534,25 @@ namespace casual
 
             auto&& transaction = current();
 
-            if( ! transaction.resources.empty())
+            if( transaction.trid)
             {
-               return TX_OUTSIDE;
+               if( m_control != Control::stacked)
+               {
+                  throw exception::tx::Protocoll{ "begin - already in transaction mode", CASUAL_NIP( transaction)};
+               }
+
+               //
+               // Tell the RM:s to suspend
+               //
+               resources_end( transaction, TMSUSPEND);
+
+            }
+            else if( ! transaction.resources.empty())
+            {
+               throw exception::tx::Outside{ "begin - resources not done with work outside global transaction"}; //, exception::make_nip( "resources", range::make( transaction.resources))};
             }
 
-            if( ! transaction.suspended)
-            {
-               return TX_PROTOCOL_ERROR;
-            }
+
 
             queue::blocking::Writer writer( manager().queue);
             queue::blocking::Reader reader( ipc::receive::queue());
@@ -547,7 +570,7 @@ namespace casual
          }
 
 
-         int Context::open()
+         void Context::open()
          {
             common::trace::Scope trace{ "transaction::Context::open", common::log::internal::transaction};
 
@@ -557,12 +580,16 @@ namespace casual
 
             range::transform( m_resources.all, result, open);
 
-            // TODO: TX_FAIL
-            if( std::all_of( std::begin( result), std::end( result), []( int value) { return value != XA_OK;}))
+            //
+            // XA spec: if one, or more of resources opens ok, then it's not an error...
+            //   seams really strange not to notify user that some of the resources has
+            //   failed to open...
+            //
+
+            if( range::all_of( result, []( int value) { return value != XA_OK;}))
             {
-               //throw exception::tx::Error( "failed to open resources");
+               //throw exception::tx::Error( "failed to open all resources"); //, CASUAL_NIP( m_resources.all));
             }
-            return TX_OK;
          }
 
          void Context::close()
@@ -594,16 +621,24 @@ namespace casual
 
             const auto process = process::handle();
 
+            if( ! transaction.trid)
+            {
+               throw exception::tx::no::Begin{ "commit - no ongoing transaction"};
+            }
+
             if( transaction.trid.owner() != process)
             {
-               log::internal::transaction << "commit - current process not owner of transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
-               return TX_PROTOCOL_ERROR;
+               throw exception::tx::Protocoll{ "commit - not owner of transaction", CASUAL_NIP( transaction)};
+            }
+
+            if( transaction.state != Transaction::State::active)
+            {
+               throw exception::tx::Protocoll{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
             }
 
             if( ! transaction.descriptors.empty())
             {
-               log::error << "commit - pending replies " << range::make( transaction.descriptors) << " associated with transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
-               return TX_PROTOCOL_ERROR;
+               throw exception::tx::Protocoll{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }
 
 
@@ -669,14 +704,9 @@ namespace casual
 
          int Context::commit()
          {
-            if( m_transactions.empty())
-            {
-               log::internal::transaction << "commit - no ongoing transaction: " << error::tx::error( TX_NO_BEGIN) << std::endl;
-               return TX_NO_BEGIN;
-            }
+            common::trace::Scope trace{ "transaction::Context::commit", common::log::internal::transaction};
 
-
-            auto result = commit( m_transactions.back());
+            auto result = commit( current());
 
             //
             // We only remove/consume transaction if commit succeed
@@ -684,7 +714,7 @@ namespace casual
             //
             if( result == TX_OK)
             {
-               m_transactions.pop_back();
+               return pop_transaction();
             }
 
             return result;
@@ -697,16 +727,14 @@ namespace casual
 
             if( ! transaction)
             {
-               log::error << "rollback - no ongoing transaction: " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
-               return TX_PROTOCOL_ERROR;
+               throw exception::tx::Protocoll{ "no ongoing transaction"};
             }
 
             const auto process = process::handle();
 
             if( transaction.trid.owner() != process)
             {
-               log::internal::transaction << "rollback - current process not owner of transaction " << transaction << " - " << error::tx::error( TX_PROTOCOL_ERROR) << std::endl;
-               return TX_PROTOCOL_ERROR;
+               throw exception::tx::Protocoll{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
             }
 
             message::transaction::rollback::Request request;
@@ -731,13 +759,12 @@ namespace casual
 
          int Context::rollback()
          {
-            auto& transaction = current();
 
-            auto result = rollback( transaction);
+            auto result = rollback( current());
 
-            if( transaction)
+            if( result == TX_OK)
             {
-               m_transactions.pop_back();
+               return pop_transaction();
             }
 
             return result;
@@ -757,26 +784,144 @@ namespace casual
 
          int Context::setTransactionControl(TRANSACTION_CONTROL control)
          {
-            // TODO:
+            switch( control)
+            {
+               case TX_UNCHAINED:
+               {
+                  m_control = Control::unchained;
+                  break;
+               }
+               case TX_CHAINED:
+               {
+                  m_control = Control::chained;
+                  break;
+               }
+               case TX_STACKED:
+               {
+                  m_control = Control::stacked;
+                  break;
+               }
+               default:
+               {
+                  throw exception::tx::Argument{ "argument control has invalid value", CASUAL_NIP( control)};
+               }
+            }
             return TX_OK;
          }
 
-         int Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
+         void Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
          {
-            // TODO:
-            return TX_OK;
+            throw exception::tx::no::Support{ "set transaction timeout is not supported"};
+
          }
 
-         int Context::info( TXINFO& info)
+         bool Context::info( TXINFO* info)
          {
             auto&& transaction = current();
 
-            info.xid = transaction.trid.xid;
-            info.transaction_state = static_cast< decltype( info.transaction_state)>( transaction.state);
-
-
-            return transaction ? 1 : 0;
+            if( info)
+            {
+               info->xid = transaction.trid.xid;
+               info->transaction_state = static_cast< decltype( info->transaction_state)>( transaction.state);
+            }
+            return static_cast< bool>( transaction);
          }
+
+
+         void Context::suspend( XID* xid)
+         {
+            common::trace::Scope trace{ "transaction::Context::suspend", common::log::internal::transaction};
+
+            if( xid == nullptr)
+            {
+               throw exception::tx::Argument{ "argument xid is null"};
+            }
+
+            auto& ongoing = current();
+
+            if( transaction::null( ongoing.trid))
+            {
+               throw exception::tx::Protocoll{ "attempt to suspend a null xid"};
+            }
+
+            //
+            // We don't check if current transaction is aborted. This differs from Tuxedo's semantics
+            //
+
+            //
+            // Tell the RM:s to suspend
+            //
+            resources_end( ongoing, TMSUSPEND);
+
+            *xid = ongoing.trid.xid;
+
+            //
+            // Push a null-xid to indicate suspended transaction
+            //
+            m_transactions.push_back( Transaction{});
+         }
+
+
+
+         void Context::resume( const XID* xid)
+         {
+            common::trace::Scope trace{ "transaction::Context::resume", common::log::internal::transaction};
+
+            if( xid == nullptr)
+            {
+               throw exception::tx::Argument{ "argument xid is null"};
+            }
+
+            if( transaction::null( *xid))
+            {
+               throw exception::tx::Argument{ "attempt to resume a 'null xid'"};
+            }
+
+            auto& ongoing = current();
+
+            if( ongoing.trid)
+            {
+               throw exception::tx::Protocoll{ "active transaction"};
+            }
+
+            if( ! ongoing.resources.empty())
+            {
+               auto& global = ongoing;
+               throw exception::tx::Outside{ "ongoing work outside global transaction", CASUAL_NIP( global)};
+            }
+
+
+
+            auto found = range::find( m_transactions, *xid);
+
+            if( ! found)
+            {
+               throw exception::tx::Argument{ "transaction not known"};
+               //common::log::internal::transaction << "TX_EINVAL - transaction not known: " << *xid << std::endl;
+            }
+
+
+            //
+            // All precondition is met, let's set wanted transaction as current
+            //
+            {
+               //
+               // Tell the RM:s to resume
+               //
+               resources_end( *found, TMRESUME);
+
+               //
+               // We pop the top null-xid that represent a suspended transaction
+               //
+               m_transactions.pop_back();
+
+               //
+               // We rotate the wanted to end;
+               //
+               std::rotate( found.first, found.first + 1, std::end( m_transactions));
+            }
+         }
+
 
          void Context::resources_start( const Transaction& transaction, long flags)
          {
@@ -790,6 +935,8 @@ namespace casual
 
                auto start = std::bind( &Resource::start, std::placeholders::_1, std::ref( transaction), flags);
                range::for_each( m_resources.fixed, start);
+
+               // TODO: throw if some of the rm:s report an error?
 
 
                //
@@ -816,8 +963,63 @@ namespace casual
                // We call end on all resources
                //
                auto end = std::bind( &Resource::end, std::placeholders::_1, std::ref( transaction), flags);
-               range::for_each( m_resources.all, end);
+
+               std::vector< int> results;
+               range::transform( m_resources.all, results, end);
+
+               // TODO: throw if some of the rm:s report an error?
             }
+         }
+
+         int Context::pop_transaction()
+         {
+            common::trace::Scope trace{ __func__, common::log::internal::transaction};
+
+            //
+            // Dependent on control we do different stuff
+            //
+            switch( m_control)
+            {
+               case Control::unchained:
+               {
+                  //
+                  // Same as pop, then push null-xid
+                  //
+                  m_transactions.back() = Transaction{};
+                  break;
+               }
+               case Control::chained:
+               {
+                  //
+                  // Same as pop, then push null-xid
+                  //
+                  m_transactions.back() = Transaction{};
+
+                  //
+                  // We start a new one
+                  //
+                  return begin();
+               }
+               case Control::stacked:
+               {
+                  //
+                  // Just promote the previous transaction in the stack to current
+                  //
+                  m_transactions.pop_back();
+
+                  //
+                  // Tell the RM:s to resume
+                  //
+                  resources_end( m_transactions.back(), TMRESUME);
+
+                  break;
+               }
+               default:
+               {
+                  throw exception::tx::Fail{ "unknown control directive - this can not happen"};
+               }
+            }
+            return TX_OK;
          }
 
       } // transaction
