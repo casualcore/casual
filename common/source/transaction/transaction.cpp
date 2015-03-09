@@ -34,6 +34,8 @@ namespace casual
 
          bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
 
+         bool operator == ( const Transaction& lhs, const XID& rhs) { return lhs.trid.xid == rhs;}
+
          std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
          {
             return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<

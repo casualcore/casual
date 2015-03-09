@@ -72,6 +72,9 @@ typedef long COMMIT_RETURN;
 typedef long TRANSACTION_CONTROL;
 #define TX_UNCHAINED 0
 #define TX_CHAINED 1
+/* casual extension */
+#define TX_STACKED 42
+
 
 /* type of transaction timeouts */
 typedef long TRANSACTION_TIMEOUT;
@@ -104,6 +107,11 @@ extern "C" {
    extern int tx_set_transaction_control(TRANSACTION_CONTROL control);
    extern int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout);
    extern int tx_info(TXINFO *);
+
+   /* casual extension */
+   extern int tx_suspend( XID* xid);
+   extern int tx_resume( const XID* xid);
+
 #ifdef __cplusplus
 }
 #endif

@@ -485,7 +485,7 @@ namespace casual
 
                   if( option_string.empty())
                   {
-                     option_string == "<empty>";
+                     option_string = "<empty>";
                   }
 
                   out << "   " << terminal::color::white << option_string;

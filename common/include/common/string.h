@@ -12,6 +12,7 @@
 
 #include <regex>
 #include <algorithm>
+#include <sstream>
 
 namespace casual
 {
@@ -118,6 +119,15 @@ namespace casual
 
 
 
+         inline std::string to_string( std::string value) { return value;}
+         inline const std::string& to_string( const std::string& value) { return value;}
+
+         inline std::string to_string( long value) { return std::to_string( value);}
+
+         template< typename T>
+         std::string to_string( T& value) { std::ostringstream out; out << value; return out.str();}
+
+
 
       } // internal
 
@@ -125,6 +135,12 @@ namespace casual
 		R from_string( const std::string& value)
 		{
 		   return internal::from_string< typename std::decay< R>::type>::get( value);
+		}
+
+		template< typename T>
+		auto to_string( T&& value) -> decltype( internal::to_string( std::forward< T>( value)))
+		{
+		   return internal::to_string( std::forward< T>( value));
 		}
 
 

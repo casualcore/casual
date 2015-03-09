@@ -56,7 +56,7 @@ install_bin.append( casual_field_make_header)
 #
 # Unittest
 #
-LinkIsolatedUnittest( 'bin/test-buffer',
+LinkUnittest( 'bin/test-buffer',
    [
     Compile( 'unittest/isolated/source/test_field_buffer.cpp'),
     Compile( 'unittest/isolated/source/test_octet_buffer.cpp'),

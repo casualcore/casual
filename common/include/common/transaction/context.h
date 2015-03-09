@@ -40,7 +40,7 @@ namespace casual
             //! Correspond to the tx API
             //!
             //! @{
-            int open();
+            void open();
             void close();
 
             int begin();
@@ -51,8 +51,16 @@ namespace casual
 
             int setCommitReturn( COMMIT_RETURN value);
             int setTransactionControl(TRANSACTION_CONTROL control);
-            int setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
-            int info( TXINFO& info);
+            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            bool info( TXINFO* info);
+            //! @}
+
+            //!
+            //! Correspond to casual extension of the tx API
+            //!
+            //! @{
+            void suspend( XID* xid);
+            void resume( const XID* xid);
             //! @}
 
             //!
@@ -62,9 +70,6 @@ namespace casual
             int resourceRegistration( int rmid, XID* xid, long flags);
             int resourceUnregistration( int rmid, long flags);
             //! @}
-
-            int suspend();
-            int resume();
 
 
 
@@ -120,9 +125,10 @@ namespace casual
             {
                unchained = TX_UNCHAINED,
                chained = TX_CHAINED,
+               stacked = TX_STACKED
             };
 
-            Control control = Control::unchained;
+            Control m_control = Control::unchained;
 
 
             struct resources_type
@@ -175,6 +181,7 @@ namespace casual
             void resources_start( const Transaction& transaction, long flags);
             void resources_end( const Transaction& transaction, long flags);
 
+            int pop_transaction();
 
 
          };

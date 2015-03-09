@@ -79,7 +79,7 @@ install_headers.append( 'include/transaction/resource/proxy_server.h')
 # unittest
 #
  
-LinkIsolatedUnittest( 'bin/test-casual-transaction',
+LinkUnittest( 'bin/test-casual-transaction',
     [
         Compile( 'unittest/isolated/source/test_configuration.cpp'),
         Compile( 'unittest/isolated/source/test_transactionlog.cpp'),

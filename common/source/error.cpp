@@ -230,6 +230,40 @@ namespace casual
 
                return mapping.at( code);
             }
+
+            int handler()
+            {
+               try
+               {
+                  throw;
+               }
+               catch( const exception::tx::Protocoll& exception)
+               {
+                  log::error << "TX_PROTOCOL_ERROR " << exception << std::endl;
+                  return TX_PROTOCOL_ERROR;
+               }
+               catch( const exception::tx::Fail& exception)
+               {
+                  log::error << "TX_FAIL " << exception << std::endl;
+                  return TX_FAIL;
+               }
+               catch( const exception::tx::no::Support& exception)
+               {
+                  log::internal::transaction << "TX_NOT_SUPPORTED " << exception << std::endl;
+                  return TX_NOT_SUPPORTED;
+               }
+               catch( const exception::tx::no::Begin& exception)
+               {
+                  log::internal::transaction << "TX_NO_BEGIN " << exception << std::endl;
+                  return TX_NO_BEGIN;
+               }
+               catch( ...)
+               {
+                  error::handler();
+                  return TX_FAIL;
+               }
+            }
+
          } // tx
 
       } // error

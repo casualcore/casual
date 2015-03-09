@@ -55,7 +55,7 @@ install_lib.append( lib_sf)
 # unittest
 #
 
-LinkIsolatedUnittest( 'bin/test-casual-sf',
+LinkUnittest( 'bin/test-casual-sf',
 	[
         Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
         Compile( 'unittest/isolated/source/test_archive.cpp'),

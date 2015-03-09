@@ -51,6 +51,7 @@ casual_common_objectfiles = [
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/dispatch.cpp'),
     
+    Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),
     Compile( 'source/environment.cpp'),
     Compile( 'source/file.cpp'),
@@ -148,6 +149,7 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_signal.cpp'),
    
    Compile( 'unittest/isolated/source/test_transaction_id.cpp'),
+   Compile( 'unittest/isolated/source/test_transaction.cpp'),
    Compile( 'unittest/isolated/source/test_algorithm.cpp'),
    
    Compile( 'unittest/isolated/source/test_mockup.cpp'),
@@ -158,7 +160,7 @@ unittest_objectfiles = [
 
 
 
-target_test_common = LinkIsolatedUnittest( 'bin/test-casual-common-isolated', 
+target_test_common = LinkUnittest( 'bin/test-casual-common-isolated', 
 	unittest_objectfiles,
 	[
      common,

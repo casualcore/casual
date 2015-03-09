@@ -81,7 +81,7 @@ test_casual_broker_isolated = [
 ]
  
  
-LinkIsolatedUnittest( 'bin/test-casual-broker-isolated',
+LinkUnittest( 'bin/test-casual-broker-isolated',
    test_casual_broker_isolated,
     [
      logic_archive,

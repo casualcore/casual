@@ -34,10 +34,11 @@ install_include.append( 'include/xatmi.h')
 # unittest
 #
 
-LinkIsolatedUnittest( 'bin/test-casual-xatmi',
+LinkUnittest( 'bin/test-casual-xatmi',
     [
        Compile( 'unittest/isolated/source/test_buffer.cpp'),
        Compile( 'unittest/isolated/source/test_xatmi.cpp'),
+       Compile( 'unittest/isolated/source/test_tx.cpp'),
     ],
     [ lib_xatmi, 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment'])
 

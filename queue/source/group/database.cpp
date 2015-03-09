@@ -13,6 +13,9 @@
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 
+// temp
+#include "common/chronology.h"
+
 
 #include <chrono>
 
@@ -141,8 +144,12 @@ namespace casual
             //
             // group error queue
             //
-            auto groupname = common::file::removeExtension( common::file::basename( database));
-            m_connection.execute( "INSERT OR IGNORE INTO queues VALUES ( 1, \"" + groupname + "error-queue\", 0, 1, 1); ");
+            auto groupname = common::file::removeExtension( common::file::basename( m_connection.file()));
+            if( groupname.empty())
+            {
+               groupname = common::uuid::string( common::uuid::make());
+            }
+            m_connection.execute( "INSERT OR REPLACE INTO queues VALUES ( 1, \"" + groupname + ".group.error\", 0, 1, 1); ");
             m_errorQueue = 1;
 
 
@@ -190,7 +197,9 @@ namespace casual
 
                m_statement.information.queues = m_connection.precompile( R"(
                   SELECT
-                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id)
+                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id), 
+                       MIN( length( m.payload)), MAX( length( m.payload)), AVG( length( m.payload)), 
+                       SUM( length( m.payload)), MAX( m.timestamp)
                   FROM
                      queues q LEFT JOIN messages m ON q.id = m.queue AND m.state = 2
                   GROUP BY q.id 
@@ -198,9 +207,24 @@ namespace casual
                       ;
                   )");
 
+               /*
+                  id            BLOB PRIMARY KEY,
+                  queue         INTEGER,
+                  origin        NUMBER, -- the first queue a message is enqueued to
+                  gtrid         BLOB,
+                  correlation   TEXT,
+                  state         INTEGER,
+                  reply         TEXT,
+                  redelivered   INTEGER,
+                  type          TEXT,
+                  subtype       TEXT,
+                  avalible      INTEGER,
+                  timestamp     INTEGER,
+                  payload       BLOB,
+                */
                m_statement.information.messages = m_connection.precompile( R"(
                   SELECT
-                     m.id, m.type, m.state
+                     m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.subtype, m.avalible, m.timestamp, length( m.payload)
                   FROM
                      messages m
                   WHERE
@@ -208,6 +232,12 @@ namespace casual
                 )");
 
             }
+         }
+
+
+         std::string Database::file() const
+         {
+            return m_connection.file();
          }
 
          Queue Database::create( Queue queue)
@@ -218,7 +248,7 @@ namespace casual
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name + "_error", queue.retries, m_errorQueue, Queue::cErrorQueue);
+            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name + ".error", queue.retries, m_errorQueue, Queue::cErrorQueue);
             queue.error = m_connection.rowid();
 
             m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name, queue.retries, queue.error, Queue::cQueue);
@@ -236,7 +266,7 @@ namespace casual
             if( ! existing.empty())
             {
                m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id);
-               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name + "_error", queue.retries, existing.front().error);
+               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error);
 
             }
          }
@@ -306,8 +336,6 @@ namespace casual
 
             long state = message.trid ? message::State::added : message::State::enqueued;
 
-            auto avalible = std::chrono::time_point_cast< std::chrono::microseconds>( message.message.avalible).time_since_epoch().count();
-            auto timestamp = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
             m_statement.enqueue.execute(
                   reply.id.get(),
@@ -320,8 +348,8 @@ namespace casual
                   0,
                   message.message.type.type,
                   message.message.type.subtype,
-                  avalible,
-                  timestamp,
+                  message.message.avalible,
+                  common::platform::clock_type::now(),
                   message.message.payload);
 
             return reply;
@@ -442,7 +470,14 @@ namespace casual
                row.get( 2, queue.retries);
                row.get( 3, queue.error);
                row.get( 4, queue.type);
-               row.get( 5, queue.messages);
+               row.get( 5, queue.message.counts);
+               row.get( 6, queue.message.size.min);
+               row.get( 7, queue.message.size.max);
+               row.get( 8, queue.message.size.average);
+               row.get( 9, queue.message.size.total);
+               row.get( 10, queue.message.timestamp);
+
+               common::log::internal::queue << common::chronology::local( queue.message.timestamp) << std::endl;
 
                result.push_back( std::move( queue));
             }
@@ -459,11 +494,22 @@ namespace casual
 
             while( query.fetch( row))
             {
+               /*
+                m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.subtype, m.avalible, m.timestamp, length( m.payload)
+                */
                common::message::queue::information::Message message;
 
                row.get( 0, message.id.get());
-               row.get( 1, message.type);
-               row.get( 2, message.state);
+               row.get( 1, message.origin);
+               row.get( 2, message.trid);
+               row.get( 3, message.state);
+               row.get( 4, message.reply);
+               row.get( 5, message.redelivered);
+               row.get( 6, message.type.type);
+               row.get( 7, message.type.subtype);
+               row.get( 8, message.avalible);
+               row.get( 9, message.timestamp);
+               row.get( 10, message.size);
 
                result.push_back( std::move( message));
             }

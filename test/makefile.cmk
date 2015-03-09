@@ -115,7 +115,7 @@ install_bin.append( target)
 # unittest
 #
 
-LinkIsolatedUnittest( 'unittest/bin/test-casual-generation-isolated',
+LinkUnittest( 'unittest/bin/test-casual-generation-isolated',
     [
 	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp')
 	],

@@ -237,7 +237,7 @@ namespace casual
                            queue::peek::Message result;
 
                            result.id = message.id;
-                           result.type = message.type;
+                           //result.type = message.type;
                            result.state = message.state;
 
                            return result;

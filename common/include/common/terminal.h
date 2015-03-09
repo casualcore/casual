@@ -65,6 +65,20 @@ namespace casual
             extern color_t magenta;
             extern color_t cyan;
             extern color_t white;
+
+            struct Solid
+            {
+               Solid( color_t& color) : m_color( color) {}
+
+               template< typename T>
+               void operator () ( std::ostream& out, T&& value)
+               {
+                  out << m_color << value;
+               }
+            private:
+               color_t& m_color;
+            };
+
          } // color
       } // terminal
 

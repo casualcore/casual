@@ -91,6 +91,7 @@ namespace casual
                   {
                      State::Group queueGroup;
                      queueGroup.name = group.name;
+                     queueGroup.queuebase = group.queuebase;
 
                      queueGroup.process.pid = casual::common::process::spawn(
                         casual::common::environment::directory::casual() + "/bin/casual-queue-group",
@@ -293,67 +294,25 @@ namespace casual
          return m_state;
       }
 
-      std::vector< broker::Queues> Broker::queues( std::vector< std::string> groups)
+      std::vector< common::message::queue::information::queues::Reply> Broker::queues()
       {
          common::trace::internal::Scope trace( "Broker::queues", common::log::internal::queue);
 
-         if( groups.empty())
-         {
-            return getQueues( m_state.groups);
-         }
-         else
-         {
-            return getQueues(
-                  std::get< 0>( common::range::intersection(
-                     m_state.groups,
-                     common::range::unique( groups),
-                     std::bind( common::equal_to{},
-                           std::bind( &broker::State::Group::name, std::placeholders::_1), std::placeholders::_2))));
-         }
+         std::vector< common::message::queue::information::queues::Reply> replies;
+
+         common::queue::batch(
+               broker::queue::blocking::Send{ m_state}, m_state.groups,
+               broker::queue::blocking::Reader{ casual::common::ipc::receive::queue(), m_state}, replies,
+                  []( const broker::State::Group& group)
+                  {
+                     common::message::queue::information::queues::Request request;
+                     request.process = common::process::handle();
+                     return std::make_tuple( group.process.queue, std::move( request));
+                  });
+
+         return replies;
       }
 
-      template< typename R>
-      std::vector< broker::Queues> Broker::getQueues( R&& range)
-      {
-         common::trace::internal::Scope trace( "Broker::getQueues", common::log::internal::queue);
-
-         std::vector< broker::Queues> result;
-
-         for( auto&& group : range)
-         {
-            common::log::internal::queue << "request to: " << group.process << std::endl;
-
-            broker::queue::blocking::Writer blockedWrite( group.process.queue, m_state);
-
-            common::message::queue::information::queues::Request request;
-            request.process = common::process::handle();
-
-            blockedWrite( request);
-
-            broker::Queues queues;
-            queues.group = group;
-            result.push_back( std::move( queues));
-         }
-
-         for( auto count = result.size(); count != 0; --count)
-         {
-            broker::queue::blocking::Reader blockedRead( casual::common::ipc::receive::queue(), m_state);
-
-            common::message::queue::information::queues::Reply reply;
-            blockedRead( reply);
-
-            auto found = common::range::find_if( result,
-                  std::bind( common::equal_to{}, std::bind( &broker::Queues::groupId, std::placeholders::_1), reply.process.pid));
-
-            if( found)
-            {
-               common::range::copy( reply.queues, std::back_inserter( found->queues));
-            }
-         }
-
-         return result;
-
-      }
 
    } // queue
 

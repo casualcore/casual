@@ -22,48 +22,104 @@ namespace casual
          namespace admin
          {
 
-            struct GroupVO
+            struct Group
             {
-               sf::platform::pid_type pid;
-               sf::platform::queue_id_type queue_id;
-               std::string name;
-
-               std::vector< std::string> queues;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
+               struct id_t
                {
-                  archive & CASUAL_MAKE_NVP( pid);
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( queues);
-               })
-            };
+                  sf::platform::pid_type pid;
+                  sf::platform::queue_id_type queue;
 
-            struct QueueVO
-            {
-               std::size_t id;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( pid);
+                     archive & CASUAL_MAKE_NVP( queue);
+                  })
+
+               } id;
                std::string name;
-               std::size_t type;
-               std::size_t retries;
-               std::size_t error;
-               std::size_t messages;
+               std::string queuebase;
+
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( id);
                   archive & CASUAL_MAKE_NVP( name);
+                  archive & CASUAL_MAKE_NVP( queuebase);
+               })
+            };
+
+            struct Queue
+            {
+               sf::platform::pid_type group;
+               std::size_t id;
+               std::string name;
+               std::size_t type;
+               std::size_t retries;
+               std::size_t error;
+
+               struct message_t
+               {
+                  std::size_t counts = 0;
+                  sf::platform::time_type timestamp;
+
+                  struct size_t
+                  {
+                     std::size_t min = 0;
+                     std::size_t max = 0;
+                     std::size_t average = 0;
+                     std::size_t total = 0;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        archive & CASUAL_MAKE_NVP( min);
+                        archive & CASUAL_MAKE_NVP( max);
+                        archive & CASUAL_MAKE_NVP( average);
+                        archive & CASUAL_MAKE_NVP( total);
+                     })
+                  } size;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( counts);
+                     archive & CASUAL_MAKE_NVP( timestamp);
+                     archive & CASUAL_MAKE_NVP( size);
+                  })
+
+               } message;
+
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( group);
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( name);
                   archive & CASUAL_MAKE_NVP( type);
                   archive & CASUAL_MAKE_NVP( retries);
                   archive & CASUAL_MAKE_NVP( error);
-                  archive & CASUAL_MAKE_NVP( messages);
+                  archive & CASUAL_MAKE_NVP( message);
                })
 
-               friend bool operator < ( const QueueVO& lhs, const QueueVO& rhs)
+               friend bool operator < ( const Queue& lhs, const Queue& rhs)
                {
                   return lhs.id < rhs.id;
                }
             };
 
+            struct State
+            {
+               std::vector< Group> groups;
+               std::vector< Queue> queues;
 
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( groups);
+                  archive & CASUAL_MAKE_NVP( queues);
+               })
+
+            };
+
+            /*
             namespace verbose
             {
                struct GroupVO
@@ -82,9 +138,8 @@ namespace casual
                   })
 
                };
-
-
             }
+            */
 
 
          } // admin
