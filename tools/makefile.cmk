@@ -24,7 +24,7 @@ install_bin = []
 
 target = LinkExecutable( 'bin/casual-build-server',
    [ Compile( 'build_server/build_server.cpp')],
-   [ 'casual-common', 'casual-common-terminal', 'casual-sf', 'casual-configuration'])
+   [ 'casual-common', 'casual-sf', 'casual-configuration'])
 
 install_bin.append( target)
 
@@ -32,7 +32,6 @@ target = LinkExecutable( 'bin/casual-build-resource-proxy',
    [ Compile( 'resource_proxy/build_resource_proxy.cpp')],
    [ 
     'casual-common', 
-    'casual-common-terminal',
     'casual-sf', 
     'casual-configuration',
     ])

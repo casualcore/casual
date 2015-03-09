@@ -29,6 +29,21 @@ namespace casual
 
             std::vector< std::string> libraries;
 
+            struct paths_t
+            {
+               std::vector< std::string> include;
+               std::vector< std::string> library;
+
+               template< typename A>
+               void serialize( A& archive)
+               {
+                  archive & CASUAL_MAKE_NVP( include);
+                  archive & CASUAL_MAKE_NVP( library);
+               }
+
+            } paths;
+
+
             template< typename A>
             void serialize( A& archive)
             {
@@ -36,6 +51,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( server);
                archive & CASUAL_MAKE_NVP( xa_struct_name);
                archive & CASUAL_MAKE_NVP( libraries);
+               archive & CASUAL_MAKE_NVP( paths);
             }
          };
 
