@@ -153,6 +153,7 @@ namespace casual
          } // domain
 
 
+
          std::string string( const std::string& value)
          {
             std::string result;
@@ -195,7 +196,6 @@ namespace casual
 
             return result;
          }
-
 		} // environment
 	} // common
 } // casual

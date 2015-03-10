@@ -330,11 +330,11 @@ namespace sql
 
       struct Connection
       {
-         Connection( const std::string &filename)
+         Connection( std::string filename) : m_file( std::move( filename))
          {
             sqlite3* handle;
 
-            if( sqlite3_open( filename.data(), &handle) != SQLITE_OK)
+            if( sqlite3_open( m_file.c_str(), &handle) != SQLITE_OK)
                //&& sql("PRAGMA foreign_keys = ON;"))
             {
                throw exception::Connection( sqlite3_errmsg( handle), __FILE__, __LINE__);
@@ -348,12 +348,15 @@ namespace sql
 
          std::string file() const
          {
+            return m_file;
+            /*
             auto path = sqlite3_db_filename( m_handle.get(), "main");
             if( ! path)
             {
                return {};
             }
             return path;
+            */
          }
 
 
@@ -395,6 +398,7 @@ namespace sql
          void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
 
       private:
+         std::string m_file;
          std::shared_ptr< sqlite3> m_handle;
       };
 

@@ -127,6 +127,7 @@ namespace casual
 			//!
 			std::string string( const std::string& value);
 
+
 		} // environment
 	} // common
 } // casual
