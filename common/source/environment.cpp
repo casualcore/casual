@@ -9,6 +9,7 @@
 #include "common/environment.h"
 #include "common/exception.h"
 #include "common/file.h"
+#include "common/algorithm.h"
 
 #include <cstdlib>
 
@@ -153,9 +154,50 @@ namespace casual
 
 
 
-		}
-	}
-}
+         std::string string( const std::string& value)
+         {
+            std::string result;
+            auto divide = range::divide_first( value, "$(");
 
+            while( std::get< 1>( divide))
+            {
+
+               result.insert( std::end( result), std::begin( std::get< 0>( divide)), std::end( std::get< 0>( divide)));
+
+               auto current = std::get< 1>( divide);
+               auto variable = current;
+
+               //
+               // Make sure we're past the "$("
+               //
+               ++variable;
+               ++variable;
+
+               auto rest = range::divide_first( variable, ")");
+
+               if( std::get< 1>( rest))
+               {
+                  const std::string name{ std::begin( std::get< 0>( rest)), std::end( std::get< 0>( rest))};
+
+                  result += environment::variable::get( name);
+
+                  current = std::get< 1>( rest)++;
+               }
+               else
+               {
+                  result.insert( std::end( result), std::begin( current), std::end( current));
+                  current = std::get< 1>( rest);
+               }
+
+               divide = range::divide_first( current, "$(");
+            }
+
+            result.insert( std::end( result), std::begin( std::get< 0>( divide)), std::end( std::get< 0>( divide)));
+
+            return result;
+         }
+		} // environment
+	} // common
+} // casual
 
 

@@ -24,6 +24,7 @@ LibraryPaths( ['bin',
 
 install_lib = []
 install_bin = []
+install_headers = []
 
 #
 # Compile and link the transaction manager
@@ -71,6 +72,9 @@ target = LinkLibrary( 'bin/casual-resource-proxy-server',
 
 install_lib.append( target)
 
+install_headers.append( 'include/transaction/resource/proxy_server.h')
+
+
 #
 # unittest
 #
@@ -105,5 +109,8 @@ install_bin.append( target)
 
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')
+Install( install_headers,'$(CASUAL_HOME)/include')
+
+
 
 

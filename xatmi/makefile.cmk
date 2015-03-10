@@ -12,6 +12,7 @@ LibraryPaths([
 
 
 install_lib = []
+install_include = []
  
 
 lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
@@ -24,6 +25,10 @@ lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
 	['casual-common'])
 
 install_lib.append( lib_xatmi)
+install_include.append( 'include/xatmi_server.h')
+install_include.append( 'include/xa.h')
+install_include.append( 'include/tx.h')
+install_include.append( 'include/xatmi.h')
 
 #
 # unittest
@@ -41,5 +46,7 @@ LinkUnittest( 'bin/test-casual-xatmi',
 # Install
 #    
 Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_include, '$(CASUAL_HOME)/include')
+
 
 

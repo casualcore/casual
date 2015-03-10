@@ -1,6 +1,16 @@
 from casual.make.directive import *
 
 
+#sys.stderr.write( 'platform: ' + sys.platform);
+
+# lib_paths = [
+#    '../common/bin',
+#     '../xatmi/bin',
+#     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'
+# ];
+
+#if sys.platform.startswith( 'linux'):
+    
 
 IncludePaths([
     'include',

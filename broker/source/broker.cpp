@@ -269,7 +269,7 @@ namespace casual
 
       void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)
       {
-         common::Trace trace( "Broker::serverInstances");
+         common::trace::internal::Scope trace( "Broker::serverInstances");
 
          auto updateInstances = [&]( const admin::update::InstancesVO& value)
                {
@@ -286,6 +286,7 @@ namespace casual
 
       admin::ShutdownVO Broker::shutdown( bool broker)
       {
+         common::trace::internal::Scope trace( "Broker::shutdown");
 
          auto orginal = m_state.processes();
 

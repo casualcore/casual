@@ -40,7 +40,7 @@ void generate( std::ostream& out, const config::xa::Switch& xa_switch)
 *
 */
 
-#include "transaction/resource/proxy_server.h"
+#include <proxy_server.h>
 #include <xa.h>
 
 #ifdef __cplusplus
@@ -164,15 +164,31 @@ int build( const std::string& c_file, const config::xa::Switch& xa_switch, const
 
    std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
+   auto linkDirective = common::string::adjacent::split( settings.linkDirectives);
+   arguments.insert( std::end( arguments), std::begin( linkDirective), std::end( linkDirective));
+
+   for( auto& include_path : xa_switch.paths.include)
+   {
+      arguments.emplace_back( "-I" + include_path);
+   }
+   // Add casual-paths, that we know will be needed
+   arguments.emplace_back( "-I$CASUAL_HOME/include");
+
+   for( auto& lib_path : xa_switch.paths.library)
+   {
+      arguments.emplace_back( "-L" + lib_path);
+   }
+   // Add casual-paths, that we know will be needed
+   arguments.emplace_back( "-L$CASUAL_HOME/lib");
+
+
    for( auto& lib : xa_switch.libraries)
    {
       arguments.emplace_back( "-l" + lib);
    }
-
-   auto linkDirective = common::string::adjacent::split( settings.linkDirectives);
-   arguments.insert( std::end( arguments), std::begin( linkDirective), std::end( linkDirective));
-
+   // Add casual-lib, that we know will be needed
    arguments.emplace_back( "-lcasual-resource-proxy-server");
+
 
    if( settings.verbose)
    {
@@ -194,16 +210,14 @@ config::xa::Switch configuration( const Settings& settings)
 
    auto swithces = config::xa::switches::get();
 
-   auto findKey = std::find_if(
-      std::begin( swithces),
-      std::end( swithces),
+   auto found = common::range::find_if( swithces,
       [&]( const config::xa::Switch& value){ return value.key == settings.resourceKey;});
 
-   if( findKey == std::end( swithces))
+   if( ! found)
    {
       throw common::exception::invalid::Argument( "resource-key: " + settings.resourceKey + " not found");
    }
-   return *findKey;
+   return *found;
 }
 
 
@@ -244,6 +258,11 @@ int main( int argc, char **argv)
 
 
       auto xa_switch = configuration( settings);
+
+      if( settings.verbose)
+      {
+         std::cout << std::endl << CASUAL_MAKE_NVP( xa_switch) << std::endl;
+      }
 
       if( settings.output.empty())
       {

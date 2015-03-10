@@ -15,6 +15,9 @@ resources:
     libraries:
       - db2
       
+    paths:
+      library: [ $DB2DIR/lib64]
+      
    
   - key: rm-mockup   
     server: rm-proxy-casual-mockup
