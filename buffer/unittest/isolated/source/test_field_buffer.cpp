@@ -46,7 +46,7 @@ namespace casual
          const auto FLD_DOUBLE3 = CASUAL_FIELD_DOUBLE * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
 
          const auto FLD_STRING1 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
-         //const auto FLD_STRING2 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
+         const auto FLD_STRING2 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
          //const auto FLD_STRING3 = CASUAL_FIELD_STRING * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
 
          const auto FLD_BINARY1 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 1;
@@ -932,6 +932,29 @@ namespace casual
       }
 
 
+      TEST( casual_field_buffer, count_occurrences__expecting_correct_numbers)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
+         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
+         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
+
+         {
+            long occurrences{};
+            EXPECT_FALSE( CasualFieldOccurrencesOfId( buffer, FLD_STRING1, &occurrences));
+            EXPECT_TRUE( occurrences == 2);
+         }
+
+         {
+            long occurrences{};
+            EXPECT_FALSE( CasualFieldOccurrencesInBuffer( buffer, &occurrences));
+            EXPECT_TRUE( occurrences == 3);
+         }
+
+         tpfree( buffer);
+      }
 
 
 

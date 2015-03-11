@@ -691,6 +691,65 @@ namespace casual
             }
 
 
+            int count( const char* const handle, const long id, long& occurrences)
+            {
+               const auto buffer = find_buffer( handle);
+
+               if( !buffer)
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               const Value beyond( buffer->end());
+               Value value( buffer->begin());
+
+               occurrences = 0;
+
+               while( value != beyond)
+               {
+                  if( value.id() == id)
+                  {
+                     ++occurrences;
+                  }
+
+                  value = value.next();
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+
+            }
+
+            int count( const char* const handle, long& occurrences)
+            {
+               const auto buffer = find_buffer( handle);
+
+               if( !buffer)
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               const Value beyond( buffer->end());
+               Value value( buffer->begin());
+
+               occurrences = 0;
+
+               while( value != beyond)
+               {
+                  if( value.id() != CASUAL_FIELD_NO_ID)
+                  {
+                     ++occurrences;
+                  }
+
+                  value = value.next();
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+
+            }
+
+
+
+
             int reset( const char* const handle)
             {
                if( auto buffer = find_buffer( handle))
@@ -825,6 +884,27 @@ int CasualFieldExploreValue( const char* const buffer, const long id, const long
    return CASUAL_FIELD_SUCCESS;
 
 }
+
+int CasualFieldOccurrencesOfId( const char* const buffer, const long id, long* const occurrences)
+{
+   if( occurrences && id != CASUAL_FIELD_NO_ID)
+   {
+      return casual::buffer::field::count( buffer, id, *occurrences);
+   }
+
+   return CASUAL_FIELD_INVALID_ARGUMENT;
+}
+
+int CasualFieldOccurrencesInBuffer( const char* const buffer, long* const occurrences)
+{
+   if( occurrences)
+   {
+      return casual::buffer::field::count( buffer, *occurrences);
+   }
+
+   return CASUAL_FIELD_INVALID_ARGUMENT;
+}
+
 
 
 int CasualFieldAddChar( char* const buffer, const long id, const char value)

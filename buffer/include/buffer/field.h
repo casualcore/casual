@@ -152,6 +152,10 @@ int CasualFieldExploreBuffer( const char* buffer, long* size, long* used);
 int CasualFieldExploreValue( const char* buffer, long id, long index, long* count);
 
 
+int CasualFieldOccurrencesOfId( const char* buffer, long id, long* occurrences);
+int CasualFieldOccurrencesInBuffer( const char* buffer, long* occurrences);
+
+
 /* remove all content */
 int CasualFieldRemoveAll( char* buffer);
 
