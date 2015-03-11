@@ -18,7 +18,7 @@ LibraryPaths([
 
 
 install_lib = []
-
+install_include = []
 
 
 lib_buffer = LinkLibrary( 'bin/casual-buffer',
@@ -33,7 +33,9 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
     ])
 
 install_lib.append( lib_buffer)
-
+install_include.append( 'include/buffer/field.h')
+install_include.append( 'include/buffer/order.h')
+install_include.append( 'include/buffer/string.h')
 
 install_bin = []
 
@@ -69,6 +71,6 @@ LinkUnittest( 'bin/test-buffer',
 # Install
 #
 Install( install_lib, '$(CASUAL_HOME)/lib')
-
+Install( install_include, '$(CASUAL_HOME)/include')
 
 

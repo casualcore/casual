@@ -72,7 +72,7 @@ namespace casual
           * Removal of occurrences doesn't actually remove them but just make
           * them invisible by nullify it and thus the buffer doesn't collapse
           *
-          * The repository-implementation is a bit comme ci comme ça and to
+          * The repository-implementation is a bit comme ci comme ca and to
           * provide something like 'mkfldhdr32' the functionality has to be
           * accessible from there (or vice versa)
           */
@@ -428,6 +428,105 @@ namespace casual
                return add( handle, id, type, reinterpret_cast<const char*>( &encoded), sizeof (encoded));
             }
 
+            int update( const char* const handle, const long id, long index, const int type, const char* const data, const long size)
+            {
+               if( const auto result = validate_id( id, type))
+               {
+                  return result;
+               }
+
+               auto buffer = find_buffer( handle);
+
+               if( !buffer)
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               const Value beyond( buffer->end());
+               Value value( buffer->begin());
+
+               while( value != beyond)
+               {
+                  if( value.id() == id)
+                  {
+                     if( ! index--)
+                     {
+                        //
+                        // Found present value
+                        //
+
+                        const auto present = value.size();
+
+                        if( present != size)
+                        {
+                           //
+                           // Calculate new end
+                           //
+
+                           const auto required = buffer->inserter - present + size;
+
+                           if( required > buffer->payload.memory.size())
+                           {
+                              return CASUAL_FIELD_NO_SPACE;
+                           }
+
+                           //
+                           // We need to move all following values
+                           //
+
+                           auto target = value.data() + size;
+                           auto source = value.data() + present;
+
+                           //
+                           // Calculate how many bytes rest of the values represent
+                           //
+                           const auto count = buffer->inserter + buffer->payload.memory.data() - source;
+
+
+                           //
+                           // Move the data
+                           //
+                           std::memmove( target, source, count);
+
+                           //
+                           // Update the value with the new size
+                           //
+                           value.size( size);
+
+                           //
+                           // Update the buffer with the new total usage
+                           //
+                           buffer->inserter = required;
+
+                        }
+
+
+                        //
+                        // Write the new data
+                        //
+                        value.data( data, size);
+
+
+                        return CASUAL_FIELD_SUCCESS;
+                     }
+
+                  }
+
+                  value = value.next();
+
+               }
+
+               return CASUAL_FIELD_NO_OCCURRENCE;
+
+            }
+
+            template<typename T>
+            int update( const char* const handle, const long id, const long index, const int type, const T data)
+            {
+               const auto encoded = common::network::byteorder::encode( data);
+               return update( handle, id, index, type, reinterpret_cast<const char*>( &encoded), sizeof (encoded));
+            }
+
             int get( const char* const handle, const long id, long index, const int type, const char** data, long* size)
             {
 
@@ -768,7 +867,7 @@ int CasualFieldAddBinary( char* const buffer, const long id, const char* const v
    return casual::buffer::field::add( buffer, id, CASUAL_FIELD_BINARY, value, count);
 }
 
-int CasualFieldAddValue( char* buffer, long id, const void* const value, const long count)
+int CasualFieldAddValue( char* const buffer, const long id, const void* const value, const long count)
 {
    if( !value)
    {
@@ -791,6 +890,30 @@ int CasualFieldAddValue( char* buffer, long id, const void* const value, const l
       return CasualFieldAddString( buffer, id, static_cast<const char*>( value));
    case CASUAL_FIELD_BINARY:
       return CasualFieldAddBinary( buffer, id, static_cast<const char*>( value), count);
+   default:
+      return CASUAL_FIELD_INVALID_ID;
+   }
+
+}
+
+int CasualFieldAddEmpty( char* const buffer, const long id)
+{
+   switch( id / CASUAL_FIELD_TYPE_BASE)
+   {
+   case CASUAL_FIELD_SHORT:
+      return CasualFieldAddShort ( buffer, id, 0);
+   case CASUAL_FIELD_LONG:
+      return CasualFieldAddLong  ( buffer, id, 0);
+   case CASUAL_FIELD_CHAR:
+      return CasualFieldAddChar  ( buffer, id, '\0');
+   case CASUAL_FIELD_FLOAT:
+      return CasualFieldAddFloat ( buffer, id, 0.0);
+   case CASUAL_FIELD_DOUBLE:
+      return CasualFieldAddDouble( buffer, id, 0.0);
+   case CASUAL_FIELD_STRING:
+      return CasualFieldAddString( buffer, id, "");
+   case CASUAL_FIELD_BINARY:
+      return CasualFieldAddBinary( buffer, id, "", 0);
    default:
       return CASUAL_FIELD_INVALID_ID;
    }
@@ -891,8 +1014,98 @@ int CasualFieldGetValue( const char* const buffer, const long id, const long ind
 
    return CASUAL_FIELD_SUCCESS;
 
+}
+
+int CasualFieldUpdateChar( char* const buffer, const long id, const long index, const char value)
+{
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_CHAR, value);
+}
+
+int CasualFieldUpdateShort( char* const buffer, const long id, const long index, const short value)
+{
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_SHORT, value);
+}
+
+int CasualFieldUpdateLong( char* const buffer, const long id, const long index, const long value)
+{
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_LONG, value);
+}
+
+int CasualFieldUpdateFloat( char* const buffer, const long id, const long index, const float value)
+{
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_FLOAT, value);
+}
+
+int CasualFieldUpdateDouble( char* const buffer, const long id, const long index, const double value)
+{
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_DOUBLE, value);
+}
+
+int CasualFieldUpdateString( char* const buffer, const long id, const long index, const char* const value)
+{
+   const long count = std::strlen( value) + 1;
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_STRING, value, count);
+}
+
+int CasualFieldUpdateBinary( char* const buffer, const long id, const long index, const char* const value, const long count)
+{
+   return casual::buffer::field::update( buffer, id, index, CASUAL_FIELD_BINARY, value, count);
+}
+
+int CasualFieldUpdateValue( char* const buffer, const long id, const long index, const void* const value, const long count)
+{
+   if( !value)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
+   switch( id / CASUAL_FIELD_TYPE_BASE)
+   {
+   case CASUAL_FIELD_SHORT:
+      return CasualFieldUpdateShort ( buffer, id, index, *static_cast<const short*>( value));
+   case CASUAL_FIELD_LONG:
+      return CasualFieldUpdateLong  ( buffer, id, index, *static_cast<const long*>( value));
+   case CASUAL_FIELD_CHAR:
+      return CasualFieldUpdateChar  ( buffer, id, index, *static_cast<const char*>( value));
+   case CASUAL_FIELD_FLOAT:
+      return CasualFieldUpdateFloat ( buffer, id, index, *static_cast<const float*>( value));
+   case CASUAL_FIELD_DOUBLE:
+      return CasualFieldUpdateDouble( buffer, id, index, *static_cast<const double*>( value));
+   case CASUAL_FIELD_STRING:
+      return CasualFieldUpdateString( buffer, id, index, static_cast<const char*>( value));
+   case CASUAL_FIELD_BINARY:
+      return CasualFieldUpdateBinary( buffer, id, index, static_cast<const char*>( value), count);
+   default:
+      return CASUAL_FIELD_INVALID_ID;
+   }
 
 }
+
+int CasualFieldChangeValue( char* const buffer, const long id, const long index, const void* const value, const long count)
+{
+   if( index < 0)
+   {
+      return CasualFieldAddValue( buffer, id, value, count);
+   }
+
+   const auto result = CasualFieldUpdateValue( buffer, id, index, value, count);
+
+   if( result == CASUAL_FIELD_NO_OCCURRENCE)
+   {
+      if( const auto result = CasualFieldAddEmpty( buffer, id))
+      {
+         return result;
+      }
+
+      return CasualFieldChangeValue( buffer, id, index, value, count);
+
+   }
+
+   return result;
+
+}
+
+
 
 
 namespace casual

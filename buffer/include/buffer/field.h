@@ -56,6 +56,9 @@ extern "C" {
 /* returns the corresponding text for every return-code */
 const char* CasualFieldDescription( int code);
 
+/*
+   Writer functions
+*/
 
 /* value is encoded and added to buffer */
 int CasualFieldAddChar(    char* buffer, long id, char value);
@@ -73,6 +76,14 @@ int CasualFieldAddString(  char* buffer, long id, const char* value);
 int CasualFieldAddBinary(  char* buffer, long id, const char* value, long count);
 /* value is (perhaps encoded and) added to buffer where count is relevant only for CASUAL_FIELD_BINARY */
 int CasualFieldAddValue(   char* buffer, long id, const void* value, long count);
+/* an empty value is added to buffer */
+int CasualFieldAddEmpty(   char* buffer, long id);
+
+
+
+/*
+   Reader functions
+*/
 
 /* data is decoded and stored into value */
 int CasualFieldGetChar(    const char* buffer, long id, long index, char* value);
@@ -90,6 +101,36 @@ int CasualFieldGetString(  const char* buffer, long id, long index, const char**
 int CasualFieldGetBinary(  const char* buffer, long id, long index, const char** value, long* count);
 /* data is (perhaps decoded and) copied into value if (any) count is large enough and (perhaps) updates count */
 int CasualFieldGetValue(   const char* buffer, long id, long index, void* value, long* count);
+
+
+/*
+   Update functions (no values are automatically added)
+*/
+
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateChar(    char* buffer, long id, long index, char value);
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateShort(   char* buffer, long id, long index, short value);
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateLong(    char* buffer, long id, long index, long value);
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateFloat(   char* buffer, long id, long index, float value);
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateDouble(  char* buffer, long id, long index, double value);
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateString(  char* buffer, long id, long index, const char* value);
+/* value is encoded and updated in buffer */
+int CasualFieldUpdateBinary(  char* buffer, long id, long index, const char* value, long count);
+/* value is (perhaps encoded and) updated in buffer where count is relevant only for CASUAL_FIELD_BINARY */
+int CasualFieldUpdateValue(   char* buffer, long id, long index, const void* value, long count);
+
+/* value is (perhaps encoded and) updated in - or added to the buffer where count is relevant only for CASUAL_FIELD_BINARY */
+int CasualFieldChangeValue(   char* buffer, long id, long index, const void* value, long count);
+
+
+/*
+    Static functions
+*/
 
 /* get the textual name from id from repository-table */
 int CasualFieldNameOfId( long id, const char** name);

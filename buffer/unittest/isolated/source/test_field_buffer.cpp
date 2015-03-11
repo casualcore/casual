@@ -846,6 +846,97 @@ namespace casual
       }
 
 
+      TEST( casual_field_buffer, add_short_and_then_update_it__expecting_updated_value_on_get)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         {
+            {
+               short source = 123;
+               EXPECT_FALSE( CasualFieldAddShort( buffer, FLD_SHORT1, source));
+               short target{};
+               EXPECT_FALSE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &target));
+               EXPECT_TRUE( source == target);
+            }
+
+            {
+               short source = 321;
+               EXPECT_FALSE( CasualFieldUpdateShort( buffer, FLD_SHORT1, 0, source));
+               short target{};
+               EXPECT_FALSE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &target));
+               EXPECT_TRUE( source == target);
+            }
+         }
+
+         tpfree( buffer);
+      }
+
+      TEST( casual_field_buffer, add_string_of_certain_size_and_update_it__expecting_equality)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         {
+            {
+               const char source[] = "A normal string";
+               EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, source));
+               const char* target{};
+               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+               EXPECT_STREQ( source, target);
+            }
+
+            const char other[] = "An other string";
+            EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, other));
+
+            {
+               const char* target{};
+               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 1, &target));
+               EXPECT_STREQ( other, target);
+            }
+
+            {
+               const char source[] = "A looooooooooooooong string";
+               EXPECT_FALSE( CasualFieldUpdateString( buffer, FLD_STRING1, 0, source));
+               const char* target{};
+               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+               EXPECT_STREQ( source, target);
+            }
+
+
+            {
+               const char* target{};
+               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 1, &target));
+               EXPECT_STREQ( other, target);
+            }
+
+
+            {
+               const char source[] = "A tiny string";
+               EXPECT_FALSE( CasualFieldUpdateString( buffer, FLD_STRING1, 0, source));
+               const char* target{};
+               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+               EXPECT_STREQ( source, target);
+            }
+
+            {
+               const char* target{};
+               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 1, &target));
+               EXPECT_STREQ( other, target);
+            }
+
+
+         }
+
+         tpfree( buffer);
+      }
+
+
+
+
+
+
+
 
 
    }
