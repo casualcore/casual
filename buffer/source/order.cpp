@@ -56,22 +56,70 @@ namespace casual
          namespace
          {
 
-            struct Buffer : common::buffer::Buffer
+            class Buffer : public common::buffer::Buffer
             {
+            public:
+
                using common::buffer::Buffer::Buffer;
 
                typedef common::platform::binary_type::size_type size_type;
 
-               size_type inserter = 0;
-               size_type selector = 0;
 
+               //
+               // TODO: This should be moved to the Allocator-interface
+               //
                size_type size( const size_type user_size) const
                {
                   //
                   // Ignore user provided size and return past last insert
                   //
-                  return inserter;
+                  return m_inserter;
                }
+
+               size_type reserved() const
+               {
+                  return payload.memory.size();
+               }
+
+               void reserved( const size_type size)
+               {
+                  payload.memory.resize( size);
+               }
+
+               size_type utilized() const
+               {
+                  return m_inserter;
+               }
+
+               void utilized( const size_type size)
+               {
+                  m_inserter = size;
+               }
+
+
+               size_type consumed() const
+               {
+                  return m_selector;
+               }
+
+               void consumed( const size_type size)
+               {
+                  m_selector = size;
+               }
+
+               typedef common::platform::raw_buffer_type data_type;
+
+               data_type handle()
+               {
+                  return payload.memory.data();
+               }
+
+
+            private:
+
+               size_type m_inserter = 0;
+               size_type m_selector = 0;
+
 
             };
 
@@ -98,7 +146,7 @@ namespace casual
                   //
 
                   m_pool.emplace_back( type, size ? size : 1);
-                  return m_pool.back().payload.memory.data();
+                  return m_pool.back().handle();
                }
 
 
@@ -106,27 +154,21 @@ namespace casual
                {
                   const auto result = find( handle);
 
-                  if( result == std::end( m_pool))
-                  {
-                     // TODO: shouldn't this be an error (exception) ?
-                     return nullptr;
-                  }
-
-                  const auto used = result->inserter;
+                  const auto used = result->utilized();
 
                   //
                   // User may shrink a buffer, but not smaller than what's used
                   //
-                  result->payload.memory.resize( size < used ? used : size);
+                  result->reserved( size < used ? used : size);
 
-                  return result->payload.memory.data();
+                  return result->handle();
                }
 
                common::platform::raw_buffer_type insert( common::buffer::Payload payload)
                {
                   m_pool.emplace_back( std::move( payload));
-                  m_pool.back().inserter = m_pool.back().payload.memory.size();
-                  return m_pool.back().payload.memory.data();
+                  m_pool.back().utilized( m_pool.back().reserved());
+                  return m_pool.back().handle();
                }
 
             };
@@ -185,8 +227,8 @@ namespace casual
             {
                if( const auto buffer = find_buffer( handle))
                {
-                  if( size) *size = static_cast<long>(buffer->payload.memory.size());
-                  if( used) *used = static_cast<long>(buffer->inserter);
+                  if( size) *size = static_cast<long>(buffer->reserved());
+                  if( used) *used = static_cast<long>(buffer->utilized());
                }
                else
                {
@@ -205,7 +247,7 @@ namespace casual
 
                if( target && source)
                {
-                  if( target->payload.memory.size() < source->inserter)
+                  if( target->reserved() < source->utilized())
                   {
                      //
                      // Not enough space
@@ -213,17 +255,18 @@ namespace casual
                      return CASUAL_ORDER_NO_SPACE;
                   }
 
-                  target->inserter = source->inserter;
-                  target->selector = source->selector;
+                  target->utilized( source->utilized());
+                  // TODO: This shall perhaps be set to 0 ?
+                  target->consumed( source->consumed());
 
                   //
-                  // Copy the whole buffer (though perhaps not necessary)
+                  // Copy the content
                   //
 
                   std::copy(
-                     source->payload.memory.begin(),
-                     source->payload.memory.end(),
-                     target->payload.memory.begin());
+                     source->handle(),
+                     source->handle() + source->utilized(),
+                     target->handle());
                }
                else
                {
@@ -238,7 +281,7 @@ namespace casual
             {
                if( auto buffer = find_buffer( handle))
                {
-                  buffer->inserter = 0;
+                  buffer->utilized( 0);
                }
                else
                {
@@ -252,7 +295,7 @@ namespace casual
             {
                if( auto buffer = find_buffer( handle))
                {
-                  buffer->selector = 0;
+                  buffer->consumed( 0);
                }
                else
                {
@@ -274,16 +317,16 @@ namespace casual
                if( auto buffer = find_buffer( handle))
                {
                   const auto count = common::network::byteorder::bytes<T>();
-                  const auto total = count + buffer->inserter;
+                  const auto total = count + buffer->utilized();
 
-                  if( total > buffer->payload.memory.size())
+                  if( total > buffer->reserved())
                   {
                      return CASUAL_ORDER_NO_SPACE;
                   }
 
                   const auto encoded = common::network::byteorder::encode( value);
-                  std::memcpy( buffer->payload.memory.data() + buffer->inserter, &encoded, count);
-                  buffer->inserter = total;
+                  std::memcpy( buffer->handle() + buffer->utilized(), &encoded, count);
+                  buffer->utilized( total);
                }
                else
                {
@@ -298,15 +341,15 @@ namespace casual
                if( auto buffer = find_buffer( handle))
                {
                   const auto count = std::strlen( value) + 1;
-                  const auto total = buffer->inserter + count;
+                  const auto total = buffer->utilized() + count;
 
-                  if( total > buffer->payload.memory.size())
+                  if( total > buffer->reserved())
                   {
                      return CASUAL_ORDER_NO_SPACE;
                   }
 
-                  std::memcpy( buffer->payload.memory.data() + buffer->inserter, value, count);
-                  buffer->inserter = total;
+                  std::memcpy( buffer->handle() + buffer->utilized(), value, count);
+                  buffer->utilized( total);
                }
                else
                {
@@ -321,18 +364,18 @@ namespace casual
                if( auto buffer = find_buffer( handle))
                {
                   const auto count = common::network::byteorder::bytes<long>();
-                  const auto total = buffer->inserter + count + size;
+                  const auto total = buffer->utilized() + count + size;
 
-                  if( total > buffer->payload.memory.size())
+                  if( total > buffer->reserved())
                   {
                      return CASUAL_ORDER_NO_SPACE;
                   }
 
                   const auto encoded = common::network::byteorder::encode( size);
-                  std::memcpy( buffer->payload.memory.data() + buffer->inserter, &encoded, count);
-                  buffer->inserter += count;
-                  std::memcpy( buffer->payload.memory.data() + buffer->inserter, data, size);
-                  buffer->inserter += size;
+                  std::memcpy( buffer->handle() + buffer->utilized(), &encoded, count);
+                  buffer->utilized( buffer->utilized() + count);
+                  std::memcpy( buffer->handle() + buffer->utilized(), data, size);
+                  buffer->utilized( buffer->utilized() + size);
                }
                else
                {
@@ -348,18 +391,18 @@ namespace casual
                if( auto buffer = find_buffer( handle))
                {
                   const auto count = common::network::byteorder::bytes<T>();
-                  const auto total = buffer->selector + count;
+                  const auto total = buffer->consumed() + count;
 
-                  if( total > buffer->inserter)
+                  if( total > buffer->utilized())
                   {
                      return CASUAL_ORDER_NO_PLACE;
                   }
 
-                  const auto where = buffer->payload.memory.data() + buffer->selector;
+                  const auto where = buffer->handle() + buffer->consumed();
 
                   const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
                   value = common::network::byteorder::decode<T>( encoded);
-                  buffer->selector = total;
+                  buffer->consumed( total);
                }
                else
                {
@@ -374,17 +417,17 @@ namespace casual
             {
                if( auto buffer = find_buffer( handle))
                {
-                  const auto where = buffer->payload.memory.data() + buffer->selector;
+                  const auto where = buffer->handle() + buffer->consumed();
                   const auto count = std::strlen( where) + 1;
-                  const auto total = buffer->selector + count;
+                  const auto total = buffer->consumed() + count;
 
-                  if( total > buffer->inserter)
+                  if( total > buffer->utilized())
                   {
                      return CASUAL_ORDER_NO_PLACE;
                   }
 
                   value = where;
-                  buffer->selector = total;
+                  buffer->consumed( total);
                }
                else
                {
@@ -399,26 +442,26 @@ namespace casual
                if( auto buffer = find_buffer( handle))
                {
                   const auto count = common::network::byteorder::bytes<long>();
-                  const auto total = buffer->selector + count;
-                  if( total > buffer->inserter)
+                  const auto total = buffer->consumed() + count;
+                  if( total > buffer->utilized())
                   {
                      return CASUAL_ORDER_NO_PLACE;
                   }
                   else
                   {
-                     const auto where = buffer->payload.memory.data() + buffer->selector;
+                     const auto where = buffer->handle() + buffer->consumed();
                      const auto encoded = *reinterpret_cast< const common::network::byteorder::type<long>*>( where);
                      const auto decoded = common::network::byteorder::decode<long>( encoded);
-                     const auto total = buffer->selector + count + decoded;
+                     const auto total = buffer->consumed() + count + decoded;
 
-                     if( total > buffer->inserter)
+                     if( total > buffer->utilized())
                      {
                         return CASUAL_ORDER_NO_PLACE;
                      }
 
                      size = decoded;
                      data = where + count;
-                     buffer->selector = total;
+                     buffer->consumed( total);
                   }
                }
                else

@@ -28,6 +28,9 @@ namespace casual
 
                typedef common::platform::binary_type::size_type size_type;
 
+               //
+               // TODO: This should be moved to the Allocator-interface
+               //
                size_type size( const size_type user_size) const
                {
                   //
@@ -65,12 +68,6 @@ namespace casual
                common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
-
-                  if( result == std::end( m_pool))
-                  {
-                     // TODO: shouldn't this be an error (exception) ?
-                     return nullptr;
-                  }
 
                   result->payload.memory.resize( size > 0 ? size : 1);
 

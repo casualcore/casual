@@ -81,33 +81,66 @@ namespace casual
          namespace
          {
 
-            struct Buffer : common::buffer::Buffer
+            class Buffer : public common::buffer::Buffer
             {
+            public:
+
                using common::buffer::Buffer::Buffer;
 
                typedef common::platform::binary_type::size_type size_type;
 
-               size_type inserter = 0;
-
+               //
+               // TODO: This should be moved to the Allocator-interface
+               //
                size_type size( const size_type user_size) const
                {
                   //
                   // Ignore user provided size and return past last insert
                   //
-                  return inserter;
+                  return m_inserter;
+               }
+
+
+               size_type reserved() const
+               {
+                  return payload.memory.size();
+               }
+
+               void reserved( const size_type size)
+               {
+                  payload.memory.resize( size);
+               }
+
+               size_type utilized() const
+               {
+                  return m_inserter;
+               }
+
+               void utilized( const size_type size)
+               {
+                  m_inserter = size;
                }
 
                typedef common::platform::raw_buffer_type data_type;
 
-               data_type begin()
+               data_type handle()
                {
                   return payload.memory.data();
                }
 
+               data_type begin()
+               {
+                  return handle();
+               }
+
                data_type end()
                {
-                  return payload.memory.data() + inserter;
+                  return handle() + utilized();
                }
+
+            private:
+
+               size_type m_inserter = 0;
 
             };
 
@@ -202,12 +235,12 @@ namespace casual
                {
                   //
                   // This should not need to be implemented, but 'cause of some
-                  // probably not standard conformant behavior in GCC where
+                  // probably non standard conformant behavior in GCC where
                   // zero size results in that std::vector::data returns null
                   //
 
                   m_pool.emplace_back( type, size ? size : 1);
-                  return m_pool.back().payload.memory.data();
+                  return m_pool.back().handle();
 
                }
 
@@ -215,27 +248,21 @@ namespace casual
                {
                   const auto result = find( handle);
 
-                  if( result == std::end( m_pool))
-                  {
-                     // TODO: shouldn't this be an error (exception) ?
-                     return nullptr;
-                  }
-
-                  const auto used = result->inserter;
+                  const auto used = result->utilized();
 
                   //
                   // User may shrink a buffer, but not smaller than what's used
                   //
-                  result->payload.memory.resize( size < used ? used : size);
+                  result->reserved( size < used ? used : size);
 
-                  return result->payload.memory.data();
+                  return result->handle();
                }
 
                common::platform::raw_buffer_type insert( common::buffer::Payload payload)
                {
                   m_pool.emplace_back( std::move( payload));
-                  m_pool.back().inserter = m_pool.back().payload.memory.size();
-                  return m_pool.back().payload.memory.data();
+                  m_pool.back().utilized( m_pool.back().reserved());
+                  return m_pool.back().handle();
                }
             };
 
@@ -404,9 +431,9 @@ namespace casual
                }
 
 
-               const auto total = buffer->inserter + Value::header() + size;
+               const auto total = Value::header() + size + buffer->utilized();
 
-               if( total > buffer->payload.memory.size())
+               if( total > buffer->reserved())
                {
                   return CASUAL_FIELD_NO_SPACE;
                }
@@ -416,7 +443,7 @@ namespace casual
                value.id( id);
                value.size( size);
                value.data( data, size);
-               buffer->inserter = total;
+               buffer->utilized( total);
 
                return CASUAL_FIELD_SUCCESS;
             }
@@ -463,9 +490,9 @@ namespace casual
                            // Calculate new end
                            //
 
-                           const auto required = buffer->inserter - present + size;
+                           const auto required = buffer->utilized() - present + size;
 
-                           if( required > buffer->payload.memory.size())
+                           if( required > buffer->reserved())
                            {
                               return CASUAL_FIELD_NO_SPACE;
                            }
@@ -480,7 +507,7 @@ namespace casual
                            //
                            // Calculate how many bytes rest of the values represent
                            //
-                           const auto count = buffer->inserter + buffer->payload.memory.data() - source;
+                           const auto count = 0 + buffer->end() - source;
 
 
                            //
@@ -496,7 +523,7 @@ namespace casual
                            //
                            // Update the buffer with the new total usage
                            //
-                           buffer->inserter = required;
+                           buffer->utilized( required);
 
                         }
 
@@ -754,7 +781,7 @@ namespace casual
             {
                if( auto buffer = find_buffer( handle))
                {
-                  buffer->inserter = 0;
+                  buffer->utilized( 0);
                }
                else
                {
@@ -769,8 +796,8 @@ namespace casual
             {
                if( const auto buffer = find_buffer( handle))
                {
-                  if( size) *size = buffer->payload.memory.size();
-                  if( used) *used = buffer->inserter;
+                  if( size) *size = buffer->reserved();
+                  if( used) *used = buffer->utilized();
                }
                else
                {
@@ -789,21 +816,18 @@ namespace casual
 
                if( target && source)
                {
-                  if( target->payload.memory.size() < source->inserter)
+                  if( target->reserved() < source->utilized())
                   {
                      return CASUAL_FIELD_NO_SPACE;
                   }
 
-                  target->inserter = source->inserter;
+                  target->utilized( source->utilized());
 
                   //
-                  // Copy the whole buffer (though perhaps not necessary)
+                  // Copy the content
                   //
 
-                  std::copy(
-                     source->payload.memory.begin(),
-                     source->payload.memory.end(),
-                     target->payload.memory.begin());
+                  std::copy( source->begin(), source->end(), target->begin());
 
                }
                else
@@ -845,6 +869,8 @@ const char* CasualFieldDescription( const int code)
          return "Invalid type";
       case CASUAL_FIELD_INVALID_ARGUMENT:
          return "Invalid argument";
+      case CASUAL_FIELD_SYSTEM_FAILURE:
+         return "System failure";
       case CASUAL_FIELD_INTERNAL_FAILURE:
          return "Internal failure";
       default:

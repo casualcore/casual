@@ -29,13 +29,11 @@
 #define CASUAL_FIELD_INVALID_TYPE 6
 /* some argument is invalid (application/logic error) */
 #define CASUAL_FIELD_INVALID_ARGUMENT 7
+/* general system (os) failure (system/runtime failure) */
+#define CASUAL_FIELD_SYSTEM_FAILURE 8
 /* internal casual defect */
 #define CASUAL_FIELD_INTERNAL_FAILURE 9
 
-
-/* should this be here? */
-//#define CASUAL_FIELD_TYPE_BASE 0x8000
-#define CASUAL_FIELD_TYPE_BASE 0x2000000
 
 #define CASUAL_FIELD_NO_ID 0
 
@@ -47,6 +45,11 @@
 #define CASUAL_FIELD_DOUBLE 4
 #define CASUAL_FIELD_STRING 5
 #define CASUAL_FIELD_BINARY 6
+
+
+/* should this be here? */
+//#define CASUAL_FIELD_TYPE_BASE 0x8000
+#define CASUAL_FIELD_TYPE_BASE 0x2000000
 
 
 #ifdef __cplusplus
@@ -76,6 +79,7 @@ int CasualFieldAddString(  char* buffer, long id, const char* value);
 int CasualFieldAddBinary(  char* buffer, long id, const char* value, long count);
 /* value is (perhaps encoded and) added to buffer where count is relevant only for CASUAL_FIELD_BINARY */
 int CasualFieldAddValue(   char* buffer, long id, const void* value, long count);
+
 /* an empty value is added to buffer */
 int CasualFieldAddEmpty(   char* buffer, long id);
 
@@ -124,7 +128,7 @@ int CasualFieldUpdateBinary(  char* buffer, long id, long index, const char* val
 /* value is (perhaps encoded and) updated in buffer where count is relevant only for CASUAL_FIELD_BINARY */
 int CasualFieldUpdateValue(   char* buffer, long id, long index, const void* value, long count);
 
-/* value is (perhaps encoded and) updated in - or added to the buffer where count is relevant only for CASUAL_FIELD_BINARY */
+/* value is (perhaps encoded and) updated in - or added to the buffer (perhaps along with some magic empty values) */
 int CasualFieldChangeValue(   char* buffer, long id, long index, const void* value, long count);
 
 
