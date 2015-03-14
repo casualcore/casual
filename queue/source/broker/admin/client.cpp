@@ -130,14 +130,60 @@ namespace casual
             }
          };
 
+
+         struct Message
+         {
+            sf::platform::Uuid id;
+            std::string state;
+
+            std::size_t size;
+
+            std::string trid;
+            std::size_t rd;
+
+            std::string type;
+            std::string reply;
+
+            std::string timestamp;
+            std::string avalible;
+
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( id);
+               archive & sf::makeNameValuePair( "s", state);
+
+               archive & CASUAL_MAKE_NVP( size);
+
+               archive & CASUAL_MAKE_NVP( trid);
+               archive & CASUAL_MAKE_NVP( rd);
+               archive & CASUAL_MAKE_NVP( type);
+               archive & CASUAL_MAKE_NVP( reply);
+               archive & CASUAL_MAKE_NVP( timestamp);
+               archive & CASUAL_MAKE_NVP( avalible);
+            })
+
+            static std::vector< sf::archive::terminal::Directive> directive()
+            {
+               return {
+                  { "id", terminal::color::Solid{ terminal::color::yellow}},
+                  { "state", sf::archive::terminal::Directive::Align::right},
+                  { "size", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
+                  { "trid", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
+                  { "rd", sf::archive::terminal::Directive::Align::right},
+                  { "type", sf::archive::terminal::Directive::Align::left},
+                  { "reply", sf::archive::terminal::Directive::Align::left},
+                  { "timestamp", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
+                  { "avalible", sf::archive::terminal::Directive::Align::right},
+               };
+            }
+
+         };
+
       } // normalized
 
       namespace normalize
       {
-         namespace queue
-         {
-
-         } // queue
 
          std::vector< normalized::Queue> queues( const broker::admin::State& state)
          {
@@ -155,7 +201,7 @@ namespace casual
                   return g.id.pid == queue.group;}).at( 0).name;
 
                value.message = queue.message;
-               if( queue.message.timestamp != sf::platform::time_type::min())
+               if( queue.message.timestamp != sf::platform::time_point::min())
                {
                   value.updated = chronology::local( queue.message.timestamp);
                }
@@ -219,7 +265,49 @@ namespace casual
             return range::sort( result);
          }
 
-      } // transform
+         struct Message
+         {
+            normalized::Message operator () ( const broker::admin::Message& message)
+            {
+               normalized::Message result;
+
+               result.id = message.id;
+               auto state = []( std::size_t s){
+                  switch( s)
+                  {
+                     case 1: return "E";
+                     case 2: return "C";
+                     case 3: return "D";
+                  }
+                  return "?";
+               };
+
+               result.state = state( message.state);
+               result.size = message.size;
+
+               result.trid = common::transcode::hex::encode( message.trid);
+               result.type = message.type.main + ":" + message.type.sub;
+
+               result.rd = message.redelivered;
+
+               result.timestamp = chronology::local( message.timestamp);
+
+               if( message.avalible != std::chrono::time_point_cast< std::chrono::microseconds>( sf::platform::time_type::min()))
+               {
+                  result.avalible = chronology::local( message.avalible);
+               }
+
+
+               return result;
+            }
+         };
+
+         std::vector< normalized::Message> messages( std::vector< broker::admin::Message> messages)
+         {
+            return common::range::transform( messages, Message{});
+         }
+
+      } // normalize
 
       namespace call
       {
@@ -231,6 +319,20 @@ namespace casual
             auto reply = service();
 
             broker::admin::State serviceReply;
+
+            reply >> CASUAL_MAKE_NVP( serviceReply);
+
+            return serviceReply;
+         }
+
+         std::vector< broker::admin::Message> messages( const std::string& queue)
+         {
+            sf::xatmi::service::binary::Sync service( ".casual.queue.list.messages");
+            service << CASUAL_MAKE_NVP( queue);
+
+            auto reply = service();
+
+            std::vector< broker::admin::Message> serviceReply;
 
             reply >> CASUAL_MAKE_NVP( serviceReply);
 
@@ -288,11 +390,25 @@ namespace casual
          }
       }
 
-      void peekQueue( const std::string& queue)
+      void listMessages( const std::string& queue)
       {
-         auto messages = peek::queue( queue);
+         auto temp = call::messages( queue);
+         //std::cout << CASUAL_MAKE_NVP( temp);
 
-         std::cout << CASUAL_MAKE_NVP( messages);
+         auto messages = normalize::messages( temp);
+
+         if( global::porcelain)
+         {
+            sf::archive::terminal::percelain::Writer writer{ std::cout};
+            writer << CASUAL_MAKE_NVP( messages);
+
+         }
+         else
+         {
+            sf::archive::terminal::Writer writer{ std::cout, normalized::Message::directive(), global::header, global::color};
+            writer << CASUAL_MAKE_NVP( messages);
+         }
+
 
       }
 
@@ -354,7 +470,7 @@ namespace casual
             common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
             common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::listQueues),
             common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::listGroups),
-            common::argument::directive( {"-p", "--peek-queue"}, "peek queue", &queue::listQueues),
+            common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::listMessages),
             common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual-admin queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
             common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_)
 

@@ -92,7 +92,7 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
-                     common::message::queue::information::queue::Reply reply;
+                     common::message::queue::information::messages::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
                      reply.messages = m_state.queuebase.messages( message.qid);
@@ -102,9 +102,7 @@ namespace casual
                   }
 
                } // messages
-
             } // information
-
 
 
             namespace enqueue

@@ -98,6 +98,41 @@ namespace casual
                      reply.size,
                      reply.flags);
                }
+
+
+               void list_messages( TPSVCINFO *serviceInfo)
+               {
+                  casual::sf::service::reply::State reply;
+
+                  try
+                  {
+                     auto service_io = local::server->createService( serviceInfo);
+
+                     std::string queue;
+                     service_io >> CASUAL_MAKE_NVP( queue);
+
+
+                     auto serviceReturn = service_io.call(
+                        *local::implementation,
+                        &Server::listMessages,
+                        queue);
+
+                     service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+                     reply = service_io.finalize();
+                  }
+                  catch( ...)
+                  {
+                     local::server->handleException( serviceInfo, reply);
+                  }
+
+                  tpreturn(
+                     reply.value,
+                     reply.code,
+                     reply.data,
+                     reply.size,
+                     reply.flags);
+               }
             }
 
 
@@ -108,6 +143,7 @@ namespace casual
                common::server::Arguments result{ { common::process::path()}};
 
                result.services.emplace_back( ".casual.queue.list.queues", &list_queues, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+               result.services.emplace_back( ".casual.queue.list.messages", &list_messages, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
 
                return result;
             }
@@ -126,6 +162,11 @@ namespace casual
                result.groups = transform::groups( m_broker->state());
 
                return result;
+            }
+
+            std::vector< Message> Server::listMessages( const std::string& queue)
+            {
+               return transform::messages( m_broker->messages( queue));
             }
 
 

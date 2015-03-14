@@ -78,11 +78,8 @@ namespace casual
                information.queues = m_state.queuebase.queues();
 
                queueBroker( information);
-
             }
-
-
-         }
+         } // group
 
 
          void Server::start()

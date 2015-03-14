@@ -37,6 +37,8 @@ namespace casual
 
                admin::State listQueues();
 
+               std::vector< Message> listMessages( const std::string& queue);
+
 
 
             private:

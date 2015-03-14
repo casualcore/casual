@@ -13,6 +13,7 @@
 #include "sf/platform.h"
 
 
+
 namespace casual
 {
    namespace queue
@@ -105,6 +106,54 @@ namespace casual
                   return lhs.id < rhs.id;
                }
             };
+
+            struct Message
+            {
+
+
+               sf::platform::Uuid id;
+               std::size_t queue;
+               std::size_t origin;
+               sf::platform::binary_type trid;
+               std::size_t state;
+               std::string reply;
+               std::size_t redelivered;
+
+               struct buffer_t
+               {
+                  std::string main;
+                  std::string sub;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( main);
+                     archive & CASUAL_MAKE_NVP( sub);
+                  })
+               } type;
+
+               sf::platform::time_point avalible;
+               sf::platform::time_point timestamp;
+
+               std::size_t size;
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( queue);
+                  archive & CASUAL_MAKE_NVP( origin);
+                  archive & CASUAL_MAKE_NVP( trid);
+                  archive & CASUAL_MAKE_NVP( state);
+                  archive & CASUAL_MAKE_NVP( reply);
+                  archive & CASUAL_MAKE_NVP( redelivered);
+                  archive & CASUAL_MAKE_NVP( type);
+                  archive & CASUAL_MAKE_NVP( avalible);
+                  archive & CASUAL_MAKE_NVP( timestamp);
+                  archive & CASUAL_MAKE_NVP( size);
+               })
+
+            };
+
 
             struct State
             {

@@ -500,16 +500,17 @@ namespace casual
                common::message::queue::information::Message message;
 
                row.get( 0, message.id.get());
-               row.get( 1, message.origin);
-               row.get( 2, message.trid);
-               row.get( 3, message.state);
-               row.get( 4, message.reply);
-               row.get( 5, message.redelivered);
-               row.get( 6, message.type.type);
-               row.get( 7, message.type.subtype);
-               row.get( 8, message.avalible);
-               row.get( 9, message.timestamp);
-               row.get( 10, message.size);
+               row.get( 1, message.queue);
+               row.get( 2, message.origin);
+               row.get( 3, message.trid);
+               row.get( 4, message.state);
+               row.get( 5, message.reply);
+               row.get( 6, message.redelivered);
+               row.get( 7, message.type.type);
+               row.get( 8, message.type.subtype);
+               row.get( 9, message.avalible);
+               row.get( 10, message.timestamp);
+               row.get( 11, message.size);
 
                result.push_back( std::move( message));
             }

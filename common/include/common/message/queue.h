@@ -303,19 +303,17 @@ namespace casual
 
                } // queues
 
-               namespace queue
+               namespace messages
                {
                   struct Request : server::basic_id< Type::cQueueQueueInformationRequest>
                   {
                      using base_type = server::basic_id< Type::cQueueQueueInformationRequest>;
 
-                     std::string qname;
                      Queue::id_type qid = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_type::marshal( archive);
-                        archive & qname;
                         archive & qid;
                      })
 
@@ -335,7 +333,7 @@ namespace casual
 
                   };
 
-               } // queue
+               } // messages
 
             } // information
 

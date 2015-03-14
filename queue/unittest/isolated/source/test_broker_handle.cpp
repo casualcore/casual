@@ -60,7 +60,7 @@ namespace casual
                broker::handle::transaction::commit::Reply{ state.state},
                broker::handle::transaction::rollback::Request{ state.state},
                broker::handle::transaction::rollback::Reply{ state.state},
-               broker::handle::peek::queue::Request{ state.state},
+               //broker::handle::peek::queue::Request{ state.state},
                common::message::handle::Shutdown{},
             };
          }
