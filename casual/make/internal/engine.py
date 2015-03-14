@@ -94,9 +94,9 @@ class Engine(object):
             # This import is needed to be able to use internal_pre_make_rules
             # All other imports needs to be explicit in cmk-file
             #
-            cmk.write( 'from casual.make.dsl import internal_pre_make_rules')
+            cmk.write( 'from casual.make.plumbingimpl.directive import pre_make_rules, post_make_rules, global_pre_make_statement_stack')
             
-            cmk.write( '\n' + 'internal_pre_make_rules()\n');
+            cmk.write( '\n' + 'pre_make_rules()\n');
             
             
             #
@@ -105,7 +105,7 @@ class Engine(object):
             for line in origin:
                 cmk.write( line);    
             
-            cmk.write( '\n' + 'internal_post_make_rules()\n')
+            cmk.write( '\n' + 'post_make_rules()\n')
                         
         
             
@@ -159,8 +159,8 @@ class Engine(object):
         
         try:
             cmk = self.prepareCasualMakeFile( casual_makefile)
-            
-            code = compile( cmk.getvalue(), casual_makefile, 'exec')
+            code = compile(cmk.getvalue(), casual_makefile, 'exec')
+            #sys.stderr.write(cmk.getvalue())
             cmk.close();
             
             exec( code, globalVariables)
@@ -177,7 +177,7 @@ class Engine(object):
         
         makefile = self.makefiles_path + '/' + self.makefile_stem + '.mk';
 
-        pre_make_statements = globalVariables[ 'internal_global_pre_make_statement_stack']
+        pre_make_statements = globalVariables[ 'global_pre_make_statement_stack']
             
             
         self.write( self.output, makefile, pre_make_statements[ 0])

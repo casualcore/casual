@@ -1,3 +1,3 @@
-from casual.make.dsl import *
+from casual.make.porcelain import *
 
 Build('unittest/gtest/makefile.cmk')
