@@ -12,6 +12,7 @@
 #include "common/uuid.h"
 #include "common/platform.h"
 
+
 #include "sf/namevaluepair.h"
 
 namespace casual
@@ -35,6 +36,7 @@ namespace casual
 
 
          typedef common::platform::time_point time_type;
+         using time_point = common::platform::time_point;
 
          using pid_type = common::platform::pid_type;
 
@@ -52,9 +54,9 @@ namespace casual
          void serialize( Writer& archive, const platform::Uuid& value, const char* name);
 
 
-         void serialize( Reader& archive, platform::time_type& value, const char* name);
+         void serialize( Reader& archive, platform::time_point& value, const char* name);
 
-         void serialize( Writer& archive, const platform::time_type& value, const char* name);
+         void serialize( Writer& archive, const platform::time_point& value, const char* name);
 
       } // archive
    } // sf

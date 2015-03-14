@@ -43,7 +43,13 @@ namespace casual
          struct Message
          {
             queue::Message operator () ( common::message::queue::dequeue::Reply::Message& value) const;
+
+            broker::admin::Message operator () ( const common::message::queue::information::Message& message) const;
          };
+
+         std::vector< broker::admin::Message> messages( const common::message::queue::information::messages::Reply& reply);
+
+
 
 
       } // transform

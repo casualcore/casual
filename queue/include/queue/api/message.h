@@ -35,7 +35,7 @@ namespace casual
          //!
          //! When the message is available, in absolute time.
          //!
-         common::platform::time_point available;
+         common::platform::time_point available = common::platform::time_point::min();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {

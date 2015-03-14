@@ -31,14 +31,14 @@ namespace casual
          }
 
 
-         void serialize( Reader& archive, platform::time_type& value, const char* name)
+         void serialize( Reader& archive, platform::time_point& value, const char* name)
          {
-            platform::time_type::rep representation;
+            platform::time_point::rep representation;
             archive >> sf::makeNameValuePair( name, representation);
-            value = platform::time_type( platform::time_type::duration( representation));
+            value = platform::time_point( platform::time_type::duration( representation));
          }
 
-         void serialize( Writer& archive, const platform::time_type& value, const char* name)
+         void serialize( Writer& archive, const platform::time_point& value, const char* name)
          {
             archive << sf::makeNameValuePair( name, value.time_since_epoch().count());
          }
