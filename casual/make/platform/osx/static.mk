@@ -66,9 +66,7 @@ CROSS_COMPILE_DIRECTIVES = -c -g -Wall -pedantic -fcolor-diagnostics -DNOWHAT -s
 # VALGRIND
 #
 ifdef VALGRIND
-VALGRIND_CONFIG=valgrind --xml=yes --xml-file=valgrind.xml
-else
-VALGRIND_CONFIG=
+PRE_UNITTEST_DIRECTIVE=valgrind --xml=yes --xml-file=valgrind.xml
 endif
 
 
@@ -84,7 +82,7 @@ DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 #
 # Header dependency stuff
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -M -std=c++11
 
 
 

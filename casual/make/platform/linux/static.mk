@@ -49,9 +49,9 @@ ifdef DEBUG
    endif
 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++11
-   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic
-   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic 
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++11 -Wall -pedantic
+   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic -Wall -pedantic
+   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic -Wall -pedantic
    LINK_DIRECTIVES_ARCHIVE = 
 endif
 
@@ -59,16 +59,14 @@ endif
 CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT -std=c++11
 
 BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
-BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
+#BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
 
 
 #
 # VALGRIND
 #
 ifdef VALGRIND
-VALGRIND_CONFIG=valgrind --xml=yes --xml-file=valgrind.xml
-else
-VALGRIND_CONFIG=
+PRE_UNITTEST_DIRECTIVE=valgrind --xml=yes --xml-file=valgrind.xml
 endif
 
 

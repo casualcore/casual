@@ -523,6 +523,7 @@ def library_targets( libs):
     
     return targets
 
+
 def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix = ''):
 
     internal.validate_list( objectfiles);
@@ -556,7 +557,7 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     print
     print '   objects_' + target.name + ' = ' + internal.multiline( object_name_list( objectfiles))
     print
-    print '   libs_'  + target.name + ' = ' + internal.multiline( _platform.link_directive( libraries))
+    print '   libs_'  + target.name + ' = ' + internal.multiline( platform().link_directive( libraries))
     print
     print '   #'
     print '   # possible dependencies to other targets (in this makefile)'
@@ -573,6 +574,7 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     return target
 
 
+
 def link_resource_proxy( target, resource, libraries, directive):
     
     internal.validate_list( libraries);
@@ -586,12 +588,9 @@ def link_resource_proxy( target, resource, libraries, directive):
     
     destination_path = os.path.dirname( target.file)
     
-    build_resource_proxy = _platform.executable_name( 'casual-build-resource-proxy')
+    build_resource_proxy = platform().executable_name( 'casual-build-resource-proxy')
     
-    directive += ' ' + _platform.link_directive( libraries)
-    
-    
-     
+    directive += ' ' + platform().link_directive( libraries)
     
     print
     print "link: " + target.name
@@ -610,12 +609,15 @@ def link_resource_proxy( target, resource, libraries, directive):
 
     return target
 
+
 def install(target, destination):
     
     if isinstance( target, list):
         for t in target:
             install( t, destination)
     
+    elif isinstance( target, basestring):
+        install( internal.Target( target), destination)
     else:
         target.name = 'install_' + target.name
         
@@ -624,13 +626,10 @@ def install(target, destination):
         print 'install: '+ target.name
         print
         print target.name + ": " + target.file + ' | ' + destination
-        print "\t" + _platform.install( target.file, destination)
+        print "\t" + platform().install( target.file, destination)
         print
         
         return target;
-
-    
-
 
 
 def set_parallel_make( value):
@@ -643,5 +642,13 @@ def set_parallel_make( value):
 def platform():
     return _platform 
 
-def debug( message):
-    if os.getenv('PYTHONDEBUG'): sys.stderr.write( message + '\n')
+
+
+def internal_set_parallel_make( value):
+    global parallel_make;
+    
+    # we only do stuff if we haven't set parallel before...
+    if state().parallel_make is None:        
+        state().parallel_make = value;
+    
+    

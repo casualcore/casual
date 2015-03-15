@@ -270,76 +270,35 @@ def Build(casualMakefile):
     
     
 
-def LinkIsolatedUnittest(name,objectfiles,libraries):
+def LinkUnittest(name,objectfiles,libraries = [], test_target = True):
+    
     """
-
-
  LinkIsolatedUnittest(name,objectfiles,libs)
-
- param: name        name of the unittest executable
     
- param: objectfiles    object files that is linked
-
- param: libs        dependent libraries
-
-
+ :param: name        name of the unittest executable
+ :param: objectfiles    object files that is linked
+ :param: libraries        dependent libraries (optional)
+ :param: tets_target   if true, a test target is generated. (True is the default)
     """
-    
     target = plumbing.target( plumbing.executable_name_path( name))
-    
-
-    plumbing.link( platform().link_executable, target, objectfiles, libraries, '$(ISOLATED_UNITTEST_LIB)')
-    
+    #
+    # We add the unittest lib for the user...
+    #
+    plumbing.link( platform().link_executable, target, objectfiles, libraries + platform().unittest_libraries)
     plumbing.deploy( target, 'client')
-
-    plumbing.set_ld_path()
-    
-    print "test: " + 'test_' + target.name    
-    print
-    print 'test_' + target.name + ": " +  target.name
-    print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(VALGRIND_CONFIG) " + target.file + " $(ISOLATED_UNITTEST_DIRECTIVES)"
-    print 
-
+    if test_target:
+        plumbing.set_ld_path()
+        print "test: " + 'test_' + target.name    
+        print
+        print 'test_' + target.name + ": " +  target.name
+        print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(PRE_UNITTEST_DIRECTIVE) " + target.file + " $(ISOLATED_UNITTEST_DIRECTIVES)"
+        print 
     return target
-
-
-def LinkDependentUnittest( name, objectfiles, libraries, resources = None):
-    """
-
-
- LinkDependentUnittest(name,objectfiles,libs)
-
- param: name        name of the unittest executable
-    
- param: objectfiles    object files that is linked
-
- param: libs        dependent libraries
-
-
-    """
-    
-    target = plumbing.target( plumbing.executable_name_path( name))    
-
-    if not resources:
-        directive = "";
-    else:
-        directive = " -r " + ' '.join( resources)
-        
-    libraries.append( "$(DEPENDENT_UNITTEST_LIB)")
-        
-    plumbing.link( platform().link_client, target, objectfiles, libraries, directive)
-    
-    return target;
-
-
     
 
 def Install( target, destination):
     
-    if isinstance( target, basestring):
-        plumbing.install( plumbing.target( target), destination)
-    else:
-        plumbing.install( target, destination)
+    plumbing.install( target, destination)
     
 
 def Include( filename):

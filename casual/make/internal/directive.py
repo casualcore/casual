@@ -65,7 +65,5 @@ def target_base( values):
     
     return names;
 
-
-
 def debug( message):
     if os.getenv('PYTHONDEBUG'): sys.stderr.write( message + '\n')
