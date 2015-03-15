@@ -1,6 +1,6 @@
+import os
 
-
-from casual.make.platform.factory import *
+from casual.make.platform.platform import Platform
 
 
 class CommonUNIX( Platform):

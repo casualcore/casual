@@ -1,4 +1,4 @@
-from casual.make.directive import *
+from casual.make.porcelain import *
 
 
 IncludePaths( ['include', 'current'])

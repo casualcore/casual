@@ -1,7 +1,8 @@
+import os
+from casual.make.platform.platform_unix import CommonUNIX
+from casual.make.platform.registry import RegisterPlatform
 
-from casual.make.platform.platform_unix import *
-
-
+@RegisterPlatform("linux")
 class Linux( CommonUNIX):
     
     def pre_make(self):
