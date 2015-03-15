@@ -1,5 +1,5 @@
-from casual.make.directive import *
-
+import sys
+from casual.middleware.make.dsl import *
 
 if sys.platform.startswith('darwin'):
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
