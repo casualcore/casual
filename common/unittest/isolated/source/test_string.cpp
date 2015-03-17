@@ -75,7 +75,20 @@ namespace casual
          EXPECT_TRUE( trimmed.size() == 9);
          EXPECT_TRUE( trimmed.at( 0) == '1');
          EXPECT_TRUE( trimmed.at( 8) == '5');
+
+         auto empty = string::trim( "   ");
+         EXPECT_TRUE( empty.empty());
+
+         auto hello = string::trim( "\n hello \t  ");
+         EXPECT_TRUE( hello == "hello");
       }
+
+      TEST( casual_common_type, type)
+      {
+         const auto type = type::name<long>();
+         EXPECT_TRUE( type == "long") << type;
+      }
+
 
    }
 }
