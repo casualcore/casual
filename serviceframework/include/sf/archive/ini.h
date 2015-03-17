@@ -18,9 +18,6 @@
 #include <vector>
 #include <string>
 
-
-#include <iostream> // debug
-
 namespace casual
 {
    namespace sf
@@ -153,7 +150,6 @@ namespace casual
                {
                   return target();
                }
-
 
             private:
 
