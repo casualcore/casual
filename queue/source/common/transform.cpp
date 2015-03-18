@@ -110,6 +110,34 @@ namespace casual
             return result;
          }
 
+         broker::admin::Message Message::operator () ( const common::message::queue::information::Message& message) const
+         {
+            broker::admin::Message result;
+
+            result.id = message.id;
+            result.queue = message.queue;
+            result.origin = message.origin;
+            result.reply = message.reply;
+            result.trid = message.trid;
+            result.type.main = message.type.type;
+            result.type.sub = message.type.subtype;
+
+            result.state = message.state;
+            result.redelivered = message.redelivered;
+
+            result.avalible = message.avalible;
+            result.timestamp = message.timestamp;
+
+            result.size = message.size;
+
+
+            return result;
+         }
+
+         std::vector< broker::admin::Message> messages( const common::message::queue::information::messages::Reply& reply)
+         {
+            return common::range::transform( reply.messages, Message{});
+         }
 
 
 

@@ -26,7 +26,7 @@ namespace casual
 
          namespace peek
          {
-            std::vector< queue::peek::Message> queue( const std::string& queue);
+            //std::vector< queue::peek::Message> queue( const std::string& queue);
 
          } // peek
 

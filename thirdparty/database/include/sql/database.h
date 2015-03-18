@@ -182,8 +182,8 @@ namespace sql
          if( sqlite3_column_type( statement, column) != SQLITE_NULL)
          {
             using time_point = std::chrono::time_point< system_clock, duration>;
-            std::chrono::microseconds ms{ sqlite3_column_int64( statement, column)};
-            value = time_point( ms);
+            std::chrono::microseconds us{ sqlite3_column_int64( statement, column)};
+            value = time_point( us);
          }
       }
 

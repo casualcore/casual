@@ -89,7 +89,7 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::queue::information::queue::Request;
+                     using message_type = common::message::queue::information::messages::Request;
 
                      using Base::Base;
 

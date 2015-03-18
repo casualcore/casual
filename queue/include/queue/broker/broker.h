@@ -151,6 +151,8 @@ namespace casual
 
          std::vector< common::message::queue::information::queues::Reply> queues();
 
+         common::message::queue::information::messages::Reply messages( const std::string& queue);
+
       private:
 
 

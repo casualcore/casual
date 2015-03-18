@@ -9,6 +9,7 @@
 #define CASUAL_UTILITY_STRING_H_
 
 #include <string>
+#include <locale>
 
 #include <regex>
 #include <algorithm>
@@ -93,12 +94,13 @@ namespace casual
 
 			inline std::string trim( const std::string& value)
 			{
-			   auto ws = []( typename std::string::value_type c){ return c == ' ';};
+            const auto ws = [] ( const std::string::value_type character)
+            { return std::isspace( character, std::locale::classic()); };
 
 			   auto first = std::find_if_not( std::begin( value), std::end( value), ws);
 			   auto last = std::find_if_not( value.rbegin(), value.rend(), ws);
 
-			   return std::string( first, last.base());
+			   return first < last.base() ? std::string( first, last.base()) : std::string();
 			}
 
 		} // string
@@ -122,7 +124,10 @@ namespace casual
          inline std::string to_string( std::string value) { return value;}
          inline const std::string& to_string( const std::string& value) { return value;}
 
-         inline std::string to_string( long value) { return std::to_string( value);}
+         inline std::string to_string( const bool value) { std::ostringstream out; out << std::boolalpha << value; return out.str();}
+
+         // TODO: Why do we specialize 'long' ?
+         inline std::string to_string( const long value) { return std::to_string( value);}
 
          template< typename T>
          std::string to_string( T& value) { std::ostringstream out; out << value; return out.str();}

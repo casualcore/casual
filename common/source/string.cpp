@@ -6,6 +6,11 @@
 //!
 
 #include "common/string.h"
+
+#include <memory>
+
+#include <cstdlib>
+
 #include <cxxabi.h>
 
 
@@ -19,8 +24,8 @@ namespace casual
          {
             std::string name( const std::type_info& type)
             {
-               int status;
-               return abi::__cxa_demangle( type.name(), 0, 0, &status);
+               const auto result = abi::__cxa_demangle( type.name(), nullptr, nullptr, nullptr);
+               return std::unique_ptr<char, decltype(std::free)*> { result, &std::free }.get();
             }
          } // internal
       } // type

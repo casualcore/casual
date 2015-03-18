@@ -222,6 +222,7 @@ namespace casual
          }
 
 
+         /*
          namespace peek
          {
             namespace local
@@ -276,6 +277,7 @@ namespace casual
             }
 
          } // peek
+         */
       } // rm
    } // queue
 } // casual

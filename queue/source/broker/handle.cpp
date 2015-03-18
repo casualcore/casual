@@ -81,36 +81,6 @@ namespace casual
 
             } // shutdown
 
-            namespace peek
-            {
-               namespace queue
-               {
-                  void Request::operator () ( message_type& message)
-                  {
-                     auto found =  common::range::find( m_state.queues, message.qname);
-
-                     if( found)
-                     {
-                        //
-                        // Forward to group
-                        //
-                        message.qid = found->second.queue;
-                        broker::queue::blocking::Writer write{ found->second.process.queue, m_state};
-                        write( found->second);
-                     }
-                     else
-                     {
-                        // TODO: error?
-
-                        common::message::queue::information::queue::Reply reply;
-                        broker::queue::blocking::Writer write{ message.process.queue, m_state};
-                        write( reply);
-                     }
-                  }
-               } // queue
-
-            } // peek
-
             namespace lookup
             {
 

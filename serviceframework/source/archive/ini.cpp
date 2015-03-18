@@ -352,6 +352,12 @@ namespace casual
                         return false;
                      }
                   }
+                  else
+                  {
+                     //
+                     // It must have been a container-content and thus already found
+                     //
+                  }
 
                   return true;
 
@@ -377,8 +383,15 @@ namespace casual
                         return false;
                      }
                   }
+                  else
+                  {
+                     //
+                     // It must have been a container-content and thus already found
+                     //
+                  }
 
                   return true;
+
                }
 
                void Implementation::value_end( const char* name)
@@ -405,7 +418,7 @@ namespace casual
                void Implementation::decode( const std::string& data, std::vector<char>& value) const
                {
                   //
-                  // Binary data might be double-decoded
+                  // Binary data might be double-decoded (in the end)
                   //
                   value = common::transcode::base64::decode( data);
                }
@@ -453,7 +466,7 @@ namespace casual
 
                         //
                         // Let's print useless empty sections anyway ('cause
-                        // reading need 'em as of today
+                        // reading need 'em as of today)
                         //
                         //if( ! child.second.values.empty())
                         {

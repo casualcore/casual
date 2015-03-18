@@ -629,6 +629,22 @@ namespace casual
             return make( std::end( container) - range.size(), std::end( container));
          }
 
+         //!
+         //! Transform @p range, using @p transform
+         //!
+         //! @param range source range/container
+         //!
+         //! @return std::vector with the transformed values
+         //!
+         template< typename R, typename T>
+         auto transform( R&& range, T transform) -> std::vector< decltype( transform( *std::begin( range)))>
+         {
+            std::vector< decltype( transform( *std::begin( range)))> result;
+            result.reserve( range.size());
+            std::transform( std::begin( range), std::end( range), std::back_inserter( result), transform);
+            return result;
+         }
+
          template< typename InputIter1, typename InputIter2, typename outputIter, typename T>
          outputIter transform( Range< InputIter1> range1, Range< InputIter2> range2, outputIter output, T transform)
          {

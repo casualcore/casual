@@ -272,7 +272,7 @@ namespace casual
             broker::handle::transaction::commit::Reply{ m_state},
             broker::handle::transaction::rollback::Request{ m_state},
             broker::handle::transaction::rollback::Reply{ m_state},
-            broker::handle::peek::queue::Request{ m_state},
+            //broker::handle::peek::queue::Request{ m_state},
             common::server::handle::basic_admin_call< broker::State>{ broker::admin::Server::services( *this), m_state},
             common::message::handle::ping( m_state),
          };
@@ -311,6 +311,30 @@ namespace casual
                   });
 
          return replies;
+      }
+
+      common::message::queue::information::messages::Reply Broker::messages( const std::string& queue)
+      {
+         common::message::queue::information::messages::Reply result;
+
+         auto found = common::range::find( m_state.queues, queue);
+
+         if( found)
+         {
+            broker::queue::blocking::Send send{ m_state};
+
+            common::message::queue::information::messages::Request request;
+            request.process = common::process::handle();
+            request.qid = found->second.queue;
+
+            auto id = send( found->second.process.queue, request);
+
+
+            broker::queue::blocking::Reader receive{ casual::common::ipc::receive::queue(), m_state};
+            receive( result, id);
+         }
+
+         return result;
       }
 
 
