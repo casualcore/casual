@@ -11,7 +11,7 @@
 
 #include "sf/archive/yaml.h"
 #include "sf/buffer.h"
-#include "sf/service.h"
+#include "sf/service/interface.h"
 #include "sf/server.h"
 
 

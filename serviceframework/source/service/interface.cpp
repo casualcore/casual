@@ -5,11 +5,11 @@
 //!     Author: Lazan
 //!
 
-#include "sf/service.h"
+#include "sf/service/interface.h"
 #include "sf/exception.h"
 
 // TODO: temporary to test factory
-#include "sf/service_protocol.h"
+#include "sf/service/protocol.h"
 
 #include "common/internal/trace.h"
 

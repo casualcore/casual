@@ -8,7 +8,7 @@
 #ifndef SERVICE_IMPLEMENTATION_H_
 #define SERVICE_IMPLEMENTATION_H_
 
-#include "sf/service.h"
+#include "sf/service/interface.h"
 
 
 #include "sf/archive/yaml.h"
