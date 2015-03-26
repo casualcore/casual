@@ -17,7 +17,7 @@
 #define CASUAL_FIELD_SUCCESS 0
 /* reallocation needed (normal behavior) */
 #define CASUAL_FIELD_NO_SPACE 1
-/* id does not exist in buffer (perhaps normal behaviour) */
+/* id does not exist in buffer (perhaps normal behavior) */
 #define CASUAL_FIELD_NO_OCCURRENCE 2
 /* id unknown by the system (system/runtime failure) */
 #define CASUAL_FIELD_UNKNOWN_ID 3
@@ -36,8 +36,9 @@
 
 
 #define CASUAL_FIELD_NO_ID 0
+#define CASUAL_FIELD_NO_TYPE 0
 
-
+/*
 #define CASUAL_FIELD_SHORT 0
 #define CASUAL_FIELD_LONG 1
 #define CASUAL_FIELD_CHAR 2
@@ -45,6 +46,16 @@
 #define CASUAL_FIELD_DOUBLE 4
 #define CASUAL_FIELD_STRING 5
 #define CASUAL_FIELD_BINARY 6
+*/
+
+#define CASUAL_FIELD_SHORT 1
+#define CASUAL_FIELD_LONG 2
+#define CASUAL_FIELD_CHAR 3
+#define CASUAL_FIELD_FLOAT 4
+#define CASUAL_FIELD_DOUBLE 5
+#define CASUAL_FIELD_STRING 6
+#define CASUAL_FIELD_BINARY 7
+
 
 
 /* should this be here? */
@@ -156,25 +167,35 @@ int CasualFieldExploreBuffer( const char* buffer, long* size, long* used);
 int CasualFieldExploreValue( const char* buffer, long id, long index, long* count);
 
 
+/* get the total occurrences of id in buffer */
 int CasualFieldOccurrencesOfId( const char* buffer, long id, long* occurrences);
+/* get the total occurrences in buffer */
 int CasualFieldOccurrencesInBuffer( const char* buffer, long* occurrences);
 
 
 /* remove all content */
 int CasualFieldRemoveAll( char* buffer);
 
-/* removes all occurrences with supplied id */
+/* removes all occurrences of supplied id */
 int CasualFieldRemoveId( char* buffer, long id);
 
-/* removes supplied occurrence with supplied id and collapses possible sequential occurrences */
+/* removes supplied occurrence of supplied id and (logically) collapses possible sequential occurrences */
 int CasualFieldRemoveOccurrence( char* buffer, long id, long index);
 
-/* copies content from 'source' to 'target' */
+/* copies content from source- to target-buffer */
 int CasualFieldCopyBuffer( char* target, const char* source);
 
 
-/* gives a "handle" to the next (or first) occurrence in a buffer */
+/* gives a "handle" to the next (or first if id is CASUAL_FIELD_NO_ID) occurrence in a buffer */
 int CasualFieldNext( const char* buffer, long* id, long* index);
+
+
+/* prints the buffer to standard output */
+int CasualFieldPrint( const char* buffer);
+
+/* experimental */
+int CasualFieldMatch( const char* buffer, const char* expression, int* match);
+
 
 
 #ifdef __cplusplus

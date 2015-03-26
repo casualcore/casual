@@ -564,10 +564,10 @@ namespace casual
          ASSERT_TRUE( CasualFieldNameOfId( -666, &name) == CASUAL_FIELD_INVALID_ID);
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_id)
+      TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_argument)
       {
          long id;
-         ASSERT_TRUE( CasualFieldIdOfName( nullptr, &id) == CASUAL_FIELD_INVALID_ID);
+         ASSERT_TRUE( CasualFieldIdOfName( nullptr, &id) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_of_type__expecting_success)
@@ -957,6 +957,40 @@ namespace casual
       }
 
 
+      TEST( casual_field_buffer, print__expecting_success)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
+         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
+         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
+         EXPECT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+
+         EXPECT_FALSE( CasualFieldPrint( buffer));
+
+         tpfree( buffer);
+      }
+
+
+      TEST( casual_field_buffer, match__expecting_nothing_magic_yet)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
+         ASSERT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+
+
+         //
+         // TODO: Some testing
+         //
+
+
+         tpfree( buffer);
+      }
 
 
 

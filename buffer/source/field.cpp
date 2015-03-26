@@ -28,6 +28,10 @@
 
 #include <type_traits>
 
+#include <regex>
+
+#include <iostream>
+#include <sstream>
 
 namespace casual
 {
@@ -55,12 +59,13 @@ namespace casual
           * The id - and size type are network-long
           *
           * Some things that might be explained that perhaps is not so obvious
-          * with FML32; The type (FLD_SHORT/CASUAL_FIELD_SHORT etc) can be
+          * with FML32 where the type (FLD_SHORT/CASUAL_FIELD_SHORT etc) can be
           * deduced from the id, i.e. every id for 'short' must be between 0x0
           * and 0x1FFFFFF and every id for 'long' must be between 0x2000000 and
           * 0x3FFFFFF etc. In this implementation no validation of whether the
-          * id exists in the repository-table occurs but just from the type.
-          * For now there's no proper error-handling while handling the table-
+          * id exists in the repository-table occurs but just from the type and
+          * we're, for simplicity, CASUAL_FIELD_SHORT has base 0x2000000 and
+          * for now there's no proper error-handling while handling the table-
           * repository and that has to improve ...
           *
           * ... and many other things can be improved as well. There's a lot of
@@ -90,12 +95,12 @@ namespace casual
                typedef common::platform::binary_type::size_type size_type;
 
                //
-               // TODO: This should be moved to the Allocator-interface
+               // Shall return the actual size needed
                //
                size_type size( const size_type user_size) const
                {
                   //
-                  // Ignore user provided size and return past last insert
+                  // Ignore user provided size utilized size
                   //
                   return m_inserter;
                }
@@ -199,7 +204,6 @@ namespace casual
 
                data_type data() const
                {
-                  constexpr auto offset = common::network::byteorder::bytes<long>();
                   return where + offset * 2;
                }
 
@@ -319,33 +323,16 @@ namespace casual
                return nullptr;
             }
 
-            int validate_id( const long id, const int type)
-            {
-               //
-               // TODO: Shall we validate with repository/table as well ?
-               //
-
-               if( id > CASUAL_FIELD_NO_ID)
-               {
-                  if( type == id / CASUAL_FIELD_TYPE_BASE)
-                  {
-                     return CASUAL_FIELD_SUCCESS;
-                  }
-               }
-
-               return CASUAL_FIELD_INVALID_ID;
-            }
-
             int remove( const char* const handle, const long id)
             {
-               if( !(id > CASUAL_FIELD_NO_ID))
+               if( ! (id > CASUAL_FIELD_NO_ID))
                {
                   return CASUAL_FIELD_INVALID_ID;
                }
 
                auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -365,7 +352,6 @@ namespace casual
                   }
 
                   value = value.next();
-
                }
 
                return result;
@@ -375,7 +361,7 @@ namespace casual
 
             int remove( const char* const handle, const long id, long index)
             {
-               if( !(id > CASUAL_FIELD_NO_ID))
+               if( ! (id > CASUAL_FIELD_NO_ID))
                {
                   return CASUAL_FIELD_INVALID_ID;
                }
@@ -413,19 +399,19 @@ namespace casual
 
             int add( const char* const handle, const long id, const int type, const char* const data, const long size)
             {
-               if( const auto result = validate_id( id, type))
+               if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
-                  return result;
+                  return CASUAL_FIELD_INVALID_ID;
                }
 
                auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
 
-               if( !data)
+               if( ! data)
                {
                   return CASUAL_FIELD_INVALID_ARGUMENT;
                }
@@ -457,14 +443,14 @@ namespace casual
 
             int update( const char* const handle, const long id, long index, const int type, const char* const data, const long size)
             {
-               if( const auto result = validate_id( id, type))
+               if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
-                  return result;
+                  return CASUAL_FIELD_INVALID_ID;
                }
 
                auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -557,14 +543,15 @@ namespace casual
             int get( const char* const handle, const long id, long index, const int type, const char** data, long* size)
             {
 
-               if( const auto result = validate_id( id, type))
+               if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
-                  return result;
+                  return CASUAL_FIELD_INVALID_ID;
                }
+
 
                auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -582,7 +569,7 @@ namespace casual
                {
                   if( value.id() == id)
                   {
-                     if( !index--)
+                     if( ! index--)
                      {
                         if( data) *data = value.data();
                         if( size) *size = value.size();
@@ -631,7 +618,7 @@ namespace casual
 
                const auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -653,7 +640,7 @@ namespace casual
 
                   if( values.back() == id)
                   {
-                     if( !index--)
+                     if( ! index--)
                      {
                         if( value != beyond)
                         {
@@ -689,7 +676,7 @@ namespace casual
             {
                const auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -722,7 +709,7 @@ namespace casual
             {
                const auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -750,7 +737,7 @@ namespace casual
             {
                const auto buffer = find_buffer( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -1160,7 +1147,7 @@ int CasualFieldUpdateBinary( char* const buffer, const long id, const long index
 
 int CasualFieldUpdateValue( char* const buffer, const long id, const long index, const void* const value, const long count)
 {
-   if( !value)
+   if( ! value)
    {
       return CASUAL_FIELD_INVALID_ARGUMENT;
    }
@@ -1236,6 +1223,15 @@ namespace casual
                };
             }
 
+            int name_to_type( const char* const name)
+            {
+               static const auto mapping = name_to_type();
+
+               const auto type = mapping.find( name);
+
+               return type != mapping.end() ? type->second : CASUAL_FIELD_NO_TYPE;
+            }
+
             std::map<int,std::string> type_to_name()
             {
                return decltype(type_to_name())
@@ -1248,6 +1244,17 @@ namespace casual
                   {CASUAL_FIELD_STRING,   "string"},
                   {CASUAL_FIELD_BINARY,   "binary"},
                };
+            }
+
+
+
+            const char* type_to_name( const int type)
+            {
+               static const auto mapping = type_to_name();
+
+               const auto name = mapping.find( type);
+
+               return name != mapping.end() ? name->second.c_str() : nullptr;
             }
 
             namespace
@@ -1348,7 +1355,7 @@ namespace casual
 
                for( const auto& field : fields)
                {
-                  if( !result.emplace( field.name, field.id).second)
+                  if( ! result.emplace( field.name, field.id).second)
                   {
                      // TODO: Much better
                      throw common::exception::Base( "name for " + field.name + " is not unique");
@@ -1366,7 +1373,7 @@ namespace casual
 
                for( const auto& field : fields)
                {
-                  if( !result.emplace( field.id, field.name).second)
+                  if( ! result.emplace( field.id, field.name).second)
                   {
                      // TODO: Much better
                      throw common::exception::Base( "id for " + field.name + " is not unique");
@@ -1377,6 +1384,58 @@ namespace casual
 
             }
 
+
+            long name_to_id( const char* const name)
+            {
+
+               try
+               {
+                  static const auto mapping = name_to_id();
+
+                  const auto id = mapping.find( name);
+
+                  if( id != mapping.end())
+                  {
+                     return id->second;
+                  }
+
+               }
+               catch( ...)
+               {
+                  // TODO: Handle this in an other way ?
+                  casual::common::error::handler();
+               }
+
+               return CASUAL_FIELD_NO_ID;
+
+            }
+
+            const char* id_to_name( const long id)
+            {
+               try
+               {
+                  static const auto mapping = id_to_name();
+
+                  const auto name = mapping.find( id);
+
+                  if( name != mapping.end())
+                  {
+                     return name->second.c_str();
+                  }
+
+               }
+               catch( ...)
+               {
+                  // TODO: Handle this in an other way ?
+                  casual::common::error::handler();
+               }
+
+               return nullptr;
+
+            }
+
+
+
          } // repository
 
       } // field
@@ -1385,36 +1444,24 @@ namespace casual
 
 } // casual
 
-
 int CasualFieldNameOfId( const long id, const char** name)
 {
-   try
+   if( id > CASUAL_FIELD_NO_ID)
    {
-      static const auto mapping = casual::buffer::field::repository::id_to_name();
+      const auto result = casual::buffer::field::repository::id_to_name( id);
 
-      if( id > CASUAL_FIELD_NO_ID)
+      if( result)
       {
-         try
-         {
-            const auto& result = mapping.at( id);
-            if( name) *name = result.c_str();
-         }
-         catch( const std::out_of_range&)
-         {
-            return CASUAL_FIELD_UNKNOWN_ID;
-         }
+         if( name) *name = result;
       }
       else
       {
-         return CASUAL_FIELD_INVALID_ID;
+         return CASUAL_FIELD_UNKNOWN_ID;
       }
    }
-   catch( ...)
+   else
    {
-      // TODO: Handle this in an other way ?
-      casual::common::error::handler();
-      // TODO: Return something else ?
-      return CASUAL_FIELD_INTERNAL_FAILURE;
+      return CASUAL_FIELD_INVALID_ID;
    }
 
    return CASUAL_FIELD_SUCCESS;
@@ -1422,33 +1469,22 @@ int CasualFieldNameOfId( const long id, const char** name)
 
 int CasualFieldIdOfName( const char* const name, long* const id)
 {
-   try
+   if( name)
    {
-      static const auto mapping = casual::buffer::field::repository::name_to_id();
+      const auto result = casual::buffer::field::repository::name_to_id( name);
 
-      if( name)
+      if( result)
       {
-         try
-         {
-            const auto& result = mapping.at( name);
-            if( id) *id = result;
-         }
-         catch( const std::out_of_range&)
-         {
-            return CASUAL_FIELD_UNKNOWN_ID;
-         }
+         if( id) *id = result;
       }
       else
       {
-         return CASUAL_FIELD_INVALID_ID;
+         return CASUAL_FIELD_UNKNOWN_ID;
       }
    }
-   catch( ...)
+   else
    {
-      // TODO: Handle this in an other way ?
-      casual::common::error::handler();
-      // TODO: Return something else ?
-      return CASUAL_FIELD_INTERNAL_FAILURE;
+      return CASUAL_FIELD_INVALID_ARGUMENT;
    }
 
    return CASUAL_FIELD_SUCCESS;
@@ -1457,36 +1493,24 @@ int CasualFieldIdOfName( const char* const name, long* const id)
 
 int CasualFieldTypeOfId( const long id, int* const type)
 {
-   //
-   // CASUAL_FIELD_SHORT is 0 'cause FLD_SHORT is 0 and thus we need to
-   // represent invalid id with something else than 0
-   //
 
-   if( id > CASUAL_FIELD_NO_ID)
+   const int result = id / CASUAL_FIELD_TYPE_BASE;
+
+   switch( result)
    {
-      const int result = id / CASUAL_FIELD_TYPE_BASE;
-
-      switch( result)
-      {
-         case CASUAL_FIELD_SHORT:
-         case CASUAL_FIELD_LONG:
-         case CASUAL_FIELD_CHAR:
-         case CASUAL_FIELD_FLOAT:
-         case CASUAL_FIELD_DOUBLE:
-         case CASUAL_FIELD_STRING:
-         case CASUAL_FIELD_BINARY:
-            break;
-         default:
-            return CASUAL_FIELD_INVALID_ID;
-      }
-
-      if( type) *type = result;
-
+      case CASUAL_FIELD_SHORT:
+      case CASUAL_FIELD_LONG:
+      case CASUAL_FIELD_CHAR:
+      case CASUAL_FIELD_FLOAT:
+      case CASUAL_FIELD_DOUBLE:
+      case CASUAL_FIELD_STRING:
+      case CASUAL_FIELD_BINARY:
+         break;
+      default:
+         return CASUAL_FIELD_INVALID_ID;
    }
-   else
-   {
-      return CASUAL_FIELD_INVALID_ID;
-   }
+
+   if( type) *type = result;
 
    return CASUAL_FIELD_SUCCESS;
 
@@ -1494,14 +1518,13 @@ int CasualFieldTypeOfId( const long id, int* const type)
 
 int CasualFieldNameOfType( const int type, const char** name)
 {
-   static const auto mapping = casual::buffer::field::repository::type_to_name();
+   const auto result = casual::buffer::field::repository::type_to_name( type);
 
-   try
+   if( result)
    {
-      const auto& result = mapping.at( type);
-      if( name) *name = result.c_str();
+      if( name) *name = result;
    }
-   catch( const std::out_of_range&)
+   else
    {
       return CASUAL_FIELD_INVALID_TYPE;
    }
@@ -1511,16 +1534,22 @@ int CasualFieldNameOfType( const int type, const char** name)
 
 int CasualFieldTypeOfName( const char* const name, int* const type)
 {
-   static const auto mapping = casual::buffer::field::repository::name_to_type();
+   if( name)
+   {
+      const auto result = casual::buffer::field::repository::name_to_type( name);
 
-   try
-   {
-      const auto& result = mapping.at( name);
-      if( type) *type = result;
+      if( result)
+      {
+         if( type) *type = result;
+      }
+      else
+      {
+         return CASUAL_FIELD_INVALID_TYPE;
+      }
    }
-   catch( const std::exception&)
+   else
    {
-      return CASUAL_FIELD_INVALID_TYPE;
+      return CASUAL_FIELD_INVALID_ARGUMENT;
    }
 
    return CASUAL_FIELD_SUCCESS;
@@ -1583,7 +1612,7 @@ int CasualFieldCopyBuffer( char* const target, const char* const source)
 
 int CasualFieldNext( const char* const buffer, long* const id, long* const index)
 {
-   if( !id || !index)
+   if( ! id || ! index)
    {
       return CASUAL_FIELD_INVALID_ARGUMENT;
    }
@@ -1597,4 +1626,139 @@ int CasualFieldNext( const char* const buffer, long* const id, long* const index
       return casual::buffer::field::next( buffer, *id, *index);
    }
 
+}
+
+namespace casual
+{
+   namespace buffer
+   {
+      namespace field
+      {
+         namespace transform
+         {
+
+            namespace
+            {
+
+               template<typename T>
+               T pod( const char* const data)
+               {
+                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( data);
+                  return common::network::byteorder::decode<T>( encoded);
+               }
+
+
+               int stream( const char* const handle, std::ostream& stream)
+               {
+                  const auto buffer = find_buffer( handle);
+
+                  if( ! buffer)
+                  {
+                     return CASUAL_FIELD_INVALID_BUFFER;
+                  }
+
+                  const Value beyond( buffer->end());
+                  Value value( buffer->begin());
+
+                  stream << std::fixed;
+
+                  std::map<long,long> occurrences;
+
+                  while( value != beyond)
+                  {
+                     const auto id = value.id();
+
+                     if( id != CASUAL_FIELD_NO_ID)
+                     {
+                        if( const auto name = repository::id_to_name( id))
+                        {
+                           stream << name;
+                        }
+                        else
+                        {
+                           stream << id;
+                        }
+
+                        stream << '[' << occurrences[id]++ << ']' << " = ";
+
+                        switch( id / CASUAL_FIELD_TYPE_BASE)
+                        {
+                        case CASUAL_FIELD_SHORT:
+                           stream << pod<short>( value.data());
+                           break;
+                        case CASUAL_FIELD_LONG:
+                           stream << pod<long>( value.data());
+                           break;
+                        case CASUAL_FIELD_CHAR:
+                           stream << *value.data();
+                           break;
+                        case CASUAL_FIELD_FLOAT:
+                           stream << pod<float>( value.data());
+                           break;
+                        case CASUAL_FIELD_DOUBLE:
+                           stream << pod<double>( value.data());
+                           break;
+                        // TODO: Handle string+binary in ... some way ... do we need escaping ?
+                        case CASUAL_FIELD_STRING:
+                        case CASUAL_FIELD_BINARY:
+                        default:
+                           stream << value.data();
+                           break;
+                        }
+
+                        stream << '\n';
+
+                     }
+
+                     value = value.next();
+                  }
+
+                  return CASUAL_FIELD_SUCCESS;
+
+               }
+
+            } //
+
+         } // transform
+
+      } // field
+
+   } // buffer
+
+} // casual
+
+
+
+int CasualFieldPrint( const char* const buffer)
+{
+   return casual::buffer::field::transform::stream( buffer, std::cout);
+}
+
+int CasualFieldMatch( const char* const buffer, const char* const expression, int* const match)
+{
+   std::ostringstream stream;
+
+   if( const auto result = casual::buffer::field::transform::stream( buffer, stream))
+   {
+      return result;
+   }
+
+   try
+   {
+      const std::regex x( expression);
+
+      if( match) *match = std::regex_match( stream.str(), x);
+   }
+   catch( const std::regex_error&)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+   catch( ...)
+   {
+      //
+      // TODO: Log or remove this
+      return CASUAL_FIELD_INTERNAL_FAILURE;
+   }
+
+   return CASUAL_FIELD_SUCCESS;
 }
