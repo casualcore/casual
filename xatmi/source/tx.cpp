@@ -159,6 +159,18 @@ int tx_resume( const XID* xid)
 }
 
 
+COMMIT_RETURN tx_get_commit_return()
+{
+   try
+   {
+      return casual::common::transaction::Context::instance().get_commit_return();
+   }
+   catch( ...)
+   {
+      return casual::common::error::tx::handler();
+   }
+}
+
 
 
 

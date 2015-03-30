@@ -782,6 +782,11 @@ namespace casual
             return TX_NOT_SUPPORTED;
          }
 
+         COMMIT_RETURN Context::get_commit_return()
+         {
+            return TX_COMMIT_COMPLETED;
+         }
+
          int Context::setTransactionControl(TRANSACTION_CONTROL control)
          {
             switch( control)

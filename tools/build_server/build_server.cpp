@@ -13,6 +13,7 @@
 #include "common/file.h"
 #include "common/error.h"
 #include "common/uuid.h"
+#include "common/environment.h"
 
 #include "sf/namevaluepair.h"
 #include "config/xa_switch.h"
@@ -324,6 +325,17 @@ int build( const std::string& c_file, const Settings& settings)
    arguments.insert( std::end( arguments), std::begin( settings.compileLinkDirective), std::end( settings.compileLinkDirective));
 
    arguments.emplace_back( "-lcasual-xatmi");
+
+   arguments.push_back( "-I$(CASUAL_HOME)/include");
+   arguments.push_back( "-L$(CASUAL_HOME)/lib");
+
+   //
+   // Make sure we resolve environment stuff
+   //
+   for( auto& argument : arguments)
+   {
+      argument = common::environment::string( argument);
+   }
 
    if( settings.verbose)
    {
