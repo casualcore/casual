@@ -100,9 +100,9 @@ namespace casual
             queue::Message result;
 
             result.id = value.id;
-            result.attribues.available = value.avalible;
-            result.attribues.properties = value.correlation;
-            result.attribues.reply = value.reply;
+            result.attributes.available = value.avalible;
+            result.attributes.properties = value.properties;
+            result.attributes.reply = value.reply;
             result.payload.type.type = value.type.type;
             result.payload.type.subtype = value.type.subtype;
             std::swap( result.payload.data, value.payload);

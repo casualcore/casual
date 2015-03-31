@@ -38,9 +38,9 @@ namespace casual
 
          }
 
-         std::vector< casual::queue::Message> dequeue( const std::string& queue)
+         std::vector< casual::queue::Message> dequeue( const std::string& queue, const queue::Selector& selector)
          {
-            return queue::rm::dequeue( queue);
+            return queue::rm::dequeue( queue, selector);
          }
       };
 
@@ -141,12 +141,17 @@ extern "C"
          auto service_io = local::server->createService( serviceContext);
 
          std::string queue;
+         casual::queue::Selector selector;
          service_io >> CASUAL_MAKE_NVP( queue);
+         service_io >> CASUAL_MAKE_NVP( selector);
 
          //
          // Call the implementation
          //
-         auto returnValue = service_io.call( *local::implementation, &local::implementation_type::dequeue, queue);
+         auto returnValue = service_io.call(
+            *local::implementation,
+            &local::implementation_type::dequeue,
+            queue, selector);
 
          //
          // Serialize output

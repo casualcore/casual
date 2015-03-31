@@ -45,7 +45,6 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         Compile( 'source/xatmi_call.cpp'),
         Compile( 'source/platform.cpp'),
         
-        Compile( 'source/trace.cpp', 'obj/trace.o'),
     ],
     ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c', 'pugixml'])
 

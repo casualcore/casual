@@ -51,7 +51,6 @@ namespace casual
                result.message.id = common::uuid::make();
                result.message.reply = "someQueue";
                result.message.type.type = "X_OCTET";
-               result.message.type.subtype = "binary";
                result.message.payload.resize( 128);
 
                result.message.avalible = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now());
@@ -282,9 +281,71 @@ namespace casual
          EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
          EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
          EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
-         //EXPECT_TRUE( origin.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
-
       }
+
+      TEST( casual_queue_group_database, dequeue_message__from_id)
+      {
+         auto path = local::file();
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto origin = local::message( queue);
+
+         database.enqueue( origin);
+
+         auto reqest = local::request( queue);
+         reqest.selector.id = origin.message.id;
+         auto fetched = database.dequeue( reqest);
+
+
+         ASSERT_TRUE( fetched.message.size() == 1);
+         EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
+         EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
+         EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+         EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
+      }
+
+      TEST( casual_queue_group_database, dequeue_message__from_properties)
+      {
+         auto path = local::file();
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto origin = local::message( queue);
+         origin.message.properties = "some: properties";
+         database.enqueue( origin);
+
+         auto reqest = local::request( queue);
+         reqest.selector.properties = origin.message.properties;
+         auto fetched = database.dequeue( reqest);
+
+
+         ASSERT_TRUE( fetched.message.size() == 1);
+         EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
+         EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
+         EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+         EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
+      }
+
+
+
+      TEST( casual_queue_group_database, dequeue_message__from_non_existent_properties__expect_0_messages)
+      {
+         auto path = local::file();
+         group::Database database( path);
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto origin = local::message( queue);
+         origin.message.properties = "some: properties";
+         database.enqueue( origin);
+
+         auto reqest = local::request( queue);
+         reqest.selector.properties = "some other properties";
+         auto fetched = database.dequeue( reqest);
+
+         EXPECT_TRUE( fetched.message.size() == 0);
+      }
+
 
 
       TEST( casual_queue_group_database, dequeue_100_message)

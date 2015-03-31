@@ -108,7 +108,15 @@ namespace casual
             struct Statement
             {
                sql::database::Statement enqueue;
-               sql::database::Statement dequeue;
+
+
+               struct dequeue_t
+               {
+                  sql::database::Statement first;
+                  sql::database::Statement first_id;
+                  sql::database::Statement first_match;
+
+               } dequeue;
 
                struct state_t
                {
