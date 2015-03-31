@@ -106,6 +106,17 @@ extern  long _get_tpurcode(void); // CLIENT
 /*
  * "extended"
  */
+
+#define CASUAL_BUFFER_BINARY_TYPE ".binary"
+#define CASUAL_BUFFER_BINARY_SUBTYPE 0
+#define CASUAL_BUFFER_JSON_TYPE ".json"
+#define CASUAL_BUFFER_JSON_SUBTYPE 0
+#define CASUAL_BUFFER_YAML_TYPE ".yaml"
+#define CASUAL_BUFFER_YAML_SUBTYPE 0
+#define CASUAL_BUFFER_XML_TYPE ".xml"
+#define CASUAL_BUFFER_XML_SUBTYPE 0
+
+
 extern const char* tperrnostring( int error);
 
 extern int tpsvrinit( int argc, char** argv);

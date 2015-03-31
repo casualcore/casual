@@ -17,22 +17,21 @@ namespace casual
       {
 
          Type::Type() = default;
-         Type::Type( std::string type, std::string subtype) : type( std::move( type)), subtype( std::move( subtype)) {}
-         Type::Type( const char* type, const char* subtype) : type( type ? type : ""), subtype( subtype ? subtype : "") {}
+         Type::Type( std::string name, std::string subname) : name( std::move( name)), subname( std::move( subname)) {}
+         Type::Type( const char* name, const char* subname) : name( name ? name : ""), subname( subname ? subname : "") {}
 
 
          bool operator < ( const Type& lhs, const Type& rhs)
          {
-            if( lhs.type < rhs.type)
-               return true;
-            if( rhs.type < lhs.type)
-               return false;
-            return lhs.subtype < rhs.subtype;
+            if( lhs.name == rhs.name)
+               return lhs.subname < rhs.subname;
+
+            return lhs.name < rhs.name;
          }
 
          bool operator == ( const Type& lhs, const Type& rhs)
          {
-            return lhs.type == rhs.type && lhs.subtype == rhs.subtype;
+            return lhs.name == rhs.name && lhs.subname == rhs.subname;
          }
 
          bool operator != ( const Type& lhs, const Type& rhs)
@@ -42,8 +41,18 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Type& value)
          {
-            return out << "{type: " << value.type << " subtype: " << value.subtype << "}";
+            return out << "{name: " << value.name << " subname: " << value.subname << "}";
          }
+
+         namespace type
+         {
+            Type x_octet() { return { X_OCTET, nullptr};}
+
+            Type binary() { return { CASUAL_BUFFER_BINARY_TYPE, CASUAL_BUFFER_BINARY_SUBTYPE};}
+            Type json() { return { CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE};}
+            Type yaml() { return { CASUAL_BUFFER_YAML_TYPE, CASUAL_BUFFER_YAML_SUBTYPE};}
+            Type xml() { return { CASUAL_BUFFER_XML_TYPE, CASUAL_BUFFER_XML_SUBTYPE};}
+         } // type
 
 
 

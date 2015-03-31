@@ -75,7 +75,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          const std::size_t size{ 8 };
          memset( type, '\0', size);
-         casual::common::range::copy_max( buffer.type.type, size, type);
+         casual::common::range::copy_max( buffer.type.name, size, type);
       }
 
       //
@@ -85,7 +85,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          const std::size_t size{ 16 };
          memset( subtype, '\0', size);
-         casual::common::range::copy_max( buffer.type.subtype, size, subtype);
+         casual::common::range::copy_max( buffer.type.subname, size, subtype);
       }
 
       return buffer.memory.size();

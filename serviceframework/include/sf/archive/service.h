@@ -106,17 +106,23 @@ namespace casual
             } // implementation
 
 
-            struct Writer
-            {
-               using writer_type = basic_writer< implementation::Writer>;
-               using prepare_type = basic_reader< implementation::Prepare, policy::Relaxed>;
+            using Prepare = basic_reader< implementation::Prepare, policy::Relaxed>;
 
-               Writer( std::vector< sf::service::Model::Type>& types) : m_writer( types) {}
+            using Writer = basic_writer< implementation::Writer>;
+
+
+
+            //!
+            //! To help with unittesting and such.
+            //!
+            struct Wrapper
+            {
+               Wrapper( std::vector< sf::service::Model::Type>& types) : m_writer( types) {}
 
                template< typename T>
-               Writer& operator << ( T&& value)
+               Wrapper& operator << ( T&& value)
                {
-                  prepare_type prepare;
+                  Prepare prepare;
                   prepare >> value;
 
                   m_writer << std::forward< T>( value);
@@ -125,14 +131,14 @@ namespace casual
                }
 
                template< typename T>
-               Writer& operator & ( T&& value)
+               Wrapper& operator & ( T&& value)
                {
                   return *this << std::forward< T>( value);
                }
 
             private:
 
-               writer_type m_writer;
+               Writer m_writer;
             };
 
 

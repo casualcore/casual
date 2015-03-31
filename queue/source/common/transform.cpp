@@ -103,8 +103,8 @@ namespace casual
             result.attribues.available = value.avalible;
             result.attribues.properties = value.correlation;
             result.attribues.reply = value.reply;
-            result.payload.type.type = value.type.type;
-            result.payload.type.subtype = value.type.subtype;
+            result.payload.type.type = value.type.name;
+            result.payload.type.subtype = value.type.subname;
             std::swap( result.payload.data, value.payload);
 
             return result;
@@ -119,8 +119,8 @@ namespace casual
             result.origin = message.origin;
             result.reply = message.reply;
             result.trid = message.trid;
-            result.type.main = message.type.type;
-            result.type.sub = message.type.subtype;
+            result.type.main = message.type.name;
+            result.type.sub = message.type.subname;
 
             result.state = message.state;
             result.redelivered = message.redelivered;

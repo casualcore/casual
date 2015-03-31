@@ -294,8 +294,11 @@ namespace casual
                {
                   auto& buffer = pool_type::pool.get( handle);
 
-                  if( buffer.payload.type.type != CASUAL_FIELD)
+                  if( buffer.payload.type.name != CASUAL_FIELD)
                   {
+                     //
+                     // TODO: The pool can only be invoked with the registered type, so this
+                     //   check is not needed...
                      //
                      // TODO: This should be some generic check
                      //

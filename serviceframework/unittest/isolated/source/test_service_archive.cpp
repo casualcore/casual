@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "sf/archive/service.h"
+#include "sf/service/interface.h"
 #include "sf/log.h"
 
 #include <map>
@@ -31,7 +32,7 @@ namespace casual
 
          service::Model model;
 
-         archive::service::Writer writer{ model.arguments.input};
+         archive::service::Wrapper writer{ model.arguments.input};
 
          std::string some_string;
          long some_long = 0;
@@ -51,7 +52,7 @@ namespace casual
 
          service::Model model;
 
-         archive::service::Writer writer{ model.arguments.input};
+         archive::service::Wrapper writer{ model.arguments.input};
 
          std::vector< std::string> some_strings;
          std::vector< long> some_longs;
@@ -107,7 +108,7 @@ namespace casual
       {
 
          service::Model model;
-         archive::service::Writer writer{ model.arguments.input};
+         archive::service::Wrapper writer{ model.arguments.input};
 
          local::Composite some_composite;
 
@@ -152,7 +153,7 @@ namespace casual
       {
 
          service::Model model;
-         archive::service::Writer writer{ model.arguments.input};
+         archive::service::Wrapper writer{ model.arguments.input};
 
          std::map< local::Composite, local::NestedComposite> complex;
          writer << CASUAL_MAKE_NVP( complex);
@@ -180,6 +181,33 @@ namespace casual
          */
       }
 
+      namespace local
+      {
+         namespace
+         {
+            TPSVCINFO prepareAPI( buffer::Type type)
+            {
+               TPSVCINFO info;
+
+               sf::buffer::Buffer buffer( std::move( type), 64);
+
+               auto raw = buffer.release();
+
+               info.data = raw.buffer;
+               info.len = raw.size;
+
+               return info;
+            }
+         } // <unnamed>
+      } // local
+
+      TEST( casual_sf_service_archive, service_json_factory)
+      {
+         auto information = local::prepareAPI( buffer::type::api::json());
+
+         service::IO service_io{ sf::service::Factory::instance().create( &information)};
+
+      }
 
    } // sf
 

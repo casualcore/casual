@@ -8,7 +8,7 @@
 #include "sf/buffer.h"
 #include "common/exception.h"
 #include "common/algorithm.h"
-
+#include "common/buffer/pool.h"
 
 #include "xatmi.h"
 
@@ -23,25 +23,64 @@ namespace casual
    {
       namespace buffer
       {
-         Type type( platform::raw_buffer_type buffer)
+
+         namespace pool
          {
+            struct API : public common::buffer::pool::default_pool
+            {
+               static const std::vector< Type>& types()
+               {
+                  static const std::vector< Type> result{
+                        type::api::binary(), type::api::json(), type::api::yaml(), type::api::xml()
+                     };
+                  return result;
+               }
+            };
+
+            //
+            // Register the pool to the pool-holder at the end of this file...
+            //
+
+         } // pool
+
+         namespace type
+         {
+            namespace api
+            {
+               Type binary() { return { ".api", type::binary().name};}
+               Type json() { return { ".api", type::json().name};}
+               Type yaml() { return { ".api", type::yaml().name};}
+               Type xml() { return { ".api", type::xml().name};}
+
+               const std::vector< Type>& types() { return pool::API::types();}
+            }
+
+            Type get( platform::raw_buffer_type buffer)
+            {
+               std::array< char, 8 + 1> type;
+               std::array< char, 16 + 1> subtype;
+
+               type.back() = '\0';
+               subtype.back() = '\0';
+
+               tptypes( buffer, type.data(), subtype.data());
+
+               Type result;
+
+               result.name = type.data();
+               result.subname = subtype.data();
+
+               return result;
+            }
+
+            Type get( const Buffer& source)
+            {
+               return get( source.data());
+            }
+
+         } // type
 
 
-            std::array< char, 8 + 1> type;
-            std::array< char, 16 + 1> subtype;
-
-            type.back() = '\0';
-            subtype.back() = '\0';
-
-            tptypes( buffer, type.data(), subtype.data());
-
-            Type result;
-
-            result.name = type.data();
-            result.subname = subtype.data();
-
-            return result;
-         }
 
 
          Buffer::Buffer( const Type& type, std::size_t size)
@@ -130,14 +169,11 @@ namespace casual
             tpfree( buffer);
          }
 
-         Type type( const Buffer& source)
-         {
-            return buffer::type( source.data());
-         }
+
 
          Buffer copy( const Buffer& source)
          {
-            Buffer result{ type( source), source.size()};
+            Buffer result{ type::get( source), source.size()};
 
             common::range::copy( source, std::begin( result));
 
@@ -149,7 +185,7 @@ namespace casual
 
          namespace binary
          {
-            Stream::Stream() : Buffer( Type{ "X_OCTET", "binary"}, 128) {}
+            Stream::Stream() : Buffer( type::binary(), 128) {}
 
             void Stream::clear() noexcept
             {
@@ -193,29 +229,14 @@ namespace casual
 
          } // binary
 
-         X_Octet::X_Octet( const std::string& subtype) : X_Octet( subtype, 1024)
-         {
-         }
 
-         X_Octet::X_Octet( const std::string& subtype, std::size_t size) : binary::Stream( Type{ "X_OCTET", subtype}, size)
-         {
-            if( size)
-            {
-               data()[ 0] = '\0';
-            }
 
-         }
-
-         X_Octet::X_Octet( Buffer::Raw buffer) : binary::Stream( buffer)
-         {
-         }
-
-         std::string X_Octet::str() const
+         std::string Binary::str() const
          {
             return std::string{ std::begin( *this), std::end( *this)};
          }
 
-         void X_Octet::str( const std::string& new_string)
+         void Binary::str( const std::string& new_string)
          {
             if( new_string.size() > size())
             {
@@ -226,8 +247,24 @@ namespace casual
 
 
 
+
       } // buffer
    } // sf
+
+   namespace common
+   {
+      namespace buffer
+      {
+
+
+         //
+         // Registrate the pool to the pool-holder
+         //
+         template class ::casual::common::buffer::pool::Registration< sf::buffer::pool::API>;
+
+      } // buffer
+   } // common
+
 } // casual
 
 

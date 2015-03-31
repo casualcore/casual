@@ -14,6 +14,8 @@
 #include "common/marshal/binary.h"
 
 
+#include "xatmi.h"
+
 namespace casual
 {
    namespace common
@@ -50,7 +52,7 @@ namespace casual
 
          TEST( casual_common_buffer, pool_allocate)
          {
-            auto buffer = pool::Holder::instance().allocate( { "X_OCTET", "binary"}, 1024);
+            auto buffer = pool::Holder::instance().allocate( buffer::type::binary(), 1024);
 
             ASSERT_TRUE( buffer != nullptr);
 
@@ -68,7 +70,7 @@ namespace casual
 
          TEST( casual_common_buffer, pool_reallocate)
          {
-            auto small = pool::Holder::instance().allocate( { "X_OCTET", "binary"}, 64);
+            auto small = pool::Holder::instance().allocate( buffer::type::binary(), 64);
 
             auto big = pool::Holder::instance().reallocate( small, 2048);
 
@@ -82,7 +84,7 @@ namespace casual
 
          TEST( casual_common_buffer, pool_reallocate__reallocate_again_with_old__throws)
          {
-            auto small = pool::Holder::instance().allocate( { "X_OCTET", "binary"}, 64);
+            auto small = pool::Holder::instance().allocate( buffer::type::binary(), 64);
             auto big = pool::Holder::instance().reallocate( small, 2048);
 
             pool::Holder::instance().deallocate( big);
@@ -95,7 +97,7 @@ namespace casual
 
          TEST( casual_common_buffer, pool_type)
          {
-            Type type{ "X_OCTET", "binary"};
+            const auto type = buffer::type::binary();
             auto buffer = pool::Holder::instance().allocate( type, 64);
 
             auto&& result = pool::Holder::instance().type( buffer);
@@ -109,7 +111,7 @@ namespace casual
 
          TEST( casual_common_buffer, pool_get_user_size)
          {
-            const Type type{ "X_OCTET", "binary"};
+            const auto type = buffer::type::binary();
             const std::string info( "test string");
 
             auto handle = pool::Holder::instance().allocate( type, 128);
@@ -130,7 +132,7 @@ namespace casual
             platform::binary_type marshal_buffer;
 
             const std::string info( "test string");
-            const buffer::Type type{ "X_OCTET", "binary"};
+            const auto type = buffer::type::binary();
 
             // marshal
             {

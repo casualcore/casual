@@ -76,8 +76,8 @@ namespace casual
 
                   queue::Message reply;
                   reply.payload.data = std::move( data.memory);
-                  reply.payload.type.type = std::move( data.type.type);
-                  reply.payload.type.subtype = std::move( data.type.subtype);
+                  reply.payload.type.type = std::move( data.type.name);
+                  reply.payload.type.subtype = std::move( data.type.subname);
 
                   queue::enqueue( replyqueue, reply);
 

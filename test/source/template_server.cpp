@@ -152,7 +152,7 @@ void casual_test3( TPSVCINFO *serviceContext)
          casual::queue::Message message;
 
          message.attribues.reply = task.enqueue;
-         auto type = casual::sf::buffer::type( serviceContext->data);
+         auto type = casual::sf::buffer::type::get( serviceContext->data);
          message.payload.type.type = type.name;
          message.payload.type.subtype = type.subname;
          casual::common::range::copy( task.message, std::back_inserter( message.payload.data));

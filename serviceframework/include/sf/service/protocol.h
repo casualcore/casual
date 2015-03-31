@@ -9,13 +9,14 @@
 #define SERVICE_IMPLEMENTATION_H_
 
 #include "sf/service/interface.h"
-
+#include "sf/service/model.h"
 
 #include "sf/archive/yaml.h"
 #include "sf/archive/binary.h"
 #include "sf/archive/json.h"
 #include "sf/archive/xml.h"
 #include "sf/archive/log.h"
+#include "sf/archive/service.h"
 #include "sf/log.h"
 
 namespace casual
@@ -62,6 +63,8 @@ namespace casual
             public:
                Binary( TPSVCINFO* serviceInfo);
 
+               static std::vector< buffer::Type> types();
+
                reply::State doFinalize() override;
 
             private:
@@ -82,6 +85,8 @@ namespace casual
 
                reply::State doFinalize() override;
 
+               static std::vector< buffer::Type> types();
+
             private:
 
                archive::yaml::Load m_load;
@@ -98,6 +103,9 @@ namespace casual
 
                reply::State doFinalize() override;
 
+               static std::vector< buffer::Type> types();
+
+
             private:
 
                archive::json::Load m_load;
@@ -113,6 +121,8 @@ namespace casual
                Xml( TPSVCINFO* serviceInfo);
 
                reply::State doFinalize() override;
+
+               static std::vector< buffer::Type> types();
 
             private:
 
@@ -144,6 +154,37 @@ namespace casual
 
                };
             } // parameter
+
+            class Describe : public Base
+            {
+            public:
+
+               Describe( TPSVCINFO* information);
+
+               static std::vector< buffer::Type> types();
+
+            private:
+
+               static std::unique_ptr< Interface> protocoll( TPSVCINFO* information);
+
+               bool doCall() override;
+               reply::State doFinalize() override;
+
+               Model m_model;
+
+               archive::service::Prepare m_prepare;
+
+               struct writer_t
+               {
+                  writer_t( Model& model) : input( model.arguments.input), output( model.arguments.output) {}
+
+                  archive::service::Writer input;
+                  archive::service::Writer output;
+               } m_writer;
+
+               std::unique_ptr< Interface> m_protocoll;
+
+            };
 
          } // protocol
       } // service

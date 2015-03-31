@@ -37,7 +37,7 @@ namespace casual
 
             writer << CASUAL_MAKE_NVP( value);
 
-            sf::buffer::X_Octet buffer( "yaml");
+            sf::buffer::Binary buffer( sf::buffer::type::yaml(), 128);
 
             buffer.str( emitter.c_str());
 
@@ -63,7 +63,7 @@ namespace casual
       someVO.m_short = 34;
       someVO.m_string = "korv";
 
-      TPSVCINFO serviceInfo = local::prepareYaml( someVO);
+      auto serviceInfo = local::prepareYaml( someVO);
 
       auto service = sf::service::Factory::instance().create( &serviceInfo);
 

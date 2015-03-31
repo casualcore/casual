@@ -47,8 +47,8 @@ namespace casual
                         row.get( 1, result.correlation);
                         row.get( 2, result.reply);
                         row.get( 3, result.redelivered);
-                        row.get( 4, result.type.type);
-                        row.get( 5, result.type.subtype);
+                        row.get( 4, result.type.name);
+                        row.get( 5, result.type.subname);
 
                         result.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
                         result.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 7)}};
@@ -346,8 +346,8 @@ namespace casual
                   state,
                   message.message.reply,
                   0,
-                  message.message.type.type,
-                  message.message.type.subtype,
+                  message.message.type.name,
+                  message.message.type.subname,
                   message.message.avalible,
                   common::platform::clock_type::now(),
                   message.message.payload);
@@ -506,8 +506,8 @@ namespace casual
                row.get( 4, message.state);
                row.get( 5, message.reply);
                row.get( 6, message.redelivered);
-               row.get( 7, message.type.type);
-               row.get( 8, message.type.subtype);
+               row.get( 7, message.type.name);
+               row.get( 8, message.type.subname);
                row.get( 9, message.avalible);
                row.get( 10, message.timestamp);
                row.get( 11, message.size);

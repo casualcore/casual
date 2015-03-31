@@ -19,16 +19,14 @@ namespace casual
       namespace buffer
       {
 
-         TEST( casual_sf_buffer, X_OCTET_type_subtype)
+         TEST( casual_sf_buffer, type_subtype)
          {
-            X_Octet buffer( "yaml");
+            Binary buffer( type::binary(), 1);
 
 
-            Type type = buffer::type( buffer);
+            auto type = buffer::type::get( buffer);
 
-            EXPECT_TRUE( type.name == "X_OCTET");
-            EXPECT_TRUE( type.subname == "yaml");
-
+            EXPECT_TRUE( type == type::binary());
          }
 
          TEST( casual_sf_buffer, test)
