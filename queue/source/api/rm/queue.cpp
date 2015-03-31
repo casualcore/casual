@@ -149,9 +149,9 @@ namespace casual
                request.message.payload = message.payload.data;
                request.message.type.type = message.payload.type.type;
                request.message.type.subtype = message.payload.type.subtype;
-               request.message.correlation = message.attribues.properties;
-               request.message.reply = message.attribues.reply;
-               request.message.avalible = message.attribues.available;
+               request.message.properties = message.attributes.properties;
+               request.message.reply = message.attributes.reply;
+               request.message.avalible = message.attributes.available;
                //request.message.id = common::Uuid::make();
 
                auto group = lookup();
@@ -184,8 +184,7 @@ namespace casual
             return reply.id;
          }
 
-
-         std::vector< Message> dequeue( const std::string& queue)
+         std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
          {
             common::trace::Scope trace( "queue::rm::dequeue", common::log::internal::queue);
 
@@ -203,6 +202,8 @@ namespace casual
                auto group = lookup();
                casual::common::queue::blocking::Writer send( group.process.queue);
                request.queue = group.queue;
+               request.selector.id = selector.id;
+               request.selector.properties = selector.properties;
 
                common::log::internal::queue << "dequeues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
 
@@ -219,6 +220,11 @@ namespace casual
             }
 
             return result;
+         }
+
+         std::vector< Message> dequeue( const std::string& queue)
+         {
+            return dequeue( queue, Selector{});
          }
 
 

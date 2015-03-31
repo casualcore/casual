@@ -23,6 +23,7 @@ namespace casual
          sf::platform::Uuid enqueue( const std::string& queue, const Message& message);
 
          std::vector< Message> dequeue( const std::string& queue);
+         std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
 
          namespace peek
          {

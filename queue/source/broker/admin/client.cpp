@@ -417,7 +417,7 @@ namespace casual
 
          queue::Message message;
 
-         message.attribues.reply = queue;
+         message.attributes.reply = queue;
          message.payload.type.type = "X_OCTET";
          message.payload.type.subtype = "binary";
 

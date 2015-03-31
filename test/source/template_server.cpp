@@ -151,7 +151,7 @@ void casual_test3( TPSVCINFO *serviceContext)
 
          casual::queue::Message message;
 
-         message.attribues.reply = task.enqueue;
+         message.attributes.reply = task.enqueue;
          auto type = casual::sf::buffer::type( serviceContext->data);
          message.payload.type.type = type.name;
          message.payload.type.subtype = type.subname;
@@ -169,11 +169,13 @@ void casual_test3( TPSVCINFO *serviceContext)
          {
             auto& message = dequeued.front();
 
-            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attribues.available);
-            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attribues.properties);
-            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attribues.reply);
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message);
+            /*
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attributes.properties);
+            casual::sf::log::debug << CASUAL_MAKE_NVP( message.attributes.reply);
             casual::sf::log::debug << CASUAL_MAKE_NVP( message.payload.type);
             casual::sf::log::debug << CASUAL_MAKE_NVP( message.payload.data.size());
+            */
 
             std::string data;
             casual::common::range::copy( message.payload.data, std::back_inserter( data));

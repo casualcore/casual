@@ -37,22 +37,23 @@ namespace casual
                   struct Reply
                   {
 
-                     common::message::queue::dequeue::Reply::Message operator () ( sql::database::Row& row) const
+                     std::tuple< std::int64_t, common::message::queue::dequeue::Reply::Message> operator () ( sql::database::Row& row) const
                      {
 
-                        // SELECT correlation, reply, redelivered, type, avalible, timestamp, payload
-                        common::message::queue::dequeue::Reply::Message result;
+                        // SELECT ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
+                        std::tuple< std::int64_t, common::message::queue::dequeue::Reply::Message> result;
+                        row.get( 0, std::get< 0>( result));
 
-                        row.get( 0, result.id.get());
-                        row.get( 1, result.correlation);
-                        row.get( 2, result.reply);
-                        row.get( 3, result.redelivered);
-                        row.get( 4, result.type.type);
-                        row.get( 5, result.type.subtype);
+                        row.get( 1, std::get< 1>( result).id.get());
+                        row.get( 2, std::get< 1>( result).properties);
+                        row.get( 3, std::get< 1>( result).reply);
+                        row.get( 4, std::get< 1>( result).redelivered);
+                        row.get( 5, std::get< 1>( result).type.type);
+                        row.get( 6, std::get< 1>( result).type.subtype);
 
-                        result.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
-                        result.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 7)}};
-                        row.get( 8, result.payload);
+                        std::get< 1>( result).avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 7)}};
+                        std::get< 1>( result).timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 8)}};
+                        row.get( 9, std::get< 1>( result).payload);
 
                         return result;
                      }
@@ -114,7 +115,7 @@ namespace casual
                   queue         INTEGER,
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
-                  correlation   TEXT,
+                  properties    TEXT,
                   state         INTEGER,
                   reply         TEXT,
                   redelivered   INTEGER,
@@ -159,16 +160,30 @@ namespace casual
             {
                m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
 
-               m_statement.dequeue = m_connection.precompile( R"( 
+               m_statement.dequeue.first = m_connection.precompile( R"( 
                      SELECT 
-                        id, correlation, reply, redelivered, type, subtype, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         messages 
                      WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
 
+               m_statement.dequeue.first_id = m_connection.precompile( R"( 
+                     SELECT 
+                        ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
+                     FROM 
+                        messages 
+                     WHERE queue = :queue AND state = 2 AND avalible < :avalible AND id = :id LIMIT 1; )");
 
-               m_statement.state.xid =  m_connection.precompile( "UPDATE messages SET gtrid = :gtrid, state = 3 WHERE id = :id");
-               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM messages WHERE id = :id");
+               m_statement.dequeue.first_match = m_connection.precompile( R"( 
+                     SELECT 
+                        ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
+                     FROM 
+                        messages 
+                     WHERE queue = :queue AND state = 2 AND avalible < :avalible AND properties = :properties ORDER BY timestamp ASC LIMIT 1; )");
+
+
+               m_statement.state.xid =  m_connection.precompile( "UPDATE messages SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
+               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM messages WHERE ROWID = :id");
 
 
                m_statement.commit1 = m_connection.precompile( "UPDATE messages SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
@@ -212,7 +227,7 @@ namespace casual
                   queue         INTEGER,
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
-                  correlation   TEXT,
+                  properties   TEXT,
                   state         INTEGER,
                   reply         TEXT,
                   redelivered   INTEGER,
@@ -342,7 +357,7 @@ namespace casual
                   message.queue,
                   message.queue,
                   gtrid,
-                  message.message.correlation,
+                  message.message.properties,
                   state,
                   message.message.reply,
                   0,
@@ -367,8 +382,19 @@ namespace casual
             auto now = std::chrono::time_point_cast< std::chrono::microseconds>(
                   common::platform::clock_type::now()).time_since_epoch().count();
 
+            auto query = [&](){
+               if( message.selector.id)
+               {
+                  return m_statement.dequeue.first_id.query( message.queue, now, message.selector.id.get());
+               }
+               if( ! message.selector.properties.empty())
+               {
+                  return m_statement.dequeue.first_match.query( message.queue, now, message.selector.properties);
+               }
+               return m_statement.dequeue.first.query( message.queue, now);
+            };
 
-            auto resultset = m_statement.dequeue.query( message.queue, now);
+            auto resultset = query();
 
             sql::database::Row row;
 
@@ -381,7 +407,6 @@ namespace casual
 
             auto result = local::transform::Reply()( row);
 
-
             //
             // Update state
             //
@@ -389,16 +414,16 @@ namespace casual
             {
                auto gtrid = common::transaction::global(  message.trid);
 
-               m_statement.state.xid.execute( gtrid, result.id.get());
+               m_statement.state.xid.execute( gtrid, std::get< 0>( result));
             }
             else
             {
-               m_statement.state.nullxid.execute( result.id.get());
+               m_statement.state.nullxid.execute( std::get< 0>( result));
             }
 
-            common::log::internal::queue << "dequeue - qid: " << message.queue << " id: " << result.id << " size: " << result.payload.size() << " trid: " << message.trid << std::endl;
+            common::log::internal::queue << "dequeue - qid: " << message.queue << " id: " << std::get< 1>( result).id << " size: " << std::get< 1>( result).payload.size() << " trid: " << message.trid << std::endl;
 
-            reply.message.push_back( std::move( result));
+            reply.message.push_back( std::move( std::get< 1>( result)));
 
             return reply;
          }
