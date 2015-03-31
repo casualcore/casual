@@ -200,12 +200,10 @@ queue_client = LinkExecutable( 'bin/casual-queue-admin',
 Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 
 
-
-Environment( 'CASUAL_LOG', '')
-
-resource_proxy = LinkResourceProxy( 'bin/casual-queue-resource-proxy', 'casual-queue-rm', [ rm])
-
-install_bin.append( resource_proxy);
+# needs to be installed... We need to figure out some other way...
+#Environment( 'CASUAL_LOG', '')
+#resource_proxy = LinkResourceProxy( 'bin/casual-queue-resource-proxy', 'casual-queue-rm', [ rm])
+#install_bin.append( resource_proxy);
 
 
 

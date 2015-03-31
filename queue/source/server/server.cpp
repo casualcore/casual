@@ -10,7 +10,7 @@
 
 #include "xatmi.h"
 #include "sf/server.h"
-#include "sf/service.h"
+#include "sf/service/interface.h"
 
 
 

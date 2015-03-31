@@ -53,8 +53,6 @@ namespace casual
             using policy_type = P;
 
 
-
-
             template< typename... Arguments>
             basic_reader( Arguments&&... arguments)
              : m_implementation( std::forward< Arguments>( arguments)...)

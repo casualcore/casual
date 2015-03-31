@@ -61,7 +61,7 @@ namespace casual
             void test_service( TPSVCINFO *serviceInfo)
             {
 
-               auto buffer = buffer::pool::Holder::instance().allocate( {"X_OCTET", "binary"}, 1024);
+               auto buffer = buffer::pool::Holder::instance().allocate( buffer::type::binary(), 1024);
 
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
@@ -103,7 +103,7 @@ namespace casual
             {
                message::service::call::callee::Request message;
 
-               message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
+               message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                message.descriptor = 10;
                message.service.name = "test_service";
                message.reply.queue = id;
@@ -345,7 +345,7 @@ namespace casual
                {
                   message::service::call::callee::Request message;
 
-                  message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
+                  message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                   message.descriptor = 10;
                   message.service.name = std::move( service);
                   message.reply.queue = queue;

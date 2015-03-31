@@ -30,16 +30,16 @@ namespace casual
          struct Type
          {
             Type();
-            Type( std::string type, std::string subtype);
-            Type( const char* type, const char* subtype);
+            Type( std::string name, std::string subname);
+            Type( const char* name, const char* subname);
 
-            std::string type;
-            std::string subtype;
+            std::string name;
+            std::string subname;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
-               archive & type;
-               archive & subtype;
+               archive & name;
+               archive & subname;
             })
 
             friend bool operator < ( const Type& lhs, const Type& rhs);
@@ -48,6 +48,15 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Type& value);
          };
+
+         namespace type
+         {
+            Type x_octet();
+            Type binary();
+            Type json();
+            Type yaml();
+            Type xml();
+         } // type
 
          struct Payload
          {

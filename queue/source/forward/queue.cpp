@@ -55,8 +55,8 @@ namespace casual
 
                queue::Message forward;
                forward.payload.data = std::move( message.payload);
-               forward.payload.type.type = std::move( message.type.type);
-               forward.payload.type.subtype = std::move( message.type.subtype);
+               forward.payload.type.type = std::move( message.type.name);
+               forward.payload.type.subtype = std::move( message.type.subname);
 
                queue::enqueue( m_queue, forward);
             }

@@ -46,18 +46,7 @@ namespace casual
             {
                // TODO: try to propagate the exception in the ballast, later on...
 
-               try
-               {
-                  throw;
-               }
-               catch( const std::exception& exception)
-               {
-                  common::log::error << exception.what() << std::endl;
-               }
-               catch( ...)
-               {
-                  common::log::error << "Unknown exception catched..." << std::endl;
-               }
+               common::error::handler();
 
                reply.code = TPFAIL;
 
