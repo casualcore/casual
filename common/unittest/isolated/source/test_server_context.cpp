@@ -66,17 +66,17 @@ namespace casual
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
 
-               server::Context::instance().longJumpReturn( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
+               server::Context::instance().long_jump_return( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
             }
 
             void test_service_TPFAIL( TPSVCINFO *serviceInfo)
             {
-               server::Context::instance().longJumpReturn( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
+               server::Context::instance().long_jump_return( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
             }
 
             void test_service_TPSUCCESS( TPSVCINFO *serviceInfo)
             {
-               server::Context::instance().longJumpReturn( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
+               server::Context::instance().long_jump_return( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
             }
 
             server::Arguments arguments()
