@@ -49,7 +49,7 @@ namespace casual
          }
 
 
-         void Context::longJumpReturn( int rval, long rcode, char* data, long len, long flags)
+         void Context::long_jump_return( int rval, long rcode, char* data, long len, long flags)
          {
             log::internal::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags << std::endl;
 
@@ -67,11 +67,11 @@ namespace casual
             longjmp( m_state.long_jump_buffer, 1);
          }
 
-         void Context::advertiseService( const std::string& name, void (*adress)( TPSVCINFO *))
+         void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))
          {
-            trace::internal::Scope trace{ "server::Context advertise service " + name};
+            trace::internal::Scope trace{ "server::Context advertise service " + service};
 
-            Service prospect{ name, adress};
+            Service prospect{ service, adress};
 
 
             //
@@ -82,7 +82,7 @@ namespace casual
             if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
                prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::warning << "service name '" << name << "' truncated to '" << prospect.name << "'";
+               log::warning << "service name '" << service << "' truncated to '" << prospect.name << "'";
             }
 
             auto found = range::find( m_state.services, prospect.name);
@@ -117,18 +117,18 @@ namespace casual
             }
          }
 
-         void Context::unadvertiseService( const std::string& name)
+         void Context::unadvertise( const std::string& service)
          {
-            trace::internal::Scope log{ "server::Context unadvertise service" + name};
+            trace::internal::Scope log{ "server::Context unadvertise service" + service};
 
-            if( m_state.services.erase( name) != 1)
+            if( m_state.services.erase( service) != 1)
             {
-               throw common::exception::xatmi::service::NoEntry( "service name: " + name);
+               throw common::exception::xatmi::service::NoEntry( "service name: " + service);
             }
 
             message::service::Unadvertise message;
             message.process = process::handle();
-            message.services.push_back( message::Service( name));
+            message.services.push_back( message::Service( service));
 
             queue::blocking::Writer writer( ipc::broker::id());
             writer( message);

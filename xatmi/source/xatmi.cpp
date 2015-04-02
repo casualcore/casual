@@ -109,7 +109,7 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
    try
    {
 
-      casual::common::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
+      casual::common::server::Context::instance().long_jump_return( rval, rcode, data, len, flags);
    }
    catch( ...)
    {
@@ -189,7 +189,7 @@ int tpadvertise( const char* const svcname, void (*func)( TPSVCINFO *))
 {
    try
    {
-      casual::common::server::Context::instance().advertiseService( svcname, func);
+      casual::common::server::Context::instance().advertise( svcname, func);
    }
    catch( ...)
    {
@@ -203,7 +203,7 @@ int tpunadvertise( const char* const svcname)
 {
    try
    {
-      casual::common::server::Context::instance().unadvertiseService( svcname);
+      casual::common::server::Context::instance().unadvertise( svcname);
    }
    catch( ...)
    {
