@@ -272,7 +272,7 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::scoped::Path path( common::file::unique( "xa_switch_", ".c"));
+      common::file::scoped::Path path( common::file::name::unique( "xa_switch_", ".c"));
 
       {
          trace::Exit log( "generate file:  " + path.path(), settings.verbose);

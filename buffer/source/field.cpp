@@ -1303,7 +1303,7 @@ namespace casual
 
                   const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
 
-                  auto archive = sf::archive::reader::makeFromFile( file);
+                  auto archive = sf::archive::reader::from::file( file);
 
                   archive >> CASUAL_MAKE_NVP( groups);
 

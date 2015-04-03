@@ -29,7 +29,7 @@ namespace casual
       TEST( casual_broker_configuration, transform_domain)
       {
 
-         auto domain = config::domain::get( common::file::basedir( __FILE__) + "/../../../../configuration/domain.yaml");
+         auto domain = config::domain::get( common::directory::name::base( __FILE__) + "/../../../../configuration/domain.yaml");
 
 
          auto state = transform::configuration::Domain{}( domain);

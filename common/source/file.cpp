@@ -87,10 +87,7 @@ namespace casual
 
          } // scoped
 
-         std::string unique( const std::string& prefix, const std::string& postfix)
-         {
-            return prefix + uuid::string( uuid::make()) + postfix;
-         }
+
 
          std::string find( const std::string& path, const std::regex& search)
          {
@@ -122,52 +119,55 @@ namespace casual
             return result;
          }
 
-         std::string basename( const std::string& path)
-         {
-            auto basenameStart = std::find( path.crbegin(), path.crend(), '/');
-            return std::string( basenameStart.base(), path.end());
-         }
-
-         std::string basedir( const std::string& path)
+         namespace name
          {
 
-            //
-            // Remove trailing '/'
-            //
-            auto end = std::find_if( path.crbegin(), path.crend(), []( const char value) { return value != '/';});
-
-
-            end = std::find( end, path.crend(), '/');
-
-            //
-            // To be conformant to dirname, we have to return at least '/'
-            //
-            if( end == path.crend())
+            bool absolute( const std::string& path)
             {
-               return "/";
+               if( ! path.empty())
+               {
+                  return path[ 0] == '/';
+               }
+               return false;
             }
 
-            return std::string{ path.cbegin(), end.base()};
-         }
-
-         std::string removeExtension( const std::string& path)
-         {
-            auto extensionBegin = std::find( path.crbegin(), path.crend(), '.');
-            return std::string( path.begin(), extensionBegin.base());
-         }
-
-         std::string extension( const std::string& file)
-         {
-            std::string filename = basename( file);
-            auto extensionEnd = std::find( filename.crbegin(), filename.crend(), '.');
-
-            if( extensionEnd == filename.crend())
+            std::string unique( const std::string& prefix, const std::string& postfix)
             {
-               return std::string{};
+               return prefix + uuid::string( uuid::make()) + postfix;
             }
 
-            return std::string( extensionEnd.base(), filename.cend());
-         }
+            std::string base( const std::string& path)
+            {
+               auto basenameStart = std::find( path.crbegin(), path.crend(), '/');
+               return std::string( basenameStart.base(), path.end());
+            }
+
+
+            std::string extension( const std::string& file)
+            {
+               std::string filename = base( file);
+               auto extensionEnd = std::find( filename.crbegin(), filename.crend(), '.');
+
+               if( extensionEnd == filename.crend())
+               {
+                  return std::string{};
+               }
+
+               return std::string( extensionEnd.base(), filename.cend());
+            }
+
+            namespace without
+            {
+               std::string extension( const std::string& path)
+               {
+                  auto extensionBegin = std::find( path.crbegin(), path.crend(), '.');
+                  return std::string( path.begin(), extensionBegin.base());
+               }
+
+            } // without
+
+         } // name
+
 
          bool exists( const std::string& path)
          {
@@ -180,9 +180,36 @@ namespace casual
       namespace directory
       {
 
+         namespace name
+         {
+            std::string base( const std::string& path)
+            {
+
+               //
+               // Remove trailing '/'
+               //
+               auto end = std::find_if( path.crbegin(), path.crend(), []( const char value) { return value != '/';});
+
+
+               end = std::find( end, path.crend(), '/');
+
+               //
+               // To be conformant to dirname, we have to return at least '/'
+               //
+               if( end == path.crend())
+               {
+                  return "/";
+               }
+
+               return std::string{ path.cbegin(), end.base()};
+            }
+
+         } // name
+
+
          bool create( const std::string& path)
          {
-            auto parent = file::basedir( path);
+            auto parent = name::base( path);
 
             if( parent.size() < path.size() && parent != "/")
             {

@@ -31,7 +31,7 @@ namespace casual
                //
                // Create the reader and deserialize configuration
                //
-               auto reader = sf::archive::reader::makeFromFile( file);
+               auto reader = sf::archive::reader::from::file( file);
 
                reader >> CASUAL_MAKE_NVP( resources);
 

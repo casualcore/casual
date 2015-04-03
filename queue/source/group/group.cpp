@@ -22,7 +22,7 @@ namespace casual
       namespace group
       {
 
-         Server::Server( Settings settings) : m_state( std::move( settings.queuebase))
+         Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
             //
             // Talk to queue-broker to get configuration

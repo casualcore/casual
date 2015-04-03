@@ -70,8 +70,10 @@ namespace casual
 
             typedef holder::holder< Reader> Holder;
 
-            Holder makeFromFile( const std::string& filename);
-
+            namespace from
+            {
+               Holder file( const std::string& filename);
+            } // from
          } // reader
 
          namespace writer
