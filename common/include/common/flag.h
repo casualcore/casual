@@ -15,7 +15,7 @@ namespace casual
 	namespace common
 	{
 
-		template< std::size_t flags, typename T>
+		template< std::uint64_t flags, typename T>
 		constexpr inline bool flag( T value)
 		{
 			return ( value & flags) == flags;

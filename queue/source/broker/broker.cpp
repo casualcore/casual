@@ -75,7 +75,7 @@ namespace casual
                         result.name = value.name;
                         if( ! value.retries.empty())
                         {
-                           result.name = std::stoul( value.retries);
+                           result.retries = std::stoul( value.retries);
                         }
                         return result;
                      }
@@ -95,7 +95,7 @@ namespace casual
 
                      queueGroup.process.pid = casual::common::process::spawn(
                         casual::common::environment::directory::casual() + "/bin/casual-queue-group",
-                        { "--queuebase", group.queuebase });
+                        { "--queuebase", group.queuebase, "--name", group.name});
 
 
                      broker::queue::blocking::Reader read{ common::ipc::receive::queue(), m_state};

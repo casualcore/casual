@@ -687,7 +687,7 @@ namespace casual
                if( m_invoked)
                {
                   m_out << "NAME\n   ";
-                  m_out << terminal::color::white << file::basename( process::path());
+                  m_out << terminal::color::white << file::name::base( process::path());
 
                   m_out << "\n\nDESCRIPTION\n";
 

@@ -6,10 +6,12 @@
 //!
 
 #include "common/string.h"
+#include "common/algorithm.h"
 
 #include <memory>
 
 #include <cstdlib>
+#include <cctype>
 
 #include <cxxabi.h>
 
@@ -83,6 +85,15 @@ namespace casual
 
          } // adjacent
 
+         bool integer( const std::string& value)
+         {
+            if( value.empty())
+            {
+               return false;
+            }
+
+            return range::includes( "0123456789", value);
+         }
       } // string
    } // common
 } // casual

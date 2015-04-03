@@ -11,6 +11,8 @@
 
 #include "common/exception.h"
 #include "common/file.h"
+#include "common/environment.h"
+#include "common/algorithm.h"
 
 #include "sf/archive/maker.h"
 
@@ -27,6 +29,29 @@ namespace casual
          {
             namespace
             {
+               namespace normalize
+               {
+                  struct Path
+                  {
+                     void operator () ( Executable& executable) const
+                     {
+                        executable.path = common::environment::string( executable.path);
+                     }
+
+                     void operator () ( Default& value) const
+                     {
+                        value.path = common::environment::string( value.path);
+                     }
+                  };
+
+                  void path( Domain& domain)
+                  {
+                     Path{}( domain.casual_default);
+                     common::range::for_each( domain.servers, Path{});
+                     common::range::for_each( domain.executables, Path{});
+                  }
+               }
+
                namespace complement
                {
                   struct Default
@@ -66,7 +91,7 @@ namespace casual
                      static std::string nextAlias( const std::string& path)
                      {
                         static long index = 1;
-                        return common::file::basename( path) + "_" + std::to_string( index++);
+                        return common::file::name::base( path) + "_" + std::to_string( index++);
                      }
                      domain::Default m_casual_default;
                   };
@@ -94,9 +119,11 @@ namespace casual
             //
             // Create the reader and deserialize configuration
             //
-            auto reader = sf::archive::reader::makeFromFile( file);
+            auto reader = sf::archive::reader::from::file( file);
 
             reader >> CASUAL_MAKE_NVP( domain);
+
+            local::normalize::path( domain);
 
             //
             // Complement with default values

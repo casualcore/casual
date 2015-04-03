@@ -325,7 +325,7 @@ namespace casual
          {
             Queue::Queue()
                : internal::base_queue( msgget( IPC_PRIVATE, IPC_CREAT | 0660)),
-                    m_path( file::unique( environment::directory::temporary() + "/ipc_queue_"))
+                    m_path( file::name::unique( environment::directory::temporary() + "/ipc_queue_"))
             {
                if( m_id  == -1)
                {

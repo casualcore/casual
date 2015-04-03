@@ -57,52 +57,56 @@ namespace casual
          namespace reader
          {
 
-            template< typename A, typename S>
-            using basic_holder = holder::basic< Reader, A, S>;
-
-            Holder makeFromFile( const std::string& filename)
+            namespace from
             {
-               std::ifstream file( filename);
 
-               if( ! file.is_open())
+               template< typename A, typename S>
+               using basic_holder = holder::basic< Reader, A, S>;
+
+               Holder file( const std::string& filename)
                {
-                  throw exception::FileNotFound( filename);
+                  std::ifstream file( filename);
+
+                  if( ! file.is_open())
+                  {
+                     throw exception::FileNotFound( filename);
+                  }
+
+                  const auto extension = common::file::name::extension( filename);
+
+
+                  if( extension == "yaml" || extension == "yml")
+                  {
+                     typedef basic_holder< yaml::relaxed::Reader, yaml::Load > YamlRelaxedHolder;
+
+                     return Holder( Holder::base_value_type( new YamlRelaxedHolder( file)));
+                  }
+
+                  if( extension == "json" || extension == "jsn")
+                  {
+                     typedef basic_holder< json::relaxed::Reader, json::Load > JsonRelaxedHolder;
+
+                     return Holder( Holder::base_value_type( new JsonRelaxedHolder( file)));
+                  }
+
+                  if( extension == "xml")
+                  {
+                     typedef basic_holder< xml::relaxed::Reader, xml::Load > XmlRelaxedHolder;
+
+                     return Holder( Holder::base_value_type( new XmlRelaxedHolder( file)));
+                  }
+
+                  if( extension == "ini")
+                  {
+                     typedef basic_holder< ini::relaxed::Reader, ini::Load > IniRelaxedHolder;
+
+                     return Holder( Holder::base_value_type( new IniRelaxedHolder( file)));
+                  }
+
+                  throw exception::Validation( "Could not deduce protocol for file " + filename);
                }
 
-               const auto extension = common::file::extension( filename);
-
-
-               if( extension == "yaml" || extension == "yml")
-               {
-                  typedef basic_holder< yaml::relaxed::Reader, yaml::Load > YamlRelaxedHolder;
-
-                  return Holder( Holder::base_value_type( new YamlRelaxedHolder( file)));
-               }
-
-               if( extension == "json" || extension == "jsn")
-               {
-                  typedef basic_holder< json::relaxed::Reader, json::Load > JsonRelaxedHolder;
-
-                  return Holder( Holder::base_value_type( new JsonRelaxedHolder( file)));
-               }
-
-               if( extension == "xml")
-               {
-                  typedef basic_holder< xml::relaxed::Reader, xml::Load > XmlRelaxedHolder;
-
-                  return Holder( Holder::base_value_type( new XmlRelaxedHolder( file)));
-               }
-
-               if( extension == "ini")
-               {
-                  typedef basic_holder< ini::relaxed::Reader, ini::Load > IniRelaxedHolder;
-
-                  return Holder( Holder::base_value_type( new IniRelaxedHolder( file)));
-               }
-
-               throw exception::Validation( "Could not deduce protocol for file " + filename);
-            }
-
+            } // from
          } // reader
       } // archive
    } // sf

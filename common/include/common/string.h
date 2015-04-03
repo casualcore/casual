@@ -103,6 +103,8 @@ namespace casual
 			   return first < last.base() ? std::string( first, last.base()) : std::string();
 			}
 
+			bool integer( const std::string& value);
+
 		} // string
 
 		namespace internal
@@ -121,13 +123,13 @@ namespace casual
 
 
 
-         inline std::string to_string( std::string value) { return value;}
+         //inline std::string to_string( std::string value) { return value;}
          inline const std::string& to_string( const std::string& value) { return value;}
 
          inline std::string to_string( const bool value) { std::ostringstream out; out << std::boolalpha << value; return out.str();}
 
          // TODO: Why do we specialize 'long' ?
-         inline std::string to_string( const long value) { return std::to_string( value);}
+         //inline std::string to_string( const long value) { return std::to_string( value);}
 
          template< typename T>
          std::string to_string( T& value) { std::ostringstream out; out << value; return out.str();}
