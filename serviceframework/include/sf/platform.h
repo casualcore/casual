@@ -15,6 +15,9 @@
 
 #include "sf/namevaluepair.h"
 
+
+#include <chrono>
+
 namespace casual
 {
    namespace sf
@@ -55,8 +58,24 @@ namespace casual
 
 
          void serialize( Reader& archive, platform::time_point& value, const char* name);
-
          void serialize( Writer& archive, const platform::time_point& value, const char* name);
+
+         void serialize( Reader& archive, std::chrono::nanoseconds& value, const char* name);
+         void serialize( Writer& archive, const std::chrono::nanoseconds& value, const char* name);
+
+         template< typename R, typename P>
+         void serialize( Reader& archive, std::chrono::duration< R, P>& value, const char* name)
+         {
+            std::chrono::nanoseconds ns;
+            serialize( archive, ns, name);
+            value = std::chrono::duration_cast< std::chrono::duration< R, P>>( ns);
+         }
+
+         template< typename R, typename P>
+         void serialize( Writer& archive, const std::chrono::duration< R, P>& value, const char* name)
+         {
+            serialize( archive, std::chrono::duration_cast<std::chrono::nanoseconds>( value), name);
+         }
 
       } // archive
    } // sf

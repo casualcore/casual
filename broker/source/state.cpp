@@ -108,6 +108,15 @@ namespace casual
             return false;
          }
 
+         std::ostream& operator << ( std::ostream& out, const Service& service)
+         {
+            return out << "{ name: " << service.information.name
+                  << ", type: " << service.information.type
+                  << ", transaction: " << service.information.transaction
+                  << ", timeout: " << service.information.timeout.count()
+                  << "}";
+          }
+
       } // state
 
 
@@ -164,9 +173,11 @@ namespace casual
             //
             // If we dont't have the service, it will be added
             //
-            auto inserted = this->services.emplace( s.information.name, std::move( s));
+            auto inserted = this->services.emplace( s.information.name, s);
 
             auto& service = inserted.first->second;
+
+            common::log::internal::debug << "service: " << service << std::endl;
 
             if( inserted.second)
             {
@@ -178,6 +189,11 @@ namespace casual
                {
                   service.information.timeout = standard.service.information.timeout;
                }
+            }
+            else
+            {
+               service.information.type = s.information.type;
+               service.information.transaction = s.information.transaction;
             }
 
             service.instances.push_back( instance);

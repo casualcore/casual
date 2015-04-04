@@ -187,9 +187,9 @@ namespace broker
 
          common::server::Arguments result{ { common::process::path()}};
 
-         result.services.emplace_back( ".casual.broker.state", &admin_state, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.update.instances", &admin_updateInstances, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
-         result.services.emplace_back( ".casual.broker.shutdown", &admin_shutdown, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+         result.services.emplace_back( ".casual.broker.state", &admin_state, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+         result.services.emplace_back( ".casual.broker.update.instances", &admin_updateInstances, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+         result.services.emplace_back( ".casual.broker.shutdown", &admin_shutdown, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
 
          return result;
       }
@@ -225,6 +225,10 @@ namespace broker
                      common::extract::Second()));
          }
 
+         {
+            common::range::transform( state.pending, result.pending,
+                  admin::transform::Pending{});
+         }
 
          return result;
       }

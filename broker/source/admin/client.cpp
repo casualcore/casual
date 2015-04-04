@@ -16,6 +16,7 @@
 #include "common/arguments.h"
 #include "common/chronology.h"
 #include "common/terminal.h"
+#include "common/server/service.h"
 
 
 #include "broker/broker.h"
@@ -165,15 +166,21 @@ namespace casual
          {
             std::string name;
             std::string timeout;
-            long requested = 0;
+            std::size_t pending = 0;
+            std::size_t requested = 0;
+            std::size_t type = 0;
+            std::string mode;
             Server::State state;
 
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive << CASUAL_MAKE_NVP( name);
+               archive << CASUAL_MAKE_NVP( type);
+               archive << CASUAL_MAKE_NVP( mode);
                archive << CASUAL_MAKE_NVP( timeout);
                archive << CASUAL_MAKE_NVP( requested);
+               archive << CASUAL_MAKE_NVP( pending);
                archive & sf::makeNameValuePair( "#", state.instances);
                archive & sf::makeNameValuePair( "state", state.state);
             })
@@ -185,6 +192,9 @@ namespace casual
                return {
                   { "name", color::Solid{ common::terminal::color::yellow}},
                   { "timeout", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
+                  { "type", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
+                  { "mode", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
+                  { "pending", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::red}},
                   { "requested", sf::archive::terminal::Directive::Align::right},
                   { "#", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
                   { "state", sf::archive::terminal::Directive::Align::left, Server::State::state_color_directive{}},
@@ -212,8 +222,8 @@ namespace casual
                   value.server = server->alias;
                   value.path = server->path;
                }
-               value.pid = instance.pid;
-               value.queue = instance.queue;
+               value.pid = instance.process.pid;
+               value.queue = instance.process.queue;
 
 
                value.invoked = instance.invoked;
@@ -299,7 +309,7 @@ namespace casual
             {
                auto found = range::find_if( instances, [=]( const admin::InstanceVO& inst)
                {
-                  return inst.pid == pid;
+                  return inst.process.pid == pid;
                });
                result.push_back( *found);
             }
@@ -325,10 +335,27 @@ namespace casual
             return range::sort( result);
          }
 
+         std::map< std::string, std::vector< process::Handle>> pending( const std::vector< admin::PendingVO>& pending)
+         {
+            std::map< std::string, std::vector< process::Handle>> result;
+
+            for( auto& pend : pending)
+            {
+               process::Handle process;
+               process.pid = pend.process.pid;
+               process.queue = pend.process.queue;
+               result[ pend.requested].emplace_back( pend.process.pid, pend.process.queue);
+            }
+
+            return result;
+         }
+
 
          std::vector< normalized::Service> services( admin::StateVO state)
          {
             std::vector< normalized::Service> result;
+
+            auto pending = normalize::pending( state.pending);
 
             for( auto& service : state.services)
             {
@@ -336,11 +363,30 @@ namespace casual
 
                value.name = service.name;
                value.requested = service.lookedup;
+               value.type = service.type;
+               value.pending = pending[ value.name].size();
+
+               switch( server::service::transaction::mode( service.mode))
+               {
+                  case server::Service::Transaction::automatic:
+                     value.mode = "auto";
+                     break;
+                  case server::Service::Transaction::join:
+                     value.mode = "join";
+                     break;
+                  case server::Service::Transaction::atomic:
+                     value.mode = "atomic";
+                     break;
+                  case server::Service::Transaction::none:
+                     value.mode = "none";
+                     break;
+               }
+
 
                {
                   using second_t = std::chrono::duration< double>;
                   std::stringstream out;
-                  out << std::chrono::duration_cast< second_t>( std::chrono::microseconds{ service.timeout}).count();
+                  out << std::chrono::duration_cast< second_t>( service.timeout).count();
                   value.timeout = out.str();
                }
 
@@ -497,12 +543,12 @@ namespace casual
          auto result = call::shutdown();
 
          {
-            auto parts = common::range::intersection( state.instances, result.offline,
-                  std::bind( common::equal_to{}, std::bind( &admin::InstanceVO::pid, std::placeholders::_1), std::placeholders::_2));
-
-            for( auto& instance : std::get< 0>( parts))
+            for( auto& instance : state.instances)
             {
-               instance.state = static_cast< long>( state::Server::Instance::State::shutdown);
+               if( common::range::find( result.offline, instance.process.pid))
+               {
+                  instance.state = static_cast< long>( state::Server::Instance::State::shutdown);
+               }
             }
          }
 

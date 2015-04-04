@@ -87,7 +87,7 @@ namespace casual
 
                   switch( service.transaction)
                   {
-                     case server::Service::cAuto:
+                     case server::Service::Transaction::automatic:
                      {
                         if( message.trid)
                         {
@@ -99,17 +99,17 @@ namespace casual
                         }
                         break;
                      }
-                     case server::Service::cJoin:
+                     case server::Service::Transaction::join:
                      {
                         transaction::Context::instance().join( message.trid);
                         break;
                      }
-                     case server::Service::cAtomic:
+                     case server::Service::Transaction::atomic:
                      {
                         transaction::Context::instance().start();
                         break;
                      }
-                     case server::Service::cNone:
+                     case server::Service::Transaction::none:
                      default:
                      {
                         //

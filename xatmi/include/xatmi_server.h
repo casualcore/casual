@@ -11,7 +11,7 @@
 #include <xa.h>
 #include <xatmi.h>
 #include <stddef.h>
-
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,10 +24,10 @@ struct casual_service_name_mapping
 	const char* name;
 
 	/* type of service */
-	long type;
+	uint64_t type;
 
 	/* transaction policy */
-	int transaction;
+	uint64_t transaction;
 
 };
 
