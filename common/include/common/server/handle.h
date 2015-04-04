@@ -130,7 +130,7 @@ namespace casual
 
                   for( auto&& service : arguments.services)
                   {
-                     services.emplace_back( service.name, service.type, service.transaction);
+                     services.emplace_back( service.name, service.type, service::transaction::mode( service.transaction));
                      state.services.emplace( service.name, std::move( service));
                   }
 

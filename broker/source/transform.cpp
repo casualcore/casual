@@ -269,6 +269,7 @@ namespace casual
 
             result.information.name = value.name;
             //result.information.timeout = value.timeout;
+            result.information.transaction = value.transaction;
             result.information.type = value.type;
 
             // TODD: set against configuration

@@ -45,7 +45,7 @@ namespace local
                         service->name,
                         service->functionPointer,
                         service->type,
-                        common::server::Service::TransactionType( service->transaction));
+                        common::server::service::transaction::mode( service->transaction));
 
                   ++service;
                }

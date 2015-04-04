@@ -14,6 +14,7 @@
 #include <functional>
 #include <string>
 #include <ostream>
+#include <cstdint>
 
 namespace casual
 {
@@ -23,64 +24,73 @@ namespace casual
       {
          struct Service
          {
-            enum Type
+            enum Type : std::uint64_t
             {
                cXATMI = 0,
-               cCasualAdmin = 4200,
-               cCasualSF = 4201,
+               cCasualAdmin = 10,
+               cCasualSF = 11,
             };
 
 
-            enum TransactionType
+
+            enum class Transaction : std::uint64_t
             {
                //! if there is a transaction join it, if not, start a new one
-               cAuto = 0,
+               automatic = 0,
                //! if there is a transaction join it, if not, execute outside transaction
-               cJoin = 1,
+               join = 1,
                //! Regardless - start a new transaction
-               cAtomic = 2,
+               atomic = 2,
                //! Regardless - execute outside transaction
-               cNone = 3
+               none = 3
             };
+
 
             using function_type = std::function< void( TPSVCINFO *)>;
             using adress_type = void(*)( TPSVCINFO *);
 
+            Service( std::string name, function_type function, std::uint64_t type, Transaction transaction);
+            Service( std::string name, function_type function);
 
-            Service( std::string name, function_type function, long type, TransactionType transaction)
-               : name( std::move( name)), function( function), type( type), transaction( transaction), m_adress( *function.target< adress_type>()) {}
-
-            Service( std::string name, function_type function)
-               : Service( std::move( name), std::move( function), 0, TransactionType::cAuto) {}
+            Service( Service&&);
 
 
-            Service( Service&&) = default;
-
-
-            void call( TPSVCINFO* serviceInformation)
-            {
-               function( serviceInformation);
-            }
+            void call( TPSVCINFO* serviceInformation);
 
             std::string name;
             function_type function;
 
-            long type = 0;
-            TransactionType transaction = TransactionType::cAuto;
+            std::uint64_t type = Type::cXATMI;
+            Transaction transaction = Transaction::automatic;
             bool active = true;
 
-            friend std::ostream& operator << ( std::ostream& out, const Service& service)
-            {
-               return out << "{name: " << service.name << " type: " << service.type << " transaction: " << service.transaction
-                     << " active: " << service.active << "};";
-            }
+            friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
-            friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.m_adress == rhs.m_adress;}
-            friend bool operator != ( const Service& lhs, const Service& rhs) { return lhs.m_adress != rhs.m_adress;}
+            friend bool operator == ( const Service& lhs, const Service& rhs);
+            friend bool operator != ( const Service& lhs, const Service& rhs);
 
          private:
             adress_type m_adress;
          };
+
+         namespace service
+         {
+            namespace transaction
+            {
+               constexpr std::uint64_t mode( Service::Transaction mode)
+               {
+                  return static_cast< std::uint64_t>( mode);
+               }
+               constexpr Service::Transaction mode( std::uint64_t mode)
+               {
+                  return Service::Transaction( mode);
+               }
+               Service::Transaction mode( const std::string& mode);
+
+            } // transaction
+
+         } // service
+
       } // server
    } // common
 } // casual
