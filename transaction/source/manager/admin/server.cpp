@@ -13,7 +13,7 @@
 // sf
 //
 #include "sf/server.h"
-#include "sf/service.h"
+#include "sf/service/interface.h"
 
 
 
@@ -101,7 +101,7 @@ namespace casual
 
             common::server::Arguments result{ { common::process::path()}};
 
-            result.services.emplace_back( ".casual.tm.list.transactions", &listTransactions_, common::server::Service::Type::cCasualAdmin, common::server::Service::cNone);
+            result.services.emplace_back( ".casual.tm.list.transactions", &listTransactions_, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
 
             return result;
          }

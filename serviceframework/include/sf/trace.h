@@ -5,31 +5,25 @@
 //!     Author: Lazan
 //!
 
-#ifndef TRACE_H_
-#define TRACE_H_
+#ifndef SF_TRACE_H_
+#define SF_TRACE_H_
 
 
 //
 // std
 //
-#include <string>
+#include "common/trace.h"
 
 namespace casual
 {
    namespace sf
    {
-      class Trace
+      namespace trace
       {
-      public:
-         Trace( const std::string& information);
-         ~Trace();
+         using namespace casual::common::trace;
+      } // trace
 
-         Trace( const Trace&) = delete;
-         Trace operator = ( const Trace&) = delete;
-
-      private:
-         const std::string m_information;
-      };
+      using Trace = common::Trace;
 
    } // sf
 } // casual
@@ -38,4 +32,4 @@ namespace casual
 
 
 
-#endif /* TRACE_H_ */
+#endif /* SF_TRACE_H_ */

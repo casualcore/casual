@@ -20,7 +20,9 @@ namespace casual
          {
             static const std::vector< Type>& types()
             {
-               static std::vector< Type> result{ { "X_OCTET", "binary" }, {"X_OCTET", "json"}, {"X_OCTET", "yaml"}};
+               static const std::vector< Type> result{
+                     type::x_octet(), type::binary(), type::json(), type::yaml(), type::xml()
+                  };
                return result;
             }
          };

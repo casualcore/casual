@@ -43,6 +43,18 @@ namespace casual
             archive << sf::makeNameValuePair( name, value.time_since_epoch().count());
          }
 
+         void serialize( Reader& archive, std::chrono::nanoseconds& value, const char* name)
+         {
+            decltype( value.count()) count;
+            archive >> sf::makeNameValuePair( name, count);
+            value = std::chrono::nanoseconds( count);
+         }
+
+         void serialize( Writer& archive, const std::chrono::nanoseconds& value, const char* name)
+         {
+            archive << sf::makeNameValuePair( name, value.count());
+         }
+
       } // archive
 
    } // sf

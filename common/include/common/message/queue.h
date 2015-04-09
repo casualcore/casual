@@ -27,7 +27,7 @@ namespace casual
             {
                common::Uuid id;
 
-               std::string correlation;
+               std::string properties;
                std::string reply;
 
                common::platform::time_point avalible;
@@ -114,17 +114,30 @@ namespace casual
 
             namespace dequeue
             {
+               struct Selector
+               {
+                  std::string properties;
+                  common::Uuid id;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & properties;
+                     archive & id;
+                  })
+               };
                struct base_request
                {
                   process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
+                  Selector selector;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      archive & process;
                      archive & trid;
                      archive & queue;
+                     archive & selector;
                   })
                };
 

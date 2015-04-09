@@ -36,7 +36,7 @@ namespace casual
          class Database
          {
          public:
-            Database( const std::string& database);
+            Database( const std::string& database, std::string groupname);
 
             Queue create( Queue queue);
 
@@ -79,7 +79,7 @@ namespace casual
             //!
             //! @return "global" error queue
             //!
-            Queue::id_type error() const { return m_errorQueue;}
+            Queue::id_type error() const { return m_error_queue;}
 
 
             //!
@@ -103,12 +103,20 @@ namespace casual
 
 
             sql::database::Connection m_connection;
-            Queue::id_type m_errorQueue;
+            Queue::id_type m_error_queue;
 
             struct Statement
             {
                sql::database::Statement enqueue;
-               sql::database::Statement dequeue;
+
+
+               struct dequeue_t
+               {
+                  sql::database::Statement first;
+                  sql::database::Statement first_id;
+                  sql::database::Statement first_match;
+
+               } dequeue;
 
                struct state_t
                {
@@ -128,8 +136,8 @@ namespace casual
 
                struct info_t
                {
-                  sql::database::Statement queues;
-                  sql::database::Statement messages;
+                  sql::database::Statement queue;
+                  sql::database::Statement message;
 
                } information;
 

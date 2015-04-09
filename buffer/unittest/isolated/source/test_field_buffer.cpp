@@ -10,6 +10,7 @@
 
 #include "buffer/field.h"
 #include "common/environment.h"
+#include "common/buffer/type.h"
 
 #include "xatmi.h"
 
@@ -102,7 +103,8 @@ namespace casual
 
       TEST( casual_field_buffer, use_with_wrong_buffer__expecting_invalid_buffer)
       {
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto binary_type = common::buffer::type::binary();
+         auto buffer = tpalloc( binary_type.name.c_str(), binary_type.subname.c_str(), 128);
          ASSERT_TRUE( buffer != nullptr);
 
          EXPECT_TRUE( CasualFieldAddChar( buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_BUFFER);

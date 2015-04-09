@@ -28,8 +28,8 @@ namespace casual
                {
                   admin::InstanceVO result;
 
-                  result.pid = value.process.pid;
-                  result.queue = value.process.queue;
+                  result.process.pid = value.process.pid;
+                  result.process.queue = value.process.queue;
                   result.state = static_cast< long>( value.state);
                   result.invoked = value.invoked;
                   result.last = value.last;
@@ -70,10 +70,27 @@ namespace casual
                   admin::ServiceVO result;
 
                   result.name = value.information.name;
-                  result.timeout = value.information.timeout.count();
+                  //result.timeout = value.information.timeout.count();
+                  result.timeout = value.information.timeout;
                   result.lookedup = value.lookedup;
+                  result.type = value.information.type;
+                  result.mode = value.information.transaction;
 
                   common::range::transform( value.instances, result.instances, Pid{});
+
+                  return result;
+               }
+            };
+
+            struct Pending
+            {
+               admin::PendingVO operator () ( const common::message::service::name::lookup::Request& value) const
+               {
+                  admin::PendingVO result;
+
+                  result.requested = value.requested;
+                  result.process.pid = value.process.pid;
+                  result.process.queue = value.process.queue;
 
                   return result;
                }

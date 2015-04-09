@@ -78,17 +78,17 @@ namespace casual
             //!
             //! Being called from tpreturn
             //!
-            void longJumpReturn( int rval, long rcode, char* data, long len, long flags);
+            void long_jump_return( int rval, long rcode, char* data, long len, long flags);
 
             //!
             //! Being called from tpadvertise
             //!
-            void advertiseService( const std::string& name, void (*adress)( TPSVCINFO *));
+            void advertise( const std::string& service, void (*adress)( TPSVCINFO *));
 
             //!
             //! Being called from tpunadvertise
             //!
-            void unadvertiseService( const std::string& name);
+            void unadvertise( const std::string& service);
 
             //!
             //! Share state with callee::handle::basic_call for now...

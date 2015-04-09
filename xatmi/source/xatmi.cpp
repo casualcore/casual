@@ -75,7 +75,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          const std::size_t size{ 8 };
          memset( type, '\0', size);
-         casual::common::range::copy_max( buffer.type.type, size, type);
+         casual::common::range::copy_max( buffer.type.name, size, type);
       }
 
       //
@@ -85,7 +85,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          const std::size_t size{ 16 };
          memset( subtype, '\0', size);
-         casual::common::range::copy_max( buffer.type.subtype, size, subtype);
+         casual::common::range::copy_max( buffer.type.subname, size, subtype);
       }
 
       return buffer.memory.size();
@@ -109,7 +109,7 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
    try
    {
 
-      casual::common::server::Context::instance().longJumpReturn( rval, rcode, data, len, flags);
+      casual::common::server::Context::instance().long_jump_return( rval, rcode, data, len, flags);
    }
    catch( ...)
    {
@@ -189,7 +189,7 @@ int tpadvertise( const char* const svcname, void (*func)( TPSVCINFO *))
 {
    try
    {
-      casual::common::server::Context::instance().advertiseService( svcname, func);
+      casual::common::server::Context::instance().advertise( svcname, func);
    }
    catch( ...)
    {
@@ -203,7 +203,7 @@ int tpunadvertise( const char* const svcname)
 {
    try
    {
-      casual::common::server::Context::instance().unadvertiseService( svcname);
+      casual::common::server::Context::instance().unadvertise( svcname);
    }
    catch( ...)
    {

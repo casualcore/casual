@@ -25,11 +25,12 @@ namespace casual
          struct Settings
          {
             std::string queuebase;
+            std::string name;
          };
 
          struct State
          {
-            State( std::string filename) : queuebase( std::move( filename)) {}
+            State( std::string filename, std::string name) : queuebase( std::move( filename), std::move( name)) {}
 
             Database queuebase;
 

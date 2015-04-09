@@ -85,7 +85,7 @@ namespace casual
 
       TEST( casual_xatmi, tpalloc_X_OCTET_binary__expect_ok)
       {
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
          EXPECT_TRUE( buffer != nullptr) << "tperrno: " << tperrno;
          tpfree( buffer);
       }
@@ -127,7 +127,7 @@ namespace casual
       TEST( casual_xatmi, tpgetrply_descriptor_42__expect_TPEBADDESC)
       {
          int descriptor = 42;
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);
 
          EXPECT_TRUE( tpgetrply( &descriptor, &buffer, &len, 0) == -1);
@@ -143,7 +143,7 @@ namespace casual
          //
          local::Domain domain;
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          EXPECT_TRUE( tpacall( "XXX", buffer, 128, 0) == -1);
          EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << common::error::xatmi::error( tperrno);
@@ -160,7 +160,7 @@ namespace casual
          //
          local::Domain domain;
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY | TPNOTRAN) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
 
@@ -175,7 +175,7 @@ namespace casual
          //
          local::Domain domain;
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);
 
          EXPECT_TRUE( tpcall( "service_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
@@ -188,7 +188,7 @@ namespace casual
       {
          local::Domain domain;
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          auto descriptor = tpacall( "service_1", buffer, 128, 0);
          EXPECT_TRUE( descriptor == 1) << "desc: " << descriptor << " tperrno: " << common::error::xatmi::error( tperrno);
@@ -202,7 +202,7 @@ namespace casual
       {
          local::Domain domain;
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          std::vector< int> descriptors( 10);
 
@@ -229,7 +229,7 @@ namespace casual
          local::Domain domain;
 
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          std::vector< int> descriptors( 10);
 
@@ -262,7 +262,7 @@ namespace casual
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          std::vector< int> descriptors( 10);
 
@@ -298,7 +298,7 @@ namespace casual
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          auto len = tptypes( buffer, nullptr, nullptr);
          EXPECT_TRUE( tpcall( "service_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
@@ -318,7 +318,7 @@ namespace casual
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         auto buffer = tpalloc( "X_OCTET", "binary", 128);
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          EXPECT_TRUE( tpacall( "service_1", buffer, 128, 0) != 0) << "tperrno: " << common::error::xatmi::error( tperrno);
 

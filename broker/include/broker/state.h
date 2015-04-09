@@ -194,6 +194,8 @@ namespace casual
             void remove( const Server::Instance& instance);
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
+
+            friend std::ostream& operator << ( std::ostream& out, const Service& service);
          };
       } // state
 

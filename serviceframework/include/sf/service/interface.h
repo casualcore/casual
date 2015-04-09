@@ -166,20 +166,22 @@ namespace casual
          {
          public:
 
-            typedef std::function< std::unique_ptr< Interface>( TPSVCINFO* serviceInfo)> function_type;
-
-
+            typedef std::function< std::unique_ptr< Interface>( TPSVCINFO*)> function_type;
 
 
             static Factory& instance();
 
+            std::unique_ptr< Interface> create( TPSVCINFO* serviceInfo, const buffer::Type& type) const;
             std::unique_ptr< Interface> create( TPSVCINFO* serviceInfo) const;
 
 
             template< typename T>
-            void registrate( sf::buffer::Type&& type)
+            void registration()
             {
-               m_factories[ std::move( type)] = Creator< T>();
+               for( auto& type : T::types())
+               {
+                  m_factories[ std::move( type)] = Creator< T>();
+               }
             }
 
 

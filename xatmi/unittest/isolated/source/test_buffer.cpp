@@ -22,7 +22,7 @@ namespace casual
 
       TEST( casual_xatmi_buffer, X_OCTET_allocate)
       {
-         char* buffer = tpalloc( "X_OCTET", "binary", 2048);
+         char* buffer = tpalloc( X_OCTET, 0, 2048);
 
          ASSERT_TRUE( buffer != 0);
 
@@ -33,7 +33,7 @@ namespace casual
 
       TEST( casual_xatmi_buffer, X_OCTET_reallocate)
       {
-         char* buffer = tpalloc( "X_OCTET", "binary", 2048);
+         char* buffer = tpalloc( X_OCTET, 0, 2048);
 
          ASSERT_TRUE( buffer != 0);
 
@@ -49,7 +49,7 @@ namespace casual
 
       TEST( casual_xatmi_buffer, X_OCTET_tptypes)
       {
-         char* buffer = tpalloc( "X_OCTET", "binary", 666);
+         char* buffer = tpalloc( X_OCTET, 0, 666);
          ASSERT_TRUE( buffer != 0);
 
          std::array< char, 8> type;
@@ -57,7 +57,7 @@ namespace casual
 
          EXPECT_TRUE( tptypes( buffer, type.data(), subtype.data()) == 666);
          EXPECT_TRUE( std::string( type.data()) == "X_OCTET") << "type.data(): " << type.data();
-         EXPECT_TRUE( std::string( subtype.data()) == "binary") << "subtype.data(): " << subtype.data();
+         EXPECT_TRUE( std::string( subtype.data()) == "") << "subtype.data(): " << subtype.data();
 
 
          //tpfree( buffer);

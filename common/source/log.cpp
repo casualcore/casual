@@ -59,7 +59,7 @@ namespace casual
 
                   void log( const std::string& category, const std::string& message)
                   {
-                     const std::string basename{ file::basename( process::path())};
+                     const std::string basename{ file::name::base( process::path())};
 
                      // We don't need this - thread::Safe proxy
                      //std::lock_guard< std::mutex> lock( m_streamMutex);

@@ -5,11 +5,11 @@
 //!     Author: Lazan
 //!
 
-#include "sf/service.h"
+#include "sf/service/interface.h"
 #include "sf/exception.h"
 
 // TODO: temporary to test factory
-#include "sf/service_protocol.h"
+#include "sf/service/protocol.h"
 
 #include "common/internal/trace.h"
 
@@ -99,15 +99,11 @@ namespace casual
          }
 
 
-
-         std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
+         std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo, const buffer::Type& type) const
          {
             const common::trace::internal::Scope trace( "sf::service::Factory::create");
 
-            sf::buffer::Type type = sf::buffer::type( serviceInfo->data);
-
             auto found = m_factories.find( type);
-
 
             if( found == m_factories.end())
             {
@@ -115,17 +111,24 @@ namespace casual
             }
 
             return found->second( serviceInfo);
+         }
 
+         std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
+         {
+            const common::trace::internal::Scope trace( "sf::service::Factory::create");
+
+            return create( serviceInfo, sf::buffer::type::get( serviceInfo->data));
          }
 
          Factory::Factory()
          {
             const common::trace::internal::Scope trace( "sf::service::Factory::Factory");
 
-            registrate< service::protocol::Yaml>( buffer::Type( "X_OCTET", "yaml"));
-            registrate< service::protocol::Binary>( buffer::Type( "X_OCTET", "binary"));
-            registrate< service::protocol::Json>( buffer::Type( "X_OCTET", "json"));
-            registrate< service::protocol::Xml>( buffer::Type( "X_OCTET", "xml"));
+            registration< service::protocol::Yaml>();
+            registration< service::protocol::Binary>();
+            registration< service::protocol::Json>();
+            registration< service::protocol::Xml>();
+            registration< service::protocol::Describe>();
          }
 
 
