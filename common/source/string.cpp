@@ -9,6 +9,7 @@
 #include "common/algorithm.h"
 
 #include <memory>
+#include <numeric>
 
 #include <cstdlib>
 #include <cctype>
@@ -85,6 +86,61 @@ namespace casual
 
          } // adjacent
 
+         std::string join( const std::vector< std::string>& strings)
+         {
+            return std::accumulate( strings.begin(), strings.end(), std::string());
+         }
+
+
+         std::string join( const std::vector< std::string>& strings, const std::string& delimiter)
+         {
+            if( strings.empty())
+            {
+               return std::string();
+            }
+
+            //
+            // This will give a delimiter between empty strings (as well)
+            //
+
+            return std::accumulate( strings.begin() + 1, strings.end(), strings.front(),
+               [&]( const std::string& f, const std::string& s){ return f + delimiter + s;});
+         }
+
+
+         std::string trim( const std::string& value)
+         {
+            const auto ws = [] ( const std::string::value_type character)
+            { return std::isspace( character, std::locale::classic()); };
+
+            const auto first = std::find_if_not( std::begin( value), std::end( value), ws);
+            const auto last = std::find_if_not( value.rbegin(), value.rend(), ws);
+
+            return first < last.base() ? std::string( first, last.base()) : std::string();
+         }
+
+
+         std::string lower( std::string value)
+         {
+            const auto lower = [] ( const std::string::value_type character)
+            { return std::tolower( character, std::locale::classic());};
+
+            std::transform( value.begin(), value.end(), value.begin(), lower);
+
+            return value;
+         }
+
+         std::string upper( std::string value)
+         {
+            const auto upper = [] ( const std::string::value_type character)
+            { return std::toupper( character, std::locale::classic());};
+
+            std::transform( value.begin(), value.end(), value.begin(), upper);
+
+            return value;
+         }
+
+
          bool integer( const std::string& value)
          {
             if( value.empty())
@@ -94,6 +150,7 @@ namespace casual
 
             return range::includes( "0123456789", value);
          }
+
       } // string
    } // common
 } // casual
