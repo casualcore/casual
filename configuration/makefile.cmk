@@ -50,6 +50,6 @@ LinkUnittest( 'bin/test-casual-configuration',
 # Install
 #
 Install( intall_libs, '$(CASUAL_HOME)/lib')
-Install( 'resources.yaml', '$(CASUAL_HOME)/configuration')
+Install( 'resources.yaml', '$(CASUAL_HOME)/configuration/example')
 
 
