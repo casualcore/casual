@@ -89,6 +89,20 @@ namespace casual
          EXPECT_TRUE( type == "long") << type;
       }
 
+      TEST( casual_common_string, integer_empty_expect_false)
+      {
+         EXPECT_FALSE( string::integer( ""));
+      }
+
+      TEST( casual_common_string, integer_42_expect_true)
+      {
+         EXPECT_TRUE( string::integer( "42"));
+      }
+
+      TEST( casual_common_string, integer_ABC_expect_false)
+      {
+         EXPECT_FALSE( string::integer( "ABC"));
+      }
 
    }
 }

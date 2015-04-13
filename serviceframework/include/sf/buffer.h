@@ -16,6 +16,7 @@
 #include "common/internal/log.h"
 #include "common/string.h"
 #include "common/network/byteorder.h"
+#include "common/buffer/type.h"
 
 //
 // std
@@ -38,29 +39,27 @@ namespace casual
    {
       namespace buffer
       {
-         struct Type
+         using Type = common::buffer::Type;
+
+         namespace type
          {
-            Type( std::string name, std::string subname)
-             : name( std::move( name)), subname( std::move( subname)) {}
+            using namespace common::buffer::type;
 
-            Type() = default;
-            Type( Type&&) = default;
-
-
-            bool operator < ( const Type& rhs) const
+            namespace api
             {
-               if( name == rhs.name)
-                  return subname < rhs.subname;
+               Type binary();
+               Type json();
+               Type yaml();
+               Type xml();
 
-               return name < rhs.name;
+               const std::vector< Type>& types();
             }
 
-            std::string name;
-            std::string subname;
+            Type get( platform::raw_buffer_type buffer);
+         } // type
 
-         };
 
-         Type type( platform::raw_buffer_type buffer);
+
 
 
          struct Buffer
@@ -167,8 +166,13 @@ namespace casual
 
 
 
+         namespace type
+         {
+            Type get( const Buffer& source);
 
-         Type type( const Buffer& source);
+         } // type
+
+
 
          Buffer copy( const Buffer& source);
 
@@ -291,13 +295,10 @@ namespace casual
 
 
 
-         class X_Octet : public binary::Stream
+         class Binary : public binary::Stream
          {
          public:
-            X_Octet( const std::string& subtype);
-            X_Octet( const std::string& subtype, size_type size);
-
-            X_Octet( Buffer::Raw buffer);
+            using binary::Stream::Stream;
 
             std::string str() const;
             void str( const std::string& new_string);

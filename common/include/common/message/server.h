@@ -189,7 +189,7 @@ namespace casual
                   common::Uuid execution;
                   std::string caller;
                   common::transaction::ID trid;
-                  std::int64_t flags;
+                  std::int64_t flags = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

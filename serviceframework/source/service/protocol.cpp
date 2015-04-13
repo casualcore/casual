@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "sf/service_protocol.h"
+#include "sf/service/protocol.h"
 
 #include "common/internal/trace.h"
 
@@ -63,6 +63,11 @@ namespace casual
 
             }
 
+            std::vector< buffer::Type> Binary::types()
+            {
+               return { buffer::type::binary()};
+            }
+
             reply::State Binary::doFinalize()
             {
                const common::trace::internal::Scope trace{ "Binary::doFinalize"};
@@ -91,6 +96,11 @@ namespace casual
 
             }
 
+            std::vector< buffer::Type> Yaml::types()
+            {
+               return { buffer::type::yaml()};
+            }
+
             reply::State Yaml::doFinalize()
             {
                const common::trace::internal::Scope trace{ "Yaml::doFinalize"};
@@ -103,7 +113,7 @@ namespace casual
                std::string yaml;
                m_save.serialize( yaml);
 
-               buffer::X_Octet buffer{ "yaml", yaml.size()};
+               buffer::Binary buffer{ buffer::type::yaml(), yaml.size()};
                buffer.str( yaml);
 
                auto raw = buffer.release();
@@ -129,6 +139,11 @@ namespace casual
 
             }
 
+            std::vector< buffer::Type> Json::types()
+            {
+               return { buffer::type::json()};
+            }
+
             reply::State Json::doFinalize()
             {
                const common::trace::internal::Scope trace{ "Json::doFinalize"};
@@ -140,7 +155,7 @@ namespace casual
                std::string json;
                m_save.serialize( json);
 
-               buffer::X_Octet buffer{ "json", json.size()};
+               buffer::Binary buffer{ buffer::type::json(), json.size()};
                buffer.str( json);
 
                auto raw = buffer.release();
@@ -167,6 +182,12 @@ namespace casual
 
             }
 
+
+            std::vector< buffer::Type> Xml::types()
+            {
+               return { common::buffer::type::xml()};
+            }
+
             reply::State Xml::doFinalize()
             {
                const common::trace::internal::Scope trace{ "Xml::doFinalize"};
@@ -178,7 +199,7 @@ namespace casual
                std::string xml;
                m_save.serialize( xml);
 
-               buffer::X_Octet buffer{ "xml", xml.size()};
+               buffer::Binary buffer{ common::buffer::type::xml(), xml.size()};
                buffer.str( xml);
 
                auto raw = buffer.release();
@@ -188,6 +209,66 @@ namespace casual
                return m_state;
             }
 
+
+            Describe::Describe( TPSVCINFO* information) : Base( information), m_writer( m_model), m_protocoll( protocoll( information))
+            {
+               const common::trace::internal::Scope trace{ "Describe::Describe"};
+
+               m_input.readers.push_back( &m_prepare);
+               m_input.writers.push_back( &m_writer.input);
+
+               m_output.readers.push_back( &m_prepare);
+               m_output.writers.push_back( &m_writer.output);
+
+            }
+
+
+            std::vector< buffer::Type> Describe::types()
+            {
+               return buffer::type::api::types();
+            }
+
+            namespace local
+            {
+               namespace
+               {
+                  std::map< buffer::Type, buffer::Type> api_mapping( std::vector< buffer::Type> types)
+                  {
+                     std::map< buffer::Type, buffer::Type> result;
+
+                     for( auto& api_type : types)
+                     {
+                        buffer::Type type{ api_type.subname.c_str(), nullptr};
+                        result[ std::move( api_type)] = std::move( type);
+                     }
+
+                     return result;
+                  }
+               } // <unnamed>
+            } // local
+
+            std::unique_ptr< Interface> Describe::protocoll( TPSVCINFO* information)
+            {
+               const static auto mapping = local::api_mapping( types());
+
+               return service::Factory::instance().create( information, mapping.at( buffer::type::get( information->data)));
+            }
+
+            bool Describe::doCall()
+            {
+               return false;
+            }
+
+            reply::State Describe::doFinalize()
+            {
+               const common::trace::internal::Scope trace{ "Describe::doFinalize"};
+
+               service::IO service_io{ std::move( m_protocoll)};
+
+               service_io << makeNameValuePair( "model", m_model);
+
+               return service_io.finalize();
+            }
 
          }
       } // protocol

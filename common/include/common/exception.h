@@ -31,10 +31,12 @@ namespace casual
    {
       namespace exception
       {
+         using nip_type = std::tuple< std::string, std::string>;
+
          template< typename T>
-         std::tuple< std::string, std::string> make_nip( std::string name, T&& information)
+         nip_type make_nip( std::string name, const T& information)
          {
-            return std::make_tuple( std::move( name), to_string( std::forward< T>( information)));
+            return std::make_tuple( std::move( name), to_string( information));
          }
 
          struct base : std::exception
@@ -57,6 +59,14 @@ namespace casual
          private:
             using nip_type = std::tuple< std::string, std::string>;
 
+            struct Convert
+            {
+               nip_type operator() ( nip_type nip) { return nip;}
+
+               template< typename T>
+               nip_type operator() ( T value) { return make_nip( "value", value);}
+            };
+
             base( std::string description, std::vector< nip_type> information);
 
             static std::vector< nip_type> construct( std::vector< nip_type> nips)
@@ -67,7 +77,7 @@ namespace casual
             template< typename I, typename... Args>
             static std::vector< nip_type> construct( std::vector< nip_type> nips, I&& infomation, Args&&... args)
             {
-               nips.push_back( std::forward< I>( infomation));
+               nips.push_back( Convert{}( std::forward< I>( infomation)));
                return construct( std::move( nips), std::forward< Args>( args)...);
             }
 
@@ -131,16 +141,16 @@ namespace casual
          };
 
 
-         struct Shutdown : Base
+         struct Shutdown : base
          {
-            using Base::Base;
+            using base::base;
          };
 
          namespace invalid
          {
-            struct Base : common::exception::Base
+            struct Base : common::exception::base
             {
-               using common::exception::Base::Base;
+               using common::exception::base::base;
 
             };
 
@@ -167,18 +177,18 @@ namespace casual
 
          namespace limit
          {
-            struct Memory : Base
+            struct Memory : base
             {
-               using Base::Base;
+               using base::base;
             };
 
          } // limit
 
          namespace queue
          {
-            struct Unavailable : Base
+            struct Unavailable : base
             {
-               using Base::Base;
+               using base::base;
             };
 
          } // queue

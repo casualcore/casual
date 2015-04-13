@@ -147,8 +147,8 @@ namespace casual
                request.process = common::process::handle();
 
                request.message.payload = message.payload.data;
-               request.message.type.type = message.payload.type.type;
-               request.message.type.subtype = message.payload.type.subtype;
+               request.message.type.name = message.payload.type.type;
+               request.message.type.subname = message.payload.type.subtype;
                request.message.properties = message.attributes.properties;
                request.message.reply = message.attributes.reply;
                request.message.avalible = message.attributes.available;

@@ -32,6 +32,7 @@ casual_common_objectfiles = [
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/handle.cpp'),
+    Compile( 'source/server/service.cpp'),
     
     Compile( 'source/call/context.cpp'),
     Compile( 'source/call/timeout.cpp'),

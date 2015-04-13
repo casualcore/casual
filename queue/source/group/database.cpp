@@ -48,8 +48,8 @@ namespace casual
                         row.get( 2, std::get< 1>( result).properties);
                         row.get( 3, std::get< 1>( result).reply);
                         row.get( 4, std::get< 1>( result).redelivered);
-                        row.get( 5, std::get< 1>( result).type.type);
-                        row.get( 6, std::get< 1>( result).type.subtype);
+                        row.get( 5, std::get< 1>( result).type.name);
+                        row.get( 6, std::get< 1>( result).type.subname);
 
                         std::get< 1>( result).avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 7)}};
                         std::get< 1>( result).timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 8)}};
@@ -88,7 +88,7 @@ namespace casual
 
 
 
-         Database::Database( const std::string& database) : m_connection( database)
+         Database::Database( const std::string& database, std::string groupname) : m_connection( database)
          {
 
             common::trace::internal::Scope trace{ "Database::Database", common::log::internal::queue};
@@ -99,7 +99,7 @@ namespace casual
             m_connection.execute( "PRAGMA foreign_keys = ON;");
 
             m_connection.execute(
-                R"( CREATE TABLE IF NOT EXISTS queues 
+                R"( CREATE TABLE IF NOT EXISTS queue 
                 (
                   id           INTEGER  PRIMARY KEY,
                   name         TEXT     UNIQUE,
@@ -110,7 +110,7 @@ namespace casual
 
 
             m_connection.execute(
-                R"( CREATE TABLE IF NOT EXISTS messages 
+                R"( CREATE TABLE IF NOT EXISTS message 
                 ( id            BLOB PRIMARY KEY,
                   queue         INTEGER,
                   origin        NUMBER, -- the first queue a message is enqueued to
@@ -124,99 +124,98 @@ namespace casual
                   avalible      INTEGER,
                   timestamp     INTEGER,
                   payload       BLOB,
-                  FOREIGN KEY (queue) REFERENCES queues( id)); )");
+                  FOREIGN KEY (queue) REFERENCES queue( id)); )");
 
             m_connection.execute(
-                  "CREATE INDEX IF NOT EXISTS i_id_messages  ON messages ( id);" );
+                  "CREATE INDEX IF NOT EXISTS i_id_message  ON message ( id);" );
 
             m_connection.execute(
-               "CREATE INDEX IF NOT EXISTS i_queue_messages  ON messages ( queue);" );
+               "CREATE INDEX IF NOT EXISTS i_queue_message  ON message ( queue);" );
 
             m_connection.execute(
-              "CREATE INDEX IF NOT EXISTS i_dequeue_messages  ON messages ( queue, avalible);" );
+              "CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, avalible);" );
 
             m_connection.execute(
-               "CREATE INDEX IF NOT EXISTS i_timestamp_messages  ON messages ( timestamp ASC);" );
+               "CREATE INDEX IF NOT EXISTS i_timestamp_message  ON message ( timestamp ASC);" );
 
             m_connection.execute(
-               "CREATE INDEX IF NOT EXISTS i_gtrid_messages  ON messages ( gtrid);" );
+               "CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);" );
 
 
             //
             // group error queue
             //
-            auto groupname = common::file::removeExtension( common::file::basename( m_connection.file()));
             if( groupname.empty())
             {
                groupname = common::uuid::string( common::uuid::make());
             }
-            m_connection.execute( "INSERT OR REPLACE INTO queues VALUES ( 1, \"" + groupname + ".group.error\", 0, 1, 1); ");
-            m_errorQueue = 1;
+            m_connection.execute( "INSERT OR REPLACE INTO queue VALUES ( 1, ?, 0, 1, 1); ", groupname + ".group.error");
+            m_error_queue = 1;
 
 
             //
             // Precompile all other statements
             //
             {
-               m_statement.enqueue = m_connection.precompile( "INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
+               m_statement.enqueue = m_connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
 
                m_statement.dequeue.first = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
-                        messages 
+                        message 
                      WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
 
                m_statement.dequeue.first_id = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
-                        messages 
+                        message 
                      WHERE queue = :queue AND state = 2 AND avalible < :avalible AND id = :id LIMIT 1; )");
 
                m_statement.dequeue.first_match = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
-                        messages 
+                        message 
                      WHERE queue = :queue AND state = 2 AND avalible < :avalible AND properties = :properties ORDER BY timestamp ASC LIMIT 1; )");
 
 
-               m_statement.state.xid =  m_connection.precompile( "UPDATE messages SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
-               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM messages WHERE ROWID = :id");
+               m_statement.state.xid =  m_connection.precompile( "UPDATE message SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
+               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM message WHERE ROWID = :id");
 
 
-               m_statement.commit1 = m_connection.precompile( "UPDATE messages SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
-               m_statement.commit2 = m_connection.precompile( "DELETE FROM messages WHERE gtrid = :gtrid AND state = 3;");
-               m_statement.commit3 = m_connection.precompile( "SELECT DISTINCT( queue) FROM messages WHERE gtrid = :gtrid AND state = 2;");
+               m_statement.commit1 = m_connection.precompile( "UPDATE message SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
+               m_statement.commit2 = m_connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 3;");
+               m_statement.commit3 = m_connection.precompile( "SELECT DISTINCT( queue) FROM message WHERE gtrid = :gtrid AND state = 2;");
 
 
                /*
                m_statement.rollback = m_connection.precompile( R"(
                  -- delete all enqueued  
-                 DELETE FROM messages WHERE gtrid = :gtrid AND state = 1; 
+                 DELETE FROM message WHERE gtrid = :gtrid AND state = 1;
                  -- update all dequeued back to enqueued
-                 UPDATE messages SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3;
+                 UPDATE message SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3;
                  -- move to error queue
-                 UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE rowid = messages.queue) 
-                     WHERE messages.redelivered > ( SELECT retries FROM queues WHERE rowid = messages.queue);
+                 UPDATE message SET redelivered = 0, queue = ( SELECT error FROM queue WHERE rowid = message.queue)
+                     WHERE message.redelivered > ( SELECT retries FROM queue WHERE rowid = message.queue);
                      )");
 
                */
 
-               m_statement.rollback1 = m_connection.precompile( "DELETE FROM messages WHERE gtrid = :gtrid AND state = 1;");
-               m_statement.rollback2 = m_connection.precompile( "UPDATE messages SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3");
+               m_statement.rollback1 = m_connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 1;");
+               m_statement.rollback2 = m_connection.precompile( "UPDATE message SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3");
                m_statement.rollback3 = m_connection.precompile(
-                     "UPDATE messages SET redelivered = 0, queue = ( SELECT error FROM queues WHERE id = messages.queue)"
-                     " WHERE messages.redelivered > ( SELECT retries FROM queues WHERE id = messages.queue);");
+                     "UPDATE message SET redelivered = 0, queue = ( SELECT error FROM queue WHERE id = message.queue)"
+                     " WHERE message.redelivered > ( SELECT retries FROM queue WHERE id = message.queue);");
 
-               m_statement.information.queues = m_connection.precompile( R"(
+               m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
                      q.id, q.name, q.retries, q.error, q.type, COUNT( m.id), 
                        MIN( length( m.payload)), MAX( length( m.payload)), AVG( length( m.payload)), 
                        SUM( length( m.payload)), MAX( m.timestamp)
                   FROM
-                     queues q LEFT JOIN messages m ON q.id = m.queue AND m.state = 2
+                     queue q LEFT JOIN message m ON q.id = m.queue AND m.state = 2
                   GROUP BY q.id 
                   ORDER BY q.id  
                       ;
@@ -237,11 +236,11 @@ namespace casual
                   timestamp     INTEGER,
                   payload       BLOB,
                 */
-               m_statement.information.messages = m_connection.precompile( R"(
+               m_statement.information.message = m_connection.precompile( R"(
                   SELECT
                      m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.subtype, m.avalible, m.timestamp, length( m.payload)
                   FROM
-                     messages m
+                     message m
                   WHERE
                      m.queue = ?
                 )");
@@ -260,13 +259,16 @@ namespace casual
 
             common::trace::internal::Scope trace{ "queue::Database::create", common::log::internal::queue};
 
+            common::log::internal::queue << "queue.name: " << queue.name << std::endl;
+
+
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name + ".error", queue.retries, m_errorQueue, Queue::cErrorQueue);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?);", queue.name + ".error", queue.retries, m_error_queue, Queue::cErrorQueue);
             queue.error = m_connection.rowid();
 
-            m_connection.execute( "INSERT INTO queues VALUES ( NULL,?,?,?,?);", queue.name, queue.retries, queue.error, Queue::cQueue);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?);", queue.name, queue.retries, queue.error, Queue::cQueue);
             queue.id = m_connection.rowid();
 
             return queue;
@@ -280,8 +282,8 @@ namespace casual
 
             if( ! existing.empty())
             {
-               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id);
-               m_connection.execute( "UPDATE queues SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error);
+               m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id);
+               m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error);
 
             }
          }
@@ -293,8 +295,8 @@ namespace casual
 
             if( ! existing.empty())
             {
-               m_connection.execute( "DELETE FROM queues WHERE id = :id;", existing.front().error);
-               m_connection.execute( "DELETE FROM queues WHERE id = :id;", existing.front().id);
+               m_connection.execute( "DELETE FROM queue WHERE id = :id;", existing.front().error);
+               m_connection.execute( "DELETE FROM queue WHERE id = :id;", existing.front().id);
             }
          }
 
@@ -302,7 +304,7 @@ namespace casual
          {
             std::vector< Queue> result;
 
-            auto query = m_connection.query( "SELECT q.id, q.name, q.retries, q.error FROM queues q WHERE q.id = :id AND q.type = :type", id, Queue::cQueue);
+            auto query = m_connection.query( "SELECT q.id, q.name, q.retries, q.error FROM queue q WHERE q.id = :id AND q.type = :type", id, Queue::cQueue);
 
             auto row = query.fetch();
 
@@ -361,8 +363,8 @@ namespace casual
                   state,
                   message.message.reply,
                   0,
-                  message.message.type.type,
-                  message.message.type.subtype,
+                  message.message.type.name,
+                  message.message.type.subname,
                   message.message.avalible,
                   common::platform::clock_type::now(),
                   message.message.payload);
@@ -481,7 +483,7 @@ namespace casual
 
             std::vector< common::message::queue::information::Queue> result;
 
-            auto query = m_statement.information.queues.query();
+            auto query = m_statement.information.queue.query();
 
             sql::database::Row row;
 
@@ -513,7 +515,7 @@ namespace casual
          {
             std::vector< common::message::queue::information::Message> result;
 
-            auto query = m_statement.information.messages.query( id);
+            auto query = m_statement.information.message.query( id);
 
             sql::database::Row row;
 
@@ -531,8 +533,8 @@ namespace casual
                row.get( 4, message.state);
                row.get( 5, message.reply);
                row.get( 6, message.redelivered);
-               row.get( 7, message.type.type);
-               row.get( 8, message.type.subtype);
+               row.get( 7, message.type.name);
+               row.get( 8, message.type.subname);
                row.get( 9, message.avalible);
                row.get( 10, message.timestamp);
                row.get( 11, message.size);

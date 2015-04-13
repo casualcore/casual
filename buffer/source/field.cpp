@@ -298,8 +298,11 @@ namespace casual
                {
                   auto& buffer = pool_type::pool.get( handle);
 
-                  if( buffer.payload.type.type != CASUAL_FIELD)
+                  if( buffer.payload.type.name != CASUAL_FIELD)
                   {
+                     //
+                     // TODO: The pool can only be invoked with the registered type, so this
+                     //   check is not needed...
                      //
                      // TODO: This should be some generic check
                      //
@@ -1300,7 +1303,7 @@ namespace casual
 
                   const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
 
-                  auto archive = sf::archive::reader::makeFromFile( file);
+                  auto archive = sf::archive::reader::from::file( file);
 
                   archive >> CASUAL_MAKE_NVP( groups);
 

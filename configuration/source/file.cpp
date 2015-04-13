@@ -31,7 +31,7 @@ namespace casual
 
          std::string find( const std::string& basename)
          {
-            return find( common::file::basedir( basename), common::file::basename( basename));
+            return find( common::directory::name::base( basename), common::file::name::base( basename));
          }
 
          std::string find( const std::string& path, const std::string& basename)

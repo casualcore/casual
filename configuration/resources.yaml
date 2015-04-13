@@ -7,7 +7,7 @@ resources:
     # this is the name that shall be used to refer to a specific resource (for example with buildserver)
   - key: db2   
     # User links this her self. Can be any name. Provide full path, unless it's in the default path
-    server: casual-rm-proxy-db2
+    server: rm-proxy-casual-dummy
     # Name of the xa switch struct 
     xa_struct_name: db2xa_switch_static_std
     
@@ -16,16 +16,8 @@ resources:
       - db2
       
     paths:
-      library: [ $(DB2DIR)/lib64]
+      library: [ $DB2DIR/lib64]
       
-      
-  - key: TMSUDB2   
-    server: casual-rm-proxy-db2
-    xa_struct_name: db2xa_switch_static_std
-    libraries:
-      - db2
-    paths:
-      library: [ $(DB2DIR)/lib64]
    
   - key: rm-mockup   
     server: rm-proxy-casual-mockup

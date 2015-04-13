@@ -213,19 +213,21 @@ namespace casual
             Service() = default;
             Service& operator = (const Service& rhs) = default;
 
-            explicit Service( const std::string& name)
-               : name( name)
+
+
+            explicit Service( std::string name, std::uint64_t type, std::uint64_t transaction)
+               : name( std::move( name)), type( type), transaction( transaction)
             {}
 
-            explicit Service( const std::string& name, long type, int transaction)
-               : name( name), type( type), transaction( transaction)
+            explicit Service( std::string name)
+               : Service( std::move( name), 0, 0)
             {}
 
             std::string name;
-            long type = 0;
+            std::uint64_t type = 0;
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
             platform::queue_id_type monitor_queue = 0;
-            int transaction = 0;
+            std::uint64_t transaction = 0;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {

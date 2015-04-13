@@ -85,8 +85,8 @@ namespace casual
                template< typename T>
                Payload( T&& type_, sf::platform::binary_type& data) : data( data)
                {
-                  type.type = type_.type;
-                  type.subtype = type_.subtype;
+                  type.type = type_.name;
+                  type.subtype = type_.subname;
                }
 
                queue::Payload::type_t type;
@@ -132,8 +132,8 @@ namespace casual
 
                {
                   common::buffer::Payload payload;
-                  payload.type.type = std::move( message.payload.type.type);
-                  payload.type.subtype = std::move( message.payload.type.subtype);
+                  payload.type.name = std::move( message.payload.type.type);
+                  payload.type.subname = std::move( message.payload.type.subtype);
                   payload.memory = std::move( message.payload.data);
 
                   result.payload.size = payload.memory.size();

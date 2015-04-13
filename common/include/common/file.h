@@ -55,17 +55,6 @@ namespace casual
 
          } // scoped
 
-         class Lock
-         {
-
-
-         };
-
-
-         //!
-         //! @return a unique file-name, with post- and pre-fix, if provided
-         //!
-         std::string unique( const std::string& prefix = "", const std::string& postfix = "");
 
          //!
          //! Find the first file that matches search
@@ -75,28 +64,43 @@ namespace casual
          //!
          std::string find( const std::string& path, const std::regex& search);
 
-         //!
-         //!
-         //! @return filename without directory portion
-         //!
-         std::string basename( const std::string& path);
 
-         //!
-         //!
-         //! @return directory without filename
-         //!
-         std::string basedir( const std::string& path);
 
-         //!
-         //!
-         //! @return path without extension
-         //!
-         std::string removeExtension( const std::string& path);
+         namespace name
+         {
+            //!
+            //! @return true if path begins with /, otherwise false
+            //!
+            bool absolute( const std::string& path);
 
-         //!
-         //! @return the extension of the file. ex. yaml for file configuration.yaml
-         //!
-         std::string extension( const std::string& file);
+            //!
+            //! @return a unique file-name, with post- and pre-fix, if provided
+            //!
+            std::string unique( const std::string& prefix = "", const std::string& postfix = "");
+
+            //!
+            //!
+            //! @return filename without directory portion
+            //!
+            std::string base( const std::string& path);
+
+            //!
+            //! @return the extension of the file. ex. yaml for file configuration.yaml
+            //!
+            std::string extension( const std::string& file);
+
+            namespace without
+            {
+               //!
+               //!
+               //! @return path without extension
+               //!
+               std::string extension( const std::string& path);
+
+            } // without
+
+         } // name
+
 
          //!
          //! @return true if the file exists, otherwise false
@@ -107,6 +111,15 @@ namespace casual
 
       namespace directory
       {
+         namespace name
+         {
+            //!
+            //!
+            //! @return directory without filename
+            //!
+            std::string base( const std::string& path);
+
+         } // name
 
          bool create( const std::string& path);
 

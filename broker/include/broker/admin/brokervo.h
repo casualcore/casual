@@ -14,20 +14,29 @@ namespace casual
    {
       namespace admin
       {
-
-         struct InstanceVO
+         struct Process
          {
             sf::platform::pid_type pid;
             sf::platform::queue_id_type queue;
-            long state;
-            long invoked;
-            sf::platform::time_type last;
-            long server;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive & CASUAL_MAKE_NVP( pid);
                archive & CASUAL_MAKE_NVP( queue);
+            })
+         };
+
+         struct InstanceVO
+         {
+            Process process;
+            std::size_t state;
+            std::size_t invoked;
+            sf::platform::time_type last;
+            std::size_t server;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( process);
                archive & CASUAL_MAKE_NVP( state);
                archive & CASUAL_MAKE_NVP( invoked);
                archive & CASUAL_MAKE_NVP( last);
@@ -37,7 +46,7 @@ namespace casual
 
          struct ServerVO
          {
-            long id;
+            std::size_t id;
             std::string alias;
             std::string path;
             std::vector< sf::platform::pid_type> instances;
@@ -54,10 +63,11 @@ namespace casual
          struct ServiceVO
          {
             std::string name;
-            //std::chrono::microseconds timeout;
-            long long timeout = 0;
+            std::chrono::microseconds timeout;
             std::vector< sf::platform::pid_type> instances;
-            long lookedup = 0;
+            std::size_t lookedup = 0;
+            std::size_t type = 0;
+            std::size_t mode = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -65,6 +75,20 @@ namespace casual
                archive & CASUAL_MAKE_NVP( timeout);
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( lookedup);
+               archive & CASUAL_MAKE_NVP( type);
+               archive & CASUAL_MAKE_NVP( mode);
+            })
+         };
+
+         struct PendingVO
+         {
+            std::string requested;
+            Process process;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( requested);
+               archive & CASUAL_MAKE_NVP( process);
             })
          };
 
@@ -73,12 +97,14 @@ namespace casual
             std::vector< ServerVO> servers;
             std::vector< InstanceVO> instances;
             std::vector< ServiceVO> services;
+            std::vector< PendingVO> pending;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( services);
+               archive & CASUAL_MAKE_NVP( pending);
             })
 
          };

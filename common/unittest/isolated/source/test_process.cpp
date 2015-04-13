@@ -24,7 +24,7 @@ namespace casual
          {
             std::string processPath()
             {
-               return file::basedir( __FILE__) + "../../../bin/simple_process";
+               return directory::name::base( __FILE__) + "../../../bin/simple_process";
             }
 
          }

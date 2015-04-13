@@ -9,7 +9,7 @@
 #define SERVER_H_
 
 #include "xatmi.h"
-#include "sf/service.h"
+#include "sf/service/interface.h"
 
 #include <memory>
 

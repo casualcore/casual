@@ -15,7 +15,7 @@
 // sf
 //
 #include "sf/server.h"
-#include "sf/service.h"
+#include "sf/service/interface.h"
 
 //
 // std

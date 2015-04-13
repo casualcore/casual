@@ -14,6 +14,7 @@
 #include "common/error.h"
 #include "common/uuid.h"
 #include "common/environment.h"
+#include "common/server/service.h"
 
 #include "sf/namevaluepair.h"
 #include "config/xa_switch.h"
@@ -55,8 +56,8 @@ struct Settings
       Service() = default;
       std::string name;
       std::string function;
-      long type = 0;
-      int transaction = 0;
+      std::uint64_t type = 0;
+      std::uint64_t transaction = 0;
    };
 
    std::string output;
@@ -75,8 +76,18 @@ struct Settings
 
       common::range::transform( server.services, services, []( const service_type& service)
             {
-               static std::map< std::string, int> type{ {"casual-sf", 42}};
-               static std::map< std::string, int> transaction{ {"auto", 0}, {"join", 1}, {"atomic", 2}, {"none", 3}};
+               static std::map< std::string, int> type{
+                  {"casual-sf", common::server::Service::Type::cCasualSF},
+                  {"casual-admin", common::server::Service::Type::cCasualAdmin},
+               };
+
+               static std::map< std::string, std::uint64_t> transaction{
+                  {"auto", common::server::service::transaction::mode( common::server::Service::Transaction::automatic)},
+                  {"automatic", common::server::service::transaction::mode( common::server::Service::Transaction::automatic)},
+                  {"join", common::server::service::transaction::mode( common::server::Service::Transaction::join)},
+                  {"atomic",common::server::service::transaction::mode( common::server::Service::Transaction::atomic)},
+                  {"none", common::server::service::transaction::mode( common::server::Service::Transaction::none)},
+               };
 
                Service result;
                result.function = service.function;
@@ -386,7 +397,7 @@ int main( int argc, char **argv)
       // Generate file
       //
 
-      common::file::scoped::Path path( common::file::unique( "server_", ".c"));
+      common::file::scoped::Path path( common::file::name::unique( "server_", ".c"));
       //std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {

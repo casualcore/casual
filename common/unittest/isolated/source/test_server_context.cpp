@@ -61,39 +61,39 @@ namespace casual
             void test_service( TPSVCINFO *serviceInfo)
             {
 
-               auto buffer = buffer::pool::Holder::instance().allocate( {"X_OCTET", "binary"}, 1024);
+               auto buffer = buffer::pool::Holder::instance().allocate( buffer::type::binary(), 1024);
 
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
 
-               server::Context::instance().longJumpReturn( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
+               server::Context::instance().long_jump_return( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
             }
 
             void test_service_TPFAIL( TPSVCINFO *serviceInfo)
             {
-               server::Context::instance().longJumpReturn( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
+               server::Context::instance().long_jump_return( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
             }
 
             void test_service_TPSUCCESS( TPSVCINFO *serviceInfo)
             {
-               server::Context::instance().longJumpReturn( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
+               server::Context::instance().long_jump_return( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
             }
 
             server::Arguments arguments()
             {
                server::Arguments arguments{ { "/test/path"}};
 
-               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::cNone);
+               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::Transaction::none);
 
-               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cNone);
-               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAtomic);
-               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cJoin);
-               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAuto);
+               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::none);
+               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::atomic);
+               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::join);
+               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::automatic);
 
-               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::cNone);
-               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAtomic);
-               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::cJoin);
-               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAuto);
+               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::none);
+               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::atomic);
+               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::join);
+               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::automatic);
 
                return arguments;
             }
@@ -103,7 +103,7 @@ namespace casual
             {
                message::service::call::callee::Request message;
 
-               message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
+               message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                message.descriptor = 10;
                message.service.name = "test_service";
                message.reply.queue = id;
@@ -345,7 +345,7 @@ namespace casual
                {
                   message::service::call::callee::Request message;
 
-                  message.buffer = { { "X_OCTET", "binary"}, platform::binary_type( 1024)};
+                  message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                   message.descriptor = 10;
                   message.service.name = std::move( service);
                   message.reply.queue = queue;

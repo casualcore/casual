@@ -104,7 +104,7 @@ namespace casual
                {
                   auto& buffer = pool_type::pool.get( handle);
 
-                  if( buffer.payload.type.type != CASUAL_STRING)
+                  if( buffer.payload.type.name != CASUAL_STRING)
                   {
                      //
                      // TODO: This should be some generic check
