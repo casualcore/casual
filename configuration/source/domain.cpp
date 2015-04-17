@@ -31,11 +31,26 @@ namespace casual
             {
                namespace normalize
                {
+
+
+                  struct Argument
+                  {
+                     void operator () ( Executable& executable) const
+                     {
+                        for( auto& argument : executable.arguments)
+                        {
+                           argument = common::environment::string( argument);
+                        }
+                     }
+                  };
+
                   struct Path
                   {
                      void operator () ( Executable& executable) const
                      {
                         executable.path = common::environment::string( executable.path);
+                        executable.environment.file = common::environment::string( executable.environment.file);
+                        Argument{}( executable);
                      }
 
                      void operator () ( Default& value) const
@@ -65,6 +80,19 @@ namespace casual
                      {
                         assign_if_empty( server.instances, m_casual_default.server.instances);
                         assign_if_empty( server.alias, nextAlias( server.path));
+
+                        if( ! m_casual_default.path.empty())
+                        {
+                           if( ! common::file::name::absolute( server.path))
+                           {
+                              server.path = m_casual_default.path + '/' + server.path;
+                           }
+
+                           if( ! server.environment.file.empty() && ! common::file::name::absolute( server.environment.file))
+                           {
+                              server.environment.file = m_casual_default.path + '/' + server.environment.file;
+                           }
+                        }
                      }
 
                      void operator ()( domain::Service& service) const
@@ -88,12 +116,21 @@ namespace casual
                            value = def;
                      }
 
-                     static std::string nextAlias( const std::string& path)
+                     std::string nextAlias( const std::string& path) const
                      {
-                        static long index = 1;
-                        return common::file::name::base( path) + "_" + std::to_string( index++);
+                        auto alias = common::file::name::base( path);
+
+                        auto count = m_alias[ alias]++;
+
+                        if( count > 1)
+                        {
+                           return alias + "_" + std::to_string( count);
+                        }
+
+                        return alias;
                      }
                      domain::Default m_casual_default;
+                     mutable std::map< std::string, std::size_t> m_alias;
                   };
 
                   inline void defaultValues( Domain& domain)

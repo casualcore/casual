@@ -107,7 +107,9 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     return state.xaSwitches->xaSwitch->xa_prepare_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
+                     auto result = state.xaSwitches->xaSwitch->xa_prepare_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
+                     log::internal::transaction << error::xa::error( result) << " prepare rm: " << state.rm_id << " trid: " << message.trid << std::endl;
+                     return result;
                   }
                };
 
@@ -116,7 +118,9 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     return state.xaSwitches->xaSwitch->xa_commit_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
+                     auto result =  state.xaSwitches->xaSwitch->xa_commit_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
+                     log::internal::transaction << error::xa::error( result) << " commit rm: " << state.rm_id << " trid: " << message.trid << std::endl;
+                     return result;
                   }
                };
 
@@ -125,7 +129,9 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     return state.xaSwitches->xaSwitch->xa_rollback_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
+                     auto result =  state.xaSwitches->xaSwitch->xa_rollback_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
+                     log::internal::transaction << error::xa::error( result) << " rollback rm: " << state.rm_id << " trid: " << message.trid << std::endl;
+                     return result;
                   }
                };
 

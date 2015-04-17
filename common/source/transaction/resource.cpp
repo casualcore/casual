@@ -45,7 +45,7 @@ namespace casual
 
             if( result != XA_OK)
             {
-               log::error << error::xa::error( result) << " failed to start resource - " << *this << '\n';
+               log::error << error::xa::error( result) << " failed to start resource - " << *this << " - trid: " << transaction << '\n';
             }
             return result;
          }
@@ -58,7 +58,7 @@ namespace casual
 
             if( result != XA_OK)
             {
-               log::error << error::xa::error( result) << " failed to end resource - " << *this << '\n';
+               log::error << error::xa::error( result) << " failed to end resource - " << *this << " - trid: " << transaction << '\n';
             }
             return result;
 

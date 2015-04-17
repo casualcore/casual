@@ -40,6 +40,8 @@ namespace casual
          //!
          void shutdown( State& state);
 
+         void send_shutdown( State& state);
+
 
 
          //!

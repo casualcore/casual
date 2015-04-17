@@ -28,12 +28,29 @@ namespace casual
 
          struct Executable
          {
+
+
             std::string note;
             std::string alias;
             std::string path;
             std::string instances;
             std::vector< std::string> arguments;
             std::vector< std::string> memberships;
+
+
+            struct Environment
+            {
+               std::string file;
+               std::vector< std::string> variables;
+
+               template< typename A>
+               void serialize( A& archive)
+               {
+                  archive & CASUAL_MAKE_NVP( file);
+                  archive & CASUAL_MAKE_NVP( variables);
+               }
+
+            } environment;
 
             template< typename A>
             void serialize( A& archive)
@@ -44,6 +61,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( arguments);
                archive & CASUAL_MAKE_NVP( memberships);
+               archive & CASUAL_MAKE_NVP( environment);
             }
          };
 
@@ -75,7 +93,6 @@ namespace casual
                Executable::serialize( archive);
                archive & CASUAL_MAKE_NVP( restriction);
             }
-
          };
 
 

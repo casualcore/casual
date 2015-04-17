@@ -55,6 +55,8 @@ namespace casual
                      result.configuredInstances = std::stoul( value.instances);
                      result.note = value.note;
                      result.path = value.path;
+                     result.environment.file = value.environment.file;
+                     result.environment.variables = value.environment.variables;
 
                      result.memberships = local::membership( value.memberships, groups);
                   }

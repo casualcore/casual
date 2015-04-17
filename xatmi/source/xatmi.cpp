@@ -17,6 +17,9 @@
 #include "common/error.h"
 
 
+#include <array>
+#include <stdarg.h>
+
 
 //
 // Define globals
@@ -226,4 +229,63 @@ int tpsvrinit( int argc, char **argv)
 void tpsvrdone()
 {
 }
+
+int casual_vlog( casual_log_category_t category, const char* const format, va_list arglist)
+{
+   std::array< char, 2048> buffer;
+   std::vector< char> backup;
+
+   va_list argcopy;
+   va_copy( argcopy, arglist);
+   auto written = vsnprintf( buffer.data(), buffer.max_size(), format, argcopy);
+   va_end( argcopy );
+
+   auto data = buffer.data();
+
+   if( written >= buffer.max_size())
+   {
+      backup.resize( written + 1);
+      va_copy( argcopy, arglist);
+      vsnprintf( backup.data(), backup.size(), format, argcopy);
+      va_end( argcopy );
+      data = backup.data();
+   }
+
+
+   switch( category)
+   {
+   case casual_log_category_t::c_log_debug:
+      casual::common::log::write( casual::common::log::category::Type::debug, data);
+      break;
+   case casual_log_category_t::c_log_information:
+      casual::common::log::write( casual::common::log::category::Type::information, data);
+      break;
+   case casual_log_category_t::c_log_warning:
+      casual::common::log::write( casual::common::log::category::Type::warning, data);
+      break;
+   default:
+      casual::common::log::write( casual::common::log::category::Type::error, data);
+      break;
+   }
+
+   return 0;
+
+}
+
+int casual_log( casual_log_category_t category, const char* const format, ...)
+{
+   va_list arglist;
+   va_start( arglist, format );
+   auto result = casual_vlog( category, format, arglist);
+   va_end( arglist );
+
+   return result;
+}
+
+
+
+
+
+
+
 

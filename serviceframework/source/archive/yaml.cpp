@@ -111,7 +111,14 @@ namespace casual
                {
                   if( name)
                   {
-                     m_nodeStack.push_back( m_nodeStack.back()->FindValue( name));
+                     if( m_nodeStack.back())
+                     {
+                        m_nodeStack.push_back( m_nodeStack.back()->FindValue( name));
+                     }
+                     else
+                     {
+                        m_nodeStack.push_back( nullptr);
+                     }
                   }
 
                   return m_nodeStack.back() != nullptr;

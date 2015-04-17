@@ -124,6 +124,14 @@ namespace casual
 
             std::vector< Group::id_type> memberships;
 
+            struct Environment
+            {
+               std::string file;
+               std::vector< std::string> variables;
+
+            } environment;
+
+
             std::size_t configuredInstances = 0;
             bool restart = false;
 

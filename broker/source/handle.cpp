@@ -16,6 +16,7 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
 
 
 //
@@ -23,6 +24,7 @@
 //
 #include <vector>
 #include <string>
+#include <fstream>
 
 namespace casual
 {
@@ -41,6 +43,35 @@ namespace casual
                {
                   using state::Base::Base;
 
+                  std::vector< std::string> envrionment( const state::Executable& executable)
+                  {
+                     std::vector< std::string> result;
+
+                     if( ! executable.environment.file.empty())
+                     {
+                        std::ifstream file{ executable.environment.file};
+
+                        if( file)
+                        {
+                           for( std::string line; std::getline( file, line); )
+                           {
+                              auto trimmed = string::trim( line);
+                              if( ! trimmed.empty() && trimmed.front() != '#')
+                              {
+                                 result.push_back( std::move( trimmed));
+                              }
+                           }
+                        }
+                        else
+                        {
+                           throw exception::invalid::File{ "invalid environment file", CASUAL_NIP( executable.alias), CASUAL_NIP( executable.environment.file)};
+                        }
+                     }
+
+                     range::copy( executable.environment.variables, std::back_inserter( result));
+
+                     return result;
+                  }
 
                   void operator () ( const state::Executable& server)
                   {
@@ -48,11 +79,13 @@ namespace casual
                      {
                         decltype( server.instances) pids;
 
+                        auto environment = envrionment( server);
+
                         auto count = server.configuredInstances - server.instances.size();
 
                         while( count-- > 0)
                         {
-                           pids.push_back( common::process::spawn( server.path, server.arguments));
+                           pids.push_back( common::process::spawn( server.path, server.arguments, environment));
                         }
 
                         m_state.addInstances( server.id, std::move( pids));
@@ -62,6 +95,11 @@ namespace casual
 
                   void operator () ( State::Batch& batch)
                   {
+                     //
+                     // If something throws, we shutdown...
+                     //
+                     common::scope::Execute scope_shutdown{ std::bind( &handle::send_shutdown, std::ref( m_state))};
+
                      common::log::information << "boot group '" << batch.group << "'\n";
 
                      common::range::for_each( batch.servers, *this);
@@ -75,6 +113,12 @@ namespace casual
                         handle::transaction::manager::Ready{ m_state},
                         handle::Connect{ m_state},
                         handle::transaction::client::Connect{ m_state},
+                        handle::Advertise{ m_state},
+                        handle::Unadvertise{ m_state},
+                        //handle::ServiceLookup{ m_state},
+                        //handle::ACK{ m_state},
+                        common::message::handle::ping( m_state),
+                        common::message::handle::Shutdown{}
                      };
 
                      //
@@ -99,6 +143,11 @@ namespace casual
                            throw common::exception::signal::Terminate{};
                         }
                      }
+
+                     //
+                     // we're done, release the shutdown
+                     //
+                     scope_shutdown.release();
                   }
                };
 
@@ -147,6 +196,22 @@ namespace casual
                };
 
 
+               namespace handle
+               {
+                  void error()
+                  {
+                     try
+                     {
+                        throw;
+                     }
+                     catch( const state::exception::Missing& exception)
+                     {
+                        log::error << exception << " - action: discard";
+                     }
+                  }
+
+               } // handle
+
             } // <unnamed>
          } // local
 
@@ -172,6 +237,21 @@ namespace casual
             catch( const exception::signal::Timeout&)
             {
                log::error << "failed to shutdown - TODO: send reply" << std::endl;
+            }
+         }
+
+         void send_shutdown( State& state)
+         {
+            queue::non_blocking::Send send{ state};
+            common::message::shutdown::Request message;
+
+            while( ! send( common::ipc::receive::queue().id(), message))
+            {
+               //
+               // Queue is full, try to read non-existent message to flush the queue
+               //
+               common::message::flush::IPC flush;
+               queue::non_blocking::Reader{ common::ipc::receive::queue(), state}( flush);
             }
          }
 
@@ -277,22 +357,35 @@ namespace casual
 
          void Advertise::operator () ( message_type& message)
          {
+            try
+            {
+               std::vector< state::Service> services;
 
-            std::vector< state::Service> services;
+               common::range::transform( message.services, services, transform::Service{});
 
-            common::range::transform( message.services, services, transform::Service{});
-
-            m_state.addServices( message.process.pid, std::move( services));
+               m_state.addServices( message.process.pid, std::move( services));
+            }
+            catch( ...)
+            {
+               local::handle::error();
+            }
 
          }
 
          void Unadvertise::operator () ( message_type& message)
          {
-            std::vector< state::Service> services;
+            try
+            {
+               std::vector< state::Service> services;
 
-            common::range::transform( message.services, services, transform::Service{});
+               common::range::transform( message.services, services, transform::Service{});
 
-            m_state.removeServices( message.process.pid, std::move( services));
+               m_state.removeServices( message.process.pid, std::move( services));
+            }
+            catch( ...)
+            {
+               local::handle::error();
+            }
          }
 
 

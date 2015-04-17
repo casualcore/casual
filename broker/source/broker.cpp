@@ -299,20 +299,8 @@ namespace casual
 
          if( broker)
          {
-            queue::non_blocking::Send send{ m_state};
-            common::message::shutdown::Request message;
-
-            while( ! send( m_receiveQueue.id(), message))
-            {
-               //
-               // Queue is full, try to read non-existent message to flush the queue
-               //
-               common::message::flush::IPC flush;
-               queue::non_blocking::Reader{ m_receiveQueue, m_state}( flush);
-            }
-
+            handle::send_shutdown( m_state);
          }
-
 
          return result;
       }

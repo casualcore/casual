@@ -126,6 +126,12 @@ namespace casual
          //!
          platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments);
 
+
+         platform::pid_type spawn(
+            const std::string& path,
+            const std::vector< std::string>& arguments,
+            const std::vector< std::string>& environment);
+
          //!
          //! Spawn a new application that path describes, and wait until it exit. That is
          //!  - spawn

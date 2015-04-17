@@ -289,6 +289,7 @@ namespace casual
                      { category::Type::parameter, parameter },
                      { category::Type::information, information },
                      { category::Type::warning, warning },
+                     { category::Type::error, error},
                   };
 
                   return streams.at( category);
@@ -318,12 +319,12 @@ namespace casual
 
          void write( category::Type category, const char* message)
          {
-            local::stream( category) << message;
+            local::stream( category) << message << std::endl;
          }
 
          void write( category::Type category, const std::string& message)
          {
-            local::stream( category) << message;
+            local::stream( category) << message << std::endl;
          }
       } // log
 

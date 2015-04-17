@@ -641,6 +641,10 @@ namespace casual
                throw exception::tx::Protocoll{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }
 
+            //
+            // end resources
+            //
+            resources_end( transaction, TMNOFLAGS);
 
             message::transaction::commit::Request request;
             request.trid = transaction.trid;
@@ -736,6 +740,11 @@ namespace casual
             {
                throw exception::tx::Protocoll{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
             }
+
+            //
+            // end resources
+            //
+            resources_end( transaction, TMNOFLAGS);
 
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
@@ -913,7 +922,7 @@ namespace casual
                //
                // Tell the RM:s to resume
                //
-               resources_end( *found, TMRESUME);
+               resources_start( *found, TMRESUME);
 
                //
                // We pop the top null-xid that represent a suspended transaction

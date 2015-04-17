@@ -133,11 +133,53 @@ namespace casual
             std::this_thread::sleep_for( time);
          }
 
-
-
-
-         platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments)
+         namespace local
          {
+            namespace
+            {
+               namespace current
+               {
+
+
+                  std::vector< const char*> environment( const std::vector< std::string>& environment)
+                  {
+                     std::vector< const char*> result;
+
+                     auto current = local::environment();
+
+                     while( (*current) != nullptr)
+                     {
+                        result.push_back( *current);
+                        ++current;
+                     }
+
+                     std::transform(
+                        std::begin( environment),
+                        std::end( environment),
+                        std::back_inserter( result),
+                        std::mem_fn( &std::string::data));
+
+                     result.push_back( nullptr);
+                     return result;
+                  }
+
+                  std::vector< const char*> environment()
+                  {
+                     return environment( {});
+                  }
+
+               } // current
+
+            } // <unnamed>
+         } // local
+
+         platform::pid_type spawn(
+            const std::string& path,
+            const std::vector< std::string>& arguments,
+            const std::vector< std::string>& environment)
+         {
+
+
 
             //
             // prepare arguments
@@ -147,21 +189,20 @@ namespace casual
             //
             // think we must add application-name as first argument...
             //
-            c_arguments.push_back( path.data());
+            {
+               c_arguments.push_back( path.data());
 
-            std::transform(
-                  std::begin( arguments),
-                  std::end( arguments),
-                  std::back_inserter( c_arguments),
-                  std::mem_fn( &std::string::data));
+               std::transform(
+                     std::begin( arguments),
+                     std::end( arguments),
+                     std::back_inserter( c_arguments),
+                     std::mem_fn( &std::string::data));
 
-            c_arguments.push_back( nullptr);
-
-
-            std::vector< const char*> c_environment;
-            c_environment.push_back( nullptr);
+               c_arguments.push_back( nullptr);
+            }
 
 
+            auto c_environment = local::current::environment( environment);
 
             posix_spawnattr_t attributes;
 
@@ -169,13 +210,15 @@ namespace casual
 
             platform::pid_type pid;
 
+            log::internal::debug << "spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+
             auto status =  posix_spawnp(
                   &pid,
                   path.c_str(),
                   nullptr,
                   &attributes,
                   const_cast< char* const*>( c_arguments.data()),
-                  local::environment()// environ //const_cast< char* const*>( c_environment.data())
+                  const_cast< char* const*>( c_environment.data())
                   );
             switch( status)
             {
@@ -185,6 +228,12 @@ namespace casual
                   throw exception::invalid::Argument( "spawn failed for: " + path + " - " + error::string( status));
             }
             return pid;
+         }
+
+
+         platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments)
+         {
+            return spawn( path, arguments, {});
          }
 
 
