@@ -222,6 +222,26 @@ namespace casual
                   scope::Execute execute_ack{ [&](){ m_policy.ack( message); } };
 
 
+                  //
+                  // Prepare reply
+                  //
+                  auto reply = transform::reply( message);
+
+
+                  //
+                  // Make sure we always send reply to caller
+                  //
+                  scope::Execute execute_reply{ [&](){
+                     if( ! flag< TPNOREPLY>( message.flags))
+                     {
+                        //
+                        // Send reply to caller.
+                        //
+                        m_policy.reply( message.reply.queue, reply);
+                     } } };
+
+
+
                   auto& state = server::Context::instance().state();
 
                   //
@@ -324,19 +344,10 @@ namespace casual
 
 
                   //
-                  // Prepare reply
+                  // Modify reply
                   //
-                  auto reply = transform::reply( state.jump.state, message);
+                  transform::reply( reply, state.jump.state);
 
-
-                  scope::Execute execute_reply{ [&](){
-                     if( ! flag< TPNOREPLY>( message.flags))
-                     {
-                        //
-                        // Send reply to caller.
-                        //
-                        m_policy.reply( message.reply.queue, reply);
-                     } } };
 
 
                   //
@@ -370,52 +381,44 @@ namespace casual
             private:
 
 
-               template< typename D>
-               void try_send( D&& directive)
-               {
-                  try
-                  {
-                     //
-                     // try apply directive
-                     //
-                     directive();
-                  }
-                  catch( const exception::queue::Unavailable&)
-                  {
-                     error::handler();
-                  }
-               }
-
-
                using descriptor_type = platform::descriptor_type;
 
                struct transform
                {
-                  static message::service::call::Reply reply( server::State::jump_t::state_t& state, const message::service::call::callee::Request& message)
+
+                  static message::service::call::Reply reply( const message::service::call::callee::Request& message)
                   {
                      message::service::call::Reply result;
 
                      result.correlation = message.correlation;
-                     result.code = state.code;
                      result.descriptor = message.descriptor;
+                     result.buffer = buffer::Payload{ nullptr};
+                     result.error = TPESVCERR;
+
+                     return result;
+                  }
+
+                  static void reply( message::service::call::Reply& reply, const server::State::jump_t::state_t& state)
+                  {
+                     reply.code = state.code;
+                     reply.error = 0;
 
                      if( state.data != nullptr)
                      {
                         try
                         {
-                           result.buffer = buffer::pool::Holder::instance().release( state.data, state.len);
+                           reply.buffer = buffer::pool::Holder::instance().release( state.data, state.len);
                         }
                         catch( ...)
                         {
-                           result.error = TPESVCERR;
+                           error::handler();
+                           reply.error = TPESVCERR;
                         }
                      }
                      else
                      {
-                        result.buffer = buffer::Payload{ nullptr};
+                        reply.buffer = buffer::Payload{ nullptr};
                      }
-
-                     return result;
                   }
 
                   struct service
