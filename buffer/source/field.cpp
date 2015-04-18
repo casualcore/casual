@@ -298,22 +298,7 @@ namespace casual
                {
                   auto& buffer = pool_type::pool.get( handle);
 
-                  if( buffer.payload.type.name != CASUAL_FIELD)
-                  {
-                     //
-                     // TODO: The pool can only be invoked with the registered type, so this
-                     //   check is not needed...
-                     //
-                     // TODO: This should be some generic check
-                     //
-                     // TODO: Shall this be logged ?
-                     //
-                  }
-                  else
-                  {
-                     return &buffer;
-                  }
-
+                  return &buffer;
                }
                catch( ...)
                {
@@ -1268,6 +1253,7 @@ namespace casual
                   long id; // relative id
                   std::string name;
                   std::string type;
+                  //std::string comment;
 
                   template< typename A>
                   void serialize( A& archive)
@@ -1275,6 +1261,7 @@ namespace casual
                      archive & CASUAL_MAKE_NVP( id);
                      archive & CASUAL_MAKE_NVP( name);
                      archive & CASUAL_MAKE_NVP( type);
+                     //archive & CASUAL_MAKE_NVP( comment);
                   }
                };
 

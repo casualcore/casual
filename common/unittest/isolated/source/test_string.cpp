@@ -58,6 +58,56 @@ namespace casual
          EXPECT_TRUE( splittet.back() == "casual.transaction");
       }
 
+      TEST( casual_common_string, join_two_strings_with_no_separator__gives_concatenated_string)
+      {
+         const auto result = string::join( std::vector<std::string>{ { "alpha"}, { "beta"}});
+         EXPECT_TRUE( result == "alphabeta") << result;
+      }
+
+      TEST( casual_common_string, join_no_strings_with_no_separator__gives_empty_string)
+      {
+         const auto result = string::join( std::vector<std::string>{});
+         EXPECT_TRUE( result.empty()) << result;
+      }
+
+      TEST( casual_common_string, join_three_strings_with_comma_separator__gives_concatenated_string)
+      {
+         const auto result = string::join( std::vector<std::string>{ { "alpha"}, { "beta"}, { "echo"}}, ",");
+         EXPECT_TRUE( result == "alpha,beta,echo") << result;
+      }
+
+      TEST( casual_common_string, join_no_strings_with_comma_separator__gives_empty_string)
+      {
+         const auto result = string::join( std::vector<std::string>{}, ",");
+         EXPECT_TRUE( result.empty()) << result;
+      }
+
+      TEST( casual_common_string, transform_normal_string_to_upper__gives_upper_string)
+      {
+         const auto result = string::upper( "Hello");
+         EXPECT_TRUE( result == "HELLO") << result;
+      }
+
+      TEST( casual_common_string, transform_empty_string_to_upper__gives_empty_string)
+      {
+         const auto result = string::upper( "");
+         EXPECT_TRUE( result.empty()) << result;
+      }
+
+      TEST( casual_common_string, transform_normal_string_to_lower__gives_lower_string)
+      {
+         const auto result = string::lower( "Hello");
+         EXPECT_TRUE( result == "hello") << result;
+      }
+
+      TEST( casual_common_string, transform_empty_string_to_lower__gives_empty_string)
+      {
+         const auto result = string::lower( "");
+         EXPECT_TRUE( result.empty()) << result;
+      }
+
+
+
       TEST( casual_common_string, from_string_int)
       {
          EXPECT_TRUE( from_string< int>( "42") == 42);
