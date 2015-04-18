@@ -119,7 +119,7 @@ namespace casual
                template< typename... Args>
                basic_call( server::Arguments arguments, Args&&... args) : m_policy( std::forward< Args>( args)...)
                {
-                  trace::internal::Scope trace{ "callee::handle::basic_call::basic_call"};
+                  trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
                   auto& state = server::Context::instance().state();
 
@@ -180,12 +180,6 @@ namespace casual
 
                }
 
-
-               //!
-               //! Handles the actual XATM-call from another process. Dispatch
-               //! to the registered function, and "waits" for tpreturn (long-jump)
-               //! to send the reply.
-               //!
                void operator () ( message_type& message)
                {
                   //
@@ -193,31 +187,99 @@ namespace casual
                   //
                   call::Context::instance().execution( message.execution);
 
-                  trace::internal::Scope trace{ "callee::handle::basic_call::dispatch"};
+                  trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
 
-                  auto start = platform::clock_type::now();
+                  try
+                  {
+                     dispatch( message);
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
+                  }
+               }
+
+
+               //!
+               //! Handles the actual XATM-call from another process. Dispatch
+               //! to the registered function, and "waits" for tpreturn (long-jump)
+               //! to send the reply.
+               //!
+               void dispatch( message_type& message)
+               {
+
+                  trace::internal::Scope trace{ "server::handle::basic_call::dispatch"};
+
+
+                  //
+                  // Make sure we do some cleanup...
+                  //
+                  scope::Execute execute_finalize{ [](){ server::Context::instance().finalize();}};
+
+                  //
+                  // Make sure we'll always send ACK to broker
+                  //
+                  scope::Execute execute_ack{ [&](){ m_policy.ack( message); } };
 
 
                   auto& state = server::Context::instance().state();
 
                   //
-                  // Set starttime. TODO: Should we try to get the startime earlier? Hence, at ipc-queue level?
+                  // Set start time.
                   //
-                  if( message.service.monitor_queue != 0)
+                  state.monitor.start = platform::clock_type::now();
+
+
+                  //
+                  // set the call-correlation
+                  //
+
+                  auto found = state.services.find( message.service.name);
+
+                  if( found == state.services.end())
                   {
-                     state.monitor.start = start;
+                     throw common::exception::xatmi::SystemError( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
                   }
+
+                  auto& service = found->second;
+
+                  call::Context::instance().service( service.name);
+
+
+                  //
+                  // Do transaction stuff...
+                  // - begin transaction if service has "auto-transaction"
+                  // - notify TM about potentially resources involved.
+                  // - set 'global' deadline/timeout
+                  //
+                  m_policy.transaction( message, service, state.monitor.start);
+
+
+                  //
+                  // Also takes care of buffer to pool
+                  //
+                  TPSVCINFO information = transform::service::information( message);
+
+
+                  //
+                  // Apply pre service buffer manipulation
+                  //
+                  buffer::transport::Context::instance().dispatch(
+                        information.data,
+                        information.len,
+                        information.name,
+                        buffer::transport::Lifecycle::pre_service);
 
 
                   //
                   // Prepare for tpreturn.
                   //
-                  // ATTENTION: no types with destructor should be instantiated between
-                  // setjmp and the else clause for 'if( jumpState == 0)'
+                  // ATTENTION: no types with destructor should be instantiated
+                  // within the if( ! jumped) clause
                   //
-                  int jumpState = setjmp( state.long_jump_buffer);
+                  auto jumped = setjmp( state.long_jump_buffer) != 0;
 
-                  if( jumpState == 0)
+                  if( ! jumped)
                   {
 
                      //
@@ -225,112 +287,69 @@ namespace casual
                      // Let's call the user service...
                      //
 
-                     //
-                     // set the call-correlation
-                     //
-
-                     auto findIter = state.services.find( message.service.name);
-
-                     if( findIter == state.services.end())
+                     try
                      {
-                        throw common::exception::xatmi::SystemError( "Service [" + message.service.name + "] not present at server - inconsistency between broker and server");
+                        service.call( &information);
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                        log::error << "exception thrown from service: " << message.service.name << std::endl;
                      }
 
-                     auto& service = findIter->second;
-
                      //
-                     // Do transaction stuff...
-                     // - begin transaction if service has "auto-transaction"
-                     // - notify TM about potentially resources involved.
-                     // - set 'global' deadline/timeout
+                     // User service returned, not by tpreturn.
                      //
-                     m_policy.transaction( message, service, start);
-
-
-                     call::Context::instance().service( message.service.name);
-
-                     //
-                     // Also takes care of buffer to pool
-                     //
-                     TPSVCINFO information = transformServiceInformation( message);
-
-
-                     //
-                     // Apply pre service buffer manipulation
-                     //
-                     buffer::transport::Context::instance().dispatch(
-                           information.data,
-                           information.len,
-                           information.name,
-                           buffer::transport::Lifecycle::pre_service);
-
-
-                     service.call( &information);
-
-                     //
-                     // User service returned, not by tpreturn. The standard does not mention this situation, what to do?
-                     //
-                     throw common::exception::xatmi::service::Error( "Service: " + message.service.name + " did not call tpreturn");
-
+                     throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
                   }
-                  else
-                  {
-                     //
-                     // User has called tpreturn
-                     //
+
+                  //
+                  // User has called tpreturn
+                  //
 
 
-                     // TODO: What are the semantics of 'order' of failure?
-                     //       If TM is down, should we send reply to caller?
-                     //       If broker is down, should we send reply to caller?
-
-                     //
-                     // Apply post service buffer manipulation
-                     //
-                     buffer::transport::Context::instance().dispatch(
-                           state.jump.state.data,
-                           state.jump.state.len,
-                           message.service.name,
-                           buffer::transport::Lifecycle::post_service);
+                  // TODO: What are the semantics of 'order' of failure?
+                  //       If TM is down, should we send reply to caller?
+                  //       If broker is down, should we send reply to caller?
 
 
-                     //
-                     // Prepare reply
-                     //
-                     auto reply = transform.reply( state.jump.state, message);
+                  //
+                  // Apply post service buffer manipulation
+                  //
+                  buffer::transport::Context::instance().dispatch(
+                        state.jump.state.data,
+                        state.jump.state.len,
+                        message.service.name,
+                        buffer::transport::Lifecycle::post_service);
 
 
-                     //
-                     // Do transaction stuff...
-                     // - commit/rollback transaction if service has "auto-transaction"
-                     //
-                     m_policy.transaction( reply, state.jump.state.value);
-
-                     //
-                     // Send ACK to broker
-                     //
-                     m_policy.ack( message);
+                  //
+                  // Prepare reply
+                  //
+                  auto reply = transform::reply( state.jump.state, message);
 
 
-
+                  scope::Execute execute_reply{ [&](){
                      if( ! flag< TPNOREPLY>( message.flags))
                      {
-                        try
-                        {
-                           //
-                           // Send reply to caller.
-                           //
-                           m_policy.reply( message.reply.queue, reply);
-                        }
-                        catch( const exception::queue::Unavailable&)
-                        {
-                        }
-                     }
+                        //
+                        // Send reply to caller.
+                        //
+                        m_policy.reply( message.reply.queue, reply);
+                     } } };
 
 
-                     //
-                     // Take end time
-                     //
+                  //
+                  // Do transaction stuff...
+                  // - commit/rollback transaction if service has "auto-transaction"
+                  //
+                  scope::Execute execute_transaction{ [&](){ m_policy.transaction( reply, state.jump.state.value); } };
+
+
+                  //
+                  // Take end time
+                  //
+                  scope::Execute execute_monitor{ [&](){
                      if( message.service.monitor_queue != 0)
                      {
                         state.monitor.end = platform::clock_type::now();
@@ -340,21 +359,39 @@ namespace casual
 
                         m_policy.statistics( message.service.monitor_queue, state.monitor);
                      }
+                  }};
 
-                     //
-                     // Do some cleanup...
-                     //
-                     server::Context::instance().finalize();
+                  execute_ack();
+                  execute_transaction();
+                  execute_reply();
+                  execute_monitor();
+               }
 
+            private:
+
+
+               template< typename D>
+               void try_send( D&& directive)
+               {
+                  try
+                  {
+                     //
+                     // try apply directive
+                     //
+                     directive();
+                  }
+                  catch( const exception::queue::Unavailable&)
+                  {
+                     error::handler();
                   }
                }
-            private:
+
 
                using descriptor_type = platform::descriptor_type;
 
-               struct transform_t
+               struct transform
                {
-                  message::service::call::Reply reply( server::State::jump_t::state_t& state, const message::service::call::callee::Request& message)
+                  static message::service::call::Reply reply( server::State::jump_t::state_t& state, const message::service::call::callee::Request& message)
                   {
                      message::service::call::Reply result;
 
@@ -381,26 +418,28 @@ namespace casual
                      return result;
                   }
 
-               } transform;
+                  struct service
+                  {
+                     static TPSVCINFO information( message::service::call::callee::Request& message)
+                     {
+                        TPSVCINFO result;
 
-               TPSVCINFO transformServiceInformation( message::service::call::callee::Request& message) const
-               {
-                  TPSVCINFO result;
+                        //
+                        // Before we call the user function we have to add the buffer to the "buffer-pool"
+                        //
+                        //range::copy_max( message.service.name, )
+                        strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
+                        result.len = message.buffer.memory.size();
+                        result.cd = message.descriptor;
+                        result.flags = message.flags;
 
-                  //
-                  // Before we call the user function we have to add the buffer to the "buffer-pool"
-                  //
-                  //range::copy_max( message.service.name, )
-                  strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
-                  result.len = message.buffer.memory.size();
-                  result.cd = message.descriptor;
-                  result.flags = message.flags;
+                        result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));
 
-                  result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));
+                        return result;
+                     }
+                  };
 
-                  return result;
-               }
-
+               };
                policy_type m_policy;
                move::Moved m_moved;
             };
