@@ -54,7 +54,6 @@ int main( int argc, char* argv[])
 
       const auto names = casual::buffer::field::repository::name_to_id();
 
-
       for( const auto& pair : names)
       {
          std::cout << "#define " << pair.first << '\t' << pair.second << '\t';
@@ -65,13 +64,14 @@ int main( int argc, char* argv[])
          std::cout << std::endl;
       }
 
+      return 0;
+
    }
    catch( const std::exception& e)
    {
       std::cerr << e.what() << std::endl;
-      return -1;
    }
 
-   return 0;
+   return -1;
 
 }

@@ -77,31 +77,15 @@ namespace casual
          }
          */
 
-			inline std::string join( const std::vector< std::string>& strings, const std::string& delimiter = "")
-			{
-			   std::string result;
 
-			   for( auto& string : strings)
-			   {
-			      if( ! result.empty())
-			      {
-			         result.append( delimiter);
-			      }
-			      result.append( string);
-			   }
-			   return result;
-			}
+			std::string join( const std::vector< std::string>& strings);
+         std::string join( const std::vector< std::string>& strings, const std::string& delimiter);
 
-			inline std::string trim( const std::string& value)
-			{
-            const auto ws = [] ( const std::string::value_type character)
-            { return std::isspace( character, std::locale::classic()); };
+			std::string trim( const std::string& value);
 
-			   auto first = std::find_if_not( std::begin( value), std::end( value), ws);
-			   auto last = std::find_if_not( value.rbegin(), value.rend(), ws);
+			std::string lower( std::string value);
 
-			   return first < last.base() ? std::string( first, last.base()) : std::string();
-			}
+         std::string upper( std::string value);
 
 			bool integer( const std::string& value);
 
