@@ -252,28 +252,6 @@ namespace casual
       }
 
 
-      TEST( casual_common_server_context, call_non_existing_service__throws)
-      {
-         mockup::ipc::clear();
-
-         // just a cache to keep queue writable
-         mockup::ipc::Router router{ ipc::receive::id()};
-
-         // instance that "calls" a service in callee::handle::Call, and get's a reply
-         mockup::ipc::Instance caller( 10);
-
-         local::broker::prepare( router.id());
-         server::handle::Call callHandler( local::arguments());
-
-         auto message = local::callMessage( caller.id());
-         message.service.name = "non_existing";
-
-
-         EXPECT_THROW( {
-            callHandler( message);
-         }, exception::xatmi::SystemError);
-      }
-
 
 
       TEST( casual_common_server_context, call_service__gives_monitor_notify)
@@ -405,6 +383,24 @@ namespace casual
          local::Domain domain;
 
          server::handle::Call server( local::arguments());
+      }
+
+
+      TEST( casual_common_server_context, call_server__non_existing__gives_TPESVCERR)
+      {
+         local::Domain domain;
+
+         mockup::ipc::Instance caller{ 10};
+
+         {
+            server::handle::Call server( local::arguments());
+            auto message = local::call::request( caller.id(), "non-existing-service");
+            server( message);
+         }
+
+         auto reply = local::call::reply( caller.receive());
+
+         EXPECT_TRUE( reply.error == TPESVCERR);
       }
 
 

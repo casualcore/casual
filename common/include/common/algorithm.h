@@ -34,16 +34,23 @@ namespace casual
 
             ~Execute()
             {
+               try
+               {
+                  (*this)();
+               }
+               catch( ...)
+               {
+                  error::handler();
+               }
+            }
+
+            void operator () ()
+            {
                if( m_execute)
                {
-                  try
-                  {
-                     m_execute();
-                  }
-                  catch( ...)
-                  {
-                     error::handler();
-                  }
+                  std::function< void()> executer;
+                  std::swap( m_execute, executer);
+                  executer();
                }
             }
 
@@ -51,6 +58,8 @@ namespace casual
             {
                m_execute = nullptr;
             }
+
+         private:
 
             std::function< void()> m_execute;
          };
