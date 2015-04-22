@@ -55,6 +55,8 @@ namespace casual
                   archive & start;
                   archive & end;
                )
+
+               friend std::ostream& operator << ( std::ostream& out, const Notify& value);
             };
          } // monitor
 

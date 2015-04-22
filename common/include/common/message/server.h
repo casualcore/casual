@@ -201,6 +201,8 @@ namespace casual
                      archive & trid;
                      archive & flags;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const base_call& value);
                };
 
                namespace callee
@@ -231,6 +233,8 @@ namespace casual
                         base_call::marshal( archive);
                         archive >> buffer;
                      }
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
 
                } // callee

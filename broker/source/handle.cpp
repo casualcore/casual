@@ -261,12 +261,16 @@ namespace casual
          {
             void Connect::operator () ( message_type& message)
             {
+               common::trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
+
                //TODO: Temp
                m_state.monitorQueue = message.process.queue;
             }
 
             void Disconnect::operator () ( message_type& message)
             {
+               common::trace::internal::Scope trace{ "broker::handle::monitor::Disconnect::dispatch"};
+
                m_state.monitorQueue = 0;
             }
          }

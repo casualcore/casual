@@ -89,8 +89,7 @@ namespace monitor
 	{
 		void Notify::operator () ( const message_type& message)
 		{
-			static const std::string cMethodname("Notify::dispatch");
-			common::Trace trace(cMethodname);
+		   trace::internal::Scope trace( "handle::Notify::dispatch");
 
 			message >> monitorDB;
 		}
@@ -108,7 +107,7 @@ namespace monitor
 
 	   common::process::path( name);
 
-		common::Trace trace( "Monitor::Monitor");
+	   trace::internal::Scope trace( "Monitor::Monitor");
 
 		//
 		// Connect as a "regular" server
@@ -130,7 +129,7 @@ namespace monitor
 
 	Monitor::~Monitor()
 	{
-		common::Trace trace( "Monitor::~Monitor");
+	   trace::internal::Scope trace( "Monitor::~Monitor");
 
 		try
 		{
@@ -162,7 +161,7 @@ namespace monitor
 		//
 		// Test of select
 		//
-		common::log::debug << "Statistic logging" << std::endl;
+		//common::log::debug << "Statistic logging" << std::endl;
 //		auto rowset = m_monitordb.select();
 //		for (auto row = rowset.begin(); row != rowset.end(); ++row )
 //		{
@@ -172,7 +171,7 @@ namespace monitor
 
 	void Monitor::start()
 	{
-		Trace trace( "Monitor::start");
+		trace::internal::Scope trace( "Monitor::start");
 
 		message::dispatch::Handler handler{
 		   handle::Notify{ m_monitordb},

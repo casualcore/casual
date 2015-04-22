@@ -237,6 +237,8 @@ namespace casual
                archive & monitor_queue;
                archive & transaction;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const Service& value);
          };
 
          namespace server
