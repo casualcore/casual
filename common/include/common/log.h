@@ -56,7 +56,7 @@ namespace casual
             class Safe
             {
             public:
-               Safe( std::ostream& stream) : m_stream( stream), m_lock( m_mutext) {}
+               Safe( std::ostream& stream) : m_stream( stream), m_lock( m_mutex) {}
                Safe( Safe&&) = default;
 
 
@@ -84,7 +84,7 @@ namespace casual
                std::ostream& m_stream;
                std::unique_lock< std::mutex> m_lock;
 
-               static std::mutex m_mutext;
+               static std::mutex m_mutex;
             };
 
 
