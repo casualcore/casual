@@ -115,6 +115,8 @@ namespace casual
                         handle::transaction::client::Connect{ m_state},
                         handle::Advertise{ m_state},
                         handle::Unadvertise{ m_state},
+                        handle::monitor::Connect{ m_state},
+                        handle::monitor::Disconnect{ m_state},
                         //handle::ServiceLookup{ m_state},
                         //handle::ACK{ m_state},
                         common::message::handle::ping( m_state),
@@ -255,16 +257,23 @@ namespace casual
             }
          }
 
-         void MonitorConnect::operator () ( message_type& message)
+         namespace monitor
          {
-            //TODO: Temp
-            m_state.monitorQueue = message.process.queue;
+            void Connect::operator () ( message_type& message)
+            {
+               //TODO: Temp
+               m_state.monitorQueue = message.process.queue;
+            }
+
+            void Disconnect::operator () ( message_type& message)
+            {
+               m_state.monitorQueue = 0;
+            }
          }
 
-         void MonitorDisconnect::operator () ( message_type& message)
-         {
-            m_state.monitorQueue = 0;
-         }
+
+
+
 
 
          namespace transaction

@@ -31,11 +31,6 @@ namespace casual
 				Monitor( const std::vector< std::string>& arguments);
 				~Monitor();
 
-				//!
-				//! Reading nonblocking. Used to boost performance writing to
-				//! database. Realizes dynamic commit size
-				//!
-				void nonBlockingRead( int maxNumberOfMessages) const;
 
 				//!
 				//! Start the server

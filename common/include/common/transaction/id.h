@@ -51,7 +51,7 @@ namespace casual
             enum Format
             {
                cNull = -1,
-               cCasual = 42
+               cCasual = 2
             };
 
             //!

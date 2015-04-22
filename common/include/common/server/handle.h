@@ -166,11 +166,6 @@ namespace casual
                         // Call tpsrvdone
                         //
                         state.server_done();
-
-                        //
-                        // If there are open resources, close'em
-                        //
-                        transaction::Context::instance().close();
                      }
                      catch( ...)
                      {

@@ -84,7 +84,19 @@ namespace casual
          Payload& Payload::operator = ( const Payload&) = default;
 
 
+         std::ostream& operator << ( std::ostream& out, const Payload& value)
+         {
+            return out << "{ type: " << value.type << ", @" << static_cast< const void*>( value.memory.data()) << " size: " << value.memory.size() << '}';
+         }
 
+
+         namespace payload
+         {
+            std::ostream& operator << ( std::ostream& out, const Send& value)
+            {
+               return out << "{ payload: " << value.payload << ", transport-size: " << value.transport << '}';
+            }
+         }
 
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 

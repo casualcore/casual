@@ -107,8 +107,8 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     auto result = state.xaSwitches->xaSwitch->xa_prepare_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
-                     log::internal::transaction << error::xa::error( result) << " prepare rm: " << state.rm_id << " trid: " << message.trid << std::endl;
+                     auto result = state.xaSwitches->xaSwitch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags);
+                     log::internal::transaction << error::xa::error( result) << " prepare rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
                };
@@ -118,8 +118,25 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     auto result =  state.xaSwitches->xaSwitch->xa_commit_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
-                     log::internal::transaction << error::xa::error( result) << " commit rm: " << state.rm_id << " trid: " << message.trid << std::endl;
+                     auto result =  state.xaSwitches->xaSwitch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags);
+
+                     if( log::internal::transaction)
+                     {
+                        log::internal::transaction << error::xa::error( result) << " commit rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
+                        if( result != XA_OK)
+                        {
+                           std::array< XID, 12> xids;
+                           auto count = state.xaSwitches->xaSwitch->xa_recover_entry( xids.data(), xids.max_size(), state.rm_id, TMSTARTRSCAN | TMENDRSCAN);
+
+                           while( count > 0)
+                           {
+                              log::internal::transaction << "prepared xid: " << xids[ count -1] << std::endl;
+                              --count;
+                           }
+
+                        }
+                     }
+
                      return result;
                   }
                };
@@ -129,8 +146,8 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     auto result =  state.xaSwitches->xaSwitch->xa_rollback_entry( &message.trid.xid, state.rm_id, TMNOFLAGS);
-                     log::internal::transaction << error::xa::error( result) << " rollback rm: " << state.rm_id << " trid: " << message.trid << std::endl;
+                     auto result =  state.xaSwitches->xaSwitch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags);
+                     log::internal::transaction << error::xa::error( result) << " rollback rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
                };

@@ -8,6 +8,8 @@
 #include "monitor/monitor.h"
 #include "common/queue.h"
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
+#include "common/server/handle.h"
 #include "common/platform.h"
 #include "common/process.h"
 #include "common/error.h"
@@ -94,25 +96,6 @@ namespace monitor
 		}
 	}
 
-	void Monitor::nonBlockingRead( int maxNumberOfMessages) const
-	{
-		handle::Notify notifier( m_monitordb);
-
-		queue::non_blocking::Reader queueReader( m_receiveQueue);
-		for (auto i=0; i < maxNumberOfMessages; i++)
-		{
-			message::monitor::Notify message;
-			if ( queueReader( message))
-			{
-				notifier( message);
-			}
-			else
-			{
-				break;
-			}
-		}
-
-	}
 
 	Monitor::Monitor(const std::vector<std::string>& arguments) :
 			m_receiveQueue( common::ipc::receive::queue()),
@@ -125,8 +108,12 @@ namespace monitor
 
 	   common::process::path( name);
 
-		static const std::string cMethodname("Monitor::Monitor");
-		common::Trace trace(cMethodname);
+		common::Trace trace( "Monitor::Monitor");
+
+		//
+		// Connect as a "regular" server
+		//
+		common::server::connect( {});
 
 
 		//
@@ -143,19 +130,29 @@ namespace monitor
 
 	Monitor::~Monitor()
 	{
-		static const std::string cMethodname("Monitor::~Monitor");
-		common::Trace trace(cMethodname);
+		common::Trace trace( "Monitor::~Monitor");
 
 		try
 		{
-         //
-         // Tell broker that monitor is down...
-         //
-         message::monitor::Disconnect message;
-         message.process = common::process::handle();
 
-         queue::blocking::Writer writer( ipc::broker::id());
-         writer(message);
+	      message::dispatch::Handler handler{
+	         handle::Notify{ m_monitordb},
+	         common::message::handle::Shutdown{},
+	      };
+
+         monitor::Transaction transaction( m_monitordb);
+
+         //
+         // Consume until the queue is empty or we've got pending replies equal to statistics_batch
+         //
+
+         queue::non_blocking::Reader nonBlocking( m_receiveQueue);
+
+         for( auto count = common::platform::statistics_batch;
+            handler( nonBlocking.next()) && count > 0; --count)
+         {
+            ;
+         }
 		}
 		catch( ...)
 		{
@@ -175,30 +172,39 @@ namespace monitor
 
 	void Monitor::start()
 	{
-		static const std::string cMethodname("Monitor::start");
-		Trace trace(cMethodname);
+		Trace trace( "Monitor::start");
 
 		message::dispatch::Handler handler{
-		   handle::Notify{ m_monitordb}
+		   handle::Notify{ m_monitordb},
+		   common::message::handle::Shutdown{},
 		};
 
 		queue::blocking::Reader queueReader(m_receiveQueue);
 
-		bool working = true;
-
-		while( working)
+		while( true)
 		{
-			auto marshal = queueReader.next();
 
-			monitor::Transaction transaction( m_monitordb);
+		   monitor::Transaction transaction( m_monitordb);
 
-			if( ! handler( marshal))
-			{
-			   common::log::error << "message_type: " << " not recognized - action: discard" << std::endl;
-			}
+         //
+         // Blocking
+         //
 
-			nonBlockingRead( common::platform::statistics_batch);
-		}
+         handler( queueReader.next());
+
+
+         //
+         // Consume until the queue is empty or we've got pending replies equal to statistics_batch
+         //
+
+         queue::non_blocking::Reader nonBlocking( m_receiveQueue);
+
+         for( auto count = common::platform::statistics_batch;
+            handler( nonBlocking.next()) && count > 0; --count)
+         {
+            ;
+         }
+      }
 	}
 
 } // monitor

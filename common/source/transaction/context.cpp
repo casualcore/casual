@@ -454,6 +454,12 @@ namespace casual
                   {
                      message.transaction.state = static_cast< decltype( message.transaction.state)>( Transaction::State::rollback);
                   }
+
+                  //
+                  // end resource
+                  //
+                  resources_end( *found, TMSUCCESS);
+
                }
                message.transaction.trid = std::move( caller);
             }
@@ -644,7 +650,7 @@ namespace casual
             //
             // end resources
             //
-            resources_end( transaction, TMNOFLAGS);
+            resources_end( transaction, TMSUCCESS);
 
             message::transaction::commit::Request request;
             request.trid = transaction.trid;
@@ -744,7 +750,7 @@ namespace casual
             //
             // end resources
             //
-            resources_end( transaction, TMNOFLAGS);
+            resources_end( transaction, TMSUCCESS);
 
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
