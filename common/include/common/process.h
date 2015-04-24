@@ -124,13 +124,13 @@ namespace casual
          //! @param arguments 0..N arguments that is passed to the application
          //! @return process id of the spawned process
          //!
-         platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments);
+         platform::pid_type spawn( const std::string& path, std::vector< std::string> arguments);
 
 
          platform::pid_type spawn(
             const std::string& path,
-            const std::vector< std::string>& arguments,
-            const std::vector< std::string>& environment);
+            std::vector< std::string> arguments,
+            std::vector< std::string> environment);
 
          //!
          //! Spawn a new application that path describes, and wait until it exit. That is
@@ -141,7 +141,7 @@ namespace casual
          //! @param arguments 0..N arguments that is passed to the application
          //! @return exit code from the process
          //!
-         int execute( const std::string& path, const std::vector< std::string>& arguments);
+         int execute( const std::string& path, std::vector< std::string> arguments);
 
 
          //!

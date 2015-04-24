@@ -172,14 +172,14 @@ int build( const std::string& c_file, const config::xa::Switch& xa_switch, const
       arguments.emplace_back( "-I" + common::environment::string( include_path));
    }
    // Add casual-paths, that we know will be needed
-   arguments.emplace_back( common::environment::string( "-I$(CASUAL_HOME)/include"));
+   arguments.emplace_back( common::environment::string( "-I$CASUAL_HOME/include"));
 
    for( auto& lib_path : xa_switch.paths.library)
    {
       arguments.emplace_back( "-L" + common::environment::string( lib_path));
    }
    // Add casual-paths, that we know will be needed
-   arguments.emplace_back( common::environment::string( "-L$(CASUAL_HOME)/lib"));
+   arguments.emplace_back( common::environment::string( "-L$CASUAL_HOME/lib"));
 
 
    for( auto& lib : xa_switch.libraries)

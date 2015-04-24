@@ -3,6 +3,7 @@
 
 
 #include "common/environment.h"
+#include "common/exception.h"
 
 
 namespace casual
@@ -21,17 +22,17 @@ namespace casual
 
          auto home = environment::variable::get( "HOME");
 
-         auto result =  environment::string( "$(HOME)/a/b/c");
+         auto result =  environment::string( "${HOME}/a/b/c");
 
          EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
       }
 
-      TEST( casual_common_environment, string_variable__not_correct_format__expect_same)
+      TEST( casual_common_environment, string_variable__not_correct_format__expect_throw)
       {
-
-         auto result =  environment::string( "$(HOME/a/b/c");
-
-         EXPECT_TRUE( result == "$(HOME/a/b/c") << "result: " << result;
+         EXPECT_THROW(
+         {
+            environment::string( "$(HOME/a/b/c");
+         }, exception::invalid::Argument);
       }
    } // common
 } // casual

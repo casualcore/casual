@@ -11,10 +11,12 @@
 #include "common/file.h"
 #include "common/algorithm.h"
 
+
+#include <memory>
+
 #include <cstdlib>
-
-
 #include <ctime>
+#include <wordexp.h>
 
 
 namespace casual
@@ -153,48 +155,72 @@ namespace casual
          } // domain
 
 
+			namespace local
+         {
+            namespace
+            {
+               struct wordexp_deleter
+               {
+                  void operator()( wordexp_t* holder) const
+                  {
+                     wordfree( holder);
+                  }
+               };
+            } // <unnamed>
+         } // local
+
 
          std::string string( const std::string& value)
          {
-            std::string result;
-            auto divide = range::divide_first( value, "$(");
 
-            while( std::get< 1>( divide))
+            wordexp_t holder;
+            common::initialize( holder);
+
+            std::unique_ptr< wordexp_t, local::wordexp_deleter> deleter( &holder);
+
+
+            auto result = wordexp( value.c_str(), &holder, WRDE_UNDEF | WRDE_NOCMD);
+
+            switch( result)
             {
-
-               result.insert( std::end( result), std::begin( std::get< 0>( divide)), std::end( std::get< 0>( divide)));
-
-               auto current = std::get< 1>( divide);
-               auto variable = current;
-
-               //
-               // Make sure we're past the "$("
-               //
-               ++variable;
-               ++variable;
-
-               auto rest = range::divide_first( variable, ")");
-
-               if( std::get< 1>( rest))
+               case 0:
+                  break;
+               case WRDE_BADCHAR:
                {
-                  const std::string name{ std::begin( std::get< 0>( rest)), std::end( std::get< 0>( rest))};
-
-                  result += environment::variable::get( name);
-
-                  current = std::get< 1>( rest)++;
+                  throw exception::invalid::Argument{ "Illegal occurrence of newline or one of |, &, ;, <, >, (, ), {, }", CASUAL_NIP( value)};
                }
-               else
+               case WRDE_BADVAL:
                {
-                  result.insert( std::end( result), std::begin( current), std::end( current));
-                  current = std::get< 1>( rest);
+                  throw exception::invalid::Argument{ "An undefined shell variable was referenced", CASUAL_NIP( value)};
                }
-
-               divide = range::divide_first( current, "$(");
+               case WRDE_CMDSUB:
+               {
+                  throw exception::invalid::Argument{ "Command substitution occurred", CASUAL_NIP( value)};
+               }
+               case WRDE_NOSPACE:
+               {
+                  throw exception::limit::Memory{ "Out of memory", CASUAL_NIP( value)};
+               }
+               case WRDE_SYNTAX:
+               {
+                  throw exception::invalid::Argument{ "Shell syntax error, such as unbalanced parentheses or unmatched quotes", CASUAL_NIP( value)};
+               }
             }
 
-            result.insert( std::end( result), std::begin( std::get< 0>( divide)), std::end( std::get< 0>( divide)));
-
-            return result;
+            switch( holder.we_wordc)
+            {
+               case 0:
+                  return {};
+               case 1:
+               {
+                  auto word = holder.we_wordv;
+                  return std::string{ word[ 0]};
+               }
+               default:
+               {
+                  throw exception::invalid::Argument{ "string substitution resulted in more than one string", CASUAL_NIP( value)};
+               }
+            }
          }
 		} // environment
 	} // common

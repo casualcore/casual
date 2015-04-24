@@ -51,39 +51,11 @@ namespace casual
          {
             namespace
             {
-               namespace normalize
-               {
-                  struct Path
-                  {
-                     void operator () ( Group& group) const
-                     {
-                        group.queuebase = common::environment::string( group.queuebase);
-                     }
-
-                     void operator () ( Default& value) const
-                     {
-                        value.path = common::environment::string( value.path);
-                     }
-
-                  };
-
-                  void path( Domain& domain)
-                  {
-                     Path{}( domain.casual_default);
-                     common::range::for_each( domain.groups, Path{});
-                  }
-
-               } // normalize
 
                void default_values( Domain& domain)
                {
                   for( auto& group : domain.groups)
                   {
-                     if( ! common::file::name::absolute( group.queuebase) && ! domain.casual_default.path.empty())
-                     {
-                        group.queuebase = domain.casual_default.path + '/' + group.queuebase;
-                     }
-
                      for( auto& queue : group.queues)
                      {
                         if( queue.retries.empty())
@@ -177,7 +149,6 @@ namespace casual
 
             reader >> CASUAL_MAKE_NVP( domain);
 
-            local::normalize::path( domain);
 
             //
             // Complement with default values
