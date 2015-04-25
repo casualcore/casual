@@ -177,7 +177,7 @@ namespace casual
                   {
                      m_resources.all.emplace_back(
                            resource.key,
-                           resource.xaSwitch,
+                           resource.xa_switch,
                            rm.id,
                            std::move( rm.openinfo),
                            std::move( rm.closeinfo));
@@ -185,7 +185,7 @@ namespace casual
                }
                else
                {
-                  throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships", __FILE__, __LINE__);
+                  throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships");
                }
 
                //
@@ -454,8 +454,15 @@ namespace casual
                   {
                      message.transaction.state = static_cast< decltype( message.transaction.state)>( Transaction::State::rollback);
                   }
+
+                  //
+                  // end resources
+                  //
+                  resources_end( *found, TMNOFLAGS);
                }
                message.transaction.trid = std::move( caller);
+
+
             }
          }
 

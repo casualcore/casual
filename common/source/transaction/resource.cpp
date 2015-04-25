@@ -32,16 +32,16 @@ namespace casual
 
 
          Resource::Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo)
-            : key( std::move( key)), xaSwitch( xa), id( id), openinfo( std::move( openinfo)), closeinfo( std::move( closeinfo)) {}
+            : key( std::move( key)), xa_switch( xa), id( id), openinfo( std::move( openinfo)), closeinfo( std::move( closeinfo)) {}
 
-         Resource::Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, 0, std::string(), std::string()) {}
+         Resource::Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, 0, {}, {}) {}
 
 
          int Resource::start( const Transaction& transaction, long flags)
          {
             log::internal::transaction << "start resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
 
-            auto result = xaSwitch->xa_start_entry( local::non_const_xid( transaction), id, flags);
+            auto result = xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags);
 
             if( result != XA_OK)
             {
@@ -54,7 +54,7 @@ namespace casual
          {
             log::internal::transaction << "end resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
 
-            auto result = xaSwitch->xa_end_entry( local::non_const_xid( transaction), id, flags);
+            auto result = xa_switch->xa_end_entry( local::non_const_xid( transaction), id, flags);
 
             if( result != XA_OK)
             {
@@ -68,7 +68,7 @@ namespace casual
          {
             log::internal::transaction << "open resource: " << *this <<  " flags: " << flags << '\n';
 
-            auto result = xaSwitch->xa_open_entry( openinfo.c_str(), id, flags);
+            auto result = xa_switch->xa_open_entry( openinfo.c_str(), id, flags);
 
             if( result != XA_OK)
             {
@@ -81,7 +81,7 @@ namespace casual
          {
             log::internal::transaction << "close resource: " << *this <<  " flags: " << flags << '\n';
 
-            auto result = xaSwitch->xa_close_entry( closeinfo.c_str(), id, flags);
+            auto result = xa_switch->xa_close_entry( closeinfo.c_str(), id, flags);
 
             if( result != XA_OK)
             {
@@ -92,7 +92,7 @@ namespace casual
 
          bool Resource::dynamic() const
          {
-            return common::flag< TMREGISTER>( xaSwitch->flags);
+            return common::flag< TMREGISTER>( xa_switch->flags);
          }
 
 
