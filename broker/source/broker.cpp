@@ -133,7 +133,7 @@ namespace casual
             {
                domain = config::domain::get( arguments.configurationfile);
             }
-            catch( const exception::FileNotExist& exception)
+            catch( const exception::invalid::File& exception)
             {
                common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
             }

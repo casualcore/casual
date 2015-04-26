@@ -126,9 +126,7 @@ namespace casual
 
             struct Environment
             {
-               std::string file;
                std::vector< std::string> variables;
-
             } environment;
 
 
@@ -242,6 +240,8 @@ namespace casual
          struct Standard
          {
             state::Service service;
+
+            std::vector< std::string> environment;
 
          } standard;
 

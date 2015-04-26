@@ -84,14 +84,13 @@ namespace traffic_monitor
 		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
-		stream << "CREATE TABLE IF NOT EXISTS calls ( "
-			   << "service			TEXT, "
+		stream   << "CREATE TABLE IF NOT EXISTS calls ( "
+			      << "service			TEXT, "
                << "parentservice	TEXT, "
                << "callid			TEXT, " // should not be string
                << "transactionid	BLOB, "
                << "start			NUMBER, "
-               << "end				NUMBER, "
-               << "PRIMARY KEY (start, callid));";
+               << "end				NUMBER);";
 
 		m_connection.execute( stream.str());
 	}

@@ -337,8 +337,8 @@ int build( const std::string& c_file, const Settings& settings)
 
    arguments.emplace_back( "-lcasual-xatmi");
 
-   arguments.push_back( "-I$(CASUAL_HOME)/include");
-   arguments.push_back( "-L$(CASUAL_HOME)/lib");
+   arguments.push_back( "-I${CASUAL_HOME}/include");
+   arguments.push_back( "-L${CASUAL_HOME}/lib");
 
    //
    // Make sure we resolve environment stuff

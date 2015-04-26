@@ -29,43 +29,6 @@ namespace casual
          {
             namespace
             {
-               namespace normalize
-               {
-
-
-                  struct Argument
-                  {
-                     void operator () ( Executable& executable) const
-                     {
-                        for( auto& argument : executable.arguments)
-                        {
-                           argument = common::environment::string( argument);
-                        }
-                     }
-                  };
-
-                  struct Path
-                  {
-                     void operator () ( Executable& executable) const
-                     {
-                        executable.path = common::environment::string( executable.path);
-                        executable.environment.file = common::environment::string( executable.environment.file);
-                        Argument{}( executable);
-                     }
-
-                     void operator () ( Default& value) const
-                     {
-                        value.path = common::environment::string( value.path);
-                     }
-                  };
-
-                  void path( Domain& domain)
-                  {
-                     Path{}( domain.casual_default);
-                     common::range::for_each( domain.servers, Path{});
-                     common::range::for_each( domain.executables, Path{});
-                  }
-               }
 
                namespace complement
                {
@@ -80,19 +43,6 @@ namespace casual
                      {
                         assign_if_empty( server.instances, m_casual_default.server.instances);
                         assign_if_empty( server.alias, nextAlias( server.path));
-
-                        if( ! m_casual_default.path.empty())
-                        {
-                           if( ! common::file::name::absolute( server.path))
-                           {
-                              server.path = m_casual_default.path + '/' + server.path;
-                           }
-
-                           if( ! server.environment.file.empty() && ! common::file::name::absolute( server.environment.file))
-                           {
-                              server.environment.file = m_casual_default.path + '/' + server.environment.file;
-                           }
-                        }
                      }
 
                      void operator ()( domain::Service& service) const
@@ -160,7 +110,7 @@ namespace casual
 
             reader >> CASUAL_MAKE_NVP( domain);
 
-            local::normalize::path( domain);
+            //local::normalize::path( domain);
 
             //
             // Complement with default values
@@ -186,8 +136,7 @@ namespace casual
             }
             else
             {
-               throw common::exception::FileNotExist(
-                     "could not find domain configuration file - should be: " + config::directory::domain() + "/domain.*");
+               throw common::exception::invalid::File{ "could not find domain configuration file",  CASUAL_NIP( configuration)};
             }
          }
 

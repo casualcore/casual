@@ -125,7 +125,7 @@ namespace traffic_monitor
 
          queue::non_blocking::Reader nonBlocking( m_receiveQueue);
 
-         for( auto count = common::platform::statistics_batch;
+         for( auto count = common::platform::batch::statistics;
             handler( nonBlocking.next()) && count > 0; --count)
          {
             ;
@@ -177,7 +177,7 @@ namespace traffic_monitor
 
          queue::non_blocking::Reader nonBlocking( m_receiveQueue);
 
-         for( auto count = common::platform::statistics_batch;
+         for( auto count = common::platform::batch::statistics;
             handler( nonBlocking.next()) && count > 0; --count)
          {
             ;
