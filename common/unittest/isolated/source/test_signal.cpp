@@ -18,6 +18,11 @@ namespace casual
 
       TEST( casual_common_signal, scope_timeout)
       {
+         //
+         // Start from a clean sheet
+         //
+         signal::clear();
+
          EXPECT_NO_THROW( signal::handle());
 
          signal::timer::Scoped timer{ std::chrono::milliseconds{ 1}};
@@ -33,6 +38,11 @@ namespace casual
 
       TEST( casual_common_signal, nested_timeout)
       {
+         //
+         // Start from a clean sheet
+         //
+         signal::clear();
+
          EXPECT_NO_THROW( signal::handle());
 
          signal::timer::Scoped timer1{ std::chrono::milliseconds{ 5}};
