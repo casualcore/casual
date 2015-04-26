@@ -14,7 +14,7 @@ namespace casual
 
       namespace message
       {
-         namespace monitor
+         namespace traffic_monitor
          {
 
             std::ostream& operator << ( std::ostream& out, const Notify& value)

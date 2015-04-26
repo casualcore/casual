@@ -38,15 +38,10 @@ namespace casual
 
 namespace casual
 {
-namespace statistics
-{
-namespace monitor
-{
-namespace vo
+namespace traffic_monitor
 {
 
-
-class MonitorVO
+class ServiceEntryVO
 {
 public:
 
@@ -54,12 +49,12 @@ public:
    //## additional public declarations protected section end   [200.100]
 
 
-   MonitorVO();
-   ~MonitorVO();
-   MonitorVO( const MonitorVO&);
-   MonitorVO& operator = ( const MonitorVO&);
-   MonitorVO( MonitorVO&&);
-   MonitorVO& operator = (MonitorVO&&);
+   ServiceEntryVO();
+   ~ServiceEntryVO();
+   ServiceEntryVO( const ServiceEntryVO&);
+   ServiceEntryVO& operator = ( const ServiceEntryVO&);
+   ServiceEntryVO( ServiceEntryVO&&);
+   ServiceEntryVO& operator = (ServiceEntryVO&&);
 
 
    //## additional public declarations protected section begin [200.110]
@@ -73,8 +68,8 @@ public:
    void setParentService( std::string value);
 
 
-   std::string getSrv() const;
-   void setSrv( std::string value);
+   std::string getService() const;
+   void setService( std::string value);
 
 
    sf::platform::Uuid getCallId() const;
@@ -108,9 +103,7 @@ private:
 };
 
 
-} // vo
-} // monitor
-} // statistics
+} // trafficmonitor
 } // casual
 
 

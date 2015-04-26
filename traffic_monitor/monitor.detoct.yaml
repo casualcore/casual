@@ -2,7 +2,7 @@
 
 general:
     description_language: C++
-    namespace: casual::statistics::monitor
+    namespace: casual::trafficmonitor
     prefix: ""
 
 declaration:
@@ -10,10 +10,9 @@ declaration:
   - value_object:
       name: MonitorVO
       language: C++
-      namespace: vo
       id: 200
           
-      output_headers: include/monitor/
+      output_headers: include/trafficmonitor/
       output_source:  source/
 
       attributes:
@@ -27,7 +26,7 @@ declaration:
       name: Statistic
       language: C++
     
-      output_headers: include/monitor/
+      output_headers: include/trafficmonitor/
       output_source:  source/  
     
       services:
@@ -43,7 +42,7 @@ declaration:
           return: bool      
           
           arguments:
-              - outputValues: (out) std::vector< vo::MonitorVO>&
+              - outputValues: (out) std::vector< VO>&
   
           
           

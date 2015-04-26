@@ -4,17 +4,15 @@
 
 //## includes protected section begin [.10]
 
-#include "monitor/monitorvo.h"
-
 #include <vector>
+
+#include "serviceentryvo.h"
 
 //## includes protected section end   [.10]
 
 namespace casual
 {
-namespace statistics
-{
-namespace monitor
+namespace traffic_monitor
 {
 
 
@@ -22,7 +20,7 @@ namespace monitor
 //## declarations protected section end   [.20]
 
 
-class StatisticImplementation
+class RequestServerImplementation
 {
 
 public:
@@ -31,9 +29,9 @@ public:
    // Constructor and destructor. 
    // use these to initialize state if needed
    //
-   StatisticImplementation( int argc, char **argv);
+   RequestServerImplementation( int argc, char **argv);
     
-   ~StatisticImplementation();
+   ~RequestServerImplementation();
     
 
    //## declarations protected section begin [.200]
@@ -51,7 +49,7 @@ public:
    //! @return true if some condition is met
    //! @param values holds some values
    //!
-   bool getMonitorStatistics( std::vector< vo::MonitorVO>& outputValues);
+   bool getMonitorStatistics( std::vector< ServiceEntryVO>& outputValues);
 
    //## declarations protected section begin [.300]
    //## declarations protected section end   [.300]
@@ -62,8 +60,7 @@ public:
 //## declarations protected section begin [.40]
 //## declarations protected section end   [.40]
 
-} // monitor
-} // statistics
+} // traffic_monitor
 } // casual
 
 //## declarations protected section begin [.50]

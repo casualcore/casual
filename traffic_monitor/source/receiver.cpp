@@ -5,7 +5,6 @@
  *      Author: hbergk
  */
 
-#include "monitor/monitor.h"
 #include "common/queue.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -26,36 +25,15 @@
 //temp
 #include <iostream>
 
+#include "traffic_monitor/receiver.h"
+
+#include "traffic_monitor/serviceentryvo.h"
+
 using namespace casual::common;
-
-namespace
-{
-	//
-	// Just temporary
-	//
-   /*
-	std::ostream& operator<<( std::ostream& os, const message::monitor::Notify& message)
-	{
-		os << "parentService: " << message.parentService << ", ";
-		os << "service: " << message.service << ", ";
-		os << "callId: " << message.callId.string() << ", ";
-		os << "start: " << chronology::local( message.start) << ", ";
-		// os << "end: " << transform::time( message.end) << ", ";
-		os << "difference: " << platform::time_type::duration( message.end - message.start).count() << " usec";
-		//
-		// TODO: etc...
-		//
-		return os;
-	}
-	*/
-}
-
 
 namespace casual
 {
-namespace statistics
-{
-namespace monitor
+namespace traffic_monitor
 {
 	namespace local
 	{
@@ -70,9 +48,9 @@ namespace monitor
                 }
 
 
-    			MonitorDB& monitorDB()
+    			Database& monitorDB()
     			{
-    				return m_monitordb;
+    				return m_database;
     			}
 
     		private:
@@ -80,7 +58,7 @@ namespace monitor
     			{
     			}
 
-    			MonitorDB m_monitordb;
+    			Database m_database;
     		};
 		}
 	}
@@ -91,14 +69,14 @@ namespace monitor
 		{
 		   trace::internal::Scope trace( "handle::Notify::dispatch");
 
-			message >> monitorDB;
+			message >> database;
 		}
 	}
 
 
-	Monitor::Monitor(const std::vector<std::string>& arguments) :
+	Receiver::Receiver(const std::vector<std::string>& arguments) :
 			m_receiveQueue( common::ipc::receive::queue()),
-			m_monitordb( local::Context::instance().monitorDB())
+			m_database( local::Context::instance().monitorDB())
 	{
 	   //
       // TODO: Use a correct argumentlist handler
@@ -107,7 +85,7 @@ namespace monitor
 
 	   common::process::path( name);
 
-	   trace::internal::Scope trace( "Monitor::Monitor");
+	   trace::internal::Scope trace( "Receiver::Receiver");
 
 		//
 		// Connect as a "regular" server
@@ -118,7 +96,7 @@ namespace monitor
 		//
 		// Make the key public for others...
 		//
-		message::monitor::Connect message;
+		message::traffic_monitor::Connect message;
 
 		message.path = name;
 		message.process = common::process::handle();
@@ -127,19 +105,19 @@ namespace monitor
 		writer(message);
 	}
 
-	Monitor::~Monitor()
+	Receiver::~Receiver()
 	{
-	   trace::internal::Scope trace( "Monitor::~Monitor");
+	   trace::internal::Scope trace( "Receiver::~Receiver");
 
 		try
 		{
 
 	      message::dispatch::Handler handler{
-	         handle::Notify{ m_monitordb},
+	         handle::Notify{ m_database},
 	         common::message::handle::Shutdown{},
 	      };
 
-         monitor::Transaction transaction( m_monitordb);
+         traffic_monitor::Transaction transaction( m_database);
 
          //
          // Consume until the queue is empty or we've got pending replies equal to statistics_batch
@@ -156,25 +134,26 @@ namespace monitor
 		catch( ...)
 		{
 		   common::error::handler();
+		   return;
 		}
 
 		//
 		// Test of select
 		//
-		//common::log::debug << "Statistic logging" << std::endl;
+//		common::log::debug << "Statistic logging" << std::endl;
 //		auto rowset = m_monitordb.select();
-//		for (auto row = rowset.begin(); row != rowset.end(); ++row )
+//		for (auto row : rowset)
 //		{
-//			common::log::debug << *row;
+//			common::log::debug << row;
 //		}
 	}
 
-	void Monitor::start()
+	void Receiver::start()
 	{
-		trace::internal::Scope trace( "Monitor::start");
+		trace::internal::Scope trace( "Receiver::start");
 
 		message::dispatch::Handler handler{
-		   handle::Notify{ m_monitordb},
+		   handle::Notify{ m_database},
 		   common::message::handle::Shutdown{},
 		};
 
@@ -183,7 +162,7 @@ namespace monitor
 		while( true)
 		{
 
-		   monitor::Transaction transaction( m_monitordb);
+		   traffic_monitor::Transaction transaction( m_database);
 
          //
          // Blocking
@@ -207,8 +186,6 @@ namespace monitor
 	}
 
 } // monitor
-
-} // statistics
 
 } // casual
 
