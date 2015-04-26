@@ -44,7 +44,7 @@
 #ifdef __APPLE__
 #include <syslimits.h>
 #else
-
+#include <linux/limits.h>
 #endif
 
 
