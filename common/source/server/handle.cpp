@@ -65,10 +65,13 @@ namespace casual
 
                void Default::statistics( platform::queue_id_type id, message::monitor::Notify& message)
                {
+                  log::internal::debug << "policy::Default::statistics - message:" << message << std::endl;
+
                   try
                   {
-                     monitor_writer writer{ id};
-                     writer( message);
+                     queue::blocking::Send send;
+
+                     send( id, message);
                   }
                   catch( ...)
                   {

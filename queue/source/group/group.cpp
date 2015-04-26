@@ -113,7 +113,7 @@ namespace casual
                   group::queue::non_blocking::Reader nonBlocking( common::ipc::receive::queue(), m_state);
 
                   while( handler( nonBlocking.next()) &&
-                        m_state.persistent.size() < common::platform::transaction_batch)
+                        m_state.persistent.size() < common::platform::batch::transaction)
                   {
                      ;
                   }

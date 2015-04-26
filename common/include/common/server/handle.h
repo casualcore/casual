@@ -166,11 +166,6 @@ namespace casual
                         // Call tpsrvdone
                         //
                         state.server_done();
-
-                        //
-                        // If there are open resources, close'em
-                        //
-                        transaction::Context::instance().close();
                      }
                      catch( ...)
                      {
@@ -188,6 +183,8 @@ namespace casual
                   call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
+
+                  log::internal::debug << "message: " << message << '\n';
 
                   try
                   {
@@ -477,7 +474,6 @@ namespace casual
 
                private:
                   typedef queue::blocking::Writer reply_writer;
-                  typedef queue::non_blocking::Writer monitor_writer;
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
 

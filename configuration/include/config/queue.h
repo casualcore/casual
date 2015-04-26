@@ -59,13 +59,11 @@ namespace casual
 
          struct Default
          {
-            std::string path;
             Queue queue;
 
             template< typename A>
             void serialize( A& archive)
             {
-               archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( queue);
             }
          };

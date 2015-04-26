@@ -26,7 +26,7 @@ namespace casual
          stream << id;
 
          std::ostringstream expected;
-         expected << gtrid << ':' << gtrid << ":0:0";
+         expected << gtrid << ':' << gtrid << ':' << transaction::ID::cCasual << ":0:0";
 
 
          EXPECT_TRUE( stream.str() == expected.str()) << "stream: " << stream.str() << std::endl << "expected: " << expected.str() << std::endl;
@@ -39,9 +39,14 @@ namespace casual
          std::ostringstream stream;
          stream << id;
 
-         auto gtrid = stream.str();
+         auto trid = common::string::split( stream.str(), ':');
 
-         EXPECT_TRUE( gtrid.size() == 32 * 2 + 1 + 4) << "id: " << id << std::endl;
+         ASSERT_TRUE( trid.size() == 5);
+         EXPECT_TRUE( trid[ 0].size() == 32);
+         EXPECT_TRUE( trid[ 1].size() == 32);
+
+         EXPECT_TRUE( trid[ 3].size() == 1);
+         EXPECT_TRUE( trid[ 4].size() == 1);
       }
 
       TEST( casual_common_transaction_id, uuid_constructor)

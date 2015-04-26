@@ -105,7 +105,7 @@ namespace casual
 
             if( found)
             {
-               found->suspended = true;
+               transactions.erase( found.first);
             }
             else
             {

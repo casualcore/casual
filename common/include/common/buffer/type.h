@@ -84,6 +84,8 @@ namespace casual
                archive & type;
                archive & memory;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const Payload& value);
          };
 
          namespace payload
@@ -103,6 +105,8 @@ namespace casual
                   archive << transport;
                   archive.append( std::begin( payload.memory), std::begin( payload.memory) + transport);
                }
+
+               friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
             };
 

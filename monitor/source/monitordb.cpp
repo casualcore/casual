@@ -105,10 +105,11 @@ namespace monitor
                << "callid			TEXT, " // should not be string
                << "transactionid	BLOB, "
                << "start			NUMBER, "
-               << "end				NUMBER, "
-               << "PRIMARY KEY (start, callid));";
+               << "end				NUMBER "
+               << ");" ;
+               // << "PRIMARY KEY (start, callid));"; // this is not unique, and likely to happen
 
-		if ( !m_database.sql( stream.str()))
+		if ( ! m_database.sql( stream.str()))
 		{
 			throw std::runtime_error( m_database.error());
 		}
@@ -122,7 +123,7 @@ namespace monitor
 
 		std::ostringstream stream;
 		stream << "INSERT INTO calls VALUES (?,?,?,?,?,?);";
-		if ( !m_database.sql( stream.str(),
+		if ( ! m_database.sql( stream.str(),
 				message.service,
 				message.parentService,
 				common::uuid::string( message.callId), // should not be string

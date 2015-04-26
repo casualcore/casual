@@ -223,11 +223,12 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
-  return 0;
+   return tx_open() == TX_OK ? 0 : -1;
 }
 
 void tpsvrdone()
 {
+   tx_close();
 }
 
 int casual_vlog( casual_log_category_t category, const char* const format, va_list arglist)
@@ -242,7 +243,7 @@ int casual_vlog( casual_log_category_t category, const char* const format, va_li
 
    auto data = buffer.data();
 
-   if( written >= buffer.max_size())
+   if( written >= static_cast< decltype( written)>( buffer.max_size()))
    {
       backup.resize( written + 1);
       va_copy( argcopy, arglist);

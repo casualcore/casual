@@ -140,18 +140,28 @@ namespace casual
                namespace current
                {
 
+                  namespace internal
+                  {
+                     std::vector< const char*> environment()
+                     {
+                        std::vector< const char*> result;
 
+                        auto current = local::environment();
+
+                        while( (*current) != nullptr)
+                        {
+                           result.push_back( *current);
+                           ++current;
+                        }
+
+                        return result;
+                     }
+                  } // internal
+
+                  // we need to force lvalue parameter
                   std::vector< const char*> environment( const std::vector< std::string>& environment)
                   {
-                     std::vector< const char*> result;
-
-                     auto current = local::environment();
-
-                     while( (*current) != nullptr)
-                     {
-                        result.push_back( *current);
-                        ++current;
-                     }
+                     auto result = internal::environment();
 
                      std::transform(
                         std::begin( environment),
@@ -163,11 +173,6 @@ namespace casual
                      return result;
                   }
 
-                  std::vector< const char*> environment()
-                  {
-                     return environment( {});
-                  }
-
                } // current
 
             } // <unnamed>
@@ -175,12 +180,9 @@ namespace casual
 
          platform::pid_type spawn(
             const std::string& path,
-            const std::vector< std::string>& arguments,
-            const std::vector< std::string>& environment)
+            std::vector< std::string> arguments,
+            std::vector< std::string> environment)
          {
-
-
-
             //
             // prepare arguments
             //
@@ -192,6 +194,15 @@ namespace casual
             {
                c_arguments.push_back( path.data());
 
+               //
+               // We need to expand environment
+               //
+               for( auto& argument : arguments)
+               {
+                  argument = environment::string( argument);
+               }
+
+
                std::transform(
                      std::begin( arguments),
                      std::end( arguments),
@@ -200,6 +211,15 @@ namespace casual
 
                c_arguments.push_back( nullptr);
             }
+
+            //
+            // We need to expand environment
+            //
+            for( auto& variable : environment)
+            {
+               variable = environment::string( variable);
+            }
+
 
 
             auto c_environment = local::current::environment( environment);
@@ -231,16 +251,16 @@ namespace casual
          }
 
 
-         platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments)
+         platform::pid_type spawn( const std::string& path, std::vector< std::string> arguments)
          {
-            return spawn( path, arguments, {});
+            return spawn( path, std::move( arguments), {});
          }
 
 
 
-         int execute( const std::string& path, const std::vector< std::string>& arguments)
+         int execute( const std::string& path, std::vector< std::string> arguments)
          {
-            return wait( spawn( path, arguments));
+            return wait( spawn( path, std::move( arguments)));
          }
 
 

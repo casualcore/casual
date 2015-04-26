@@ -19,13 +19,23 @@
 #include <ostream>
 #include <sstream>
 
-#include <assert.h>
 #include <functional>
+
+#include <cassert>
+#include <cstring>
+
 
 namespace casual
 {
    namespace common
    {
+
+      template< typename T>
+      void initialize( T&& value)
+      {
+         std::memset( &value, 0, sizeof( T));
+      }
+
       namespace scope
       {
          struct Execute

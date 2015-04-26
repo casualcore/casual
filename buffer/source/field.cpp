@@ -101,8 +101,9 @@ namespace casual
                {
                   //
                   // Ignore user provided size utilized size
-                  //
+                  // TODO: m_inserter seems to be 0... for now we return the actual memory size...
                   return m_inserter;
+                  //return payload.memory.size();
                }
 
 
