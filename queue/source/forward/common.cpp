@@ -14,6 +14,8 @@
 #include "common/transaction/context.h"
 #include "common/server/handle.h"
 
+#include "queue/rm/switch.h"
+
 
 #include "tx.h"
 
@@ -107,18 +109,7 @@ namespace casual
 
 
          Dispatch::Dispatch( const std::vector< forward::Task>& tasks)
-            : m_tasks( local::lookup( tasks))
-         {
-            if( m_tasks.size() != 1)
-            {
-               throw common::exception::invalid::Argument{ "only one task is allowed"};
-            }
-
-            common::signal::timer::Scoped timout{ std::chrono::seconds{ 5}};
-
-            common::server::connect( {});
-
-         }
+            : Dispatch( tasks, { { "casual-queue-rm",  &casual_queue_xa_switch_dynamic}}) {}
 
          Dispatch::Dispatch( const std::vector< forward::Task>& tasks, const std::vector< common::transaction::Resource>& resources)
            : m_tasks( local::lookup( tasks))
