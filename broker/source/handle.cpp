@@ -606,7 +606,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::statistics( platform::queue_id_type id, message::monitor::Notify& message)
+         void Policy::statistics( platform::queue_id_type id, message::traffic_monitor::Notify& message)
          {
             //
             // We don't collect statistics for the broker

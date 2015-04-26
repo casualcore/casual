@@ -354,7 +354,12 @@ namespace sql
                   }
                   else
                   {
-                     casual::common::directory::create( casual::common::directory::name::base( file));
+                     auto created = casual::common::directory::create( casual::common::directory::name::base( file));
+
+                     if (!created)
+                     {
+                        throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+                     }
 
                      return open( file);
                   }

@@ -197,7 +197,7 @@ namespace casual
 
                   auto found = range::find( environment, log::category::name( category));
 
-                  if( ! found.empty())
+                  if( ! found.empty() || ! range::find( environment, "%").empty())
                   {
                      return getBuffer( category).factory();
                   }

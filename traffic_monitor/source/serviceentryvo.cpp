@@ -2,26 +2,22 @@
 		
 
 #include <sf/archive/archive.h>
+#include "traffic_monitor/serviceentryvo.h"
 
 
 //## includes protected section begin [200.20]
 
-#include "monitor/monitorvo.h"
 
 //## includes protected section end   [200.20]
 
 namespace casual
 {
-namespace statistics
-{
-namespace monitor
-{
-namespace vo
+namespace traffic_monitor
 {
 
 
 
-struct MonitorVO::Implementation
+struct ServiceEntryVO::Implementation
 {
     Implementation()
    //## initialization list protected section begin [200.40]
@@ -38,7 +34,7 @@ struct MonitorVO::Implementation
       //## additional serialization protected section begin [200.impl.serial.10]
       //## additional serialization protected section end   [200.impl.serial.10]
       archive & CASUAL_MAKE_NVP( parentService);
-      archive & CASUAL_MAKE_NVP( srv);
+      archive & CASUAL_MAKE_NVP( service);
       archive & CASUAL_MAKE_NVP( callId);
       archive & CASUAL_MAKE_NVP( start);
       archive & CASUAL_MAKE_NVP( end);
@@ -49,7 +45,7 @@ struct MonitorVO::Implementation
    //## additional attributes protected section begin [200.impl.attr.10]
    //## additional attributes protected section end   [200.impl.attr.10]
    std::string parentService;
-   std::string srv;
+   std::string service;
    sf::platform::Uuid callId;
    sf::platform::time_type start;
    sf::platform::time_type end;
@@ -61,71 +57,71 @@ struct MonitorVO::Implementation
 
 
 
-MonitorVO::MonitorVO()
+ServiceEntryVO::ServiceEntryVO()
    : pimpl( new Implementation())  
 {
    //## base class protected section begin [200.ctor.10]
    //## base class protected section end   [200.ctor.10]  
 }
 
-MonitorVO::~MonitorVO() = default;
+ServiceEntryVO::~ServiceEntryVO() = default;
 
-MonitorVO::MonitorVO( MonitorVO&&  rhs) = default;
+ServiceEntryVO::ServiceEntryVO( ServiceEntryVO&&  rhs) = default;
 
-MonitorVO& MonitorVO::operator = (MonitorVO&&) = default;
+ServiceEntryVO& ServiceEntryVO::operator = (ServiceEntryVO&&) = default;
 
 
-MonitorVO::MonitorVO( const MonitorVO& rhs)
+ServiceEntryVO::ServiceEntryVO( const ServiceEntryVO& rhs)
    : pimpl( new Implementation( *rhs.pimpl))
 {
 
 }
 
-MonitorVO& MonitorVO::operator = ( const MonitorVO& rhs)
+ServiceEntryVO& ServiceEntryVO::operator = ( const ServiceEntryVO& rhs)
 {
     *pimpl = *rhs.pimpl;
     return *this;
 }
 
-std::string MonitorVO::getParentService() const
+std::string ServiceEntryVO::getParentService() const
 {
    return pimpl->parentService;
 }
-std::string MonitorVO::getSrv() const
+std::string ServiceEntryVO::getService() const
 {
-   return pimpl->srv;
+   return pimpl->service;
 }
-sf::platform::Uuid MonitorVO::getCallId() const
+sf::platform::Uuid ServiceEntryVO::getCallId() const
 {
    return pimpl->callId;
 }
-sf::platform::time_type MonitorVO::getStart() const
+sf::platform::time_type ServiceEntryVO::getStart() const
 {
    return pimpl->start;
 }
-sf::platform::time_type MonitorVO::getEnd() const
+sf::platform::time_type ServiceEntryVO::getEnd() const
 {
    return pimpl->end;
 }
 
 
-void MonitorVO::setParentService( std::string value)
+void ServiceEntryVO::setParentService( std::string value)
 {
    pimpl->parentService = value;
 }
-void MonitorVO::setSrv( std::string value)
+void ServiceEntryVO::setService( std::string value)
 {
-   pimpl->srv = value;
+   pimpl->service = value;
 }
-void MonitorVO::setCallId( sf::platform::Uuid value)
+void ServiceEntryVO::setCallId( sf::platform::Uuid value)
 {
    pimpl->callId = value;
 }
-void MonitorVO::setStart( sf::platform::time_type value)
+void ServiceEntryVO::setStart( sf::platform::time_type value)
 {
    pimpl->start = value;
 }
-void MonitorVO::setEnd( sf::platform::time_type value)
+void ServiceEntryVO::setEnd( sf::platform::time_type value)
 {
    pimpl->end = value;
 }
@@ -135,12 +131,12 @@ void MonitorVO::setEnd( sf::platform::time_type value)
 
 
 
-void MonitorVO::serialize( casual::sf::archive::Reader& archive)
+void ServiceEntryVO::serialize( casual::sf::archive::Reader& archive)
 {
     pimpl->serialize( archive);
 }
   
-void MonitorVO::serialize( casual::sf::archive::Writer& archive) const
+void ServiceEntryVO::serialize( casual::sf::archive::Writer& archive) const
 {
     pimpl->serialize( archive);
 }
@@ -148,9 +144,7 @@ void MonitorVO::serialize( casual::sf::archive::Writer& archive) const
 
 
 
-} // vo
-} // monitor
-} // statistics
+} // traffic-monitor
 } // casual
 
 	

@@ -278,7 +278,7 @@ namespace casual
 
          queue::blocking::Reader reader( monitor.receive());
 
-         message::monitor::Notify message;
+         message::traffic_monitor::Notify message;
          reader( message);
          EXPECT_TRUE( message.service == "test_service");
 

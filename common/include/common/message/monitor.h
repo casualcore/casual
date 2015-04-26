@@ -18,22 +18,22 @@ namespace casual
 
       namespace message
       {
-         namespace monitor
+         namespace traffic_monitor
          {
             //!
             //! Used to advertise the monitorserver
             //!
-            typedef server::basic_connect< cMonitorConnect> Connect;
+            typedef server::basic_connect< cTrafficMonitorConnect> Connect;
 
             //!
             //! Used to unadvertise the monitorserver
             //!
-            typedef server::basic_disconnect< cMonitorDisconnect> Disconnect;
+            typedef server::basic_disconnect< cTrafficMonitorDisconnect> Disconnect;
 
             //!
             //! Notify monitorserver with statistics
             //!
-            struct Notify : basic_message< cMonitorNotify>
+            struct Notify : basic_message< cTrafficMonitorNotify>
             {
 
                std::string parentService;
@@ -58,7 +58,7 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Notify& value);
             };
-         } // monitor
+         } // traffic_monitor
 
       } // message
    } // common

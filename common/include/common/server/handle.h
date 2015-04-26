@@ -467,7 +467,7 @@ namespace casual
 
                   void ack( const message::service::call::callee::Request& message);
 
-                  void statistics( platform::queue_id_type id, message::monitor::Notify& message);
+                  void statistics( platform::queue_id_type id, message::traffic_monitor::Notify& message);
 
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
@@ -518,7 +518,7 @@ namespace casual
                   }
 
 
-                  void statistics( platform::queue_id_type id, message::monitor::Notify& message)
+                  void statistics( platform::queue_id_type id, message::traffic_monitor::Notify& message)
                   {
                      // no-op
                   }

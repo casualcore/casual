@@ -1,18 +1,8 @@
 //## includes protected section begin [.10]
 
 
-#include "monitor/statisticimplementation.h"
-
-//## includes protected section end   [.10]
-
-//
-// xatmi
-//
 #include <xatmi.h>
-
-//
-// sf
-//
+#include "traffic_monitor/request_server_implementation.h"
 #include "sf/server.h"
 #include "sf/service/interface.h"
 
@@ -25,7 +15,7 @@ namespace local
 {
    namespace
    {
-      typedef casual::statistics::monitor::StatisticImplementation implementation_type;
+      typedef casual::traffic_monitor::RequestServerImplementation implementation_type;
 
       casual::sf::server::type server;
       casual::sf::server::implementation::type< implementation_type> implementation;
@@ -38,9 +28,7 @@ extern "C"
 
 namespace casual
 {
-namespace statistics
-{
-namespace monitor
+namespace traffic_monitor
 {
 
 
@@ -93,7 +81,7 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       
 
       //## input protected section begin [2000.110]
-      using namespace casual::statistics::monitor;
+      using namespace casual::traffic_monitor;
       //## input protected section end   [2000.110]
 
 
@@ -101,7 +89,7 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       // Instantiate the output parameters
       //
             
-      std::vector< vo::MonitorVO> outputValues;
+      std::vector< ServiceEntryVO> outputValues;
 
       //## output protected section begin [2000.120]
       //## output protected section end   [2000.120]
@@ -144,8 +132,7 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
 	
 	
 
-} // monitor
-} // statistics
+} // traffic_monitor
 } // casual
 
 
