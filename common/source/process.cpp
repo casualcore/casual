@@ -183,6 +183,8 @@ namespace casual
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
          {
+            trace::Scope trace{ "process::spawn", log::internal::trace};
+
             //
             // prepare arguments
             //
@@ -230,7 +232,7 @@ namespace casual
 
             platform::pid_type pid;
 
-            log::internal::debug << "spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+            log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
             auto status =  posix_spawnp(
                   &pid,
@@ -245,8 +247,34 @@ namespace casual
                case 0:
                   break;
                default:
-                  throw exception::invalid::Argument( "spawn failed for: " + path + " - " + error::string( status));
+                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                        exception::make_nip( "arguments", range::make( arguments)),
+                        exception::make_nip( "environment", range::make( environment)),
+                        CASUAL_NIP( error::string( status)));
             }
+
+            //
+            // Try to figure out if the process started correctly..
+            //
+            /* We can't really do this, since we mess up the semantics for the caller
+
+            {
+               auto deaths = lifetime::wait( { pid}, std::chrono::microseconds{ 1});
+
+               if( ! deaths.empty() && deaths.front().reason != lifetime::Exit::Reason::exited)
+               {
+                  auto& reason = deaths.front();
+
+                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                        exception::make_nip( "arguments", range::make( arguments)),
+                        exception::make_nip( "environment", range::make( environment)),
+                        CASUAL_NIP( reason));
+               }
+            }
+            */
+            // TODO: try something else to detect if the process started correct or not.
+
+
             return pid;
          }
 

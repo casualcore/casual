@@ -52,8 +52,8 @@ namespace casual
          EXPECT_TRUE( pid != process::id());
 
          // wait for it..
-         pid = process::wait( pid);
-         EXPECT_TRUE( pid == 42) << "pid: " << pid;
+         auto result = process::wait( pid);
+         EXPECT_TRUE( result == 42) << "result: " << result;
 
          signal::clear();
       }
@@ -94,7 +94,7 @@ namespace casual
 
 
          ASSERT_TRUE( pids.size() == terminated.size());
-         EXPECT_TRUE( range::equal( range::sort( pids), range::sort( range::sort( pids))));
+         EXPECT_TRUE( range::equal( range::sort( pids), range::sort( terminated)));
 
          signal::clear();
       }

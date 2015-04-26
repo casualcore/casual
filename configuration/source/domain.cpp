@@ -29,39 +29,6 @@ namespace casual
          {
             namespace
             {
-               namespace normalize
-               {
-
-
-                  /*
-                  struct Path
-                  {
-                     void operator () ( Executable& executable) const
-                     {
-                        executable.path = common::environment::string( executable.path);
-                        Path{}( executable.environment);
-                     }
-
-                     void operator () ( Default& value) const
-                     {
-                        // no-op
-                     }
-
-                     void operator () ( Environment& value) const
-                     {
-                        value = environment::normalize( value);
-                     }
-
-                  };
-
-                  void path( Domain& domain)
-                  {
-                     Path{}( domain.casual_default);
-                     common::range::for_each( domain.servers, Path{});
-                     common::range::for_each( domain.executables, Path{});
-                  }
-                  */
-               }
 
                namespace complement
                {
@@ -169,8 +136,7 @@ namespace casual
             }
             else
             {
-               throw common::exception::FileNotExist(
-                     "could not find domain configuration file - should be: " + config::directory::domain() + "/domain.*");
+               throw common::exception::invalid::File{ "could not find domain configuration file",  CASUAL_NIP( configuration)};
             }
          }
 
