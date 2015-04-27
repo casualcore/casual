@@ -5,6 +5,9 @@
  *      Author: hbergk
  */
 
+#include "traffic/monitor/receiver.h"
+#include "traffic/monitor/serviceentryvo.h"
+
 #include "common/queue.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -25,15 +28,13 @@
 //temp
 #include <iostream>
 
-#include "traffic_monitor/receiver.h"
-
-#include "traffic_monitor/serviceentryvo.h"
-
 using namespace casual::common;
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 	namespace local
 	{
@@ -96,7 +97,7 @@ namespace traffic_monitor
 		//
 		// Make the key public for others...
 		//
-		message::traffic_monitor::Connect message;
+		message::traffic::monitor::Connect message;
 
 		message.path = name;
 		message.process = common::process::handle();
@@ -117,7 +118,7 @@ namespace traffic_monitor
 	         common::message::handle::Shutdown{},
 	      };
 
-         traffic_monitor::Transaction transaction( m_database);
+         traffic::monitor::Transaction transaction( m_database);
 
          //
          // Consume until the queue is empty or we've got pending replies equal to statistics_batch
@@ -162,7 +163,7 @@ namespace traffic_monitor
 		while( true)
 		{
 
-		   traffic_monitor::Transaction transaction( m_database);
+		   traffic::monitor::Transaction transaction( m_database);
 
          //
          // Blocking
@@ -186,6 +187,6 @@ namespace traffic_monitor
 	}
 
 } // monitor
-
+} // traffic
 } // casual
 

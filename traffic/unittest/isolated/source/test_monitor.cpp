@@ -15,13 +15,15 @@
 #include <iostream>
 #include <chrono>
 
-#include "traffic_monitor/database.h"
+#include "traffic/monitor/database.h"
 
 //#include <unistd.h>
 
 namespace casual
 {
-	namespace traffic_monitor
+	namespace traffic
+	{
+	namespace monitor
 	{
 
 		TEST( casual_monitor, create_database_ok)
@@ -45,7 +47,7 @@ namespace casual
 			EXPECT_NO_THROW(
 			{
 				Database db("test.db");
-				common::message::traffic_monitor::Notify message;
+				common::message::traffic::monitor::Notify message;
 
 				message.service = "myService";
 				message.parentService = "myParentService";
@@ -57,7 +59,7 @@ namespace casual
 			});
 		}
 
-
+	}
 	}
 }
 

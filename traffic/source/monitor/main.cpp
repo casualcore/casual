@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-#include "traffic_monitor/receiver.h"
+#include "traffic/monitor/receiver.h"
 
 
 int main( int argc, char** argv)
@@ -26,7 +26,7 @@ int main( int argc, char** argv)
 
 		std::cout << "starting" << std::endl;
 
-		casual::traffic_monitor::Receiver receiver( arguments);
+		casual::traffic::monitor::Receiver receiver( arguments);
 
 		receiver.start();
 

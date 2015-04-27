@@ -91,7 +91,7 @@ target = LinkExecutable( 'bin/test_client',
 	[ 
 		Compile( 'source/template_client.cpp')
 	], 
-    ['casual-common', 'casual-xatmi'])
+    ['casual-common', 'casual-xatmi', 'casual-buffer'])
 	
 
 install_bin.append( target)

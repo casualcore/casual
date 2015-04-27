@@ -34,7 +34,7 @@ int main( int argc, char** argv)
 	}
 
 
-	auto buffer = tpalloc( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE, 1024);
+	auto buffer = tpalloc( CASUAL_STRING, 0, 1024);
 
 	if ( buffer != nullptr)
 	{

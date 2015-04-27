@@ -2,7 +2,7 @@
 
 
 #include <xatmi.h>
-#include "traffic_monitor/request_server_implementation.h"
+#include "traffic/monitor/request_server_implementation.h"
 #include "sf/server.h"
 #include "sf/service/interface.h"
 
@@ -15,7 +15,7 @@ namespace local
 {
    namespace
    {
-      typedef casual::traffic_monitor::RequestServerImplementation implementation_type;
+      typedef casual::traffic::monitor::RequestServerImplementation implementation_type;
 
       casual::sf::server::type server;
       casual::sf::server::implementation::type< implementation_type> implementation;
@@ -28,7 +28,9 @@ extern "C"
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 
 
@@ -81,7 +83,7 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       
 
       //## input protected section begin [2000.110]
-      using namespace casual::traffic_monitor;
+      using namespace casual::traffic::monitor;
       //## input protected section end   [2000.110]
 
 
@@ -131,8 +133,8 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
 }
 	
 	
-
-} // traffic_monitor
+} // monitor
+} // traffic
 } // casual
 
 

@@ -2,7 +2,8 @@
  *  Created on: 8 dec 2012
  *      Author: hbergk
  */
-#include "traffic_monitor/database.h"
+#include "traffic/monitor/database.h"
+
 #include "common/trace.h"
 #include "common/environment.h"
 #include "common/chronology.h"
@@ -22,7 +23,9 @@
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 
 	namespace local
@@ -95,7 +98,7 @@ namespace traffic_monitor
 		m_connection.execute( stream.str());
 	}
 
-	void Database::insert( const common::message::traffic_monitor::Notify& message)
+	void Database::insert( const common::message::traffic::monitor::Notify& message)
 	{
 		static const std::string cMethodname("Database::insert");
 		common::Trace trace(cMethodname);
@@ -148,8 +151,8 @@ namespace traffic_monitor
 	}
 }
 }
-
-void operator>>( const casual::common::message::traffic_monitor::Notify& message, casual::traffic_monitor::Database& db)
+}
+void operator>>( const casual::common::message::traffic::monitor::Notify& message, casual::traffic::monitor::Database& db)
 {
 	db.insert( message);
 }

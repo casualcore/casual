@@ -1,8 +1,9 @@
 
 		
 
+#include "traffic/monitor/serviceentryvo.h"
+
 #include <sf/archive/archive.h>
-#include "traffic_monitor/serviceentryvo.h"
 
 
 //## includes protected section begin [200.20]
@@ -12,7 +13,9 @@
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 
 
@@ -143,8 +146,8 @@ void ServiceEntryVO::serialize( casual::sf::archive::Writer& archive) const
 
 
 
-
-} // traffic-monitor
+} // monitor
+} // traffic
 } // casual
 
 	

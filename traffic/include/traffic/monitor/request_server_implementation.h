@@ -6,13 +6,15 @@
 
 #include <vector>
 
-#include "serviceentryvo.h"
+#include "traffic/monitor/serviceentryvo.h"
 
 //## includes protected section end   [.10]
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 
 
@@ -59,8 +61,8 @@ public:
 
 //## declarations protected section begin [.40]
 //## declarations protected section end   [.40]
-
-} // traffic_monitor
+} // monitor
+} // traffic
 } // casual
 
 //## declarations protected section begin [.50]

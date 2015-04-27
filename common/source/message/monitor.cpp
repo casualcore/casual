@@ -14,19 +14,21 @@ namespace casual
 
       namespace message
       {
-         namespace traffic_monitor
+         namespace traffic
          {
-
-            std::ostream& operator << ( std::ostream& out, const Notify& value)
+            namespace monitor
             {
-               return out << "{ service: " << value.service << ", parent: " << value.parentService
-                  << ", start: " << std::chrono::duration_cast< std::chrono::milliseconds>( value.start.time_since_epoch()).count()
-                  << ", end: " << std::chrono::duration_cast< std::chrono::milliseconds>( value.end.time_since_epoch()).count() << '}';
-            }
+
+               std::ostream& operator << ( std::ostream& out, const Notify& value)
+               {
+                  return out << "{ service: " << value.service << ", parent: " << value.parentService
+                     << ", start: " << std::chrono::duration_cast< std::chrono::milliseconds>( value.start.time_since_epoch()).count()
+                     << ", end: " << std::chrono::duration_cast< std::chrono::milliseconds>( value.end.time_since_epoch()).count() << '}';
+               }
 
 
-         } // monitor
-
+            } // monitor
+         } // traffic
       } // message
    } // common
 } // casual

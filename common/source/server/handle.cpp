@@ -63,7 +63,7 @@ namespace casual
                }
 
 
-               void Default::statistics( platform::queue_id_type id, message::traffic_monitor::Notify& message)
+               void Default::statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
                {
                   log::internal::debug << "policy::Default::statistics - message:" << message << std::endl;
 

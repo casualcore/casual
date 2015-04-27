@@ -14,7 +14,7 @@ with Scope():
     Parallel( True)
         
     Build( 'broker/makefile.cmk')
-    Build( 'traffic_monitor/makefile.cmk')
+    Build( 'traffic/makefile.cmk')
     Build( 'administration/makefile.cmk')
     
     with Scope():

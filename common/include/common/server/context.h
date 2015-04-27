@@ -59,7 +59,7 @@ namespace casual
             service_mapping_type services;
             common::platform::long_jump_buffer_type long_jump_buffer;
 
-            message::traffic_monitor::Notify monitor;
+            message::traffic::monitor::Notify monitor;
 
             std::function<void()> server_done;
 

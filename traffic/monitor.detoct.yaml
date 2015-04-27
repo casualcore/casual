@@ -2,22 +2,22 @@
 
 general:
     description_language: C++
-    namespace: casual::trafficmonitor
+    namespace: casual::traffic::monitor
     prefix: ""
 
 declaration:
 
   - value_object:
-      name: MonitorVO
+      name: ServiceEntryVO
       language: C++
       id: 200
           
-      output_headers: include/trafficmonitor/
-      output_source:  source/
+      output_headers: include/traffic/monitor/
+      output_source:  source/monitor/
 
       attributes:
         - parentService: std::string
-        - srv: std::string
+        - service: std::string
         - callId: sf::Uuid
         - start: sf::time_type
         - end: sf::time_type
@@ -26,8 +26,8 @@ declaration:
       name: Statistic
       language: C++
     
-      output_headers: include/trafficmonitor/
-      output_source:  source/  
+      output_headers: include/traffic/monitor/
+      output_source:  source/monitor/ 
     
       services:
         - &getMonitorStatistics
@@ -42,7 +42,7 @@ declaration:
           return: bool      
           
           arguments:
-              - outputValues: (out) std::vector< VO>&
+              - outputValues: (out) std::vector< ServiceEntryVO>&
   
           
           

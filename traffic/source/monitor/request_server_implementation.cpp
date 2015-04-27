@@ -2,8 +2,9 @@
 
 //## includes protected section begin [.10]
 
-#include "traffic_monitor/database.h"
-#include "traffic_monitor/request_server_implementation.h"
+#include "traffic/monitor/request_server_implementation.h"
+
+#include "traffic/monitor/database.h"
 
 
 
@@ -11,7 +12,9 @@
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 
 
@@ -42,7 +45,7 @@ bool RequestServerImplementation::getMonitorStatistics( std::vector< ServiceEntr
 {
    //## service implementation protected section begin [2000]
 
-   static traffic_monitor::Database database;
+   static traffic::monitor::Database database;
 
    std::vector< ServiceEntryVO> result;
    result = database.select();
@@ -57,7 +60,8 @@ bool RequestServerImplementation::getMonitorStatistics( std::vector< ServiceEntr
 //## declarations protected section begin [.40]
 //## declarations protected section end   [.40]
 
-} // traffic_monitor
+} // monitor
+} // traffic
 } // casual
 
 //## declarations protected section begin [.50]

@@ -51,7 +51,7 @@ namespace casual
             //!
             struct Connect: public Base
             {
-               typedef common::message::traffic_monitor::Connect message_type;
+               typedef common::message::traffic::monitor::Connect message_type;
 
                using Base::Base;
 
@@ -60,7 +60,7 @@ namespace casual
 
             struct Disconnect: public Base
             {
-               typedef common::message::traffic_monitor::Disconnect message_type;
+               typedef common::message::traffic::monitor::Disconnect message_type;
 
                using Base::Base;
 
@@ -217,7 +217,7 @@ namespace casual
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 
-            void statistics( common::platform::queue_id_type id, common::message::traffic_monitor::Notify& message);
+            void statistics( common::platform::queue_id_type id, common::message::traffic::monitor::Notify& message);
 
          private:
 

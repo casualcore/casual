@@ -38,7 +38,9 @@ namespace casual
 
 namespace casual
 {
-namespace traffic_monitor
+namespace traffic
+{
+namespace monitor
 {
 
 class ServiceEntryVO
@@ -102,8 +104,8 @@ private:
 
 };
 
-
-} // trafficmonitor
+} // monitor
+} // traffic
 } // casual
 
 
