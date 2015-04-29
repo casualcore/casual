@@ -11,6 +11,8 @@
 #include "common/buffer/type.h"
 #include "common/network/byteorder.h"
 #include "common/platform.h"
+#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include "common/log.h"
 
@@ -191,8 +193,21 @@ namespace casual
 
          namespace
          {
-            Buffer* find_buffer( const char* const handle)
+
+            struct trace : common::trace::internal::Scope
             {
+               explicit trace( std::string information)
+               : Scope( std::move( information), common::log::internal::buffer)
+               {}
+            };
+
+
+
+            Buffer* find( const char* const handle)
+            {
+               const trace trace( "order::find");
+
+
                try
                {
                   auto& buffer = pool_type::pool.get( handle);
@@ -213,7 +228,9 @@ namespace casual
 
             int explore( const char* const handle, long* const size, long* const used)
             {
-               if( const auto buffer = find_buffer( handle))
+               const trace trace( "order::explore");
+
+               if( const auto buffer = find( handle))
                {
                   if( size) *size = static_cast<long>(buffer->reserved());
                   if( used) *used = static_cast<long>(buffer->utilized());
@@ -229,9 +246,11 @@ namespace casual
 
             int copy( const char* const target_handle, const char* const source_handle)
             {
-               const auto target = find_buffer( target_handle);
+               const trace trace( "order::copy");
 
-               const auto source = find_buffer( source_handle);
+               const auto target = find( target_handle);
+
+               const auto source = find( source_handle);
 
                if( target && source)
                {
@@ -267,7 +286,9 @@ namespace casual
 
             int reset_insert( const char* const handle)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::reset_insert");
+
+               if( auto buffer = find( handle))
                {
                   buffer->utilized( 0);
                }
@@ -281,7 +302,9 @@ namespace casual
 
             int reset_select( const char* const handle)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::reset_select");
+
+               if( auto buffer = find( handle))
                {
                   buffer->consumed( 0);
                }
@@ -302,7 +325,9 @@ namespace casual
             template<typename T>
             int add( const char* const handle, const T value)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::add");
+
+               if( auto buffer = find( handle))
                {
                   const auto count = common::network::byteorder::bytes<T>();
                   const auto total = count + buffer->utilized();
@@ -326,7 +351,9 @@ namespace casual
 
             int add( const char* const handle, const char* const value)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::add");
+
+               if( auto buffer = find( handle))
                {
                   const auto count = std::strlen( value) + 1;
                   const auto total = buffer->utilized() + count;
@@ -349,7 +376,9 @@ namespace casual
 
             int add( const char* const handle, const char* const data, const long size)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::add");
+
+               if( auto buffer = find( handle))
                {
                   const auto count = common::network::byteorder::bytes<long>();
                   const auto total = buffer->utilized() + count + size;
@@ -376,7 +405,9 @@ namespace casual
             template<typename T>
             int get( const char* const handle, T& value)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::get");
+
+               if( auto buffer = find( handle))
                {
                   const auto count = common::network::byteorder::bytes<T>();
                   const auto total = buffer->consumed() + count;
@@ -403,7 +434,9 @@ namespace casual
 
             int get( const char* const handle, const char*& value)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::get");
+
+               if( auto buffer = find( handle))
                {
                   const auto where = buffer->handle() + buffer->consumed();
                   const auto count = std::strlen( where) + 1;
@@ -427,7 +460,9 @@ namespace casual
 
             int get( const char* const handle, const char*& data, long& size)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "order::get");
+
+               if( auto buffer = find( handle))
                {
                   const auto count = common::network::byteorder::bytes<long>();
                   const auto total = buffer->consumed() + count;

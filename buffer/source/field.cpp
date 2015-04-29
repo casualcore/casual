@@ -14,6 +14,8 @@
 #include "common/buffer/type.h"
 #include "common/log.h"
 #include "common/platform.h"
+#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/maker.h"
@@ -293,8 +295,18 @@ namespace casual
          namespace
          {
 
-            Buffer* find_buffer( const char* const handle)
+            struct trace : common::trace::internal::Scope
             {
+               explicit trace( std::string information)
+               : Scope( std::move( information), common::log::internal::buffer)
+               {}
+            };
+
+
+            Buffer* find( const char* const handle)
+            {
+               const trace trace( "field::find");
+
                try
                {
                   auto& buffer = pool_type::pool.get( handle);
@@ -314,12 +326,14 @@ namespace casual
 
             int remove( const char* const handle, const long id)
             {
+               const trace trace( "field::remove");
+
                if( ! (id > CASUAL_FIELD_NO_ID))
                {
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find_buffer( handle);
+               auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -350,12 +364,14 @@ namespace casual
 
             int remove( const char* const handle, const long id, long index)
             {
+               const trace trace( "field::remove");
+
                if( ! (id > CASUAL_FIELD_NO_ID))
                {
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find_buffer( handle);
+               auto buffer = find( handle);
 
                if( !buffer)
                {
@@ -388,12 +404,14 @@ namespace casual
 
             int add( const char* const handle, const long id, const int type, const char* const data, const long size)
             {
+               const trace trace( "field::add");
+
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find_buffer( handle);
+               auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -432,12 +450,14 @@ namespace casual
 
             int update( const char* const handle, const long id, long index, const int type, const char* const data, const long size)
             {
+               const trace trace( "field::update");
+
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find_buffer( handle);
+               auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -531,6 +551,7 @@ namespace casual
 
             int get( const char* const handle, const long id, long index, const int type, const char** data, long* size)
             {
+               const trace trace( "field::get");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
@@ -538,7 +559,7 @@ namespace casual
                }
 
 
-               auto buffer = find_buffer( handle);
+               auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -596,6 +617,8 @@ namespace casual
 
             int next( const char* const handle, long& id, long& index)
             {
+               const trace trace( "field::next");
+
                //
                // This may be inefficient for large buffers
                //
@@ -605,7 +628,7 @@ namespace casual
                // An other option is to make this and double-linked-list-like
                //
 
-               const auto buffer = find_buffer( handle);
+               const auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -663,7 +686,9 @@ namespace casual
 
             int first( const char* const handle, long& id, long& index)
             {
-               const auto buffer = find_buffer( handle);
+               const trace trace( "field::first");
+
+               const auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -696,7 +721,9 @@ namespace casual
 
             int count( const char* const handle, const long id, long& occurrences)
             {
-               const auto buffer = find_buffer( handle);
+               const trace trace( "field::count");
+
+               const auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -724,7 +751,9 @@ namespace casual
 
             int count( const char* const handle, long& occurrences)
             {
-               const auto buffer = find_buffer( handle);
+               const trace trace( "field::count");
+
+               const auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -755,7 +784,9 @@ namespace casual
 
             int reset( const char* const handle)
             {
-               if( auto buffer = find_buffer( handle))
+               const trace trace( "field::reset");
+
+               if( auto buffer = find( handle))
                {
                   buffer->utilized( 0);
                }
@@ -770,7 +801,9 @@ namespace casual
 
             int explore( const char* const handle, long* const size, long* const used)
             {
-               if( const auto buffer = find_buffer( handle))
+               const trace trace( "field::explore");
+
+               if( const auto buffer = find( handle))
                {
                   if( size) *size = buffer->reserved();
                   if( used) *used = buffer->utilized();
@@ -786,9 +819,11 @@ namespace casual
 
             int copy( const char* target_handle, const char* source_handle)
             {
-               const auto target = find_buffer( target_handle);
+               const trace trace( "field::copy");
 
-               const auto source = find_buffer( source_handle);
+               const auto target = find( target_handle);
+
+               const auto source = find( source_handle);
 
                if( target && source)
                {
@@ -1641,7 +1676,7 @@ namespace casual
 
                int stream( const char* const handle, std::ostream& stream)
                {
-                  const auto buffer = find_buffer( handle);
+                  const auto buffer = find( handle);
 
                   if( ! buffer)
                   {

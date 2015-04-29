@@ -10,6 +10,10 @@
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
 
+#include "common/internal/trace.h"
+#include "common/log.h"
+
+
 #include <cstring>
 
 namespace casual
@@ -98,8 +102,10 @@ namespace casual
          namespace
          {
 
-            Buffer* find_buffer( const char* const handle)
+            Buffer* find( const char* const handle)
             {
+               const common::trace::internal::Scope trace( "string::find", common::log::internal::buffer);
+
                try
                {
                   auto& buffer = pool_type::pool.get( handle);
@@ -150,7 +156,7 @@ const char* CasualStringDescription( const int code)
 
 int CasualStringExploreBuffer( const char* const handle, long* const size, long* const used)
 {
-   const auto buffer = casual::buffer::string::find_buffer( handle);
+   const auto buffer = casual::buffer::string::find( handle);
 
    if( buffer)
    {
@@ -177,7 +183,7 @@ int CasualStringExploreBuffer( const char* const handle, long* const size, long*
 
 int CasualStringWriteString( char* const handle, const char* const value)
 {
-   auto buffer = casual::buffer::string::find_buffer( handle);
+   auto buffer = casual::buffer::string::find( handle);
 
    if( buffer)
    {
@@ -212,7 +218,7 @@ int CasualStringWriteString( char* const handle, const char* const value)
 
 int CasualStringParseString( const char* handle, const char** value)
 {
-   const auto buffer = casual::buffer::string::find_buffer( handle);
+   const auto buffer = casual::buffer::string::find( handle);
 
    if( buffer)
    {
