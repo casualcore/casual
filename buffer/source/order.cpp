@@ -11,10 +11,8 @@
 #include "common/buffer/type.h"
 #include "common/network/byteorder.h"
 #include "common/platform.h"
+#include "common/log.h"
 #include "common/internal/trace.h"
-#include "common/log.h"
-
-#include "common/log.h"
 
 #include <cstring>
 
@@ -194,11 +192,11 @@ namespace casual
          namespace
          {
 
-            struct trace : common::trace::internal::Scope
+            //struct trace : common::trace::internal::Scope
+            struct trace
             {
-               explicit trace( std::string information)
-               : Scope( std::move( information), common::log::internal::buffer)
-               {}
+               //explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
+               explicit trace( std::string information) {}
             };
 
 

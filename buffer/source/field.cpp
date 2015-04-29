@@ -15,7 +15,6 @@
 #include "common/log.h"
 #include "common/platform.h"
 #include "common/internal/trace.h"
-#include "common/log.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/maker.h"
@@ -247,8 +246,8 @@ namespace casual
                   //
 
                   m_pool.emplace_back( type, size ? size : 1);
-                  return m_pool.back().handle();
 
+                  return m_pool.back().handle();
                }
 
                common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
@@ -269,6 +268,7 @@ namespace casual
                {
                   m_pool.emplace_back( std::move( payload));
                   m_pool.back().utilized( m_pool.back().reserved());
+
                   return m_pool.back().handle();
                }
             };
@@ -295,11 +295,11 @@ namespace casual
          namespace
          {
 
-            struct trace : common::trace::internal::Scope
+            //struct trace : common::trace::internal::Scope
+            struct trace
             {
-               explicit trace( std::string information)
-               : Scope( std::move( information), common::log::internal::buffer)
-               {}
+               //explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
+               explicit trace( std::string information) {}
             };
 
 
