@@ -47,10 +47,10 @@ namespace casual
             cServiceAcknowledge,
 
             // Monitor
-            MONITOR_BASE = 3000,
-            cMonitorConnect,
-            cMonitorDisconnect,
-            cMonitorNotify,
+            TRAFFICMONITOR_BASE = 3000,
+            cTrafficMonitorConnect,
+            cTrafficMonitorDisconnect,
+            cTrafficMonitorNotify,
 
             // Transaction
             TRANSACTION_BASE = 4000,
@@ -237,6 +237,8 @@ namespace casual
                archive & monitor_queue;
                archive & transaction;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const Service& value);
          };
 
          namespace server

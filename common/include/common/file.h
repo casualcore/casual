@@ -111,6 +111,37 @@ namespace casual
 
       namespace directory
       {
+         //!
+         //! @return the current directory
+         //!
+         std::string current();
+
+         //!
+         //! change the WD to @p path
+         //! @return previous WD
+         //!
+         std::string change( const std::string& path);
+
+         namespace scope
+         {
+            //!
+            //! Change working directory to path on construction
+            //! and change back to previous WD on destruction
+            //!
+            struct Change
+            {
+               Change( const std::string& path);
+               ~Change();
+
+               Change( const Change&) = delete;
+               Change& operator = ( const Change&) = delete;
+
+            private:
+               std::string m_previous;
+            };
+
+         } // scope
+
          namespace name
          {
             //!

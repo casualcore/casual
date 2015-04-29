@@ -232,7 +232,7 @@ static ngx_int_t casual_call(ngx_http_request_t* r, ngx_str_t call_buffer)
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Allocating buffer with len=%d", call_buffer.len);
    ngx_log_debug2(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: protocol=%s, service=%s", casual_context->protocol, casual_context->service);
 
-   char* buffer = tpalloc( "X_OCTET", (const char*)casual_context->protocol, call_buffer.len);
+   char* buffer = tpalloc( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE, call_buffer.len);
    int calling_descriptor = -1;
 
    if (buffer)
@@ -256,7 +256,7 @@ static ngx_int_t casual_receive( ngx_http_request_t* r)
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Waiting for answer: calling_descriptor=%d", casual_context->calling_descriptor);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Allocating buffer protocol=%s with len=1024", casual_context->protocol);
 
-   char* buffer = tpalloc( "X_OCTET", (const char*)casual_context->protocol, 1024);
+   char* buffer = tpalloc( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE, 1024);
    if (buffer)
    {
 

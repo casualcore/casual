@@ -13,6 +13,8 @@
 
 
 #include "common/algorithm.h"
+#include "common/exception.h"
+#include "common/file.h"
 
 //
 // std
@@ -32,13 +34,9 @@ namespace sql
    {
       namespace exception
       {
-         struct Base : public std::runtime_error
+         struct Base : public casual::common::exception::base
          {
-            //Base( const std::string& information) : std::runtime_error( information) {}
-            Base( const std::string& information, decltype( __FILE__) file, decltype( __LINE__) line)
-               : std::runtime_error( information + " - " + file + ":" + std::to_string( line) ) {}
-
-
+            using casual::common::exception::base::base;
          };
 
          struct Connection : Base
@@ -330,20 +328,52 @@ namespace sql
 
       struct Connection
       {
-         Connection( std::string filename) : m_file( std::move( filename))
+         Connection( std::string filename) : m_file( std::move( filename)), m_handle( open( m_file))
          {
-            sqlite3* handle;
+            //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
+         }
 
-            if( sqlite3_open( m_file.c_str(), &handle) != SQLITE_OK)
-               //&& sql("PRAGMA foreign_keys = ON;"))
+         std::shared_ptr< sqlite3> open( const std::string& file)
+         {
+
+            sqlite3* p_handle = nullptr;
+
+            auto result = sqlite3_open( file.c_str(), &p_handle);
+
+            std::shared_ptr< sqlite3> handle( p_handle, sqlite3_close);
+
+            switch( result)
             {
-               throw exception::Connection( sqlite3_errmsg( handle), __FILE__, __LINE__);
+               case SQLITE_OK:
+                  break;
+               case SQLITE_CANTOPEN:
+               {
+                  if( casual::common::file::exists( file))
+                  {
+                     throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+                  }
+                  else
+                  {
+                     auto created = casual::common::directory::create( casual::common::directory::name::base( file));
+
+                     if (!created)
+                     {
+                        throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+                     }
+
+                     return open( file);
+                  }
+                  break;
+               }
+               default:
+               {
+                  throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+               }
+
+
             }
 
-            m_handle = std::shared_ptr< sqlite3>( handle, sqlite3_close);
-
-            //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
-
+            return handle;
          }
 
          std::string file() const

@@ -43,52 +43,30 @@ namespace casual
                {
                   using state::Base::Base;
 
-                  std::vector< std::string> envrionment( const state::Executable& executable)
+                  void operator () ( const state::Executable& executable)
                   {
-                     std::vector< std::string> result;
-
-                     if( ! executable.environment.file.empty())
+                     if( executable.configuredInstances > executable.instances.size())
                      {
-                        std::ifstream file{ executable.environment.file};
+                        decltype( executable.instances) pids;
 
-                        if( file)
-                        {
-                           for( std::string line; std::getline( file, line); )
-                           {
-                              auto trimmed = string::trim( line);
-                              if( ! trimmed.empty() && trimmed.front() != '#')
-                              {
-                                 result.push_back( std::move( trimmed));
-                              }
-                           }
-                        }
-                        else
-                        {
-                           throw exception::invalid::File{ "invalid environment file", CASUAL_NIP( executable.alias), CASUAL_NIP( executable.environment.file)};
-                        }
-                     }
+                        auto count = executable.configuredInstances - executable.instances.size();
 
-                     range::copy( executable.environment.variables, std::back_inserter( result));
-
-                     return result;
-                  }
-
-                  void operator () ( const state::Executable& server)
-                  {
-                     if( server.configuredInstances > server.instances.size())
-                     {
-                        decltype( server.instances) pids;
-
-                        auto environment = envrionment( server);
-
-                        auto count = server.configuredInstances - server.instances.size();
+                        //
+                        // Prepare environment. We use the default first and add
+                        // specific for the executable
+                        //
+                        auto environment = m_state.standard.environment;
+                        environment.insert(
+                           std::end( environment),
+                           std::begin( executable.environment.variables),
+                           std::end( executable.environment.variables));
 
                         while( count-- > 0)
                         {
-                           pids.push_back( common::process::spawn( server.path, server.arguments, environment));
+                           pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
                         }
 
-                        m_state.addInstances( server.id, std::move( pids));
+                        m_state.addInstances( executable.id, std::move( pids));
                      }
                   }
 
@@ -261,12 +239,16 @@ namespace casual
          {
             void Connect::operator () ( message_type& message)
             {
+               common::trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
+
                //TODO: Temp
                m_state.monitorQueue = message.process.queue;
             }
 
             void Disconnect::operator () ( message_type& message)
             {
+               common::trace::internal::Scope trace{ "broker::handle::monitor::Disconnect::dispatch"};
+
                m_state.monitorQueue = 0;
             }
          }
@@ -624,7 +606,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::statistics( platform::queue_id_type id, message::monitor::Notify& message)
+         void Policy::statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
          {
             //
             // We don't collect statistics for the broker

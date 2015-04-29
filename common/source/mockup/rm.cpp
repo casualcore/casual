@@ -7,6 +7,7 @@
 
 #include "common/mockup/rm.h"
 #include "common/transaction/id.h"
+#include "common/transaction/transaction.h"
 #include "common/internal/log.h"
 
 #include "xa.h"
@@ -18,27 +19,100 @@ namespace casual
    {
       namespace mockup
       {
+         namespace local
+         {
+            namespace
+            {
+               std::map< int, std::vector< transaction::Transaction>> rms;
+
+
+               struct Active
+               {
+                  template< typename T>
+                  bool operator () ( T&& value) const
+                  {
+                     return ! value.suspended;
+                  }
+               };
+
+            } // <unnamed>
+         } // local
+
          int xa_open_entry( const char* openinfo, int rmid, long flags)
          {
+            auto& transactions = local::rms[ rmid];
+
+            if( ! transactions.empty())
+            {
+               log::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions) << std::endl;
+               return XAER_PROTO;
+            }
+
             log::internal::transaction << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
             return XA_OK;
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
          {
+            auto& transactions = local::rms[ rmid];
+
+            if( ! transactions.empty())
+            {
+               log::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions) << std::endl;
+               return XAER_PROTO;
+            }
             log::internal::transaction << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
+
             return XA_OK;
          }
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
-            transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_start_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
+            transaction::ID trid{ *xid};
+            log::internal::transaction << "xa_start_entry - trid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
+
+            auto& transactions = local::rms[ rmid];
+
+
+            auto active = range::partition( transactions, local::Active{});
+
+            if( std::get< 0>( active))
+            {
+               log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << *std::get< 0>( active) << std::endl;
+               return XAER_PROTO;
+            }
+
+            auto found = range::find( transactions, trid);
+
+            if( found)
+            {
+               found->suspended = false;
+            }
+            else
+            {
+               transactions.emplace_back( trid);
+            }
+
             return XA_OK;
          }
 
          int xa_end_entry( XID* xid, int rmid, long flags)
          {
-            transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_end_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
+            transaction::ID trid{ *xid};
+            log::internal::transaction << "xa_end_entry - xid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
+
+            auto& transactions = local::rms[ rmid];
+
+            auto found = range::find( transactions, trid);
+
+            if( found)
+            {
+               transactions.erase( found.first);
+            }
+            else
+            {
+               log::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not associated with RM" << std::endl;
+               return XAER_INVAL;
+            }
+
             return XA_OK;
          }
 

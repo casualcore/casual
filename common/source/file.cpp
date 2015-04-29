@@ -9,6 +9,7 @@
 #include "common/log.h"
 #include "common/error.h"
 #include "common/uuid.h"
+#include "common/exception.h"
 
 #include <cstdio>
 
@@ -18,6 +19,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 
 namespace casual
@@ -179,6 +181,39 @@ namespace casual
 
       namespace directory
       {
+
+         std::string current()
+         {
+            char buffer[ platform::size::max::path];
+            if( getcwd( buffer, sizeof( buffer)) == nullptr)
+            {
+               throw exception::NotReallySureWhatToNameThisException( "could not get working directory");
+            }
+            return buffer;
+         }
+
+
+         std::string change( const std::string& path)
+         {
+            auto current = directory::current();
+
+            if( chdir( path.c_str()) == -1)
+            {
+               throw exception::invalid::Argument{ "failed to change working directory", CASUAL_NIP( error::string())};
+            }
+
+            return current;
+         }
+
+         namespace scope
+         {
+            Change::Change( const std::string& path) : m_previous{ change( path)} {}
+            Change::~Change()
+            {
+               change( m_previous);
+            }
+         } // scope
+
 
          namespace name
          {

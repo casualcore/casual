@@ -42,7 +42,7 @@ namespace casual
             bool dynamic() const;
 
             std::string key;
-            xa_switch_t* xaSwitch;
+            xa_switch_t* xa_switch;
             id_type id = 0;
 
             std::string openinfo;

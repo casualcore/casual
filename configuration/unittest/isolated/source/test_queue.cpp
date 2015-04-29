@@ -34,10 +34,8 @@ namespace casual
       {
          auto queues = config::queue::get( "queue.yaml");
 
-         EXPECT_TRUE( queues.casual_default.path == "/some/path");
-
          EXPECT_TRUE( queues.groups.at( 0).name == "someGroup");
-         EXPECT_TRUE( queues.groups.at( 0).queuebase == "/some/path/some-group.qb") <<  queues.groups.at( 0).queuebase;
+         EXPECT_TRUE( queues.groups.at( 0).queuebase == "some-group.qb") <<  queues.groups.at( 0).queuebase;
          EXPECT_TRUE( queues.groups.at( 0).queues.size() == 4) << CASUAL_MAKE_NVP( queues);
 
       }

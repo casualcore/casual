@@ -5,7 +5,9 @@
         <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.4/angular.min.js"></script>
         <link href="grid.ccs" rel="stylesheet">
         <link href="navbar-fixed-top.ccs" rel="stylesheet">
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
         <script src="admin.js"></script>
+        
     </head>
     
      <body ng-app="myCasualAdminApp" >
@@ -65,7 +67,7 @@
                                <th>INVOKED</th>
                                <tr ng-repeat="instance in selectedInstances | filter:searchText"/>
                                   <td>{{instance.alias}}</td>
-                                  <td>{{instance.pid}}</td>
+                                  <td>{{instance.process.pid}}</td>
                                   <td>{{getState(instance.state)}}</td>
                                   <td>{{instance.invoked}}</td>
                                </tr>
@@ -88,6 +90,14 @@
                                      <td>{{service.lookedup}}</td>
                                  </tr>
                              </table>
+                        </div>
+                        <div class="col-md-7" >
+                             <br>
+                             <br>
+                             <br>
+                             <br>
+                        
+                        <div id="chart_div"></div>
                         </div>
                     </div>
             </div>

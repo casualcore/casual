@@ -5,11 +5,12 @@
  *      Author: hbergk
  */
 
-#include "monitor/monitor.h"
 #include "common/error.h"
 
 
 #include <iostream>
+
+#include "traffic/monitor/receiver.h"
 
 
 int main( int argc, char** argv)
@@ -25,9 +26,9 @@ int main( int argc, char** argv)
 
 		std::cout << "starting" << std::endl;
 
-		casual::statistics::monitor::Monitor monitor( arguments);
+		casual::traffic::monitor::Receiver receiver( arguments);
 
-		monitor.start();
+		receiver.start();
 
 	}
 	catch( ...)
