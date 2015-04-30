@@ -61,43 +61,26 @@ namespace casual
 
       }
 
-      TEST( casual_common_transcode, UT8_decode)
+      TEST( casual_common_transcode, UT8_decode_euro_sign)
       {
          //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
 
-         {
-            const std::string source( u8"â‚¬");
-            const std::string expect = { static_cast<std::string::value_type>(0xA4)};
-            const std::string result = transcode::utf8::decode( source, "ISO-8859-15");
-            EXPECT_TRUE( result == expect);
-         }
+         // €
+         const std::string source( u8"\u20AC");
+         const std::string expect = { static_cast<std::string::value_type>(0xA4)};
+         const std::string result = transcode::utf8::decode( source, "ISO-8859-15");
+         EXPECT_TRUE( result == expect);
 
       }
 
       TEST( casual_common_transcode, UT8_encode_exotic_characters)
       {
-         const std::string source( u8"BÃ¤ngen TrÃ¥lar");
-         const std::string result = transcode::utf8::encode( source);
+         // Bängen Trålar
+         const std::string source( u8"B\u00E4ngen Tr\u00E5lar");
+         const std::string result = transcode::utf8::encode( "Bängen Trålar");
          EXPECT_TRUE( result == source);
       }
 
-
-
-      /*
-      TEST( casual_common_transcode, UT8_encode_decode)
-      {
-         //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
-
-         const std::string source( u8"BÃ¤ngen TrÃ¥lar");
-         //const std::string target = transcode::utf8::encode( source, "ISO-8859-1");
-         //const std::string result = transcode::utf8::decode( target, "ISO-8859-1");
-         const std::string target = transcode::utf8::encode( source, "en_US.utf88");
-         const std::string result = transcode::utf8::decode( target, "en_US.utf88");
-
-         EXPECT_TRUE( source == result);
-
-      }
-      */
 
       TEST( casual_common_transcode, hex_encode)
       {

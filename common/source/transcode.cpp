@@ -197,17 +197,29 @@ namespace casual
          namespace utf8
          {
             const std::string cUTF8( "UTF-8");
+            const std::string cCurrent( "");
+
+            //
+            // Make sure this is done once
+            //
+            // If "" is used as codeset to iconv, it shall choose the current
+            // locale-codeset, but that seems to work only if
+            // std::setlocale() is called first
+            //
+            // Perhaps we need to call std::setlocale() each time just in case
+            //
+            const auto once = std::setlocale( LC_CTYPE, "");
 
             std::string encode( const std::string& value)
             {
-               //return encode( value, "");
-               return encode( value, local::info().codeset);
+               //return encode( value, local::info().codeset);
+               return encode( value, cCurrent);
             }
 
             std::string decode( const std::string& value)
             {
-               //return decode( value, "");
-               return decode( value, local::info().codeset);
+               //return decode( value, local::info().codeset);
+               return decode( value, cCurrent);
             }
 
             std::string encode( const std::string& value, const std::string& codeset)
