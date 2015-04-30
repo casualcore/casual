@@ -504,8 +504,6 @@ namespace casual
                row.get( 9, queue.message.size.total);
                row.get( 10, queue.message.timestamp);
 
-               common::log::internal::queue << common::chronology::local( queue.message.timestamp) << std::endl;
-
                result.push_back( std::move( queue));
             }
             return result;

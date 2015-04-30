@@ -10,6 +10,7 @@
 
 #include "common/arguments.h"
 #include "common/exception.h"
+#include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
 #include "common/call/context.h"
@@ -55,12 +56,16 @@ namespace casual
 
             void operator () ( common::message::queue::dequeue::Reply::Message&& message)
             {
+               common::trace::internal::Scope trace{ "queue::forward::Caller::operator()", common::log::internal::queue};
+
                //
                // Prepare the xatmi-buffer
                //
                common::buffer::Payload payload;
                payload.type = std::move( message.type);
                payload.memory = std::move( message.payload);
+
+               common::log::internal::queue << "payload: " << payload << std::endl;
 
                long size = payload.memory.size();
 
