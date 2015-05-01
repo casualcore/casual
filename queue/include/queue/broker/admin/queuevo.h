@@ -61,7 +61,7 @@ namespace casual
                struct message_t
                {
                   std::size_t counts = 0;
-                  sf::platform::time_type timestamp;
+                  sf::platform::time_point timestamp;
 
                   struct size_t
                   {
