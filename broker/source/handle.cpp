@@ -239,17 +239,34 @@ namespace casual
          {
             void Connect::operator () ( message_type& message)
             {
-               common::trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
+               trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
 
-               //TODO: Temp
-               m_state.monitorQueue = message.process.queue;
+               if( ! range::find( m_state.traffic.monitors, message.process.queue))
+               {
+                  m_state.traffic.monitors.push_back( message.process.queue);
+               }
+               else
+               {
+                  log::error << "traffic monitor already connected - action: ignore" << std::endl;
+               }
+
             }
 
             void Disconnect::operator () ( message_type& message)
             {
-               common::trace::internal::Scope trace{ "broker::handle::monitor::Disconnect::dispatch"};
+               trace::internal::Scope trace{ "broker::handle::monitor::Disconnect::dispatch"};
 
-               m_state.monitorQueue = 0;
+               auto found = range::find( m_state.traffic.monitors, message.process.queue);
+
+               if( found)
+               {
+                  m_state.traffic.monitors.erase( found.first);
+               }
+               else
+               {
+                  log::error << "traffic monitor has already disconnected or not connected in the first place - action: ignore" << std::endl;
+               }
+
             }
          }
 
@@ -463,7 +480,7 @@ namespace casual
 
                   message::service::name::lookup::Reply reply;
                   reply.service = service.information;
-                  reply.service.monitor_queue = m_state.monitorQueue;
+                  reply.service.traffic_monitors = m_state.traffic.monitors;
                   reply.process = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);

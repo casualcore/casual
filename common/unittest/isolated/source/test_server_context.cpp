@@ -272,7 +272,7 @@ namespace casual
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            message.service.monitor_queue = monitor.id();
+            message.service.traffic_monitors.push_back(  monitor.id());
             callHandler( message);
          }
 
