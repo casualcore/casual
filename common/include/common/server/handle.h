@@ -317,6 +317,8 @@ namespace casual
                      //
                      // User service returned, not by tpreturn.
                      //
+                     m_policy.transaction( reply, TPESVCERR);
+
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
                   }
 

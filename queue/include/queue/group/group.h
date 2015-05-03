@@ -22,6 +22,8 @@ namespace casual
    {
       namespace group
       {
+         using queue_id_type = std::size_t;
+
          struct Settings
          {
             std::string queuebase;
@@ -43,7 +45,33 @@ namespace casual
 
             std::vector< common::message::pending::Message> persistent;
 
-            std::map< std::size_t, std::vector< common::platform::queue_id_type>> callbacks;
+
+            //!
+            //! Kepp track of pending requests
+            //!
+            struct Pending
+            {
+               using request_type = common::message::queue::dequeue::Request;
+
+
+               std::vector< request_type> requests;
+               std::map< common::transaction::ID, std::map< queue_id_type, std::size_t>> transactions;
+
+               void dequeue( const request_type& request);
+
+               void enqueue( const common::transaction::ID& trid, queue_id_type queue);
+
+               struct result_t
+               {
+                  std::vector< request_type> requests;
+                  std::map< queue_id_type, std::size_t> enqueued;
+               };
+
+               result_t commit( const common::transaction::ID& trid);
+
+               void rollback( const common::transaction::ID& trid);
+
+            } pending;
 
          };
 

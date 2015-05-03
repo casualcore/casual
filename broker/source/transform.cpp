@@ -346,7 +346,7 @@ namespace casual
                   common::message::transaction::client::connect::Reply reply;
 
                   reply.domain = common::environment::domain::name();
-                  reply.transactionManagerQueue = state.transactionManagerQueue;
+                  reply.transaction_manager = state.transaction_manager;
 
                   try
                   {
@@ -358,8 +358,8 @@ namespace casual
 
                         common::range::transform(
                            group.resources,
-                           reply.resourceManagers,
-                           transaction::Resource());
+                           reply.resources,
+                           transaction::Resource{});
                      }
 
                   }

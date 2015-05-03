@@ -46,24 +46,44 @@ namespace casual
                      send( involved);
                   }
 
-
-                  void notify( State& state, const std::vector< Queue::id_type>& queues)
+                  namespace pending
                   {
-                     for( auto& queue : queues)
+                     void replies( State& state, const common::transaction::ID& trid)
                      {
-                        auto found = common::range::find( state.callbacks, queue);
 
-                        if( found)
+                        auto pending = state.pending.commit( trid);
+
+                        for( auto& request : pending.requests)
                         {
-                           decltype( found->second) notifications;
-                           std::swap( notifications, found->second);
+                           try
+                           {
+                              auto& remaining = pending.enqueued[ request.queue];
 
-                           common::message::queue::dequeue::callback::Reply reply{ common::process::handle(), queue};
+                              if( remaining > 0)
+                              {
+                                 if( dequeue::Request{ state}( request))
+                                 {
+                                    --remaining;
+                                 }
+                                 else
+                                 {
+                                    //
+                                    // Put it back in pending
+                                    //
+                                    state.pending.dequeue( request);
+                                 }
+                              }
 
-                           state.persist( std::move( reply), notifications);
+                           }
+                           catch( const common::exception::queue::Unavailable& exception)
+                           {
+                              common::log::internal::queue << "ipc-queue unavailable for request: " << request << " - action: ignore\n";
+                           }
                         }
                      }
-                  }
+                  } // pending
+
+
 
 
                } // <unnamed>
@@ -112,18 +132,34 @@ namespace casual
                   try
                   {
                      auto reply = m_state.queuebase.enqueue( message);
-                     local::involved( m_state, message);
+                     reply.correlation = message.correlation;
+
+                     m_state.pending.enqueue( message.trid, message.queue);
 
                      if( message.trid)
                      {
+                        local::involved( m_state, message);
+
                         queue::blocking::Send send{ m_state};
                         send( message.process.queue, reply);
                      }
                      else
                      {
+                        //
+                        // enqueue is not in transaction, we guarantee atomic enqueue so
+                        // we send reply when whe're in persistent state
+                        //
                         m_state.persist( std::move( reply), { message.process.queue});
-                        local::notify( m_state, { message.queue});
+
+                        //
+                        // Check if there are any pending request for the current queue (and selector).
+                        // This could result in the message is dequeued before (persistent) reply to the caller
+                        //
+                        // We have to do it now, since it won't be any commits...
+                        //
+                        local::pending::replies( m_state, message.trid);
                      }
+
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
@@ -135,49 +171,41 @@ namespace casual
 
             namespace dequeue
             {
-               void Request::operator () ( message_type& message)
+               bool Request::operator () ( message_type& message)
                {
-                  do_dispatch( message);
-               }
-
-               template< typename M>
-               bool Request::do_dispatch( M& message)
-               {
-                  queue::blocking::Writer send{ message.process.queue, m_state};
-
                   try
                   {
                      auto reply = m_state.queuebase.dequeue( message);
-                     reply.correlation = message.correlation;
-                     local::involved( m_state, message);
-                     send( reply);
 
+                     if( message.block && reply.message.empty())
+                     {
+                        m_state.pending.dequeue( message);
+                     }
+                     else
+                     {
+                        reply.correlation = message.correlation;
 
-                     return ! reply.message.empty();
+                        //
+                        // We don't need to be involved in transaction if
+                        // have't consumed anything or if we're not in a transaction
+                        //
+                        if( ! reply.message.empty() && message.trid)
+                        {
+                           local::involved( m_state, message);
+                        }
+
+                        queue::blocking::Send send{ m_state};
+                        send( message.process.queue, reply);
+
+                        return true;
+                     }
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
                      common::log::error << exception.what() << std::endl;
                   }
-                  return true;
+                  return false;
                }
-
-               namespace callback
-               {
-                  void Request::operator () ( message_type& message)
-                  {
-                     if( ! dequeue::Request::do_dispatch( message))
-                     {
-                        //
-                        // No messages in queue, set up a call-back, that will be called
-                        // when a message is enqueued to the queue
-                        //
-                        m_state.callbacks[ message.queue].push_back( message.process.queue);
-
-                     }
-
-                  }
-               } // callback
 
             } // dequeue
 
@@ -188,6 +216,7 @@ namespace casual
                   void Request::operator () ( message_type& message)
                   {
                      common::message::transaction::resource::commit::Reply reply;
+                     reply.correlation = message.correlation;
                      reply.process = common::process::handle();
                      reply.trid = message.trid;
                      reply.state = XA_OK;
@@ -197,7 +226,10 @@ namespace casual
                         m_state.queuebase.commit( message.trid);
                         common::log::internal::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
 
-
+                        //
+                        // Will try to dequeue pending requests
+                        //
+                        local::pending::replies( m_state, message.trid);
                      }
                      catch( ...)
                      {
@@ -206,8 +238,6 @@ namespace casual
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});
-
-                     local::notify( m_state, m_state.queuebase.committed( message.trid));
                   }
                }
 
@@ -216,6 +246,7 @@ namespace casual
                   void Request::operator () ( message_type& message)
                   {
                      common::message::transaction::resource::rollback::Reply reply;
+                     reply.correlation = message.correlation;
                      reply.process = common::process::handle();
                      reply.trid = message.trid;
                      reply.state = XA_OK;
@@ -224,6 +255,11 @@ namespace casual
                      {
                         m_state.queuebase.rollback( message.trid);
                         common::log::internal::transaction << "rollback trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+
+                        //
+                        // Removes any associated enqueues with this trid
+                        //
+                        m_state.pending.rollback( message.trid);
                      }
                      catch( ...)
                      {

@@ -418,8 +418,8 @@ namespace casual
          queue::Message message;
 
          message.attributes.reply = queue;
-         message.payload.type.type = "X_OCTET";
-         message.payload.type.subtype = "binary";
+         message.payload.type.type = common::buffer::type::binary().name;
+         message.payload.type.subtype = common::buffer::type::binary().subname;
 
          while( std::cin)
          {

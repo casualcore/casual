@@ -286,7 +286,7 @@ namespace casual
 
                   common::log::internal::debug << "connect request: " << message.process << std::endl;
 
-                  m_state.transactionManagerQueue = message.process.queue;
+                  m_state.transaction_manager = message.process.queue;
 
                   //
                   // Send configuration to TM
@@ -352,7 +352,7 @@ namespace casual
 
                      message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
-                     reply.transactionManagerQueue = m_state.transactionManagerQueue;
+                     reply.transaction_manager = m_state.transaction_manager;
 
                      queue::blocking::Writer write( message.process.queue, m_state);
                      write( reply);

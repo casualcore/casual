@@ -128,7 +128,7 @@ namespace casual
                   {
                      message::transaction::client::connect::Reply reply;
                      reply.domain = "unittest-domain";
-                     reply.transactionManagerQueue = mockup::ipc::transaction::manager::queue().id();
+                     reply.transaction_manager = mockup::ipc::transaction::manager::queue().id();
                      send( reply);
                   }
 

@@ -54,7 +54,7 @@ namespace casual
 
             common::message::queue::enqueue::Reply enqueue( const common::message::queue::enqueue::Request& message);
 
-            common::message::queue::dequeue::Reply dequeue( const common::message::queue::dequeue::base_request& message);
+            common::message::queue::dequeue::Reply dequeue( const common::message::queue::dequeue::Request& message);
 
 
             void commit( const common::transaction::ID& id);
