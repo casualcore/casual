@@ -24,7 +24,10 @@ namespace casual
 
          void State::Pending::dequeue( const common::message::queue::dequeue::Request& request)
          {
-            requests.push_back( request);
+            if( request.block)
+            {
+               requests.push_back( request);
+            }
          }
 
 
