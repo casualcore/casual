@@ -42,12 +42,12 @@ namespace casual
 
                   reply.correlation = message.correlation;
                   reply.domain = "unittest-domain";
-                  reply.transactionManagerQueue = common::mockup::ipc::transaction::manager::id();
+                  reply.transaction_manager = common::mockup::ipc::transaction::manager::id();
 
                   {
                      common::message::transaction::resource::Manager rm;
                      rm.key = "rm-mockup";
-                     reply.resourceManagers.push_back( std::move( rm));
+                     reply.resources.push_back( std::move( rm));
                   }
 
                   std::vector< common::ipc::message::Complete> result;

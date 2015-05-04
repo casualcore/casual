@@ -37,31 +37,37 @@ namespace casual
 
          namespace base64
          {
-            std::string encode( const std::vector<char>& value)
+            namespace detail
             {
-               //
-               // b64_ntop requires one extra char of some reason
-               //
-               std::string result( ((value.size() + 2) / 3) * 4 + 1, 0);
-
-               const auto length =
-                  b64_ntop(
-                     reinterpret_cast<const unsigned char*>(value.data()),
-                     value.size(),
-                     &result[0],
-                     result.size());
-
-               if( length < 0)
+               std::string encode( const void* data, std::size_t bytes)
                {
-                  throw std::logic_error( "Base64-encode failed");
+                  //
+                  // b64_ntop requires one extra char of some reason
+                  //
+                  std::string result( ( ( bytes + 2) / 3) * 4 + 1, 0);
+
+                  const auto length =
+                     b64_ntop(
+                        static_cast<const unsigned char*>( data),
+                        bytes,
+                        &result[0],
+                        result.size());
+
+                  if( length < 0)
+                  {
+                     throw std::logic_error( "Base64-encode failed");
+                  }
+
+                  result.resize( length);
+
+                  return result;
+
                }
 
-               result.resize( length);
+            } // detail
 
-               return result;
-            }
 
-            std::vector<char> decode( const std::string& value)
+            platform::binary_type decode( const std::string& value)
             {
                std::vector<char> result( (value.size() / 4) * 3);
 

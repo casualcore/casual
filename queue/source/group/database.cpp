@@ -375,7 +375,7 @@ namespace casual
 
 
 
-         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::base_request& message)
+         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
             common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
 
@@ -503,8 +503,6 @@ namespace casual
                row.get( 8, queue.message.size.average);
                row.get( 9, queue.message.size.total);
                row.get( 10, queue.message.timestamp);
-
-               common::log::internal::queue << common::chronology::local( queue.message.timestamp) << std::endl;
 
                result.push_back( std::move( queue));
             }

@@ -25,7 +25,12 @@ namespace casual
 
       };
 
+      namespace handle
+      {
+
+      } // handle
+
    } // queue
 } // casual
 
-#endif // QUEUE_H_
+#endif // CAUSUAL_QUEUE_COMMON_QUEUE_H_

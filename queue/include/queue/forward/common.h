@@ -8,7 +8,7 @@
 #ifndef CASUAL_QUEUE_FROWARD_COMMON_H_
 #define CASUAL_QUEUE_FROWARD_COMMON_H_
 
-#include "common/message/queue.h"
+#include "queue/api/message.h"
 
 #include "common/transaction/resource.h"
 
@@ -21,7 +21,7 @@ namespace casual
    {
       namespace forward
       {
-         using dispatch_type = std::function< void( common::message::queue::dequeue::Reply::Message&&)>;
+         using dispatch_type = std::function< void( queue::Message&&)>;
 
          struct Task
          {
@@ -35,26 +35,14 @@ namespace casual
 
          struct Dispatch
          {
-            Dispatch( const std::vector< forward::Task>& tasks);
-            Dispatch( const std::vector< forward::Task>& tasks, const std::vector< common::transaction::Resource>& resources);
+            Dispatch( std::vector< forward::Task> tasks);
+            Dispatch( std::vector< forward::Task> tasks, const std::vector< common::transaction::Resource>& resources);
 
             void execute();
 
-            struct Task
-            {
-               struct queue_t
-               {
-                  std::size_t id;
-                  std::string name;
-               } queue;
-
-               common::process::Handle process;
-               dispatch_type dispatch;
-            };
-
          private:
 
-            std::vector< Task> m_tasks;
+            std::vector< forward::Task> m_tasks;
 
          };
 

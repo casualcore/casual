@@ -226,7 +226,7 @@ namespace casual
             std::string name;
             std::uint64_t type = 0;
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            platform::queue_id_type monitor_queue = 0;
+            std::vector< platform::queue_id_type> traffic_monitors;
             std::uint64_t transaction = 0;
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -234,7 +234,7 @@ namespace casual
                archive & name;
                archive & type;
                archive & timeout;
-               archive & monitor_queue;
+               archive & traffic_monitors;
                archive & transaction;
             })
 

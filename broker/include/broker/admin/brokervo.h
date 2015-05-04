@@ -31,7 +31,7 @@ namespace casual
             Process process;
             std::size_t state;
             std::size_t invoked;
-            sf::platform::time_type last;
+            sf::platform::time_point last;
             std::size_t server;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

@@ -53,7 +53,7 @@ casual_common_objectfiles = [
     Compile( 'source/message/dispatch.cpp'),
     Compile( 'source/message/server.cpp'),
     Compile( 'source/message/monitor.cpp'),
-    
+    Compile( 'source/message/queue.cpp'),
     
     Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),

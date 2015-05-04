@@ -11,6 +11,7 @@
 
 #include "common/uuid.h"
 #include "common/platform.h"
+#include "common/algorithm.h"
 
 
 #include "sf/namevaluepair.h"
@@ -28,9 +29,12 @@ namespace casual
          typedef common::platform::raw_buffer_type raw_buffer_type;
          using const_raw_buffer_type = common::platform::const_raw_buffer_type;
 
-         typedef common::platform::binary_type binary_type;
 
-         typedef common::Uuid Uuid;
+         using binary_type = common::platform::binary_type;
+
+         using const_binary_range_type = common::Range< binary_type::const_iterator>;
+
+         using Uuid = common::Uuid;
 
          namespace uuid
          {
@@ -38,7 +42,6 @@ namespace casual
          } // uuid
 
 
-         typedef common::platform::time_point time_type;
          using time_point = common::platform::time_point;
 
          using pid_type = common::platform::pid_type;
@@ -53,7 +56,6 @@ namespace casual
          class Writer;
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name);
-
          void serialize( Writer& archive, const platform::Uuid& value, const char* name);
 
 

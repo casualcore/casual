@@ -317,6 +317,8 @@ namespace casual
                      //
                      // User service returned, not by tpreturn.
                      //
+                     m_policy.transaction( reply, TPESVCERR);
+
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
                   }
 
@@ -358,14 +360,17 @@ namespace casual
                   // Take end time
                   //
                   scope::Execute execute_monitor{ [&](){
-                     if( message.service.monitor_queue != 0)
+                     if( ! message.service.traffic_monitors.empty())
                      {
                         state.monitor.end = platform::clock_type::now();
                         state.monitor.callId = message.execution;
                         state.monitor.service = message.service.name;
                         state.monitor.parentService = message.caller;
 
-                        m_policy.statistics( message.service.monitor_queue, state.monitor);
+                        for( auto& queue : message.service.traffic_monitors)
+                        {
+                           m_policy.statistics( queue, state.monitor);
+                        }
                      }
                   }};
 

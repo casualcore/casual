@@ -109,6 +109,45 @@ namespace casual
             return result;
          }
 
+         namespace instance
+         {
+            namespace identity
+            {
+               const Uuid& broker()
+               {
+                  const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
+                  return singleton;
+               }
+
+               namespace transaction
+               {
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
+                     return singleton;
+                  }
+               } // transaction
+
+               namespace queue
+               {
+                  const Uuid& broker()
+                  {
+                     const static Uuid singleton{ "4d18d4d0b8654890ba87310ad1860f5a"};
+                     return singleton;
+                  }
+               } // queue
+
+               namespace traffic
+               {
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "1aa1ce0e3e254a91b32e9d2ab22a8d31"};
+                     return singleton;
+                  }
+               } // traffic
+            } // identity
+         } // instance
+
 
          bool operator == ( const Handle& lhs, const Handle& rhs)
          {

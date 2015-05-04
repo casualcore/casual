@@ -6,10 +6,11 @@
 //!
 
 #include "queue/forward/common.h"
-#include "queue/api/queue.h"
+#include "queue/api/rm/queue.h"
 
 #include "common/arguments.h"
 #include "common/exception.h"
+#include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
 #include "common/call/context.h"
@@ -53,14 +54,21 @@ namespace casual
          {
             Caller( std::string service, std::string reply) : m_service( std::move( service)), m_reply( std::move( reply)) {}
 
-            void operator () ( common::message::queue::dequeue::Reply::Message&& message)
+            void operator () ( queue::Message&& message)
             {
+               common::trace::internal::Scope trace{ "queue::forward::Caller::operator()", common::log::internal::queue};
+
                //
                // Prepare the xatmi-buffer
                //
-               common::buffer::Payload payload;
-               payload.type = std::move( message.type);
-               payload.memory = std::move( message.payload);
+               common::buffer::Payload payload{
+                  {
+                     std::move( message.payload.type.type),
+                     std::move( message.payload.type.subtype)
+
+                  }, std::move( message.payload.data)};
+
+               common::log::internal::queue << "payload: " << payload << std::endl;
 
                long size = payload.memory.size();
 
@@ -68,7 +76,7 @@ namespace casual
 
                common::call::Context::instance().sync( m_service, buffer, size, buffer, size, 0);
 
-               const auto& replyqueue = m_reply.empty() ? message.reply : m_reply;
+               const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
 
                if( ! replyqueue.empty())
                {
@@ -79,7 +87,7 @@ namespace casual
                   reply.payload.type.type = std::move( data.type.name);
                   reply.payload.type.subtype = std::move( data.type.subname);
 
-                  queue::enqueue( replyqueue, reply);
+                  queue::rm::enqueue( replyqueue, reply);
 
                }
             }
@@ -131,10 +139,6 @@ namespace casual
 
                start( std::move( settings));
 
-            }
-            catch( const common::exception::signal::Terminate&)
-            {
-               return 0;
             }
             catch( ...)
             {

@@ -125,12 +125,13 @@ namespace casual
                      archive & id;
                   })
                };
-               struct base_request
+               struct Request : basic_message< Type::cQueueDequeueRequest>
                {
                   process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
                   Selector selector;
+                  bool block = false;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -138,10 +139,11 @@ namespace casual
                      archive & trid;
                      archive & queue;
                      archive & selector;
+                     archive & block;
                   })
-               };
 
-               using Request = message::type_wrapper< base_request, Type::cQueueDequeueRequest>;
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
+               };
 
                struct Reply : basic_message< Type::cQueueDequeueReply>
                {
@@ -169,9 +171,9 @@ namespace casual
 
                namespace callback
                {
-                  using Request = message::type_wrapper< base_request, Type::cQueueDequeueCallbackRequest>;
+                  //using Request = message::type_wrapper< base_request, Type::cQueueDequeueCallbackRequest>;
 
-                  using Reply = message::type_wrapper< queue::lookup::base_reply, Type::cQueueDequeueCallbackReply>;
+                  //using Reply = message::type_wrapper< queue::lookup::base_reply, Type::cQueueDequeueCallbackReply>;
 
                } // callback
 

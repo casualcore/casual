@@ -22,6 +22,63 @@ namespace casual
       namespace group
       {
 
+         void State::Pending::dequeue( const common::message::queue::dequeue::Request& request)
+         {
+            if( request.block)
+            {
+               requests.push_back( request);
+            }
+         }
+
+
+         void State::Pending::enqueue( const common::transaction::ID& trid, queue_id_type id)
+         {
+            auto found = common::range::find_if( requests, [&]( const request_type& r){
+               return r.queue == id;
+            });
+
+            if( found)
+            {
+               //
+               // Someone is waiting for messages in this queue
+               //
+               transactions[ trid][ id]++;
+            }
+         }
+
+         State::Pending::result_t State::Pending::commit( const common::transaction::ID& trid)
+         {
+            result_t result;
+
+            auto found = common::range::find( transactions, trid);
+
+            if( found)
+            {
+               result.enqueued = std::move( found->second);
+               transactions.erase( found.first);
+
+               //
+               // Move all request that is interested in committed queues to the end.
+               //
+               auto split = common::range::stable_partition( requests, [&]( const request_type& r){
+                  return ! common::range::find( result.enqueued, r.queue);
+               });
+
+               //
+               // move the requests to the result, and erase them in pending
+               //
+               common::range::move( std::get< 1>( split), result.requests);
+               requests.erase( std::begin( std::get< 1>( split)), std::end( std::get< 1>( split)));
+            }
+
+            return result;
+         }
+
+         void State::Pending::rollback( const common::transaction::ID& trid)
+         {
+            transactions.erase( trid);
+         }
+
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
             //
@@ -87,7 +144,6 @@ namespace casual
             common::message::dispatch::Handler handler{
                handle::enqueue::Request{ m_state},
                handle::dequeue::Request{ m_state},
-               handle::dequeue::callback::Request{ m_state},
                handle::transaction::commit::Request{ m_state},
                handle::transaction::rollback::Request{ m_state},
                handle::information::queues::Request{ m_state},

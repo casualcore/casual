@@ -75,23 +75,27 @@ namespace casual
 
       namespace xatmi
       {
-         namespace reference
+         namespace copy
          {
             //
             // To hold reference data, so we don't need to copy the buffer.
             //
             struct Payload
             {
-               template< typename T>
-               Payload( T&& type_, sf::platform::binary_type& data) : data( data)
+               template< typename T, typename Iter>
+               Payload( T&& type_, Iter first, Iter last)
+                 : data( first, last)
                {
                   type.type = type_.name;
                   type.subtype = type_.subname;
                }
 
+               Payload( Payload&&) = default;
+               Payload& operator = ( Payload&&) = default;
+
                queue::Payload::type_t type;
 
-               sf::platform::binary_type& data;
+               sf::platform::binary_type data;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -111,7 +115,18 @@ namespace casual
 
             auto send = common::buffer::pool::Holder::instance().get( message.payload.buffer, message.payload.size);
 
-            reference::Message send_message{ message.id, message.attributes, { send.payload.type, send.payload.memory}};
+            //
+            // We have to send only the real size of the buffer [buffer.begin, buffer.begin + transport_size)
+            //
+            // We could do this in several ways, but the most clean end ease way is to do
+            // a copy... This is probably the only place we do a copy of a buffer.
+            //
+            // TODO: get rid of the copy in a conformant way
+            //         we probably need to change the interface for 'binary' in write-archives (to take a range, or iterator first, last)
+            //
+            copy::Message send_message{
+               message.id, message.attributes,
+                 { send.payload.type, send.payload.memory.begin(), send.payload.memory.begin() + send.transport}};
 
             return local::enqueue( queue, send_message);
          }

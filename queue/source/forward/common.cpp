@@ -7,6 +7,7 @@
 
 #include "queue/forward/common.h"
 #include "queue/common/queue.h"
+#include "queue/api/rm/queue.h"
 
 #include "common/queue.h"
 #include "common/message/dispatch.h"
@@ -29,34 +30,7 @@ namespace casual
          {
             namespace
             {
-               std::vector< Dispatch::Task> lookup( const std::vector< forward::Task>& tasks)
-               {
-                  std::vector< Dispatch::Task> result;
-
-                  for( auto& task : tasks)
-                  {
-                     auto reply = queue::Lookup{ task.queue}();
-
-                     if( reply.queue == 0)
-                     {
-                        throw common::exception::invalid::Argument{ "failed to lookup queue: " + task.queue};
-                     }
-
-                     Dispatch::Task dispatch;
-
-                     dispatch.process = reply.process;
-                     dispatch.queue.id = reply.queue;
-                     dispatch.queue.name = task.queue;
-                     dispatch.dispatch = task.dispatch;
-
-                     result.push_back( std::move( dispatch));
-                  }
-
-                  return result;
-               }
-
-
-               bool perform( const Dispatch::Task& task)
+               bool perform( const forward::Task& task)
                {
                   try
                   {
@@ -65,35 +39,13 @@ namespace casual
                         return false;
                      }
 
-
-                     TXINFO info;
-                     tx_info( &info);
-
-                     common::message::queue::dequeue::callback::Request request;
-                     request.process = common::process::handle();
-                     request.queue = task.queue.id;
-                     request.trid.xid = info.xid;
-
-                     common::queue::blocking::Send send;
-                     auto correlation = send( task.process.queue, request);
-
-
-                     common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-                     common::message::queue::dequeue::Reply reply;
-                     receive( reply, correlation);
-
-                     if( reply.message.empty())
-                     {
-                        common::log::internal::queue << "message empty - rollback and wait for notification" << std::endl;
-                        common::transaction::Context::instance().rollback();
-                        return false;
-                     }
-
-                     common::log::internal::queue << "message not empty - call dispatch" << std::endl;
-
-                     task.dispatch( std::move( reply.message.front()));
+                     task.dispatch( rm::blocking::dequeue( task.queue));
 
                      tx_commit();
+                  }
+                  catch( const common::exception::Shutdown&)
+                  {
+                     return false;
                   }
                   catch( ...)
                   {
@@ -108,11 +60,11 @@ namespace casual
          } // local
 
 
-         Dispatch::Dispatch( const std::vector< forward::Task>& tasks)
-            : Dispatch( tasks, { { "casual-queue-rm",  &casual_queue_xa_switch_dynamic}}) {}
+         Dispatch::Dispatch( std::vector< forward::Task> tasks)
+            : Dispatch( std::move( tasks), { { "casual-queue-rm",  &casual_queue_xa_switch_dynamic}}) {}
 
-         Dispatch::Dispatch( const std::vector< forward::Task>& tasks, const std::vector< common::transaction::Resource>& resources)
-           : m_tasks( local::lookup( tasks))
+         Dispatch::Dispatch( std::vector< forward::Task> tasks, const std::vector< common::transaction::Resource>& resources)
+           : m_tasks( std::move( tasks))
          {
             if( m_tasks.size() != 1)
             {
@@ -126,60 +78,10 @@ namespace casual
          }
 
 
-         namespace handle
-         {
-
-            namespace callback
-            {
-
-               struct Reply
-               {
-                  using message_type = common::message::queue::dequeue::callback::Reply;
-
-                  void operator () ( message_type& message)
-                  {
-                     //
-                     // We do nothing, this just acts as a blocker, and when we get
-                     // this message, we continue
-                     //
-                  }
-               };
-
-            } // callback
-
-
-         } // handle
-
-
          void Dispatch::execute()
          {
-            common::message::dispatch::Handler handler{
-               handle::callback::Reply{},
-               common::message::handle::Shutdown{},
-               common::message::handle::ping(),
-            };
-
-            while( true)
-            {
-               //
-               // Perform the task until there are no more messages
-               //
-               while( local::perform( m_tasks.front()))
-               {
-                  common::queue::non_blocking::Reader receive{ common::ipc::receive::queue()};
-                  handler( receive.next());
-               }
-
-
-
-               //
-               // Wait to be notified when there are some messages on the queue.
-               // or someone wants us to shut down...
-               //
-               common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-               handler( receive.next());
-            }
-
+            while( local::perform( m_tasks.front()))
+               ;
          }
 
       } // forward
