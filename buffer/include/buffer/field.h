@@ -182,12 +182,27 @@ int CasualFieldRemoveId( char* buffer, long id);
 /* removes supplied occurrence of supplied id and (logically) collapses possible sequential occurrences */
 int CasualFieldRemoveOccurrence( char* buffer, long id, long index);
 
+/* gives a "handle" to the next (or first if id is CASUAL_FIELD_NO_ID) occurrence in a buffer */
+int CasualFieldNext( const char* buffer, long* id, long* index);
+
 /* copies content from source- to target-buffer */
+//int CasualFieldCopyBufferToBuffer( char* target, const char* source);
 int CasualFieldCopyBuffer( char* target, const char* source);
 
 
-/* gives a "handle" to the next (or first if id is CASUAL_FIELD_NO_ID) occurrence in a buffer */
-int CasualFieldNext( const char* buffer, long* id, long* index);
+/* find out how many bytes needed for marshal */
+int CasualFieldCopyBufferToMemoryNeed( const char* buffer, long* size);
+
+/* marshal the buffer to a memory storage with appropriate size */
+int CasualFieldCopyBufferToMemory( void* memory, const char* buffer);
+
+/* find out how large the buffer need to be for unmarshal */
+int CasualFieldCopyMemoryToBufferNeed( const void* memory, long* size);
+
+/* unmarshal a memory storage to an allocated buffer with appropriate size */
+int CasualFieldCopyMemoryToBuffer( char* buffer, const void* memory);
+
+
 
 
 /* prints the buffer to standard output */

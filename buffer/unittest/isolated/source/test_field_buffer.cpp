@@ -184,6 +184,18 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST( casual_field_buffer, reallocate_with_invalid_handle__expecting_nullptr)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 128);
+         ASSERT_TRUE( buffer != nullptr);
+
+         tpfree( buffer);
+
+         buffer = tprealloc( buffer, 0);
+         EXPECT_TRUE( buffer == nullptr);
+      }
+
+
       TEST( casual_field_buffer, allocate_with_small_size_and_write_much___expecting_no_space)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 64);
@@ -957,6 +969,43 @@ namespace casual
 
          tpfree( buffer);
       }
+
+      TEST( casual_field_buffer, serialize_buffer__expecting_success)
+      {
+         auto source = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( source != nullptr);
+
+         EXPECT_FALSE( CasualFieldAddString( source, FLD_STRING1, "A little string"));
+
+         long memory_size{};
+
+         ASSERT_FALSE( CasualFieldCopyBufferToMemoryNeed( source, &memory_size));
+
+         std::vector<char> memory( memory_size);
+
+         ASSERT_FALSE( CasualFieldCopyBufferToMemory( memory.data(), source));
+
+         tpfree( source);
+
+         long buffer_size{};
+
+         ASSERT_FALSE( CasualFieldCopyMemoryToBufferNeed( memory.data(), &buffer_size));
+
+         auto target = tpalloc( CASUAL_FIELD, "", buffer_size);
+
+         ASSERT_FALSE( CasualFieldCopyMemoryToBuffer( target, memory.data()));
+
+         const char* string = nullptr;
+
+         ASSERT_FALSE( CasualFieldGetString( target, FLD_STRING1, 0, &string));
+
+         EXPECT_STREQ( string, "A little string");
+
+         tpfree( target);
+
+      }
+
+
 
 
       TEST( casual_field_buffer, print__expecting_success)

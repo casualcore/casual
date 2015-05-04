@@ -816,8 +816,7 @@ namespace casual
                return CASUAL_FIELD_SUCCESS;
             }
 
-
-            int copy( const char* target_handle, const char* source_handle)
+            int copy( const char* const target_handle, const char* const source_handle)
             {
                const trace trace( "field::copy");
 
@@ -849,6 +848,110 @@ namespace casual
                return CASUAL_FIELD_SUCCESS;
             }
 
+            int need( const char* const handle, long* const size)
+            {
+               const trace trace( "field::need");
+
+               const auto buffer = find( handle);
+
+               if( buffer)
+               {
+                  *size = common::network::byteorder::bytes<Buffer::size_type>() + buffer->utilized();
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            int need( const void* const memory, long* const size)
+            {
+               const trace trace( "field::need");
+
+               if( memory)
+               {
+                  const auto encoded = *reinterpret_cast<const common::network::byteorder::type<Buffer::size_type>*>( memory);
+                  const auto decoded = casual::common::network::byteorder::decode<Buffer::size_type>( encoded);
+
+                  *size = decoded;
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            //
+            // Serializing is trivial when the buffer is already ready to go
+            //
+            // These functions exist primarily for future compatibility just
+            // in case the internal memory layout will become more complex
+            //
+
+
+            int serialize( void* const memory, const char* const handle)
+            {
+               const trace trace( "field::serialize");
+
+               const auto buffer = find( handle);
+
+               if( buffer)
+               {
+                  const auto encoded = common::network::byteorder::encode( buffer->utilized());
+
+                  //
+                  // Copy the size
+                  //
+                  std::memcpy( memory, &encoded, sizeof( encoded));
+
+                  //
+                  // Copy (marshal) the buffer
+                  //
+                  std::memcpy( static_cast<char*>(memory) + sizeof( encoded), buffer->handle(), buffer->utilized());
+
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+
+            int serialize( char* const handle, const void* const memory)
+            {
+               const trace trace( "field::serialize");
+
+               auto buffer = casual::buffer::field::find( handle);
+
+               if( handle)
+               {
+                  const auto encoded = *reinterpret_cast<const common::network::byteorder::type<Buffer::size_type>*>( memory);
+
+                  const auto decoded = common::network::byteorder::decode<Buffer::size_type>( encoded);
+
+                  if( decoded > buffer->reserved())
+                  {
+                     return CASUAL_FIELD_NO_SPACE;
+                  }
+
+                  std::memcpy( buffer->handle(), static_cast<const char*>(memory) + sizeof( encoded), decoded);
+
+                  buffer->utilized( decoded);
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+
+            }
 
          } //
 
@@ -1631,11 +1734,6 @@ int CasualFieldRemoveOccurrence( char* const buffer, const long id, long index)
    return casual::buffer::field::remove( buffer, id, index);
 }
 
-int CasualFieldCopyBuffer( char* const target, const char* const source)
-{
-   return casual::buffer::field::copy( target, source);
-}
-
 int CasualFieldNext( const char* const buffer, long* const id, long* const index)
 {
    if( ! id || ! index)
@@ -1653,6 +1751,35 @@ int CasualFieldNext( const char* const buffer, long* const id, long* const index
    }
 
 }
+
+int CasualFieldCopyBuffer( char* const target, const char* const source)
+{
+   return casual::buffer::field::copy( target, source);
+}
+
+
+int CasualFieldCopyBufferToMemoryNeed( const char* const buffer, long* const size)
+{
+   return casual::buffer::field::need( buffer, size);
+}
+
+int CasualFieldCopyBufferToMemory( void* const memory, const char* const buffer)
+{
+   return casual::buffer::field::serialize( memory, buffer);
+}
+
+int CasualFieldCopyMemoryToBufferNeed( const void* const memory, long* const size)
+{
+   return casual::buffer::field::need( memory, size);
+}
+
+
+int CasualFieldCopyMemoryToBuffer( char* const buffer, const void* const memory)
+{
+   return casual::buffer::field::serialize( buffer, memory);
+}
+
+
 
 namespace casual
 {
