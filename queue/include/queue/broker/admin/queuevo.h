@@ -80,7 +80,7 @@ namespace casual
 
                   } number;
 
-                  sf::platform::time_type timestamp;
+                  sf::platform::time_point timestamp;
 
                   struct size_t
                   {

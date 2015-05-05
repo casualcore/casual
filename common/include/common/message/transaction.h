@@ -54,16 +54,16 @@ namespace casual
                   struct Reply : basic_message< cTransactionClientConnectReply>
                   {
 
-                     typedef platform::queue_id_type queue_id_type;
+                     using queue_id_type = platform::queue_id_type;
 
-                     queue_id_type transactionManagerQueue = 0;
-                     std::vector< resource::Manager> resourceManagers;
+                     queue_id_type transaction_manager = 0;
+                     std::vector< resource::Manager> resources;
                      std::string domain;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        archive & transactionManagerQueue;
-                        archive & resourceManagers;
+                        archive & transaction_manager;
+                        archive & resources;
                         archive & domain;
                      })
                   };

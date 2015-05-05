@@ -102,9 +102,9 @@ namespace casual
             reader( reply);
 
 
-            queue = reply.transactionManagerQueue;
+            queue = reply.transaction_manager;
             common::environment::domain::name( reply.domain);
-            std::swap( resources, reply.resourceManagers);
+            std::swap( resources, reply.resources);
 
             log::internal::transaction << "received client connect reply from broker" << std::endl;
 

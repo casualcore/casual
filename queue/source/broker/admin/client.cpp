@@ -262,7 +262,7 @@ namespace casual
                   value.message.size.average = value.message.size.total / value.message.number.total();
                }
 
-               if( value.message.timestamp != sf::platform::time_type::min())
+               if( value.message.timestamp != sf::platform::time_point::min())
                {
                   value.updated = chronology::local( value.message.timestamp);
                }
@@ -302,7 +302,7 @@ namespace casual
 
                result.timestamp = chronology::local( message.timestamp);
 
-               if( message.avalible != std::chrono::time_point_cast< std::chrono::microseconds>( sf::platform::time_type::min()))
+               if( message.avalible != std::chrono::time_point_cast< std::chrono::microseconds>( sf::platform::time_point::min()))
                {
                   result.avalible = chronology::local( message.avalible);
                }
@@ -428,8 +428,8 @@ namespace casual
          queue::Message message;
 
          message.attributes.reply = queue;
-         message.payload.type.type = "X_OCTET";
-         message.payload.type.subtype = "binary";
+         message.payload.type.type = common::buffer::type::binary().name;
+         message.payload.type.subtype = common::buffer::type::binary().subname;
 
          while( std::cin)
          {

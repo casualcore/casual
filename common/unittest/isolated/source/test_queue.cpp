@@ -119,13 +119,13 @@ namespace casual
 
             message::service::Advertise sendMessage;
             sendMessage.serverPath = "banan";
-            sendMessage.services.resize( 50);
+            sendMessage.services.resize( 30);
             writer( sendMessage);
 
             message::service::Advertise receiveMessage;
             EXPECT_TRUE( reader( receiveMessage));
             EXPECT_TRUE( receiveMessage.serverPath == "banan");
-            EXPECT_TRUE( receiveMessage.services.size() == 50);
+            EXPECT_TRUE( receiveMessage.services.size() == 30);
 
          }
 

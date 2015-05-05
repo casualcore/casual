@@ -246,12 +246,13 @@ namespace casual
          } standard;
 
 
-         // TODO: Temp
-         common::platform::queue_id_type monitorQueue = 0;
 
-         state::Server* transactionManager = nullptr;
+         struct traffic_t
+         {
+            std::vector< common::platform::queue_id_type> monitors;
+         } traffic;
 
-         common::platform::queue_id_type transactionManagerQueue = 0;
+         common::platform::queue_id_type transaction_manager = 0;
 
 
          state::Group& getGroup( state::Group::id_type id);

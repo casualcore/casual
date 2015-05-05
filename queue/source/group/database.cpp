@@ -375,7 +375,7 @@ namespace casual
 
 
 
-         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::base_request& message)
+         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
             common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
 

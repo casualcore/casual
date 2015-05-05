@@ -83,6 +83,28 @@ namespace casual
          //!
          Handle handle();
 
+         namespace instance
+         {
+            namespace identity
+            {
+               const Uuid& broker();
+
+               namespace transaction
+               {
+                  const Uuid& manager();
+               } // transaction
+
+               namespace queue
+               {
+                  const Uuid& broker();
+               } // queue
+
+               namespace traffic
+               {
+                  const Uuid& manager();
+               } // traffic
+            } // identity
+         } // instance
 
 
          //!
