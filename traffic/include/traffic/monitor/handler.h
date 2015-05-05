@@ -5,8 +5,8 @@
  *      Author: hbergk
  */
 
-#ifndef CASUAL_MONITOR_H_
-#define CASUAL_MONITOR_H_
+#ifndef CASUAL_MONITOR_HANDLER_H_
+#define CASUAL_MONITOR_HANDLER_H_
 
 #include <vector>
 #include <string>
@@ -24,25 +24,7 @@ namespace traffic
 {
 namespace monitor
 {
-   class Receiver
-   {
-   public:
-
-      Receiver( const std::vector< std::string>& arguments);
-      ~Receiver();
-
-
-      //!
-      //! Start the server
-      //!
-      void start();
-
-   private:
-      common::ipc::receive::Queue& m_receiveQueue;
-      Database& m_database;
-   };
-
-   namespace handle
+    namespace handle
    {
       //!
       //! Used with the dispatch handler to handle relevant
@@ -52,15 +34,13 @@ namespace monitor
       {
       public:
          typedef common::message::traffic::monitor::Notify message_type;
-         Notify( Database& db ) : database( db)
+         Notify( Database& database) : m_database( database)
          {
          };
 
          void operator () ( const message_type& message);
-
       private:
-         Database& database;
-
+         Database& m_database;
       };
    }
 }
@@ -68,4 +48,4 @@ namespace monitor
 }
 
 
-#endif /* CASUAL_MONITOR_H_ */
+#endif /* CASUAL_MONITOR_HANDLER_H_ */

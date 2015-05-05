@@ -58,7 +58,7 @@ namespace casual
 				message.end = common::platform::clock_type::now();
 				message.start = message.end - std::chrono::microseconds( 5);
 
-				db.insert(message);
+				db.store(message);
 			});
 		}
 
