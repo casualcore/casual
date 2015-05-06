@@ -9,9 +9,14 @@
 
 
 #include <iostream>
+#include <vector>
+#include <string>
 
-#include "traffic/monitor/receiver.h"
+#include "traffic/monitor/handler.h"
+#include "traffic/receiver.h"
+#include "traffic/monitor/database.h"
 
+using namespace casual::traffic::monitor;
 
 int main( int argc, char** argv)
 {
@@ -26,7 +31,11 @@ int main( int argc, char** argv)
 
 		std::cout << "starting" << std::endl;
 
-		casual::traffic::monitor::Receiver receiver( arguments);
+      //
+      // Allocate resource
+      //
+		Database database;
+		casual::traffic::Receiver< Database, handle::Notify > receiver( arguments, database);
 
 		receiver.start();
 

@@ -366,6 +366,7 @@ namespace casual
                         state.monitor.callId = message.execution;
                         state.monitor.service = message.service.name;
                         state.monitor.parentService = message.caller;
+                        state.monitor.pid = process::handle().pid;
 
                         for( auto& queue : message.service.traffic_monitors)
                         {

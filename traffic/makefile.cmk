@@ -39,7 +39,7 @@ archive_monitor_db = LinkArchive( 'bin/casual-traffic-monitor-db',
 
 target = LinkExecutable( 'bin/casual-traffic-monitor',
 	[
-		Compile( 'source/monitor/receiver.cpp'),
+	    Compile( 'source/monitor/handler.cpp'),
 		Compile( 'source/monitor/main.cpp'),
 	],
 	[
@@ -49,6 +49,18 @@ target = LinkExecutable( 'bin/casual-traffic-monitor',
 	'sqlite3'] )
 
 install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-traffic-log',
+	[
+	    Compile( 'source/log/handler.cpp'),
+		Compile( 'source/log/file.cpp'),
+		Compile( 'source/log/main.cpp'),
+	],
+	[
+	'casual-common'] )
+
+install_bin.append( target)
+
 
 
 target = LinkServer('bin/casual-traffic-monitor-request-server',

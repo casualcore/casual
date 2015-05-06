@@ -1,9 +1,10 @@
 
 
-general:
+constants:
     description_language: C++
     namespace: casual::traffic::monitor
     prefix: ""
+    model_version: 1.0
 
 declaration:
 
@@ -11,20 +12,28 @@ declaration:
       name: ServiceEntryVO
       language: C++
       id: 200
-          
+      filename: serviceentryvo
+      
       output_headers: include/traffic/monitor/
       output_source:  source/monitor/
 
       attributes:
-        - parentService: std::string
-        - service: std::string
-        - callId: sf::Uuid
-        - start: sf::time_type
-        - end: sf::time_type
+        - name: parentService
+          type: std::string
+        - name: service
+          type: std::string
+        - name: callId
+          type: sf::platform::Uuid
+        - name: start
+          type: sf::platform::time_point
+        - name: end
+          type: sf::platform::time_point
 
   - server:
-      name: Statistic
+      name: RequestServer
+      id: 11878666-b9b1-4712-ae90-d21bfaad1ba1
       language: C++
+      filename: request_server
     
       output_headers: include/traffic/monitor/
       output_source:  source/monitor/ 
@@ -39,10 +48,12 @@ declaration:
             @return true if some condition is met
             @param values holds some values
     
-          return: bool      
-          
+          return:
+             - type: bool
+         
           arguments:
-              - outputValues: (out) std::vector< ServiceEntryVO>&
+              - name: outputValues
+                type: (out) std::vector< ServiceEntryVO>&
   
           
           
