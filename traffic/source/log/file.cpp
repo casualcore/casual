@@ -41,7 +41,7 @@ namespace
 }
 }
 
-	File::File( std::ofstream& stream) : m_stream{stream}
+	File::File( std::ofstream& stream) :  m_stream( stream) // bug in g++ 4.8.2  m_stream{stream}
 	{
 		static const std::string cMethodname("File::File(...)");
 		common::Trace trace(cMethodname);

@@ -49,7 +49,7 @@ namespace casual
          common::message::queue::dequeue::forget::Reply State::Pending::forget( const common::message::queue::dequeue::forget::Request& request)
          {
             common::message::queue::dequeue::forget::Reply reply;
-            reply.correlation == request.correlation;
+            reply.correlation = request.correlation;
 
             auto found = common::range::find_if( requests, [&]( const request_type& r){
                return r.queue == request.queue && r.process == request.process;
