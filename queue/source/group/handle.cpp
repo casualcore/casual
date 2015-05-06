@@ -207,6 +207,25 @@ namespace casual
                   return false;
                }
 
+               namespace forget
+               {
+                  void Request::operator () ( message_type& message)
+                  {
+                     try
+                     {
+                        auto reply = m_state.pending.forget( message);
+
+                        queue::blocking::Send send{ m_state};
+                        send( message.process.queue, reply);
+                     }
+                     catch( ...)
+                     {
+                        common::error::handler();
+                     }
+                  }
+
+               } // forget
+
             } // dequeue
 
             namespace transaction

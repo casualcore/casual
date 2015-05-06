@@ -46,6 +46,29 @@ namespace casual
             }
          }
 
+         common::message::queue::dequeue::forget::Reply State::Pending::forget( const common::message::queue::dequeue::forget::Request& request)
+         {
+            common::message::queue::dequeue::forget::Reply reply;
+            reply.correlation == request.correlation;
+
+            auto found = common::range::find_if( requests, [&]( const request_type& r){
+               return r.queue == request.queue && r.process == request.process;
+            });
+
+            reply.found = static_cast< bool>( found);
+
+            if( found)
+            {
+               requests.erase( found.first);
+
+               if( requests.empty())
+               {
+                  transactions.clear();
+               }
+            }
+            return reply;
+         }
+
          State::Pending::result_t State::Pending::commit( const common::transaction::ID& trid)
          {
             result_t result;

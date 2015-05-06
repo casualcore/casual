@@ -127,127 +127,138 @@ namespace casual
                   };
                } // scoped
 
-               namespace async
+
+               sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
                {
-                  namespace enqueue
+                  auto send_request = [&]()
                   {
-                     sf::platform::Uuid request( const std::string& queue, const Message& message)
+                     queue::Lookup lookup( queue);
+
+                     common::message::queue::enqueue::Request request;
+                     local::scoped::AX_reg ax_reg( request.trid);
+
+                     request.process = common::process::handle();
+
+                     request.message.payload = message.payload.data;
+                     request.message.type.name = message.payload.type.type;
+                     request.message.type.subname = message.payload.type.subtype;
+                     request.message.properties = message.attributes.properties;
+                     request.message.reply = message.attributes.reply;
+                     request.message.avalible = message.attributes.available;
+                     //request.message.id = common::Uuid::make();
+
+                     auto group = lookup();
+
+                     if( group.queue == 0)
                      {
-                        queue::Lookup lookup( queue);
-
-                        common::message::queue::enqueue::Request request;
-                        local::scoped::AX_reg ax_reg( request.trid);
-
-                        request.process = common::process::handle();
-
-                        request.message.payload = message.payload.data;
-                        request.message.type.name = message.payload.type.type;
-                        request.message.type.subname = message.payload.type.subtype;
-                        request.message.properties = message.attributes.properties;
-                        request.message.reply = message.attributes.reply;
-                        request.message.avalible = message.attributes.available;
-                        //request.message.id = common::Uuid::make();
-
-                        auto group = lookup();
-
-                        if( group.queue == 0)
-                        {
-                           throw common::exception::invalid::Argument{ "failed to look up queue: " + queue};
-                        }
-
-                        common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
-
-
-                        casual::common::queue::blocking::Send send;
-                        request.queue = group.queue;
-
-                        return send( group.process.queue, request);
+                        throw common::exception::invalid::Argument{ "failed to look up queue: " + queue};
                      }
 
-                     sf::platform::Uuid reply( const sf::platform::Uuid& descriptor)
-                     {
-                        common::message::queue::enqueue::Reply reply;
+                     common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
 
-                        casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-                        receive( reply, descriptor);
 
-                        return reply.id;
-                     }
+                     casual::common::queue::blocking::Send send;
+                     request.queue = group.queue;
 
-                  } // enqueue
+                     return send( group.process.queue, request);
+                  };
 
-                  namespace dequeue
+                  common::message::queue::enqueue::Reply reply;
+
+                  casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
+                  receive( reply, send_request());
+
+                  return reply.id;
+               }
+
+
+               std::vector< Message> dequeue( const std::string& queue, const Selector& selector, bool block = false)
+               {
+                  common::scope::Execute forget_blocking{ [&]()
                   {
-                     struct descriptor_t
+                     queue::Lookup lookup( queue);
+
+                     common::message::queue::dequeue::forget::Request request;
+                     request.process = common::process::handle();
+
+                     auto group = lookup();
+                     request.queue = group.queue;
+
+                     casual::common::queue::blocking::Send send;
+                     auto correlation = send( group.process.queue, request);
+
+                     casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
+                     common::message::queue::dequeue::forget::Reply reply;
+                     receive( reply, correlation);
+                  }};
+
+                  auto send_reqeust = [&]()
+                  {
+                     queue::Lookup lookup( queue);
+
+                     common::message::queue::dequeue::Request request;
+                     local::scoped::AX_reg ax_reg( request.trid);
+
+                     request.process = common::process::handle();
+
+                     auto group = lookup();
+                     request.queue = group.queue;
+                     request.block = block;
+                     request.selector.id = selector.id;
+                     request.selector.properties = selector.properties;
+
+                     common::log::internal::queue << "async::dequeue - request: " << request << std::endl;
+
+                     casual::common::queue::blocking::Send send;
+                     return send( group.process.queue, request);
+                  };
+
+                  auto correlation = send_reqeust();
+
+                  std::vector< Message> result;
+
+                  casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
+
+                  //
+                  // We need to listen to shutdown-message.
+                  // TODO: Don't know if we really should do this here, but otherwise we have
+                  // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
+                  // (which we now also do) but it isn't really coherent with how casual otherwise works
+                  //
+                  auto complete = receive.next( {
+                     common::message::queue::dequeue::Reply::message_type,
+                     common::message::shutdown::Request::message_type});
+
+                  if( complete.type == common::message::queue::dequeue::Reply::message_type)
+                  {
+                     common::message::queue::dequeue::Reply reply;
+                     complete >> reply;
+
+                     if( reply.correlation != correlation)
                      {
-                        sf::platform::Uuid id;
-                     };
-
-                     descriptor_t reqeust( const std::string& queue, const Selector& selector, bool block = false)
-                     {
-                        queue::Lookup lookup( queue);
-
-                        common::message::queue::dequeue::Request request;
-                        local::scoped::AX_reg ax_reg( request.trid);
-
-                        request.process = common::process::handle();
-
-                        auto group = lookup();
-                        request.queue = group.queue;
-                        request.block = block;
-                        request.selector.id = selector.id;
-                        request.selector.properties = selector.properties;
-
-                        common::log::internal::queue << "async::dequeue - request: " << request << std::endl;
-
-                        casual::common::queue::blocking::Send send;
-                        return { send( group.process.queue, request)};
-
+                        throw common::exception::NotReallySureWhatToNameThisException{ "correlation mismatch"};
                      }
 
-                     std::vector< Message> reply( const descriptor_t& descriptor)
-                     {
-                        std::vector< Message> result;
+                     common::range::transform( reply.message, result, queue::transform::Message());
+                  }
+                  else
+                  {
+                     common::log::internal::queue << "async::dequeue::reply - shutdown received" << std::endl;
 
-                        casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
+                     common::message::shutdown::Request request;
+                     complete >> request;
 
-                        //
-                        // We need to listen to shutdown-message.
-                        // TODO: Don't know if we really should do this here, but otherwise we have
-                        // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
-                        // (which we now also do) but it isn't really coherent with how casual otherwise works
-                        //
-                        auto complete = receive.next( {
-                           common::message::queue::dequeue::Reply::message_type,
-                           common::message::shutdown::Request::message_type});
+                     common::message::handle::Shutdown{}( request);
+                  }
 
-                        if( complete.type == common::message::queue::dequeue::Reply::message_type)
-                        {
-                           common::message::queue::dequeue::Reply reply;
-                           complete >> reply;
+                  //
+                  // We don't need to send forget, since it went as it should.
+                  //
+                  forget_blocking.release();
 
-                           if( reply.correlation != descriptor.id)
-                           {
-                              throw common::exception::NotReallySureWhatToNameThisException{ "correlation mismatch"};
-                           }
+                  return result;
+               }
 
-                           common::range::transform( reply.message, result, queue::transform::Message());
-                        }
-                        else
-                        {
-                           common::log::internal::queue << "async::dequeue::reply - shutdown received" << std::endl;
-
-                           common::message::shutdown::Request request;
-                           complete >> request;
-
-                           common::message::handle::Shutdown{}( request);
-                        }
-
-
-                        return result;
-                     }
-                  } // dequeue
-               } // async
             } // <unnamed>
          } // local
 
@@ -256,43 +267,20 @@ namespace casual
          {
             common::trace::Scope trace( "queue::rm::enqueue", common::log::internal::queue);
 
-            return local::async::enqueue::reply( local::async::enqueue::request( queue, message));
+            return local::enqueue( queue, message);
          }
 
          std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
          {
             common::trace::Scope trace( "queue::rm::dequeue", common::log::internal::queue);
 
-            return local::async::dequeue::reply( local::async::dequeue::reqeust( queue, selector));
+            return local::dequeue( queue, selector);
          }
 
          std::vector< Message> dequeue( const std::string& queue)
          {
             return dequeue( queue, Selector{});
          }
-
-         /*
-         namespace async
-         {
-            namespace dequeue
-            {
-               descriptor_t reqeust( const std::string& queue, const Selector& selector)
-               {
-                  common::trace::Scope trace( "queue::rm::async::dequeue::request", common::log::internal::queue);
-
-                  return local::async::dequeue::reqeust( queue, selector);
-
-               }
-
-               std::vector< Message> reply( const descriptor_t& descriptor)
-               {
-                  common::trace::Scope trace( "queue::rm::async::dequeue::reply", common::log::internal::queue);
-
-                  return local::async::dequeue::reply( descriptor);
-               }
-            } // dequeue
-         } // async
-         */
 
 
 
@@ -302,7 +290,7 @@ namespace casual
             {
                common::trace::Scope trace( "queue::rm::blocking::dequeue", common::log::internal::queue);
 
-               auto message = local::async::dequeue::reply( local::async::dequeue::reqeust( queue, selector, true));
+               auto message = local::dequeue( queue, selector, true);
 
                if( message.empty())
                {

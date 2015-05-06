@@ -61,6 +61,9 @@ namespace casual
 
                void enqueue( const common::transaction::ID& trid, queue_id_type queue);
 
+
+               common::message::queue::dequeue::forget::Reply forget( const common::message::queue::dequeue::forget::Request& request);
+
                struct result_t
                {
                   std::vector< request_type> requests;

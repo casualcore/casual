@@ -169,13 +169,32 @@ namespace casual
                   })
                };
 
-               namespace callback
+               namespace forget
                {
-                  //using Request = message::type_wrapper< base_request, Type::cQueueDequeueCallbackRequest>;
+                  struct Request : basic_message< Type::cQueueDequeueForgetRequest>
+                  {
+                     process::Handle process;
+                     std::size_t queue;
 
-                  //using Reply = message::type_wrapper< queue::lookup::base_reply, Type::cQueueDequeueCallbackReply>;
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & process;
+                        archive & queue;
+                     })
+                  };
 
-               } // callback
+                  struct Reply : basic_message< Type::cQueueDequeueForgetReply>
+                  {
+                     bool found = false;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & found;
+                     })
+                  };
+
+               } // forget
+
 
             } // dequeue
 
