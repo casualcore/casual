@@ -25,6 +25,7 @@
 #include <map>
 #include <vector>
 
+
 #include <algorithm>
 
 #include <type_traits>
@@ -162,7 +163,7 @@ namespace casual
 
                data_type where = nullptr;
 
-               Value( data_type where) : where( where) {}
+               explicit Value( data_type where) : where( where) {}
 
                bool operator == ( const Value& other) const
                {
@@ -214,7 +215,6 @@ namespace casual
                   std::memcpy( data(), value, count);
                }
 
-               //! @return A 'handle' to next 'iterator'
                Value next() const
                {
                   return Value( data() + size());
@@ -268,6 +268,7 @@ namespace casual
                {
                   m_pool.emplace_back( std::move( payload));
                   m_pool.back().utilized( m_pool.back().reserved());
+
 
                   return m_pool.back().handle();
                }
@@ -324,6 +325,13 @@ namespace casual
                return nullptr;
             }
 
+
+            //
+            // TODO: There's a whole lot of find-functionality here that should
+            // be consolidated
+            //
+
+
             int remove( const char* const handle, const long id)
             {
                const trace trace( "field::remove");
@@ -373,7 +381,7 @@ namespace casual
 
                auto buffer = find( handle);
 
-               if( !buffer)
+               if( ! buffer)
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
@@ -385,7 +393,7 @@ namespace casual
                {
                   if( value.id() == id)
                   {
-                     if( !index--)
+                     if( ! index--)
                      {
                         value.id( CASUAL_FIELD_NO_ID);
                         return CASUAL_FIELD_SUCCESS;
@@ -1758,7 +1766,7 @@ int CasualFieldCopyBuffer( char* const target, const char* const source)
 }
 
 
-int CasualFieldCopyBufferToMemoryNeed( const char* const buffer, long* const size)
+int CasualFieldBufferToMemoryNeed( const char* const buffer, long* const size)
 {
    return casual::buffer::field::need( buffer, size);
 }
@@ -1768,7 +1776,7 @@ int CasualFieldCopyBufferToMemory( void* const memory, const char* const buffer)
    return casual::buffer::field::serialize( memory, buffer);
 }
 
-int CasualFieldCopyMemoryToBufferNeed( const void* const memory, long* const size)
+int CasualFieldMemoryToBufferNeed( const void* const memory, long* const size)
 {
    return casual::buffer::field::need( memory, size);
 }

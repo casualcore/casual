@@ -190,16 +190,16 @@ int CasualFieldNext( const char* buffer, long* id, long* index);
 int CasualFieldCopyBuffer( char* target, const char* source);
 
 
-/* find out how many bytes needed for marshal */
-int CasualFieldCopyBufferToMemoryNeed( const char* buffer, long* size);
+/* find out how many bytes needed for serialize (marshal) */
+int CasualFieldBufferToMemoryNeed( const char* buffer, long* size);
 
-/* marshal the buffer to a memory storage with appropriate size */
+/* serialize (marshal) the buffer to a memory storage with appropriate size */
 int CasualFieldCopyBufferToMemory( void* memory, const char* buffer);
 
-/* find out how large the buffer need to be for unmarshal */
-int CasualFieldCopyMemoryToBufferNeed( const void* memory, long* size);
+/* find out how large the buffer need to be for serialize (unmarshal) */
+int CasualFieldMemoryToBufferNeed( const void* memory, long* size);
 
-/* unmarshal a memory storage to an allocated buffer with appropriate size */
+/* serialize (unmarshal) a memory storage to a buffer with appropriate size */
 int CasualFieldCopyMemoryToBuffer( char* buffer, const void* memory);
 
 

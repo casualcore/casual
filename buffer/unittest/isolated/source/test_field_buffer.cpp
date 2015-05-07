@@ -979,7 +979,7 @@ namespace casual
 
          long memory_size{};
 
-         ASSERT_FALSE( CasualFieldCopyBufferToMemoryNeed( source, &memory_size));
+         ASSERT_FALSE( CasualFieldBufferToMemoryNeed( source, &memory_size));
 
          std::vector<char> memory( memory_size);
 
@@ -989,7 +989,7 @@ namespace casual
 
          long buffer_size{};
 
-         ASSERT_FALSE( CasualFieldCopyMemoryToBufferNeed( memory.data(), &buffer_size));
+         ASSERT_FALSE( CasualFieldMemoryToBufferNeed( memory.data(), &buffer_size));
 
          auto target = tpalloc( CASUAL_FIELD, "", buffer_size);
 
