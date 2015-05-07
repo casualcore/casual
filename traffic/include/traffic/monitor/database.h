@@ -5,8 +5,8 @@
  *      Author: hbergk
  */
 
-#ifndef MONITORDB_H_
-#define MONITORDB_H_
+#ifndef CASUAL_MONITOR_DATABASE_H_
+#define CASUAL_MONITOR_DATABASE_H_
 
 #include "sql/database.h"
 #include "common/message/monitor.h"
@@ -21,20 +21,24 @@ namespace traffic
 {
 namespace monitor
 {
+   struct Transaction; // Forward
+
    class Database
    {
    public:
 
+      typedef Transaction transaction_type;
       Database();
 
       Database( const std::string& database);
 
       ~Database();
 
-      void insert( const common::message::traffic::monitor::Notify& message);
+      void store( const common::message::traffic::monitor::Notify& message);
       std::vector< ServiceEntryVO> select( );
 
       sql::database::Connection& getConnection();
+
    private:
       //
       // Creates table if necessary
@@ -46,9 +50,9 @@ namespace monitor
 
    struct Transaction
    {
-      Transaction( Database& db);
+      Transaction( Database& database);
       ~Transaction();
-
+   private:
       Database& m_database;
    };
 
@@ -59,4 +63,4 @@ namespace monitor
 void operator>>( const casual::common::message::traffic::monitor::Notify& message, casual::traffic::monitor::Database& db);
 
 
-#endif /* MONITORDB_H_ */
+#endif /* CASUAL_MONITOR_DATABASE_H_ */

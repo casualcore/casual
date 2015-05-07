@@ -123,11 +123,21 @@ namespace casual
                   using Base::Base;
 
                   bool operator () ( message_type& message);
-
-                  template< typename P>
-                  bool operator () ( message_type& message, P pending_request);
-
                };
+
+               namespace forget
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::dequeue::forget::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+
+                  };
+
+               } // forget
 
             } // dequeue
 

@@ -39,6 +39,7 @@ namespace casual
 
                   std::string parentService;
                   std::string service;
+                  long pid;
 
                   common::Uuid callId;
 
@@ -51,6 +52,7 @@ namespace casual
                   (
                      archive & parentService;
                      archive & service;
+                     archive & pid;
                      archive & callId;
                      archive & transactionId;
                      archive & start;

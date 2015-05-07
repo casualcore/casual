@@ -2,6 +2,7 @@ from casual.make.directive import *
 
 
 IncludePaths([
+    '.', # proposal
 	'include',
 	'../common/include',
 	'../serviceframework/include',
@@ -39,7 +40,7 @@ archive_monitor_db = LinkArchive( 'bin/casual-traffic-monitor-db',
 
 target = LinkExecutable( 'bin/casual-traffic-monitor',
 	[
-		Compile( 'source/monitor/receiver.cpp'),
+	    Compile( 'source/monitor/handler.cpp'),
 		Compile( 'source/monitor/main.cpp'),
 	],
 	[
@@ -49,6 +50,18 @@ target = LinkExecutable( 'bin/casual-traffic-monitor',
 	'sqlite3'] )
 
 install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-traffic-log',
+	[
+	    Compile( 'source/log/handler.cpp'),
+		Compile( 'source/log/file.cpp'),
+		Compile( 'source/log/main.cpp'),
+	],
+	[
+	'casual-common'] )
+
+install_bin.append( target)
+
 
 
 target = LinkServer('bin/casual-traffic-monitor-request-server',
@@ -84,5 +97,25 @@ LinkUnittest( 'bin/test-casual-monitor',
 #
 Install( install_lib,'$(CASUAL_HOME)/lib')
 Install( install_bin,'$(CASUAL_HOME)/bin')
+
+#
+# TODO proposal
+#
+receiver_obj = Compile( 'proposal/receiver.cpp')
+
+target = LinkExecutable( 'bin/proposal-traffic-log',
+	[
+	    Compile( 'proposal/log.cpp'),
+	    receiver_obj
+	],
+	[
+	'casual-common'] )
+
+
+
+
+
+
+
 
 

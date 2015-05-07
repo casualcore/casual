@@ -59,7 +59,7 @@ namespace monitor
 		common::Trace trace(cMethodname);
 	}
 
-	Transaction::Transaction( Database& monitordb) : m_database( monitordb)
+	Transaction::Transaction(Database& database) : m_database( database)
 	{
 		static const std::string cMethodname("Database::begin()");
 		common::Trace trace(cMethodname);
@@ -72,11 +72,11 @@ namespace monitor
 		common::Trace trace(cMethodname);
 		if ( ! std::uncaught_exception())
 		{
-			m_database.getConnection().commit();
+		   m_database.getConnection().commit();
 		}
 		else
 		{
-			m_database.getConnection().rollback();
+		   m_database.getConnection().rollback();
 		}
 	}
 
@@ -98,9 +98,9 @@ namespace monitor
 		m_connection.execute( stream.str());
 	}
 
-	void Database::insert( const common::message::traffic::monitor::Notify& message)
+	void Database::store( const common::message::traffic::monitor::Notify& message)
 	{
-		static const std::string cMethodname("Database::insert");
+		static const std::string cMethodname("Database::store");
 		common::Trace trace(cMethodname);
 
 		std::ostringstream stream;
@@ -154,7 +154,7 @@ namespace monitor
 }
 void operator>>( const casual::common::message::traffic::monitor::Notify& message, casual::traffic::monitor::Database& db)
 {
-	db.insert( message);
+	db.store( message);
 }
 
 

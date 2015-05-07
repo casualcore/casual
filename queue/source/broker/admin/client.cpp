@@ -43,21 +43,26 @@ namespace casual
 
             std::string updated;
 
+
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive & CASUAL_MAKE_NVP( name);
 
+
                // size and stuff
-               archive & sf::makeNameValuePair( "msg #", message.counts);
-               archive & sf::makeNameValuePair( "total", message.size.total);
-               archive & sf::makeNameValuePair( "avg", message.size.average);
+               archive & sf::makeNameValuePair( "# total", message.number.total());
+               archive & sf::makeNameValuePair( "(C", message.number.commited);
+               archive & sf::makeNameValuePair( "E", message.number.enqueued);
+               archive & sf::makeNameValuePair( "D)", message.number.dequeued);
+               archive & sf::makeNameValuePair( "size", message.size.total);
+               archive & sf::makeNameValuePair( "(avg", message.size.average);
                archive & sf::makeNameValuePair( "min", message.size.min);
-               archive & sf::makeNameValuePair( "max", message.size.max);
+               archive & sf::makeNameValuePair( "max)", message.size.max);
 
                archive & CASUAL_MAKE_NVP( updated);
 
 
-               archive & CASUAL_MAKE_NVP( retries);
+               archive & sf::makeNameValuePair( "r", retries);
                archive & sf::makeNameValuePair( "error queue", error);
 
 
@@ -78,12 +83,15 @@ namespace casual
             {
                return {
                   { "name", terminal::color::Solid{ terminal::color::yellow}},
-                  { "msg #", sf::archive::terminal::Directive::Align::right},
-                  { "total", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
+                  { "# total", sf::archive::terminal::Directive::Align::right},
+                  { "(C", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::green}},
+                  { "E", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::yellow}},
+                  { "D)", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::yellow}},
+                  { "size", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
+                  { "(avg", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
                   { "min", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "max", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "avg", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "retries", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
+                  { "max)", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
+                  { "r", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
                   { "error queue", sf::archive::terminal::Directive::Align::left, terminal::color::Solid{ common::terminal::color::blue}},
                };
             }
@@ -106,7 +114,7 @@ namespace casual
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive & CASUAL_MAKE_NVP( name);
-               archive & sf::makeNameValuePair( "msg #", message.counts);
+               archive & sf::makeNameValuePair( "msg #", message.number.total());
                archive & sf::makeNameValuePair( "total", message.size.total);
                archive & sf::makeNameValuePair( "avg", message.size.average);
                archive & sf::makeNameValuePair( "min", message.size.min);
@@ -243,13 +251,15 @@ namespace casual
                         if( value.message.size.min > q.message.size.min ) { value.message.size.min = q.message.size.min;}
                         if( value.message.size.max < q.message.size.max ) { value.message.size.max = q.message.size.max;}
                         if( value.message.timestamp < q.message.timestamp ) { value.message.timestamp = q.message.timestamp;}
-                        value.message.counts += q.message.counts;
+                        value.message.number.commited += q.message.number.commited;
+                        value.message.number.dequeued += q.message.number.dequeued;
+                        value.message.number.enqueued += q.message.number.enqueued;
                         value.message.size.total += q.message.size.total;
                      });
 
-               if( value.message.counts > 0)
+               if( value.message.number.total() > 0)
                {
-                  value.message.size.average = value.message.size.total / value.message.counts;
+                  value.message.size.average = value.message.size.total / value.message.number.total();
                }
 
                if( value.message.timestamp != sf::platform::time_point::min())
