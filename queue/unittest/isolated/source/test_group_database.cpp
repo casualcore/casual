@@ -51,7 +51,11 @@ namespace casual
                result.message.id = common::uuid::make();
                result.message.reply = "someQueue";
                result.message.type = common::buffer::type::binary();
-               result.message.payload.resize( 128);
+
+               for( auto c : common::uuid::string( common::uuid::make()))
+               {
+                  result.message.payload.push_back( c);
+               }
 
                result.message.avalible = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now());
                //result.message.timestamp = common::platform::clock_type::now();
@@ -280,6 +284,7 @@ namespace casual
          EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
          EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
          EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+         EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
          EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
       }
 
@@ -324,6 +329,7 @@ namespace casual
          EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
          EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
          EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+         EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
          EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
       }
 
@@ -384,6 +390,7 @@ namespace casual
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
             EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type) << "origin.type: " << origin.message.type << " fetched.type; " << fetched.message.at( 0).type;
             EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
+            EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
             EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
             //EXPECT_TRUE( origin.message.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
          });

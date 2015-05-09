@@ -119,13 +119,13 @@ namespace casual
 
             message::service::Advertise sendMessage;
             sendMessage.serverPath = "banan";
-            sendMessage.services.resize( 50);
+            sendMessage.services.resize( 30);
             writer( sendMessage);
 
             message::service::Advertise receiveMessage;
             EXPECT_TRUE( reader( receiveMessage));
             EXPECT_TRUE( receiveMessage.serverPath == "banan");
-            EXPECT_TRUE( receiveMessage.services.size() == 50);
+            EXPECT_TRUE( receiveMessage.services.size() == 30);
 
          }
 
@@ -140,7 +140,7 @@ namespace casual
 
             non_blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cMonitorConnect, message::Type::cMonitorNotify});
+            auto result = reader.next( { message::Type::cTrafficMonitorConnect, message::Type::cTrafficMonitorNotify});
 
             EXPECT_TRUE( result.empty());
          }
@@ -175,7 +175,7 @@ namespace casual
 
             blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cMonitorConnect, message::service::Advertise::message_type});
+            auto result = reader.next( { message::Type::cTrafficMonitorConnect, message::service::Advertise::message_type});
             EXPECT_TRUE( result.type == message::service::Advertise::message_type);
          }
 

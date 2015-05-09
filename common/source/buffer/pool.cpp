@@ -9,7 +9,6 @@
 #include "common/algorithm.h"
 #include "common/exception.h"
 
-
 #include <functional>
 
 
@@ -93,7 +92,6 @@ namespace casual
             {
                log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
                      << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
-
 
                auto buffer = find( payload.type).insert( std::move( payload));
 

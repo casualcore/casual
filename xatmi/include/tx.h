@@ -111,6 +111,7 @@ extern "C" {
    /* casual extension */
    extern int tx_suspend( XID* xid);
    extern int tx_resume( const XID* xid);
+   extern COMMIT_RETURN tx_get_commit_return();
 
 #ifdef __cplusplus
 }

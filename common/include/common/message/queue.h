@@ -125,12 +125,13 @@ namespace casual
                      archive & id;
                   })
                };
-               struct base_request
+               struct Request : basic_message< Type::cQueueDequeueRequest>
                {
                   process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
                   Selector selector;
+                  bool block = false;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -138,10 +139,11 @@ namespace casual
                      archive & trid;
                      archive & queue;
                      archive & selector;
+                     archive & block;
                   })
-               };
 
-               using Request = message::type_wrapper< base_request, Type::cQueueDequeueRequest>;
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
+               };
 
                struct Reply : basic_message< Type::cQueueDequeueReply>
                {
@@ -167,13 +169,32 @@ namespace casual
                   })
                };
 
-               namespace callback
+               namespace forget
                {
-                  using Request = message::type_wrapper< base_request, Type::cQueueDequeueCallbackRequest>;
+                  struct Request : basic_message< Type::cQueueDequeueForgetRequest>
+                  {
+                     process::Handle process;
+                     std::size_t queue;
 
-                  using Reply = message::type_wrapper< queue::lookup::base_reply, Type::cQueueDequeueCallbackReply>;
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & process;
+                        archive & queue;
+                     })
+                  };
 
-               } // callback
+                  struct Reply : basic_message< Type::cQueueDequeueForgetReply>
+                  {
+                     bool found = false;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & found;
+                     })
+                  };
+
+               } // forget
+
 
             } // dequeue
 
@@ -241,11 +262,14 @@ namespace casual
                         })
                      } size;
 
+                     int state;
+
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & counts;
                         archive & timestamp;
                         archive & size;
+                        archive & state;
                      })
 
                   } message;

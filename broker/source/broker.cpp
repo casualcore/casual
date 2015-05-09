@@ -133,7 +133,7 @@ namespace casual
             {
                domain = config::domain::get( arguments.configurationfile);
             }
-            catch( const exception::FileNotExist& exception)
+            catch( const exception::invalid::File& exception)
             {
                common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
             }
@@ -231,8 +231,8 @@ namespace casual
                handle::Unadvertise{ m_state},
                handle::ServiceLookup{ m_state},
                handle::ACK{ m_state},
-               handle::MonitorConnect{ m_state},
-               handle::MonitorDisconnect{ m_state},
+               handle::monitor::Connect{ m_state},
+               handle::monitor::Disconnect{ m_state},
                handle::transaction::client::Connect{ m_state},
                handle::Call{ admin::Server::services( *this), m_state},
                common::message::handle::ping( m_state),
@@ -299,20 +299,8 @@ namespace casual
 
          if( broker)
          {
-            queue::non_blocking::Send send{ m_state};
-            common::message::shutdown::Request message;
-
-            while( ! send( m_receiveQueue.id(), message))
-            {
-               //
-               // Queue is full, try to read non-existent message to flush the queue
-               //
-               common::message::flush::IPC flush;
-               queue::non_blocking::Reader{ m_receiveQueue, m_state}( flush);
-            }
-
+            handle::send_shutdown( m_state);
          }
-
 
          return result;
       }

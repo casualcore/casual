@@ -35,7 +35,7 @@ namespace casual
          {
             platform::time_point::rep representation;
             archive >> sf::makeNameValuePair( name, representation);
-            value = platform::time_point( platform::time_type::duration( representation));
+            value = platform::time_point( platform::time_point::duration( representation));
          }
 
          void serialize( Writer& archive, const platform::time_point& value, const char* name)

@@ -57,7 +57,9 @@ namespace casual
                }
                else
                {
-                  throw common::exception::FileNotExist( "could not find resource configuration file - should be: " + common::environment::directory::casual() + "/configuration/configuration.*");
+                  throw common::exception::invalid::File( "could not find resource configuration file",
+                        common::exception::make_nip( "path", common::environment::directory::casual() + "/configuration"),
+                        common::exception::make_nip( "name", "configuration.(yaml|json|xml|..."));
                }
             }
          } // switches

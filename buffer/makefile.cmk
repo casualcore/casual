@@ -71,6 +71,6 @@ LinkUnittest( 'bin/test-buffer',
 # Install
 #
 Install( install_lib, '$(CASUAL_HOME)/lib')
-Install( install_include, '$(CASUAL_HOME)/include')
+Install( install_include, '$(CASUAL_HOME)/include/buffer')
 
 

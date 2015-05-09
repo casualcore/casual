@@ -16,6 +16,7 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
+#include "common/message/handle.h"
 
 
 //
@@ -23,6 +24,7 @@
 //
 #include <vector>
 #include <string>
+#include <fstream>
 
 namespace casual
 {
@@ -41,27 +43,41 @@ namespace casual
                {
                   using state::Base::Base;
 
-
-                  void operator () ( const state::Executable& server)
+                  void operator () ( const state::Executable& executable)
                   {
-                     if( server.configuredInstances > server.instances.size())
+                     if( executable.configuredInstances > executable.instances.size())
                      {
-                        decltype( server.instances) pids;
+                        decltype( executable.instances) pids;
 
-                        auto count = server.configuredInstances - server.instances.size();
+                        auto count = executable.configuredInstances - executable.instances.size();
+
+                        //
+                        // Prepare environment. We use the default first and add
+                        // specific for the executable
+                        //
+                        auto environment = m_state.standard.environment;
+                        environment.insert(
+                           std::end( environment),
+                           std::begin( executable.environment.variables),
+                           std::end( executable.environment.variables));
 
                         while( count-- > 0)
                         {
-                           pids.push_back( common::process::spawn( server.path, server.arguments));
+                           pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
                         }
 
-                        m_state.addInstances( server.id, std::move( pids));
+                        m_state.addInstances( executable.id, std::move( pids));
                      }
                   }
 
 
                   void operator () ( State::Batch& batch)
                   {
+                     //
+                     // If something throws, we shutdown...
+                     //
+                     common::scope::Execute scope_shutdown{ std::bind( &handle::send_shutdown, std::ref( m_state))};
+
                      common::log::information << "boot group '" << batch.group << "'\n";
 
                      common::range::for_each( batch.servers, *this);
@@ -75,6 +91,14 @@ namespace casual
                         handle::transaction::manager::Ready{ m_state},
                         handle::Connect{ m_state},
                         handle::transaction::client::Connect{ m_state},
+                        handle::Advertise{ m_state},
+                        handle::Unadvertise{ m_state},
+                        handle::monitor::Connect{ m_state},
+                        handle::monitor::Disconnect{ m_state},
+                        //handle::ServiceLookup{ m_state},
+                        //handle::ACK{ m_state},
+                        common::message::handle::ping( m_state),
+                        common::message::handle::Shutdown{}
                      };
 
                      //
@@ -99,6 +123,11 @@ namespace casual
                            throw common::exception::signal::Terminate{};
                         }
                      }
+
+                     //
+                     // we're done, release the shutdown
+                     //
+                     scope_shutdown.release();
                   }
                };
 
@@ -147,6 +176,22 @@ namespace casual
                };
 
 
+               namespace handle
+               {
+                  void error()
+                  {
+                     try
+                     {
+                        throw;
+                     }
+                     catch( const state::exception::Missing& exception)
+                     {
+                        log::error << exception << " - action: discard";
+                     }
+                  }
+
+               } // handle
+
             } // <unnamed>
          } // local
 
@@ -175,16 +220,59 @@ namespace casual
             }
          }
 
-         void MonitorConnect::operator () ( message_type& message)
+         void send_shutdown( State& state)
          {
-            //TODO: Temp
-            m_state.monitorQueue = message.process.queue;
+            queue::non_blocking::Send send{ state};
+            common::message::shutdown::Request message;
+
+            while( ! send( common::ipc::receive::queue().id(), message))
+            {
+               //
+               // Queue is full, try to read non-existent message to flush the queue
+               //
+               common::message::flush::IPC flush;
+               queue::non_blocking::Reader{ common::ipc::receive::queue(), state}( flush);
+            }
          }
 
-         void MonitorDisconnect::operator () ( message_type& message)
+         namespace monitor
          {
-            m_state.monitorQueue = 0;
+            void Connect::operator () ( message_type& message)
+            {
+               trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
+
+               if( ! range::find( m_state.traffic.monitors, message.process.queue))
+               {
+                  m_state.traffic.monitors.push_back( message.process.queue);
+               }
+               else
+               {
+                  log::error << "traffic monitor already connected - action: ignore" << std::endl;
+               }
+
+            }
+
+            void Disconnect::operator () ( message_type& message)
+            {
+               trace::internal::Scope trace{ "broker::handle::monitor::Disconnect::dispatch"};
+
+               auto found = range::find( m_state.traffic.monitors, message.process.queue);
+
+               if( found)
+               {
+                  m_state.traffic.monitors.erase( found.first);
+               }
+               else
+               {
+                  log::error << "traffic monitor has already disconnected or not connected in the first place - action: ignore" << std::endl;
+               }
+
+            }
          }
+
+
+
+
 
 
          namespace transaction
@@ -198,7 +286,7 @@ namespace casual
 
                   common::log::internal::debug << "connect request: " << message.process << std::endl;
 
-                  m_state.transactionManagerQueue = message.process.queue;
+                  m_state.transaction_manager = message.process.queue;
 
                   //
                   // Send configuration to TM
@@ -264,7 +352,7 @@ namespace casual
 
                      message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
-                     reply.transactionManagerQueue = m_state.transactionManagerQueue;
+                     reply.transaction_manager = m_state.transaction_manager;
 
                      queue::blocking::Writer write( message.process.queue, m_state);
                      write( reply);
@@ -277,22 +365,35 @@ namespace casual
 
          void Advertise::operator () ( message_type& message)
          {
+            try
+            {
+               std::vector< state::Service> services;
 
-            std::vector< state::Service> services;
+               common::range::transform( message.services, services, transform::Service{});
 
-            common::range::transform( message.services, services, transform::Service{});
-
-            m_state.addServices( message.process.pid, std::move( services));
+               m_state.addServices( message.process.pid, std::move( services));
+            }
+            catch( ...)
+            {
+               local::handle::error();
+            }
 
          }
 
          void Unadvertise::operator () ( message_type& message)
          {
-            std::vector< state::Service> services;
+            try
+            {
+               std::vector< state::Service> services;
 
-            common::range::transform( message.services, services, transform::Service{});
+               common::range::transform( message.services, services, transform::Service{});
 
-            m_state.removeServices( message.process.pid, std::move( services));
+               m_state.removeServices( message.process.pid, std::move( services));
+            }
+            catch( ...)
+            {
+               local::handle::error();
+            }
          }
 
 
@@ -379,7 +480,7 @@ namespace casual
 
                   message::service::name::lookup::Reply reply;
                   reply.service = service.information;
-                  reply.service.monitor_queue = m_state.monitorQueue;
+                  reply.service.traffic_monitors = m_state.traffic.monitors;
                   reply.process = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
@@ -522,7 +623,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::statistics( platform::queue_id_type id, message::monitor::Notify& message)
+         void Policy::statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
          {
             //
             // We don't collect statistics for the broker

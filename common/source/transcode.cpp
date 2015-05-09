@@ -37,31 +37,37 @@ namespace casual
 
          namespace base64
          {
-            std::string encode( const std::vector<char>& value)
+            namespace detail
             {
-               //
-               // b64_ntop requires one extra char of some reason
-               //
-               std::string result( ((value.size() + 2) / 3) * 4 + 1, 0);
-
-               const auto length =
-                  b64_ntop(
-                     reinterpret_cast<const unsigned char*>(value.data()),
-                     value.size(),
-                     &result[0],
-                     result.size());
-
-               if( length < 0)
+               std::string encode( const void* data, std::size_t bytes)
                {
-                  throw std::logic_error( "Base64-encode failed");
+                  //
+                  // b64_ntop requires one extra char of some reason
+                  //
+                  std::string result( ( ( bytes + 2) / 3) * 4 + 1, 0);
+
+                  const auto length =
+                     b64_ntop(
+                        static_cast<const unsigned char*>( data),
+                        bytes,
+                        &result[0],
+                        result.size());
+
+                  if( length < 0)
+                  {
+                     throw std::logic_error( "Base64-encode failed");
+                  }
+
+                  result.resize( length);
+
+                  return result;
+
                }
 
-               result.resize( length);
+            } // detail
 
-               return result;
-            }
 
-            std::vector<char> decode( const std::string& value)
+            platform::binary_type decode( const std::string& value)
             {
                std::vector<char> result( (value.size() / 4) * 3);
 
@@ -197,17 +203,29 @@ namespace casual
          namespace utf8
          {
             const std::string cUTF8( "UTF-8");
+            const std::string cCurrent( "");
+
+            //
+            // Make sure this is done once
+            //
+            // If "" is used as codeset to iconv, it shall choose the current
+            // locale-codeset, but that seems to work only if
+            // std::setlocale() is called first
+            //
+            // Perhaps we need to call std::setlocale() each time just in case
+            //
+            const auto once = std::setlocale( LC_CTYPE, "");
 
             std::string encode( const std::string& value)
             {
-               //return encode( value, "");
-               return encode( value, local::info().codeset);
+               //return encode( value, local::info().codeset);
+               return encode( value, cCurrent);
             }
 
             std::string decode( const std::string& value)
             {
-               //return decode( value, "");
-               return decode( value, local::info().codeset);
+               //return decode( value, local::info().codeset);
+               return decode( value, cCurrent);
             }
 
             std::string encode( const std::string& value, const std::string& codeset)

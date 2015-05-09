@@ -211,12 +211,12 @@ namespace casual
 
                m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
-                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id), 
+                     q.id, m.state, q.name, q.retries, q.error, q.type, COUNT( m.id), 
                        MIN( length( m.payload)), MAX( length( m.payload)), AVG( length( m.payload)), 
                        SUM( length( m.payload)), MAX( m.timestamp)
                   FROM
-                     queue q LEFT JOIN message m ON q.id = m.queue AND m.state = 2
-                  GROUP BY q.id 
+                     queue q LEFT JOIN message m ON q.id = m.queue
+                  GROUP BY q.id, m.state 
                   ORDER BY q.id  
                       ;
                   )");
@@ -375,7 +375,7 @@ namespace casual
 
 
 
-         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::base_request& message)
+         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
             common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
 
@@ -493,18 +493,17 @@ namespace casual
 
 
                row.get( 0, queue.id);
-               row.get( 1, queue.name);
-               row.get( 2, queue.retries);
-               row.get( 3, queue.error);
-               row.get( 4, queue.type);
-               row.get( 5, queue.message.counts);
-               row.get( 6, queue.message.size.min);
-               row.get( 7, queue.message.size.max);
-               row.get( 8, queue.message.size.average);
-               row.get( 9, queue.message.size.total);
-               row.get( 10, queue.message.timestamp);
-
-               common::log::internal::queue << common::chronology::local( queue.message.timestamp) << std::endl;
+               row.get( 1, queue.message.state);
+               row.get( 2, queue.name);
+               row.get( 3, queue.retries);
+               row.get( 4, queue.error);
+               row.get( 5, queue.type);
+               row.get( 6, queue.message.counts);
+               row.get( 7, queue.message.size.min);
+               row.get( 8, queue.message.size.max);
+               row.get( 9, queue.message.size.average);
+               row.get( 10, queue.message.size.total);
+               row.get( 11, queue.message.timestamp);
 
                result.push_back( std::move( queue));
             }

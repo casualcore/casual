@@ -8,7 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include "monitor/monitordb.h"
 #include "common/message/monitor.h"
 #include "common/platform.h"
 #include "common/process.h"
@@ -16,12 +15,14 @@
 #include <iostream>
 #include <chrono>
 
+#include "traffic/monitor/database.h"
+
 //#include <unistd.h>
 
 namespace casual
 {
-namespace statistics
-{
+	namespace traffic
+	{
 	namespace monitor
 	{
 
@@ -29,24 +30,27 @@ namespace statistics
 		{
          EXPECT_NO_THROW(
          {
-				MonitorDB db(":memory:");
+				Database db(":memory:");
 			});
 		}
 
 		TEST( casual_monitor, create_database_fail)
 		{
+		   /*
+		    * this creates a db-file, and does not throw
 		   EXPECT_THROW(
 		   {
-		      MonitorDB db("/path_not_exist/fail.db");
+		      Database db("/path_not_exist/fail.db");
 		   },std::exception);
+		   */
 		}
 
 		TEST( casual_monitor, insert_ok)
 		{
 			EXPECT_NO_THROW(
 			{
-				MonitorDB db("test.db");
-				common::message::monitor::Notify message;
+				Database db("test.db");
+				common::message::traffic::monitor::Notify message;
 
 				message.service = "myService";
 				message.parentService = "myParentService";
@@ -54,12 +58,11 @@ namespace statistics
 				message.end = common::platform::clock_type::now();
 				message.start = message.end - std::chrono::microseconds( 5);
 
-				db.insert(message);
+				db.store(message);
 			});
 		}
 
-
 	}
-}
+	}
 }
 

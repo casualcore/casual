@@ -102,9 +102,9 @@ namespace casual
             reader( reply);
 
 
-            queue = reply.transactionManagerQueue;
+            queue = reply.transaction_manager;
             common::environment::domain::name( reply.domain);
-            std::swap( resources, reply.resourceManagers);
+            std::swap( resources, reply.resources);
 
             log::internal::transaction << "received client connect reply from broker" << std::endl;
 
@@ -177,7 +177,7 @@ namespace casual
                   {
                      m_resources.all.emplace_back(
                            resource.key,
-                           resource.xaSwitch,
+                           resource.xa_switch,
                            rm.id,
                            std::move( rm.openinfo),
                            std::move( rm.closeinfo));
@@ -185,7 +185,7 @@ namespace casual
                }
                else
                {
-                  throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships", __FILE__, __LINE__);
+                  throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships");
                }
 
                //
@@ -454,8 +454,16 @@ namespace casual
                   {
                      message.transaction.state = static_cast< decltype( message.transaction.state)>( Transaction::State::rollback);
                   }
+                  
+                  //
+                  // end resource
+                  //
+                  resources_end( *found, TMSUCCESS);
+
                }
                message.transaction.trid = std::move( caller);
+
+
             }
          }
 
@@ -641,6 +649,10 @@ namespace casual
                throw exception::tx::Protocoll{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }
 
+            //
+            // end resources
+            //
+            resources_end( transaction, TMSUCCESS);
 
             message::transaction::commit::Request request;
             request.trid = transaction.trid;
@@ -737,6 +749,11 @@ namespace casual
                throw exception::tx::Protocoll{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
             }
 
+            //
+            // end resources
+            //
+            resources_end( transaction, TMSUCCESS);
+
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
             request.process = process;
@@ -780,6 +797,11 @@ namespace casual
             }
 
             return TX_NOT_SUPPORTED;
+         }
+
+         COMMIT_RETURN Context::get_commit_return()
+         {
+            return TX_COMMIT_COMPLETED;
          }
 
          int Context::setTransactionControl(TRANSACTION_CONTROL control)
@@ -908,7 +930,7 @@ namespace casual
                //
                // Tell the RM:s to resume
                //
-               resources_end( *found, TMRESUME);
+               resources_start( *found, TMRESUME);
 
                //
                // We pop the top null-xid that represent a suspended transaction

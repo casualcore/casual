@@ -29,28 +29,6 @@ namespace casual
          {
             namespace
             {
-               namespace normalize
-               {
-                  struct Path
-                  {
-                     void operator () ( Executable& executable) const
-                     {
-                        executable.path = common::environment::string( executable.path);
-                     }
-
-                     void operator () ( Default& value) const
-                     {
-                        value.path = common::environment::string( value.path);
-                     }
-                  };
-
-                  void path( Domain& domain)
-                  {
-                     Path{}( domain.casual_default);
-                     common::range::for_each( domain.servers, Path{});
-                     common::range::for_each( domain.executables, Path{});
-                  }
-               }
 
                namespace complement
                {
@@ -88,12 +66,21 @@ namespace casual
                            value = def;
                      }
 
-                     static std::string nextAlias( const std::string& path)
+                     std::string nextAlias( const std::string& path) const
                      {
-                        static long index = 1;
-                        return common::file::name::base( path) + "_" + std::to_string( index++);
+                        auto alias = common::file::name::base( path);
+
+                        auto count = m_alias[ alias]++;
+
+                        if( count > 1)
+                        {
+                           return alias + "_" + std::to_string( count);
+                        }
+
+                        return alias;
                      }
                      domain::Default m_casual_default;
+                     mutable std::map< std::string, std::size_t> m_alias;
                   };
 
                   inline void defaultValues( Domain& domain)
@@ -123,7 +110,7 @@ namespace casual
 
             reader >> CASUAL_MAKE_NVP( domain);
 
-            local::normalize::path( domain);
+            //local::normalize::path( domain);
 
             //
             // Complement with default values
@@ -149,8 +136,7 @@ namespace casual
             }
             else
             {
-               throw common::exception::FileNotExist(
-                     "could not find domain configuration file - should be: " + config::directory::domain() + "/domain.*");
+               throw common::exception::invalid::File{ "could not find domain configuration file",  CASUAL_NIP( configuration)};
             }
          }
 

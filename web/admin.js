@@ -1,5 +1,7 @@
 var app = angular.module('myCasualAdminApp', []);
 
+google.load('visualization', '1', {packages: ['corechart']});
+
 function CasualAdminCtrl($scope, $http, $log, $timeout) {
 	
 	var promise;
@@ -68,7 +70,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
             for (var j = 0; j < $scope.instances.length; j++)
             {
                var instance = $scope.instances[j]
-               if ( serverInstances[i] == instance.pid )
+               if ( serverInstances[i] == instance.process.pid )
                {
                   $scope.selectedInstances.push(instance)
                   break
@@ -123,6 +125,20 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 				.error(errorCallback);
 	}
 
+	$scope.getMonitorStatistics = function doGetCasualMonitorInfo() {
+		$http.defaults.headers.common.Accept = 'application/json';
+		$http
+				.post(host + '/casual/casual?service=getMonitorStatistics&protocol=json','{}')
+				.success(getCasualMonitorInfoCallback)
+				.error(errorCallback);
+	}
+	function getCasualMonitorInfoCallback(reply) 
+	{	
+	  $scope.outputValues = reply.outputValues;
+	  drawBackgroundColor()
+	  //$log.log($scope.outputValues);
+	}
+	
 	function getCasualStateInfoCallback(reply) 
 	{	
 	  $scope.state = reply.serviceReturn;
@@ -154,7 +170,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
       
       for (var i = 0; i < $scope.instances.length; i++) 
       {
-         $scope.instances[i].alias = $scope.getServer( $scope.instances[i].pid)
+         $scope.instances[i].alias = $scope.getServer( $scope.instances[i].process.pid)
       }
       
       if ($scope.selectedInstances.length == 0)
@@ -169,7 +185,7 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
             for (var j = 0; j < $scope.instances.length; j++)
             {
                var instance = $scope.instances[j]
-               if ( selectedInstance.pid == instance.pid )
+               if ( selectedInstance.process.pid == instance.process.pid )
                {
                   $scope.selectedInstances[i] = $scope.instances[j]
                   break
@@ -182,16 +198,47 @@ function CasualAdminCtrl($scope, $http, $log, $timeout) {
 
 	}
 
+	function drawBackgroundColor() {
+		  
+	      var data = new google.visualization.DataTable();
+	      data.addColumn('datetime', 'X');
+	      data.addColumn('number', 'getMonitorSt...');
 
+	      for (i=0; i < $scope.outputValues.length; i++)
+	      {
+	    	  if ($scope.outputValues[i].service == "getMonitorStatistics")
+	    	  {
+		    	  start = $scope.outputValues[i].start/1000
+		    	  end = $scope.outputValues[i].end/1000
+		    	  data.addRow([new Date(start/1000), end - start])
+	    	  }
+	      }
+	      
+	      var options = {
+	        hAxis: {
+	          title: 'Timepoint'
+	        },
+	        vAxis: {
+	          title: 'Elapsed time (usec)'
+	        },
+	        backgroundColor: '#f1f8e9',
+	        width: 700,
+	        height: 400
+	      };
+
+	      var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+	      chart.draw(data, options);
+	}
+	
 	function errorCallback(reply) {
 		
 		$log.error(reply);
 	}
 
-
 	//
 	// start cycle
 	//
+	$scope.getMonitorStatistics()
 	$scope.submit();
 
 }
@@ -209,3 +256,6 @@ app.directive('ngEnter', function () {
         });
     };
 });
+
+
+

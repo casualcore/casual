@@ -11,6 +11,11 @@
 #ifndef XATMI_H_
 #define XATMI_H_
 
+
+#include <stdarg.h>
+
+
+
 #define TPNOBLOCK    0x00000001
 #define TPSIGRSTRT   0x00000002
 #define TPNOREPLY    0x00000004
@@ -93,14 +98,13 @@ extern int tprecv( int id, char ** odata, long *olen, long flags, long* event); 
 extern int tpconnect( char* svc, char* idata, long ilen, long flags); // COMMUNICATION
 extern int tpdiscon( int id); // COMMUNICATION
 
-extern int tperrno;
-extern long tpurcode;
-/*
- * Not sure what blacktie uses this for...
- *
-extern  int _get_tperrno(void); // CLIENT
-extern  long _get_tpurcode(void); // CLIENT
-*/
+
+extern int casual_get_tperrno(void); // CLIENT
+extern long casual_get_tpurcode(void); // CLIENT
+
+#define tperrno casual_get_tperrno()
+#define tpurcode casual_get_tpurcode()
+
 
 
 /*
@@ -120,11 +124,11 @@ extern  long _get_tpurcode(void); // CLIENT
 extern const char* tperrnostring( int error);
 
 extern int tpsvrinit( int argc, char** argv);
-
-
 extern void tpsvrdone();
 
-
+typedef enum { c_log_error, c_log_warning, c_log_information, c_log_debug } casual_log_category_t;
+extern int casual_log( casual_log_category_t category, const char* const format, ...);
+extern int casual_vlog( casual_log_category_t category, const char* const format, va_list ap);
 
 
 #ifdef __cplusplus
