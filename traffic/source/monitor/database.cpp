@@ -4,8 +4,10 @@
  */
 
 #include "common/trace.h"
-#include "common/environment.h"
 #include "common/chronology.h"
+#include "common/arguments.h"
+#include "common/process.h"
+
 
 #include "sql/database.h"
 
@@ -30,72 +32,58 @@ namespace traffic
 {
 namespace monitor
 {
+   struct Handler : handler::Base
+   {
+      Handler( const std::string& value) : m_connection( sql::database::Connection( value))
+      {
+         std::ostringstream stream;
+         stream   << "CREATE TABLE IF NOT EXISTS calls ( "
+                  << "service       TEXT, "
+                  << "parentservice TEXT, "
+                  << "callid        TEXT, " // should not be string
+                  << "transactionid BLOB, "
+                  << "start         NUMBER, "
+                  << "end           NUMBER);";
 
-	namespace local
-	{
-		namespace
-		{
-			std::string getDatabase()
-			{
-				return common::environment::directory::domain() + "/monitor.db";
-			}
-		}
-	}
+         m_connection.execute( stream.str());
+      }
 
+      void persist_begin( ) override
+      {
+         m_connection.begin();
+      }
 
-         struct Handler : handler::Base
+      void log( const message_type& message) override
+      {
+         std::ostringstream stream;
+         stream << "INSERT INTO calls VALUES (?,?,?,?,?,?);";
+         m_connection.execute( stream.str(),
+               message.service,
+               message.parentService,
+               common::uuid::string( message.callId), // should not be string
+               message.transactionId,
+               std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
+               std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count());
+      }
+
+      void persist_commit() override
+      {
+         if ( ! std::uncaught_exception())
          {
-            Handler( const std::string& value) : m_connection( sql::database::Connection( value))
-            {
-               std::ostringstream stream;
-               stream   << "CREATE TABLE IF NOT EXISTS calls ( "
-                        << "service       TEXT, "
-                        << "parentservice TEXT, "
-                        << "callid        TEXT, " // should not be string
-                        << "transactionid BLOB, "
-                        << "start         NUMBER, "
-                        << "end           NUMBER);";
+            m_connection.commit();
+         }
+         else
+         {
+            m_connection.rollback();
+         }
+      }
 
-               m_connection.execute( stream.str());
-            }
+   private:
+      sql::database::Connection m_connection;
+   };
 
-            void persist_begin( ) override
-            {
-               m_connection.begin();
-            }
-
-
-            void log( const message_type& message) override
-            {
-               std::ostringstream stream;
-               stream << "INSERT INTO calls VALUES (?,?,?,?,?,?);";
-               m_connection.execute( stream.str(),
-                     message.service,
-                     message.parentService,
-                     common::uuid::string( message.callId), // should not be string
-                     message.transactionId,
-                     std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
-                     std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count());
-            }
-
-            void persist_commit() override
-            {
-               if ( ! std::uncaught_exception())
-               {
-                  m_connection.commit();
-               }
-               else
-               {
-                  m_connection.rollback();
-               }
-            }
-
-         private:
-            sql::database::Connection m_connection;
-         };
-
-      } // monitor
-   } // traffic
+} // monitor
+} // traffic
 } // casual
 
 
@@ -104,12 +92,17 @@ int main( int argc, char **argv)
 {
 
 
-   // get log-file from arguments
-   std::string database = casual::traffic::monitor::local::getDatabase();
+   // get database from arguments
+   std::string database{"monitor.db"};
+   {
+      casual::common::Arguments parser;
+      parser.add(
+            casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", database)
+      );
 
-   // set process name from arguments
-
-
+      parser.parse( argc, argv);
+      casual::common::process::path( parser.processName());
+   }
 
    casual::traffic::monitor::Handler handler{ database};
 

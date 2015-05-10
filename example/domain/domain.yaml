@@ -41,11 +41,19 @@ domain:
   servers: 
       
     - path: /opt/casual/bin/casual-traffic-monitor
+      arguments: [ -db, monitor.db ]
       instances: 1
       note: The monitor
       memberships:
         - group1
         
+    - path: /opt/casual/bin/casual-traffic-log
+      arguments: [ -f, statistics.log ]
+      instances: 1
+      note: The monitor
+      memberships:
+        - group1
+ 
     - alias: someServer
       note: Some testserver...
       path: /opt/casual/bin/test
@@ -117,7 +125,7 @@ domain:
     - alias: echo
       note: echo, echo...
       path: /bin/echo
-      arguments: [poop]
+      arguments: [casual is the greatest thing since sliced bread]
       instances: 0
 
   

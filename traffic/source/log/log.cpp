@@ -7,8 +7,9 @@
 
 #include "receiver.h"
 
-
 #include "common/internal/trace.h"
+#include "common/arguments.h"
+#include "common/process.h"
 
 //
 // std
@@ -67,14 +68,17 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-
-
    // get log-file from arguments
-   std::string file("statisics.log");
+   std::string file{"statistics.log"};
+   {
+      casual::common::Arguments parser;
+      parser.add(
+            casual::common::argument::directive( { "-f", "--file"}, "path to log-file", file)
+      );
 
-   // set process name from arguments
-
-
+      parser.parse( argc, argv);
+      casual::common::process::path( parser.processName());
+   }
 
    casual::traffic::log::Handler handler{ file};
 

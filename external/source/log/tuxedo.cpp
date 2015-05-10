@@ -10,6 +10,10 @@
 
 #include "common/internal/trace.h"
 
+#include "common/arguments.h"
+#include "common/process.h"
+
+
 //
 // std
 //
@@ -90,11 +94,16 @@ int main( int argc, char **argv)
 
 
    // get log-file from arguments
-   std::string file("txrpt.stat");
+   std::string file{"txrpt.stat"};
+   {
+      casual::common::Arguments parser;
+      parser.add(
+            casual::common::argument::directive( { "-f", "--file"}, "path to log-file", file)
+      );
 
-   // set process name from arguments
-
-
+      parser.parse( argc, argv);
+      casual::common::process::path( parser.processName());
+   }
 
    casual::traffic::log::tuxedo::Handler handler{ file};
 

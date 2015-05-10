@@ -2,7 +2,7 @@ from casual.make.directive import *
 
 
 IncludePaths([
-    '.', # proposal
+    '.', 
 	'include',
 	'../common/include',
 	'../serviceframework/include',
@@ -32,15 +32,16 @@ lib_vo = LinkLibrary( 'bin/casual-traffic-monitor-vo',
 
 install_lib.append( lib_vo)
 
-receiver_obj = Compile( 'source/receiver.cpp')
-
+link_log_base = LinkLibrary('bin/casual-traffic-log-base',
+    [Compile( 'source/receiver.cpp')],
+    ['casual-common'])
+    
 target = LinkExecutable( 'bin/casual-traffic-monitor',
 	[
-	    receiver_obj,
         Compile( 'source/monitor/database.cpp')
 	],
 	[
-	lib_vo,
+    link_log_base,
 	'casual-common',
 	'sqlite3'] )
 
@@ -48,10 +49,9 @@ install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-traffic-log',
 	[
-	    Compile( 'source/log/log.cpp'),
-        receiver_obj
+	    Compile( 'source/log/log.cpp')
 	],
-	[
+	[link_log_base,
 	'casual-common'] )
 
 install_bin.append( target)
@@ -83,21 +83,6 @@ LinkUnittest( 'bin/test-casual-monitor',
 	lib_vo,
 	'casual-common',
 	'sqlite3'])	
-
-
-#
-# Code for tuxedoformat txrpt.stat
-# Move to other repo
-#
-target = LinkExecutable( 'bin/casual-traffic-tuxedo-log',
-    [
-        Compile( 'source/log/tuxedo.cpp'),
-        receiver_obj
-    ],
-    [
-    'casual-common'] )
-
-install_bin.append( target)
 
 #
 # Install
