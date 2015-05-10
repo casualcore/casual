@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "proposal/receiver.h"
+#include "receiver.h"
 
 
 #include "common/internal/trace.h"
@@ -14,14 +14,7 @@
 // std
 //
 #include <fstream>
-
-
-//
-// example of traffic log implementation.
-// we can keep this in one source file, no need
-// to split it into several.
-//
-
+#include <iostream>
 
 namespace casual
 {
@@ -29,6 +22,7 @@ namespace casual
    {
       namespace log
       {
+
          struct Handler : handler::Base
          {
             Handler( const std::string& file) : m_logfile{ file}
@@ -36,14 +30,26 @@ namespace casual
 
             }
 
-            void log( const message_type& message) override
+            void persist_begin( ) override
             {
-               // write to logfile...
+               // no-op
             }
 
-            void persist() override
+
+            void log( const message_type& message) override
             {
-               // no-op?
+               m_logfile << message.service
+                     << "|" << message.parentService
+                     << "|" << message.pid
+                     << "|" << message.callId
+                     << "|" << message.transactionId
+                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( message.start.time_since_epoch()).count()
+                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( message.end.time_since_epoch()).count() << std::endl;
+            }
+
+            void persist_commit() override
+            {
+               // no-op
             }
 
          private:
@@ -64,7 +70,7 @@ int main( int argc, char **argv)
 
 
    // get log-file from arguments
-   std::string file;
+   std::string file("statisics.log");
 
    // set process name from arguments
 

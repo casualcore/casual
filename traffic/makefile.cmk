@@ -32,19 +32,14 @@ lib_vo = LinkLibrary( 'bin/casual-traffic-monitor-vo',
 
 install_lib.append( lib_vo)
 
-archive_monitor_db = LinkArchive( 'bin/casual-traffic-monitor-db',
-	[
-		Compile( 'source/monitor/database.cpp'),
-	])
-
+receiver_obj = Compile( 'source/receiver.cpp')
 
 target = LinkExecutable( 'bin/casual-traffic-monitor',
 	[
-	    Compile( 'source/monitor/handler.cpp'),
-		Compile( 'source/monitor/main.cpp'),
+	    receiver_obj,
+        Compile( 'source/monitor/database.cpp')
 	],
 	[
-	archive_monitor_db,
 	lib_vo,
 	'casual-common',
 	'sqlite3'] )
@@ -53,9 +48,8 @@ install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-traffic-log',
 	[
-	    Compile( 'source/log/handler.cpp'),
-		Compile( 'source/log/file.cpp'),
-		Compile( 'source/log/main.cpp'),
+	    Compile( 'source/log/log.cpp'),
+        receiver_obj
 	],
 	[
 	'casual-common'] )
@@ -70,7 +64,6 @@ target = LinkServer('bin/casual-traffic-monitor-request-server',
 	   Compile( 'source/monitor/request_server_implementation.cpp'),			
 	],
     [
-	archive_monitor_db,
 	lib_vo,
     'casual-xatmi',
     'casual-common',
@@ -87,32 +80,30 @@ install_bin.append( target)
 LinkUnittest( 'bin/test-casual-monitor',
 	[ Compile( 'unittest/isolated/source/test_monitor.cpp')],
 	[
-	archive_monitor_db,
 	lib_vo,
 	'casual-common',
 	'sqlite3'])	
+
+
+#
+# Code for tuxedoformat txrpt.stat
+# Move to other repo
+#
+target = LinkExecutable( 'bin/casual-traffic-tuxedo-log',
+    [
+        Compile( 'source/log/tuxedo.cpp'),
+        receiver_obj
+    ],
+    [
+    'casual-common'] )
+
+install_bin.append( target)
 
 #
 # Install
 #
 Install( install_lib,'$(CASUAL_HOME)/lib')
 Install( install_bin,'$(CASUAL_HOME)/bin')
-
-#
-# TODO proposal
-#
-receiver_obj = Compile( 'proposal/receiver.cpp')
-
-target = LinkExecutable( 'bin/proposal-traffic-log',
-	[
-	    Compile( 'proposal/log.cpp'),
-	    receiver_obj
-	],
-	[
-	'casual-common'] )
-
-
-
 
 
 

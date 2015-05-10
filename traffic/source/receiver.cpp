@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "proposal/receiver.h"
+#include "receiver.h"
 
 
 #include "common/queue.h"
@@ -89,11 +89,13 @@ namespace casual
             while( true)
             {
 
+               log.persist_begin();
+
                //
                // Make sure we write persistent no matter what...
                //
                common::scope::Execute persist{ [&](){
-                  log.persist();
+                  log.persist_commit();
                }};
 
 

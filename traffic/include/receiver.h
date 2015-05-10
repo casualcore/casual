@@ -32,8 +32,9 @@ namespace casual
             Base() = default;
             virtual ~Base() = default;
 
+            virtual void persist_begin() = 0;
             virtual void log( const message_type&) = 0;
-            virtual void persist() = 0;
+            virtual void persist_commit() = 0;
          };
 
       } // handler
