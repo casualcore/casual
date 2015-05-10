@@ -1,0 +1,41 @@
+
+
+domain:
+
+  name: some-queue-domain-name
+  note: some information
+  
+  default:
+    #path: /some/path
+   
+    queue:
+      retries: 3
+    
+  
+  groups:
+    - name: someGroup
+      queuebase: queue/some-group.qb
+      
+      queues:
+        - name: queue1
+          
+        - name: queue2
+          
+        - name: queue3
+          
+        - name: queue4
+    
+    - name: someOtherGroup
+      queuebase: queue/some-other-group.qb
+      
+      queues:
+        - name: queueB1
+          
+        - name: queueB2
+          
+        - name: queueB3
+          
+        - name: queueB4
+          
+          
+   
