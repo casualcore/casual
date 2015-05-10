@@ -1,0 +1,133 @@
+domain:
+
+  name: domain1
+  
+  transactionmanager:
+      path: /opt/casual/bin/casual-transaction-manager # development purpose only
+      database: "transaction-manager.db" #optional
+
+  default:
+  
+    server:
+      instances: 1
+       
+    service:
+      timeout: 90s
+   
+
+  groups: 
+      
+    - name: group1        
+      note: mockup-test
+      resources:
+        - key: rm-mockup
+          instances: 3
+          openinfo: "some openinfo string"
+        
+    - name: group2
+      note: some non rm group
+      dependencies:
+        - group1
+
+
+    - name: casual-queue
+      note: casual-queue resource group
+      resources:
+        - key: casual-queue-rm
+          instances: 1
+          openinfo: "bla bla bla"
+
+    
+  servers: 
+      
+    - path: /opt/casual/bin/casual-traffic-monitor
+      instances: 1
+      note: The monitor
+      memberships:
+        - group1
+        
+    - alias: someServer
+      note: Some testserver...
+      path: /opt/casual/bin/test
+      instances: 5 
+      memberships:
+        - group1
+        - casual-queue
+       
+    - alias: someOther
+      note: Some testserver...
+      path: /opt/casual/bin/test
+      instances: 0
+      memberships:
+        - group1
+        - casual-queue
+      restriction:
+        - casual_test1
+        - casual_test2
+        
+
+    - alias: sf-server
+      note: Some testserver...
+      path: /opt/casual/bin/sf_test
+      instances: 0
+      memberships:
+        - group2 
+
+    - alias: casual-queue
+      path: casual-queue-broker
+      arguments: [ -c, configuration/queue.yaml ]
+      instances: 1
+      memberships: [ casual-queue]
+
+    - alias: casual-queue-server
+      path: casual-queue-server
+      instances: 2
+      memberships:
+        - casual-queue
+
+    - alias: forward-queue1-queue2
+      path: casual-queue-forward-queue
+      arguments: [ -f, queue1, queue2]
+      instances: 1
+      memberships: [ casual-queue]
+        
+   
+    - alias: service-forward-queue2-casual.echo
+      path: casual-queue-forward-service
+      arguments: [ -f, queue2, casual.echo, queue3]
+      instances: 1
+      memberships: [ casual-queue]
+      
+    - alias: forward-queue3-queueB1
+      path: casual-queue-forward-queue
+      arguments: [ -f, queue3, queueB1]
+      instances: 1
+      memberships: [ casual-queue]
+
+    - alias: service-forward-queueB1-casual.echo-B2
+      path: casual-queue-forward-service
+      arguments: [ -f, queueB1, casual.echo, queueB2]
+      instances: 1
+      memberships: [ casual-queue]
+      
+  # arbitrary executables that will be executed. On shutdown SIG_TERM will be signaled (if they're still alive)
+  executables:
+
+    
+    - alias: echo
+      note: echo, echo...
+      path: /bin/echo
+      arguments: [poop]
+      instances: 0
+
+  
+  services:
+    - name: casual_test2
+      timeout: 4s
+      authorized:
+        - casual_test1 
+
+
+
+
+
