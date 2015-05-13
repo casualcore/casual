@@ -484,13 +484,13 @@ namespace casual
          EXPECT_TRUE( id == FLD_SHORT1);
          EXPECT_TRUE( occurrence == 0);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_SHORT1);
+         EXPECT_TRUE( occurrence == 1);
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1);
          EXPECT_TRUE( occurrence == 0);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1);
-         EXPECT_TRUE( occurrence == 1);
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_SHORT1);
          EXPECT_TRUE( occurrence == 1);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1);
@@ -652,14 +652,17 @@ namespace casual
          EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         CasualFieldPrint( buffer);
+
          EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
+         CasualFieldPrint( buffer);
 
          long id = CASUAL_FIELD_NO_ID;
          long occurrence;
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_FLOAT1);
+         EXPECT_TRUE( id == FLD_FLOAT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
@@ -682,11 +685,11 @@ namespace casual
          long occurrence;
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_SHORT1);
+         EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_FLOAT1);
+         EXPECT_TRUE( id == FLD_FLOAT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
