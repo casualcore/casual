@@ -2,7 +2,6 @@ from casual.make.directive import *
 
 
 IncludePaths([
-    '.', 
 	'include',
 	'../common/include',
 	'../serviceframework/include',
@@ -35,6 +34,8 @@ install_lib.append( lib_vo)
 link_log_base = LinkLibrary('bin/casual-traffic-log-base',
     [Compile( 'source/receiver.cpp')],
     ['casual-common'])
+
+install_lib.append( link_log_base)
     
 target = LinkExecutable( 'bin/casual-traffic-monitor',
 	[

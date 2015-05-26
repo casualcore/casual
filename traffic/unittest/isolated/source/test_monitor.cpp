@@ -22,11 +22,14 @@ namespace casual
 {
 	namespace traffic
 	{
-	namespace monitor
-	{
+      namespace monitor
+      {
+         TEST( casual_traffic, monitor_empty)
+         {
 
+         }
 
-	}
+      }
 	}
 }
 
