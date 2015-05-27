@@ -34,14 +34,34 @@ namespace casual
                {
                   try
                   {
+                     //
+                     // Rollback unless we commit
+                     //
+                     common::scope::Execute rollback{ [](){
+                           tx_rollback();
+                     }};
+
                      if( tx_begin() != TX_OK)
                      {
+                        rollback.release();
                         return false;
                      }
 
                      task.dispatch( rm::blocking::dequeue( task.queue));
 
-                     tx_commit();
+                     //
+                     // Check what we should do with the transaction
+                     //
+                     {
+                        TXINFO txinfo;
+                        tx_info( &txinfo);
+
+                        if( txinfo.transaction_state == TX_ACTIVE)
+                        {
+                           tx_commit();
+                           rollback.release();
+                        }
+                     }
                   }
                   catch( const common::exception::Shutdown&)
                   {
@@ -50,7 +70,6 @@ namespace casual
                   catch( ...)
                   {
                      common::error::handler();
-                     tx_rollback();
                   }
 
                   return true;

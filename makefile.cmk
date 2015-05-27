@@ -24,4 +24,8 @@ with Scope():
         # queue depends on libcasual-resource-proxy-server.so in transaction
         Build( 'queue/makefile.cmk')
 
+#
+# Temporary until moved to different repo
+#
+Build( 'external/makefile.cmk')
 Build( 'test/makefile.cmk')

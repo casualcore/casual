@@ -364,21 +364,31 @@ namespace casual
          auto serverSet = range::make( normalized.servers);
          auto executableSet = range::make( normalized.executables);
 
-         for( auto&& group : groups)
+         //
+         // We need to go through the groups in reverse order so we get a match for an executable
+         // for the group that is booted last (if the executable has several memberships).
+         //
+         // We just reverse groups, and then we reverse the result.
+         //
          {
-
-            auto serverPartition = range::stable_partition( serverSet, filter::group::Id{ group.id});
-            auto executablePartition = range::stable_partition( executableSet, filter::group::Id{ group.id});
-
-            auto serverBatch = std::get< 0>( serverPartition);
-            auto executableBatch = std::get< 0>( executablePartition);
-
-            if( serverBatch || executableBatch)
+            for( auto&& group : range::make_reverse( groups))
             {
-               result.push_back( { group.name, range::to_vector( serverBatch), range::to_vector( executableBatch)});
-               serverSet = std::get< 1>( serverPartition);
-               executableSet = std::get< 1>( executablePartition);
+
+               auto serverPartition = range::stable_partition( serverSet, filter::group::Id{ group.id});
+               auto executablePartition = range::stable_partition( executableSet, filter::group::Id{ group.id});
+
+               auto serverBatch = std::get< 0>( serverPartition);
+               auto executableBatch = std::get< 0>( executablePartition);
+
+               if( serverBatch || executableBatch)
+               {
+                  result.push_back( { group.name, range::to_vector( serverBatch), range::to_vector( executableBatch)});
+                  serverSet = std::get< 1>( serverPartition);
+                  executableSet = std::get< 1>( executablePartition);
+               }
             }
+
+            std::reverse( std::begin( result), std::end( result));
          }
 
          if( serverSet || executableSet)
