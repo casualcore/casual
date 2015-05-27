@@ -1543,13 +1543,13 @@ namespace casual
                            else
                            {
                               // TODO: Much better
-                              throw common::exception::Base( "id for " + field.name + " is invalid");
+                              common::log::warning << "id for " << field.name << " is invalid" << std::endl;
                            }
                         }
                         catch( const std::out_of_range&)
                         {
                            // TODO: Much better
-                           throw common::exception::Base( "type for " + field.name + " is invalid");
+                           common::log::warning << "type for " << field.name << " is invalid" << std::endl;
                         }
                      }
                   }
@@ -1571,7 +1571,7 @@ namespace casual
                   if( ! result.emplace( field.name, field.id).second)
                   {
                      // TODO: Much better
-                     throw common::exception::Base( "name for " + field.name + " is not unique");
+                     common::log::warning << "name for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1589,7 +1589,7 @@ namespace casual
                   if( ! result.emplace( field.id, field.name).second)
                   {
                      // TODO: Much better
-                     throw common::exception::Base( "id for " + field.name + " is not unique");
+                     common::log::warning << "id for " << field.name << " is not unique" << std::endl;
                   }
                }
 
