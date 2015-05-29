@@ -5,7 +5,7 @@
 //!     Author: Lazan
 //!
 
-#include "receiver.h"
+#include "traffic/receiver.h"
 
 #include "common/internal/trace.h"
 #include "common/arguments.h"
@@ -37,15 +37,16 @@ namespace casual
             }
 
 
-            void log( const message_type& message) override
+            void log( const event_type& event) override
             {
-               m_logfile << message.service
-                     << "|" << message.parentService
-                     << "|" << message.pid
-                     << "|" << message.callId
-                     << "|" << message.transactionId
-                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( message.start.time_since_epoch()).count()
-                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( message.end.time_since_epoch()).count() << std::endl;
+               m_logfile << event.service()
+                     << "|" << event.parent()
+                     << "|" << event.pid()
+                     << "|" << event.execution()
+                     << "|" << event.transaction()
+                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( event.start().time_since_epoch()).count()
+                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( event.end().time_since_epoch()).count()
+                     << '\n';
             }
 
             void persist_commit() override

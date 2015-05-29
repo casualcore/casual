@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include "common/message/monitor.h"
+#include "common/message/traffic.h"
 #include "common/platform.h"
 #include "common/process.h"
 

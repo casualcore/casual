@@ -167,6 +167,7 @@ namespace casual
             common::message::dispatch::Handler handler{
                handle::enqueue::Request{ m_state},
                handle::dequeue::Request{ m_state},
+               handle::dequeue::forget::Request{ m_state},
                handle::transaction::commit::Request{ m_state},
                handle::transaction::rollback::Request{ m_state},
                handle::information::queues::Request{ m_state},

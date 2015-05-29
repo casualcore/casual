@@ -27,5 +27,5 @@ with Scope():
 #
 # Temporary until moved to different repo
 #
-Build( 'external/makefile.cmk')
 Build( 'test/makefile.cmk')
+

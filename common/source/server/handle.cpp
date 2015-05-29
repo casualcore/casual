@@ -63,15 +63,15 @@ namespace casual
                }
 
 
-               void Default::statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
+               void Default::statistics( platform::queue_id_type id,  message::traffic::Event& event)
                {
-                  log::internal::debug << "policy::Default::statistics - message:" << message << std::endl;
+                  log::internal::debug << "policy::Default::statistics - event:" << event << std::endl;
 
                   try
                   {
                      queue::blocking::Send send;
 
-                     send( id, message);
+                     send( id, event);
                   }
                   catch( ...)
                   {
