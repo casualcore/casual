@@ -452,7 +452,7 @@ namespace casual
                            //
                            // Prepare has gone ok. Log state
                            //
-                           m_state.log.prepareCommit( transaction.trid);
+                           m_state.log.prepare( transaction.trid);
 
                            //
                            // prepare send reply. Will be sent after persistent write to file

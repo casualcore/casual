@@ -189,6 +189,9 @@ namespace casual
          return result;
       }
 
+      State::State( const std::string& database) : log( database) {}
+
+
       std::size_t State::instances() const
       {
          std::size_t result = 0;
@@ -234,6 +237,11 @@ namespace casual
          log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
       }
 
+
+      bool operator < ( const State::Deadline& lhs, const State::Deadline& rhs)
+      {
+         return lhs.deadline < rhs.deadline;
+      }
 
 
    } // transaction

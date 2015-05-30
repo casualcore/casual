@@ -86,13 +86,13 @@ namespace casual
 
          ID::ID( process::Handle owner) : m_owner( std::move( owner))
          {
-            std::memset( &xid, 0, sizeof( XID));
+            std::memset( &xid, 0, sizeof( xid_type));
             xid.formatID = Format::cNull;
          }
 
-         ID::ID( const XID& xid)
+         ID::ID( const xid_type& xid)
          {
-            memcpy( &this->xid, &xid, sizeof( XID));
+            memcpy( &this->xid, &xid, sizeof( xid_type));
          }
 
 
@@ -198,7 +198,7 @@ namespace casual
             return lhs.xid == rhs.xid;
          }
 
-         bool operator == ( const ID& lhs, const XID& rhs)
+         bool operator == ( const ID& lhs, const xid_type& rhs)
          {
             return lhs.xid == rhs;
          }
@@ -213,12 +213,12 @@ namespace casual
             return out;
          }
 
-         xid_range_type global( const XID& xid)
+         xid_range_type global( const xid_type& xid)
          {
             return { xid.data, xid.data + xid.gtrid_length};
          }
 
-         xid_range_type branch( const XID& xid)
+         xid_range_type branch( const xid_type& xid)
          {
             return { xid.data + xid.gtrid_length,
                   xid.data + xid.gtrid_length + xid.bqual_length};
@@ -229,7 +229,7 @@ namespace casual
             return null( id.xid);
          }
 
-         bool null( const XID& id)
+         bool null( const xid_type& id)
          {
             return id.formatID == ID::Format::cNull;
          }

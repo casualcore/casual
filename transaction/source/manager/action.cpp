@@ -64,6 +64,24 @@ namespace casual
 
          }
 
+         void timeout( State& state)
+         {
+            auto transactions = state.log.passed( common::platform::clock_type::now());
+
+            handle::Rollback::message_type message;
+
+            //
+            // We make our self the sender, and we'll discard the response  (from our self)
+            //
+            message.process = process::handle();
+
+            for( auto& transaction : transactions)
+            {
+               message.trid = transaction;
+
+               handle::Rollback{ state}( message);
+            }
+         }
 
          namespace boot
          {

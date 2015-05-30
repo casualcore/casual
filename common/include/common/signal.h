@@ -76,6 +76,16 @@ namespace casual
 
 			namespace timer
 			{
+			   //!
+			   //! Sets a timeout.
+			   //!
+			   //! @param offset when the timer kicks in.
+			   //! @returns previous timeout.
+			   //!
+			   //! @note zero and negative offset will trigger a signal directly
+			   //! @note std::chrono::microseconds::min() has special meaning and will not set any
+			   //! timeout and will unset current timeout, if any.
+			   //!
 			   std::chrono::microseconds set( std::chrono::microseconds offset);
 
 			   template< typename R, typename P>
@@ -84,12 +94,26 @@ namespace casual
 			      return set( std::chrono::duration_cast< std::chrono::microseconds>( offset));
 			   }
 
-
+			   //!
+			   //! @return current timeout, std::chrono::microseconds::min() if there isn't one
+			   //!
 			   std::chrono::microseconds get();
 
+            //!
+            //! Unset current timeout, if any.
+            //!
+            //! @return previous timeout, std::chrono::microseconds::min() if there wasn't one
+            //!
 			   std::chrono::microseconds unset();
 
 
+			   //!
+			   //! Sets a scoped timout.
+			   //! dtor will 'reset' previous timeout, if any. Hence enable nested timeouts.
+			   //!
+			   //! @note std::chrono::microseconds::min() has special meaning and will not set any
+            //! timeout and will unset current timeout, if any (that will be reset by dtor)
+			   //!
             class Scoped
             {
             public:

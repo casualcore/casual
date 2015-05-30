@@ -152,11 +152,13 @@ namespace casual
                struct Request : public basic_request< cTransactionBeginRequest>
                {
                   common::platform::time_point start;
+                  std::chrono::microseconds timeout;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & start;
+                     archive & timeout;
                   })
                };
 

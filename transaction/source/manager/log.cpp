@@ -27,31 +27,41 @@ namespace casual
          {
             namespace transform
             {
+               common::transaction::ID trid( sql::database::Row& row, int index = 0)
+               {
+                  common::transaction::ID result;
+
+                  {
+                     auto gtrid = row.get< common::platform::binary_type>( index);
+
+                     common::range::copy( common::range::make( gtrid), std::begin( result.xid.data));
+
+                     result.xid.gtrid_length = gtrid.size();
+                  }
+
+                  {
+                     auto bqual = row.get< common::platform::binary_type>( index + 1);
+
+                     common::range::copy(
+                           common::range::make( bqual),
+                           std::begin( result.xid.data) + result.xid.gtrid_length);
+
+                     result.xid.bqual_length = bqual.size();
+                  }
+
+                  result.xid.formatID = row.get< long>( index + 2);
+
+                  return result;
+               }
+
                struct Row
                {
                   Log::Row operator () ( sql::database::Row& row) const
                   {
                      Log::Row result;
 
-                     {
-                        auto gtrid = row.get< common::platform::binary_type>( 0);
+                     result.trid = transform::trid( row);
 
-                        common::range::copy( common::range::make( gtrid), std::begin( result.trid.xid.data));
-
-                        result.trid.xid.gtrid_length = gtrid.size();
-                     }
-
-                     {
-                        auto bqual = row.get< common::platform::binary_type>( 1);
-
-                        common::range::copy(
-                              common::range::make( bqual),
-                              std::begin( result.trid.xid.data) + result.trid.xid.gtrid_length);
-
-                        result.trid.xid.bqual_length = bqual.size();
-                     }
-
-                     result.trid.xid.formatID = row.get< long>( 2);
 
                      result.pid = row.get< common::platform::pid_type>( 3);
                      result.state = static_cast< Log::State>( row.get< long>( 4));
@@ -73,27 +83,35 @@ namespace casual
 
          m_connection.execute(
             R"( CREATE TABLE IF NOT EXISTS trans (
-            gtrid         BLOB,
-            bqual         BLOB,
-            format        NUMBER,
-            pid           NUMBER,
-            state         NUMBER,
-            started       NUMBER,
-            updated       NUMBER,
+            gtrid         BLOB NOT NULL,
+            bqual         BLOB NOT NULL,
+            format        NUMBER NOT NULL,
+            pid           NUMBER NOT NULL,
+            state         NUMBER NOT NULL,
+            started       NUMBER NOT NULL,
+            deadline      NUMBER,
             PRIMARY KEY (gtrid, bqual)); )");
 
          m_connection.execute(
             "CREATE INDEX IF NOT EXISTS i_xid_trans ON trans ( gtrid, bqual);" );
 
+         m_connection.execute(
+            "CREATE INDEX IF NOT EXISTS i_deadline_trans ON trans ( deadline);" );
+
 
          m_statement.begin = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
 
-         m_statement.update.state = m_connection.precompile( R"( UPDATE trans SET state = :state, updated = :updated WHERE gtrid = :gtrid AND bqual = :bqual; )");
+         m_statement.update.state = m_connection.precompile( R"( UPDATE trans SET state = :state WHERE gtrid = :gtrid AND bqual = :bqual; )");
 
          m_statement.select.all = m_connection.precompile( R"( SELECT * FROM trans; )");
-         m_statement.select.transaction = m_connection.precompile( "SELECT gtrid, bqual, format, pid, state, started, updated FROM trans WHERE gtrid = :gtrid AND bqual = :bqual;");
+         m_statement.select.transaction = m_connection.precompile( "SELECT gtrid, bqual, format, pid, state, started, deadline FROM trans WHERE gtrid = :gtrid AND bqual = :bqual;");
 
          m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ? AND bqual = ?; ");
+
+
+         m_statement.deadline.earliest = m_connection.precompile( R"( SELECT MIN( deadline) FROM trans WHERE state = 10; )");
+
+         m_statement.deadline.transactions = m_connection.precompile( R"( SELECT gtrid, bqual, format, pid FROM trans WHERE deadline > :deadline AND state = 10)");
 
       }
 
@@ -102,40 +120,92 @@ namespace casual
          common::log::internal::transaction << "log begin for xid: " << request.trid << "\n";
 
          auto started = std::chrono::time_point_cast< std::chrono::microseconds>( request.start).time_since_epoch().count();
-         auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
 
          long state = Log::State::cBegin;
 
-         m_statement.begin.execute(
-               common::transaction::global( request.trid),
-               common::transaction::branch( request.trid),
-               request.trid.xid.formatID,
-               request.process.pid,
-               state,
-               started,
-               updated);
+         if( request.timeout == std::chrono::microseconds{ 0})
+         {
+            //
+            // No deadline
+            //
+
+            m_statement.begin.execute(
+                  common::transaction::global( request.trid),
+                  common::transaction::branch( request.trid),
+                  request.trid.xid.formatID,
+                  request.process.pid,
+                  state,
+                  started,
+                  nullptr);
+         }
+         else
+         {
+            //
+            // Set deadline, and we add 1s just to let boarder cases have higher chance of better semantics.
+            // If this deadline kicks in, it'll be errors from RM:s, and not from xatmi-API.
+            //
+            auto deadline = std::chrono::time_point_cast< std::chrono::microseconds>( request.start + request.timeout + std::chrono::seconds{ 1}).time_since_epoch().count();
+
+            m_statement.begin.execute(
+                  common::transaction::global( request.trid),
+                  common::transaction::branch( request.trid),
+                  request.trid.xid.formatID,
+                  request.process.pid,
+                  state,
+                  started,
+                  deadline);
+         }
       }
 
-      void Log::commit( const common::message::transaction::commit::Request& request)
+
+      void Log::prepare( const common::transaction::ID& id)
       {
-
-      }
-
-      void Log::rollback( const common::message::transaction::rollback::Request& request)
-      {
-
-      }
-
-      void Log::prepareCommit( const common::transaction::ID& id)
-      {
-         auto updated = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now()).time_since_epoch().count();
-         long state = State::cPreparedCommit;
+         long state = State::cPrepared;
 
          m_statement.update.state.execute(
                state,
-               updated,
                common::transaction::global( id),
                common::transaction::branch( id));
+      }
+
+      void Log::remove( const common::transaction::ID& trid)
+      {
+         m_statement.remove.execute(
+            common::transaction::global( trid),
+            common::transaction::branch( trid));
+      }
+
+      std::chrono::microseconds Log::timeout()
+      {
+         auto query = m_statement.deadline.earliest.query();
+
+         sql::database::Row row;
+
+         if( query.fetch( row) && ! row.null( 0))
+         {
+            auto timeout = row.get< common::platform::time_point::rep>( 0);
+
+            return std::chrono::duration_cast< std::chrono::microseconds>(
+                  common::platform::time_point{ std::chrono::microseconds{ timeout}} - common::platform::clock_type::now());
+         }
+         return std::chrono::microseconds::min();
+      }
+
+      std::vector< common::transaction::ID> Log::passed( const common::platform::time_point& now)
+      {
+         std::vector< common::transaction::ID> result;
+
+         auto query = m_statement.deadline.transactions.query(
+               std::chrono::time_point_cast< std::chrono::microseconds>( now).time_since_epoch().count());
+
+         sql::database::Row row;
+
+         while( query.fetch( row))
+         {
+            result.push_back( local::transform::trid( row));
+         }
+
+         return result;
       }
 
       std::vector< Log::Row> Log::select( const common::transaction::ID& id)
@@ -156,12 +226,6 @@ namespace casual
          return result;
       }
 
-      void Log::remove( const common::transaction::ID& trid)
-      {
-         m_statement.remove.execute(
-            common::transaction::global( trid),
-            common::transaction::branch( trid));
-      }
 
       std::vector< Log::Row> Log::select()
       {

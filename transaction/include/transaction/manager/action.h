@@ -21,6 +21,7 @@ namespace casual
 
          void configure( State& state);
 
+         void timeout( State& state);
 
 
          namespace boot

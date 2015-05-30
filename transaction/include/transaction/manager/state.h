@@ -372,6 +372,13 @@ namespace casual
          State( const std::string& database);
 
 
+         struct Deadline
+         {
+            common::transaction::xid_type xid;
+            common::platform::time_point deadline;
+
+            friend bool operator < ( const Deadline& lhs, const Deadline& rhs);
+         };
 
          //typedef instances_type;
 
@@ -380,6 +387,7 @@ namespace casual
          std::vector< state::resource::Proxy> resources;
 
          std::vector< Transaction> transactions;
+
 
          //!
          //! Replies that will be sent after an atomic write to the log
