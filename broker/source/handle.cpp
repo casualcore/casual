@@ -93,8 +93,8 @@ namespace casual
                         handle::transaction::client::Connect{ m_state},
                         handle::Advertise{ m_state},
                         handle::Unadvertise{ m_state},
-                        handle::monitor::Connect{ m_state},
-                        handle::monitor::Disconnect{ m_state},
+                        handle::traffic::Connect{ m_state},
+                        handle::traffic::Disconnect{ m_state},
                         //handle::ServiceLookup{ m_state},
                         //handle::ACK{ m_state},
                         common::message::handle::ping( m_state),
@@ -235,7 +235,7 @@ namespace casual
             }
          }
 
-         namespace monitor
+         namespace traffic
          {
             void Connect::operator () ( message_type& message)
             {
@@ -623,7 +623,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
+         void Policy::statistics( platform::queue_id_type id,common::message::traffic::Event&)
          {
             //
             // We don't collect statistics for the broker

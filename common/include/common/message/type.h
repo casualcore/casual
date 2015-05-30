@@ -50,7 +50,7 @@ namespace casual
             TRAFFICMONITOR_BASE = 3000,
             cTrafficMonitorConnect,
             cTrafficMonitorDisconnect,
-            cTrafficMonitorNotify,
+            cTrafficEvent,
 
             // Transaction
             TRANSACTION_BASE = 4000,

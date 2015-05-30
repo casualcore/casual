@@ -184,6 +184,18 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST( casual_field_buffer, reallocate_with_invalid_handle__expecting_nullptr)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 128);
+         ASSERT_TRUE( buffer != nullptr);
+
+         tpfree( buffer);
+
+         buffer = tprealloc( buffer, 0);
+         EXPECT_TRUE( buffer == nullptr);
+      }
+
+
       TEST( casual_field_buffer, allocate_with_small_size_and_write_much___expecting_no_space)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 64);
@@ -472,13 +484,13 @@ namespace casual
          EXPECT_TRUE( id == FLD_SHORT1);
          EXPECT_TRUE( occurrence == 0);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_SHORT1);
+         EXPECT_TRUE( occurrence == 1);
+         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1);
          EXPECT_TRUE( occurrence == 0);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1);
-         EXPECT_TRUE( occurrence == 1);
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_SHORT1);
          EXPECT_TRUE( occurrence == 1);
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1);
@@ -640,14 +652,17 @@ namespace casual
          EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         CasualFieldPrint( buffer);
+
          EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
+         CasualFieldPrint( buffer);
 
          long id = CASUAL_FIELD_NO_ID;
          long occurrence;
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_FLOAT1);
+         EXPECT_TRUE( id == FLD_FLOAT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
@@ -670,11 +685,11 @@ namespace casual
          long occurrence;
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_SHORT1);
+         EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_FLOAT1);
+         EXPECT_TRUE( id == FLD_FLOAT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
          EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
@@ -957,6 +972,43 @@ namespace casual
 
          tpfree( buffer);
       }
+
+      TEST( casual_field_buffer, serialize_buffer__expecting_success)
+      {
+         auto source = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( source != nullptr);
+
+         EXPECT_FALSE( CasualFieldAddString( source, FLD_STRING1, "A little string"));
+
+         long memory_size{};
+
+         ASSERT_FALSE( CasualFieldBufferToMemoryNeed( source, &memory_size));
+
+         std::vector<char> memory( memory_size);
+
+         ASSERT_FALSE( CasualFieldCopyBufferToMemory( memory.data(), source));
+
+         tpfree( source);
+
+         long buffer_size{};
+
+         ASSERT_FALSE( CasualFieldMemoryToBufferNeed( memory.data(), &buffer_size));
+
+         auto target = tpalloc( CASUAL_FIELD, "", buffer_size);
+
+         ASSERT_FALSE( CasualFieldCopyMemoryToBuffer( target, memory.data()));
+
+         const char* string = nullptr;
+
+         ASSERT_FALSE( CasualFieldGetString( target, FLD_STRING1, 0, &string));
+
+         EXPECT_STREQ( string, "A little string");
+
+         tpfree( target);
+
+      }
+
+
 
 
       TEST( casual_field_buffer, print__expecting_success)

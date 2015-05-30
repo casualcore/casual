@@ -20,10 +20,14 @@
 #include "sf/archive/maker.h"
 
 #include <cstring>
+#include <cstddef>
 
 #include <string>
 #include <map>
 #include <vector>
+
+#include <unordered_map>
+
 
 #include <algorithm>
 
@@ -87,8 +91,92 @@ namespace casual
          namespace
          {
 
+            //
+            // Helper
+            //
+            class Value
+            {
+            public:
+
+               typedef common::platform::raw_buffer_type data_type;
+
+               static constexpr auto offset = common::network::byteorder::bytes<long>();
+
+               explicit Value( data_type where) : m_where( where) {}
+
+               explicit operator bool() const
+               {
+                  return m_where != nullptr;
+               }
+
+               bool operator == ( const Value& other) const
+               {
+                  return this->m_where == other.m_where;
+               }
+
+               bool operator != ( const Value& other) const
+               {
+                  return this->m_where != other.m_where;
+               }
+
+               static constexpr auto header() -> decltype( offset)
+               {
+                  return offset * 2;
+               }
+
+               data_type where() const
+               {
+                  return m_where;
+               }
+
+               long id() const
+               {
+                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<long>*>( m_where + offset * 0);
+                  return common::network::byteorder::decode<long>( encoded);
+               }
+
+               void id( const long value)
+               {
+                  const auto encoded = common::network::byteorder::encode( value);
+                  std::memcpy( m_where + offset * 0, &encoded, sizeof( encoded));
+               }
+
+               long size() const
+               {
+                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<long>*>( m_where + offset * 1);
+                  return common::network::byteorder::decode<long>( encoded);
+               }
+
+               void size( const long value)
+               {
+                  const auto encoded = common::network::byteorder::encode( value);
+                  std::memcpy( m_where + offset * 1, &encoded, sizeof( encoded));
+               }
+
+               data_type data() const
+               {
+                  return m_where + offset * 2;
+               }
+
+               void data( const void* value, const std::size_t count)
+               {
+                  std::memcpy( data(), value, count);
+               }
+
+               Value next() const
+               {
+                  return Value( data() + size());
+               }
+
+            private:
+
+               data_type m_where = nullptr;
+            };
+
+
             class Buffer : public common::buffer::Buffer
             {
+
             public:
 
                using common::buffer::Buffer::Buffer;
@@ -102,9 +190,8 @@ namespace casual
                {
                   //
                   // Ignore user provided size utilized size
-                  // TODO: m_inserter seems to be 0... for now we return the actual memory size...
+                  //
                   return m_inserter;
-                  //return payload.memory.size();
                }
 
 
@@ -130,6 +217,7 @@ namespace casual
 
                typedef common::platform::raw_buffer_type data_type;
 
+
                data_type handle()
                {
                   return payload.memory.data();
@@ -145,80 +233,256 @@ namespace casual
                   return handle() + utilized();
                }
 
+               void index()
+               {
+                  m_index.clear();
+
+                  const Value beyond( end());
+                  Value value( begin());
+                  while( value != beyond)
+                  {
+                     // Don't add removed occurrences
+                     if( const auto id = value.id())
+                     {
+                        m_index[id].push_back( value.where() - begin());
+                     }
+
+                     value = value.next();
+                  }
+               }
+
+
+               data_type find( const long id, const long index)
+               {
+                  try
+                  {
+                     return begin() + m_index.at( id).at( index);
+                  }
+                  catch( const std::out_of_range&)
+                  {
+                     return nullptr;
+                  }
+               }
+
+               bool remove( const long id)
+               {
+                  try
+                  {
+                     for( auto offset : m_index.at( id))
+                     {
+                        // Remove it in the buffer
+                        Value( begin() + offset).id( CASUAL_FIELD_NO_ID);
+                     }
+
+                     // Remove it from the index
+                     m_index.erase( id);
+
+                  }
+                  catch( const std::out_of_range&)
+                  {
+                     return false;
+                  }
+
+                  return true;
+               }
+
+               bool remove( const long id, const long index)
+               {
+                  try
+                  {
+                     auto& entry = m_index.at( id);
+                     Value value( begin() + entry.at( index));
+
+                     // Remove it in the buffer
+                     value.id( CASUAL_FIELD_NO_ID);
+
+                     // Remove it from the index
+                     entry.erase( entry.begin() + index);
+
+                     if( entry.empty())
+                     {
+                        m_index.erase( id);
+                     }
+
+                  }
+                  catch( const std::out_of_range&)
+                  {
+                     return false;
+                  }
+
+                  return true;
+               }
+
+
+               bool append( const long id, const char* const data, const long size)
+               {
+                  const auto total = utilized() + Value::header() + size;
+
+                  if( total > reserved())
+                  {
+                     return false;
+                  }
+
+                  m_index[id].push_back( utilized());
+
+                  Value value( end());
+
+                  value.id( id);
+                  value.size( size);
+                  value.data( data, size);
+
+                  utilized( total);
+
+                  return true;
+               }
+
+
+               bool update( const long id, const long index, const char* const data, const long size)
+               {
+                  Value value( find( id, index));
+
+                  if( value)
+                  {
+                     const auto present = value.size();
+
+                     if( present != size)
+                     {
+                        //
+                        // Calculate new end
+                        //
+
+                        const auto required = utilized() - present + size;
+
+                        if( required > reserved())
+                        {
+                           return false;
+                        }
+
+                        //
+                        // We need to move all following values
+                        //
+
+                        auto target = value.data() + size;
+                        auto source = value.data() + present;
+
+                        //
+                        // Calculate how many bytes rest of the values represent
+                        //
+                        const auto count = 0 + end() - source;
+
+
+                        //
+                        // Move the data (in some direction)
+                        //
+                        std::memmove( target, source, count);
+
+                        //
+                        // Update the value with the new size
+                        //
+                        value.size( size);
+
+
+                        //
+                        // Calculate which values to be updated
+                        //
+                        const auto current = value.where() - begin();
+
+                        //
+                        // Update the index (only beyond current)
+                        //
+                        for( auto& id : m_index)
+                        {
+                           for( auto& offset : id.second)
+                           {
+                              if( offset > current)
+                              {
+                                 offset = offset + size - present;
+                              }
+                           }
+                        }
+
+                        //
+                        // Update the buffer with the new total usage
+                        //
+                        utilized( required);
+
+
+                     }
+
+
+                     //
+                     // Write the new data
+                     //
+                     value.data( data, size);
+
+                  }
+                  else
+                  {
+                     return false;
+                  }
+
+                  return true;
+
+               }
+
+               long first() const
+               {
+                  return m_index.empty() ? CASUAL_FIELD_NO_ID : m_index.begin()->first;
+               }
+
+               long next( const long id) const
+               {
+                  auto result = m_index.find( id);
+                  if( result != m_index.end())
+                  {
+                     if( ++result != m_index.end())
+                     {
+                        return result->first;
+                     }
+                  }
+
+                  return CASUAL_FIELD_NO_ID;
+               }
+
+
+               long count( const long id) const
+               {
+                  try
+                  {
+                     return m_index.at( id).size();
+                  }
+                  catch( const std::out_of_range&)
+                  {
+                     return 0;
+                  }
+               }
+
+               long count() const
+               {
+                  long result{};
+
+                  for( const auto& id : m_index)
+                  {
+                     result += id.second.size();
+                  }
+
+                  return result;
+               }
+
+               void reset()
+               {
+                  utilized( 0);
+                  m_index.clear();
+               }
+
             private:
 
                size_type m_inserter = 0;
 
-            };
-
-            //
-            // Helper
-            //
-            struct Value
-            {
-               typedef common::platform::raw_buffer_type data_type;
-
-               static constexpr auto offset = common::network::byteorder::bytes<long>();
-
-               data_type where = nullptr;
-
-               Value( data_type where) : where( where) {}
-
-               bool operator == ( const Value& other) const
-               {
-                  return this->where == other.where;
-               }
-
-               bool operator != ( const Value& other) const
-               {
-                  return this->where != other.where;
-               }
-
-
-               static constexpr auto header() -> decltype( offset)
-               {
-                  return offset * 2;
-               }
-
-               long id() const
-               {
-                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<long>*>( where + offset * 0);
-                  return common::network::byteorder::decode<long>( encoded);
-               }
-
-               void id( const long value)
-               {
-                  const auto encoded = common::network::byteorder::encode( value);
-                  std::memcpy( where + offset * 0, &encoded, sizeof( encoded));
-               }
-
-               long size() const
-               {
-                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<long>*>( where + offset * 1);
-                  return common::network::byteorder::decode<long>( encoded);
-               }
-
-               void size( const long value)
-               {
-                  const auto encoded = common::network::byteorder::encode( value);
-                  std::memcpy( where + offset * 1, &encoded, sizeof( encoded));
-               }
-
-               data_type data() const
-               {
-                  return where + offset * 2;
-               }
-
-               void data( const void* value, const std::size_t count)
-               {
-                  std::memcpy( data(), value, count);
-               }
-
-               //! @return A 'handle' to next 'iterator'
-               Value next() const
-               {
-                  return Value( data() + size());
-               }
+               // faster
+               //std::unordered_map<long,std::vector<std::ptrdiff_t>> m_index;
+               // deterministic (for iteration)
+               std::map<long,std::vector<std::ptrdiff_t>> m_index;
 
             };
 
@@ -268,7 +532,7 @@ namespace casual
                {
                   m_pool.emplace_back( std::move( payload));
                   m_pool.back().utilized( m_pool.back().reserved());
-
+                  m_pool.back().index();
                   return m_pool.back().handle();
                }
             };
@@ -324,6 +588,13 @@ namespace casual
                return nullptr;
             }
 
+
+            //
+            // TODO: There's a whole lot of find-functionality here that should
+            // be consolidated
+            //
+
+
             int remove( const char* const handle, const long id)
             {
                const trace trace( "field::remove");
@@ -333,32 +604,12 @@ namespace casual
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find( handle);
-
-               if( ! buffer)
+               if( const auto buffer = find( handle))
                {
-                  return CASUAL_FIELD_INVALID_BUFFER;
+                  return buffer->remove( id) ? CASUAL_FIELD_SUCCESS : CASUAL_FIELD_NO_OCCURRENCE;
                }
 
-               int result = CASUAL_FIELD_NO_OCCURRENCE;
-
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               while( value != beyond)
-               {
-                  if( value.id() == id)
-                  {
-                     value.id( CASUAL_FIELD_NO_ID);
-                     // We found at least one
-                     result = CASUAL_FIELD_SUCCESS;
-                  }
-
-                  value = value.next();
-               }
-
-               return result;
-
+               return CASUAL_FIELD_INVALID_BUFFER;
             }
 
 
@@ -371,33 +622,12 @@ namespace casual
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find( handle);
-
-               if( !buffer)
+               if( const auto buffer = find( handle))
                {
-                  return CASUAL_FIELD_INVALID_BUFFER;
+                  return buffer->remove( id, index) ? CASUAL_FIELD_SUCCESS : CASUAL_FIELD_NO_OCCURRENCE;
                }
 
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               while( value != beyond)
-               {
-                  if( value.id() == id)
-                  {
-                     if( !index--)
-                     {
-                        value.id( CASUAL_FIELD_NO_ID);
-                        return CASUAL_FIELD_SUCCESS;
-                     }
-
-                  }
-
-                  value = value.next();
-
-               }
-
-               return CASUAL_FIELD_NO_OCCURRENCE;
+               return CASUAL_FIELD_INVALID_BUFFER;
 
             }
 
@@ -411,34 +641,18 @@ namespace casual
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find( handle);
-
-               if( ! buffer)
-               {
-                  return CASUAL_FIELD_INVALID_BUFFER;
-               }
-
                if( ! data)
                {
                   return CASUAL_FIELD_INVALID_ARGUMENT;
                }
 
-
-               const auto total = Value::header() + size + buffer->utilized();
-
-               if( total > buffer->reserved())
+               if( const auto buffer = find( handle))
                {
-                  return CASUAL_FIELD_NO_SPACE;
+                  return buffer->append( id, data, size) ? CASUAL_FIELD_SUCCESS : CASUAL_FIELD_NO_SPACE;
                }
 
-               Value value( buffer->end());
+               return CASUAL_FIELD_INVALID_BUFFER;
 
-               value.id( id);
-               value.size( size);
-               value.data( data, size);
-               buffer->utilized( total);
-
-               return CASUAL_FIELD_SUCCESS;
             }
 
             template<typename T>
@@ -457,88 +671,25 @@ namespace casual
                   return CASUAL_FIELD_INVALID_ID;
                }
 
-               auto buffer = find( handle);
+               if( ! data)
+               {
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+               }
 
-               if( ! buffer)
+               if( const auto buffer = find( handle))
+               {
+                  if( buffer->update( id, index, data, size))
+                  {
+                     return CASUAL_FIELD_SUCCESS;
+                  }
+
+                  return buffer->find( id, index) ? CASUAL_FIELD_NO_SPACE : CASUAL_FIELD_NO_OCCURRENCE;
+
+               }
+               else
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
-
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               while( value != beyond)
-               {
-                  if( value.id() == id)
-                  {
-                     if( ! index--)
-                     {
-                        //
-                        // Found present value
-                        //
-
-                        const auto present = value.size();
-
-                        if( present != size)
-                        {
-                           //
-                           // Calculate new end
-                           //
-
-                           const auto required = buffer->utilized() - present + size;
-
-                           if( required > buffer->reserved())
-                           {
-                              return CASUAL_FIELD_NO_SPACE;
-                           }
-
-                           //
-                           // We need to move all following values
-                           //
-
-                           auto target = value.data() + size;
-                           auto source = value.data() + present;
-
-                           //
-                           // Calculate how many bytes rest of the values represent
-                           //
-                           const auto count = 0 + buffer->end() - source;
-
-
-                           //
-                           // Move the data
-                           //
-                           std::memmove( target, source, count);
-
-                           //
-                           // Update the value with the new size
-                           //
-                           value.size( size);
-
-                           //
-                           // Update the buffer with the new total usage
-                           //
-                           buffer->utilized( required);
-
-                        }
-
-
-                        //
-                        // Write the new data
-                        //
-                        value.data( data, size);
-
-
-                        return CASUAL_FIELD_SUCCESS;
-                     }
-
-                  }
-
-                  value = value.next();
-
-               }
-
-               return CASUAL_FIELD_NO_OCCURRENCE;
 
             }
 
@@ -559,7 +710,7 @@ namespace casual
                }
 
 
-               auto buffer = find( handle);
+               const auto buffer = find( handle);
 
                if( ! buffer)
                {
@@ -571,28 +722,19 @@ namespace casual
                //   return CASUAL_FIELD_INVALID_ARGUMENT;
                //}
 
+               const Value value( buffer->find( id, index));
 
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               while( value != beyond)
+               if( value)
                {
-                  if( value.id() == id)
-                  {
-                     if( ! index--)
-                     {
-                        if( data) *data = value.data();
-                        if( size) *size = value.size();
-                        return CASUAL_FIELD_SUCCESS;
-                     }
-
-                  }
-
-                  value = value.next();
-
+                  if( data) *data = value.data();
+                  if( size) *size = value.size();
+               }
+               else
+               {
+                  return CASUAL_FIELD_NO_OCCURRENCE;
                }
 
-               return CASUAL_FIELD_NO_OCCURRENCE;
+               return CASUAL_FIELD_SUCCESS;
 
             }
 
@@ -619,68 +761,42 @@ namespace casual
             {
                const trace trace( "field::next");
 
-               //
-               // This may be inefficient for large buffers
-               //
-               // Perhaps we shall store the occurrence as well, but then
-               // insertions and removals becomes a bit more cumbersome
-               //
-               // An other option is to make this and double-linked-list-like
-               //
-
-               const auto buffer = find( handle);
-
-               if( ! buffer)
+               if( const auto buffer = find( handle))
                {
-                  return CASUAL_FIELD_INVALID_BUFFER;
-               }
-
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               //
-               // Store all found id's to estimate index later
-               //
-               std::vector<decltype(value.id())> values;
-
-
-               while( value != beyond)
-               {
-                  values.push_back( value.id());
-
-                  value = value.next();
-
-                  if( values.back() == id)
+                  if( const auto occurrences = buffer->count( id))
                   {
-                     if( ! index--)
+                     if( index < (occurrences - 1))
                      {
-                        if( value != beyond)
+                        ++index;
+                     }
+                     else
+                     {
+                        if( const auto next = buffer->next( id))
                         {
-                           id = value.id();
-                           index = std::count( values.begin(), values.end(), id);
-
-                           if( id == CASUAL_FIELD_NO_ID)
-                           {
-                              // We have encountered a removed occurrence
-                              return next( handle, id, index);
-                           }
-
-                           return CASUAL_FIELD_SUCCESS;
+                           id = next;
+                           index = 0;
                         }
                         else
                         {
                            return CASUAL_FIELD_NO_OCCURRENCE;
                         }
                      }
-
+                  }
+                  else
+                  {
+                     //
+                     // We couldn't even find the previous one
+                     //
+                     return CASUAL_FIELD_INVALID_ID;
                   }
 
                }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
 
-               //
-               // We couldn't even find the previous one
-               //
-               return CASUAL_FIELD_INVALID_ID;
+               return CASUAL_FIELD_SUCCESS;
 
             }
 
@@ -688,31 +804,21 @@ namespace casual
             {
                const trace trace( "field::first");
 
-               const auto buffer = find( handle);
-
-               if( ! buffer)
+               if( const auto buffer = find( handle))
                {
-                  return CASUAL_FIELD_INVALID_BUFFER;
-               }
-
-               const Value value( buffer->begin());
-               const Value beyond( buffer->end());
-
-               if( value != beyond)
-               {
-                  id = value.id();
-                  index = 0;
-
-                  if( id == CASUAL_FIELD_NO_ID)
+                  if( const auto result = buffer->first())
                   {
-                     // The first field was removed
-                     return next( handle, id, index);
+                     id = result;
+                     index = 0;
                   }
-
+                  else
+                  {
+                     return CASUAL_FIELD_NO_OCCURRENCE;
+                  }
                }
                else
                {
-                  return CASUAL_FIELD_NO_OCCURRENCE;
+                  return CASUAL_FIELD_INVALID_BUFFER;
                }
 
                return CASUAL_FIELD_SUCCESS;
@@ -725,24 +831,13 @@ namespace casual
 
                const auto buffer = find( handle);
 
-               if( ! buffer)
+               if( buffer)
+               {
+                  occurrences = buffer->count( id);
+               }
+               else
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
-               }
-
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               occurrences = 0;
-
-               while( value != beyond)
-               {
-                  if( value.id() == id)
-                  {
-                     ++occurrences;
-                  }
-
-                  value = value.next();
                }
 
                return CASUAL_FIELD_SUCCESS;
@@ -753,30 +848,16 @@ namespace casual
             {
                const trace trace( "field::count");
 
-               const auto buffer = find( handle);
-
-               if( ! buffer)
+               if( const auto buffer = find( handle))
+               {
+                  occurrences = buffer->count();
+               }
+               else
                {
                   return CASUAL_FIELD_INVALID_BUFFER;
                }
 
-               const Value beyond( buffer->end());
-               Value value( buffer->begin());
-
-               occurrences = 0;
-
-               while( value != beyond)
-               {
-                  if( value.id() != CASUAL_FIELD_NO_ID)
-                  {
-                     ++occurrences;
-                  }
-
-                  value = value.next();
-               }
-
                return CASUAL_FIELD_SUCCESS;
-
             }
 
 
@@ -786,9 +867,9 @@ namespace casual
             {
                const trace trace( "field::reset");
 
-               if( auto buffer = find( handle))
+               if( const auto buffer = find( handle))
                {
-                  buffer->utilized( 0);
+                  buffer->reset();
                }
                else
                {
@@ -816,8 +897,7 @@ namespace casual
                return CASUAL_FIELD_SUCCESS;
             }
 
-
-            int copy( const char* target_handle, const char* source_handle)
+            int copy( const char* const target_handle, const char* const source_handle)
             {
                const trace trace( "field::copy");
 
@@ -840,6 +920,13 @@ namespace casual
 
                   std::copy( source->begin(), source->end(), target->begin());
 
+                  //
+                  // Index the target
+                  //
+                  // TODO: Copy this instead
+                  //
+                  target->index();
+
                }
                else
                {
@@ -849,6 +936,110 @@ namespace casual
                return CASUAL_FIELD_SUCCESS;
             }
 
+            int need( const char* const handle, long* const size)
+            {
+               const trace trace( "field::need");
+
+               if( const auto buffer = find( handle))
+               {
+                  *size = common::network::byteorder::bytes<Buffer::size_type>() + buffer->utilized();
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            int need( const void* const memory, long* const size)
+            {
+               const trace trace( "field::need");
+
+               if( memory)
+               {
+                  const auto encoded = *reinterpret_cast<const common::network::byteorder::type<Buffer::size_type>*>( memory);
+                  const auto decoded = casual::common::network::byteorder::decode<Buffer::size_type>( encoded);
+
+                  *size = decoded;
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            //
+            // Serializing is trivial when the buffer is already ready to go
+            //
+            // These functions exist primarily for future compatibility just
+            // in case the internal memory layout will become more complex
+            //
+
+
+            int serialize( void* const memory, const char* const handle)
+            {
+               const trace trace( "field::serialize");
+
+               if( const auto buffer = find( handle))
+               {
+                  const auto encoded = common::network::byteorder::encode( buffer->utilized());
+
+                  //
+                  // Copy the size
+                  //
+                  std::memcpy( memory, &encoded, sizeof( encoded));
+
+                  //
+                  // Copy (marshal) the buffer
+                  //
+                  std::memcpy( static_cast<char*>(memory) + sizeof( encoded), buffer->handle(), buffer->utilized());
+
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+
+            int serialize( char* const handle, const void* const memory)
+            {
+               const trace trace( "field::serialize");
+
+               if( const auto buffer = casual::buffer::field::find( handle))
+               {
+                  const auto encoded = *reinterpret_cast<const common::network::byteorder::type<Buffer::size_type>*>( memory);
+
+                  const auto decoded = common::network::byteorder::decode<Buffer::size_type>( encoded);
+
+                  if( decoded > buffer->reserved())
+                  {
+                     return CASUAL_FIELD_NO_SPACE;
+                  }
+
+                  buffer->utilized( decoded);
+
+                  std::memcpy( buffer->handle(), static_cast<const char*>(memory) + sizeof( encoded), decoded);
+
+                  //
+                  // Index the buffer
+                  //
+                  buffer->index();
+
+               }
+               else
+               {
+                  return CASUAL_FIELD_INVALID_BUFFER;
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+
+            }
 
          } //
 
@@ -970,7 +1161,7 @@ int CasualFieldAddDouble( char* const buffer, const long id, const double value)
 
 int CasualFieldAddString( char* const buffer, const long id, const char* const value)
 {
-   const auto count = std::strlen( value) + 1;
+   const auto count = value ? std::strlen( value) + 1 : 0;
    return casual::buffer::field::add( buffer, id, CASUAL_FIELD_STRING, value, count);
 }
 
@@ -986,10 +1177,6 @@ int CasualFieldAddBinary( char* const buffer, const long id, const char* const v
 
 int CasualFieldAddValue( char* const buffer, const long id, const void* const value, const long count)
 {
-   if( !value)
-   {
-      return CASUAL_FIELD_INVALID_ARGUMENT;
-   }
 
    switch( id / CASUAL_FIELD_TYPE_BASE)
    {
@@ -1356,13 +1543,13 @@ namespace casual
                            else
                            {
                               // TODO: Much better
-                              throw common::exception::Base( "id for " + field.name + " is invalid");
+                              common::log::warning << "id for " << field.name << " is invalid" << std::endl;
                            }
                         }
                         catch( const std::out_of_range&)
                         {
                            // TODO: Much better
-                           throw common::exception::Base( "type for " + field.name + " is invalid");
+                           common::log::warning << "type for " << field.name << " is invalid" << std::endl;
                         }
                      }
                   }
@@ -1384,7 +1571,7 @@ namespace casual
                   if( ! result.emplace( field.name, field.id).second)
                   {
                      // TODO: Much better
-                     throw common::exception::Base( "name for " + field.name + " is not unique");
+                     common::log::warning << "name for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1402,7 +1589,7 @@ namespace casual
                   if( ! result.emplace( field.id, field.name).second)
                   {
                      // TODO: Much better
-                     throw common::exception::Base( "id for " + field.name + " is not unique");
+                     common::log::warning << "id for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1631,11 +1818,6 @@ int CasualFieldRemoveOccurrence( char* const buffer, const long id, long index)
    return casual::buffer::field::remove( buffer, id, index);
 }
 
-int CasualFieldCopyBuffer( char* const target, const char* const source)
-{
-   return casual::buffer::field::copy( target, source);
-}
-
 int CasualFieldNext( const char* const buffer, long* const id, long* const index)
 {
    if( ! id || ! index)
@@ -1653,6 +1835,35 @@ int CasualFieldNext( const char* const buffer, long* const id, long* const index
    }
 
 }
+
+int CasualFieldCopyBuffer( char* const target, const char* const source)
+{
+   return casual::buffer::field::copy( target, source);
+}
+
+
+int CasualFieldBufferToMemoryNeed( const char* const buffer, long* const size)
+{
+   return casual::buffer::field::need( buffer, size);
+}
+
+int CasualFieldCopyBufferToMemory( void* const memory, const char* const buffer)
+{
+   return casual::buffer::field::serialize( memory, buffer);
+}
+
+int CasualFieldMemoryToBufferNeed( const void* const memory, long* const size)
+{
+   return casual::buffer::field::need( memory, size);
+}
+
+
+int CasualFieldCopyMemoryToBuffer( char* const buffer, const void* const memory)
+{
+   return casual::buffer::field::serialize( buffer, memory);
+}
+
+
 
 namespace casual
 {
