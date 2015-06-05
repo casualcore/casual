@@ -38,10 +38,11 @@ extern "C" {
 const char* CasualOrderDescription( int code);
 
 
-/* get allocated - and used bytes */
+/* Get allocated - and used bytes */
 int CasualOrderExploreBuffer( const char* buffer, long* size, long* used);
 
 
+/* Reset the append-cursor (only needed if/when recycling the buffer) */
 int CasualOrderAddPrepare( char* buffer);
 
 #ifdef __bool_true_false_are_defined
@@ -55,6 +56,7 @@ int CasualOrderAddDouble(  char* buffer, double value);
 int CasualOrderAddString(  char* buffer, const char* value);
 int CasualOrderAddBinary(  char* buffer, const char* data, long size);
 
+/* Reset the select-cursor (only needed if/when recycling the buffer) */
 int CasualOrderGetPrepare( char* buffer);
 
 #ifdef __bool_true_false_are_defined
