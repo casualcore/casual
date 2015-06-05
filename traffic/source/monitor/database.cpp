@@ -11,7 +11,7 @@
 
 #include "sql/database.h"
 
-#include "receiver.h"
+#include "traffic/receiver.h"
 
 
 #include <vector>
@@ -53,17 +53,15 @@ namespace monitor
          m_connection.begin();
       }
 
-      void log( const message_type& message) override
+      void log( const event_type& event) override
       {
-         std::ostringstream stream;
-         stream << "INSERT INTO calls VALUES (?,?,?,?,?,?);";
-         m_connection.execute( stream.str(),
-               message.service,
-               message.parentService,
-               common::uuid::string( message.callId), // should not be string
-               message.transactionId,
-               std::chrono::time_point_cast<std::chrono::microseconds>(message.start).time_since_epoch().count(),
-               std::chrono::time_point_cast<std::chrono::microseconds>(message.end).time_since_epoch().count());
+         m_connection.execute( "INSERT INTO calls VALUES (?,?,?,?,?,?);",
+            event.service(),
+            event.parent(),
+            common::uuid::string( event.execution()), // should not be string
+            common::transaction::global( event.transaction()),
+            std::chrono::time_point_cast<std::chrono::microseconds>(event.start()).time_since_epoch().count(),
+            std::chrono::time_point_cast<std::chrono::microseconds>(event.end()).time_since_epoch().count());
       }
 
       void persist_commit() override

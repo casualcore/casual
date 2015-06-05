@@ -13,7 +13,7 @@
 #include "common/server/service.h"
 
 
-#include "common/message/monitor.h"
+#include "common/message/traffic.h"
 
 #include "common/platform.h"
 
@@ -59,7 +59,7 @@ namespace casual
             service_mapping_type services;
             common::platform::long_jump_buffer_type long_jump_buffer;
 
-            message::traffic::monitor::Notify monitor;
+            message::traffic::Event traffic;
 
             std::function<void()> server_done;
 

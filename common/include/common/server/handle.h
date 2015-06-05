@@ -244,7 +244,7 @@ namespace casual
                   //
                   // Set start time.
                   //
-                  state.monitor.start = platform::clock_type::now();
+                  state.traffic.start = platform::clock_type::now();
 
 
                   //
@@ -269,7 +269,7 @@ namespace casual
                   // - notify TM about potentially resources involved.
                   // - set 'global' deadline/timeout
                   //
-                  m_policy.transaction( message, service, state.monitor.start);
+                  m_policy.transaction( message, service, state.traffic.start);
 
 
                   //
@@ -362,15 +362,15 @@ namespace casual
                   scope::Execute execute_monitor{ [&](){
                      if( ! message.service.traffic_monitors.empty())
                      {
-                        state.monitor.end = platform::clock_type::now();
-                        state.monitor.callId = message.execution;
-                        state.monitor.service = message.service.name;
-                        state.monitor.parentService = message.caller;
-                        state.monitor.pid = process::handle().pid;
+                        state.traffic.end = platform::clock_type::now();
+                        state.traffic.execution = message.execution;
+                        state.traffic.service = message.service.name;
+                        state.traffic.parent = message.caller;
+                        state.traffic.process = process::handle();
 
                         for( auto& queue : message.service.traffic_monitors)
                         {
-                           m_policy.statistics( queue, state.monitor);
+                           m_policy.statistics( queue, state.traffic);
                         }
                      }
                   }};
@@ -473,7 +473,7 @@ namespace casual
 
                   void ack( const message::service::call::callee::Request& message);
 
-                  void statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message);
+                  void statistics( platform::queue_id_type id, message::traffic::Event& event);
 
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
@@ -524,7 +524,7 @@ namespace casual
                   }
 
 
-                  void statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
+                  void statistics( platform::queue_id_type id, message::traffic::Event&)
                   {
                      // no-op
                   }

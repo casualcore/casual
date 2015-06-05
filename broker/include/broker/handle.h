@@ -44,10 +44,10 @@ namespace casual
 
 
 
-         namespace monitor
+         namespace traffic
          {
             //!
-            //! Monitor Connect
+            //! Traffic Connect
             //!
             struct Connect: public Base
             {
@@ -217,7 +217,7 @@ namespace casual
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 
-            void statistics( common::platform::queue_id_type id, common::message::traffic::monitor::Notify& message);
+            void statistics( common::platform::queue_id_type id, common::message::traffic::Event& event);
 
          private:
 
