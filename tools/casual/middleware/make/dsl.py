@@ -11,6 +11,7 @@
 #
 import casual.make.plumbing
 import casual.make.porcelain
+from casual.make.version import Version
 
 #
 # Select specific version or leave empty for latest
@@ -97,8 +98,8 @@ def Environment( name, value = '', export = True):
     return _porcelain.Environment(name, value, export)
 def Compile( sourcefile, objectfile = None, directive = ''): 
     return  _porcelain.Compile( sourcefile, objectfile, directive)
-def LinkLibrary(name,objectfiles,libs = []): 
-    return _porcelain.LinkLibrary(name,objectfiles,libs)
+def LinkLibrary(name,objectfiles,libs = [], version = None): 
+    return _porcelain.LinkLibrary(name, objectfiles, libs, version)
 def LinkArchive(name,objectfiles): 
     return _porcelain.LinkArchive(name,objectfiles)
 def LinkExecutable( name, objectfiles, libraries = []): 
