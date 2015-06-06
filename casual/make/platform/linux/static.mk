@@ -87,6 +87,10 @@ DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) ) $(addprefix 
 HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
 
 
+#
+# Directive for setting SONAME
+#
+LINKER_SONAME_DIRECTIVE = -Wl,-soname,
     
    
 
