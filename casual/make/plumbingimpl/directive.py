@@ -423,9 +423,9 @@ def object_name_list( objects):
 def normalize_string( string):
     return internal.normalize_string(string)
 
-def target(filename, source = '', name = None):
+def target(filename, source = '', name = None, version = None):
     
-    return internal.Target( filename, source, name)
+    return internal.Target( filename, source, name, version)
 
 
 def cross_object_name(name):
@@ -528,13 +528,15 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
 
     internal.validate_list( objectfiles);
     internal.validate_list( libraries);
-    
-    
-    
+
+    if target.versioned_file:
+        filename = target.versioned_file
+    else:
+        filename = target.file
+                
     print "#"
-    print "# Links: " + os.path.basename( target.file)
-    
-    
+    print "# Links: " + os.path.basename( filename)
+     
     #
     # extract file if some is targets
     # 
@@ -548,12 +550,12 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     #
     libraries = internal.target_base( libraries)
 
-    destination_path = os.path.dirname( target.file)
+    destination_path = os.path.dirname( filename)
     
     print
     print "link: " + target.name
     print 
-    print target.name + ': ' + target.file
+    print target.name + ': ' + filename
     print
     print '   objects_' + target.name + ' = ' + internal.multiline( object_name_list( objectfiles))
     print
@@ -563,12 +565,18 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     print '   # possible dependencies to other targets (in this makefile)'
     print '   depenency_' + target.name + ' = ' + internal.multiline( dependent_targets)
     print 
-    print target.file + ': $(objects_' + target.name + ') $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + prefix + operation( target.file, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives)
+    print filename + ': $(objects_' + target.name + ') $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
+    print '\t' + prefix + operation( filename, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives, target.soname)
+    
+    if target.versioned_file:
+        print '\t' + _platform.remove( target.file)  
+        soname_fullpath = target.dirname + '/' + target.soname
+        print '\t' + _platform.unix_link( target.versioned_file, soname_fullpath)
+        print '\t' + _platform.unix_link( soname_fullpath, target.file)
     print
     
     
-    register_file_for_clean( target.file)
+    register_file_for_clean( filename)
     register_path_for_create( destination_path)
     
     return target

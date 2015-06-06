@@ -25,9 +25,9 @@ class Platform:
     def cross_compile(self, sourcefile, objectfile, directive): pass
     
     def link_generic(self, linker, filename, objectfiles, libs, directive, extraDirective): pass
-    def link_library(self, filename, objectfiles, libs, directive): pass
-    def link_executable(self, filename, objectfiles, libs, directive): pass
-    def link_archive(self, filename, objectfiles, libs, directive): pass
+    def link_library(self, filename, objectfiles, libs, directive, version): pass
+    def link_executable(self, filename, objectfiles, libs, directive, version): pass
+    def link_archive(self, filename, objectfiles, libs, directive, version): pass
     
     def install(self, source, destination): pass
     

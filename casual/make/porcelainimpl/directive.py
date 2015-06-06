@@ -12,6 +12,7 @@ Contains the basic syntax to produce makefile
 import os
 import casual.make.plumbingimpl.directive as plumbing
 import casual.make.platform.platform
+from casual.make.version import Version
 
 _platform = casual.make.platform.platform.platform()
 def platform():
@@ -165,7 +166,7 @@ def Compile( sourcefile, objectfile = None, directive = ''):
     return target
 
 
-def LinkLibrary(name,objectfiles,libs = []):
+def LinkLibrary(name,objectfiles,libs = [], version = None):
     """LinkLibrary(name,objectfiles,libs)
  Links a shared library
  
@@ -176,8 +177,8 @@ def LinkLibrary(name,objectfiles,libs = []):
     :return: target name
     """
     
-    target = plumbing.target( plumbing.shared_library_name_path( name), name)   
-    
+    target = plumbing.target( plumbing.shared_library_name_path( name), name, version = version)
+        
     plumbing.link( platform().link_library, target, objectfiles, libs)
     
     plumbing.deploy( target, 'lib')

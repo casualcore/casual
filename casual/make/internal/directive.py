@@ -7,6 +7,7 @@ Created on 13 maj 2012
 import os
 import sys
 import re
+from casual.make.version import Version
 
 #
 # Defines the return from "all" functions, that can be used
@@ -14,8 +15,18 @@ import re
 # 
 class Target:
     
-    def __init__(self, filename, source = '', name = None):
-        self.file = filename
+    def __init__(self, filename, source = '', name = None, version = None):
+        if not version:
+            self.file = filename
+            self.soname = None
+            self.versioned_file = None
+        else:
+            self.file = filename
+            self.soname = os.path.basename( filename) + '.' + version.soname()
+            self.versioned_file = filename + '.' + version.full() 
+        
+        self.dirname = os.path.dirname( filename)
+        
         if name:
             self.name = name
         else:
