@@ -40,7 +40,7 @@ void generate( std::ostream& out, const config::xa::Switch& xa_switch)
 *
 */
 
-#include <proxy_server.h>
+#include <transaction/resource/proxy_server.h>
 #include <xa.h>
 
 #ifdef __cplusplus

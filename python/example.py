@@ -1,13 +1,17 @@
-import casual
+import casual.porcelain as casual
+import casual.exception as exception
+import casual.buffer as buffer
 
 try:
-    reply = casual.call( ".casual.broker.state", "{}")
-except casual.BufferError as bufferError:
+    #buf = buffer.JsonBuffer("{}")
+    buf = buffer.XmlBuffer("<root></root>")
+    reply = casual.call( ".casual.broker.state", buf)
+except exception.BufferError as bufferError:
     """
     Just to visualize exception type
     """
     raise bufferError
-except casual.CallError as callError:
+except exception.CallError as callError:
     """
     Just to visualize exception type
     """
