@@ -98,7 +98,10 @@ class CommonUNIX( Platform):
     
     def install(self, source, destination):
         return 'rsync --checksum -i ' + source + ' ' +  destination
-        
+    
+    def install_link(self, source, destination):
+        return 'rsync --checksum -i --links ' + source + ' ' +  destination
+     
     def unix_link(self, source, linkname):
         return 'ln -s ' + source + ' ' +  linkname
    

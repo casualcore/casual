@@ -569,10 +569,12 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     print '\t' + prefix + operation( filename, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives, target.soname)
     
     if target.versioned_file:
-        print '\t' + _platform.remove( target.file)  
         soname_fullpath = target.dirname + '/' + target.soname
-        print '\t' + _platform.unix_link( target.versioned_file, soname_fullpath)
-        print '\t' + _platform.unix_link( soname_fullpath, target.file)
+        print '\t' + platform().remove( target.file)  
+        print '\t' + platform().remove( soname_fullpath)
+         
+        print '\t' + platform().unix_link( target.versioned_file, soname_fullpath)
+        print '\t' + platform().unix_link( soname_fullpath, target.file)
     print
     
     
@@ -627,14 +629,27 @@ def install(target, destination):
     elif isinstance( target, basestring):
         install( internal.Target( target), destination)
     else:
+        
+        if target.versioned_file:
+            filename = target.versioned_file
+        else:
+            filename = target.file
+
         target.name = 'install_' + target.name
         
         register_path_for_create( destination);
         
         print 'install: '+ target.name
         print
-        print target.name + ": " + target.file + ' | ' + destination
-        print "\t" + platform().install( target.file, destination)
+        print target.name + ": " + filename + ' | ' + destination
+        print "\t" + platform().install( filename, destination)
+        if target.versioned_file:
+            soname_fullpath = target.dirname + '/' + target.soname
+            print '\t' + platform().remove( destination + '/' + os.path.basename(soname_fullpath))
+            print '\t' + platform().remove( destination + '/' + os.path.basename(target.file))
+
+            print '\t' + platform().unix_link( destination + '/' + os.path.basename(target.versioned_file), destination + '/' + os.path.basename(soname_fullpath))
+            print '\t' + platform().unix_link( destination + '/'  + os.path.basename(soname_fullpath), destination + '/' + os.path.basename(target.file))
         print
         
         return target;
