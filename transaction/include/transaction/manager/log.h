@@ -30,10 +30,9 @@ namespace casual
          {
             cUnknown = 0,
             cBegin = 10,
-            cPreparedCommit,
-            cPrepareRollback
-
-
+            cPrepared,
+            cPrepareRollback,
+            cTimeout
          };
 
          struct Row
@@ -50,14 +49,21 @@ namespace casual
 
          void begin( const common::message::transaction::begin::Request& request);
 
-         void commit( const common::message::transaction::commit::Request& request);
-
-         void rollback( const common::message::transaction::rollback::Request& request);
+         void prepare( const common::transaction::ID& id);
 
          void remove( const common::transaction::ID& xid);
 
+         //!
+         //! Set transaction in timeout-mode
+         //!
+         void timeout( const common::transaction::ID& xid);
 
-         void prepareCommit( const common::transaction::ID& id);
+         //!
+         //! @returns the earliest timeout there is.
+         //!
+         std::chrono::microseconds timeout();
+
+         std::vector< common::transaction::ID> passed( const common::platform::time_point& now);
 
 
          std::vector< Row> select( const common::transaction::ID& id);
@@ -71,6 +77,8 @@ namespace casual
          void writeRollback();
 
       private:
+
+         void state( const common::transaction::ID& id, long state);
 
          sql::database::Connection m_connection;
 
@@ -91,6 +99,12 @@ namespace casual
 
             } select;
 
+            struct deadline_t
+            {
+               sql::database::Statement earliest;
+               sql::database::Statement transactions;
+
+            } deadline;
 
             sql::database::Statement remove;
 

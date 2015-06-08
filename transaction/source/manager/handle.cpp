@@ -146,7 +146,7 @@ namespace casual
 
                         for( auto& resource : std::get< 0>( resources))
                         {
-                           auto found = state::find::idle::instance( common::range::make( m_state.resources), resource.id);
+                           auto found = m_state.idle_instance( resource.id);
 
                            if( ! found || ! resource::request< Q>( m_state, request.message, *found))
                            {
@@ -178,11 +178,14 @@ namespace casual
                template< typename M>
                void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
                {
-                  auto instance = state::find::instance( common::range::make( state.resources), message);
-
-                  if( ! instance.empty())
+                  try
                   {
-                     instance.first->state = newState;
+                     auto& instance = state.get_instance( message.resource, message.process.pid);
+                     instance.state = newState;
+                  }
+                  catch( common::exception::invalid::Argument&)
+                  {
+
                   }
                }
 
@@ -250,6 +253,9 @@ namespace casual
             void Involved::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
+
+               common::log::internal::transaction << "involved message: " << message << '\n';
+
 
                auto transaction = common::range::find_if(
                      m_state.transactions, find::Transaction( message.trid));
@@ -348,31 +354,32 @@ namespace casual
                {
                   common::trace::Scope trace{ "transaction::handle::resource::connect reply", common::log::internal::transaction};
 
-                  common::log::internal::transaction << "resource (id: " << message.resource << ") " <<  message.process << " connected" << std::endl;
+                  common::log::internal::transaction << "resource connected: " << message << std::endl;
 
-                  auto instanceRange = state::find::instance(
-                        common::range::make( m_state.resources),
-                        message);
-
-                  if( ! instanceRange.empty())
+                  try
                   {
+                     auto& instance = m_state.get_instance( message.resource, message.process.pid);
+
                      if( message.state == XA_OK)
                      {
-                        instanceRange.first->state = state::resource::Proxy::Instance::State::idle;
-                        instanceRange.first->process = std::move( message.process);
+                        instance.state = state::resource::Proxy::Instance::State::idle;
+                        instance.process = std::move( message.process);
 
                      }
                      else
                      {
                         common::log::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
-                        instanceRange.first->state = state::resource::Proxy::Instance::State::startupError;
+                        instance.state = state::resource::Proxy::Instance::State::startupError;
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
                      }
+
                   }
-                  else
+                  catch( common::exception::invalid::Argument&)
                   {
-                     common::log::error << "transaction manager - unexpected resource connecting - process: " << message.process << " - action: discard" << std::endl;
+                     common::log::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
+
+                     common::log::internal::transaction << "resources: " << common::range::make( m_state.resources) << std::endl;
                   }
 
 
@@ -452,7 +459,7 @@ namespace casual
                            //
                            // Prepare has gone ok. Log state
                            //
-                           m_state.log.prepareCommit( transaction.trid);
+                           m_state.log.prepare( transaction.trid);
 
                            //
                            // prepare send reply. Will be sent after persistent write to file
@@ -600,6 +607,8 @@ namespace casual
                      switch( result)
                      {
                         case Transaction::Resource::Result::cXA_OK:
+                        case Transaction::Resource::Result::cXAER_NOTA:
+                        case Transaction::Resource::Result::cXA_RDONLY:
                         {
                            common::log::internal::transaction << "rollback completed - " << transaction << " XA_OK\n";
 

@@ -76,6 +76,10 @@ namespace casual
                friend bool operator == ( const Proxy& lhs, id_type rhs) { return lhs.id == rhs; }
                friend bool operator == ( id_type lhs, const Proxy& rhs) { return lhs == rhs.id; }
 
+               friend std::ostream& operator << ( std::ostream& out, const Proxy& value);
+               friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
+               friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value);
+
             };
 
 
@@ -199,10 +203,10 @@ namespace casual
                cXAER_INVAL,
                cXA_NOMIGRATE,
                cXAER_OUTSIDE,
-               cXAER_NOTA,
                cXAER_ASYNC,
                cXA_RETRY,
                cXAER_DUPID,
+               cXAER_NOTA,
                cXA_OK,      //! Went as expected
                cXA_RDONLY,  //! Went "better" than expected
             };
@@ -372,6 +376,13 @@ namespace casual
          State( const std::string& database);
 
 
+         struct Deadline
+         {
+            common::transaction::xid_type xid;
+            common::platform::time_point deadline;
+
+            friend bool operator < ( const Deadline& lhs, const Deadline& rhs);
+         };
 
          //typedef instances_type;
 
@@ -380,6 +391,7 @@ namespace casual
          std::vector< state::resource::Proxy> resources;
 
          std::vector< Transaction> transactions;
+
 
          //!
          //! Replies that will be sent after an atomic write to the log
@@ -410,7 +422,13 @@ namespace casual
 
          std::vector< common::platform::pid_type> processes() const;
 
-         void removeProcess(  common::platform::pid_type pid);
+         void removeProcess( common::platform::pid_type pid);
+
+         state::resource::Proxy& get_resource( common::platform::resource::id_type rm);
+         state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid);
+
+         using instance_range = decltype( common::range::make( std::declval< state::resource::Proxy>().instances.begin(), std::declval< state::resource::Proxy>().instances.end()));
+         instance_range idle_instance( common::platform::resource::id_type rm);
 
       };
 
@@ -420,6 +438,7 @@ namespace casual
 
          namespace filter
          {
+
             struct Instance
             {
                Instance( common::platform::pid_type pid) : m_pid( pid) {}
@@ -431,6 +450,7 @@ namespace casual
                common::platform::pid_type m_pid;
 
             };
+
 
             struct Idle
             {
@@ -463,53 +483,6 @@ namespace casual
 
 
          } // filter
-
-
-         namespace find
-         {
-            template< typename R>
-            auto resource( R&& range, common::platform::resource::id_type id) -> decltype( common::range::make( range))
-            {
-               return common::range::sorted::bound(
-                  range,
-                  state::resource::Proxy{ id});
-            }
-
-            template< typename R, typename M>
-            auto instance( R&& resources, const M& message) -> decltype( common::range::make( std::begin( resources)->instances))
-            {
-               auto resourceRange = resource(
-                     resources,
-                     message.resource);
-
-               if( resourceRange.empty())
-                  return decltype( common::range::make( std::begin( resources)->instances))();
-
-               return common::range::find_if(
-                     resourceRange->instances,
-                     filter::Instance{ message.process.pid});
-            }
-
-            namespace idle
-            {
-               template< typename R>
-               auto instance( R&& resources, common::platform::resource::id_type id) -> decltype( common::range::make( std::begin( resources)->instances))
-               {
-                  auto range = resource(
-                        resources,
-                        id);
-
-                  if( range.empty())
-                     return decltype( common::range::make( std::begin( resources)->instances))();
-
-                  return common::range::find_if(
-                     common::range::make( range->instances),
-                     filter::Idle{});
-               }
-
-            } // idle
-
-         } // find
 
 
 

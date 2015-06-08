@@ -228,12 +228,17 @@ namespace casual
 
 
             template< typename QW, typename QR>
-            Transaction startTransaction( QW& writer, QR& reader)
+            Transaction startTransaction( QW& writer, QR& reader, const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
             {
 
                message::transaction::begin::Request request;
                request.process = process::handle();
                request.trid = transaction::ID::create();
+               request.timeout = std::chrono::seconds{ timeout};
+               request.start = start;
+
+               //call::Timeout::instance().current()
+
                writer( request);
 
                message::transaction::begin::Reply reply;
@@ -253,17 +258,19 @@ namespace casual
 
          } // local
 
-         void Context::involved( const transaction::ID& id, std::vector< int> resources)
+         void Context::involved( const transaction::ID& trid, std::vector< int> resources)
          {
             common::trace::Scope trace{ "transaction::Context::involved", common::log::internal::transaction};
 
-            common::log::internal::transaction << "resources involved: " << common::range::make( resources) << std::endl;
 
             queue::blocking::Writer writer{ manager().queue};
 
             message::transaction::resource::Involved message;
-            message.trid = id;
+            message.process = process::handle();
+            message.trid = trid;
             message.resources = std::move( resources);
+
+            common::log::internal::transaction << "involved message: " << message << '\n';
 
             writer( message);
          }
@@ -283,14 +290,14 @@ namespace casual
             m_transactions.push_back( std::move( transaction));
          }
 
-         void Context::start()
+         void Context::start( const platform::time_point& start)
          {
             common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
 
             queue::blocking::Writer writer( manager().queue);
             queue::blocking::Reader reader( ipc::receive::queue());
 
-            auto transaction = local::startTransaction( writer, reader);
+            auto transaction = local::startTransaction( writer, reader, start, m_timeout);
 
             resources_start( transaction, TMNOFLAGS);
 
@@ -566,7 +573,7 @@ namespace casual
             queue::blocking::Reader reader( ipc::receive::queue());
 
 
-            auto trans = local::startTransaction( writer, reader);
+            auto trans = local::startTransaction( writer, reader, platform::clock_type::now(), m_timeout);
 
             resources_start( trans, TMNOFLAGS);
 
@@ -831,10 +838,13 @@ namespace casual
             return TX_OK;
          }
 
-         void Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
+         void Context::setTransactionTimeout( TRANSACTION_TIMEOUT timeout)
          {
-            throw exception::tx::no::Support{ "set transaction timeout is not supported"};
-
+            if( timeout < 0)
+            {
+               throw exception::tx::Argument{ "timeout value has to be 0 or greater", CASUAL_NIP( timeout)};
+            }
+            m_timeout = timeout;
          }
 
          bool Context::info( TXINFO* info)
@@ -845,6 +855,8 @@ namespace casual
             {
                info->xid = transaction.trid.xid;
                info->transaction_state = static_cast< decltype( info->transaction_state)>( transaction.state);
+               info->transaction_timeout = m_timeout;
+               info->transaction_control = static_cast< control_type>( m_control);
             }
             return static_cast< bool>( transaction);
          }

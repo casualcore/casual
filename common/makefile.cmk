@@ -48,12 +48,15 @@ casual_common_objectfiles = [
     Compile( 'source/transaction/transaction.cpp'),
     
     Compile( 'source/ipc.cpp'),
+    Compile( 'source/queue.cpp'),
+    
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/dispatch.cpp'),
     Compile( 'source/message/server.cpp'),
     Compile( 'source/message/traffic.cpp'),
     Compile( 'source/message/queue.cpp'),
+    Compile( 'source/message/transaction.cpp'),
     
     Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),
@@ -66,6 +69,7 @@ casual_common_objectfiles = [
     Compile( 'source/error.cpp'),
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
+    Compile( 'source/execution.cpp'),
     Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
     

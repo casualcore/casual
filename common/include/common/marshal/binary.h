@@ -13,6 +13,7 @@
 #include "common/ipc.h"
 #include "common/algorithm.h"
 #include "common/marshal/marshal.h"
+#include "common/execution.h"
 
 #include <vector>
 #include <cassert>
@@ -290,6 +291,11 @@ namespace casual
          template< typename M>
          ipc::message::Complete complete( M&& message)
          {
+            if( ! message.execution)
+            {
+               message.execution = execution::id();
+            }
+
             ipc::message::Complete complete( message.message_type, message.correlation ? message.correlation : uuid::make());
 
             marshal::output::Binary marshal{ complete.payload};

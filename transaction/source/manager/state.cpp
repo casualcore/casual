@@ -58,6 +58,47 @@ namespace casual
             }
          } // local
 
+         namespace resource
+         {
+            std::ostream& operator << ( std::ostream& out, const Proxy& value)
+            {
+               return out << "{ id: " << value.id
+                     << ", concurency: " << value.concurency
+                     << ", key: " << value.key
+                     << ", openinfo: \"" << value.openinfo
+                     << "\", closeinfo: \"" << value.closeinfo
+                     << "\", instances: " << common::range::make( value.instances)
+                     << '}';
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value)
+            {
+               return out << "{ id: " << value.id
+                     << ", process: " << value.process
+                     << ", state: " << value.state
+                     << '}';
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value)
+            {
+               auto state_switch = [&]()
+                  {
+                     switch( value)
+                     {
+                        case Proxy::Instance::State::busy: return "busy";
+                        case Proxy::Instance::State::absent: return "absent";
+                        case Proxy::Instance::State::idle: return "idle";
+                        case Proxy::Instance::State::shutdown: return "shutdown";
+                        case Proxy::Instance::State::started: return "started";
+                        case Proxy::Instance::State::startupError: return "startupError";
+                     }
+                     return "<unknown>";
+                  };
+
+               return out << state_switch();
+            }
+         } // resource
+
          void configure( State& state, const common::message::transaction::manager::Configuration& configuration)
          {
 
@@ -189,6 +230,9 @@ namespace casual
          return result;
       }
 
+      State::State( const std::string& database) : log( database) {}
+
+
       std::size_t State::instances() const
       {
          std::size_t result = 0;
@@ -234,6 +278,43 @@ namespace casual
          log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
       }
 
+      state::resource::Proxy& State::get_resource( common::platform::resource::id_type rm)
+      {
+         auto found = common::range::find( resources, rm);
+
+         if( ! found)
+         {
+            throw common::exception::invalid::Argument{ "failed to find resource"};
+         }
+         return *found;
+      }
+
+      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid)
+      {
+         auto& resource = get_resource( rm);
+
+         auto found = common::range::find_if( resource.instances, [=]( const state::resource::Proxy::Instance& instance){
+               return instance.process.pid == pid;
+            });
+
+         if( ! found)
+         {
+            throw common::exception::invalid::Argument{ "failed to find instance"};
+         }
+         return *found;
+      }
+
+      State::instance_range State::idle_instance( common::platform::resource::id_type rm)
+      {
+         auto& resource = get_resource( rm);
+
+         return common::range::find_if( resource.instances, state::filter::Idle{});
+      }
+
+      bool operator < ( const State::Deadline& lhs, const State::Deadline& rhs)
+      {
+         return lhs.deadline < rhs.deadline;
+      }
 
 
    } // transaction

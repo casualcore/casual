@@ -43,8 +43,6 @@ namespace casual
                std::string parent;
                common::process::Handle process;
 
-               common::Uuid execution;
-
                common::transaction::ID trid;
 
                common::platform::time_point start;
@@ -52,6 +50,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_MARSHAL
                (
+                  base_type::marshal( archive);
                   archive & service;
                   archive & parent;
                   archive & process;

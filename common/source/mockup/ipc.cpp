@@ -18,6 +18,8 @@
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 
+#include "common/message/type.h"
+
 
 #include <thread>
 #include <future>
@@ -84,7 +86,7 @@ namespace casual
                      };
 
                      template< message::Type type>
-                     struct basic_messsage
+                     struct basic_message
                      {
                         enum
                         {
@@ -93,13 +95,25 @@ namespace casual
 
                         Uuid correlation;
 
-                        CASUAL_CONST_CORRECT_MARSHAL({
-                           // no information
+                        //!
+                        //! The execution-id
+                        //!
+                        Uuid execution;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+
+                           //
+                           // correlation is part of ipc::message::Complete, and is
+                           // handled by the ipc-abstraction (marshaled 'on the side')
+                           //
+
+                           archive & execution;
                         })
                      };
 
-                     using Disconnect =  basic_messsage< cMockupDisconnect>;
-                     using Clear =  basic_messsage< cMockupClear>;
+                     using Disconnect =  basic_message< cMockupDisconnect>;
+                     using Clear =  basic_message< cMockupClear>;
                   }
                }
             }

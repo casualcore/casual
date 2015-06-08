@@ -30,9 +30,9 @@ namespace casual
             return result;
          }
 
-         common::file::scoped::Path transactionLogPath()
+         std::string transactionLogPath()
          {
-            return common::file::scoped::Path{ "unittest_transaction_log.db"};
+            return ":memory:";
          }
 
       } // local
@@ -84,17 +84,51 @@ namespace casual
          auto begin = local::beginReqest();
          log.begin( begin);
 
-         log.prepareCommit( begin.trid);
+         log.prepare( begin.trid);
 
 
          auto rows = log.select( begin.trid);
 
          ASSERT_TRUE( rows.size() == 1);
          EXPECT_TRUE( rows.at( 0).trid == begin.trid);
-         EXPECT_TRUE( rows.at( 0).state == Log::State::cPreparedCommit);
+         EXPECT_TRUE( rows.at( 0).state == Log::State::cPrepared);
+      }
+
+      TEST( casual_transaction_log, one_begin__0us_timoeut__expect_NO_timeout)
+      {
+         Log log( ":memory:");
+
+         auto begin = local::beginReqest();
+         begin.timeout = std::chrono::microseconds{ 0};
+
+         log.begin( begin);
+
+         EXPECT_TRUE( log.timeout() == std::chrono::microseconds::min());
+
+         auto trans = log.passed( common::platform::clock_type::now() - begin.timeout - std::chrono::seconds{ 1});
+
+         EXPECT_TRUE( trans.empty()) << "size: " << trans.size() << std::endl;
+      }
+
+      TEST( casual_transaction_log, one_begin__10us_timoeut__expect_timeout)
+      {
+         Log log( ":memory:");
+
+         auto begin = local::beginReqest();
+         begin.timeout = std::chrono::microseconds{ 10};
+
+         log.begin( begin);
+
+         auto timeout = log.timeout();
+         EXPECT_TRUE( timeout != std::chrono::microseconds::min());
+
+         auto trans = log.passed( common::platform::clock_type::now() - timeout);
+
+         ASSERT_TRUE( trans.size() == 1) << "trans.size(): " << trans.size() << std::endl;
+         EXPECT_TRUE( trans.front() == begin.trid) << "trans.front(): " << trans.front() << std::endl;
+
       }
 
 
    } // transaction
-
 } // casual

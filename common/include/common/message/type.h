@@ -106,12 +106,31 @@ namespace casual
          template< message::Type type>
          struct basic_message
          {
+
+            using base_type = basic_message< type>;
+
             enum
             {
                message_type = type
             };
 
             Uuid correlation;
+
+            //!
+            //! The execution-id
+            //!
+            Uuid execution;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+
+               //
+               // correlation is part of ipc::message::Complete, and is
+               // handled by the ipc-abstraction (marshaled 'on the side')
+               //
+
+               archive & execution;
+            })
          };
 
          template< typename M, message::Type type>
@@ -125,6 +144,22 @@ namespace casual
             };
 
             Uuid correlation;
+
+            //!
+            //! The execution-id
+            //!
+            Uuid execution;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               //
+               // correlation is part of ipc::message::Complete, and is
+               // handled by the ipc-abstraction (marshaled 'on the side')
+               //
+
+               archive & execution;
+               M::marshal( archive);
+            })
          };
 
          namespace flush
@@ -169,6 +204,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  base_type::marshal( archive);
                   archive & reply;
                })
             };
@@ -194,6 +230,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  base_type::marshal( archive);
                   archive & executables;
                   archive & servers;
                })
@@ -247,11 +284,11 @@ namespace casual
             template< message::Type type>
             struct basic_id : basic_message< type>
             {
-
                process::Handle process;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  basic_message< type>::marshal( archive);
                   archive & process;
                })
             };
@@ -277,6 +314,45 @@ namespace casual
             };
 
          } // server
+
+         namespace reverse
+         {
+
+
+            //!
+            //! declaration of helper tratis to get the
+            //! "reverse type". Normally to get the Reply-type
+            //! from a Request-type, and vice versa.
+            //!
+            template< typename T>
+            struct type;
+
+            namespace detail
+            {
+               template< typename R>
+               struct type
+               {
+                  using reverse_type = R;
+
+                  template< typename T>
+                  static reverse_type convert( T&& message)
+                  {
+                     reverse_type result;
+
+                     result.correlation = message.correlation;
+                     result.execution = message.execution;
+
+                     return result;
+                  }
+
+               };
+            } // detail
+
+            template<>
+            struct type< shutdown::Request> : detail::type< shutdown::Reply> {};
+
+         } // reverse
+
       } // message
    } // common
 } // casual

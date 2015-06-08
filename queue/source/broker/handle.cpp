@@ -153,9 +153,9 @@ namespace casual
                {
                   auto found = common::range::find( state.involved, message.trid);
 
-                  auto sendError = [&](){
-                     common::message::transaction::resource::commit::Reply reply;
-                     reply.state = XAER_RMFAIL;
+                  auto sendError = [&]( int error_state){
+                     auto reply = common::message::reverse::type< message_type>::convert( message);
+                     reply.state = error_state;
                      reply.trid = message.trid;
                      reply.resource = message.resource;
                      reply.process = common::process::handle();
@@ -191,13 +191,13 @@ namespace casual
                      catch( ...)
                      {
                         common::error::handler();
-                        sendError();
+                        sendError( XAER_RMFAIL);
                      }
                   }
                   else
                   {
-                     common::log::internal::queue << "request - trid: " << message.trid << " could not be found - action: XAER_RMFAIL" << std::endl;
-                     sendError();
+                     common::log::internal::queue << "XAER_NOTA - trid: " << message.trid << " could not be found\n";
+                     sendError( XAER_NOTA);
                   }
 
                }

@@ -66,6 +66,7 @@ namespace casual
                   transactions.clear();
                }
             }
+
             return reply;
          }
 

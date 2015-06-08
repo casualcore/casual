@@ -40,10 +40,6 @@ namespace casual
    namespace transaction
    {
 
-
-      State::State( const std::string& database) : log( database) {}
-
-
       Manager::Manager( const Settings& settings) :
           m_queueFilePath( common::process::singleton( common::environment::domain::singleton::path() + "/.casual-transaction-manager-queue")),
           m_receiveQueue( ipc::receive::queue()),
@@ -54,6 +50,8 @@ namespace casual
 
       Manager::~Manager()
       {
+         common::Trace trace{ "transaction::Manager::~Manager", common::log::internal::transaction};
+
          try
          {
             std::vector< common::process::Handle> instances;
@@ -174,18 +172,33 @@ namespace casual
 
             while( true)
             {
+               common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
+
                {
+
                   scoped::Writer batchWrite( m_state.log);
 
                   //
                   // Blocking
                   //
+                  try
+                  {
+                     common::signal::timer::Scoped timeout{ m_state.log.timeout()};
 
-                  handler( queueReader.next());
-
+                     handler( queueReader.next());
+                  }
+                  catch( const exception::signal::Timeout&)
+                  {
+                     //
+                     // We've got a transaction timeout.
+                     // casual doesn't really care, but to play nice with RM's and let them release resources
+                     // and such, we roll-back every transaction that has reached it's deadline.
+                     //
+                     action::timeout( m_state);
+                  }
 
                   //
-                  // Consume until the queue is empty or we've got pending replies equal to transaction_batch
+                  // Consume until the queue is empty or we've got pending replies equal to batch::transaction
                   //
 
                   queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);

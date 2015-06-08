@@ -62,6 +62,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
+                        base_type::marshal( archive);
                         archive & transaction_manager;
                         archive & resources;
                         archive & domain;
@@ -86,6 +87,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & domain;
                      archive & resources;
                   })
@@ -99,6 +101,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & process;
                      archive & success;
                   })
@@ -109,13 +112,14 @@ namespace casual
             template< message::Type type>
             struct basic_transaction : basic_message< type>
             {
-               typedef basic_transaction< type> base_type;
+               using base_type = basic_transaction< type>;
 
                process::Handle process;
                common::transaction::ID trid;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  basic_message< type>::marshal( archive);
                   archive & process;
                   archive & trid;
                })
@@ -127,21 +131,20 @@ namespace casual
             template< message::Type type>
             struct basic_request : basic_transaction< type>
             {
-               typedef basic_transaction< type> base_type;
+               //using base_type = basic_transaction< type>;
 
             };
 
             template< message::Type type>
             struct basic_reply : basic_transaction< type>
             {
-               typedef basic_transaction< type> base_type;
 
                platform::resource::id_type resource = 0;
                int state = 0;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  base_type::marshal( archive);
+                  basic_transaction< type>::marshal( archive);
                   archive & resource;
                   archive & state;
                })
@@ -152,11 +155,13 @@ namespace casual
                struct Request : public basic_request< cTransactionBeginRequest>
                {
                   common::platform::time_point start;
+                  std::chrono::microseconds timeout;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & start;
+                     archive & timeout;
                   })
                };
 
@@ -194,19 +199,22 @@ namespace casual
                      base_type::marshal( archive);
                      archive & resources;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Involved& value);
+
                };
 
                template< message::Type type>
                struct basic_request : basic_transaction< type>
                {
-                  typedef basic_transaction< type> base_type;
+                  using base_type = basic_request;
 
                   platform::resource::id_type resource = 0;
                   int flags = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     base_type::marshal( archive);
+                     basic_transaction< type>::marshal( archive);
                      archive & resource;
                      archive & flags;
                   })
@@ -226,10 +234,13 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
+                        base_type::marshal( archive);
                         archive & process;
                         archive & resource;
                         archive & state;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& message);
                   };
                } // connect
 
@@ -293,6 +304,16 @@ namespace casual
 
 
          } // transaction
+
+         namespace reverse
+         {
+            template<>
+            struct type< transaction::resource::commit::Request> : detail::type< transaction::resource::commit::Reply> {};
+
+            template<>
+            struct type< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
+
+         } // reverse
 
 
       } // message
