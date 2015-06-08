@@ -186,21 +186,10 @@ int CasualFieldRemoveOccurrence( char* buffer, long id, long index);
 int CasualFieldNext( const char* buffer, long* id, long* index);
 
 /* copies content from source- to target-buffer */
-//int CasualFieldCopyBufferToBuffer( char* target, const char* source);
 int CasualFieldCopyBuffer( char* target, const char* source);
 
-
-/* find out how many bytes needed for serialize (marshal) */
-int CasualFieldBufferToMemoryNeed( const char* buffer, long* size);
-
-/* serialize (marshal) the buffer to a memory storage with appropriate size */
-int CasualFieldCopyBufferToMemory( void* memory, const char* buffer);
-
-/* find out how large the buffer need to be for serialize (unmarshal) */
-int CasualFieldMemoryToBufferNeed( const void* memory, long* size);
-
 /* serialize (unmarshal) a memory storage to a buffer with appropriate size */
-int CasualFieldCopyMemoryToBuffer( char* buffer, const void* memory);
+int CasualFieldCopyMemory( char* target, const void* source, long count);
 
 
 

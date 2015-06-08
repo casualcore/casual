@@ -70,52 +70,82 @@ TEST( casual_order_buffer, add_and_get)
    auto buffer = tpalloc( CASUAL_ORDER, "", 1024);
    ASSERT_TRUE( buffer != nullptr);
 
-   EXPECT_TRUE( CasualOrderAddBool( buffer, false) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddChar( buffer, 'a') == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddShort( buffer, 123) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddLong( buffer, 654321) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddFloat( buffer, 3.14) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddDouble( buffer, 987.654) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddString( buffer, "Hello!") == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( CasualOrderAddBinary( buffer, "Some Data", 9) == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddBool( buffer, false) == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddChar( buffer, 'a') == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddShort( buffer, 123) == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddLong( buffer, 654321) == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddFloat( buffer, 3.14) == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddDouble( buffer, 987.654) == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddString( buffer, "Hello!") == CASUAL_ORDER_SUCCESS);
+   ASSERT_TRUE( CasualOrderAddBinary( buffer, "Some Data", 9) == CASUAL_ORDER_SUCCESS);
 
 
-   bool boolean;
-   EXPECT_TRUE( CasualOrderGetBool( buffer, &boolean) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( boolean == false);
+   {
+      bool boolean;
+      const auto result = CasualOrderGetBool( buffer, &boolean);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( boolean == false);
+   }
 
 
-   char character;
-   EXPECT_TRUE( CasualOrderGetChar( buffer, &character) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( character == 'a');
+   {
+      char character;
+      const auto result = CasualOrderGetChar( buffer, &character);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( character == 'a');
+   }
 
-   short short_integer;
-   EXPECT_TRUE( CasualOrderGetShort( buffer, &short_integer) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( short_integer == 123);
+   {
+      short integer;
+      const auto result = CasualOrderGetShort( buffer, &integer);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( integer == 123);
+   }
 
-   long long_integer;
-   EXPECT_TRUE( CasualOrderGetLong( buffer, &long_integer) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( long_integer == 654321);
+   {
+      long integer;
+      const auto result = CasualOrderGetLong( buffer, &integer);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( integer == 654321);
+   }
 
-   float short_decimal;
-   EXPECT_TRUE( CasualOrderGetFloat( buffer, &short_decimal) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( short_decimal > 3.1 && short_decimal < 3.2);
+   {
+      float decimal;
+      const auto result = CasualOrderGetFloat( buffer, &decimal);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( decimal > 3.1 && decimal < 3.2);
+   }
 
-   double long_decimal;
-   EXPECT_TRUE( CasualOrderGetDouble( buffer, &long_decimal) == CASUAL_ORDER_SUCCESS);
-   EXPECT_TRUE( long_decimal > 987.6 && long_decimal < 987.7);
+   {
+      double decimal;
+      const auto result = CasualOrderGetDouble( buffer, &decimal);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( decimal > 987.6 && decimal < 987.7);
+   }
+
+   {
+      const char* string = nullptr;
+      const auto result = CasualOrderGetString( buffer, &string);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_STREQ( string, "Hello!") << string;
+   }
 
 
-   const char* string = nullptr;
-   EXPECT_TRUE( CasualOrderGetString( buffer, &string) == CASUAL_ORDER_SUCCESS);
-   EXPECT_STREQ( string, "Hello!") << string;
 
-   const char* binary = nullptr;
-   long size;
-   EXPECT_TRUE( CasualOrderGetBinary( buffer, &binary, &size) == CASUAL_ORDER_SUCCESS) << CasualOrderGetBinary( buffer, &binary, &size);
-   EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size) << binary << " " << size << std::endl;
-   EXPECT_TRUE( size == 9);
+   {
+      const char* binary = nullptr;
+      long size;
+      const auto result = CasualOrderGetBinary( buffer, &binary, &size);
+      EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
+      EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size) << binary << " " << size << std::endl;
+      EXPECT_TRUE( size == 9);
+   }
 
+   {
+      bool none;
+      const auto result = CasualOrderGetBool( buffer, &none);
+      EXPECT_TRUE( result == CASUAL_ORDER_NO_PLACE) << result;
+   }
 
    tpfree( buffer);
 }
@@ -182,5 +212,56 @@ TEST( casual_order_buffer, copy_buffer__expecting_success)
 
    tpfree( source);
    tpfree( target);
+}
+
+
+TEST( casual_order_buffer, performance__expecting_good_enough_speed)
+{
+   for( long idx = 0; idx < 100000; ++idx)
+   {
+
+      auto buffer = tpalloc( CASUAL_ORDER, "", 512);
+      ASSERT_TRUE( buffer != nullptr);
+
+      //ASSERT_TRUE( CasualOrderAddBool( buffer, false) == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddChar( buffer, 'a') == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddShort( buffer, 123) == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddLong( buffer, 654321) == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddFloat( buffer, 3.14) == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddDouble( buffer, 987.654) == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddString( buffer, "Hello!") == CASUAL_ORDER_SUCCESS);
+      ASSERT_TRUE( CasualOrderAddBinary( buffer, "Some Data", 9) == CASUAL_ORDER_SUCCESS);
+
+
+
+      //bool boolean;
+      //ASSERT_TRUE( CasualOrderGetBool( buffer, &boolean) == CASUAL_ORDER_SUCCESS);
+
+      char character;
+      ASSERT_TRUE( CasualOrderGetChar( buffer, &character) == CASUAL_ORDER_SUCCESS);
+
+      short short_integer;
+      ASSERT_TRUE( CasualOrderGetShort( buffer, &short_integer) == CASUAL_ORDER_SUCCESS);
+
+      long long_integer;
+      ASSERT_TRUE( CasualOrderGetLong( buffer, &long_integer) == CASUAL_ORDER_SUCCESS);
+
+      float short_decimal;
+      ASSERT_TRUE( CasualOrderGetFloat( buffer, &short_decimal) == CASUAL_ORDER_SUCCESS);
+
+      double long_decimal;
+      ASSERT_TRUE( CasualOrderGetDouble( buffer, &long_decimal) == CASUAL_ORDER_SUCCESS);
+
+
+      const char* string = nullptr;
+      ASSERT_TRUE( CasualOrderGetString( buffer, &string) == CASUAL_ORDER_SUCCESS);
+
+      const char* binary = nullptr;
+      long size;
+      ASSERT_TRUE( CasualOrderGetBinary( buffer, &binary, &size) == CASUAL_ORDER_SUCCESS) << CasualOrderGetBinary( buffer, &binary, &size);
+
+      tpfree( buffer);
+
+   }
 }
 
