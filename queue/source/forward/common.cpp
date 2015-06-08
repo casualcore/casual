@@ -34,18 +34,17 @@ namespace casual
                {
                   try
                   {
+                     if( tx_begin() != TX_OK)
+                     {
+                        return false;
+                     }
+
                      //
                      // Rollback unless we commit
                      //
                      common::scope::Execute rollback{ [](){
                            tx_rollback();
                      }};
-
-                     if( tx_begin() != TX_OK)
-                     {
-                        rollback.release();
-                        return false;
-                     }
 
                      task.dispatch( rm::blocking::dequeue( task.queue));
 

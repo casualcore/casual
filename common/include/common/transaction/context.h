@@ -52,7 +52,7 @@ namespace casual
             int setCommitReturn( COMMIT_RETURN value);
             COMMIT_RETURN get_commit_return();
             int setTransactionControl(TRANSACTION_CONTROL control);
-            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            void setTransactionTimeout( TRANSACTION_TIMEOUT timeout);
             bool info( TXINFO* info);
             //! @}
 
@@ -86,7 +86,7 @@ namespace casual
             //!
             //! Start a new transaction
             //!
-            void start();
+            void start( const platform::time_point& start);
 
             //!
             //! trid server is invoked with
@@ -121,7 +121,7 @@ namespace casual
 
          private:
 
-            typedef TRANSACTION_CONTROL control_type;
+            using control_type = TRANSACTION_CONTROL;
             enum class Control : control_type
             {
                unchained = TX_UNCHAINED,
@@ -152,6 +152,8 @@ namespace casual
             std::vector< int> m_outside;
 
             transaction::ID m_caller;
+
+            TRANSACTION_TIMEOUT m_timeout = 0;
 
             //!
             //! Attributes that is initialized from "manager"

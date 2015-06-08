@@ -84,7 +84,7 @@ namespace casual
                   log::internal::debug << "service: " << service << std::endl;
 
                   //
-                  // We add callers transaction (can be null-trid).
+                  // We keep track of callers transaction (can be null-trid).
                   //
                   transaction::Context::instance().caller = message.trid;
 
@@ -98,7 +98,7 @@ namespace casual
                         }
                         else
                         {
-                           transaction::Context::instance().start();
+                           transaction::Context::instance().start( now);
                         }
                         break;
                      }
@@ -109,7 +109,7 @@ namespace casual
                      }
                      case server::Service::Transaction::atomic:
                      {
-                        transaction::Context::instance().start();
+                        transaction::Context::instance().start( now);
                         break;
                      }
                      case server::Service::Transaction::none:

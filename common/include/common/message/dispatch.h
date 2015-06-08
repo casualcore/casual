@@ -9,6 +9,7 @@
 #define MESSAGE_DISPATCH_H_
 
 #include "common/marshal/binary.h"
+#include "common/execution.h"
 #include "common/queue.h"
 
 
@@ -91,28 +92,13 @@ namespace casual
                   {
                      message_type message;
                      complete >> message;
+
+                     execution::id( message.execution);
+
                      m_handler( message);
-                     //Transform transform( complete);
-                     //m_handler( transform);
                   }
 
                private:
-                  /*
-                  struct Transform
-                  {
-                     Transform( ipc::message::Complete& complete) : complete( complete) {}
-
-                     template< typename M>
-                     operator M ()
-                     {
-                        M message;
-                        complete >> message;
-                        return message;
-                     }
-
-                     ipc::message::Complete& complete;
-                  };
-                  */
 
                   handler_type m_handler;
                };

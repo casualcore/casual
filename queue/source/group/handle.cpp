@@ -10,6 +10,7 @@
 #include "queue/common/environment.h"
 
 #include "common/internal/log.h"
+#include "common/trace.h"
 #include "common/error.h"
 
 namespace casual
@@ -50,6 +51,8 @@ namespace casual
                   {
                      void replies( State& state, const common::transaction::ID& trid)
                      {
+                        common::trace::Scope trace{ "queue::handle::pending", common::log::internal::queue};
+
 
                         auto pending = state.pending.commit( trid);
 
@@ -173,6 +176,8 @@ namespace casual
             {
                bool Request::operator () ( message_type& message)
                {
+                  common::trace::Scope trace{ "queue::handle::dequeue::Request", common::log::internal::queue};
+
                   try
                   {
                      auto reply = m_state.queuebase.dequeue( message);
@@ -211,8 +216,11 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::dequeue::forget::Request", common::log::internal::queue};
+
                      try
                      {
+
                         auto reply = m_state.pending.forget( message);
 
                         queue::blocking::Send send{ m_state};

@@ -75,7 +75,7 @@ namespace casual
                   Reply& operator = ( Reply&&) = default;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
-                     // no information
+                     base_type::marshal( archive);
                   })
                };
 
@@ -108,6 +108,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  base_type::marshal( archive);
                   archive & serverPath;
                   archive & process;
                   archive & services;
@@ -121,6 +122,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
+                  base_type::marshal( archive);
                   archive & process;
                   archive & services;
                })
@@ -144,6 +146,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
+                        base_type::marshal( archive);
                         archive & requested;
                         archive & process;
                      })
@@ -161,6 +164,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
+                        base_type::marshal( archive);
                         archive & service;
                         archive & process;
                      })
@@ -184,20 +188,22 @@ namespace casual
                   base_call& operator = ( const base_call&) = delete;
 
                   platform::descriptor_type descriptor = 0;
+                  process::Handle process;
+
                   Service service;
-                  process::Handle reply;
-                  common::Uuid execution;
-                  std::string caller;
+                  std::string parent;
+
                   common::transaction::ID trid;
                   std::int64_t flags = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & descriptor;
+                     archive & process;
                      archive & service;
-                     archive & reply;
+                     archive & parent;
                      archive & execution;
-                     archive & caller;
                      archive & trid;
                      archive & flags;
                   })
@@ -294,6 +300,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & descriptor;
                      archive & error;
                      archive & code;
@@ -315,6 +322,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & service;
                      archive & process;
                   })

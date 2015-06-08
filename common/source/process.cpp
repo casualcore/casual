@@ -156,7 +156,7 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Handle& value)
          {
-            return out << "{pid: " << value.pid << ", queue: " << value.queue << '}';
+            return out << "{ pid: " << value.pid << ", queue: " << value.queue << '}';
          }
 
 

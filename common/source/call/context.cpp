@@ -238,35 +238,6 @@ namespace casual
             return singleton;
          }
 
-         void Context::execution( const Uuid& uuid)
-         {
-            if( ! uuid)
-            {
-               m_state.execution = uuid::make();
-            }
-            else
-            {
-               m_state.execution = uuid;
-            }
-         }
-
-         const common::Uuid& Context::execution() const
-         {
-            return m_state.execution;
-         }
-
-
-
-         void Context::service( const std::string& service)
-         {
-            m_state.service = service;
-         }
-
-         const std::string& Context::service() const
-         {
-            return m_state.service;
-         }
-
          namespace local
          {
             namespace
@@ -354,9 +325,9 @@ namespace casual
                   message.descriptor = m_state.pending.reserve( message.correlation);
                }
 
-               message.reply = process::handle();
-               message.execution = m_state.execution;
-               message.caller = m_state.service;
+               message.process = process::handle();
+               //message.execution = execution::id();
+               message.parent = execution::service();
                message.flags = flags;
 
                log::internal::debug << "descriptor: " << message.descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;

@@ -119,9 +119,6 @@ namespace casual
 
             } pending;
 
-            common::Uuid execution = common::uuid::make();
-
-            std::string service;
          };
 
          class Context
@@ -140,13 +137,6 @@ namespace casual
             void cancel( descriptor_type cd);
 
             void clean();
-
-            void execution( const common::Uuid& uuid);
-            const common::Uuid& execution() const;
-
-            void service( const std::string& service);
-            const std::string& service() const;
-
 
          private:
 

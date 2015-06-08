@@ -31,34 +31,17 @@ namespace casual
          {
             struct Ignore
             {
-               inline void apply() {}
+               void apply();
             };
 
             struct Timeout
             {
-               inline void apply()
-               {
-                  try
-                  {
-
-                  }
-                  catch( const exception::signal::Timeout&)
-                  {
-                     throw;
-                  }
-                  catch( ...)
-                  {
-
-                  }
-               }
+               void apply();
             };
 
             struct NoAction
             {
-               inline void apply()
-               {
-                  throw;
-               }
+               void apply();
             };
 
             //!

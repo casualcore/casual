@@ -106,7 +106,7 @@ namespace casual
                message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                message.descriptor = 10;
                message.service.name = "test_service";
-               message.reply.queue = id;
+               message.process.queue = id;
 
                return message;
             }
@@ -326,7 +326,7 @@ namespace casual
                   message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                   message.descriptor = 10;
                   message.service.name = std::move( service);
-                  message.reply.queue = queue;
+                  message.process.queue = queue;
                   message.trid = std::move( trid);
 
                   return message;

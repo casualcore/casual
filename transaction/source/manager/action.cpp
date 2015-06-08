@@ -80,6 +80,11 @@ namespace casual
                message.trid = transaction;
 
                handle::Rollback{ state}( message);
+
+               //
+               // Set the transaction in "timeout-mode"
+               //
+               state.log.timeout( transaction);
             }
          }
 
@@ -152,7 +157,7 @@ namespace casual
                for( auto&& id : resources)
                {
 
-                  auto found = state::find::idle::instance( m_state.resources, id);
+                  auto found = m_state.idle_instance( id);
 
                   if( found)
                   {

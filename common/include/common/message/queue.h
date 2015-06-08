@@ -54,6 +54,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & process;
                      archive & name;
                   })
@@ -93,6 +94,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & process;
                      archive & trid;
                      archive & queue;
@@ -106,6 +108,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & id;
                   })
                };
@@ -135,6 +138,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & process;
                      archive & trid;
                      archive & queue;
@@ -165,6 +169,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & message;
                   })
                };
@@ -178,9 +183,12 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
+                        base_type::marshal( archive);
                         archive & process;
                         archive & queue;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
 
                   struct Reply : basic_message< Type::cQueueDequeueForgetReply>
@@ -189,8 +197,11 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
+                        base_type::marshal( archive);
                         archive & found;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
 
                } // forget
@@ -290,6 +301,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     basic_message< type>::marshal( archive);
                      archive & process;
                      archive & queues;
                   })
@@ -387,6 +399,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
+                     base_type::marshal( archive);
                      archive & process;
                   })
                };
@@ -396,7 +409,9 @@ namespace casual
                   std::string name;
                   std::vector< Queue> queues;
 
-                  CASUAL_CONST_CORRECT_MARSHAL({
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
                      archive & name;
                      archive & queues;
                   })
@@ -410,7 +425,9 @@ namespace casual
                   process::Handle process;
                   common::transaction::ID trid;
 
-                  CASUAL_CONST_CORRECT_MARSHAL({
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
                      archive & process;
                      archive & trid;
                   })

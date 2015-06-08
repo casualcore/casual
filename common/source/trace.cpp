@@ -30,11 +30,11 @@ namespace casual
             {
                if( std::uncaught_exception())
                {
-                  log::thread::Safe{ m_log} << m_information << " >*\n";
+                  log::thread::Safe{ m_log} << m_information << " - in*\n";
                }
                else
                {
-                  log::thread::Safe{ m_log} << m_information << " >\n";
+                  log::thread::Safe{ m_log} << m_information << " - in\n";
                }
             }
          }
@@ -45,11 +45,11 @@ namespace casual
             {
                if( std::uncaught_exception())
                {
-                  log::thread::Safe{ m_log} << m_information << " <*\n";
+                  log::thread::Safe{ m_log} << m_information << " - out*\n";
                }
                else
                {
-                  log::thread::Safe{ m_log} << m_information << " <\n";
+                  log::thread::Safe{ m_log} << m_information << " - out\n";
                }
             }
          }

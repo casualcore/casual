@@ -50,6 +50,8 @@ namespace casual
 
       Manager::~Manager()
       {
+         common::Trace trace{ "transaction::Manager::~Manager", common::log::internal::transaction};
+
          try
          {
             std::vector< common::process::Handle> instances;
@@ -170,7 +172,10 @@ namespace casual
 
             while( true)
             {
+               common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
+
                {
+
                   scoped::Writer batchWrite( m_state.log);
 
                   //

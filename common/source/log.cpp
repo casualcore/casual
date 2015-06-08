@@ -15,6 +15,7 @@
 #include "common/server/context.h"
 #include "common/transaction/context.h"
 #include "common/call/context.h"
+#include "common/execution.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 
@@ -61,19 +62,17 @@ namespace casual
                   {
                      const std::string basename{ file::name::base( process::path())};
 
-                     // We don't need this - thread::Safe proxy
-                     //std::lock_guard< std::mutex> lock( m_streamMutex);
-
                      m_output << chronology::local()
                         << '|' << environment::domain::name()
-                        << '|' << call::Context::instance().execution()
+                        << '|' << execution::id()
                         << '|' << transaction::Context::instance().current().trid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
-                        << "|" << category
-                        << '|' << call::Context::instance().service()
-                        << "|" << message << std::endl;
+                        << '|' << execution::parent::service()
+                        << '|' << execution::service()
+                        << '|' << category
+                        << '|' << message << std::endl;
                   }
 
                private:

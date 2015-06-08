@@ -22,14 +22,18 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const base_call& value)
                {
-                  return out << "caller: " << value.caller << ", service: " << value.service;
+                  return out << "{ process: " << value.process
+                     << ", service: " << value.service
+                     << ", parent: " << value.parent
+                     << ", flags: " << value.flags
+                     << '}';
                }
 
                namespace callee
                {
                   std::ostream& operator << ( std::ostream& out, const Request& value)
                   {
-                     return out << "{ " << static_cast< const base_call&>( value) << ", buffer: " << value.buffer << '}';
+                     return out << "{ base: " << static_cast< const base_call&>( value) << ", buffer: " << value.buffer << '}';
                   }
 
                } // caller

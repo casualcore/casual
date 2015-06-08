@@ -31,9 +31,8 @@ namespace casual
             cUnknown = 0,
             cBegin = 10,
             cPrepared,
-            cPrepareRollback
-
-
+            cPrepareRollback,
+            cTimeout
          };
 
          struct Row
@@ -55,6 +54,11 @@ namespace casual
          void remove( const common::transaction::ID& xid);
 
          //!
+         //! Set transaction in timeout-mode
+         //!
+         void timeout( const common::transaction::ID& xid);
+
+         //!
          //! @returns the earliest timeout there is.
          //!
          std::chrono::microseconds timeout();
@@ -73,6 +77,8 @@ namespace casual
          void writeRollback();
 
       private:
+
+         void state( const common::transaction::ID& id, long state);
 
          sql::database::Connection m_connection;
 

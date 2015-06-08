@@ -180,7 +180,7 @@ namespace casual
                   //
                   // Set the call-chain-id for this "chain"
                   //
-                  call::Context::instance().execution( message.execution);
+                  //call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
 
@@ -234,7 +234,7 @@ namespace casual
                         //
                         // Send reply to caller.
                         //
-                        m_policy.reply( message.reply.queue, reply);
+                        m_policy.reply( message.process.queue, reply);
                      } } };
 
 
@@ -260,7 +260,10 @@ namespace casual
 
                   auto& service = found->second;
 
-                  call::Context::instance().service( service.name);
+                  execution::service( service.name);
+                  execution::parent::service( message.parent);
+
+
 
 
                   //
@@ -365,7 +368,7 @@ namespace casual
                         state.traffic.end = platform::clock_type::now();
                         state.traffic.execution = message.execution;
                         state.traffic.service = message.service.name;
-                        state.traffic.parent = message.caller;
+                        state.traffic.parent = message.parent;
                         state.traffic.process = process::handle();
 
                         for( auto& queue : message.service.traffic_monitors)

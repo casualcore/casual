@@ -160,12 +160,7 @@ namespace casual
 
       void Log::prepare( const common::transaction::ID& id)
       {
-         long state = State::cPrepared;
-
-         m_statement.update.state.execute(
-               state,
-               common::transaction::global( id),
-               common::transaction::branch( id));
+         state( id, State::cPrepared);
       }
 
       void Log::remove( const common::transaction::ID& trid)
@@ -173,6 +168,11 @@ namespace casual
          m_statement.remove.execute(
             common::transaction::global( trid),
             common::transaction::branch( trid));
+      }
+
+      void Log::timeout( const common::transaction::ID& xid)
+      {
+         state( xid, State::cTimeout);
       }
 
       std::chrono::microseconds Log::timeout()
@@ -258,6 +258,14 @@ namespace casual
       void Log::writeRollback()
       {
          m_connection.rollback();
+      }
+
+      void Log::state( const common::transaction::ID& id, long state)
+      {
+         m_statement.update.state.execute(
+               state,
+               common::transaction::global( id),
+               common::transaction::branch( id));
       }
 
    } // transaction

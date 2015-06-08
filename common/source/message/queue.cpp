@@ -30,6 +30,26 @@ namespace casual
                }
 
 
+               namespace forget
+               {
+
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ correlation: " << value.correlation
+                        << ", process: " << value.process
+                        << ", queue: " << value.queue << '}';
+                  }
+
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ correlation: " << value.correlation
+                        << ", found: " << value.found << '}';
+                  }
+
+               } // forget
+
+
             } // monitor
          } // traffic
       } // message
