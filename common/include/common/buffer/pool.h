@@ -56,7 +56,7 @@ namespace casual
 
                   virtual platform::raw_buffer_type insert( Payload payload) = 0;
 
-                  virtual Payload& get( platform::const_raw_buffer_type handle) = 0;
+                  virtual payload::Send get( platform::const_raw_buffer_type handle) = 0;
                   virtual payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
 
                   virtual Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
@@ -122,16 +122,18 @@ namespace casual
                      return m_pool.insert( std::move( payload));
                   }
 
-                  Payload& get( platform::const_raw_buffer_type handle) override
+                  payload::Send get( platform::const_raw_buffer_type handle) override
                   {
-                     return m_pool.get( handle).payload;
+                     auto& buffer = m_pool.get( handle);
+
+                     return { buffer.payload, buffer.transport( buffer.reserved()), buffer.reserved()};
                   }
 
                   payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
                   {
                      auto& buffer = m_pool.get( handle);
 
-                     payload::Send result{ buffer.payload, buffer.size( user_size)};
+                     payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
 
                      log::internal::buffer << "pool::get - buffer: " << result << std::endl;
 
@@ -147,12 +149,12 @@ namespace casual
                   {
                      auto buffer = m_pool.release( handle);
 
-                     log::internal::buffer << "pool::release - payload: " << buffer.payload << " - buffer.size: " << buffer.size( user_size) << std::endl;
+                     log::internal::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << std::endl;
 
                      //
                      // Adjust the buffer size, with regards to the user size
                      //
-                     buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.size( user_size), std::end( buffer.payload.memory));
+                     buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.transport( user_size), std::end( buffer.payload.memory));
                      return std::move( buffer.payload);
                   }
 
@@ -225,7 +227,7 @@ namespace casual
 
                platform::raw_buffer_type insert( Payload&& payload);
 
-               Payload& get( platform::const_raw_buffer_type handle);
+               payload::Send get( platform::const_raw_buffer_type handle);
 
                payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size);
 

@@ -154,13 +154,13 @@ namespace casual
                   auto found = common::range::find( state.involved, message.trid);
 
                   auto sendError = [&]( int error_state){
-                     auto reply = common::message::reverse::type< message_type>::convert( message);
+                     auto reply = common::message::reverse::type( message);
                      reply.state = error_state;
                      reply.trid = message.trid;
                      reply.resource = message.resource;
                      reply.process = common::process::handle();
                      queue::blocking::Writer send{ message.process.queue, state};
-                     send( message);
+                     send( reply);
                   };
 
                   if( found)

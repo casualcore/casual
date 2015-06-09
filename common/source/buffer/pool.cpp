@@ -74,7 +74,7 @@ namespace casual
 
             const Type& Holder::type( platform::const_raw_buffer_type handle)
             {
-               return get( handle).type;
+               return get( handle).payload.type;
             }
 
             void Holder::deallocate( platform::const_raw_buffer_type handle)
@@ -103,7 +103,7 @@ namespace casual
                return find( handle).get( handle, user_size);
             }
 
-            Payload& Holder::get( platform::const_raw_buffer_type handle)
+            payload::Send Holder::get( platform::const_raw_buffer_type handle)
             {
                return find( handle).get( handle);
             }

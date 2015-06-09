@@ -11,11 +11,13 @@
 #include "buffer/field.h"
 #include "common/environment.h"
 #include "common/buffer/type.h"
+#include "common/buffer/pool.h"
 
 #include "xatmi.h"
 
 
 #include <string>
+#include <array>
 
 namespace casual
 {
@@ -54,6 +56,39 @@ namespace casual
          //const auto FLD_BINARY2 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 2;
          //const auto FLD_BINARY3 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
       }
+
+
+      TEST( casual_field_buffer, pool)
+      {
+         auto handle = buffer::pool::Holder::instance().allocate( common::buffer::Type{ CASUAL_FIELD, nullptr}, 666);
+
+         auto buffer = buffer::pool::Holder::instance().get( handle, 666);
+
+         EXPECT_TRUE( buffer.transport == 0) << "transport: " <<  buffer.transport;
+         EXPECT_TRUE( buffer.reserved == 666) << "reserved: " <<  buffer.reserved;
+         EXPECT_TRUE( buffer.payload.type.name == CASUAL_FIELD) << "buffer.type.name: " << buffer.payload.type.name;
+         EXPECT_TRUE( buffer.payload.type.subname.empty());
+
+         buffer::pool::Holder::instance().deallocate( handle);
+      }
+
+
+      TEST( casual_field_buffer, tptypes)
+      {
+         char* buffer = tpalloc( CASUAL_FIELD, 0, 666);
+         ASSERT_TRUE( buffer != 0);
+
+         std::array< char, 8> type;
+         std::array< char, 16> subtype;
+
+         auto size =  tptypes( buffer, type.data(), subtype.data());
+         EXPECT_TRUE( size == 666) << "size: " << size;
+         EXPECT_TRUE( std::string( type.data()) == CASUAL_FIELD) << "type.data(): " << type.data();
+         EXPECT_TRUE( std::string( subtype.data()).empty()) << "subtype.data(): " << subtype.data();
+
+         tpfree( buffer);
+      }
+
 
       TEST( casual_field_buffer, use_with_invalid_buffer__expecting_invalid_buffer)
       {

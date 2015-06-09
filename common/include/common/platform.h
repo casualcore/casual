@@ -113,9 +113,15 @@ namespace casual
 			typedef long message_type_type;
 
 
-			// TODO: bigger!
-			// const std::size_t message_size = 2048;
-			 const std::size_t message_size = 1024;
+#ifdef __APPLE__
+
+			//
+			// OSX has very tight limits on IPC
+			//
+			constexpr std::size_t message_size = 1024;
+#else
+			constexpr std::size_t message_size = 1024 * 4;
+#endif
 
 			//
 			// uuid
