@@ -318,18 +318,16 @@ namespace casual
          namespace
          {
 
-            //struct trace : common::trace::internal::Scope
-            struct trace
+            struct trace : common::trace::internal::Scope
             {
-               //explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
-               explicit trace( std::string information) {}
+               explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
             };
 
 
 
             Buffer* find( const char* const handle)
             {
-               const trace trace( "order::find");
+               //const trace trace( "order::find");
 
 
                try
@@ -352,7 +350,7 @@ namespace casual
 
             int explore( const char* const handle, long* const size, long* const used)
             {
-               const trace trace( "order::explore");
+               //const trace trace( "order::explore");
 
                if( const auto buffer = find( handle))
                {
@@ -370,7 +368,7 @@ namespace casual
 
             int copy( const char* const target_handle, const char* const source_handle)
             {
-               const trace trace( "order::copy");
+               //const trace trace( "order::copy");
 
                const auto target = find( target_handle);
 
@@ -396,7 +394,7 @@ namespace casual
 
             int clear( const char* const handle)
             {
-               const trace trace( "order::clear");
+               //const trace trace( "order::clear");
 
                if( auto buffer = find( handle))
                {
@@ -412,7 +410,7 @@ namespace casual
 
             int reset( const char* const handle)
             {
-               const trace trace( "order::reset");
+               //const trace trace( "order::reset");
 
                if( auto buffer = find( handle))
                {
@@ -430,7 +428,7 @@ namespace casual
             template<typename... A>
             int add( const char* const handle, A&&... arguments)
             {
-               const trace trace( "order::add");
+               //const trace trace( "order::add");
 
                if( auto buffer = find( handle))
                {
@@ -453,7 +451,7 @@ namespace casual
             template<typename... A>
             int get( const char* const handle, A&&... arguments)
             {
-               const trace trace( "order::get");
+               //const trace trace( "order::get");
 
                if( auto buffer = find( handle))
                {

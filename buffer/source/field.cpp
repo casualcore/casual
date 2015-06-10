@@ -569,17 +569,15 @@ namespace casual
          namespace
          {
 
-            //struct trace : common::trace::internal::Scope
-            struct trace
+            struct trace : common::trace::internal::Scope
             {
-               //explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
-               explicit trace( std::string information) {}
+               explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
             };
 
 
             Buffer* find( const char* const handle)
             {
-               const trace trace( "field::find");
+               //const trace trace( "field::find");
 
                try
                {
@@ -600,7 +598,7 @@ namespace casual
 
             int remove( const char* const handle, const long id, long index)
             {
-               const trace trace( "field::remove");
+               //const trace trace( "field::remove");
 
                if( ! (id > CASUAL_FIELD_NO_ID))
                {
@@ -629,7 +627,7 @@ namespace casual
             template<typename... A>
             int add( const char* const handle, const long id, const int type, A&&... arguments)
             {
-               const trace trace( "field::add");
+               //const trace trace( "field::add");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
@@ -657,7 +655,7 @@ namespace casual
             template<typename... A>
             int update( const char* const handle, const long id, long index, const int type, A&&... arguments)
             {
-               const trace trace( "field::update");
+               //const trace trace( "field::update");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
@@ -687,7 +685,7 @@ namespace casual
             template<typename... A>
             int get( const char* const handle, const long id, long index, const int type, A&&... arguments)
             {
-               const trace trace( "field::get");
+               //const trace trace( "field::get");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
@@ -746,7 +744,7 @@ namespace casual
 
             int next( const char* const handle, long& id, long& index)
             {
-               const trace trace( "field::next");
+               //const trace trace( "field::next");
 
                if( const Buffer* const buffer = find( handle))
                {
@@ -786,7 +784,7 @@ namespace casual
 
             int first( const char* const handle, long& id, long& index)
             {
-               const trace trace( "field::first");
+               //const trace trace( "field::first");
 
                if( const auto buffer = find( handle))
                {
@@ -811,7 +809,7 @@ namespace casual
 
             int count( const char* const handle, const long id, long& occurrences)
             {
-               const trace trace( "field::count");
+               //const trace trace( "field::count");
 
                if( const auto buffer = find( handle))
                {
@@ -827,7 +825,7 @@ namespace casual
 
             int count( const char* const handle, long& occurrences)
             {
-               const trace trace( "field::count");
+               //const trace trace( "field::count");
 
                if( const auto buffer = find( handle))
                {
@@ -844,7 +842,7 @@ namespace casual
 
             int reset( const char* const handle)
             {
-               const trace trace( "field::reset");
+               //const trace trace( "field::reset");
 
                if( const auto buffer = find( handle))
                {
@@ -861,7 +859,7 @@ namespace casual
 
             int explore( const char* const handle, long* const size, long* const used)
             {
-               const trace trace( "field::explore");
+               //const trace trace( "field::explore");
 
                if( const auto buffer = find( handle))
                {
@@ -878,7 +876,7 @@ namespace casual
 
             int copy( const char* const target_handle, const char* const source_handle)
             {
-               const trace trace( "field::copy");
+               //const trace trace( "field::copy");
 
                const auto target = find( target_handle);
 
@@ -901,7 +899,7 @@ namespace casual
 
             int serialize( char* const handle, const void* const source, const long count)
             {
-               const trace trace( "field::serialize");
+               //const trace trace( "field::serialize");
 
                if( const auto buffer = casual::buffer::field::find( handle))
                {
