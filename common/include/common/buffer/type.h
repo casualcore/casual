@@ -92,11 +92,12 @@ namespace casual
          {
             struct Send
             {
-               Send( Payload& payload, platform::binary_size_type transport)
-                  : payload( payload), transport( transport) {}
+               Send( Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
+                  : payload( payload), transport( transport), reserved( reserved) {}
 
                Payload& payload;
                platform::binary_size_type transport;
+               platform::binary_size_type reserved;
 
                template< typename A>
                void marshal( A& archive) const
@@ -123,7 +124,9 @@ namespace casual
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
-            platform::binary_type::size_type size( platform::binary_type::size_type user_size) const;
+            platform::binary_type::size_type transport( platform::binary_type::size_type user_size) const;
+
+            platform::binary_type::size_type reserved() const;
 
             Payload payload;
          };

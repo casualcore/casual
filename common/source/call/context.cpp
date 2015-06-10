@@ -278,6 +278,8 @@ namespace casual
          {
             trace::internal::Scope trace( "calling::Context::async");
 
+            log::internal::debug << "input - service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+
             local::validate::input( idata, ilen, flags);
 
             local::service::Lookup lookup( service);
@@ -436,9 +438,9 @@ namespace casual
             //
             if( *odata != nullptr && common::flag< TPNOCHANGE>( flags))
             {
-               auto& output = buffer::pool::Holder::instance().get( *odata);
+               auto output = buffer::pool::Holder::instance().get( *odata);
 
-               if( output.type != reply.buffer.type)
+               if( output.payload.type != reply.buffer.type)
                {
                   throw exception::xatmi::buffer::TypeNotExpected{};
                }

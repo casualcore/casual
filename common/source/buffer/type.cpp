@@ -94,7 +94,7 @@ namespace casual
          {
             std::ostream& operator << ( std::ostream& out, const Send& value)
             {
-               return out << "{ payload: " << value.payload << ", transport-size: " << value.transport << '}';
+               return out << "{ payload: " << value.payload << ", transport: " << value.transport << ", reserved: " << value.reserved <<'}';
             }
          }
 
@@ -107,7 +107,7 @@ namespace casual
          Buffer::Buffer( Buffer&&) noexcept = default;
          Buffer& Buffer::operator = ( Buffer&&) noexcept = default;
 
-         platform::binary_type::size_type Buffer::size( platform::binary_type::size_type user_size) const
+         platform::binary_type::size_type Buffer::transport( platform::binary_type::size_type user_size) const
          {
             if( user_size > payload.memory.size())
             {
@@ -117,6 +117,11 @@ namespace casual
             return user_size;
          }
 
+
+         platform::binary_type::size_type Buffer::reserved() const
+         {
+            return payload.memory.size();
+         }
 
       } // buffer
    } // common

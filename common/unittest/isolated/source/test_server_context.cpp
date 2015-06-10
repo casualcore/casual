@@ -323,6 +323,7 @@ namespace casual
                {
                   message::service::call::callee::Request message;
 
+                  message.correlation = uuid::make();
                   message.buffer = { buffer::type::binary(), platform::binary_type( 1024)};
                   message.descriptor = 10;
                   message.service.name = std::move( service);
@@ -333,11 +334,11 @@ namespace casual
                }
 
                template< typename R>
-               message::service::call::Reply reply( R& receive)
+               message::service::call::Reply reply( R& receive, const Uuid& correlation)
                {
                   queue::blocking::Reader reader( receive);
                   message::service::call::Reply message;
-                  reader( message);
+                  reader( message, correlation);
 
                   return message;
                }
@@ -392,13 +393,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "non-existing-service");
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "non-existing-service");
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCERR);
       }
@@ -410,13 +411,12 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS");
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS");
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
       }
@@ -427,13 +427,12 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS");
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS");
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
       }
@@ -444,13 +443,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_join_TPSUCCESS");
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_join_TPSUCCESS");
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
       }
@@ -461,13 +460,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_auto_TPSUCCESS");
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_auto_TPSUCCESS");
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
       }
@@ -479,13 +478,11 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS", local::transaction::ongoing());
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS", local::transaction::ongoing());
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -498,13 +495,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS", local::transaction::ongoing());
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS", local::transaction::ongoing());
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -517,13 +514,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_join_TPSUCCESS", local::transaction::ongoing());
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_join_TPSUCCESS", local::transaction::ongoing());
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -536,13 +533,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_auto_TPSUCCESS", local::transaction::ongoing());
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_auto_TPSUCCESS", local::transaction::ongoing());
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -556,13 +553,11 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_none_TPFAIL");
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_none_TPFAIL");
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
@@ -573,13 +568,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_atomic_TPFAIL");
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_atomic_TPFAIL");
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
       }
@@ -590,13 +585,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_join_TPFAIL");
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_join_TPFAIL");
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
@@ -607,13 +602,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL");
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL");
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
@@ -625,13 +620,11 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_none_TPFAIL", local::transaction::ongoing());
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_none_TPFAIL", local::transaction::ongoing());
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -644,13 +637,13 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_atomic_TPFAIL", local::transaction::ongoing());
-            server( message);
-         }
 
-         auto reply = local::call::reply( caller.receive());
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_atomic_TPFAIL", local::transaction::ongoing());
+         server( message);
+
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -663,13 +656,11 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_join_TPFAIL", local::transaction::ongoing());
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_join_TPFAIL", local::transaction::ongoing());
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -682,13 +673,12 @@ namespace casual
 
          mockup::ipc::Instance caller{ 10};
 
-         {
-            server::handle::Call server( local::arguments());
-            auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL", local::transaction::ongoing());
-            server( message);
-         }
+         server::handle::Call server( local::arguments());
+         auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL", local::transaction::ongoing());
+         server( message);
 
-         auto reply = local::call::reply( caller.receive());
+
+         auto reply = local::call::reply( caller.receive(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());

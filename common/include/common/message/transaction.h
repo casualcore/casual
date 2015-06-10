@@ -308,10 +308,10 @@ namespace casual
          namespace reverse
          {
             template<>
-            struct type< transaction::resource::commit::Request> : detail::type< transaction::resource::commit::Reply> {};
+            struct type_traits< transaction::resource::commit::Request> : detail::type< transaction::resource::commit::Reply> {};
 
             template<>
-            struct type< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
+            struct type_traits< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
 
          } // reverse
 

@@ -110,6 +110,25 @@ namespace casual
                   item_offset = common::network::byteorder::bytes<long>() * 0
                };
 
+               common::platform::binary_type::size_type transport( common::platform::binary_type::size_type user_size) const
+               {
+                  //
+                  // We could ignore user-size all together... But something isn't right if user supplies a greater
+                  // size than allocated.
+                  //
+                  if( user_size > payload.memory.capacity())
+                  {
+                     throw common::exception::xatmi::InvalidArguments{ "user supplied size is larger than the buffer actual size"};
+                  }
+                  return payload.memory.size();
+               }
+
+               size_type reserved() const
+               {
+                  return payload.memory.capacity();
+               }
+
+
             private:
 
                template<typename Iterator, typename Predicate, typename Index>
@@ -135,10 +154,7 @@ namespace casual
                   update();
                }
 
-               size_type reserved() const
-               {
-                  return payload.memory.capacity();
-               }
+
 
                size_type utilized() const
                {

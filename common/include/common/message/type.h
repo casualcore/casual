@@ -325,7 +325,7 @@ namespace casual
             //! from a Request-type, and vice versa.
             //!
             template< typename T>
-            struct type;
+            struct type_traits;
 
             namespace detail
             {
@@ -334,22 +334,26 @@ namespace casual
                {
                   using reverse_type = R;
 
-                  template< typename T>
-                  static reverse_type convert( T&& message)
-                  {
-                     reverse_type result;
-
-                     result.correlation = message.correlation;
-                     result.execution = message.execution;
-
-                     return result;
-                  }
-
                };
             } // detail
 
             template<>
-            struct type< shutdown::Request> : detail::type< shutdown::Reply> {};
+            struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
+
+
+            template< typename T>
+            auto type( T&& message) -> typename type_traits< typename std::decay<T>::type>::reverse_type
+            {
+               typename type_traits< typename std::decay<T>::type>::reverse_type result;
+
+               result.correlation = message.correlation;
+               result.execution = message.execution;
+
+               return result;
+            }
+
+
+
 
          } // reverse
 
