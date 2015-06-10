@@ -241,6 +241,8 @@ namespace casual
                   m_state.persistentRequests.clear();
 
                }
+
+               common::log::internal::transaction << "manager transactions: " << m_state.transactions.size() << "\n";
             }
 
          }

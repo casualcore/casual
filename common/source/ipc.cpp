@@ -128,7 +128,11 @@ namespace casual
                      {
                         common::signal::handle();
 
-                        return false;
+                        //
+                        // we got a signal we don't have a handle for
+                        // We continue
+                        //
+                        return receive( id, transport, flags);
                      }
                      case ENOMSG:
                      case EAGAIN:
