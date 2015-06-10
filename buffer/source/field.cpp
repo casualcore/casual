@@ -85,42 +85,41 @@ namespace casual
             public:
 
                typedef common::platform::binary_type::size_type size_type;
-               typedef common::platform::binary_type::pointer data_type;
                typedef common::platform::binary_type::const_pointer const_data_type;
 
-               struct Offset
+               struct compare_first
                {
-                  long id;
-                  size_type distance;
-
-                  struct Find
-                  {
-                     const long id;
-                     bool operator() ( const Offset& offset) const { return offset.id == id;}
-                  };
+                  const long first;
+                  bool operator()( const std::pair<long,long>& pair) const { return pair.first == first;}
                };
 
-               typedef Offset offset_type;
-               typedef Offset::Find find_offset_type;
+               struct update_second
+               {
+                  const long value;
+                  void operator()( std::pair<long,long>& pair) const { pair.second += value;}
+               };
 
-               enum : decltype(common::network::byteorder::bytes<long>())
+
+               //enum : decltype(common::network::byteorder::bytes<long>())
+               enum : long
                {
                   data_offset = common::network::byteorder::bytes<long>() * 2,
                   size_offset = common::network::byteorder::bytes<long>() * 1,
                   item_offset = common::network::byteorder::bytes<long>() * 0
                };
 
-               common::platform::binary_type::size_type transport( common::platform::binary_type::size_type user_size) const
+               size_type transport( size_type user_size) const
                {
                   //
-                  // We could ignore user-size all together... But something isn't right if user supplies a greater
-                  // size than allocated.
+                  // We could ignore user-size all together, but something is
+                  // wrong if user supplies a greater size than allocated
                   //
-                  if( user_size > payload.memory.capacity())
+                  if( user_size > reserved())
                   {
-                     throw common::exception::xatmi::InvalidArguments{ "user supplied size is larger than the buffer actual size"};
+                     throw common::exception::xatmi::InvalidArguments{ "user supplied size is larger than allocated size"};
                   }
-                  return payload.memory.size();
+
+                  return utilized();
                }
 
                size_type reserved() const
@@ -128,9 +127,15 @@ namespace casual
                   return payload.memory.capacity();
                }
 
+               size_type utilized() const
+               {
+                  return payload.memory.size();
+               }
+
 
             private:
 
+               // TODO: Perhaps move this to common/algorithm.h
                template<typename Iterator, typename Predicate, typename Index>
                static Iterator find_if_index( Iterator first, Iterator last, Predicate p, Index i)
                {
@@ -138,8 +143,8 @@ namespace casual
                   return std::find_if( first, last, [&]( Reference item) { return p( item) && !(i--); } );
                }
 
-               template<typename T, typename D>
-               static T decode( D where)
+               template<typename T>
+               static T decode( const_data_type where)
                {
                   using network_type = common::network::byteorder::type<T>;
                   const auto encoded = *reinterpret_cast< const network_type*>( where);
@@ -151,14 +156,7 @@ namespace casual
                template<typename... A>
                Buffer( A&&... arguments) : common::buffer::Buffer( std::forward<A>( arguments)...)
                {
-                  update();
-               }
-
-
-
-               size_type utilized() const
-               {
-                  return payload.memory.size();
+                  update_index();
                }
 
                bool copy( const Buffer& other)
@@ -185,32 +183,32 @@ namespace casual
                      static_cast<const_data_type>(data),
                      static_cast<const_data_type>(data) + size);
 
-                  update();
+                  update_index();
 
                   return true;
                }
 
 
-               const std::vector< offset_type>& index() const
+               const std::vector< std::pair< long, long> >& index() const
                {
                   return m_index;
                }
 
 
-               std::vector< offset_type>::const_iterator index( const long id, const long occurrence) const
+               std::vector< std::pair< long, long> >::const_iterator index( const long id, const long occurrence) const
                {
-                  return find_if_index( m_index.begin(), m_index.end(), find_offset_type{ id}, occurrence);
+                  return find_if_index( m_index.begin(), m_index.end(), compare_first{ id}, occurrence);
                }
 
-               std::vector< offset_type>::iterator index( const long id, const long occurrence)
+               std::vector< std::pair< long, long> >::iterator index( const long id, const long occurrence)
                {
-                  return find_if_index( m_index.begin(), m_index.end(), find_offset_type{ id}, occurrence);
+                  return find_if_index( m_index.begin(), m_index.end(), compare_first{ id}, occurrence);
                }
 
+               //! @throw std::out_of_range when occurrence is not found
                size_type offset( const long id, const long occurrence) const
                {
-                  // May throw std::out_of_range
-                  return m_index.at( index( id, occurrence) - m_index.begin()).distance;
+                  return m_index.at( index( id, occurrence) - m_index.begin()).second;
                }
 
                const_data_type find( const long id, const long occurrence) const
@@ -225,34 +223,33 @@ namespace casual
                   }
                }
 
-               data_type find( const long id, const long occurrence)
-               {
-                  try
-                  {
-                     return payload.memory.data() + offset( id, occurrence);
-                  }
-                  catch( const std::out_of_range&)
-                  {
-                     return nullptr;
-                  }
-               }
-
                bool append( const long id, const_data_type value, const long count)
                {
-                  const auto total = data_offset + count;
+                  const auto total = utilized() + data_offset + count;
 
-                  if( (reserved() - utilized()) < total)
+                  if( total > reserved())
                   {
                      return false;
                   }
 
-                  // Append current offset
-                  m_index.push_back( offset_type{ id, utilized()});
+                  //
+                  // Append current offset to index
+                  //
+                  m_index.emplace_back( id, utilized());
 
+                  //
+                  // Append the id to buffer
+                  //
                   append( id);
 
+                  //
+                  // Append the size to buffer
+                  //
                   append( count);
 
+                  //
+                  // Append the data to buffer
+                  //
                   payload.memory.insert( payload.memory.end(), value, value + count);
 
                   return true;
@@ -325,7 +322,7 @@ namespace casual
 
                   if( offset != m_index.end())
                   {
-                     const auto count = decode<long>( payload.memory.data() + offset->distance + size_offset);
+                     const auto count = decode<long>( payload.memory.data() + offset->second + size_offset);
 
                      //
                      // With equal sizes, stuff could be optimized ... but no
@@ -347,7 +344,7 @@ namespace casual
                      std::copy(
                         reinterpret_cast<const_data_type>( &encoded),
                         reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded),
-                        payload.memory.begin() + offset->distance + size_offset);
+                        payload.memory.begin() + offset->second + size_offset);
 
 
                      //
@@ -358,21 +355,15 @@ namespace casual
 
                      payload.memory.insert(
                         payload.memory.erase(
-                           payload.memory.begin() + offset->distance + data_offset,
-                           payload.memory.begin() + offset->distance + data_offset + count),
+                           payload.memory.begin() + offset->second + data_offset,
+                           payload.memory.begin() + offset->second + data_offset + count),
                         data, data + size);
 
 
                      //
                      // Update offsets beyond this one
                      //
-
-                     const auto difference = size - count;
-
-                     std::for_each(
-                        offset + 1, m_index.end(),
-                        [&difference]( offset_type& index)
-                        { index.distance += difference;});
+                     std::for_each( offset + 1, m_index.end(), update_second{size - count});
 
                   }
                   else
@@ -419,22 +410,22 @@ namespace casual
 
                   if( offset != m_index.end())
                   {
-                     const auto count = decode<long>( payload.memory.data() + offset->distance + size_offset);
+                     const auto count = decode<long>( payload.memory.data() + offset->second + size_offset);
 
+                     //
+                     // Remove the data from the buffer
+                     //
                      payload.memory.erase(
-                        payload.memory.begin() + offset->distance,
-                        payload.memory.begin() + offset->distance + data_offset + count);
+                        payload.memory.begin() + offset->second,
+                        payload.memory.begin() + offset->second + data_offset + count);
 
                      //
                      // Remove entry and update offsets
                      //
-
-                     const auto difference = data_offset + count;
-
                      std::for_each(
-                        m_index.erase( offset), m_index.end(),
-                        [&difference]( offset_type& index)
-                        { index.distance -= difference;});
+                        m_index.erase( offset),
+                        m_index.end(),
+                        update_second{0 - data_offset - count});
 
                   }
                   else
@@ -475,7 +466,7 @@ namespace casual
 
                long count( const long id) const
                {
-                  return std::count_if( m_index.begin(), m_index.end(), find_offset_type{ id});
+                  return std::count_if( m_index.begin(), m_index.end(), compare_first{ id});
                }
 
             private:
@@ -490,8 +481,7 @@ namespace casual
                      reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded));
                }
 
-               // TODO: Change name
-               void update()
+               void update_index()
                {
                   m_index.clear();
 
@@ -504,7 +494,7 @@ namespace casual
                      const auto id = decode<long>( &*cursor + item_offset);
                      const auto size = decode<long>( &*cursor + size_offset);
 
-                     m_index.push_back( offset_type{ id, static_cast<size_type>(std::distance( begin, cursor))});
+                     m_index.emplace_back( id, std::distance( begin, cursor));
 
                      std::advance( cursor, data_offset + size);
                   }
@@ -512,13 +502,7 @@ namespace casual
 
             private:
 
-               // faster
-               //std::unordered_map<long,std::vector<std::ptrdiff_t>> m_index;
-               // deterministic (for iteration)
-               //std::map< long, std::vector< size_type>> m_index;
-               // fastest and most deterministic
-               //std::vector< std::pair< long, size_type>> m_index;
-               std::vector< offset_type> m_index;
+               std::vector< std::pair< long, long> > m_index;
 
             };
 
@@ -774,8 +758,8 @@ namespace casual
 
                      if( adjacent != buffer->index().end())
                      {
-                        id = adjacent->id;
-                        index = std::count_if( buffer->index().begin(), adjacent, Buffer::find_offset_type{ id});
+                        id = adjacent->first;
+                        index = std::count_if( buffer->index().begin(), adjacent, Buffer::compare_first{ id});
                      }
                      else
                      {
@@ -811,7 +795,7 @@ namespace casual
                      return CASUAL_FIELD_NO_OCCURRENCE;
                   }
 
-                  id = buffer->index().at( 0).id;
+                  id = buffer->index().at( 0).first;
                   index = 0;
 
                }
@@ -1802,20 +1786,20 @@ namespace casual
 
                   for( const auto& field : buffer->index())
                   {
-                     if( const auto name = repository::id_to_name( field.id))
+                     if( const auto name = repository::id_to_name( field.first))
                      {
                         stream << name;
                      }
                      else
                      {
-                        stream << field.id;
+                        stream << field.first;
                      }
 
-                     stream << '[' << occurrences[field.id]++ << ']' << " = ";
+                     stream << '[' << occurrences[field.first]++ << ']' << " = ";
 
-                     const auto data = buffer->payload.memory.data() + field.distance + Buffer::data_offset;
+                     const auto data = buffer->payload.memory.data() + field.second + Buffer::data_offset;
 
-                     switch( field.id / CASUAL_FIELD_TYPE_BASE)
+                     switch( field.first / CASUAL_FIELD_TYPE_BASE)
                      {
                      case CASUAL_FIELD_SHORT:
                         stream << pod<short>( data);

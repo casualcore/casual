@@ -63,6 +63,21 @@ namespace casual
                typedef common::platform::binary_type::size_type size_type;
                typedef common::platform::binary_type::const_pointer const_data_type;
 
+
+               size_type transport( size_type user_size) const
+               {
+                  //
+                  // We could ignore user-size all together, but something is
+                  // wrong if user supplies a greater size than allocated
+                  //
+                  if( user_size > reserved())
+                  {
+                     throw common::exception::xatmi::InvalidArguments{ "user supplied size is larger than allocated size"};
+                  }
+
+                  return utilized();
+               }
+
                size_type reserved() const
                {
                   return payload.memory.capacity();
@@ -77,6 +92,8 @@ namespace casual
                {
                   return m_selector;
                }
+
+            public:
 
                void clear()
                {
