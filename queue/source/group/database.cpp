@@ -108,6 +108,8 @@ namespace casual
                   type         INTEGER ); )"
               );
 
+            m_connection.execute(
+                  "CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);" );
 
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS message 
@@ -211,13 +213,12 @@ namespace casual
 
                m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
-                     q.id, m.state, q.name, q.retries, q.error, q.type, COUNT( m.id), 
+                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id), 
                        MIN( length( m.payload)), MAX( length( m.payload)), AVG( length( m.payload)), 
                        SUM( length( m.payload)), MAX( m.timestamp)
                   FROM
                      queue q LEFT JOIN message m ON q.id = m.queue
-                  GROUP BY q.id, m.state 
-                  ORDER BY q.id  
+                  GROUP BY q.id  
                       ;
                   )");
 
@@ -491,19 +492,17 @@ namespace casual
             {
                common::message::queue::information::Queue queue;
 
-
                row.get( 0, queue.id);
-               row.get( 1, queue.message.state);
-               row.get( 2, queue.name);
-               row.get( 3, queue.retries);
-               row.get( 4, queue.error);
-               row.get( 5, queue.type);
-               row.get( 6, queue.message.counts);
-               row.get( 7, queue.message.size.min);
-               row.get( 8, queue.message.size.max);
-               row.get( 9, queue.message.size.average);
-               row.get( 10, queue.message.size.total);
-               row.get( 11, queue.message.timestamp);
+               row.get( 1, queue.name);
+               row.get( 2, queue.retries);
+               row.get( 3, queue.error);
+               row.get( 4, queue.type);
+               row.get( 5, queue.message.counts);
+               row.get( 6, queue.message.size.min);
+               row.get( 7, queue.message.size.max);
+               row.get( 8, queue.message.size.average);
+               row.get( 9, queue.message.size.total);
+               row.get( 10, queue.message.timestamp);
 
                result.push_back( std::move( queue));
             }

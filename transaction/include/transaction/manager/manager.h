@@ -43,6 +43,9 @@ namespace casual
 
          void start();
 
+
+         const State& state() const;
+
       private:
 
 

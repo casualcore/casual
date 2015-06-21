@@ -82,8 +82,8 @@ namespace casual
 
                   using traits_type = traits::function< H>;
 
-                  static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared void");
-                  static_assert( std::is_same< typename traits_type::result_type, void>::value, "handlers has to have this signature: void( <some message>), can be declared void");
+                  static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
+                  static_assert( std::is_same< typename traits_type::result_type, void>::value, "handlers has to have this signature: void( <some message>), can be declared const");
 
                   using message_type = typename std::decay< typename traits_type::template argument< 0>::type>::type;
 

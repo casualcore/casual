@@ -273,14 +273,11 @@ namespace casual
                         })
                      } size;
 
-                     int state;
-
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & counts;
                         archive & timestamp;
                         archive & size;
-                        archive & state;
                      })
 
                   } message;

@@ -38,7 +38,7 @@ manager_archive = LinkArchive( 'bin/manager-archive',
     Compile( 'source/manager/log.cpp'),
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
-    Compile( 'source/manager/admin/vo/transaction.cpp'),
+    Compile( 'source/manager/admin/transform.cpp'),
     ])
  
 
@@ -58,6 +58,21 @@ target = LinkExecutable( 'bin/casual-transaction-manager',
 
 install_bin.append( target)
 
+
+target = LinkExecutable( 'bin/casual-transaction-admin',
+    [
+     Compile( 'source/manager/admin/client.cpp')
+    ],
+    [ 
+      manager_archive, 
+     'casual-sf', 
+     'casual-common', 
+     #'casual-configuration', 
+     #'casual-xatmi',
+     ])
+
+
+Install( target, '$(CASUAL_HOME)/internal/bin')
 
 #
 # Compile and link resurce-proxy-server lib

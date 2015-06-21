@@ -185,7 +185,14 @@ namespace casual
                   auto persistent = sql::database::scoped::write( m_state.queuebase);
 
 
-                  handler( blockedRead.next());
+                  if( m_state.persistent.empty())
+                  {
+                     //
+                     // We can only block if our back log is empty...
+                     //
+
+                     handler( blockedRead.next());
+                  }
 
                   //
                   // Consume until the queue is empty or we've got pending replies equal to transaction_batch

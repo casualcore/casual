@@ -178,24 +178,29 @@ namespace casual
 
                   scoped::Writer batchWrite( m_state.log);
 
-                  //
-                  // Blocking
-                  //
-                  try
+                  if( ! m_state.pending())
                   {
-                     common::signal::timer::Scoped timeout{ m_state.log.timeout()};
+                     //
+                     // We can only block if our backlog is empty
+                     //
 
-                     handler( queueReader.next());
+                     try
+                     {
+                        common::signal::timer::Scoped timeout{ m_state.log.timeout()};
+
+                        handler( queueReader.next());
+                     }
+                     catch( const exception::signal::Timeout&)
+                     {
+                        //
+                        // We've got a transaction timeout.
+                        // casual doesn't really care, but to play nice with RM's and let them release resources
+                        // and such, we roll-back every transaction that has reached it's deadline.
+                        //
+                        action::timeout( m_state);
+                     }
                   }
-                  catch( const exception::signal::Timeout&)
-                  {
-                     //
-                     // We've got a transaction timeout.
-                     // casual doesn't really care, but to play nice with RM's and let them release resources
-                     // and such, we roll-back every transaction that has reached it's deadline.
-                     //
-                     action::timeout( m_state);
-                  }
+
 
                   //
                   // Consume until the queue is empty or we've got pending replies equal to batch::transaction
@@ -256,6 +261,11 @@ namespace casual
          }
       }
 
+
+      const State& Manager::state() const
+      {
+         return m_state;
+      }
 
    } // transaction
 } // casual
