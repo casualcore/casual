@@ -98,6 +98,11 @@ namespace casual
             //
             m_connection.execute( "PRAGMA foreign_keys = ON;");
 
+            //
+            // We can't set WAL mode, for some reason...
+            //
+            //m_connection.execute( "PRAGMA journal_mode=WAL;");
+
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS queue 
                 (
@@ -107,6 +112,10 @@ namespace casual
                   error        INTEGER,
                   type         INTEGER ); )"
               );
+
+
+            m_connection.execute(
+                  "CREATE INDEX IF NOT EXISTS i_id_queue  ON queue( id);" );
 
 
             m_connection.execute(
@@ -133,10 +142,15 @@ namespace casual
                "CREATE INDEX IF NOT EXISTS i_queue_message  ON message ( queue);" );
 
             m_connection.execute(
-              "CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, avalible);" );
+              "CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, timestamp ASC);" );
 
             m_connection.execute(
+              "CREATE INDEX IF NOT EXISTS i_dequeue_message_properties ON message ( queue, state, properties, timestamp ASC);" );
+
+            /*
+            m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_timestamp_message  ON message ( timestamp ASC);" );
+            */
 
             m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);" );
@@ -164,21 +178,21 @@ namespace casual
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
+                     WHERE queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
 
                m_statement.dequeue.first_id = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND avalible < :avalible AND id = :id LIMIT 1; )");
+                     WHERE id = :id AND queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible); )");
 
                m_statement.dequeue.first_match = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND avalible < :avalible AND properties = :properties ORDER BY timestamp ASC LIMIT 1; )");
+                     WHERE queue = :queue AND state = 2 AND properties = :properties AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
 
 
                m_statement.state.xid =  m_connection.precompile( "UPDATE message SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
