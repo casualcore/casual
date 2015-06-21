@@ -2,6 +2,7 @@
 
 
 #include "transaction/manager/admin/server.h"
+#include "transaction/manager/admin/transform.h"
 #include "transaction/manager/manager.h"
 
 //
@@ -56,7 +57,7 @@ void tpsvrdone()
 }
 
 
-void listTransactions_( TPSVCINFO *serviceInfo)
+void transaction_state( TPSVCINFO *serviceInfo)
 {
    casual::sf::service::reply::State reply;
 
@@ -64,9 +65,9 @@ void listTransactions_( TPSVCINFO *serviceInfo)
    {
       auto service_io = local::server->createService( serviceInfo);
 
-      std::vector< vo::Transaction> serviceReturn = service_io.call(
+      auto serviceReturn = service_io.call(
          *local::implementation,
-         &local::implementation_type::listTransactions);
+         &local::implementation_type::state);
 
       service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -101,7 +102,7 @@ namespace casual
 
             common::server::Arguments result{ { common::process::path()}};
 
-            result.services.emplace_back( ".casual.tm.list.transactions", &listTransactions_, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+            result.services.emplace_back( ".casual.transaction.state", &transaction_state, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
 
             return result;
          }
@@ -119,12 +120,9 @@ namespace casual
 
 
 
-         std::vector< vo::Transaction> Server::listTransactions()
+         vo::State Server::state()
          {
-            std::vector< vo::Transaction> result;
-
-
-            return result;
+            return transform::state( m_manager->state());
          }
 
          Manager* Server::m_manager = nullptr;

@@ -60,47 +60,28 @@ namespace casual
 
                struct message_t
                {
-                  struct number_t
-                  {
-                     std::size_t commited = 0;
-                     std::size_t enqueued = 0;
-                     std::size_t dequeued = 0;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        archive & CASUAL_MAKE_NVP( commited);
-                        archive & CASUAL_MAKE_NVP( enqueued);
-                        archive & CASUAL_MAKE_NVP( dequeued);
-                     })
-
-                     std::size_t total() const
-                     {
-                        return commited + enqueued + dequeued;
-                     }
-
-                  } number;
-
+                  std::size_t counts;
                   sf::platform::time_point timestamp;
 
                   struct size_t
                   {
+                     std::size_t total = 0;
                      std::size_t min = 0;
                      std::size_t max = 0;
                      std::size_t average = 0;
-                     std::size_t total = 0;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
+                        archive & CASUAL_MAKE_NVP( total);
                         archive & CASUAL_MAKE_NVP( min);
                         archive & CASUAL_MAKE_NVP( max);
                         archive & CASUAL_MAKE_NVP( average);
-                        archive & CASUAL_MAKE_NVP( total);
                      })
                   } size;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( number);
+                     archive & CASUAL_MAKE_NVP( counts);
                      archive & CASUAL_MAKE_NVP( timestamp);
                      archive & CASUAL_MAKE_NVP( size);
                   })

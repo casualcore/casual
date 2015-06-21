@@ -27,7 +27,7 @@ namespace casual
 
                if( findIter != std::end( m_handlers))
                {
-                  findIter->second->marshal( complete);
+                  findIter->second->dispatch( complete);
                   return true;
                }
                else
@@ -45,7 +45,7 @@ namespace casual
                   return false;
                }
 
-               return (*this)( complete.front());
+               return do_dispatch( complete.front());
             }
 
 

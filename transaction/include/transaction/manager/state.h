@@ -300,27 +300,14 @@ namespace casual
          common::transaction::ID trid;
          std::vector< Resource> resources;
 
-         Resource::State state() const
-         {
-            Resource::State result = Resource::State::cNotInvolved;
-
-            for( auto& resource : resources)
-            {
-               if( result > resource.state)
-                  result = resource.state;
-            }
-            return result;
-         }
+         Resource::State state() const;
 
          //!
          //! @return the most severe result from the resources
          //!
          Resource::Result results() const;
 
-         friend std::ostream& operator << ( std::ostream& out, const Transaction& value)
-         {
-            return out << "{trid: " << value.trid << " resources: " << common::range::make( value.resources) << "}";
-         }
+         friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
       };
 
 
@@ -413,6 +400,13 @@ namespace casual
 
 
          transaction::Log log;
+
+
+         //!
+         //! @return true if there are pending stuff to do. We can't block
+         //! if we got stuff to do...
+         //!
+         bool pending() const;
 
 
          //!

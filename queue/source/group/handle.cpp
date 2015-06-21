@@ -64,7 +64,7 @@ namespace casual
 
                               if( remaining > 0)
                               {
-                                 if( dequeue::Request{ state}( request))
+                                 if( dequeue::request( state, request))
                                  {
                                     --remaining;
                                  }
@@ -174,17 +174,18 @@ namespace casual
 
             namespace dequeue
             {
-               bool Request::operator () ( message_type& message)
+
+               bool request( State& state, Request::message_type& message)
                {
-                  common::trace::Scope trace{ "queue::handle::dequeue::Request", common::log::internal::queue};
+                  common::trace::Scope trace{ "queue::handle::dequeue::request", common::log::internal::queue};
 
                   try
                   {
-                     auto reply = m_state.queuebase.dequeue( message);
+                     auto reply = state.queuebase.dequeue( message);
 
                      if( message.block && reply.message.empty())
                      {
-                        m_state.pending.dequeue( message);
+                        state.pending.dequeue( message);
                      }
                      else
                      {
@@ -196,10 +197,10 @@ namespace casual
                         //
                         if( ! reply.message.empty() && message.trid)
                         {
-                           local::involved( m_state, message);
+                           local::involved( state, message);
                         }
 
-                        queue::blocking::Send send{ m_state};
+                        queue::blocking::Send send{ state};
                         send( message.process.queue, reply);
 
                         return true;
@@ -210,6 +211,12 @@ namespace casual
                      common::log::error << exception.what() << std::endl;
                   }
                   return false;
+               }
+
+
+               void Request::operator () ( message_type& message)
+               {
+                  request( m_state, message);
                }
 
                namespace forget

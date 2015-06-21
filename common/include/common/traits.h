@@ -30,6 +30,66 @@ namespace casual
    {
       namespace traits
       {
+
+
+         template<typename T>
+         struct function : public function< decltype( &T::operator())>
+         {
+
+         };
+
+
+         namespace detail
+         {
+            template< typename R, typename ...Args>
+            struct function
+            {
+               //!
+               //! @returns number of arguments
+               //!
+               constexpr static auto arguments() -> decltype( sizeof...(Args))
+               {
+                  return sizeof...(Args);
+               }
+
+               using result_type = R;
+
+               template< std::size_t index>
+               struct argument
+               {
+                  using type = typename std::tuple_element< index, std::tuple< Args...>>::type;
+               };
+            };
+
+         }
+
+
+         //!
+         //! const functor specialization
+         //!
+         template< typename C, typename R, typename ...Args>
+         struct function< R(C::*)(Args...) const> : public detail::function< R, Args...>
+         {
+         };
+
+         //!
+         //! non const functor specialization
+         //!
+         template< typename C, typename R, typename ...Args>
+         struct function< R(C::*)(Args...)> : public detail::function< R, Args...>
+         {
+         };
+
+         //!
+         //! free function specialization
+         //!
+         template< typename R, typename ...Args>
+         struct function< R(Args...)> : public detail::function< R, Args...>
+         {
+         };
+
+
+
          template< typename T>
          struct is_sequence_container : public std::integral_constant< bool, false> {};
 

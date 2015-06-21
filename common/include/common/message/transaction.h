@@ -131,7 +131,6 @@ namespace casual
             template< message::Type type>
             struct basic_request : basic_transaction< type>
             {
-               //using base_type = basic_transaction< type>;
 
             };
 

@@ -11,6 +11,7 @@
 #include "common/marshal/binary.h"
 #include "common/execution.h"
 #include "common/queue.h"
+#include "common/traits.h"
 
 
 #include <map>
@@ -68,8 +69,9 @@ namespace casual
                {
                public:
                   virtual ~base_handler() = default;
-                  virtual void marshal( ipc::message::Complete& complete) = 0;
+                  virtual void dispatch( ipc::message::Complete& complete) = 0;
                };
+
 
                template< typename H>
                class handle_holder : public base_handler
@@ -77,7 +79,14 @@ namespace casual
                public:
 
                   typedef H handler_type;
-                  typedef typename handler_type::message_type message_type;
+
+                  using traits_type = traits::function< H>;
+
+                  static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
+                  static_assert( std::is_same< typename traits_type::result_type, void>::value, "handlers has to have this signature: void( <some message>), can be declared const");
+
+                  using message_type = typename std::decay< typename traits_type::template argument< 0>::type>::type;
+
 
                   handle_holder( handle_holder&&) = default;
                   handle_holder& operator = ( handle_holder&&) = default;
@@ -85,10 +94,8 @@ namespace casual
 
                   handle_holder( handler_type&& handler) : m_handler( std::move( handler)) {}
 
-                  template< typename... Arguments>
-                  handle_holder( Arguments&&... arguments) : m_handler{ std::forward< Arguments>( arguments)...} {}
 
-                  void marshal( ipc::message::Complete& complete)
+                  void dispatch( ipc::message::Complete& complete) override
                   {
                      message_type message;
                      complete >> message;
@@ -103,22 +110,25 @@ namespace casual
                   handler_type m_handler;
                };
 
+
                typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
 
-               template< typename H>
-               static void assign( handlers_type& result, H&& handler)
-               {
-                  assert( result.count( H::message_type::message_type) == 0);
 
-                  result.emplace( H::message_type::message_type,
-                        std::unique_ptr< base_handler>(
-                              new handle_holder< H>{ std::forward< H>( handler)}));
+               static void assign( handlers_type& result)
+               {
                }
 
                template< typename H, typename... Args>
                static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
                {
-                  assign( result, std::forward< H>( handler));
+                  assert( result.count( H::message_type::message_type) == 0);
+
+                  std::unique_ptr< base_handler> holder{ new handle_holder< typename std::decay< H>::type>( std::forward< H>( handler))};
+
+                  result.emplace(
+                        H::message_type::message_type,
+                        std::move( holder));
+
                   assign( result, std::forward< Args>( handlers)...);
                }
 

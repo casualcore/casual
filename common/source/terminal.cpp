@@ -52,6 +52,18 @@ namespace casual
                return "\033[0m";
             }
 
+            const std::string& color_t::start() const
+            {
+               return m_color;
+            }
+
+            const std::string& color_t::end() const
+            {
+               static const std::string reset = "\033[0m";
+
+               return reset;
+            }
+
             color_t::proxy_t operator << ( std::ostream& out, const color_t& color)
             {
                auto flags = out.flags();
@@ -67,7 +79,7 @@ namespace casual
 
             namespace color
             {
-
+               color_t no_color{ ""};
                color_t grey{ "\033[0;30m"};
                color_t red{ "\033[0;31m"};
                color_t green{ "\033[0;32m"};
@@ -79,7 +91,12 @@ namespace casual
             } // color
 
 
-      } // terminal
+            namespace format
+            {
 
+            } // format
+      } // terminal
    } // common
 } // casual
+
+

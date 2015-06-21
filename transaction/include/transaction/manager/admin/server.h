@@ -2,7 +2,7 @@
 #define CASUALTRANSACTIONADMIN_SERVER_H
 
 
-#include "transaction/manager/admin/vo/transaction.h"
+#include "transaction/manager/admin/transactionvo.h"
 
 #include "common/server/argument.h"
 
@@ -28,11 +28,9 @@ namespace casual
             ~Server();
 
             //!
-            //! List all current transactions
+            //! @return total state
             //!
-            //! @return list of transacions
-            //!
-            std::vector< vo::Transaction> listTransactions();
+            vo::State state();
 
          private:
             static Manager* m_manager;

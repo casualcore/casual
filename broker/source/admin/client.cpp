@@ -7,7 +7,6 @@
 
 
 #include "sf/xatmi_call.h"
-#include "sf/archive/terminal.h"
 #include "sf/namevaluepair.h"
 
 #include "broker/admin/brokervo.h"
@@ -39,372 +38,6 @@ namespace casual
    namespace broker
    {
 
-      namespace normalized
-      {
-         namespace color
-         {
-            using Solid = terminal::color::Solid;
-         } // color
-
-
-         struct Instance
-         {
-            std::string server;
-            std::string path;
-            sf::platform::pid_type pid = 0;
-            sf::platform::queue_id_type queue = 0;
-            std::string state = "off-line";
-            long invoked = 0;
-            std::string last = "---";
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( server);
-               archive & CASUAL_MAKE_NVP( pid);
-               archive & CASUAL_MAKE_NVP( queue);
-               archive & CASUAL_MAKE_NVP( state);
-               archive & CASUAL_MAKE_NVP( invoked);
-               archive & CASUAL_MAKE_NVP( last);
-               archive & CASUAL_MAKE_NVP( path);
-            })
-
-            friend bool operator < ( const Instance& lhs, const Instance& rhs)
-            {
-               if( lhs.server < rhs.server) return true;
-               if( lhs.server > rhs.server) return false;
-               return lhs.pid < rhs.pid;
-            }
-
-            static std::vector< sf::archive::terminal::Directive> directive()
-            {
-               auto state_color = []( std::ostream& out, const std::string& value)
-               {
-                  if( value == "busy") { out << common::terminal::color::yellow << value; return;}
-                  if( value == "idle") { out << common::terminal::color::green << value; return;}
-                  if( value == "shutdown" || value == "off-line") { out << common::terminal::color::red << value; return;}
-                  out << value;
-                  return;
-               };
-
-               return {
-                  { "server", color::Solid{ common::terminal::color::yellow}},
-                  { "pid", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
-                  { "queue", sf::archive::terminal::Directive::Align::right},
-                  { "state", sf::archive::terminal::Directive::Align::left, state_color},
-                  { "invoked", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-                  { "last", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-               };
-            }
-         };
-
-
-         struct Server
-         {
-            struct State
-            {
-               long invoked = 0;
-               std::string last;
-               long instances = 0;
-               std::string state;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  archive & CASUAL_MAKE_NVP( invoked);
-                  archive & CASUAL_MAKE_NVP( last);
-                  archive & sf::makeNameValuePair( "#", instances);
-                  archive & CASUAL_MAKE_NVP( state);
-               })
-
-               struct state_color_directive
-               {
-                  void operator()( std::ostream& out, const std::string& value)
-                  {
-                     auto padding = out.width( 0) - value.size();
-
-                     for( auto& c : value)
-                     {
-                        switch( c)
-                        {
-                           case '*': out << common::terminal::color::yellow << c; break;
-                           case '+': out << common::terminal::color::green << c; break;
-                           default: out << common::terminal::color::red << c; break;
-                        }
-                     }
-                     out << std::string( padding, ' ');
-                  }
-               };
-
-            };
-
-            std::string alias;
-            State state;
-            std::string path;
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( alias);
-               archive & CASUAL_MAKE_NVP( state);
-               archive & CASUAL_MAKE_NVP( path);
-            })
-
-            friend bool operator < ( const Server& lhs, const Server& rhs) { return lhs.alias < rhs.alias;}
-
-            static std::vector< sf::archive::terminal::Directive> directive()
-            {
-               return {
-                  { "alias", color::Solid{ common::terminal::color::yellow}},
-                  { "invoked", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-                  { "last", sf::archive::terminal::Directive::Align::left, color::Solid{ common::terminal::color::blue}},
-                  { "#", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
-                  { "state", sf::archive::terminal::Directive::Align::left, State::state_color_directive{}},
-               };
-            }
-         };
-
-         struct Service
-         {
-            std::string name;
-            std::string timeout;
-            std::size_t pending = 0;
-            std::size_t requested = 0;
-            std::size_t type = 0;
-            std::string mode;
-            Server::State state;
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive << CASUAL_MAKE_NVP( name);
-               archive << CASUAL_MAKE_NVP( type);
-               archive << CASUAL_MAKE_NVP( mode);
-               archive << CASUAL_MAKE_NVP( timeout);
-               archive << CASUAL_MAKE_NVP( requested);
-               archive << CASUAL_MAKE_NVP( pending);
-               archive & sf::makeNameValuePair( "#", state.instances);
-               archive & sf::makeNameValuePair( "state", state.state);
-            })
-
-            friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.name < rhs.name;}
-
-            static std::vector< sf::archive::terminal::Directive> directive()
-            {
-               return {
-                  { "name", color::Solid{ common::terminal::color::yellow}},
-                  { "timeout", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-                  { "type", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-                  { "mode", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::blue}},
-                  { "pending", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::red}},
-                  { "requested", sf::archive::terminal::Directive::Align::right},
-                  { "#", sf::archive::terminal::Directive::Align::right, color::Solid{ common::terminal::color::white}},
-                  { "state", sf::archive::terminal::Directive::Align::left, Server::State::state_color_directive{}},
-               };
-            }
-         };
-
-      } // normalized
-
-      namespace normalize
-      {
-         std::vector< normalized::Instance> instances( const admin::StateVO& state)
-         {
-            std::vector< normalized::Instance> result;
-
-            for( auto& instance : state.instances)
-            {
-               normalized::Instance value;
-
-               auto server = range::find_if( state.servers, std::bind( equal_to{},
-                     std::bind( &admin::ServerVO::id, std::placeholders::_1), instance.server));
-
-               if( server)
-               {
-                  value.server = server->alias;
-                  value.path = server->path;
-               }
-               value.pid = instance.process.pid;
-               value.queue = instance.process.queue;
-
-
-               value.invoked = instance.invoked;
-
-               if( instance.last != sf::platform::time_point::min())
-               {
-                  value.last = common::chronology::local( instance.last);
-               }
-
-               auto state = []( long state){
-                  switch( static_cast< state::Server::Instance::State>( state))
-                  {
-                     case state::Server::Instance::State::booted: return "booted"; break;
-                     case state::Server::Instance::State::idle: return "idle"; break;
-                     case state::Server::Instance::State::busy: return "busy"; break;
-                     case state::Server::Instance::State::shutdown: return "shutdown"; break;
-                     default: return "off-line";
-                  }
-               };
-
-               value.state = state( instance.state);
-
-               result.push_back( std::move( value));
-            }
-
-            range::sort( result);
-
-            return result;
-         }
-
-         template< typename R>
-         normalized::Server::State state( R&& instances)
-         {
-            normalized::Server::State result;
-
-            result.instances = instances.size();
-
-            auto latest = sf::platform::time_point::min();
-
-            for( auto& instance : instances)
-            {
-
-               result.invoked += instance.invoked;
-
-               latest = std::max( latest, instance.last);
-
-               auto state = []( long state){
-                  switch( static_cast< state::Server::Instance::State>( state))
-                  {
-                     case state::Server::Instance::State::booted: return '^'; break;
-                     case state::Server::Instance::State::idle: return '+'; break;
-                     case state::Server::Instance::State::busy: return '*'; break;
-                     case state::Server::Instance::State::shutdown: return 'x'; break;
-                     default: return '-';
-                  }
-               };
-
-               result.state.push_back( state( instance.state));
-            }
-
-            if( latest != sf::platform::time_point::min())
-            {
-               result.last = common::chronology::local( latest);
-            }
-
-            return result;
-         }
-
-
-         std::vector< admin::InstanceVO> filterInstances(
-               const std::vector< admin::InstanceVO>& instances,
-               const std::vector< platform::pid_type>& pids)
-         {
-            std::vector< admin::InstanceVO> result;
-
-            result.reserve( pids.size());
-
-            //
-            // We have to keep the order of the servers instances. We don't have an algorithm
-            // that keep order in that way...
-            //
-            for( auto pid : pids)
-            {
-               auto found = range::find_if( instances, [=]( const admin::InstanceVO& inst)
-               {
-                  return inst.process.pid == pid;
-               });
-               result.push_back( *found);
-            }
-
-            return result;
-         }
-
-         std::vector< normalized::Server> servers( admin::StateVO state)
-         {
-            std::vector< normalized::Server> result;
-
-            for( auto& server : state.servers)
-            {
-               normalized::Server value;
-
-               value.alias = server.alias;
-               value.path = server.path;
-               value.state = normalize::state( filterInstances( state.instances, server.instances));
-
-               result.push_back( std::move( value));
-            }
-
-            return range::sort( result);
-         }
-
-         std::map< std::string, std::vector< process::Handle>> pending( const std::vector< admin::PendingVO>& pending)
-         {
-            std::map< std::string, std::vector< process::Handle>> result;
-
-            for( auto& pend : pending)
-            {
-               process::Handle process;
-               process.pid = pend.process.pid;
-               process.queue = pend.process.queue;
-               result[ pend.requested].emplace_back( pend.process.pid, pend.process.queue);
-            }
-
-            return result;
-         }
-
-
-         std::vector< normalized::Service> services( admin::StateVO state)
-         {
-            std::vector< normalized::Service> result;
-
-            auto pending = normalize::pending( state.pending);
-
-            for( auto& service : state.services)
-            {
-               normalized::Service value;
-
-               value.name = service.name;
-               value.requested = service.lookedup;
-               value.type = service.type;
-               value.pending = pending[ value.name].size();
-
-               switch( server::service::transaction::mode( service.mode))
-               {
-                  case server::Service::Transaction::automatic:
-                     value.mode = "auto";
-                     break;
-                  case server::Service::Transaction::join:
-                     value.mode = "join";
-                     break;
-                  case server::Service::Transaction::atomic:
-                     value.mode = "atomic";
-                     break;
-                  case server::Service::Transaction::none:
-                     value.mode = "none";
-                     break;
-               }
-
-
-               {
-                  using second_t = std::chrono::duration< double>;
-                  std::stringstream out;
-                  out << std::chrono::duration_cast< second_t>( service.timeout).count();
-                  value.timeout = out.str();
-               }
-
-               value.state = normalize::state( filterInstances( state.instances, service.instances));
-
-               //value.instances = service.instances.size();
-               //value.pids = common::range::to_string( service.instances);
-
-               result.push_back( std::move( value));
-            }
-
-            range::sort( result);
-
-            return result;
-         }
-      } // normalize
-
-
       namespace global
       {
          bool porcelain = false;
@@ -413,8 +46,6 @@ namespace casual
          bool no_header = false;
 
       } // global
-
-
 
 
 
@@ -462,58 +93,354 @@ namespace casual
 
 
 
+      namespace format
+      {
 
 
+         struct base_instances
+         {
+            base_instances( const std::vector< admin::InstanceVO>& instances) : m_instances( instances) {}
+
+         protected:
+
+            std::vector< admin::InstanceVO> instances( const std::vector< platform::pid_type>& pids) const
+            {
+               std::vector< admin::InstanceVO> result;
+
+               for( auto& pid : pids)
+               {
+                  auto found = range::find_if( m_instances, [=]( const admin::InstanceVO& v){
+                     return v.process.pid == pid;
+                  });
+                  if( found)
+                  {
+                     result.push_back( *found);
+                  }
+               }
+
+               return result;
+            }
+
+            const std::vector< admin::InstanceVO>& m_instances;
+         };
+
+         struct format_state :  base_instances
+         {
+            using base_instances::base_instances;
+
+            template< typename T>
+            std::size_t width( const T& value) const
+            {
+               return value.instances.size();
+            }
+
+
+
+            template< typename T>
+            void print( std::ostream& out, const T& value, std::size_t width, bool color) const
+            {
+               if( color)
+               {
+                  for( auto& instance : instances( value.instances))
+                  {
+                     switch( static_cast< state::Server::Instance::State>( instance.state))
+                     {
+                        case state::Server::Instance::State::booted: out << terminal::color::magenta.start() << '^'; break;
+                        case state::Server::Instance::State::idle: out << terminal::color::green.start() << '+'; break;
+                        case state::Server::Instance::State::busy: out << terminal::color::yellow.start() << '*'; break;
+                        case state::Server::Instance::State::shutdown: out << terminal::color::red.start() << 'x'; break;
+                        default: out << terminal::color::red.start() <<  '-'; break;
+                     }
+                  }
+                  out << terminal::color::green.end();
+               }
+               else
+               {
+                  for( auto& instance : instances( value.instances))
+                  {
+                     switch( static_cast< state::Server::Instance::State>( instance.state))
+                     {
+                        case state::Server::Instance::State::booted: out << '^'; break;
+                        case state::Server::Instance::State::idle: out << '+'; break;
+                        case state::Server::Instance::State::busy: out << '*'; break;
+                        case state::Server::Instance::State::shutdown: out << 'x'; break;
+                        default: out <<  '-'; break;
+                     }
+                  }
+               }
+
+               //
+               // Pad manually
+               //
+
+               if( width != 0 )
+               {
+                  out << std::string( width - value.instances.size(), ' ');
+               }
+            }
+         };
+
+
+         struct format_instances
+         {
+            template< typename T>
+            std::size_t operator () ( const T& value) const { return value.instances.size();}
+         };
+
+         terminal::format::formatter< admin::ServiceVO> services( const std::vector< admin::InstanceVO>& instances)
+         {
+
+            struct format_timeout
+            {
+               double operator () ( const admin::ServiceVO& value) const
+               {
+                  using second_t = std::chrono::duration< double>;
+                  return std::chrono::duration_cast< second_t>( value.timeout).count();
+               }
+            };
+
+
+            struct format_mode
+            {
+               const char* operator () ( const admin::ServiceVO& value) const
+               {
+                  static std::map< server::Service::Transaction, const char*> mapping{
+                     {server::Service::Transaction::automatic, "auto"},
+                     {server::Service::Transaction::join, "join"},
+                     {server::Service::Transaction::atomic, "atomic"},
+                     {server::Service::Transaction::none, "none"},
+                  };
+                  return mapping[ server::Service::Transaction( value.mode)];
+               }
+            };
+
+            return {
+               { global::porcelain, ! global::no_colors, ! global::no_header},
+               terminal::format::column( "name", std::mem_fn( &admin::ServiceVO::name), terminal::color::yellow, terminal::format::Align::left),
+               terminal::format::column( "type", std::mem_fn( &admin::ServiceVO::type), terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "requested", std::mem_fn( &admin::ServiceVO::lookedup), terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "#", format_instances{}, terminal::color::white, terminal::format::Align::right),
+               terminal::format::custom_column( "state", format_state{ instances})
+            };
+         }
+
+         terminal::format::formatter< admin::ServerVO> servers( const std::vector< admin::InstanceVO>& instances)
+         {
+
+            struct format_last : base_instances
+            {
+               using base_instances::base_instances;
+
+               std::string operator () ( const admin::ServerVO& value) const
+               {
+                  auto inst = instances( value.instances);
+
+                  decltype( inst.front().last) last;
+
+                  for( auto& instance : inst)
+                  {
+                     last = std::max( last, instance.last);
+                  }
+                  return chronology::local( last);
+               }
+            };
+
+            struct format_invoked : base_instances
+            {
+               using base_instances::base_instances;
+
+               std::size_t operator () ( const admin::ServerVO& value) const
+               {
+                  auto inst = instances( value.instances);
+
+                  decltype( inst.front().invoked) invoked = 0;
+
+                  for( auto& instance : inst)
+                  {
+                     invoked = std::max( invoked, instance.invoked);
+                  }
+                  return invoked;
+               }
+            };
+
+
+            return {
+               { global::porcelain, ! global::no_colors, ! global::no_header},
+               terminal::format::column( "alias", std::mem_fn( &admin::ServerVO::alias), terminal::color::yellow, terminal::format::Align::left),
+               terminal::format::column( "invoked", format_invoked{ instances}, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "last", format_last{ instances}, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "#", format_instances{}, terminal::color::white, terminal::format::Align::right),
+               terminal::format::custom_column( "state", format_state{ instances}),
+               terminal::format::column( "path", std::mem_fn( &admin::ServerVO::path), terminal::color::no_color, terminal::format::Align::left)
+            };
+         }
+
+
+         terminal::format::formatter< admin::InstanceVO> instances( const std::vector< admin::ServerVO>& servers)
+         {
+            struct base_server
+            {
+               base_server( const std::vector< admin::ServerVO>& servers) : m_servers( servers) {}
+
+               const std::string& operator () ( const admin::InstanceVO& value) const
+               {
+                  return server( value.server).alias;
+               }
+
+            protected:
+
+               const admin::ServerVO& server( std::size_t server_id) const
+               {
+                  auto found = range::find_if( m_servers, [=] (const admin::ServerVO& v){
+                     return v.id == server_id;
+                  });
+
+                  if( ! found)
+                     throw exception::invalid::Configuration{ "Inconsistency"};
+
+                  return *found;
+               }
+
+               const std::vector< admin::ServerVO>& m_servers;
+            };
+
+
+            struct format_server_name : base_server
+            {
+               using base_server::base_server;
+
+               const std::string& operator () ( const admin::InstanceVO& value) const
+               {
+                  return server( value.server).alias;
+               }
+            };
+
+            struct format_pid
+            {
+               platform::pid_type operator () ( const admin::InstanceVO& v) const { return v.process.pid;}
+            };
+
+            struct format_queue
+            {
+               platform::queue_id_type operator () ( const admin::InstanceVO& v) const { return v.process.queue;}
+            };
+
+
+            struct format_state
+            {
+               std::size_t width( const admin::InstanceVO& value) const { return 6;}
+
+               void print( std::ostream& out, const admin::InstanceVO& value, std::size_t width, bool color) const
+               {
+                  out << std::setfill( ' ');
+
+                  if( color)
+                  {
+                     switch( state::Server::Instance::State( value.state))
+                     {
+                        case state::Server::Instance::State::booted: out << std::right << std::setw( width) << terminal::color::red << "booted"; break;
+                        case state::Server::Instance::State::idle: out << std::right << std::setw( width) << terminal::color::green << "idle"; break;
+                        case state::Server::Instance::State::busy: out << std::right << std::setw( width) << terminal::color::yellow << "busy"; break;
+                        case state::Server::Instance::State::shutdown: out << std::right << std::setw( width) << terminal::color::red << "shutdown"; break;
+                     }
+                  }
+                  else
+                  {
+                     switch( state::Server::Instance::State( value.state))
+                     {
+                        case state::Server::Instance::State::booted: out << std::right << std::setw( width) << "booted"; break;
+                        case state::Server::Instance::State::idle: out << std::right << std::setw( width) << "idle"; break;
+                        case state::Server::Instance::State::busy: out << std::right << std::setw( width) << "busy"; break;
+                        case state::Server::Instance::State::shutdown: out  << std::right << std::setw( width) << "shutdown"; break;
+                     }
+                  }
+               }
+            };
+
+            struct format_last
+            {
+               std::string operator () ( const admin::InstanceVO& v) const { return chronology::local( v.last);}
+            };
+
+            struct format_path : base_server
+            {
+               using base_server::base_server;
+
+               const std::string& operator () ( const admin::InstanceVO& v) const
+               {
+                  return server( v.server).path;
+               }
+            };
+
+            return {
+               { global::porcelain, ! global::no_colors, ! global::no_header},
+               terminal::format::column( "server", format_server_name{ servers}, terminal::color::yellow, terminal::format::Align::left),
+               terminal::format::column( "pid", format_pid{}, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::custom_column( "state", format_state{}),
+               terminal::format::column( "invoked", std::mem_fn( &admin::InstanceVO::invoked), terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "last", format_last{}, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "path", format_path{ servers}, terminal::color::no_color, terminal::format::Align::left),
+            };
+         }
+
+      } // format
+
+
+      namespace print
+      {
+
+         void servers( std::ostream& out, admin::StateVO& state)
+         {
+            range::sort( state.servers, []( const admin::ServerVO& l, const admin::ServerVO& r){ return l.alias < r.alias;});
+
+            auto formatter = format::servers( state.instances);
+
+            formatter.print( std::cout, std::begin( state.servers), std::end( state.servers));
+         }
+
+         void services( std::ostream& out, admin::StateVO& state)
+         {
+            range::sort( state.services, []( const admin::ServiceVO& l, const admin::ServiceVO& r){ return l.name < r.name;});
+
+            auto formatter = format::services( state.instances);
+
+            formatter.print( std::cout, std::begin( state.services), std::end( state.services));
+         }
+
+         void instances( std::ostream& out, admin::StateVO& state)
+         {
+            range::sort( state.instances, []( const admin::InstanceVO& l, const admin::InstanceVO& r){ return l.server < r.server;});
+
+            auto formatter = format::instances( state.servers);
+
+            formatter.print( std::cout, std::begin( state.instances), std::end( state.instances));
+         }
+
+      } // print
 
       void listServers()
       {
-         auto servers = normalize::servers( call::state());
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( servers);
+         auto state = call::state();
 
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), ! global::no_header, ! global::no_colors};
-            writer << CASUAL_MAKE_NVP( servers);
-         }
+         print::servers( std::cout, state);
       }
 
       void listServices()
       {
-         auto services = normalize::services( call::state());
+         auto state = call::state();
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( services);
-
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Service::directive(), ! global::no_header, ! global::no_colors};
-            writer << CASUAL_MAKE_NVP( services);
-         }
+         print::services( std::cout, state);
       }
 
       void listInstances()
       {
-         auto instances = normalize::instances( call::state());
+         auto state = call::state();
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( instances);
-
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Instance::directive(), ! global::no_header, ! global::no_colors};
-            writer << CASUAL_MAKE_NVP( instances);
-         }
+         print::instances( std::cout, state);
       }
 
 
@@ -552,37 +479,14 @@ namespace casual
             }
          }
 
-         auto output = normalize::servers( state);
-         range::sort( output);
-
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( output);
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), ! global::no_header, ! global::no_colors};
-
-            writer << CASUAL_MAKE_NVP( output);
-         }
+         print::servers( std::cout, state);
       }
 
       void boot()
       {
-         auto servers = normalize::servers( call::boot());
+         auto state =  call::boot();
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( servers);
-
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Server::directive(), ! global::no_header, ! global::no_colors};
-            writer << CASUAL_MAKE_NVP( servers);
-         }
+         print::servers( std::cout, state);
       }
 
    } // broker

@@ -216,6 +216,19 @@ namespace casual
          result = convert( value);
       }
 
+
+      Transaction::Resource::State Transaction::state() const
+      {
+         Resource::State result = Resource::State::cNotInvolved;
+
+         for( auto& resource : resources)
+         {
+            if( result > resource.state)
+               result = resource.state;
+         }
+         return result;
+      }
+
       Transaction::Resource::Result Transaction::results() const
       {
          auto result = Resource::Result::cXA_RDONLY;
@@ -230,8 +243,19 @@ namespace casual
          return result;
       }
 
+
+      std::ostream& operator << ( std::ostream& out, const Transaction& value)
+      {
+         return out << "{trid: " << value.trid << ", resources: " << common::range::make( value.resources) << "}";
+      }
+
       State::State( const std::string& database) : log( database) {}
 
+
+      bool State::pending() const
+      {
+         return ! pendingRequests.empty() || ! persistentReplies.empty();
+      }
 
       std::size_t State::instances() const
       {
