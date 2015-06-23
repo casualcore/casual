@@ -67,6 +67,8 @@ namespace casual
 
                   void clear()
                   {
+                     signal_count = 0;
+
                      alarm_count = 0;
                      child_terminate_count = 0;
                      terminate_count = 0;

@@ -98,6 +98,11 @@ namespace casual
             //
             m_connection.execute( "PRAGMA foreign_keys = ON;");
 
+            //
+            // We can't set WAL mode, for some reason...
+            //
+            //m_connection.execute( "PRAGMA journal_mode=WAL;");
+
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS queue 
                 (
@@ -107,6 +112,12 @@ namespace casual
                   error        INTEGER,
                   type         INTEGER ); )"
               );
+
+            m_connection.execute(
+                  "CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);" );
+
+            m_connection.execute(
+                  "CREATE INDEX IF NOT EXISTS i_id_queue  ON queue( id);" );
 
 
             m_connection.execute(
@@ -133,10 +144,15 @@ namespace casual
                "CREATE INDEX IF NOT EXISTS i_queue_message  ON message ( queue);" );
 
             m_connection.execute(
-              "CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, avalible);" );
+              "CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, timestamp ASC);" );
 
             m_connection.execute(
+              "CREATE INDEX IF NOT EXISTS i_dequeue_message_properties ON message ( queue, state, properties, timestamp ASC);" );
+
+            /*
+            m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_timestamp_message  ON message ( timestamp ASC);" );
+            */
 
             m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);" );
@@ -164,21 +180,21 @@ namespace casual
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND avalible < :avalible  ORDER BY timestamp ASC LIMIT 1; )");
+                     WHERE queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
 
                m_statement.dequeue.first_id = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND avalible < :avalible AND id = :id LIMIT 1; )");
+                     WHERE id = :id AND queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible); )");
 
                m_statement.dequeue.first_match = m_connection.precompile( R"( 
                      SELECT 
                         ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND avalible < :avalible AND properties = :properties ORDER BY timestamp ASC LIMIT 1; )");
+                     WHERE queue = :queue AND state = 2 AND properties = :properties AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
 
 
                m_statement.state.xid =  m_connection.precompile( "UPDATE message SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
@@ -211,13 +227,12 @@ namespace casual
 
                m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
-                     q.id, m.state, q.name, q.retries, q.error, q.type, COUNT( m.id), 
+                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id), 
                        MIN( length( m.payload)), MAX( length( m.payload)), AVG( length( m.payload)), 
                        SUM( length( m.payload)), MAX( m.timestamp)
                   FROM
                      queue q LEFT JOIN message m ON q.id = m.queue
-                  GROUP BY q.id, m.state 
-                  ORDER BY q.id  
+                  GROUP BY q.id  
                       ;
                   )");
 
@@ -491,19 +506,17 @@ namespace casual
             {
                common::message::queue::information::Queue queue;
 
-
                row.get( 0, queue.id);
-               row.get( 1, queue.message.state);
-               row.get( 2, queue.name);
-               row.get( 3, queue.retries);
-               row.get( 4, queue.error);
-               row.get( 5, queue.type);
-               row.get( 6, queue.message.counts);
-               row.get( 7, queue.message.size.min);
-               row.get( 8, queue.message.size.max);
-               row.get( 9, queue.message.size.average);
-               row.get( 10, queue.message.size.total);
-               row.get( 11, queue.message.timestamp);
+               row.get( 1, queue.name);
+               row.get( 2, queue.retries);
+               row.get( 3, queue.error);
+               row.get( 4, queue.type);
+               row.get( 5, queue.message.counts);
+               row.get( 6, queue.message.size.min);
+               row.get( 7, queue.message.size.max);
+               row.get( 8, queue.message.size.average);
+               row.get( 9, queue.message.size.total);
+               row.get( 10, queue.message.timestamp);
 
                result.push_back( std::move( queue));
             }

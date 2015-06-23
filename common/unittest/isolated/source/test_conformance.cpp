@@ -14,6 +14,13 @@
 
 #include <type_traits>
 
+
+//
+// Just a place to test C++-conformance, or rather, casual's view on conformance
+//
+
+
+
 namespace casual
 {
    namespace common
@@ -64,6 +71,76 @@ namespace casual
          EXPECT_TRUE( std::is_floating_point< double>::value);
 
       }
+
+
+
+
+
+
+
+      struct some_functor
+      {
+         void operator () ( const double& value)  {}
+
+         int test;
+      };
+
+
+      TEST( casual_common_conformance, get_functor_argument_type)
+      {
+
+         EXPECT_TRUE( traits::function< some_functor>::arguments() == 1);
+
+         using argument_type = typename traits::function< some_functor>::argument< 0>::type;
+
+         auto is_same = std::is_same< const double&, argument_type>::value;
+         EXPECT_TRUE( is_same);
+
+      }
+
+
+      TEST( casual_common_conformance, get_function_argument_type)
+      {
+         using function_1 = std::function< void( double&)>;
+
+         EXPECT_TRUE( traits::function< function_1>::arguments() == 1);
+
+         using argument_type = typename traits::function< function_1>::argument< 0>::type;
+
+         auto is_same = std::is_same< double&, argument_type>::value;
+         EXPECT_TRUE( is_same);
+
+      }
+
+
+
+      long some_function( const std::string& value) { return 1;}
+
+      TEST( casual_common_conformance, get_free_function_argument_type)
+      {
+         using traits_type = traits::function< decltype( some_function)>;
+
+         EXPECT_TRUE( traits_type::arguments() == 1);
+
+         {
+            using argument_type = typename traits_type::argument< 0>::type;
+
+            auto is_same = std::is_same< const std::string&, argument_type>::value;
+            EXPECT_TRUE( is_same);
+         }
+
+         {
+            using result_type = typename traits_type::result_type;
+
+            auto is_same = std::is_same< long, result_type>::value;
+            EXPECT_TRUE( is_same);
+         }
+
+
+
+      }
+
+
 
 
    } // common

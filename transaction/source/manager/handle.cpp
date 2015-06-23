@@ -558,8 +558,6 @@ namespace casual
                            //
                            m_state.log.remove( message.trid);
                            return true;
-
-                           break;
                         }
                         default:
                         {
@@ -626,8 +624,6 @@ namespace casual
                            //
                            m_state.log.remove( message.trid);
                            return true;
-
-                           break;
                         }
                         default:
                         {
@@ -725,6 +721,8 @@ namespace casual
                      // We can remove this transaction from the log.
                      //
                      m_state.log.remove( transaction.trid);
+                     m_state.transactions.erase( found.first);
+
 
                      //
                      // Send reply
@@ -1037,6 +1035,11 @@ namespace casual
                            reply_type> sender{ m_state};
 
                         sender( message, Transaction::Resource::convert( result));
+
+                        //
+                        // We remove the transaction
+                        //
+                        return true;
                      }
 
                      //

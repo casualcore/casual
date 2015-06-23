@@ -11,6 +11,7 @@
 
 #include "common/uuid.h"
 #include "common/platform.h"
+#include "common/transaction/id.h"
 #include "common/algorithm.h"
 
 
