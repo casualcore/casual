@@ -148,7 +148,7 @@ namespace casual
 
 
             auto format_error = [&]( const q_type& q){
-               return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error;}).at( 0).name;
+               return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
             };
 
             auto format_group = [&]( const q_type& q){

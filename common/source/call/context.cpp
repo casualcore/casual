@@ -352,10 +352,12 @@ namespace casual
                throw common::exception::xatmi::service::NoEntry( service);
             }
 
+
+
             //
             // Keep track of timeouts
             //
-            // TODO: this can cause a timeout directly - need to send ack to broker in that case...
+            // TODO:
             //
             if( message.descriptor != 0)
             {
@@ -364,6 +366,19 @@ namespace casual
                      flag< TPNOTIME>( flags) ? std::chrono::microseconds{ 0} : target.service.timeout,
                      start);
             }
+
+            //
+            // If something goes wrong (most likely a timeout), we need to send ack to broker in that case, cus the service(instance)
+            // will not do it...
+            //
+            common::scope::Execute send_ack{ [&]()
+               {
+                  message::service::call::ACK ack;
+                  ack.process = target.process;
+                  ack.service = target.service.name;
+                  local::queue::blocking::Send send;
+                  send( common::ipc::broker::id(), ack);
+               }};
 
 
             //
@@ -375,6 +390,7 @@ namespace casual
             send( target.process.queue, message);
 
             unreserve.release();
+            send_ack.release();
             return message.descriptor;
          }
 
@@ -504,6 +520,15 @@ namespace casual
             // TODO: Do some cleaning on buffers, pending replies and such...
             //
 
+         }
+
+         long Context::user_code() const
+         {
+            return m_state.user_code;
+         }
+         void Context::user_code( long code)
+         {
+            m_state.user_code = code;
          }
 
          Context::Context()

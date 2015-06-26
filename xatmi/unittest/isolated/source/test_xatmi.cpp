@@ -44,11 +44,13 @@ namespace casual
                Domain()
                   : server{ ipc::receive::id(), mockup::create::server({
                      createService( "service_1"),
-                     createService( "timeout_2", TPESVCFAIL)
+                     createService( "timeout_2", TPESVCFAIL),
+                     createService( "service_user_code_1", 0, -1)
                   })},
                   broker{ ipc::receive::id(), mockup::create::broker({
                      mockup::create::lookup::reply( "service_1", server.id()),
-                     mockup::create::lookup::reply( "timeout_2", server.id(), std::chrono::milliseconds{ 2})
+                     mockup::create::lookup::reply( "timeout_2", server.id(), std::chrono::milliseconds{ 2}),
+                     mockup::create::lookup::reply( "service_user_code_1", server.id()),
                   })},
                   link_broker_reply{ mockup::ipc::broker::queue().receive().id(), broker.id()},
                   tm{ ipc::receive::id(), mockup::create::transaction::manager()},
@@ -68,10 +70,12 @@ namespace casual
 
                static std::pair< std::string, common::message::service::call::Reply> createService(
                      const std::string& service,
-                     int error = 0)
+                     int error = 0,
+                     long user_code = 0)
                {
                   common::message::service::call::Reply reply;
                   reply.error = error;
+                  reply.code = user_code;
 
                   return std::make_pair( service, std::move( reply));
                }
@@ -329,6 +333,23 @@ namespace casual
 
          tpfree( buffer);
       }
+
+
+      TEST( casual_xatmi, tpcall_service_user_code_1__expect_ok__urcode_1)
+      {
+         //
+         // Set up a "linked-domain" that transforms request to replies - see above
+         //
+         local::Domain domain;
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "service_user_code_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpurcode == -1) << "urcode: " << tpurcode;
+         tpfree( buffer);
+      }
+
 
       /*
       TEST( casual_xatmi, tpcall_service_timeout_2__expect_TPETIME)

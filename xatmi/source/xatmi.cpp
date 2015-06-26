@@ -30,7 +30,6 @@ namespace local
    namespace
    {
       int tperrno_value = 0;
-      long tpurcode_value = 0;
    } // <unnamed>
 } // local
 
@@ -48,12 +47,12 @@ void casual_set_tperrno( int value)
 
 long casual_get_tpurcode(void)
 {
-   return local::tpurcode_value;
+   return casual::common::call::Context::instance().user_code();
 }
 
 void casual_set_tpurcode( long value)
 {
-   local::tpurcode_value = value;
+   casual::common::call::Context::instance().user_code( value);
 }
 
 
@@ -146,6 +145,7 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
 {
    casual_set_tperrno( 0);
 
+
    try
    {
 
@@ -160,6 +160,7 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
 int tpcall( const char* const svc, char* idata, const long ilen, char** odata, long* olen, const long flags)
 {
    casual_set_tperrno( 0);
+   casual_set_tpurcode( 0);
 
    if( svc == nullptr)
    {
@@ -182,6 +183,7 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
 {
    casual_set_tperrno( 0);
+   casual_set_tpurcode( 0);
 
    if( svc == nullptr)
    {

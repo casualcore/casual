@@ -109,7 +109,6 @@ namespace casual
                //!
                void discard( descriptor_type descriptor);
 
-
             private:
 
                descriptor_type reserve();
@@ -119,6 +118,7 @@ namespace casual
 
             } pending;
 
+            long user_code = 0;
          };
 
          class Context
@@ -137,6 +137,9 @@ namespace casual
             void cancel( descriptor_type cd);
 
             void clean();
+
+            long user_code() const;
+            void user_code( long code);
 
          private:
 

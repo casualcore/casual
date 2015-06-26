@@ -15,7 +15,30 @@
 
 namespace casual
 {
+   namespace local
+   {
+      namespace
+      {
+         struct UnknownException
+         {
 
+         };
+      } // <unnamed>
+   } // local
+
+   TEST( casual_common_error, catch_unknown)
+   {
+      EXPECT_NO_THROW({
+         try
+         {
+            throw local::UnknownException{};
+         }
+         catch( ...)
+         {
+            common::error::handler();
+         }
+      });
+   }
 
 
    template< typename E, int code, common::log::category::Type category>

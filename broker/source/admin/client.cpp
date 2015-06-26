@@ -259,7 +259,7 @@ namespace casual
 
                   for( auto& instance : inst)
                   {
-                     invoked = std::max( invoked, instance.invoked);
+                     invoked += instance.invoked;
                   }
                   return invoked;
                }
