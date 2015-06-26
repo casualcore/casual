@@ -401,7 +401,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.receive(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCERR);
+         EXPECT_TRUE( reply.error == TPESVCERR) << "error: " << reply.error << " - "<< common::error::xatmi::error( reply.error);
       }
 
 

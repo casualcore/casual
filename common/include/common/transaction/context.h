@@ -119,6 +119,12 @@ namespace casual
             void set( const std::vector< Resource>& resources);
 
 
+            //!
+            //! @return true if there are pending transactions that is owned by this
+            //! process
+            //!
+            bool pending() const;
+
          private:
 
             using control_type = TRANSACTION_CONTROL;

@@ -623,6 +623,11 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
+         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+         {
+            throw common::exception::xatmi::SystemError{ "can't forward within broker"};
+         }
+
          void Policy::statistics( platform::queue_id_type id,common::message::traffic::Event&)
          {
             //

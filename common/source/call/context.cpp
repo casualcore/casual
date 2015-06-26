@@ -7,6 +7,7 @@
 
 #include "common/call/context.h"
 #include "common/call/timeout.h"
+#include "common/call/lookup.h"
 
 #include "common/queue.h"
 #include "common/internal/log.h"
@@ -73,33 +74,6 @@ namespace casual
                   } // non_blocking
 
                } // queue
-
-
-               namespace service
-               {
-                  struct Lookup
-                  {
-                     Lookup( const std::string& service)
-                     {
-                        message::service::name::lookup::Request serviceLookup;
-                        serviceLookup.requested = service;
-                        serviceLookup.process = process::handle();
-
-                        queue::blocking::Send send;
-                        send( ipc::broker::id(), serviceLookup);
-                     }
-
-                     message::service::name::lookup::Reply operator () () const
-                     {
-                        message::service::name::lookup::Reply result;
-                        queue::blocking::Receive receive( ipc::receive::queue());
-                        receive( result);
-
-                        return result;
-                     }
-                  };
-
-               } // service
 
 
                namespace validate
@@ -231,6 +205,11 @@ namespace casual
             unreserve( descriptor);
          }
 
+         bool State::Pending::empty() const
+         {
+            return m_correlations.empty() && range::all_of( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
+         }
+
 
          Context& Context::instance()
          {
@@ -282,7 +261,7 @@ namespace casual
 
             local::validate::input( idata, ilen, flags);
 
-            local::service::Lookup lookup( service);
+            service::Lookup lookup( service);
 
             //
             // We do as much as possible while we wait for the broker reply

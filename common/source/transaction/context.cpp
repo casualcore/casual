@@ -212,6 +212,16 @@ namespace casual
 
          }
 
+
+         bool Context::pending() const
+         {
+            const auto process = process::handle();
+
+            return ! range::find_if( m_transactions, [&]( const Transaction& transaction){
+               return ! transaction.trid.null() && transaction.trid.owner() != process;
+            }).empty();
+         }
+
          namespace local
          {
             namespace pop
@@ -401,9 +411,11 @@ namespace casual
                }
             };
 
-            if( return_state != TPSUCCESS)
+            switch( return_state)
             {
-               message.error = TPESVCFAIL;
+               case TPESVCERR: break;
+               case TPSUCCESS: break;
+               default: message.error = TPESVCFAIL; break;
             }
 
 

@@ -283,6 +283,13 @@ void tpsvrdone()
    tx_close();
 }
 
+
+void casual_service_forward( const char* service, char* data, long size)
+{
+
+}
+
+
 int casual_vlog( casual_log_category_t category, const char* const format, va_list arglist)
 {
    std::array< char, 2048> buffer;

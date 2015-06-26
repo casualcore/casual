@@ -217,6 +217,8 @@ namespace casual
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 
+            void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
+
             void statistics( common::platform::queue_id_type id, common::message::traffic::Event& event);
 
          private:
