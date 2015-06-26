@@ -83,6 +83,11 @@ namespace casual
          Payload::Payload( const Payload&)  = default;
          Payload& Payload::operator = ( const Payload&) = default;
 
+         bool Payload::null() const
+         {
+            return type.name == "NULL";
+         }
+
 
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {

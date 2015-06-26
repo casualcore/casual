@@ -126,9 +126,12 @@ extern const char* tperrnostring( int error);
 extern int tpsvrinit( int argc, char** argv);
 extern void tpsvrdone();
 
+extern void casual_service_forward( const char* service, char* data, long size);
+
 typedef enum { c_log_error, c_log_warning, c_log_information, c_log_debug } casual_log_category_t;
 extern int casual_log( casual_log_category_t category, const char* const format, ...);
 extern int casual_vlog( casual_log_category_t category, const char* const format, va_list ap);
+
 
 
 #ifdef __cplusplus

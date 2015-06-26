@@ -109,6 +109,12 @@ namespace casual
                //!
                void discard( descriptor_type descriptor);
 
+               //!
+               //! @returns true if there are no pending replies or associated transactions.
+               //!  Thus, it's ok to do a service-forward
+               //!
+               bool empty() const;
+
             private:
 
                descriptor_type reserve();
@@ -140,6 +146,12 @@ namespace casual
 
             long user_code() const;
             void user_code( long code);
+
+            //!
+            //! @returns true if there are pending replies or associated transactions.
+            //!  Hence, it's ok to do a service-forward if false is return
+            //!
+            bool pending() const { return ! m_state.pending.empty();}
 
          private:
 

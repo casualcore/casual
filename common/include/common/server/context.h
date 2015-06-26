@@ -39,13 +39,34 @@ namespace casual
          {
             struct jump_t
             {
+               enum From
+               {
+                  c_no_jump = 0,
+                  c_return = 10,
+                  c_forward = 20,
+               };
+
+               struct buffer_t
+               {
+                  platform::raw_buffer_type data = nullptr;
+                  long len = 0;
+
+               } buffer;
+
                struct state_t
                {
                   int value = 0;
                   long code = 0;
-                  platform::raw_buffer_type data = nullptr;
-                  long len = 0;
                } state;
+
+               struct forward_t
+               {
+                  std::string service;
+
+               } forward;
+
+               friend std::ostream& operator << ( std::ostream& out, const jump_t& value);
+
             } jump;
 
 
@@ -79,6 +100,11 @@ namespace casual
             //! Being called from tpreturn
             //!
             void long_jump_return( int rval, long rcode, char* data, long len, long flags);
+
+            //!
+            //! called from extern casual_service_forward
+            //!
+            void forward( const char* service, char* data, long size);
 
             //!
             //! Being called from tpadvertise

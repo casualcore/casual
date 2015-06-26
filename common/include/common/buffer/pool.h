@@ -208,6 +208,7 @@ namespace casual
                Base& find( const Type& type);
                Base& find( platform::const_raw_buffer_type handle);
 
+               const Payload& null_payload() const;
 
             public:
 
@@ -216,6 +217,7 @@ namespace casual
                   static Holder singleton;
                   return singleton;
                }
+
 
                platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size);
 

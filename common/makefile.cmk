@@ -36,6 +36,7 @@ casual_common_objectfiles = [
     
     Compile( 'source/call/context.cpp'),
     Compile( 'source/call/timeout.cpp'),
+    Compile( 'source/call/lookup.cpp'),
     
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),

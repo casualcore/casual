@@ -48,6 +48,14 @@ namespace casual
                return **pool;
             }
 
+            const Payload& Holder::null_payload() const
+            {
+               static const Payload singleton{ nullptr};
+               return singleton;
+            }
+
+
+
             platform::raw_buffer_type Holder::allocate( const Type& type, platform::binary_size_type size)
             {
                auto buffer = find( type).allocate( type, size);
@@ -93,6 +101,11 @@ namespace casual
                log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
                      << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
 
+               if( payload.null())
+               {
+                  return nullptr;
+               }
+
                auto buffer = find( payload.type).insert( std::move( payload));
 
                return buffer;
@@ -100,17 +113,31 @@ namespace casual
 
             payload::Send Holder::get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size)
             {
+               if( handle == nullptr)
+               {
+                  return null_payload();
+               }
                return find( handle).get( handle, user_size);
             }
 
             payload::Send Holder::get( platform::const_raw_buffer_type handle)
             {
+               if( handle == nullptr)
+               {
+                  return null_payload();
+               }
+
                return find( handle).get( handle);
             }
 
 
             Payload Holder::release( platform::const_raw_buffer_type handle)
             {
+               if( handle == nullptr)
+               {
+                  return null_payload();
+               }
+
                auto result = find( handle).release( handle);
 
                log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
@@ -120,6 +147,11 @@ namespace casual
 
             Payload Holder::release( platform::const_raw_buffer_type handle, platform::binary_size_type size)
             {
+               if( handle == nullptr)
+               {
+                  return null_payload();
+               }
+
                auto result = find( handle).release( handle, size);
 
                log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';

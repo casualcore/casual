@@ -76,6 +76,8 @@ namespace casual
             Payload( const Payload&);
             Payload& operator = ( const Payload&);
 
+            bool null() const;
+
             Type type;
             platform::binary_type memory;
 
@@ -92,12 +94,15 @@ namespace casual
          {
             struct Send
             {
-               Send( Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
+               Send( const Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
                   : payload( payload), transport( transport), reserved( reserved) {}
 
-               Payload& payload;
-               platform::binary_size_type transport;
-               platform::binary_size_type reserved;
+               Send( const Payload& payload)
+                  : payload( payload) {}
+
+               const Payload& payload;
+               platform::binary_size_type transport = 0;
+               platform::binary_size_type reserved = 0;
 
                template< typename A>
                void marshal( A& archive) const

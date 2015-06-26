@@ -238,6 +238,12 @@ namespace casual
                      } } };
 
 
+                  //
+                  // If something goes wrong, make sure to rollback before reply with error.
+                  // this will execute before execute_reply
+                  //
+                  scope::Execute execute_error_reply{ [&](){ m_policy.transaction( reply, TPESVCERR); } };
+
 
                   auto& state = server::Context::instance().state();
 
@@ -251,9 +257,9 @@ namespace casual
                   // set the call-correlation
                   //
 
-                  auto found = state.services.find( message.service.name);
+                  auto found = range::find( state.services, message.service.name);
 
-                  if( found == state.services.end())
+                  if( ! found)
                   {
                      throw common::exception::xatmi::SystemError( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
                   }
@@ -294,13 +300,14 @@ namespace casual
                   //
                   // Prepare for tpreturn.
                   //
-                  // ATTENTION: no types with destructor should be instantiated
-                  // within the if( ! jumped) clause
-                  //
-                  auto jumped = setjmp( state.long_jump_buffer) != 0;
+                  auto from = setjmp( state.long_jump_buffer);
 
-                  if( ! jumped)
+                  if( from == State::jump_t::From::c_no_jump)
                   {
+                     //
+                     // ATTENTION: no types with destructor should be instantiated
+                     // within this scope
+                     //
 
                      //
                      // No longjmp has been called, this is the first time in this "service call"
@@ -320,14 +327,45 @@ namespace casual
                      //
                      // User service returned, not by tpreturn.
                      //
-                     m_policy.transaction( reply, TPESVCERR);
-
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
+                  }
+                  else if( from == State::jump_t::From::c_forward)
+                  {
+                     //
+                     // user has called casual_service_forward
+                     //
+
+                     if( call::Context::instance().pending())
+                     {
+                        //
+                        // We can't do a forward, user has pending stuff in flight
+                        //
+                        throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending actions");
+                     }
+
+                     //
+                     // Check if service is present at this instance
+                     //
+                     if( range::find( state.services, state.jump.forward.service))
+                     {
+                        throw common::exception::xatmi::service::Error( "not implemented to forward to a service in the same instance");
+                     }
+
+                     m_policy.forward( message, state.jump);
+
+                     //
+                     // Forward went ok, make sure we don't do error stuff
+                     //
+                     execute_reply.release();
+                     execute_error_reply.release();
+
+                     return;
                   }
 
                   //
                   // User has called tpreturn
                   //
+
 
 
                   // TODO: What are the semantics of 'order' of failure?
@@ -339,16 +377,15 @@ namespace casual
                   // Apply post service buffer manipulation
                   //
                   buffer::transport::Context::instance().dispatch(
-                        state.jump.state.data,
-                        state.jump.state.len,
+                        state.jump.buffer.data,
+                        state.jump.buffer.len,
                         message.service.name,
                         buffer::transport::Lifecycle::post_service);
-
 
                   //
                   // Modify reply
                   //
-                  transform::reply( reply, state.jump.state);
+                  transform::reply( reply, state.jump);
 
 
 
@@ -357,6 +394,11 @@ namespace casual
                   // - commit/rollback transaction if service has "auto-transaction"
                   //
                   scope::Execute execute_transaction{ [&](){ m_policy.transaction( reply, state.jump.state.value); } };
+
+                  //
+                  // Nothing did go wrong
+                  //
+                  execute_error_reply.release();
 
 
                   //
@@ -377,6 +419,8 @@ namespace casual
                         }
                      }
                   }};
+
+
 
                   execute_ack();
                   execute_transaction();
@@ -404,16 +448,16 @@ namespace casual
                      return result;
                   }
 
-                  static void reply( message::service::call::Reply& reply, const server::State::jump_t::state_t& state)
+                  static void reply( message::service::call::Reply& reply, const server::State::jump_t& jump)
                   {
-                     reply.code = state.code;
+                     reply.code = jump.state.code;
                      reply.error = 0;
 
-                     if( state.data != nullptr)
+                     if( jump.buffer.data != nullptr)
                      {
                         try
                         {
-                           reply.buffer = buffer::pool::Holder::instance().release( state.data, state.len);
+                           reply.buffer = buffer::pool::Holder::instance().release( jump.buffer.data, jump.buffer.len);
                         }
                         catch( ...)
                         {
@@ -481,6 +525,8 @@ namespace casual
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
 
+                  void forward( const message::service::call::callee::Request& message, const State::jump_t& jump);
+
                private:
                   typedef queue::blocking::Writer reply_writer;
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
@@ -539,6 +585,11 @@ namespace casual
                   void transaction( message::service::call::Reply& message, int return_state)
                   {
                      // no-op
+                  }
+
+                  void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+                  {
+                     throw common::exception::xatmi::SystemError{ "can't forward within an administration server"};
                   }
 
 

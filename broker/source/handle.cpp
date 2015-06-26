@@ -478,7 +478,8 @@ namespace casual
                   //
                   idle->get().alterState( state::Server::Instance::State::busy);
 
-                  message::service::name::lookup::Reply reply;
+                  auto reply = message::reverse::type( message);
+
                   reply.service = service.information;
                   reply.service.traffic_monitors = m_state.traffic.monitors;
                   reply.process = transform::Instance()( *idle);
@@ -505,7 +506,7 @@ namespace casual
                // Server (queue) that hosts the requested service is not found.
                // We propagate this by having 0 occurrence of server in the response
                //
-               message::service::name::lookup::Reply reply;
+               auto reply = message::reverse::type( message);
                reply.service.name = message.requested;
 
                queue::blocking::Writer writer( message.process.queue, m_state);
@@ -621,6 +622,11 @@ namespace casual
          void Policy::transaction( const message::service::call::Reply& message, int return_state)
          {
             // broker doesn't bother with transactions...
+         }
+
+         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+         {
+            throw common::exception::xatmi::SystemError{ "can't forward within broker"};
          }
 
          void Policy::statistics( platform::queue_id_type id,common::message::traffic::Event&)

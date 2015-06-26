@@ -287,7 +287,7 @@ namespace casual
          EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
          EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
       }
-
+      /*
       TEST( casual_queue_group_database, dequeue_message__from_id)
       {
          auto path = local::file();
@@ -332,6 +332,8 @@ namespace casual
          EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
          EXPECT_TRUE( origin.message.avalible == fetched.message.at( 0).avalible);
       }
+
+      */
 
 
 

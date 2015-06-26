@@ -101,11 +101,7 @@ namespace casual
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpacall_buffer_null__expect_TPEINVAL)
-      {
-         EXPECT_TRUE( tpacall( "someServer", nullptr, 0, 0) == -1);
-         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
-      }
+
 
       TEST( casual_xatmi, tpacall_TPNOREPLY_without_TPNOTRAN__expect_TPEINVAL)
       {
@@ -154,6 +150,18 @@ namespace casual
 
 
          tpfree( buffer);
+      }
+
+      TEST( casual_xatmi, tpacall_buffer_null__expect_expect_ok)
+      {
+         //
+         // Set up a "linked-domain" that transforms request to replies - see above
+         //
+         local::Domain domain;
+
+         auto descriptor = tpacall( "service_1", nullptr, 0, 0);
+         EXPECT_TRUE( descriptor != -1) << "tperrno: " << tperrno;
+         EXPECT_TRUE( tpcancel( descriptor) != -1);
       }
 
 

@@ -230,15 +230,12 @@ namespace casual
 
                      buffer::Payload buffer;
 
-                     //
-                     // Only for input
-                     //
-                     template< typename A>
-                     void marshal( A& archive)
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_call::marshal( archive);
-                        archive >> buffer;
-                     }
+                        archive & buffer;
+                     })
 
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
@@ -331,6 +328,16 @@ namespace casual
             } // call
 
          } // service
+
+         namespace reverse
+         {
+
+            template<>
+            struct type_traits< service::name::lookup::Request> : detail::type< service::name::lookup::Reply> {};
+
+
+         } // reverse
+
       } // message
    } //common
 } // casual
