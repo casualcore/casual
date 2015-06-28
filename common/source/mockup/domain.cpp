@@ -106,7 +106,7 @@ namespace casual
                   return {};
                }
 
-               common::message::service::call::Reply reply;
+               auto reply = message::reverse::type( message);
                auto found = range::find( m_server, message.service.name);
 
                if( found)
@@ -114,9 +114,9 @@ namespace casual
                   reply = found->second;
                }
 
+               reply.correlation = message.correlation;
                reply.buffer.memory = message.buffer.memory;
                reply.buffer.type = message.buffer.type;
-               reply.correlation = message.correlation;
                reply.transaction.trid = message.trid;
                reply.descriptor = message.descriptor;
 
@@ -138,7 +138,7 @@ namespace casual
                reply_type reply;
 
                reply.correlation = message.correlation;
-               reply.process = common::mockup::ipc::transaction::manager::queue().server();
+               reply.process = common::mockup::ipc::transaction::manager::queue().process();
                reply.state = XA_OK;
                reply.trid = message.trid;
 
@@ -165,7 +165,7 @@ namespace casual
                   common::message::transaction::commit::Reply reply;
 
                   reply.correlation = message.correlation;
-                  reply.process = common::mockup::ipc::transaction::manager::queue().server();
+                  reply.process = common::mockup::ipc::transaction::manager::queue().process();
                   reply.state = XA_OK;
                   reply.trid = message.trid;
 
@@ -179,7 +179,7 @@ namespace casual
                reply_type reply;
 
                reply.correlation = message.correlation;
-               reply.process = common::mockup::ipc::transaction::manager::queue().server();
+               reply.process = common::mockup::ipc::transaction::manager::queue().process();
                reply.state = XA_OK;
                reply.trid = message.trid;
 

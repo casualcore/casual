@@ -150,7 +150,7 @@ namespace casual
          {
             mockup::ipc::Router route{ ipc::receive::id()};
             {
-               blocking::Writer send{ route.id()};
+               blocking::Writer send{ route.input()};
 
 
                {

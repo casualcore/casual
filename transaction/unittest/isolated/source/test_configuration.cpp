@@ -67,7 +67,7 @@ namespace casual
       common::mockup::ipc::Router router{ common::ipc::receive::id()};
 
       // prepare queues
-      local::prepareConfigurationResponse( router.id());
+      local::prepareConfigurationResponse( router.input());
 
 
       auto path = local::transactionLogPath();
@@ -88,7 +88,7 @@ namespace casual
       common::mockup::ipc::Router router{ common::ipc::receive::id()};
 
       // prepare queues
-      local::prepareConfigurationResponse( router.id());
+      local::prepareConfigurationResponse( router.input());
 
 
       auto path = local::transactionLogPath();

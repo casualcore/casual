@@ -455,6 +455,7 @@ namespace casual
 
             typedef basic_reader< policy::NoAction> Reader;
 
+            using Send = basic_send< policy::NoAction>;
 
             inline Reader reader( ipc::receive::Queue& ipc)
             {

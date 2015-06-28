@@ -143,12 +143,14 @@ namespace casual
 
                      std::string requested;
                      process::Handle process;
+                     long flags = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_type::marshal( archive);
                         archive & requested;
                         archive & process;
+                        archive & flags;
                      })
                   };
 
@@ -335,6 +337,11 @@ namespace casual
             template<>
             struct type_traits< service::name::lookup::Request> : detail::type< service::name::lookup::Reply> {};
 
+            template<>
+            struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};
+
+            template<>
+            struct type_traits< service::call::callee::Request> : detail::type<  service::call::Reply> {};
 
          } // reverse
 

@@ -270,20 +270,20 @@ namespace casual
                {
                public:
 
-                  Router( id_type destination, Worker::transform_type transform)
-                     : destination( destination)
+                  Router( id_type output, Worker::transform_type transform)
+                     : output( output)
                   {
                      //
                      // We use an ipc-queue that does not check signals
                      //
                      common::ipc::receive::Queue ipc;
-                     id = ipc.id();
+                     input = ipc.id();
 
-                     m_thread = std::thread{ implementation::Worker{}, std::move( ipc), destination, std::move( transform)};
+                     m_thread = std::thread{ implementation::Worker{}, std::move( ipc), output, std::move( transform)};
                   }
 
-                  Router( id_type destination)
-                     : Router( destination, nullptr)
+                  Router( id_type output)
+                     : Router( output, nullptr)
                   {
                   }
 
@@ -291,7 +291,7 @@ namespace casual
                   {
                      try
                      {
-                        common::queue::blocking::Writer send{ id};
+                        common::queue::blocking::Writer send{ input};
                         local::message::Disconnect message;
 
                         bool resend = true;
@@ -322,8 +322,8 @@ namespace casual
                      }
                   }
 
-                  id_type id;
-                  id_type destination;
+                  id_type input;
+                  id_type output;
                   std::thread m_thread;
 
                };
@@ -347,20 +347,19 @@ namespace casual
             Router::Router( Router&&) noexcept = default;
             Router& Router::operator = ( Router&&) noexcept = default;
 
-            id_type Router::id() const { return m_implementation->id;}
-
-            id_type Router::destination() const { return m_implementation->destination;}
+            id_type Router::input() const { return m_implementation->input;}
+            id_type Router::output() const { return m_implementation->output;}
 
 
 
             class Link::Implementation
             {
             public:
-               Implementation( id_type source, id_type destination)
-                 : source( source), destination( destination)
+               Implementation( id_type input, id_type output)
+                 : input( input), output( output)
                {
 
-                  m_thread = std::thread{ []( id_type source, id_type destination)
+                  m_thread = std::thread{ []( id_type input, id_type output)
                   {
                      std::deque< common::ipc::message::Transport> cache;
 
@@ -373,10 +372,10 @@ namespace casual
                            //
                            // We block
                            //
-                           common::ipc::message::receive( source, transport, 0);
+                           common::ipc::message::receive( input, transport, 0);
                            cache.push_back( transport);
                         }
-                        else if( common::ipc::message::receive( source, transport, common::ipc::message::Flags::cNoBlocking))
+                        else if( common::ipc::message::receive( input, transport, common::ipc::message::Flags::cNoBlocking))
                         {
                            cache.push_back( transport);
                         }
@@ -387,16 +386,16 @@ namespace casual
 
                         if( transport.message.type == local::message::Disconnect::message_type)
                         {
-                           common::ipc::message::send( destination, transport, common::ipc::message::Flags::cNoBlocking);
+                           common::ipc::message::send( output, transport, common::ipc::message::Flags::cNoBlocking);
                            return;
                         }
 
-                        if( ! cache.empty() && common::ipc::message::send( destination, cache.front(), common::ipc::message::Flags::cNoBlocking))
+                        if( ! cache.empty() && common::ipc::message::send( output, cache.front(), common::ipc::message::Flags::cNoBlocking))
                         {
                            cache.pop_front();
                         }
                      }
-                  }, source, destination};
+                  }, input, output};
                }
 
                ~Implementation()
@@ -412,7 +411,7 @@ namespace casual
                      {
                         try
                         {
-                           common::ipc::message::send( source, transport, 0);
+                           common::ipc::message::send( input, transport, 0);
                            resend = false;
                         }
                         catch( const exception::signal::Base&) {}
@@ -435,14 +434,14 @@ namespace casual
                   }
                }
 
-               id_type source;
-               id_type destination;
+               id_type input;
+               id_type output;
                std::thread m_thread;
 
             };
 
-            Link::Link( id_type source, id_type destination)
-            : m_implementation( source, destination)
+            Link::Link( id_type input, id_type output)
+               : m_implementation( input, output)
             {}
 
             Link::~Link() = default;
@@ -450,8 +449,8 @@ namespace casual
             Link::Link( Link&&) noexcept = default;
             Link& Link::operator = ( Link&&) noexcept = default;
 
-            id_type Link::source() const { return m_implementation->source;}
-            id_type Link::destination() const { return m_implementation->destination;}
+            id_type Link::input() const { return m_implementation->input;}
+            id_type Link::output() const { return m_implementation->output;}
 
 
 
@@ -461,13 +460,14 @@ namespace casual
 
             struct Instance::Implementation
             {
-               Implementation( platform::pid_type pid, transform_type transform) : pid( pid), router( receive.id(), std::move( transform))
+               Implementation( platform::pid_type pid, transform_type transform)
+                   : router( output.id(), std::move( transform)), process{ pid, router.input()}
                {
                }
 
-               platform::pid_type pid;
-               common::ipc::receive::Queue receive;
+               common::ipc::receive::Queue output;
                Router router;
+               common::process::Handle process;
             };
 
             Instance::Instance( platform::pid_type pid, transform_type transform) : m_implementation( pid, std::move( transform)) {}
@@ -482,30 +482,25 @@ namespace casual
             Instance::Instance( Instance&&) noexcept = default;
             Instance& Instance::operator = ( Instance&&) noexcept = default;
 
-            platform::pid_type Instance::pid() const
+
+            const common::process::Handle& Instance::process() const
             {
-               return m_implementation->pid;
+               return m_implementation->process;
             }
 
-            id_type Instance::id() const
+            id_type Instance::input() const
             {
-               return m_implementation->router.id();
+               return m_implementation->router.input();
             }
 
-            common::process::Handle Instance::server() const
+            common::ipc::receive::Queue& Instance::output()
             {
-               return { pid(), id()};
-
-            }
-
-            common::ipc::receive::Queue& Instance::receive()
-            {
-               return m_implementation->receive;
+               return m_implementation->output;
             }
 
             void Instance::clear()
             {
-               common::queue::blocking::Writer send{ id()};
+               common::queue::blocking::Writer send{ input()};
                local::message::Clear message;
                send( message);
 
@@ -516,7 +511,7 @@ namespace casual
                   ++count;
                   process::sleep( std::chrono::milliseconds( 10));
                }
-               while( ! m_implementation->receive( common::ipc::receive::Queue::cNoBlocking).empty());
+               while( ! m_implementation->output( common::ipc::receive::Queue::cNoBlocking).empty());
 
 
                log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;
@@ -555,10 +550,7 @@ namespace casual
                } // local
 
 
-               platform::pid_type pid()
-               {
-                  return queue().pid();
-               }
+
 
                ipc::Instance& queue()
                {
@@ -566,9 +558,14 @@ namespace casual
                   return singleton;
                }
 
+               platform::pid_type pid()
+               {
+                  return queue().process().pid;
+               }
+
                id_type id()
                {
-                  return queue().id();
+                  return queue().input();
                }
 
             } // broker
@@ -579,8 +576,9 @@ namespace casual
                {
                   platform::pid_type pid()
                   {
-                     return queue().pid();
+                     return queue().process().pid;
                   }
+
 
                   ipc::Instance& queue()
                   {
@@ -590,7 +588,7 @@ namespace casual
 
                   id_type id()
                   {
-                     return queue().id();
+                     return queue().input();
                   }
 
                } // manager

@@ -197,7 +197,25 @@ namespace casual
 
          void boot( State& state)
          {
+
             auto bootOrder = state.bootOrder();
+
+            //
+            // Make sure we boot our forward-cache
+            //
+            {
+               state::Server forward;
+               forward.configuredInstances = 1;
+               forward.memberships.push_back( state.casual_group_id);
+               forward.note = "forward service calls, and act as a load cache";
+               forward.path = "casual-forward-cache";
+               forward.alias = forward.path;
+
+               state.servers.emplace( forward.id, forward);
+               state.forward.pid = common::process::spawn( forward.path, {}, state.standard.environment);
+
+               state.addInstances( forward.id, { state.forward.pid});
+            }
 
             range::for_each( bootOrder, local::Boot{ state});
          }
@@ -488,6 +506,19 @@ namespace casual
                   writer( reply);
 
                   service.lookedup++;
+               }
+               else if( common::flag< TPNOREPLY>( message.flags))
+               {
+                  //
+                  // The intention is "send and forget", we use our forward-cache for this
+                  //
+                  auto reply = message::reverse::type( message);
+                  reply.service = service.information;
+                  reply.process = m_state.forward;
+
+                  queue::blocking::Writer writer( message.process.queue, m_state);
+                  writer( reply);
+
                }
                else
                {

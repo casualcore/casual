@@ -48,14 +48,14 @@ namespace casual
                      createService( "service_user_code_1", 0, -1)
                   })},
                   broker{ ipc::receive::id(), mockup::create::broker({
-                     mockup::create::lookup::reply( "service_1", server.id()),
-                     mockup::create::lookup::reply( "timeout_2", server.id(), std::chrono::milliseconds{ 2}),
-                     mockup::create::lookup::reply( "service_user_code_1", server.id()),
+                     mockup::create::lookup::reply( "service_1", server.input()),
+                     mockup::create::lookup::reply( "timeout_2", server.input(), std::chrono::milliseconds{ 2}),
+                     mockup::create::lookup::reply( "service_user_code_1", server.input()),
                   })},
-                  link_broker_reply{ mockup::ipc::broker::queue().receive().id(), broker.id()},
+                  link_broker_reply{ mockup::ipc::broker::queue().output().id(), broker.input()},
                   tm{ ipc::receive::id(), mockup::create::transaction::manager()},
                   // link the global mockup-transaction-manager-queue's output to 'our' tm
-                  link_tm_reply{ mockup::ipc::transaction::manager::queue().receive().id(), tm.id()}
+                  link_tm_reply{ mockup::ipc::transaction::manager::queue().output().id(), tm.input()}
                {
 
                }

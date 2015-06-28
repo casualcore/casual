@@ -178,14 +178,14 @@ namespace casual
          // Prepare "broker response"
          //
          {
-            local::broker::prepare( router.id());
+            local::broker::prepare( router.input());
          }
 
          server::handle::Call callHandler( local::arguments());
 
          message::server::connect::Request message;
 
-         queue::blocking::Reader read( mockup::ipc::broker::queue().receive());
+         queue::blocking::Reader read( mockup::ipc::broker::queue().output());
          read( message);
 
          EXPECT_TRUE( message.process == process::handle());
@@ -208,7 +208,7 @@ namespace casual
          mockup::ipc::Instance caller( 10);
 
          {
-            local::broker::prepare( router.id());
+            local::broker::prepare( router.input());
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
@@ -216,7 +216,7 @@ namespace casual
          }
 
 
-         queue::blocking::Reader reader( caller.receive());
+         queue::blocking::Reader reader( caller.output());
          message::service::call::Reply message;
 
          reader( message);
@@ -236,14 +236,14 @@ namespace casual
          mockup::ipc::Instance caller( 10);
 
          {
-            local::broker::prepare( router.id());
+            local::broker::prepare( router.input());
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
             callHandler( message);
          }
 
-         queue::blocking::Reader broker( mockup::ipc::broker::queue().receive());
+         queue::blocking::Reader broker( mockup::ipc::broker::queue().output());
          message::service::call::ACK message;
 
          broker( message);
@@ -267,7 +267,7 @@ namespace casual
          mockup::ipc::Instance monitor( 42);
 
          {
-            local::broker::prepare( router.id());
+            local::broker::prepare( router.input());
 
             server::handle::Call callHandler( local::arguments());
 
@@ -276,7 +276,7 @@ namespace casual
             callHandler( message);
          }
 
-         queue::blocking::Reader reader( monitor.receive());
+         queue::blocking::Reader reader( monitor.output());
 
          message::traffic::Event message;
          reader( message);
@@ -301,11 +301,11 @@ namespace casual
                   :
                   broker{ ipc::receive::id(), mockup::create::broker()},
                   // link the global mockup-broker-queue's output to 'our' broker
-                  link_broker_reply{ mockup::ipc::broker::queue().receive().id(), broker.id()},
+                  link_broker_reply{ mockup::ipc::broker::queue().output().id(), broker.input()},
 
                   tm{ ipc::receive::id(), mockup::create::transaction::manager()},
                   // link the global mockup-transaction-manager-queue's output to 'our' tm
-                  link_tm_reply{ mockup::ipc::transaction::manager::queue().receive().id(), tm.id()}
+                  link_tm_reply{ mockup::ipc::transaction::manager::queue().output().id(), tm.input()}
                {
 
                }
@@ -399,7 +399,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCERR) << "error: " << reply.error << " - "<< common::error::xatmi::error( reply.error);
       }
@@ -416,7 +416,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
       }
@@ -432,7 +432,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
       }
@@ -449,7 +449,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
       }
@@ -466,7 +466,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
       }
@@ -482,7 +482,7 @@ namespace casual
          auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS", local::transaction::ongoing());
          server( message);
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -501,7 +501,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -520,7 +520,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -539,7 +539,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -557,7 +557,7 @@ namespace casual
          auto message = local::call::request( caller.id(), "test_service_none_TPFAIL");
          server( message);
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
@@ -574,7 +574,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
       }
@@ -591,7 +591,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
@@ -608,7 +608,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
@@ -624,7 +624,7 @@ namespace casual
          auto message = local::call::request( caller.id(), "test_service_none_TPFAIL", local::transaction::ongoing());
          server( message);
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -643,7 +643,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -660,7 +660,7 @@ namespace casual
          auto message = local::call::request( caller.id(), "test_service_join_TPFAIL", local::transaction::ongoing());
          server( message);
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
@@ -678,7 +678,7 @@ namespace casual
          server( message);
 
 
-         auto reply = local::call::reply( caller.receive(), message.correlation);
+         auto reply = local::call::reply( caller.output(), message.correlation);
 
          EXPECT_TRUE( reply.error == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());

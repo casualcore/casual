@@ -49,13 +49,13 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( instance.id());
+            queue::blocking::Writer write( instance.input());
 
             write( request);
          }
 
          {
-            queue::blocking::Reader read( instance.receive());
+            queue::blocking::Reader read( instance.output());
             message::service::name::lookup::Request request;
             read( request);
 
@@ -79,20 +79,20 @@ namespace casual
          //
          // Link "output" of source to "input" of destination
          //
-         mockup::ipc::Link link{ source.receive().id(), destination.id()};
+         mockup::ipc::Link link{ source.output().id(), destination.input()};
 
          {
             message::service::name::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( source.id());
+            queue::blocking::Writer write( source.input());
 
             write( request);
          }
 
          {
-            queue::blocking::Reader read( destination.receive());
+            queue::blocking::Reader read( destination.output());
             message::service::name::lookup::Request request;
             read( request);
 
@@ -119,7 +119,7 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( instance.id());
+            queue::blocking::Writer write( instance.input());
 
             const std::string temp = "service_";
 
@@ -133,7 +133,7 @@ namespace casual
          {
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
-            queue::blocking::Reader read( instance.receive());
+            queue::blocking::Reader read( instance.output());
             message::service::name::lookup::Request request;
 
             const std::string temp = "service_";
@@ -162,7 +162,7 @@ namespace casual
          //
          // Link "output" of source to "input" of destination
          //
-         mockup::ipc::Link link{ source.receive().id(), destination.id()};
+         mockup::ipc::Link link{ source.output().id(), destination.input()};
 
 
          {
@@ -170,7 +170,7 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( source.id());
+            queue::blocking::Writer write( source.input());
 
             const std::string temp = "service_";
 
@@ -184,7 +184,7 @@ namespace casual
          {
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
-            queue::blocking::Reader read( destination.receive());
+            queue::blocking::Reader read( destination.output());
             message::service::name::lookup::Request request;
 
             const std::string temp = "service_";
@@ -217,7 +217,7 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( router.id());
+            queue::blocking::Writer write( router.input());
             write( request);
          }
 
@@ -250,7 +250,7 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( router.id());
+            queue::blocking::Writer write( router.input());
 
             for( auto count = 0; count < 200; ++count)
             {
@@ -258,7 +258,7 @@ namespace casual
             }
 
 
-            common::log::debug << "wrote 200 messages to " << router.id() << std::endl;
+            common::log::debug << "wrote 200 messages to " << router.input() << std::endl;
          }
 
          {

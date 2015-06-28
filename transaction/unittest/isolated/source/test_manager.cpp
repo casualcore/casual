@@ -44,12 +44,12 @@ namespace casual
 
                      state::resource::Proxy::Instance instance;
                      instance.id = proxy.id;
-                     instance.process = mockup.server();
+                     instance.process = mockup.process();
                      instance.state = state::resource::Proxy::Instance::State::started;
 
                      proxy.instances.push_back( std::move( instance));
 
-                     mockups.emplace( mockup.pid(), std::move( mockup));
+                     mockups.emplace( mockup.process().pid, std::move( mockup));
                   }
                   resources.push_back( std::move( proxy));
                }
@@ -156,16 +156,15 @@ namespace casual
          auto& rm = state.get( 100);
 
          common::message::transaction::resource::connect::Reply reply;
-         reply.process.queue = rm.id();
-         reply.process.pid = rm.pid();
+         reply.process = rm.process();
          reply.resource = 1;
          reply.state = XA_OK;
 
-         common::queue::blocking::Writer( router.id())( reply);
+         common::queue::blocking::Writer( router.input())( reply);
 
          local::handleDispatch( state);
 
-         common::queue::non_blocking::Reader broker( common::mockup::ipc::broker::queue().receive());
+         common::queue::non_blocking::Reader broker( common::mockup::ipc::broker::queue().output());
          common::message::transaction::manager::Ready ready;
          EXPECT_FALSE( broker( ready));
       }
@@ -179,7 +178,7 @@ namespace casual
          // just a cache to keep queue writable
          common::mockup::ipc::Router router{ common::ipc::receive::id()};
 
-         common::queue::blocking::Writer send( router.id());
+         common::queue::blocking::Writer send( router.input());
 
          auto state = local::state();
 
@@ -187,8 +186,7 @@ namespace casual
             auto& rm = state.get( 200);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.process.queue = rm.id();
-            reply.process.pid = rm.pid();
+            reply.process = rm.process();
             reply.resource = 2;
             reply.state = XA_OK;
             send( reply);
@@ -198,8 +196,7 @@ namespace casual
             auto& rm = state.get( 201);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.process.queue = rm.id();
-            reply.process.pid = rm.pid();
+            reply.process = rm.process();
             reply.resource = 2;
             reply.state = XA_OK;
             send( reply);
@@ -208,7 +205,7 @@ namespace casual
 
          local::handleDispatch( state);
 
-         common::queue::non_blocking::Reader broker( common::mockup::ipc::broker::queue().receive());
+         common::queue::non_blocking::Reader broker( common::mockup::ipc::broker::queue().output());
          common::message::transaction::manager::Ready ready;
          EXPECT_FALSE( broker( ready));
 
@@ -223,7 +220,7 @@ namespace casual
          // just a cache to keep queue writable
          common::mockup::ipc::Router router{ common::ipc::receive::id()};
 
-         common::queue::blocking::Writer send( router.id());
+         common::queue::blocking::Writer send( router.input());
 
 
          auto state = local::state();
@@ -232,8 +229,7 @@ namespace casual
             auto& rm = state.get( 100);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.process.queue = rm.id();
-            reply.process.pid = rm.pid();
+            reply.process = rm.process();
             reply.resource = 1;
             reply.state = XA_OK;
             send( reply);
@@ -243,8 +239,7 @@ namespace casual
             auto& rm = state.get( 200);
 
             common::message::transaction::resource::connect::Reply reply;
-            reply.process.queue = rm.id();
-            reply.process.pid = rm.pid();
+            reply.process = rm.process();
             reply.resource = 2;
             reply.state = XA_OK;
             send( reply);
@@ -255,7 +250,7 @@ namespace casual
          local::handleDispatch( state);
 
          // We expect broker reply
-         common::queue::blocking::Reader broker( common::mockup::ipc::broker::queue().receive());
+         common::queue::blocking::Reader broker( common::mockup::ipc::broker::queue().output());
          common::message::transaction::manager::Ready ready;
          broker( ready);
          EXPECT_TRUE( ready.success);

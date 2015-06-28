@@ -58,6 +58,21 @@ target = LinkExecutable( 'bin/casual-broker',
    #casual-broker-admin-vo )
 
 install_bins.append( target)
+
+
+forward_objs = [
+        Compile( 'source/forward/cache.cpp'),   
+    ]
+
+target = LinkExecutable( 'bin/casual-forward-cache',
+    [
+        Compile( 'source/forward/main.cpp')
+     ] + forward_objs,
+    [
+      'casual-common'
+     ])
+
+install_bins.append( target)
 	
 	
 #
@@ -76,13 +91,14 @@ Install( target,'$(CASUAL_HOME)/internal/bin')
 
 test_casual_broker_isolated = [
 #    Compile( 'unittest/isolated/source/test_broker.cpp', 'unittest/isolated/obj/test_broker.o'),
-    Compile( 'unittest/isolated/source/test_broker_confguration.cpp', 'unittest/isolated/obj/test_broker_confguration.o'),
+    Compile( 'unittest/isolated/source/test_broker_confguration.cpp'),
 #    Compile( 'unittest/isolated/source/test_broker_transformation.cpp', 'unittest/isolated/obj/test_broker_transformation.o'),
+    Compile( 'unittest/isolated/source/test_forward_cache.cpp'),
 ]
  
  
 LinkUnittest( 'bin/test-casual-broker-isolated',
-   test_casual_broker_isolated,
+   test_casual_broker_isolated + forward_objs,
     [
      logic_archive,
      'casual-common', 
@@ -91,6 +107,10 @@ LinkUnittest( 'bin/test-casual-broker-isolated',
      'casual-mockup-unittest-environment', 
      'casual-mockup',
      ])
+
+
+
+
 
 	
 #

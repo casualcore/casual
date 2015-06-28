@@ -37,26 +37,30 @@ namespace casual
             struct Router
             {
                //!
-               //! @param destination where to send messages
+               //! @param output where to send messages
                //! @param transform invoked before send, hence one can transform
                //!   complete messages (mostly to transform regest->reply and keep correlation)
                //!
-               Router( id_type destination, transform_type transform);
-               Router( id_type destination);
+               Router( id_type output, transform_type transform);
+               Router( id_type output);
 
                ~Router();
 
-               //template< typename D, typename... Args>
-               //Router( D&& destination, Args&&... args) : Router( destination.id(), std::forward< Args>( args)...) {}
 
                Router( Router&&) noexcept;
                Router& operator = ( Router&&) noexcept;
 
 
 
+               //!
+               //! input-queue is owned by the Router
+               //!
+               id_type input() const;
 
-               id_type id() const;
-               id_type destination() const;
+               //!
+               //! output-queue is NOT owned by the router
+               //!
+               id_type output() const;
 
             private:
                class Implementation;
@@ -66,19 +70,21 @@ namespace casual
             //!
             //! Links one queue to another.
             //!
-            //! Reads transport-messages from source and writes them to
-            //! destination. Caches transport if we can't write.
+            //! Reads transport-messages from input and writes them to
+            //! output. Caches transport if we can't write.
+            //!
+            //! neither of the input and output is owned by an instance of Link
             //!
             struct Link
             {
-               Link( id_type source, id_type destination);
+               Link( id_type input, id_type output);
                ~Link();
 
                Link( Link&&) noexcept;
                Link& operator = ( Link&&) noexcept;
 
-               id_type source() const;
-               id_type destination() const;
+               id_type input() const;
+               id_type output() const;
 
             private:
                class Implementation;
@@ -92,12 +98,15 @@ namespace casual
             //! Acts as an instance.
             //!
             //! In a separate thread:
-            //!  - consumes from ipc-queue denoted by @p id()
-            //!  - writes to ipc-queue denoted by @p receive()
+            //!  - consumes from ipc-queue denoted by @p input()
+            //!  - apply transformation (if supplied)
+            //!  - writes to ipc-queue denoted by @p output()
             //!
-            //! The source queue @p id() will always be writable
+            //! The source queue @p input() will always be writable
             //!
-            //! messages can be read from @p receive()
+            //! input- and output-queue is owned by an instance of Instance
+            //!
+            //! messages can be read from @p output(), or forward to another queue via Link
             //!
             struct Instance
             {
@@ -114,13 +123,18 @@ namespace casual
                Instance( Instance&&) noexcept;
                Instance& operator = ( Instance&&) noexcept;
 
-               platform::pid_type pid() const;
 
-               id_type id() const;
+               const common::process::Handle& process() const;
 
-               common::process::Handle server() const;
 
-               common::ipc::receive::Queue& receive();
+               id_type input() const;
+               common::ipc::receive::Queue& output();
+
+
+               //!
+               //! To enable the instance to act as a regular queue, non intrusive
+               //!
+               id_type id() const { return input();}
 
                //!
                //! consumes and discard all messages on @p receive()

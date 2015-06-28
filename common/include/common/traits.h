@@ -32,12 +32,6 @@ namespace casual
       {
 
 
-         template<typename T>
-         struct function : public function< decltype( &T::operator())>
-         {
-
-         };
-
 
          namespace detail
          {
@@ -63,6 +57,11 @@ namespace casual
 
          }
 
+         template<typename T>
+         struct function : public function< decltype( &T::operator())>
+         {
+
+         };
 
          //!
          //! const functor specialization

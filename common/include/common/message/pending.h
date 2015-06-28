@@ -26,6 +26,7 @@ namespace casual
             struct Message
             {
                using targets_type = std::vector< platform::queue_id_type>;
+               using target_type = platform::queue_id_type;
 
                enum class Targets
                {
@@ -41,7 +42,13 @@ namespace casual
 
                template< typename M>
                Message( M&& message, targets_type targets)
-                  : Message( std::move( message), std::move( targets), Targets::all)
+                  : Message( std::forward< M>( message), std::move( targets), Targets::all)
+               {
+               }
+
+               template< typename M>
+               Message( M&& message, target_type target)
+                  : Message( std::forward< M>( message), { target}, Targets::first)
                {
                }
 

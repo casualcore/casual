@@ -121,12 +121,14 @@ namespace casual
                template< typename H, typename... Args>
                static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
                {
-                  assert( result.count( H::message_type::message_type) == 0);
+                  using handle_type = handle_holder< typename std::decay< H>::type>;
 
-                  std::unique_ptr< base_handler> holder{ new handle_holder< typename std::decay< H>::type>( std::forward< H>( handler))};
+                  assert( result.count( handle_type::message_type::message_type) == 0);
+
+                  std::unique_ptr< base_handler> holder{ new handle_type( std::forward< H>( handler))};
 
                   result.emplace(
-                        H::message_type::message_type,
+                        handle_type::message_type::message_type,
                         std::move( holder));
 
                   assign( result, std::forward< Args>( handlers)...);

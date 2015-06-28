@@ -254,6 +254,8 @@ namespace casual
 
          common::platform::queue_id_type transaction_manager = 0;
 
+         common::process::Handle forward;
+
 
          state::Group& getGroup( state::Group::id_type id);
 
