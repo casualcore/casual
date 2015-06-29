@@ -47,6 +47,16 @@ namespace casual
                      return result;
                   }
 
+                  std::vector< std::string> environment( const config::Environment& environment)
+                  {
+                     std::vector< std::string> result;
+                     for( auto& variable : config::environment::fetch( environment))
+                     {
+                        result.push_back( variable.key + "=" + variable.value);
+                     }
+                     return result;
+                  }
+
                   template< typename R, typename V>
                   void executable( R& result, const V& value, const std::vector< state::Group>& groups)
                   {
@@ -55,6 +65,8 @@ namespace casual
                      result.configuredInstances = std::stoul( value.instances);
                      result.note = value.note;
                      result.path = value.path;
+
+                     result.environment.variables = local::environment( value.environment);
 
                      result.memberships = local::membership( value.memberships, groups);
                   }
@@ -235,6 +247,7 @@ namespace casual
                }
 
                result.standard.service = Service{}( domain.casual_default.service);
+               result.standard.environment = local::environment( domain.casual_default.environment);
 
                return result;
             }
@@ -333,7 +346,7 @@ namespace casual
                   common::message::transaction::client::connect::Reply reply;
 
                   reply.domain = common::environment::domain::name();
-                  reply.transactionManagerQueue = state.transactionManagerQueue;
+                  reply.transaction_manager = state.transaction_manager;
 
                   try
                   {
@@ -345,8 +358,8 @@ namespace casual
 
                         common::range::transform(
                            group.resources,
-                           reply.resourceManagers,
-                           transaction::Resource());
+                           reply.resources,
+                           transaction::Resource{});
                      }
 
                   }

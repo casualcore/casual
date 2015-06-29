@@ -40,31 +40,36 @@ namespace casual
          //!
          void shutdown( State& state);
 
+         void send_shutdown( State& state);
 
 
-         //!
-         //! Monitor Connect
-         //!
-         struct MonitorConnect: public Base
+
+         namespace monitor
          {
-            typedef common::message::monitor::Connect message_type;
+            //!
+            //! Monitor Connect
+            //!
+            struct Connect: public Base
+            {
+               typedef common::message::traffic::monitor::Connect message_type;
 
-            using Base::Base;
+               using Base::Base;
 
-            void operator () ( message_type& message);
-         };
+               void operator () ( message_type& message);
+            };
 
-         //!
-         //! Monitor Disconnect
-         //!
-         struct MonitorDisconnect: public Base
-         {
-            typedef common::message::monitor::Disconnect message_type;
+            struct Disconnect: public Base
+            {
+               typedef common::message::traffic::monitor::Disconnect message_type;
 
-            using Base::Base;
+               using Base::Base;
 
-            void operator () ( message_type& message);
-         };
+               void operator () ( message_type& message);
+            };
+
+         } // monitor
+
+
 
          namespace transaction
          {
@@ -212,7 +217,7 @@ namespace casual
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 
-            void statistics( common::platform::queue_id_type id, common::message::monitor::Notify& message);
+            void statistics( common::platform::queue_id_type id, common::message::traffic::monitor::Notify& message);
 
          private:
 

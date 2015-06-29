@@ -5,8 +5,11 @@
 //!     Author: Lazan
 //!
 
-#ifndef DOMAIN_H_
-#define DOMAIN_H_
+#ifndef CONFIG_DOMAIN_H_
+#define CONFIG_DOMAIN_H_
+
+
+#include "config/environment.h"
 
 
 #include "sf/namevaluepair.h"
@@ -20,12 +23,8 @@ namespace casual
 {
    namespace config
    {
-
       namespace domain
       {
-
-
-
          struct Executable
          {
             std::string note;
@@ -34,6 +33,9 @@ namespace casual
             std::string instances;
             std::vector< std::string> arguments;
             std::vector< std::string> memberships;
+
+            Environment environment;
+
 
             template< typename A>
             void serialize( A& archive)
@@ -44,6 +46,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( arguments);
                archive & CASUAL_MAKE_NVP( memberships);
+               archive & CASUAL_MAKE_NVP( environment);
             }
          };
 
@@ -75,7 +78,6 @@ namespace casual
                Executable::serialize( archive);
                archive & CASUAL_MAKE_NVP( restriction);
             }
-
          };
 
 
@@ -139,19 +141,19 @@ namespace casual
             Default()
             {
                server.instances = std::to_string( 1);
-               service.timeout = std::to_string( 3600);
-               service.transaction = "auto";
+               service.timeout = "1h";
             }
 
-            std::string path;
+            Environment environment;
             Server server;
             Executable executable;
             Service service;
 
+
             template< typename A>
             void serialize( A& archive)
             {
-               archive & CASUAL_MAKE_NVP( path);
+               archive & CASUAL_MAKE_NVP( environment);
                archive & CASUAL_MAKE_NVP( server);
                archive & CASUAL_MAKE_NVP( executable);
                archive & CASUAL_MAKE_NVP( service);

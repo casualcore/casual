@@ -23,6 +23,7 @@ intall_libs = []
 lib_configuration = LinkLibrary( 'bin/casual-configuration',
     [
         Compile( 'source/file.cpp'),
+        Compile( 'source/environment.cpp'),
         Compile( 'source/domain.cpp'),
         Compile( 'source/xa_switch.cpp'),
         Compile( 'source/serverdefinition.cpp'),
@@ -50,6 +51,6 @@ LinkUnittest( 'bin/test-casual-configuration',
 # Install
 #
 Install( intall_libs, '$(CASUAL_HOME)/lib')
-Install( 'resources.yaml', '$(CASUAL_HOME)/configuration')
+Install( 'resources.yaml', '$(CASUAL_HOME)/configuration/example')
 
 

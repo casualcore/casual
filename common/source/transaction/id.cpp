@@ -45,7 +45,8 @@ std::ostream& operator << ( std::ostream& out, const XID& xid)
    if( out && ! casual::common::transaction::null( xid))
    {
       out << casual::common::transcode::hex::encode( xid.data, xid.data + xid.gtrid_length) << ':'
-          << casual::common::transcode::hex::encode( xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length);
+          << casual::common::transcode::hex::encode( xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length)
+          << ':' << xid.formatID;
    }
    return out;
 }
@@ -85,9 +86,8 @@ namespace casual
 
          ID::ID( process::Handle owner) : m_owner( std::move( owner))
          {
+            std::memset( &xid, 0, sizeof( XID));
             xid.formatID = Format::cNull;
-            xid.gtrid_length = 0;
-            xid.bqual_length = 0;
          }
 
          ID::ID( const XID& xid)

@@ -18,6 +18,13 @@ namespace casual
    {
       namespace message
       {
+
+         std::ostream& operator << ( std::ostream& out, const Service& value)
+         {
+            return out << "{ name: " << value.name << ", type: " << value.type << ", timeout: "
+               << value.timeout.count() << ", mode: " << value.transaction << ", traffic: " << range::make( value.traffic_monitors) << '}';
+         }
+
          namespace server
          {
 

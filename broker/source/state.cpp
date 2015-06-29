@@ -214,7 +214,8 @@ namespace casual
 
             if( current)
             {
-               this->services.erase( current.first);
+               current->second.remove( instance);
+               //this->services.erase( current.first);
             }
          }
       }

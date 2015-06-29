@@ -2,6 +2,7 @@ from casual.make.directive import *
 
 
 IncludePaths([
+    '.', # proposal
 	'include',
 	'../common/include',
 	'../serviceframework/include',
@@ -24,23 +25,23 @@ install_lib = []
 install_bin = []
 
 
-lib_vo = LinkLibrary( 'bin/casual-monitor-vo',
-    [Compile( 'source/monitorvo.cpp')],
+lib_vo = LinkLibrary( 'bin/casual-traffic-monitor-vo',
+    [Compile( 'source/monitor/serviceentryvo.cpp')],
     ['casual-common',
     'casual-sf'])
 
 install_lib.append( lib_vo)
 
-archive_monitor_db = LinkArchive( 'bin/casual-monitor-db',
+archive_monitor_db = LinkArchive( 'bin/casual-traffic-monitor-db',
 	[
-		Compile( 'source/monitordb.cpp'),
+		Compile( 'source/monitor/database.cpp'),
 	])
 
 
-target = LinkExecutable( 'bin/casual-monitor',
+target = LinkExecutable( 'bin/casual-traffic-monitor',
 	[
-		Compile( 'source/monitor.cpp'),
-		Compile( 'source/monitor_main.cpp'),
+	    Compile( 'source/monitor/handler.cpp'),
+		Compile( 'source/monitor/main.cpp'),
 	],
 	[
 	archive_monitor_db,
@@ -50,11 +51,23 @@ target = LinkExecutable( 'bin/casual-monitor',
 
 install_bin.append( target)
 
+target = LinkExecutable( 'bin/casual-traffic-log',
+	[
+	    Compile( 'source/log/handler.cpp'),
+		Compile( 'source/log/file.cpp'),
+		Compile( 'source/log/main.cpp'),
+	],
+	[
+	'casual-common'] )
 
-target = LinkServer('bin/casual-monitor-request-server',
+install_bin.append( target)
+
+
+
+target = LinkServer('bin/casual-traffic-monitor-request-server',
     [
-	   Compile( 'source/statisticserver.cpp'),
-	   Compile( 'source/statisticimplementation.cpp'),			
+	   Compile( 'source/monitor/request_server.cpp'),
+	   Compile( 'source/monitor/request_server_implementation.cpp'),			
 	],
     [
 	archive_monitor_db,
@@ -84,5 +97,25 @@ LinkUnittest( 'bin/test-casual-monitor',
 #
 Install( install_lib,'$(CASUAL_HOME)/lib')
 Install( install_bin,'$(CASUAL_HOME)/bin')
+
+#
+# TODO proposal
+#
+receiver_obj = Compile( 'proposal/receiver.cpp')
+
+target = LinkExecutable( 'bin/proposal-traffic-log',
+	[
+	    Compile( 'proposal/log.cpp'),
+	    receiver_obj
+	],
+	[
+	'casual-common'] )
+
+
+
+
+
+
+
 
 

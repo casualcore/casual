@@ -143,7 +143,7 @@ namespace casual
                   //
                   // Call tpsrvinit
                   //
-                  if( arguments.server_init( arguments.argc, arguments.argv) != 0)
+                  if( arguments.server_init( arguments.argc, arguments.argv) == -1)
                   {
                      throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
@@ -166,11 +166,6 @@ namespace casual
                         // Call tpsrvdone
                         //
                         state.server_done();
-
-                        //
-                        // If there are open resources, close'em
-                        //
-                        transaction::Context::instance().close();
                      }
                      catch( ...)
                      {
@@ -188,6 +183,8 @@ namespace casual
                   call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
+
+                  log::internal::debug << "message: " << message << '\n';
 
                   try
                   {
@@ -320,6 +317,8 @@ namespace casual
                      //
                      // User service returned, not by tpreturn.
                      //
+                     m_policy.transaction( reply, TPESVCERR);
+
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
                   }
 
@@ -361,14 +360,18 @@ namespace casual
                   // Take end time
                   //
                   scope::Execute execute_monitor{ [&](){
-                     if( message.service.monitor_queue != 0)
+                     if( ! message.service.traffic_monitors.empty())
                      {
                         state.monitor.end = platform::clock_type::now();
                         state.monitor.callId = message.execution;
                         state.monitor.service = message.service.name;
                         state.monitor.parentService = message.caller;
+                        state.monitor.pid = process::handle().pid;
 
-                        m_policy.statistics( message.service.monitor_queue, state.monitor);
+                        for( auto& queue : message.service.traffic_monitors)
+                        {
+                           m_policy.statistics( queue, state.monitor);
+                        }
                      }
                   }};
 
@@ -470,14 +473,13 @@ namespace casual
 
                   void ack( const message::service::call::callee::Request& message);
 
-                  void statistics( platform::queue_id_type id, message::monitor::Notify& message);
+                  void statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message);
 
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
 
                private:
                   typedef queue::blocking::Writer reply_writer;
-                  typedef queue::non_blocking::Writer monitor_writer;
                   typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
                   typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
 
@@ -522,7 +524,7 @@ namespace casual
                   }
 
 
-                  void statistics( platform::queue_id_type id, message::monitor::Notify& message)
+                  void statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
                   {
                      // no-op
                   }

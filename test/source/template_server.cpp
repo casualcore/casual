@@ -200,6 +200,13 @@ void casual_test3( TPSVCINFO *serviceContext)
 }
 
 
+void casual_echo( TPSVCINFO *info)
+{
+   tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+}
+
+
+
 int tpsvrinit(int argc, char **argv)
 {
    casual::common::log::debug << "USER tpsvrinit called" << std::endl;

@@ -20,6 +20,7 @@ LibraryPaths( [
         '../configuration/bin',
         '../serviceframework/bin',
         '../common/bin',
+        '../buffer/bin',
         '../xatmi/bin',
         '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ]);
@@ -176,13 +177,13 @@ forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
     [
         Compile( 'source/forward/service.cpp'),
     ],
-    [ forward_common, queue_api, common, 'casual-xatmi', 'casual-common'])
+    [ forward_common, queue_api_rm, rm, common, 'casual-xatmi', 'casual-common', 'casual-buffer'])
 
 forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     [
         Compile( 'source/forward/queue.cpp'),
     ],
-    [ forward_common, queue_api, common, 'casual-xatmi', 'casual-common'])
+    [ forward_common, queue_api_rm, rm, common, 'casual-xatmi', 'casual-common', 'casual-buffer'])
 
 install_bin.append( forward_service);
 install_bin.append( forward_queue);
@@ -216,6 +217,7 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
      Compile( 'unittest/isolated/source/test_group_database.cpp'),
      Compile( 'unittest/isolated/source/test_transform.cpp'),
      Compile( 'unittest/isolated/source/test_broker_handle.cpp'),
+     Compile( 'unittest/isolated/source/test_group_pending.cpp'),
     ],
     [
      group_archive,

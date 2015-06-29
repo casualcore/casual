@@ -128,7 +128,7 @@ namespace casual
                   {
                      message::transaction::client::connect::Reply reply;
                      reply.domain = "unittest-domain";
-                     reply.transactionManagerQueue = mockup::ipc::transaction::manager::queue().id();
+                     reply.transaction_manager = mockup::ipc::transaction::manager::queue().id();
                      send( reply);
                   }
 
@@ -272,13 +272,13 @@ namespace casual
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            message.service.monitor_queue = monitor.id();
+            message.service.traffic_monitors.push_back(  monitor.id());
             callHandler( message);
          }
 
          queue::blocking::Reader reader( monitor.receive());
 
-         message::monitor::Notify message;
+         message::traffic::monitor::Notify message;
          reader( message);
          EXPECT_TRUE( message.service == "test_service");
 

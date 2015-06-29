@@ -50,6 +50,7 @@ namespace casual
 
 
             int setCommitReturn( COMMIT_RETURN value);
+            COMMIT_RETURN get_commit_return();
             int setTransactionControl(TRANSACTION_CONTROL control);
             void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
             bool info( TXINFO* info);

@@ -131,7 +131,11 @@ namespace casual
                   {
                      auto& buffer = m_pool.get( handle);
 
-                     return { buffer.payload, buffer.size( user_size)};
+                     payload::Send result{ buffer.payload, buffer.size( user_size)};
+
+                     log::internal::buffer << "pool::get - buffer: " << result << std::endl;
+
+                     return result;
                   }
 
                   Payload release( platform::const_raw_buffer_type handle) override
@@ -142,6 +146,8 @@ namespace casual
                   Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
                   {
                      auto buffer = m_pool.release( handle);
+
+                     log::internal::buffer << "pool::release - payload: " << buffer.payload << " - buffer.size: " << buffer.size( user_size) << std::endl;
 
                      //
                      // Adjust the buffer size, with regards to the user size
@@ -300,7 +306,7 @@ namespace casual
 
                   if( buffer != std::end( m_pool))
                   {
-                     buffer_type result{ std::move( buffer->payload)};
+                     buffer_type result{ std::move( *buffer)};
                      m_pool.erase( buffer);
 
                      return result;

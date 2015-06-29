@@ -122,24 +122,22 @@ namespace casual
 
                   using Base::Base;
 
-                  void operator () ( message_type& message);
-
-                  template< typename M>
-                  bool do_dispatch( M& message);
+                  bool operator () ( message_type& message);
                };
 
-               namespace callback
+               namespace forget
                {
-                  struct Request : dequeue::Request
+                  struct Request : Base
                   {
-                     using message_type = common::message::queue::dequeue::callback::Request;
+                     using message_type = common::message::queue::dequeue::forget::Request;
 
-                     using dequeue::Request::Request;
+                     using Base::Base;
 
                      void operator () ( message_type& message);
+
                   };
 
-               } // callback
+               } // forget
 
             } // dequeue
 

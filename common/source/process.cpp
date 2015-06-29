@@ -109,6 +109,45 @@ namespace casual
             return result;
          }
 
+         namespace instance
+         {
+            namespace identity
+            {
+               const Uuid& broker()
+               {
+                  const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
+                  return singleton;
+               }
+
+               namespace transaction
+               {
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
+                     return singleton;
+                  }
+               } // transaction
+
+               namespace queue
+               {
+                  const Uuid& broker()
+                  {
+                     const static Uuid singleton{ "4d18d4d0b8654890ba87310ad1860f5a"};
+                     return singleton;
+                  }
+               } // queue
+
+               namespace traffic
+               {
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "1aa1ce0e3e254a91b32e9d2ab22a8d31"};
+                     return singleton;
+                  }
+               } // traffic
+            } // identity
+         } // instance
+
 
          bool operator == ( const Handle& lhs, const Handle& rhs)
          {
@@ -133,11 +172,57 @@ namespace casual
             std::this_thread::sleep_for( time);
          }
 
-
-
-
-         platform::pid_type spawn( const std::string& path, const std::vector< std::string>& arguments)
+         namespace local
          {
+            namespace
+            {
+               namespace current
+               {
+
+                  namespace internal
+                  {
+                     std::vector< const char*> environment()
+                     {
+                        std::vector< const char*> result;
+
+                        auto current = local::environment();
+
+                        while( (*current) != nullptr)
+                        {
+                           result.push_back( *current);
+                           ++current;
+                        }
+
+                        return result;
+                     }
+                  } // internal
+
+                  // we need to force lvalue parameter
+                  std::vector< const char*> environment( const std::vector< std::string>& environment)
+                  {
+                     auto result = internal::environment();
+
+                     std::transform(
+                        std::begin( environment),
+                        std::end( environment),
+                        std::back_inserter( result),
+                        std::mem_fn( &std::string::data));
+
+                     result.push_back( nullptr);
+                     return result;
+                  }
+
+               } // current
+
+            } // <unnamed>
+         } // local
+
+         platform::pid_type spawn(
+            const std::string& path,
+            std::vector< std::string> arguments,
+            std::vector< std::string> environment)
+         {
+            trace::Scope trace{ "process::spawn", log::internal::trace};
 
             //
             // prepare arguments
@@ -147,21 +232,38 @@ namespace casual
             //
             // think we must add application-name as first argument...
             //
-            c_arguments.push_back( path.data());
+            {
+               c_arguments.push_back( path.data());
 
-            std::transform(
-                  std::begin( arguments),
-                  std::end( arguments),
-                  std::back_inserter( c_arguments),
-                  std::mem_fn( &std::string::data));
-
-            c_arguments.push_back( nullptr);
-
-
-            std::vector< const char*> c_environment;
-            c_environment.push_back( nullptr);
+               //
+               // We need to expand environment
+               //
+               for( auto& argument : arguments)
+               {
+                  argument = environment::string( argument);
+               }
 
 
+               std::transform(
+                     std::begin( arguments),
+                     std::end( arguments),
+                     std::back_inserter( c_arguments),
+                     std::mem_fn( &std::string::data));
+
+               c_arguments.push_back( nullptr);
+            }
+
+            //
+            // We need to expand environment
+            //
+            for( auto& variable : environment)
+            {
+               variable = environment::string( variable);
+            }
+
+
+
+            auto c_environment = local::current::environment( environment);
 
             posix_spawnattr_t attributes;
 
@@ -169,29 +271,63 @@ namespace casual
 
             platform::pid_type pid;
 
+            log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+
             auto status =  posix_spawnp(
                   &pid,
                   path.c_str(),
                   nullptr,
                   &attributes,
                   const_cast< char* const*>( c_arguments.data()),
-                  local::environment()// environ //const_cast< char* const*>( c_environment.data())
+                  const_cast< char* const*>( c_environment.data())
                   );
             switch( status)
             {
                case 0:
                   break;
                default:
-                  throw exception::invalid::Argument( "spawn failed for: " + path + " - " + error::string( status));
+                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                        exception::make_nip( "arguments", range::make( arguments)),
+                        exception::make_nip( "environment", range::make( environment)),
+                        CASUAL_NIP( error::string( status)));
             }
+
+            //
+            // Try to figure out if the process started correctly..
+            //
+            /* We can't really do this, since we mess up the semantics for the caller
+
+            {
+               auto deaths = lifetime::wait( { pid}, std::chrono::microseconds{ 1});
+
+               if( ! deaths.empty() && deaths.front().reason != lifetime::Exit::Reason::exited)
+               {
+                  auto& reason = deaths.front();
+
+                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                        exception::make_nip( "arguments", range::make( arguments)),
+                        exception::make_nip( "environment", range::make( environment)),
+                        CASUAL_NIP( reason));
+               }
+            }
+            */
+            // TODO: try something else to detect if the process started correct or not.
+
+
             return pid;
          }
 
 
-
-         int execute( const std::string& path, const std::vector< std::string>& arguments)
+         platform::pid_type spawn( const std::string& path, std::vector< std::string> arguments)
          {
-            return wait( spawn( path, arguments));
+            return spawn( path, std::move( arguments), {});
+         }
+
+
+
+         int execute( const std::string& path, std::vector< std::string> arguments)
+         {
+            return wait( spawn( path, std::move( arguments)));
          }
 
 

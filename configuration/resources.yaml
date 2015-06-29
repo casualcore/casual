@@ -16,7 +16,7 @@ resources:
       - db2
       
     paths:
-      library: [ $DB2DIR/lib64]
+      library: [ "${DB2DIR}/lib64"]
       
    
   - key: rm-mockup   

@@ -26,6 +26,7 @@ namespace casual
 
          struct Resource
          {
+
             using id_type = common::platform::resource::id_type;
 
             Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
@@ -41,13 +42,11 @@ namespace casual
             bool dynamic() const;
 
             std::string key;
-            xa_switch_t* xaSwitch;
+            xa_switch_t* xa_switch;
             id_type id = 0;
 
             std::string openinfo;
             std::string closeinfo;
-
-
 
 
             friend std::ostream& operator << ( std::ostream& out, const Resource& resource);

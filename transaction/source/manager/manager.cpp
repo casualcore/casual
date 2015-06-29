@@ -191,7 +191,7 @@ namespace casual
                   queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
 
                   while( handler( nonBlocking.next()) &&
-                        m_state.persistentReplies.size() < common::platform::transaction_batch)
+                        m_state.persistentReplies.size() < common::platform::batch::transaction)
                   {
                      ;
                   }

@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include "xatmi.h"
+#include "buffer/string.h"
 
 
 
@@ -33,26 +34,31 @@ int main( int argc, char** argv)
 	}
 
 
-	char* buffer = tpalloc( "STRING", "", 1024);
+	auto buffer = tpalloc( CASUAL_STRING, 0, 1024);
 
-	const std::string& argument = arguments[ 1];
+	if ( buffer != nullptr)
+	{
+      const std::string& argument = arguments[ 1];
 
-	std::copy( argument.begin(), argument.end(), buffer);
-	buffer[ argument.size()] = '\0';
+      std::copy( argument.begin(), argument.end(), buffer);
+      buffer[ argument.size()] = '\0';
 
+      long size = 0;
+      int cd1 = tpacall( "casual_test1", buffer, 0, 0);
+      int cd2 = tpacall( "casual_test2", buffer, 0, 0);
 
-	long size = 0;
-	int cd1 = tpacall( "casual_test1", buffer, 0, 0);
-	int cd2 = tpacall( "casual_test2", buffer, 0, 0);
+      tpgetrply( &cd1, &buffer, &size, 0);
+      std::cout << std::endl << "reply1: " << buffer << std::endl;
 
-	tpgetrply( &cd1, &buffer, &size, 0);
-	std::cout << std::endl << "reply1: " << buffer << std::endl;
+      tpgetrply( &cd2, &buffer, &size, 0);
+      std::cout << std::endl << "reply2: " << buffer << std::endl;
 
-	tpgetrply( &cd2, &buffer, &size, 0);
-	std::cout << std::endl << "reply2: " << buffer << std::endl;
-
-	tpfree( buffer);
-
+      tpfree( buffer);
+	}
+	else
+	{
+	   std::cout << tperrnostring(tperrno) << std::endl;
+	}
 }
 
 

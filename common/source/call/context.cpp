@@ -508,8 +508,13 @@ namespace casual
 
          void Context::sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags)
          {
-            auto descriptor = async( service, idata, ilen, flags);
-            reply( descriptor, &odata, olen, flags);
+            //
+            // casual always has 'block-semantics' in sync call. We remove possible no-block
+            //
+            auto supported_flags = ( ~TPNOBLOCK) & flags;
+
+            auto descriptor = async( service, idata, ilen, supported_flags);
+            reply( descriptor, &odata, olen, supported_flags);
          }
 
 

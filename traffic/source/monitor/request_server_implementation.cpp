@@ -2,8 +2,9 @@
 
 //## includes protected section begin [.10]
 
-#include "monitor/statisticimplementation.h"
-#include "monitor/monitordb.h"
+#include "traffic/monitor/request_server_implementation.h"
+
+#include "traffic/monitor/database.h"
 
 
 
@@ -11,7 +12,7 @@
 
 namespace casual
 {
-namespace statistics
+namespace traffic
 {
 namespace monitor
 {
@@ -20,7 +21,7 @@ namespace monitor
 //## declarations protected section begin [.20]
 //## declarations protected section end   [.20]
 
-StatisticImplementation::StatisticImplementation( int argc, char **argv)
+RequestServerImplementation::RequestServerImplementation( int argc, char **argv)
 {
    //## constructor protected section begin [ctor.20]
    //## constructor protected section end   [ctor.20]
@@ -28,7 +29,7 @@ StatisticImplementation::StatisticImplementation( int argc, char **argv)
 
 
 
-StatisticImplementation::~StatisticImplementation()
+RequestServerImplementation::~RequestServerImplementation()
 {
    //## destructor protected section begin [dtor.20]
    //## destructor protected section end   [dtor.20]
@@ -40,22 +41,18 @@ StatisticImplementation::~StatisticImplementation()
 //
 
 
-bool StatisticImplementation::getMonitorStatistics( std::vector< vo::MonitorVO>& outputValues)
+bool RequestServerImplementation::getMonitorStatistics( std::vector< ServiceEntryVO>& outputValues)
 {
    //## service implementation protected section begin [2000]
 
-   static MonitorDB monitordb;
+   static traffic::monitor::Database database;
 
-   /*
-     std::vector< vo::MonitorVO> result;
-     result = monitordb.select();
+   std::vector< ServiceEntryVO> result;
+   result = database.select();
 
-     std::copy( result.begin(), result.end(), std::back_inserter( outputValues));
-     */
+   std::copy( result.begin(), result.end(), std::back_inserter( outputValues));
 
-   outputValues = monitordb.select();
-
-      return true;
+   return true;
 
    //## service implementation protected section end   [2000]
 }
@@ -64,7 +61,7 @@ bool StatisticImplementation::getMonitorStatistics( std::vector< vo::MonitorVO>&
 //## declarations protected section end   [.40]
 
 } // monitor
-} // statistics
+} // traffic
 } // casual
 
 //## declarations protected section begin [.50]

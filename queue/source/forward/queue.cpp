@@ -6,7 +6,7 @@
 //!
 
 #include "queue/forward/common.h"
-#include "queue/api/queue.h"
+#include "queue/api/rm/queue.h"
 
 #include "common/arguments.h"
 #include "common/exception.h"
@@ -49,16 +49,10 @@ namespace casual
          {
             Enqueuer( std::string queue) : m_queue( std::move( queue)) {}
 
-            void operator () ( common::message::queue::dequeue::Reply::Message&& message)
+            void operator () ( queue::Message&& message)
             {
                common::trace::Scope trace{ "queue::forward::Enqueuer::operator()", common::log::internal::queue};
-
-               queue::Message forward;
-               forward.payload.data = std::move( message.payload);
-               forward.payload.type.type = std::move( message.type.name);
-               forward.payload.type.subtype = std::move( message.type.subname);
-
-               queue::enqueue( m_queue, forward);
+               queue::rm::enqueue( m_queue, message);
             }
 
          private:
@@ -97,7 +91,7 @@ namespace casual
                   common::Arguments parser;
 
                   parser.add(
-                        common::argument::directive( {"-f", "--forward"}, "forward  <queue> <queue>", settings, &Settings::setForward)
+                        common::argument::directive( {"-f", "--forward"}, "--forward  <from-queue> <to-queue>", settings, &Settings::setForward)
                   );
 
                   parser.parse( argc, argv);

@@ -13,6 +13,9 @@ server:
       function: casual_test3
       transaction: join
 
+    - name: casual.echo
+      function: casual_echo
+      transaction: join
     
   
 #    - binding: casual-test3

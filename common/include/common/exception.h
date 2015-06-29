@@ -125,21 +125,6 @@ namespace casual
                : Base( information) {}
          };
 
-         struct MemoryNotFound : public std::exception {};
-
-         struct FileNotExist : public Base
-         {
-            FileNotExist( const std::string& file)
-               : Base( "file does not exists: " + file) {}
-         };
-
-
-         struct EnvironmentVariableNotFound : public Base
-         {
-            EnvironmentVariableNotFound( const std::string& description)
-               : Base( "environment variable not found: " + description) {}
-         };
-
 
          struct Shutdown : base
          {
@@ -158,6 +143,15 @@ namespace casual
             {
                using Base::Base;
             };
+
+            namespace environment
+            {
+               struct Variable : Argument
+               {
+                  using Argument::Argument;
+               };
+
+            } // environment
 
             struct Configuration : Base
             {

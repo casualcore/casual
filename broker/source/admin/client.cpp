@@ -228,7 +228,7 @@ namespace casual
 
                value.invoked = instance.invoked;
 
-               if( instance.last != sf::platform::time_type::min())
+               if( instance.last != sf::platform::time_point::min())
                {
                   value.last = common::chronology::local( instance.last);
                }
@@ -261,7 +261,7 @@ namespace casual
 
             result.instances = instances.size();
 
-            auto latest = sf::platform::time_type::min();
+            auto latest = sf::platform::time_point::min();
 
             for( auto& instance : instances)
             {
@@ -284,7 +284,7 @@ namespace casual
                result.state.push_back( state( instance.state));
             }
 
-            if( latest != sf::platform::time_type::min())
+            if( latest != sf::platform::time_point::min())
             {
                result.last = common::chronology::local( latest);
             }
