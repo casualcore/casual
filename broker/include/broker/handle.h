@@ -121,6 +121,16 @@ namespace casual
             } // client
          } // transaction
 
+         namespace forward
+         {
+            struct Connect : Base
+            {
+               using Base::Base;
+
+               void operator () ( const common::message::forward::Connect& message);
+            };
+
+         } // forward
 
 
          //!

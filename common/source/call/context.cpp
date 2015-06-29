@@ -257,7 +257,7 @@ namespace casual
 
             local::validate::input( idata, ilen, flags);
 
-            service::Lookup lookup( service);
+            service::Lookup lookup( service, flags);
 
             //
             // We do as much as possible while we wait for the broker reply

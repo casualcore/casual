@@ -226,6 +226,7 @@ namespace casual
 
 
             message::dispatch::Handler handler{
+               handle::forward::Connect{ m_state},
                handle::Connect{ m_state},
                handle::Advertise{ m_state},
                handle::Unadvertise{ m_state},

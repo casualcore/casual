@@ -149,7 +149,7 @@ namespace casual
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending transactions");
                   }
 
-                  call::service::Lookup lookup{ jump.forward.service};
+                  call::service::Lookup lookup{ jump.forward.service, message.flags};
 
 
                   message::service::call::callee::Request request;

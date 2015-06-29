@@ -52,13 +52,11 @@ namespace casual
             {
                struct Request : public basic_connect< cServerConnectRequest>
                {
-                  typedef basic_connect< cServerConnectRequest> base_type;
-
                   std::vector< Service> services;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                        base_type::marshal( archive);
+                        basic_connect< cServerConnectRequest>::marshal( archive);
                         archive & services;
                   })
                };

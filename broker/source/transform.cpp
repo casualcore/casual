@@ -212,6 +212,20 @@ namespace casual
                }
 
                //
+               // Make sure we "configure" the forward-cache
+               //
+               {
+                  state::Server forward;
+                  forward.alias = "casual-forward-cache";
+                  forward.path = "casual-forward-cache";
+                  forward.configuredInstances = 1;
+                  forward.memberships.push_back( result.casual_group_id);
+                  forward.note = "TODO...";
+
+                  result.add( std::move( forward));
+               }
+
+               //
                // Handle TM
                //
                {

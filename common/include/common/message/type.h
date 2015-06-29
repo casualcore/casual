@@ -27,6 +27,7 @@ namespace casual
             cFlushIPC, // dummy message used to flush queue (into cache)
             cShutdowndRequest,
             cShutdowndReply,
+            cForwardConnect,
 
             // Server
             SERVER_BASE = 1000, // message type can't be 0!
@@ -314,6 +315,12 @@ namespace casual
             };
 
          } // server
+
+         namespace forward
+         {
+            using Connect = server::basic_connect< cForwardConnect>;
+
+         } // forward
 
          namespace reverse
          {

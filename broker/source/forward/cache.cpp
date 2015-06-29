@@ -166,6 +166,14 @@ namespace casual
             // Connect to broker
             //
             server::connect( {});
+
+            {
+               message::forward::Connect connect;
+               connect.process = process::handle();
+
+               common::queue::blocking::Send send;
+               send( ipc::broker::id(), connect);
+            }
          }
 
          Cache::~Cache()

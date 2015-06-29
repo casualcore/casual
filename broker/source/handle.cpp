@@ -89,6 +89,7 @@ namespace casual
                      common::message::dispatch::Handler handler{
                         handle::transaction::manager::Connect{ m_state},
                         handle::transaction::manager::Ready{ m_state},
+                        handle::forward::Connect{ m_state},
                         handle::Connect{ m_state},
                         handle::transaction::client::Connect{ m_state},
                         handle::Advertise{ m_state},
@@ -199,23 +200,6 @@ namespace casual
          {
 
             auto bootOrder = state.bootOrder();
-
-            //
-            // Make sure we boot our forward-cache
-            //
-            {
-               state::Server forward;
-               forward.configuredInstances = 1;
-               forward.memberships.push_back( state.casual_group_id);
-               forward.note = "forward service calls, and act as a load cache";
-               forward.path = "casual-forward-cache";
-               forward.alias = forward.path;
-
-               state.servers.emplace( forward.id, forward);
-               state.forward.pid = common::process::spawn( forward.path, {}, state.standard.environment);
-
-               state.addInstances( forward.id, { state.forward.pid});
-            }
 
             range::for_each( bootOrder, local::Boot{ state});
          }
@@ -339,6 +323,8 @@ namespace casual
             }
 
 
+
+
             namespace client
             {
 
@@ -380,6 +366,18 @@ namespace casual
             } // client
          } // transaction
 
+
+         namespace forward
+         {
+
+            void Connect::operator () ( const common::message::forward::Connect& message)
+            {
+               common::trace::internal::Scope trace{ "broker::handle::forward::Connect"};
+
+               m_state.forward = message.process;
+            }
+
+         } // forward
 
          void Advertise::operator () ( message_type& message)
          {
