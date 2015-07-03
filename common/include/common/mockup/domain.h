@@ -11,6 +11,7 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 
+#include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 
@@ -53,14 +54,14 @@ namespace casual
 
             struct Lookup
             {
-               Lookup( std::vector< common::message::service::name::lookup::Reply> replies);
+               Lookup( std::vector< common::message::service::lookup::Reply> replies);
 
-               using message_type = common::message::service::name::lookup::Request;
-               using reply_type = common::message::service::name::lookup::Reply;
+               using message_type = common::message::service::lookup::Request;
+               using reply_type = common::message::service::lookup::Reply;
 
                std::vector< common::ipc::message::Complete> operator () ( message_type message);
 
-               std::map< std::string, common::message::service::name::lookup::Reply> m_broker;
+               std::map< std::string, common::message::service::lookup::Reply> m_broker;
             };
 
          } // broker
@@ -120,14 +121,14 @@ namespace casual
          {
             namespace lookup
             {
-               common::message::service::name::lookup::Reply reply(
+               common::message::service::lookup::Reply reply(
                      const std::string& service,
                      platform::queue_id_type queue,
                      std::chrono::microseconds timeout = std::chrono::microseconds::zero());
 
             } // lookup
 
-            transform::Handler broker( std::vector< message::service::name::lookup::Reply> replies);
+            transform::Handler broker( std::vector< message::service::lookup::Reply> replies);
             transform::Handler broker();
 
 

@@ -76,12 +76,14 @@ namespace casual
             {
                Send( Q& queue) : m_queue( queue) {}
 
+               //!
+               //! @return true if the message has been sent
+               //!
                bool operator () ( Message& message)
                {
-
                   auto send = [&]( platform::queue_id_type ipc){
                      return m_queue.send( ipc, message.complete);
-                  };
+                     };
 
                   if( message.task == Message::Targets::all)
                   {

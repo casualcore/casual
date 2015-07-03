@@ -486,6 +486,18 @@ namespace casual
                      service.instances,
                      filter::instance::Idle{});
 
+               //
+               // Prepare the message
+               //
+
+               auto reply = message::reverse::type( message);
+
+               {
+                  reply.service = service.information;
+                  reply.service.traffic_monitors = m_state.traffic.monitors;
+
+               }
+
 
                if( idle)
                {
@@ -494,10 +506,10 @@ namespace casual
                   //
                   idle->get().alterState( state::Server::Instance::State::busy);
 
+                  reply.state = decltype( reply.state)::idle;
+
                   auto reply = message::reverse::type( message);
 
-                  reply.service = service.information;
-                  reply.service.traffic_monitors = m_state.traffic.monitors;
                   reply.process = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
@@ -511,8 +523,13 @@ namespace casual
                   // The intention is "send and forget", we use our forward-cache for this
                   //
                   auto reply = message::reverse::type( message);
-                  reply.service = service.information;
                   reply.process = m_state.forward;
+
+                  //
+                  // Caller will think that service is idle, that's the whole point
+                  // with our forward.
+                  //
+                  reply.state = decltype( reply.state)::idle;
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
                   writer( reply);
@@ -521,22 +538,32 @@ namespace casual
                else
                {
                   //
-                  // All servers are busy, we stack the request
+                  // All instances are busy, we stack the request
                   //
                   m_state.pending.push_back( std::move( message));
+
+                  //
+                  // ...and send busy-message to caller, to set timeouts and stuff
+                  //
+                  reply.state = decltype( reply.state)::busy;
+
+                  queue::blocking::Writer writer( message.process.queue, m_state);
+                  writer( reply);
+
                }
 
             }
             catch( state::exception::Missing& exception)
             {
                //
-               // TODO: We will send the request to the gateway.
+               // TODO: We will send the request to the gateway. (only if we want auto discovery)
                //
                // Server (queue) that hosts the requested service is not found.
                // We propagate this by having 0 occurrence of server in the response
                //
                auto reply = message::reverse::type( message);
                reply.service.name = message.requested;
+               reply.state = decltype( reply.state)::absent;
 
                queue::blocking::Writer writer( message.process.queue, m_state);
                writer( reply);

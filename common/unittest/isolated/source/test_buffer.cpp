@@ -10,7 +10,7 @@
 
 #include "common/buffer/pool.h"
 
-#include "common/message/server.h"
+#include "common/message/service.h"
 #include "common/marshal/binary.h"
 
 

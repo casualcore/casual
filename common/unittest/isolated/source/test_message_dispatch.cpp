@@ -11,6 +11,7 @@
 
 
 
+#include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"

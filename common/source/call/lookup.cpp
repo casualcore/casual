@@ -19,7 +19,7 @@ namespace casual
          {
             Lookup::Lookup( const std::string& service, long flags)
             {
-               message::service::name::lookup::Request request;
+               message::service::lookup::Request request;
                request.requested = service;
                request.process = process::handle();
                request.flags = flags;
@@ -36,14 +36,24 @@ namespace casual
                }
             }
 
-            message::service::name::lookup::Reply Lookup::operator () () const
+            message::service::lookup::Reply Lookup::operator () () const
             {
-               message::service::name::lookup::Reply result;
+               if( m_correlation == uuid::empty())
+               {
+                  throw exception::Casual{ "call::service::Lookup::operator () called in a improper context"};
+               }
+
+               message::service::lookup::Reply result;
                queue::blocking::Reader receive( ipc::receive::queue());
                receive( result, m_correlation);
 
-               m_correlation = Uuid();
-
+               if( result.state != message::service::lookup::Reply::State::busy)
+               {
+                  //
+                  // We're not expecting another message from broker
+                  //
+                  m_correlation = Uuid{};
+               }
                return result;
             }
 

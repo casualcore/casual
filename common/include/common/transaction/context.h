@@ -17,7 +17,7 @@
 
 #include "common/ipc.h"
 #include "common/message/transaction.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 
 #include <stack>

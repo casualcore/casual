@@ -12,6 +12,7 @@
 #include "common/queue.h"
 
 #include "common/message/server.h"
+#include "common/message/service.h"
 
 #include "common/exception.h"
 
@@ -223,7 +224,7 @@ namespace casual
          typedef std::unordered_map< state::Executable::id_type, state::Executable> executable_mapping_type;
          typedef std::unordered_map< state::Server::pid_type, state::Server::Instance> instance_mapping_type;
          typedef std::unordered_map< std::string, state::Service> service_mapping_type;
-         typedef std::deque< common::message::service::name::lookup::Request> pending_requests_type;
+         typedef std::deque< common::message::service::lookup::Request> pending_requests_type;
 
 
          server_mapping_type servers;

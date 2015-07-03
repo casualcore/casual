@@ -84,7 +84,7 @@ namespace casual
 
             struct Pending
             {
-               admin::PendingVO operator () ( const common::message::service::name::lookup::Request& value) const
+               admin::PendingVO operator () ( const common::message::service::lookup::Request& value) const
                {
                   admin::PendingVO result;
 

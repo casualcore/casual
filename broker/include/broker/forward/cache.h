@@ -9,7 +9,7 @@
 #define CASUAL_BROKER_FORWARD_CACHE_H_
 
 
-#include "common/message/server.h"
+#include "common/message/service.h"
 #include "common/message/pending.h"
 
 #include <map>

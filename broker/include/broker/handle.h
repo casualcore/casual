@@ -175,7 +175,7 @@ namespace casual
          //!
          struct ServiceLookup : public Base
          {
-            typedef common::message::service::name::lookup::Request message_type;
+            typedef common::message::service::lookup::Request message_type;
 
             using Base::Base;
 

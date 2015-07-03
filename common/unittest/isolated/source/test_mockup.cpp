@@ -9,7 +9,7 @@
 
 #include "common/mockup/ipc.h"
 
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 #include "common/queue.h"
 #include "common/log.h"
@@ -45,7 +45,7 @@ namespace casual
          mockup::ipc::Instance instance;
 
          {
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
@@ -56,7 +56,7 @@ namespace casual
 
          {
             queue::blocking::Reader read( instance.output());
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             read( request);
 
             EXPECT_TRUE( request.requested == "someService");
@@ -82,7 +82,7 @@ namespace casual
          mockup::ipc::Link link{ source.output().id(), destination.input()};
 
          {
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
@@ -93,7 +93,7 @@ namespace casual
 
          {
             queue::blocking::Reader read( destination.output());
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             read( request);
 
             EXPECT_TRUE( request.requested == "someService");
@@ -115,7 +115,7 @@ namespace casual
 
          {
             trace::Scope trace( "sender.add  200");
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
@@ -134,7 +134,7 @@ namespace casual
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
             queue::blocking::Reader read( instance.output());
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
 
             const std::string temp = "service_";
 
@@ -166,7 +166,7 @@ namespace casual
 
 
          {
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
@@ -185,7 +185,7 @@ namespace casual
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
             queue::blocking::Reader read( destination.output());
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
 
             const std::string temp = "service_";
 
@@ -213,7 +213,7 @@ namespace casual
          //ipc::receive::queue().clear();
 
          {
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
@@ -224,7 +224,7 @@ namespace casual
          {
 
             queue::blocking::Reader read( ipc::receive::queue());
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
 
             read( request);
             EXPECT_TRUE( request.requested == "someService");
@@ -246,7 +246,7 @@ namespace casual
          //ipc::receive::queue().clear();
 
          {
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
@@ -263,7 +263,7 @@ namespace casual
 
          {
             auto read = queue::blocking::reader( ipc::receive::queue());
-            message::service::name::lookup::Request request;
+            message::service::lookup::Request request;
 
 
             for( auto count = 0; count < 200; ++count)

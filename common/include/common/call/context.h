@@ -11,7 +11,7 @@
 
 #include "common/queue.h"
 #include "common/platform.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 
 

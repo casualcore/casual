@@ -58,7 +58,7 @@ namespace casual
             } // client
 
 
-            Lookup::Lookup( std::vector< common::message::service::name::lookup::Reply> replies)
+            Lookup::Lookup( std::vector< common::message::service::lookup::Reply> replies)
             {
                for( auto& reply : replies)
                {
@@ -68,13 +68,18 @@ namespace casual
 
             std::vector< common::ipc::message::Complete> Lookup::operator () ( message_type message)
             {
-               common::message::service::name::lookup::Reply reply;
+               common::message::service::lookup::Reply reply;
 
                auto found = range::find( m_broker, message.requested);
 
                if( found)
                {
                   reply = found->second;
+                  reply.state = message::service::lookup::Reply::State::idle;
+               }
+               else
+               {
+                  reply.state = message::service::lookup::Reply::State::absent;
                }
 
                reply.correlation = message.correlation;
@@ -196,12 +201,12 @@ namespace casual
 
             namespace lookup
             {
-               common::message::service::name::lookup::Reply reply(
+               common::message::service::lookup::Reply reply(
                      const std::string& service,
                      platform::queue_id_type queue,
                      std::chrono::microseconds timeout)
                {
-                  common::message::service::name::lookup::Reply reply;
+                  common::message::service::lookup::Reply reply;
                   reply.process.queue = queue;
                   reply.process.pid = common::process::id();
                   reply.service.name = service;
@@ -213,7 +218,7 @@ namespace casual
 
             } // lookup
 
-            transform::Handler broker( std::vector< message::service::name::lookup::Reply> replies)
+            transform::Handler broker( std::vector< message::service::lookup::Reply> replies)
             {
                return transform::Handler{ broker::Lookup{ std::move( replies)}, broker::server::Connect{}, broker::client::Connect{}};
             }

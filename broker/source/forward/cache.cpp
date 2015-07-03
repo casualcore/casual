@@ -84,15 +84,33 @@ namespace casual
                   {
                      using base::base;
 
-                     void operator () ( const common::message::service::name::lookup::Reply& message)
+                     void operator () ( const message::service::lookup::Reply& message)
                      {
-                        log::debug << "service lookup reply received for service: " << message.service << '\n';
+                        try
+                        {
+                           handle( message);
+                        }
+                        catch( ...)
+                        {
+                           error::handler();
+                        }
+                     }
+
+                     void handle( const message::service::lookup::Reply& message)
+                     {
+                        log::debug << "service lookup reply received - message: " << message << '\n';
+
+                        if( message.state == message::service::lookup::Reply::State::busy)
+                        {
+                           log::debug << "service is busy - action: wait for idle\n";
+                           return;
+                        }
 
                         auto& pending_queue = m_state.reqested[ message.service.name];
 
                         if( pending_queue.empty())
                         {
-                           log::error << "service lookup reply for a service '" << message.service.name << "' has no reqested call - action: discard\n";
+                           log::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
                            return;
                         }
 
@@ -101,31 +119,35 @@ namespace casual
                         //
                         auto request = std::move( pending_queue.front());
                         pending_queue.pop_front();
-
                         request.service = message.service;
 
-                        try
-                        {
-
-                           common::queue::non_blocking::Send send;
-                           if( ! send( message.process.queue, request))
-                           {
-                              //
-                              // We could not send the call. We put in pending and hope to send it
-                              // later
-                              //
-                              m_state.pending.emplace_back( request, message.process.queue);
-
-                              log::debug << "could not forward call to process: " << message.process << " - will try later\n";
-
-                           }
-                        }
-                        catch( const exception::queue::Unavailable&)
-                        {
+                        //
+                        // If something goes wrong, we try to send error reply to caller
+                        //
+                        scope::Execute error_reply{ [&](){
                            send::error::reply( m_state, std::move( request));
+                        }};
+
+
+                        if( message.state == message::service::lookup::Reply::State::absent)
+                        {
+                           log::error << "service '" << message.service.name << "' has no entry - action: send error reply\n";
+                           return;
                         }
 
+                        common::queue::non_blocking::Send send;
+                        if( ! send( message.process.queue, request))
+                        {
+                           //
+                           // We could not send the call. We put in pending and hope to send it
+                           // later
+                           //
+                           m_state.pending.emplace_back( request, message.process.queue);
 
+                           log::debug << "could not forward call to process: " << message.process << " - will try later\n";
+
+                        }
+                        error_reply.release();
                      }
                   };
 
@@ -143,7 +165,7 @@ namespace casual
                      // lookup service
                      //
                      {
-                        message::service::name::lookup::Request request;
+                        message::service::lookup::Request request;
                         request.requested = message.service.name;
                         request.process = process::handle();
 
@@ -209,7 +231,7 @@ namespace casual
                      auto sender = message::pending::sender( send);
 
                      auto remain = common::range::remove_if(
-                           m_state.pending,
+                        m_state.pending,
                         sender);
 
                      m_state.pending.erase( remain.last, std::end( m_state.pending));

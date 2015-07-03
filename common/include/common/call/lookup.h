@@ -9,7 +9,7 @@
 #define CASUAL_COMMON_CALL_LOOKUP_H_
 
 #include "common/uuid.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 #include <string>
 
@@ -25,7 +25,7 @@ namespace casual
             {
                Lookup( const std::string& service, long flags);
                ~Lookup();
-               message::service::name::lookup::Reply operator () () const;
+               message::service::lookup::Reply operator () () const;
             private:
                mutable Uuid m_correlation;
             };

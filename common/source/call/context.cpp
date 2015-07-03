@@ -303,11 +303,10 @@ namespace casual
                }
 
                message.process = process::handle();
-               //message.execution = execution::id();
                message.parent = execution::service();
                message.flags = flags;
 
-               log::internal::debug << "descriptor: " << message.descriptor << " service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+               log::internal::debug << "async - service: " << service << ", message: " << message << std::endl;
             }
 
 
@@ -322,25 +321,11 @@ namespace casual
             //
             auto target = lookup();
 
-            if( ! target.process)
+            if( target.state == message::service::lookup::Reply::State::absent)
             {
                throw common::exception::xatmi::service::NoEntry( service);
             }
 
-
-
-            //
-            // Keep track of timeouts
-            //
-            // TODO:
-            //
-            if( message.descriptor != 0)
-            {
-               Timeout::instance().add(
-                     message.descriptor,
-                     flag< TPNOTIME>( flags) ? std::chrono::microseconds{ 0} : target.service.timeout,
-                     start);
-            }
 
             //
             // If something goes wrong (most likely a timeout), we need to send ack to broker in that case, cus the service(instance)
@@ -355,6 +340,25 @@ namespace casual
                   send( common::ipc::broker::id(), ack);
                }};
 
+            //
+            // Keep track of timeouts
+            //
+            if( message.descriptor != 0)
+            {
+               Timeout::instance().add(
+                     message.descriptor,
+                     flag< TPNOTIME>( flags) ? std::chrono::microseconds{ 0} : target.service.timeout,
+                     start);
+            }
+
+
+            if( target.state == message::service::lookup::Reply::State::busy)
+            {
+               //
+               // We wait for an instance to become idle.
+               //
+               target = lookup();
+            }
 
             //
             // Call the service
