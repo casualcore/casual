@@ -27,26 +27,19 @@ LibraryPaths( [
 install_bins = []
 
 
-casual_broker_logic_objectfiles = [
-   Compile( 'source/broker.cpp', 'obj/broker.o'),
-   Compile( 'source/handle.cpp', 'obj/handle.o'),
-   Compile( 'source/state.cpp', 'obj/state.o'),
-   Compile( 'source/transform.cpp', 'obj/transform.o'),
-   ]
-
 
 logic_archive = LinkArchive( 'bin/casual-broker-logic',
-   casual_broker_logic_objectfiles )
+   [
+   Compile( 'source/broker.cpp'),
+   Compile( 'source/handle.cpp'),
+   Compile( 'source/state.cpp'),
+   Compile( 'source/transform.cpp'),
+   Compile( 'source/admin/server.cpp')
+   ])
 
-
-	
-casual_broker_objectfiles = [
-    Compile( 'source/main.cpp', 'obj/main.o'),
-    Compile( 'source/admin/server.cpp', 'obj/admin/server.o'),
-]
 
 target = LinkExecutable( 'bin/casual-broker',
-	casual_broker_objectfiles,
+	[ Compile( 'source/main.cpp')],
 	[
      logic_archive,
      'casual-common',
@@ -81,28 +74,25 @@ install_bins.append( target)
 
 
 target = LinkExecutable( 'bin/casual-broker-admin',
-    [ Compile( 'source/admin/client.cpp', 'obj/admin/client.o')],
+    [ Compile( 'source/admin/client.cpp')],
     ['casual-common', 'casual-sf', 'casual-xatmi'])
 	
 
 Install( target,'$(CASUAL_HOME)/internal/bin')
 
 
-
-test_casual_broker_isolated = [
-#    Compile( 'unittest/isolated/source/test_broker.cpp', 'unittest/isolated/obj/test_broker.o'),
-    Compile( 'unittest/isolated/source/test_broker_confguration.cpp'),
-#    Compile( 'unittest/isolated/source/test_broker_transformation.cpp', 'unittest/isolated/obj/test_broker_transformation.o'),
-    Compile( 'unittest/isolated/source/test_forward_cache.cpp'),
-]
- 
  
 LinkUnittest( 'bin/test-casual-broker-isolated',
-   test_casual_broker_isolated + forward_objs,
+    [
+      Compile( 'unittest/isolated/source/test_broker.cpp'),
+      Compile( 'unittest/isolated/source/test_broker_confguration.cpp'),
+      Compile( 'unittest/isolated/source/test_forward_cache.cpp'),
+    ] + forward_objs,
     [
      logic_archive,
      'casual-common', 
-     'casual-sf', 
+     'casual-sf',
+     'casual-xatmi', 
      'casual-configuration', 
      'casual-mockup-unittest-environment', 
      'casual-mockup',

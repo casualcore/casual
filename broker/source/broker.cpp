@@ -218,29 +218,6 @@ namespace casual
                handle::boot( m_state);
             }
 
-            //
-            // Prepare message-pump handlers
-            //
-
-            common::log::internal::debug << "prepare message-pump handlers\n";
-
-
-            message::dispatch::Handler handler{
-               handle::forward::Connect{ m_state},
-               handle::Connect{ m_state},
-               handle::Advertise{ m_state},
-               handle::Unadvertise{ m_state},
-               handle::ServiceLookup{ m_state},
-               handle::ACK{ m_state},
-               handle::traffic::Connect{ m_state},
-               handle::traffic::Disconnect{ m_state},
-               handle::transaction::client::Connect{ m_state},
-               handle::Call{ admin::Server::services( *this), m_state},
-               common::message::handle::ping( m_state),
-               common::message::handle::Shutdown{},
-            };
-
-
 
             auto end = common::platform::clock_type::now();
 
@@ -248,12 +225,7 @@ namespace casual
                   << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
 
-
-            common::log::internal::debug << "start message pump\n";
-
-            queue::blocking::Reader blockingReader( m_receiveQueue, m_state);
-
-            message::dispatch::pump( handler, blockingReader);
+            message::pump( m_state, m_receiveQueue);
 
 
          }
@@ -268,43 +240,105 @@ namespace casual
          }
 		}
 
-      void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)
-      {
-         common::trace::internal::Scope trace( "Broker::serverInstances");
 
-         auto updateInstances = [&]( const admin::update::InstancesVO& value)
-               {
-                  for( auto&& server : m_state.servers)
-                  {
-                     if( server.second.alias == value.alias)
-                     {
-                        m_state.instance( server.second, value.instances);
-                     }
-                  }
+
+      namespace message
+      {
+         void pump( State& state, common::ipc::receive::Queue& ipc)
+         {
+            try
+            {
+               //
+               // Prepare message-pump handlers
+               //
+
+               common::log::internal::debug << "prepare message-pump handlers\n";
+
+
+               common::message::dispatch::Handler handler{
+                  handle::transaction::manager::Connect{ state},
+                  handle::transaction::manager::Ready{ state},
+                  handle::forward::Connect{ state},
+                  handle::Connect{ state},
+                  handle::Advertise{ state},
+                  handle::Unadvertise{ state},
+                  handle::ServiceLookup{ state},
+                  handle::ACK{ state},
+                  handle::traffic::Connect{ state},
+                  handle::traffic::Disconnect{ state},
+                  handle::transaction::client::Connect{ state},
+                  handle::Call{ admin::services( state), state},
+                  common::message::handle::ping( state),
+                  common::message::handle::Shutdown{},
                };
-         common::range::for_each( instances, updateInstances);
-      }
 
-      admin::ShutdownVO Broker::shutdown( bool broker)
+
+
+
+               common::log::internal::debug << "start message pump\n";
+
+               queue::blocking::Reader blockingReader( ipc, state);
+
+               common::message::dispatch::pump( handler, blockingReader);
+
+
+            }
+            catch( const common::exception::signal::Terminate&)
+            {
+               // we do nothing, and let the dtor take care of business
+               common::log::internal::debug << "broker has been terminated\n";
+            }
+            catch( ...)
+            {
+               common::error::handler();
+            }
+         }
+
+      } // message
+
+
+      namespace update
       {
-         common::trace::internal::Scope trace( "Broker::shutdown");
+         void instances( State& state, const std::vector< admin::update::InstancesVO>& instances)
+         {
+            common::trace::internal::Scope trace( "broker::update::instances");
 
-         auto orginal = m_state.processes();
+            auto updateInstances = [&]( const admin::update::InstancesVO& value)
+                  {
+                     for( auto&& server : state.servers)
+                     {
+                        if( server.second.alias == value.alias)
+                        {
+                           state.instance( server.second, value.instances);
+                        }
+                     }
+                  };
+            common::range::for_each( instances, updateInstances);
+         }
+
+      } // update
+
+      admin::ShutdownVO shutdown( State& state, bool broker)
+      {
+         common::trace::internal::Scope trace( "broker::shutdown");
+
+         auto orginal = state.processes();
 
          admin::ShutdownVO result;
 
-         handle::shutdown( m_state);
+         handle::shutdown( state);
 
-         result.online = m_state.processes();
+         result.online = state.processes();
          result.offline = range::to_vector( range::difference( orginal, result.online));
 
          if( broker)
          {
-            handle::send_shutdown( m_state);
+            handle::send_shutdown( state);
          }
 
          return result;
       }
+
 
 	} // broker
 

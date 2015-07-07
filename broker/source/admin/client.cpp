@@ -421,73 +421,79 @@ namespace casual
 
       } // print
 
-      void listServers()
+      namespace action
       {
 
-         auto state = call::state();
 
-         print::servers( std::cout, state);
-      }
-
-      void listServices()
-      {
-         auto state = call::state();
-
-         print::services( std::cout, state);
-      }
-
-      void listInstances()
-      {
-         auto state = call::state();
-
-         print::instances( std::cout, state);
-      }
-
-
-      void updateInstances( const std::vector< std::string>& values)
-      {
-         if( values.size() == 2)
+         void listServers()
          {
-            admin::update::InstancesVO instance;
 
-            instance.alias = values[ 0];
-            instance.instances = std::stoul( values[ 1]);
+            auto state = call::state();
 
-            sf::xatmi::service::binary::Sync service( ".casual.broker.update.instances");
-
-            service << CASUAL_MAKE_NVP( std::vector< admin::update::InstancesVO>{ instance});
-
-            service();
-
+            print::servers( std::cout, state);
          }
-      }
 
-
-      void shutdown()
-      {
-         auto state = call::state();
-
-         auto result = call::shutdown();
-
+         void listServices()
          {
-            for( auto& instance : state.instances)
+            auto state = call::state();
+
+            print::services( std::cout, state);
+         }
+
+         void listInstances()
+         {
+            auto state = call::state();
+
+            print::instances( std::cout, state);
+         }
+
+
+         void updateInstances( const std::vector< std::string>& values)
+         {
+            if( values.size() == 2)
             {
-               if( common::range::find( result.offline, instance.process.pid))
-               {
-                  instance.state = static_cast< long>( state::Server::Instance::State::shutdown);
-               }
+               admin::update::InstancesVO instance;
+
+               instance.alias = values[ 0];
+               instance.instances = std::stoul( values[ 1]);
+
+               sf::xatmi::service::binary::Sync service( ".casual.broker.update.instances");
+
+               service << CASUAL_MAKE_NVP( std::vector< admin::update::InstancesVO>{ instance});
+
+               service();
+
             }
          }
 
-         print::servers( std::cout, state);
-      }
 
-      void boot()
-      {
-         auto state =  call::boot();
+         void shutdown()
+         {
+            auto state = call::state();
 
-         print::servers( std::cout, state);
-      }
+            auto result = call::shutdown();
+
+            {
+               for( auto& instance : state.instances)
+               {
+                  if( common::range::find( result.offline, instance.process.pid))
+                  {
+                     instance.state = static_cast< long>( state::Server::Instance::State::shutdown);
+                  }
+               }
+            }
+
+            print::servers( std::cout, state);
+         }
+
+         void boot()
+         {
+            auto state =  call::boot();
+
+            print::servers( std::cout, state);
+         }
+
+      } // action
 
    } // broker
 } // casual
@@ -503,12 +509,12 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"--porcelain"}, "easy to parse format", casual::broker::global::porcelain),
          casual::common::argument::directive( {"--no-color"}, "no color will be used", casual::broker::global::no_colors),
          casual::common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", casual::broker::global::no_header),
-         casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::listServers),
-         casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::listServices),
-         casual::common::argument::directive( {"-li", "--list-instances"}, "list all instances", &casual::broker::listInstances),
-         casual::common::argument::directive( {"-ui", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::updateInstances),
-         casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &casual::broker::shutdown),
-         casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::boot)
+         casual::common::argument::directive( {"-lsvr", "--list-servers"}, "list all servers", &casual::broker::action::listServers),
+         casual::common::argument::directive( {"-lsvc", "--list-services"}, "list all services", &casual::broker::action::listServices),
+         casual::common::argument::directive( {"-li", "--list-instances"}, "list all instances", &casual::broker::action::listInstances),
+         casual::common::argument::directive( {"-ui", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::action::updateInstances),
+         casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &casual::broker::action::shutdown),
+         casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::action::boot)
    );
 
 

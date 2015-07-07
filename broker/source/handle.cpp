@@ -343,7 +343,7 @@ namespace casual
                      // Instance is started for the first time.
                      // Send some configuration
                      //
-                     message::transaction::client::connect::Reply reply =
+                     auto reply =
                            transform::transaction::client::reply( m_state, instance);
 
                      queue::blocking::Writer write( message.process.queue, m_state);
@@ -354,7 +354,7 @@ namespace casual
                      // What to do? Add the instance?
                      ///log::error << "could not find instance - " << exception.what() << std::endl;
 
-                     message::transaction::client::connect::Reply reply;
+                     common::message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
                      reply.transaction_manager = m_state.transaction_manager;
 
@@ -448,7 +448,7 @@ namespace casual
                //
                // Send some configuration
                //
-               message::server::connect::Reply reply;
+               common::message::server::connect::Reply reply;
 
                common::log::internal::debug << "connect reply: " << message.process << std::endl;
 
@@ -490,7 +490,7 @@ namespace casual
                // Prepare the message
                //
 
-               auto reply = message::reverse::type( message);
+               auto reply = common::message::reverse::type( message);
 
                {
                   reply.service = service.information;
@@ -507,9 +507,6 @@ namespace casual
                   idle->get().alterState( state::Server::Instance::State::busy);
 
                   reply.state = decltype( reply.state)::idle;
-
-                  auto reply = message::reverse::type( message);
-
                   reply.process = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
@@ -522,7 +519,6 @@ namespace casual
                   //
                   // The intention is "send and forget", we use our forward-cache for this
                   //
-                  auto reply = message::reverse::type( message);
                   reply.process = m_state.forward;
 
                   //
@@ -561,7 +557,7 @@ namespace casual
                // Server (queue) that hosts the requested service is not found.
                // We propagate this by having 0 occurrence of server in the response
                //
-               auto reply = message::reverse::type( message);
+               auto reply = common::message::reverse::type( message);
                reply.service.name = message.requested;
                reply.state = decltype( reply.state)::absent;
 
@@ -586,7 +582,7 @@ namespace casual
                //
                {
                   auto pending = common::range::find_if(
-                     common::range::make( m_state.pending),
+                     m_state.pending,
                      filter::Pending( instance));
 
                   if( pending)
@@ -653,15 +649,15 @@ namespace casual
          }
 
 
-         void Policy::reply( platform::queue_id_type id, message::service::call::Reply& message)
+         void Policy::reply( platform::queue_id_type id, common::message::service::call::Reply& message)
          {
             queue::blocking::Writer writer( id, m_state);
             writer( message);
          }
 
-         void Policy::ack( const message::service::call::callee::Request& message)
+         void Policy::ack( const common::message::service::call::callee::Request& message)
          {
-            message::service::call::ACK ack;
+            common::message::service::call::ACK ack;
 
             ack.process = common::process::handle();
             ack.service = message.service.name;
@@ -670,12 +666,12 @@ namespace casual
             sendACK( ack);
          }
 
-         void Policy::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
+         void Policy::transaction( const common::message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
          {
             // broker doesn't bother with transactions...
          }
 
-         void Policy::transaction( const message::service::call::Reply& message, int return_state)
+         void Policy::transaction( const common::message::service::call::Reply& message, int return_state)
          {
             // broker doesn't bother with transactions...
          }

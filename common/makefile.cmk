@@ -145,6 +145,7 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_queue.cpp'),
    Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
    Compile( 'unittest/isolated/source/test_server_context.cpp'),
+   Compile( 'unittest/isolated/source/test_service.cpp'),
    
    Compile( 'unittest/isolated/source/test_uuid.cpp'),
    Compile( 'unittest/isolated/source/test_arguments.cpp'),

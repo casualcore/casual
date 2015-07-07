@@ -257,7 +257,7 @@ namespace casual
                : name( std::move( name)), type( type), transaction( transaction)
             {}
 
-            explicit Service( std::string name)
+            Service( std::string name)
                : Service( std::move( name), 0, 0)
             {}
 

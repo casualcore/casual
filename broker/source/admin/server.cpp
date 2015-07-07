@@ -20,9 +20,6 @@ namespace local
 {
    namespace
    {
-      typedef casual::broker::admin::Server implementation_type;
-
-      casual::sf::server::implementation::type< implementation_type> implementation;
 
       casual::sf::server::type server;
    }
@@ -42,8 +39,6 @@ namespace broker
          {
             local::server = casual::sf::server::create( argc, argv);
 
-            local::implementation = casual::sf::server::implementation::make< local::implementation_type>( argc, argv);
-
          }
          catch( ...)
          {
@@ -60,7 +55,6 @@ namespace broker
          // delete the implementation an server implementation
          //
          casual::sf::server::sink( local::server);
-         casual::sf::server::sink( local::implementation);
       }
    }
 
@@ -70,38 +64,9 @@ namespace broker
       extern "C"
       {
 
-         void admin_state( TPSVCINFO *serviceInfo)
-         {
-            casual::sf::service::reply::State reply;
-
-            try
-            {
-
-               auto service_io = local::server->createService( serviceInfo);
 
 
-               auto serviceReturn = service_io.call(
-                  *local::implementation,
-                  &Server::state);
-
-               service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-               reply = service_io.finalize();
-            }
-            catch( ...)
-            {
-               local::server->handleException( serviceInfo, reply);
-            }
-
-            tpreturn(
-               reply.value,
-               reply.code,
-               reply.data,
-               reply.size,
-               reply.flags);
-         }
-
-         void admin_updateInstances( TPSVCINFO *serviceInfo)
+         void service_update_instances( TPSVCINFO *serviceInfo, broker::State& state)
          {
             casual::sf::service::reply::State reply;
 
@@ -115,11 +80,7 @@ namespace broker
 
                service_io >> CASUAL_MAKE_NVP( instances);
 
-
-               service_io.call(
-                  *local::implementation,
-                  &Server::updateInstances,
-                  instances);
+               broker::update::instances( state, instances);
 
                reply = service_io.finalize();
             }
@@ -137,7 +98,7 @@ namespace broker
          }
 
 
-         void admin_shutdown( TPSVCINFO *serviceInfo)
+         void service_shutdown( TPSVCINFO *serviceInfo, broker::State& state)
          {
             casual::sf::service::reply::State reply;
 
@@ -149,10 +110,7 @@ namespace broker
 
                service_io >> CASUAL_MAKE_NVP( broker);
 
-               auto serviceReturn = service_io.call(
-                  *local::implementation,
-                  &Server::shutdown,
-                  broker);
+               auto serviceReturn = broker::shutdown( state, broker);
 
                service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -174,34 +132,41 @@ namespace broker
       }
 
 
-      Server::Server( int argc, char **argv)
-      {
 
+      void service_broker_state( TPSVCINFO *serviceInfo, broker::State& state)
+      {
+         casual::sf::service::reply::State reply;
+
+         try
+         {
+
+            auto service_io = local::server->createService( serviceInfo);
+
+
+            auto serviceReturn = broker_state( state);
+
+            service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+            reply = service_io.finalize();
+         }
+         catch( ...)
+         {
+            local::server->handleException( serviceInfo, reply);
+         }
+
+         tpreturn(
+            reply.value,
+            reply.code,
+            reply.data,
+            reply.size,
+            reply.flags);
       }
 
 
 
-      common::server::Arguments Server::services( Broker& broker)
-      {
-         m_broker = &broker;
-
-         common::server::Arguments result{ { common::process::path()}};
-
-         result.services.emplace_back( ".casual.broker.state", &admin_state, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-         result.services.emplace_back( ".casual.broker.update.instances", &admin_updateInstances, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-         result.services.emplace_back( ".casual.broker.shutdown", &admin_shutdown, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-
-         return result;
-      }
-
-
-
-
-      admin::StateVO Server::state()
+      admin::StateVO broker_state( const broker::State& state)
       {
          admin::StateVO result;
-
-         auto& state = m_broker->state();
 
          {
             common::range::transform( state.servers, result.servers,
@@ -234,22 +199,26 @@ namespace broker
       }
 
 
-      void Server::updateInstances( const std::vector<admin::update::InstancesVO>& instances)
+      void test1( TPSVCINFO *serviceInfo)
       {
-         common::trace::internal::Scope trace( "Server::updateInstances");
 
-         m_broker->serverInstances( instances);
       }
 
 
-
-      admin::ShutdownVO Server::shutdown( bool broker)
+      common::server::Arguments services( broker::State& state)
       {
-         return m_broker->shutdown( broker);
+
+         common::server::Arguments result{ { common::process::path()}};
+
+         result.services.emplace_back( ".casual.broker.state", std::bind( &service_broker_state, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+         result.services.emplace_back( ".casual.broker.update.instances", std::bind( &service_update_instances, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+         result.services.emplace_back( ".casual.broker.shutdown", std::bind( &service_shutdown, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+
+         //result.services.push_back( common::server::Service{ ".casual.test", std::bind( &test1, std::placeholders::_1), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none});
+
+         return result;
       }
 
-
-      Broker* Server::m_broker = nullptr;
 
    } // admin
 

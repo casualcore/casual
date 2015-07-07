@@ -38,10 +38,7 @@ namespace casual
 
             message::service::lookup::Reply Lookup::operator () () const
             {
-               if( m_correlation == uuid::empty())
-               {
-                  throw exception::Casual{ "call::service::Lookup::operator () called in a improper context"};
-               }
+               assert(  m_correlation != uuid::empty());
 
                message::service::lookup::Reply result;
                queue::blocking::Reader receive( ipc::receive::queue());
