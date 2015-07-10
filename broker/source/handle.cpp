@@ -611,7 +611,7 @@ namespace casual
          }
 
 
-         void Policy::connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
+         void Policy::connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
 
             //

@@ -53,7 +53,7 @@ namespace casual
                void operator () ( message_type& message)
                {
                   server::ping::Reply reply;
-
+                  reply.correlation = message.correlation;
                   reply.process = process::handle();
                   reply.uuid = process::uuid();
 

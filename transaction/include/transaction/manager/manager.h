@@ -59,6 +59,12 @@ namespace casual
 
       };
 
+      namespace message
+      {
+         void pump( State& state, common::ipc::receive::Queue& ipc);
+
+      } // message
+
 
 
    } // transaction

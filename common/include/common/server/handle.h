@@ -34,9 +34,9 @@ namespace casual
       namespace server
       {
 
-         message::server::connect::Reply connect( std::vector< message::Service> services);
+         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services);
 
-         message::server::connect::Reply connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
 
          template< typename P>
@@ -45,7 +45,7 @@ namespace casual
             using policy_type = P;
 
             template< typename... Args>
-            message::server::connect::Reply operator () ( std::vector< message::Service> services, Args&& ...args)
+            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, std::vector< message::Service> services, Args&& ...args)
             {
                using queue_writer = common::queue::blocking::basic_writer< policy_type>;
                using queue_reader = common::queue::blocking::basic_reader< policy_type>;
@@ -62,7 +62,7 @@ namespace casual
                //
                // Wait for configuration reply
                //
-               queue_reader reader( ipc::receive::queue(), args...);
+               queue_reader reader( ipc, args...);
                message::server::connect::Reply reply;
                reader( reply);
 
@@ -120,7 +120,7 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( server::Arguments arguments, Args&&... args) : m_policy( std::forward< Args>( args)...)
+               basic_call( ipc::receive::Queue& ipc, server::Arguments arguments, Args&&... args) : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
@@ -141,7 +141,7 @@ namespace casual
                   //
                   // Connect to casual
                   //
-                  m_policy.connect( std::move( services), arguments.resources);
+                  m_policy.connect( m_ipc, std::move( services), arguments.resources);
 
                   //
                   // Call tpsrvinit
@@ -150,6 +150,13 @@ namespace casual
                   {
                      throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
+
+               }
+
+               template< typename... Args>
+               basic_call( server::Arguments arguments, Args&&... args)
+                  : basic_call( ipc::receive::queue(), std::move( arguments), std::forward< Args>( args)...)
+               {
 
                }
 
@@ -496,6 +503,8 @@ namespace casual
                   };
 
                };
+
+               ipc::receive::Queue& m_ipc;
                policy_type m_policy;
                move::Moved m_moved;
             };
@@ -517,7 +526,7 @@ namespace casual
                   };
 
 
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message);
 
@@ -552,11 +561,11 @@ namespace casual
                   Admin( state_type& state) : m_state( state) {}
 
 
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+                  void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                   {
                      Connect< policy_type> connect;
 
-                     connect( std::move( services), m_state);
+                     connect( ipc, std::move( services), m_state);
                   }
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message)

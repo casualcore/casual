@@ -17,16 +17,16 @@ namespace casual
       namespace server
       {
 
-         message::server::connect::Reply connect( std::vector< message::Service> services)
+         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services)
          {
             Connect< queue::policy::NoAction> connect;
 
-            return connect( std::move( services));
+            return connect( ipc, std::move( services));
          }
 
-         message::server::connect::Reply connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
          {
-            auto reply = connect( std::move( services));
+            auto reply = connect( ipc, std::move( services));
 
             transaction::Context::instance().set( resources);
 
@@ -38,13 +38,13 @@ namespace casual
 
             namespace policy
             {
-               void Default::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Default::connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                {
 
                   //
                   // Let the broker know about us, and our services...
                   //
-                  server::connect( std::move( services), resources);
+                  server::connect( ipc, std::move( services), resources);
 
                }
 

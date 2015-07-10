@@ -358,8 +358,9 @@ namespace casual
       } // transform
 
 
-      struct State
+      class State
       {
+      public:
          State( const std::string& database);
 
 

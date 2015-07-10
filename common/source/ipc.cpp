@@ -229,8 +229,8 @@ namespace casual
 
             std::ostream& operator << ( std::ostream& out, const Complete& value)
             {
-               return out << "{ type: " << value.type << " correlation: " << value.correlation << " size: "
-                     << value.payload.size() << std::boolalpha << " complete: " << value.complete() << '}';
+               return out << "{ type: " << value.type << ", correlation: " << value.correlation << ", size: "
+                     << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << '}';
             }
 
 

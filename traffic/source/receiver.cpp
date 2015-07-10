@@ -85,7 +85,7 @@ namespace casual
          //
          // Connect as a "regular" server
          //
-         common::server::connect( {});
+         common::server::connect( common::ipc::receive::queue(), {});
 
          //
          // Register this traffic-logger

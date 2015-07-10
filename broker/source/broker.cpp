@@ -267,7 +267,7 @@ namespace casual
                   handle::traffic::Connect{ state},
                   handle::traffic::Disconnect{ state},
                   handle::transaction::client::Connect{ state},
-                  handle::Call{ admin::services( state), state},
+                  handle::Call{ ipc::receive::queue(), admin::services( state), state},
                   common::message::handle::ping( state),
                   common::message::handle::Shutdown{},
                };

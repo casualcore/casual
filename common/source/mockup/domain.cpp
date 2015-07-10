@@ -8,6 +8,7 @@
 #include "common/mockup/domain.h"
 
 #include "common/flag.h"
+#include "common/trace.h"
 
 
 namespace casual
@@ -24,11 +25,16 @@ namespace casual
             {
                std::vector< common::ipc::message::Complete> Connect::operator () ( message_type message)
                {
+                  Trace trace{ "mockup::broker::server::Connect", log::internal::debug};
+
                   reply_type reply;
                   reply.correlation = message.correlation;
 
                   std::vector< common::ipc::message::Complete> result;
                   result.emplace_back( marshal::complete( reply));
+
+                  log::internal::debug << "connect reply - message: " << range::make( result) << '\n';
+
                   return result;
                }
 
@@ -38,6 +44,8 @@ namespace casual
             {
                std::vector< common::ipc::message::Complete> Connect::operator () ( message_type message)
                {
+                  Trace trace{ "mockup::broker::client::Connect", log::internal::debug};
+
                   reply_type reply;
 
                   reply.correlation = message.correlation;
@@ -60,6 +68,8 @@ namespace casual
 
             Lookup::Lookup( std::vector< common::message::service::lookup::Reply> replies)
             {
+               log::internal::debug << "replies: " << range::make( replies) << "\n";
+
                for( auto& reply : replies)
                {
                   m_broker.emplace( reply.service.name, std::move( reply));
@@ -68,6 +78,8 @@ namespace casual
 
             std::vector< common::ipc::message::Complete> Lookup::operator () ( message_type message)
             {
+               Trace trace{ "mockup::broker::Lookup", log::internal::debug};
+
                common::message::service::lookup::Reply reply;
 
                auto found = range::find( m_broker, message.requested);
@@ -105,6 +117,8 @@ namespace casual
 
             std::vector< common::ipc::message::Complete> Call::operator () ( message_type message)
             {
+               Trace trace{ "mockup::service::Call", log::internal::debug};
+
                if( common::flag< TPNOREPLY>( message.flags))
                {
                   //common::log::error << "message.descriptor: " << message.descriptor << " correlation: " << message.correlation << std::endl;
@@ -140,6 +154,8 @@ namespace casual
 
             std::vector< common::ipc::message::Complete> Begin::operator () ( message_type message)
             {
+               Trace trace{ "mockup::transaction::Begin", log::internal::debug};
+
                reply_type reply;
 
                reply.correlation = message.correlation;
@@ -154,12 +170,13 @@ namespace casual
 
             std::vector< common::ipc::message::Complete> Commit::operator () ( message_type message)
             {
+               Trace trace{ "mockup::transaction::Commit", log::internal::debug};
+
                std::vector< common::ipc::message::Complete> result;
 
                {
                   common::message::transaction::prepare::Reply reply;
                   reply.correlation = message.correlation;
-                  reply.resource = 42;
                   reply.state = TX_OK;
                   reply.trid = message.trid;
 
@@ -181,6 +198,8 @@ namespace casual
 
             std::vector< common::ipc::message::Complete> Rollback::operator () ( message_type message)
             {
+               Trace trace{ "mockup::transaction::Rollback", log::internal::debug};
+
                reply_type reply;
 
                reply.correlation = message.correlation;

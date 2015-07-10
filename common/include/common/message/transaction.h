@@ -137,14 +137,11 @@ namespace casual
             template< message::Type type>
             struct basic_reply : basic_transaction< type>
             {
-
-               platform::resource::id_type resource = 0;
                int state = 0;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   basic_transaction< type>::marshal( archive);
-                  archive & resource;
                   archive & state;
                })
             };
@@ -189,6 +186,19 @@ namespace casual
 
             namespace resource
             {
+
+               template< message::Type type>
+               struct basic_reply : transaction::basic_reply< type>
+               {
+                  platform::resource::id_type resource = 0;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     transaction::basic_reply< type>::marshal( archive);
+                     archive & resource;
+                  })
+               };
+
                struct Involved : basic_transaction< cTransactionResourceInvolved>
                {
                   std::vector< platform::resource::id_type> resources;
@@ -306,6 +316,15 @@ namespace casual
 
          namespace reverse
          {
+            template<>
+            struct type_traits< transaction::begin::Request> : detail::type< transaction::begin::Reply> {};
+
+            template<>
+            struct type_traits< transaction::commit::Request> : detail::type< transaction::commit::Reply> {};
+
+            template<>
+            struct type_traits< transaction::rollback::Request> : detail::type< transaction::rollback::Reply> {};
+
             template<>
             struct type_traits< transaction::resource::commit::Request> : detail::type< transaction::resource::commit::Reply> {};
 

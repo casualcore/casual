@@ -39,7 +39,7 @@ namespace casual
                //!
                //! @param output where to send messages
                //! @param transform invoked before send, hence one can transform
-               //!   complete messages (mostly to transform regest->reply and keep correlation)
+               //!   complete messages (mostly to transform request->reply and keep correlation)
                //!
                Router( id_type output, transform_type transform);
                Router( id_type output);

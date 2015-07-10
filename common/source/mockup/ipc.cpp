@@ -193,9 +193,11 @@ namespace casual
                      // We block if the queue is empty
                      const long flags = state.cache.empty() ? 0 : common::ipc::receive::Queue::cNoBlocking;
 
-                     log::internal::ipc << "read from source: " <<  state.source.id() << " flags: " << flags << std::endl;
+
 
                      auto message = state.source( flags);
+
+                     log::internal::ipc << "read from source: " <<  state.source.id() << " - flags: " << flags << " - message: " << range::make( message) << std::endl;
 
                      if( message.empty())
                         return;
@@ -231,7 +233,7 @@ namespace casual
                   {
                      if( ! state.cache.empty())
                      {
-                        log::internal::ipc << "write to destination: " <<  state.destination.id() << " flags: " << common::ipc::send::Queue::cNoBlocking << std::endl;
+                        log::internal::ipc << "write to destination: " <<  state.destination.id() << " - message: " << state.cache.front() << std::endl;
 
                         if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
                         {

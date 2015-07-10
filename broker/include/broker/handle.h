@@ -217,7 +217,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
+            void connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::queue_id_type id, common::message::service::call::Reply& message);
 

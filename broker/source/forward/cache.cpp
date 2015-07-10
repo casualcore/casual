@@ -187,7 +187,7 @@ namespace casual
             //
             // Connect to broker
             //
-            server::connect( {});
+            server::connect( ipc::receive::queue(), {});
 
             {
                message::forward::Connect connect;

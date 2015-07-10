@@ -28,10 +28,12 @@ namespace casual
             {
                namespace persistent
                {
+
                   template< typename R, typename M>
                   void reply( State& state, const M& request, int code, const common::process::Handle& target)
                   {
                      R message;
+                     message.correlation = request.correlation;
                      message.process = common::process::handle();
                      message.trid = request.trid;
                      message.state = code;
@@ -56,6 +58,7 @@ namespace casual
                   void operator () ( const T& request, int code, const common::process::Handle& target)
                   {
                      M message;
+                     message.correlation = request.correlation;
                      message.process = common::process::handle();
                      message.trid = request.trid;
                      message.state = code;

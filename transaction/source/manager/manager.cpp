@@ -113,43 +113,6 @@ namespace casual
             }
 
 
-            common::log::internal::transaction << "prepare message dispatch handlers\n";
-
-            //
-            // prepare message dispatch handlers...
-            //
-
-            message::dispatch::Handler handler{
-               common::message::handle::Shutdown{},
-               handle::Begin{ m_state},
-               handle::Commit{ m_state},
-               handle::Rollback{ m_state},
-               handle::resource::Involved{ m_state},
-               handle::resource::reply::Connect{ m_state},
-               handle::resource::reply::Prepare{ m_state},
-               handle::resource::reply::Commit{ m_state},
-               handle::resource::reply::Rollback{ m_state},
-               handle::domain::Prepare{ m_state},
-               handle::domain::Commit{ m_state},
-               handle::domain::Rollback{ m_state},
-               handle::domain::resource::reply::Prepare{ m_state},
-               handle::domain::resource::reply::Commit{ m_state},
-               handle::domain::resource::reply::Rollback{ m_state},
-               common::server::handle::basic_admin_call< State>{ admin::Server::services( *this), m_state},
-               common::message::handle::ping( m_state),
-
-               //
-               // We discard the connect reply message
-               //
-               common::message::handle::Discard< common::message::server::connect::Reply>{},
-            };
-
-
-
-            common::log::internal::transaction << "start message pump\n";
-
-
-
             auto instances = common::range::accumulate(
                   m_state.resources, 0,
                   []( std::size_t count, const state::resource::Proxy& p)
@@ -167,88 +130,11 @@ namespace casual
                   << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
 
-            queue::blocking::Reader queueReader{ m_receiveQueue, m_state};
+            //
+            // We're ready to start....
+            //
+            message::pump( m_state, m_receiveQueue);
 
-
-            while( true)
-            {
-               common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
-
-               {
-
-                  scoped::Writer batchWrite( m_state.log);
-
-                  if( ! m_state.pending())
-                  {
-                     //
-                     // We can only block if our backlog is empty
-                     //
-
-                     try
-                     {
-                        common::signal::timer::Scoped timeout{ m_state.log.timeout()};
-
-                        handler( queueReader.next());
-                     }
-                     catch( const exception::signal::Timeout&)
-                     {
-                        //
-                        // We've got a transaction timeout.
-                        // casual doesn't really care, but to play nice with RM's and let them release resources
-                        // and such, we roll-back every transaction that has reached it's deadline.
-                        //
-                        action::timeout( m_state);
-                     }
-                  }
-
-
-                  //
-                  // Consume until the queue is empty or we've got pending replies equal to batch::transaction
-                  //
-
-                  queue::non_blocking::Reader nonBlocking( m_receiveQueue, m_state);
-
-                  while( handler( nonBlocking.next()) &&
-                        m_state.persistentReplies.size() < common::platform::batch::transaction)
-                  {
-                     ;
-                  }
-               }
-
-               //
-               // Send persistent replies to clients
-               //
-               {
-                  common::log::internal::transaction << "manager persistent replies: " << m_state.persistentReplies.size() << "\n";
-
-                  auto notDone = common::range::partition(
-                        m_state.persistentReplies,
-                        common::negate( action::persistent::Send{ m_state}));
-
-                  common::range::trim( m_state.persistentReplies, std::get< 0>( notDone));
-               }
-
-               //
-               // Send persistent resource requests
-               //
-               {
-                  common::log::internal::transaction << "manager persistent request: " << m_state.persistentRequests.size() << "\n";
-
-                  auto notDone = common::range::partition(
-                        m_state.persistentRequests,
-                        common::negate( action::persistent::Send{ m_state}));
-
-                  //
-                  // Move the ones that did not find an idle resource to pending requests
-                  //
-                  common::range::move( std::get< 0>( notDone), m_state.pendingRequests);
-
-                  m_state.persistentRequests.clear();
-
-               }
-
-               common::log::internal::transaction << "manager transactions: " << m_state.transactions.size() << "\n";
-            }
 
          }
          catch( const common::exception::signal::Terminate&)
@@ -266,6 +152,138 @@ namespace casual
       {
          return m_state;
       }
+
+      namespace message
+      {
+         void pump( State& state, common::ipc::receive::Queue& ipc)
+         {
+            try
+            {
+
+               common::log::internal::transaction << "prepare message dispatch handlers\n";
+
+               //
+               // prepare message dispatch handlers...
+               //
+
+               common::message::dispatch::Handler handler{
+                  common::message::handle::Shutdown{},
+                  handle::Begin{ state},
+                  handle::Commit{ state},
+                  handle::Rollback{ state},
+                  handle::resource::Involved{ state},
+                  handle::resource::reply::Connect{ state},
+                  handle::resource::reply::Prepare{ state},
+                  handle::resource::reply::Commit{ state},
+                  handle::resource::reply::Rollback{ state},
+                  handle::domain::Prepare{ state},
+                  handle::domain::Commit{ state},
+                  handle::domain::Rollback{ state},
+                  handle::domain::resource::reply::Prepare{ state},
+                  handle::domain::resource::reply::Commit{ state},
+                  handle::domain::resource::reply::Rollback{ state},
+                  common::server::handle::basic_admin_call< State>{ ipc, admin::services( state), state},
+                  common::message::handle::ping( state),
+
+                  //
+                  // We discard the connect reply message
+                  //
+                  common::message::handle::Discard< common::message::server::connect::Reply>{},
+               };
+
+               common::log::internal::transaction << "start message pump\n";
+
+
+               queue::blocking::Reader queueReader{ ipc, state};
+
+               while( true)
+               {
+                  common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
+
+                  {
+                     scoped::Writer batchWrite( state.log);
+
+                     if( ! state.pending())
+                     {
+                        //
+                        // We can only block if our backlog is empty
+                        //
+
+                        try
+                        {
+                           common::signal::timer::Scoped timeout{ state.log.timeout()};
+
+                           handler( queueReader.next());
+                        }
+                        catch( const exception::signal::Timeout&)
+                        {
+                           //
+                           // We've got a transaction timeout.
+                           // casual doesn't really care, but to play nice with RM's and let them release resources
+                           // and such, we roll-back every transaction that has reached it's deadline.
+                           //
+                           action::timeout( state);
+                        }
+                     }
+
+
+                     //
+                     // Consume until the queue is empty or we've got pending replies equal to batch::transaction
+                     //
+
+                     queue::non_blocking::Reader nonBlocking( ipc, state);
+
+                     while( handler( nonBlocking.next()) &&
+                           state.persistentReplies.size() < common::platform::batch::transaction)
+                     {
+                        ;
+                     }
+                  }
+
+                  //
+                  // Send persistent replies to clients
+                  //
+                  {
+                     common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
+
+                     auto notDone = common::range::partition(
+                           state.persistentReplies,
+                           common::negate( action::persistent::Send{ state}));
+
+                     common::range::trim( state.persistentReplies, std::get< 0>( notDone));
+                  }
+
+                  //
+                  // Send persistent resource requests
+                  //
+                  {
+                     common::log::internal::transaction << "manager persistent request: " << state.persistentRequests.size() << "\n";
+
+                     auto notDone = common::range::partition(
+                           state.persistentRequests,
+                           common::negate( action::persistent::Send{ state}));
+
+                     //
+                     // Move the ones that did not find an idle resource to pending requests
+                     //
+                     common::range::move( std::get< 0>( notDone), state.pendingRequests);
+
+                     state.persistentRequests.clear();
+
+                  }
+
+                  common::log::internal::transaction << "manager transactions: " << state.transactions.size() << "\n";
+               }
+            }
+            catch( const exception::Shutdown&)
+            {
+               //
+               // We do nothing
+               //
+            }
+         }
+
+      } // message
 
    } // transaction
 } // casual

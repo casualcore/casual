@@ -16,23 +16,25 @@
 
 
 
-namespace local
-{
-   namespace
-   {
-
-      casual::sf::server::type server;
-   }
-}
-
 
 namespace casual
 {
 namespace broker
 {
 
-   extern "C"
+   namespace admin
    {
+
+      namespace local
+      {
+         namespace
+         {
+
+            casual::sf::server::type server;
+         }
+      }
+
+
       int tpsvrinit( int argc, char **argv)
       {
          try
@@ -42,7 +44,6 @@ namespace broker
          }
          catch( ...)
          {
-            // TODO
             return -1;
          }
 
@@ -56,80 +57,73 @@ namespace broker
          //
          casual::sf::server::sink( local::server);
       }
-   }
 
-   namespace admin
-   {
 
-      extern "C"
+
+      void service_update_instances( TPSVCINFO *serviceInfo, broker::State& state)
       {
+         casual::sf::service::reply::State reply;
 
-
-
-         void service_update_instances( TPSVCINFO *serviceInfo, broker::State& state)
+         try
          {
-            casual::sf::service::reply::State reply;
 
-            try
-            {
-
-               auto service_io = local::server->createService( serviceInfo);
+            auto service_io = local::server->createService( serviceInfo);
 
 
-               std::vector<admin::update::InstancesVO> instances;
+            std::vector<admin::update::InstancesVO> instances;
 
-               service_io >> CASUAL_MAKE_NVP( instances);
+            service_io >> CASUAL_MAKE_NVP( instances);
 
-               broker::update::instances( state, instances);
+            broker::update::instances( state, instances);
 
-               reply = service_io.finalize();
-            }
-            catch( ...)
-            {
-               local::server->handleException( serviceInfo, reply);
-            }
-
-            tpreturn(
-               reply.value,
-               reply.code,
-               reply.data,
-               reply.size,
-               reply.flags);
+            reply = service_io.finalize();
+         }
+         catch( ...)
+         {
+            local::server->handleException( serviceInfo, reply);
          }
 
-
-         void service_shutdown( TPSVCINFO *serviceInfo, broker::State& state)
-         {
-            casual::sf::service::reply::State reply;
-
-            try
-            {
-               auto service_io = local::server->createService( serviceInfo);
-
-               bool broker;
-
-               service_io >> CASUAL_MAKE_NVP( broker);
-
-               auto serviceReturn = broker::shutdown( state, broker);
-
-               service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-               reply = service_io.finalize();
-            }
-            catch( ...)
-            {
-               local::server->handleException( serviceInfo, reply);
-            }
-
-            tpreturn(
-               reply.value,
-               reply.code,
-               reply.data,
-               reply.size,
-               reply.flags);
-         }
-
+         tpreturn(
+            reply.value,
+            reply.code,
+            reply.data,
+            reply.size,
+            reply.flags);
       }
+
+
+      void service_shutdown( TPSVCINFO *serviceInfo, broker::State& state)
+      {
+         casual::sf::service::reply::State reply;
+
+         try
+         {
+            auto service_io = local::server->createService( serviceInfo);
+
+            bool broker;
+
+            service_io >> CASUAL_MAKE_NVP( broker);
+
+            auto serviceReturn = broker::shutdown( state, broker);
+
+            service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+            reply = service_io.finalize();
+         }
+         catch( ...)
+         {
+            local::server->handleException( serviceInfo, reply);
+         }
+
+         tpreturn(
+            reply.value,
+            reply.code,
+            reply.data,
+            reply.size,
+            reply.flags);
+      }
+
+
 
 
 
@@ -209,6 +203,9 @@ namespace broker
       {
 
          common::server::Arguments result{ { common::process::path()}};
+
+         result.server_init = &tpsvrinit;
+         result.server_done = &tpsvrdone;
 
          result.services.emplace_back( ".casual.broker.state", std::bind( &service_broker_state, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
          result.services.emplace_back( ".casual.broker.update.instances", std::bind( &service_update_instances, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);

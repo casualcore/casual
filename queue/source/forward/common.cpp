@@ -91,7 +91,7 @@ namespace casual
 
             common::signal::timer::Scoped timout{ std::chrono::seconds{ 5}};
 
-            common::server::connect( {}, resources);
+            common::server::connect( common::ipc::receive::queue(), {}, resources);
 
          }
 
