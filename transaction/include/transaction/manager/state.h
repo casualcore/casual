@@ -300,6 +300,11 @@ namespace casual
          common::transaction::ID trid;
          std::vector< Resource> resources;
 
+         //!
+         //! Used to keep track of the origin for commit request.
+         //!
+         common::Uuid correlation;
+
          Resource::State state() const;
 
          //!

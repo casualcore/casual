@@ -64,28 +64,67 @@ namespace casual
 
          }
 
+         namespace local
+         {
+            namespace
+            {
+               struct Timout : state::Base
+               {
+                  using state::Base::Base;
+
+                  inline void operator () ( const common::transaction::ID& trid)
+                  {
+                     //
+                     // Find the transaction
+                     //
+                     auto found = common::range::find_if(
+                           common::range::make( m_state.transactions), find::Transaction{ trid});
+
+                     if( found)
+                     {
+                        if( found->state() == Transaction::Resource::State::cInvolved)
+                        {
+
+                           handle::Rollback::message_type message;
+                           message.trid = trid;
+
+                           //
+                           // We make our self the sender, and we'll discard the response  (from our self)
+                           //
+                           message.process = process::handle();
+
+                           handle::Rollback{ m_state}( message);
+                        }
+                        else
+                        {
+                           log::internal::transaction << "transaction: " << *found << " already in transition\n";
+                        }
+                     }
+                     else
+                     {
+                        log::error << "persistent transaction is not active - action: discard\n";
+                     }
+
+
+                     //
+                     // Set the transaction in "timeout-mode"
+                     //
+                     m_state.log.timeout( trid);
+
+                  }
+               };
+
+            } // <unnamed>
+         } // local
+
+
          void timeout( State& state)
          {
+            trace::internal::Scope trace( "action::timeout", common::log::internal::transaction);
+
             auto transactions = state.log.passed( common::platform::clock_type::now());
 
-            handle::Rollback::message_type message;
-
-            //
-            // We make our self the sender, and we'll discard the response  (from our self)
-            //
-            message.process = process::handle();
-
-            for( auto& transaction : transactions)
-            {
-               message.trid = transaction;
-
-               handle::Rollback{ state}( message);
-
-               //
-               // Set the transaction in "timeout-mode"
-               //
-               state.log.timeout( transaction);
-            }
+            range::for_each( transactions, local::Timout{ state});
          }
 
          namespace boot

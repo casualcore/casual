@@ -175,22 +175,17 @@ namespace casual
                std::vector< common::ipc::message::Complete> result;
 
                {
-                  common::message::transaction::prepare::Reply reply;
-                  reply.correlation = message.correlation;
-                  reply.state = TX_OK;
-                  reply.trid = message.trid;
-
-                  result.emplace_back( marshal::complete( reply));
-               }
-
-               {
                   common::message::transaction::commit::Reply reply;
 
                   reply.correlation = message.correlation;
                   reply.process = common::mockup::ipc::transaction::manager::queue().process();
                   reply.state = XA_OK;
+                  reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
                   reply.trid = message.trid;
 
+                  result.emplace_back( marshal::complete( reply));
+
+                  reply.stage = common::message::transaction::commit::Reply::Stage::commit;
                   result.emplace_back( marshal::complete( reply));
                }
                return result;

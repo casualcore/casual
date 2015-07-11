@@ -374,10 +374,10 @@ namespace casual
                            //
                            // We block
                            //
-                           common::ipc::message::receive( input, transport, 0);
+                           common::ipc::message::ignore::signal::receive( input, transport, 0);
                            cache.push_back( transport);
                         }
-                        else if( common::ipc::message::receive( input, transport, common::ipc::message::Flags::cNoBlocking))
+                        else if( common::ipc::message::ignore::signal::receive( input, transport, common::ipc::message::Flags::cNoBlocking))
                         {
                            cache.push_back( transport);
                         }
@@ -388,11 +388,11 @@ namespace casual
 
                         if( transport.message.type == local::message::Disconnect::message_type)
                         {
-                           common::ipc::message::send( output, transport, common::ipc::message::Flags::cNoBlocking);
+                           common::ipc::message::ignore::signal::send( output, transport, common::ipc::message::Flags::cNoBlocking);
                            return;
                         }
 
-                        if( ! cache.empty() && common::ipc::message::send( output, cache.front(), common::ipc::message::Flags::cNoBlocking))
+                        if( ! cache.empty() && common::ipc::message::ignore::signal::send( output, cache.front(), common::ipc::message::Flags::cNoBlocking))
                         {
                            cache.pop_front();
                         }
@@ -413,7 +413,7 @@ namespace casual
                      {
                         try
                         {
-                           common::ipc::message::send( input, transport, 0);
+                           common::ipc::message::ignore::signal::send( input, transport, 0);
                            resend = false;
                         }
                         catch( const exception::signal::Base&) {}

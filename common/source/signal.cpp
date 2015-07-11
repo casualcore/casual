@@ -391,7 +391,7 @@ namespace casual
                sigset_t set;
                sigfillset(&set);
                sigset_t result;
-               pthread_sigmask(SIG_SETMASK, &set, &result);
+               pthread_sigmask( SIG_BLOCK, &set, &result);
                return result;
             }
 
@@ -405,7 +405,7 @@ namespace casual
                }
                Block::~Block()
                {
-                  pthread_sigmask(SIG_SETMASK, &m_set, NULL);
+                  pthread_sigmask(SIG_SETMASK, &m_set, nullptr);
                }
 
             } // scope

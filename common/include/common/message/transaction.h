@@ -169,12 +169,26 @@ namespace casual
             namespace commit
             {
                typedef basic_request< cTransactionCommitRequest> Request;
-               typedef basic_reply< cTransactionCommitReply> Reply;
-            } // commit
 
-            namespace prepare
-            {
-               typedef basic_reply< cTransactionPrepareReply> Reply;
+               struct Reply : basic_reply< cTransactionCommitReply>
+               {
+                  enum class Stage : char
+                  {
+                     prepare = 0,
+                     commit = 1,
+                     error = 2,
+                  };
+
+                  Stage stage = Stage::prepare;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_reply< cTransactionCommitReply>::marshal( archive);
+                     archive & stage;
+                  })
+
+               };
+
             } // commit
 
             namespace rollback
@@ -318,18 +332,24 @@ namespace casual
          {
             template<>
             struct type_traits< transaction::begin::Request> : detail::type< transaction::begin::Reply> {};
-
             template<>
             struct type_traits< transaction::commit::Request> : detail::type< transaction::commit::Reply> {};
-
             template<>
             struct type_traits< transaction::rollback::Request> : detail::type< transaction::rollback::Reply> {};
 
             template<>
+            struct type_traits< transaction::resource::prepare::Request> : detail::type< transaction::resource::prepare::Reply> {};
+            template<>
             struct type_traits< transaction::resource::commit::Request> : detail::type< transaction::resource::commit::Reply> {};
-
             template<>
             struct type_traits< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
+
+            template<>
+            struct type_traits< transaction::resource::domain::prepare::Request> : detail::type< transaction::resource::domain::prepare::Reply> {};
+            template<>
+            struct type_traits< transaction::resource::domain::commit::Request> : detail::type< transaction::resource::domain::commit::Reply> {};
+            template<>
+            struct type_traits< transaction::resource::domain::rollback::Request> : detail::type< transaction::resource::domain::rollback::Reply> {};
 
          } // reverse
 

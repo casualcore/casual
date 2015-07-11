@@ -63,7 +63,6 @@ namespace casual
             cTransactionBeginRequest = 4100,
             cTransactionBeginReply,
             cTransactionCommitRequest,
-            cTransactionPrepareReply,
             cTransactionCommitReply,
             cTransactionRollbackRequest,
             cTransactionRollbackReply,

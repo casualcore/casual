@@ -18,14 +18,18 @@ namespace casual
    {
       namespace local
       {
-         common::message::transaction::begin::Request beginReqest()
+         common::message::transaction::begin::Request begin_request()
          {
             common::message::transaction::begin::Request result;
 
+
             result.trid = common::transaction::ID::create();
             result.process.queue = 100;
-            result.start = common::platform::clock_type::now();
 
+            //
+            // We've got a 1s delay on the timeout (to get "better" semantics) , so we subtract 1s from 'now'
+            //
+            result.start = common::platform::clock_type::now() - std::chrono::seconds{ 1};
 
             return result;
          }
@@ -42,7 +46,7 @@ namespace casual
          auto path = local::transactionLogPath();
          Log log( path);
 
-         auto begin = local::beginReqest();
+         auto begin = local::begin_request();
 
          log.begin( begin);
 
@@ -59,10 +63,10 @@ namespace casual
          auto path = local::transactionLogPath();
          Log log( path);
 
-         auto first = local::beginReqest();
+         auto first = local::begin_request();
          log.begin( first);
 
-         auto second = local::beginReqest();
+         auto second = local::begin_request();
          log.begin( second);
 
 
@@ -81,7 +85,7 @@ namespace casual
          auto path = local::transactionLogPath();
          Log log( path);
 
-         auto begin = local::beginReqest();
+         auto begin = local::begin_request();
          log.begin( begin);
 
          log.prepare( begin.trid);
@@ -98,7 +102,7 @@ namespace casual
       {
          Log log( ":memory:");
 
-         auto begin = local::beginReqest();
+         auto begin = local::begin_request();
          begin.timeout = std::chrono::microseconds{ 0};
 
          log.begin( begin);
@@ -114,7 +118,7 @@ namespace casual
       {
          Log log( ":memory:");
 
-         auto begin = local::beginReqest();
+         auto begin = local::begin_request();
          begin.timeout = std::chrono::microseconds{ 10};
 
          log.begin( begin);

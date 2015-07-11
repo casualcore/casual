@@ -244,6 +244,7 @@ namespace casual
                   // Send persistent replies to clients
                   //
                   {
+
                      common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
 
                      auto notDone = common::range::partition(
@@ -251,6 +252,8 @@ namespace casual
                            common::negate( action::persistent::Send{ state}));
 
                      common::range::trim( state.persistentReplies, std::get< 0>( notDone));
+
+                     common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
                   }
 
                   //

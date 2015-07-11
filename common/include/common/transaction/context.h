@@ -137,6 +137,17 @@ namespace casual
 
             Control m_control = Control::unchained;
 
+            using commit_return_type = COMMIT_RETURN;
+
+            enum class Commit_Return : commit_return_type
+            {
+               completed = TX_COMMIT_COMPLETED,
+               logged = TX_COMMIT_DECISION_LOGGED
+            };
+
+            Commit_Return m_commit_return = Commit_Return::completed;
+
+
 
             struct resources_type
             {

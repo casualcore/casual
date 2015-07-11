@@ -111,7 +111,7 @@ namespace casual
 
          m_statement.deadline.earliest = m_connection.precompile( R"( SELECT MIN( deadline) FROM trans WHERE state = 10; )");
 
-         m_statement.deadline.transactions = m_connection.precompile( R"( SELECT gtrid, bqual, format, pid FROM trans WHERE deadline > :deadline AND state = 10)");
+         m_statement.deadline.transactions = m_connection.precompile( R"( SELECT gtrid, bqual, format, pid FROM trans WHERE deadline < :deadline AND state = 10)");
 
       }
 

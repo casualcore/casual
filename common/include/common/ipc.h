@@ -76,6 +76,27 @@ namespace casual
             bool receive( id_type id, Transport& transport, long flags);
 
 
+            namespace ignore
+            {
+               namespace signal
+               {
+                  //!
+                  //! Send a @p transport message to ipc-queue with @p id
+                  //!
+                  //! ignores signals
+                  //!
+                  bool send( id_type id, const Transport& transport, long flags);
+
+                  //!
+                  //! Send a @p transport message to ipc-queue with @p id
+                  //!
+                  //! ignores signals
+                  //!
+                  bool receive( id_type id, Transport& transport, long flags);
+
+               } // signal
+            } // ignore
+
             struct Transport
             {
                typedef platform::message_type_type message_type_type;
@@ -160,6 +181,9 @@ namespace casual
 
                friend bool send( id_type id, const Transport& transport, long flags);
                friend bool receive( id_type id, Transport& transport, long flags);
+               friend bool ignore::signal::send( id_type id, const Transport& transport, long flags);
+               friend bool ignore::signal::receive( id_type id, Transport& transport, long flags);
+
 
             private:
 

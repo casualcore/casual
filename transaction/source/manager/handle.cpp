@@ -24,6 +24,35 @@ namespace casual
       {
          namespace internal
          {
+
+            namespace transform
+            {
+
+               template< typename R, typename M>
+               R message( M&& message)
+               {
+                  R result;
+
+                  result.process = message.process;
+                  result.trid = message.trid;
+
+                  return result;
+               }
+
+
+               template< typename M>
+               auto reply( M&& message) -> decltype( common::message::reverse::type( message))
+               {
+                  auto result = common::message::reverse::type( message);
+
+                  result.process = common::process::handle();
+                  result.trid = message.trid;
+
+                  return result;
+               }
+
+            } // transform
+
             namespace send
             {
                namespace persistent
@@ -45,6 +74,12 @@ namespace casual
                   void reply( State& state, const M& request, int code)
                   {
                      reply< R>( state, request, code, request.process);
+                  }
+
+                  template< typename M>
+                  void reply( State& state, M&& message, const common::process::Handle& target)
+                  {
+                     state.persistentReplies.emplace_back( target.queue, std::move( message));
                   }
 
                } // persistent
@@ -82,6 +117,21 @@ namespace casual
                   }
 
                };
+
+
+               template< typename R>
+               void reply( State& state, R&& message, const common::process::Handle& target)
+               {
+                  state::pending::Reply reply{ target.queue, message};
+
+                  action::persistent::Send send{ state};
+
+                  if( ! send( reply))
+                  {
+                     common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
+                     state.persistentReplies.push_back( std::move( reply));
+                  }
+               }
 
 
                namespace resource
@@ -234,20 +284,6 @@ namespace casual
                }
             } // instance
 
-
-            namespace transform
-            {
-               template< typename R, typename M>
-               R message( M&& message)
-               {
-                  R result;
-
-                  result.process = message.process;
-                  result.trid = message.trid;
-
-                  return result;
-               }
-            } // transform
 
          } // internal
 
@@ -423,7 +459,7 @@ namespace casual
                   if( state == Transaction::Resource::State::cPrepareReplied)
                   {
 
-                     using reply_type = common::message::transaction::prepare::Reply;
+                     using reply_type = common::message::transaction::commit::Reply;
 
                      //
                      // Normalize all the resources return-state
@@ -445,10 +481,14 @@ namespace casual
                            //
                            // Send reply
                            //
-                           internal::send::Reply<
-                              reply_type> send{ m_state};
+                           {
+                              auto reply = internal::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.stage = reply_type::Stage::commit;
+                              reply.state = XA_RDONLY;
 
-                           send( message, XA_RDONLY, transaction.trid.owner());
+                              internal::send::reply( m_state, std::move( reply), transaction.trid.owner());
+                           }
 
                            //
                            // Indicate that wrapper should remove the transaction from state
@@ -467,7 +507,14 @@ namespace casual
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.trid.owner());
+                           {
+                              auto reply = internal::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.stage = reply_type::Stage::prepare;
+                              reply.state = XA_OK;
+
+                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                           }
 
                            //
                            // All XA_OK is to be committed, send commit to all
@@ -528,7 +575,7 @@ namespace casual
                   //
                   if( state == Transaction::Resource::State::cCommitReplied)
                   {
-                     //using non_block_writer = typename queue_policy::non_block_writer;
+
                      using reply_type = common::message::transaction::commit::Reply;
 
                      //
@@ -545,16 +592,18 @@ namespace casual
                            //
                            // Send reply
                            // TODO: We can't send reply directly without checking that the prepare-reply
-                           // has been sent. For now, we do a delayed reply, so we're sure that the
+                           // has been sent (prepare-reply could be pending for persistent write).
+                           // For now, we do a delayed reply, so we're sure that the
                            // commit-reply arrives after the prepare-reply
-                           /*
-                           internal::send::Reply<
-                              non_block_writer,
-                              reply_type> send{ m_state};
+                           //
+                           {
+                              auto reply = internal::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.stage = reply_type::Stage::commit;
+                              reply.state = XA_OK;
 
-                           send( message, XA_OK, transaction.owner);
-                           */
-                           internal::send::persistent::reply< reply_type>( m_state, message, XA_OK, transaction.trid.owner());
+                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                           }
 
                            //
                            // Remove transaction
@@ -570,10 +619,18 @@ namespace casual
                            common::log::error << "TODO: something has gone wrong...\n";
 
                            //
-                           // prepare send reply. Will be sent after persistent write to file
+                           // prepare send reply. Will be sent after persistent write to file.
                            //
-                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.trid.owner());
+                           // TOOD: we do have to save the state of the transaction?
+                           //
+                           {
+                              auto reply = internal::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.stage = reply_type::Stage::commit;
+                              reply.state = Transaction::Resource::convert( result);
 
+                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                           }
                            break;
                         }
                      }
@@ -616,11 +673,13 @@ namespace casual
                            //
                            // Send reply
                            //
-                           internal::send::Reply<
-                              reply_type> sender{ m_state};
+                           {
+                              auto reply = internal::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.state = XA_OK;
 
-                           sender( message, XA_OK, transaction.trid.owner());
-
+                              internal::send::reply( m_state, std::move( reply), transaction.trid.owner());
+                           }
 
                            //
                            // Remove transaction
@@ -633,13 +692,21 @@ namespace casual
                            //
                            // Something has gone wrong.
                            //
-                           common::log::error << "TODO: something has gone wrong...\n";
+                           common::log::error << "TODO: resource rollback - something has gone wrong...\n";
 
                            //
                            // prepare send reply. Will be sent after persistent write to file
                            //
-                           internal::send::persistent::reply< reply_type>( m_state, message, Transaction::Resource::convert( result), transaction.trid.owner());
+                           //
+                           // TOOD: we do have to save the state of the transaction?
+                           //
+                           {
+                              auto reply = internal::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.state = Transaction::Resource::convert( result);
 
+                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                           }
                            break;
                         }
                      }
@@ -680,7 +747,11 @@ namespace casual
                //
                // prepare send reply. Will be sent after persistent write to file
                //
-               internal::send::persistent::reply< reply_type>( m_state, message, XA_OK);
+               {
+                  auto reply = internal::transform::reply( message);
+                  reply.state = XA_OK;
+                  internal::send::persistent::reply( m_state, std::move( reply), message.process);
+               }
             }
             else
             {
@@ -689,13 +760,12 @@ namespace casual
                //
                // Send reply
                //
-               internal::send::Reply<
-                  reply_type> sender{ m_state};
-
-               sender( message, XAER_DUPID);
+               {
+                  auto reply = internal::transform::reply( message);
+                  reply.state = XAER_DUPID;
+                  internal::send::persistent::reply( m_state, std::move( reply), message.process);
+               }
             }
-
-
          }
 
          void Commit::operator () ( message_type& message)
@@ -730,10 +800,14 @@ namespace casual
                      //
                      // Send reply
                      //
-                     internal::send::Reply<
-                        common::message::transaction::prepare::Reply> sender{ m_state};
+                     {
+                        auto reply = internal::transform::reply( message);
+                        reply.state = XA_RDONLY;
+                        reply.stage = reply_type::Stage::commit;
 
-                     sender( message, XA_RDONLY);
+                        internal::send::reply( m_state, std::move( reply), message.process);
+                     }
+
                      break;
                   }
                   case 1:
@@ -743,6 +817,10 @@ namespace casual
                      //
                      common::log::internal::transaction << "only one resource involved - " << transaction << " TMONEPHASE\n";
 
+                     //
+                     // Keep the correlation so we can send correct reply
+                     //
+                     transaction.correlation = message.correlation;
 
                      internal::send::resource::Requests<
                         queue::non_blocking::Writer,
@@ -759,6 +837,10 @@ namespace casual
                      //
                      common::log::internal::transaction << "prepare " << transaction << "\n";
 
+                     //
+                     // Keep the correlation so we can send correct reply
+                     //
+                     transaction.correlation = message.correlation;
 
                      internal::send::resource::Requests<
                         queue::non_blocking::Writer,
@@ -776,12 +858,15 @@ namespace casual
                common::log::error << "XAER_NOTA Attempt to commit transaction " << message.trid << ", which is not known to TM - action: XAER_NOTA reply" << std::endl;
 
                //
-               // Send reply
+               // Send error reply
                //
-               internal::send::Reply<
-                  reply_type> sender{ m_state};
+               {
+                  auto reply = internal::transform::reply( message);
+                  reply.state = XAER_NOTA;
+                  reply.stage = reply_type::Stage::error;
 
-               sender( message, XAER_NOTA);
+                  internal::send::reply( m_state, std::move( reply), message.process);
+               }
             }
          }
 
@@ -811,13 +896,20 @@ namespace casual
                   //
                   // Send reply
                   //
-                  internal::send::Reply<
-                     reply_type> sender{ m_state};
+                  {
+                     auto reply = internal::transform::reply( message);
+                     reply.state = XA_OK;
 
-                  sender( message, XA_OK);
+                     internal::send::reply( m_state, std::move( reply), message.process);
+                  }
                }
                else
                {
+                  //
+                  // Keep the correlation so we can send correct reply
+                  //
+                  transaction.correlation = message.correlation;
+
                   internal::send::resource::Requests<
                      queue::non_blocking::Writer,
                      common::message::transaction::resource::rollback::Request> request{ m_state};
@@ -832,10 +924,12 @@ namespace casual
                //
                // Send reply
                //
-               internal::send::Reply<
-                  reply_type> sender{ m_state};
+               {
+                  auto reply = internal::transform::reply( message);
+                  reply.state = XAER_NOTA;
 
-               sender( message, XAER_NOTA);
+                  internal::send::reply( m_state, std::move( reply), message.process);
+               }
             }
 
          }
@@ -882,10 +976,12 @@ namespace casual
                   //
                   // Send reply
                   //
-                  internal::send::Reply<
-                     reply_type> sender{ m_state};
+                  {
+                     auto reply = internal::transform::reply( message);
+                     reply.state = XA_RDONLY;
 
-                  sender( message, XA_RDONLY);
+                     internal::send::reply( m_state, std::move( reply), message.process);
+                  }
 
                }
             }
@@ -919,10 +1015,12 @@ namespace casual
                   //
                   // Send reply
                   //
-                  internal::send::Reply<
-                     reply_type> sender{ m_state};
+                  {
+                     auto reply = internal::transform::reply( message);
+                     reply.state = XAER_NOTA;
 
-                  sender( message, XAER_NOTA);
+                     internal::send::reply( m_state, std::move( reply), message.process);
+                  }
                }
             }
 
@@ -955,10 +1053,12 @@ namespace casual
                   //
                   // Send reply
                   //
-                  internal::send::Reply<
-                     reply_type> sender{ m_state};
+                  {
+                     auto reply = internal::transform::reply( message);
+                     reply.state = XAER_NOTA;
 
-                  sender( message, XAER_NOTA);
+                     internal::send::reply( m_state, std::move( reply), message.process);
+                  }
                }
             }
 
@@ -993,10 +1093,12 @@ namespace casual
                         //
                         // Send reply
                         //
-                        internal::send::Reply<
-                           reply_type> sender{ m_state};
+                        {
+                           auto reply = internal::transform::message< reply_type>( message);
+                           reply.state = Transaction::Resource::convert( result);
 
-                        sender( message, Transaction::Resource::convert( result));
+                           internal::send::reply( m_state, std::move( reply), message.process);
+                        }
                      }
 
                      //
@@ -1034,10 +1136,12 @@ namespace casual
                         //
                         // Send reply
                         //
-                        internal::send::Reply<
-                           reply_type> sender{ m_state};
+                        {
+                           auto reply = internal::transform::message< reply_type>( message);
+                           reply.state = Transaction::Resource::convert( result);
 
-                        sender( message, Transaction::Resource::convert( result));
+                           internal::send::reply( m_state, std::move( reply), message.process);
+                        }
 
                         //
                         // We remove the transaction

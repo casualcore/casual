@@ -107,7 +107,11 @@ namespace casual
                {
                   common::message::transaction::begin::Request request;
                   request.process = caller.process();
-                  request.start = common::platform::clock_type::now();
+
+                  //
+                  // We've got a 1s delay on the timeout (to get "better" semantics) , so we subtract 1s from 'now'
+                  //
+                  request.start = common::platform::clock_type::now() - std::chrono::seconds{ 1};
                   request.timeout = timout;
 
                   auto correlation = local::mockup::send::tm( request);
@@ -184,7 +188,7 @@ namespace casual
                            common::message::transaction::resource::prepare::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
-                           reply.resource = message.resource;
+                           reply.resource = rm_id;
                            reply.process.pid = current_pid - 1;
                            reply.state = error_state::get( message.trid);
 
@@ -193,12 +197,12 @@ namespace casual
                            return std::vector< common::ipc::message::Complete>{};
                         },
                         // commit
-                        []( common::message::transaction::resource::commit::Request message)
+                        [=]( common::message::transaction::resource::commit::Request message)
                         {
                            common::message::transaction::resource::commit::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
-                           reply.resource = message.resource;
+                           reply.resource = rm_id;
                            reply.process.pid = current_pid - 1;
                            reply.state = error_state::get( message.trid);
 
@@ -206,13 +210,13 @@ namespace casual
 
                            return std::vector< common::ipc::message::Complete>{};
                         },
-                        // prepare
-                        []( common::message::transaction::resource::rollback::Request message)
+                        // rollback
+                        [=]( common::message::transaction::resource::rollback::Request message)
                         {
                            common::message::transaction::resource::rollback::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
-                           reply.resource = message.resource;
+                           reply.resource = rm_id;
                            reply.process.pid = current_pid - 1;
                            reply.state = error_state::get( message.trid);
 
@@ -363,16 +367,7 @@ namespace casual
          {
             local::Manager manager{ domain.state};
 
-            common::message::transaction::begin::Request request;
-            request.process = server1.process();
-
-            auto correlation = local::mockup::send::tm( request);
-
-
-            common::queue::blocking::Reader receive{ server1.output()};
-            receive( reply, correlation);
-
-            EXPECT_TRUE( ! reply.trid.null());
+            reply = local::mockup::begin( server1);
          }
 
          auto trans = domain.state.log.select( reply.trid);
@@ -396,9 +391,7 @@ namespace casual
 
             // begin
             {
-
                auto reply = local::mockup::begin( server1);
-
                trid = reply.trid;
             }
 
@@ -407,17 +400,15 @@ namespace casual
 
                auto correlation = local::mockup::commit::request( server1, trid);
 
-               common::queue::blocking::Reader receive{ server1.output()};
+               auto reply = local::mockup::commit::reply( server1, correlation);
 
                //
                // We expect read-only optimization.
                //
-               common::message::transaction::prepare::Reply reply;
-               receive( reply, correlation);
 
+               EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::commit);
                EXPECT_TRUE( reply.trid == trid);
                EXPECT_TRUE( reply.state == XA_RDONLY);
-
             }
          }
 
@@ -425,6 +416,174 @@ namespace casual
          EXPECT_TRUE( trans.empty());
       }
 
+
+      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
+      {
+         common::mockup::ipc::Instance caller{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid;
+
+
+         {
+            local::Manager manager{ domain.state};
+
+            // begin
+            {
+               auto reply = local::mockup::begin( caller);
+               trid = reply.trid;
+            }
+
+            // involved
+            {
+               common::message::transaction::resource::Involved message;
+               message.trid = trid;
+               message.process = caller.process();
+               message.resources = { domain.state.resources.at( 0).id};
+
+               local::mockup::send::tm( message);
+            }
+
+            // commit
+            {
+
+               auto correlation = local::mockup::commit::request( caller, trid);
+
+               //
+               // We expect committed
+               //
+               {
+                  auto reply = local::mockup::commit::reply( caller, correlation);
+
+                  EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::commit);
+                  EXPECT_TRUE( reply.trid == trid);
+                  EXPECT_TRUE( reply.state == XA_OK);
+               }
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
+
+      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved_10ms_timeout___expect__timeout_rollback_XAER_NOTA)
+      {
+         common::mockup::ipc::Instance caller{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid;
+
+
+         {
+            local::Manager manager{ domain.state};
+
+            common::signal::thread::scope::Block signal_block;
+
+            // begin
+            {
+               auto reply = local::mockup::begin( caller, std::chrono::milliseconds{ 10});
+               trid = reply.trid;
+            }
+
+            // involved
+            {
+               common::message::transaction::resource::Involved message;
+               message.trid = trid;
+               message.process = caller.process();
+               message.resources = { domain.state.resources.at( 0).id};
+
+               local::mockup::send::tm( message);
+            }
+
+            // commit
+            {
+
+               common::process::sleep( std::chrono::milliseconds{ 10});
+
+               auto correlation = local::mockup::commit::request( caller, trid);
+
+
+               //
+               // We expect timeout
+               //
+               {
+                  auto reply = local::mockup::commit::reply( caller, correlation);
+
+                  EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::error);
+                  EXPECT_TRUE( reply.trid == trid);
+                  EXPECT_TRUE( reply.state == XAER_NOTA);
+               }
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
+
+      TEST( casual_transaction_manager, begin_commit_transaction__2_resources_involved__expect_two_phase_commit)
+      {
+         common::mockup::ipc::Instance caller{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid;
+
+
+         {
+            local::Manager manager{ domain.state};
+
+            // begin
+            {
+               auto reply = local::mockup::begin( caller);
+               trid = reply.trid;
+            }
+
+            // involved
+            {
+               common::message::transaction::resource::Involved message;
+               message.trid = trid;
+               message.process = caller.process();
+               message.resources = { domain.state.resources.at( 0).id, domain.state.resources.at( 1).id};
+
+               local::mockup::send::tm( message);
+            }
+
+            // commit
+            {
+
+               auto correlation = local::mockup::commit::request( caller, trid);
+
+               //
+               // We expect prepared
+               //
+               {
+                  auto reply = local::mockup::commit::reply( caller, correlation);
+
+                  EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::prepare);
+                  EXPECT_TRUE( reply.trid == trid);
+                  EXPECT_TRUE( reply.state == XA_OK);
+               }
+
+               //
+               // We expect committed
+               //
+               {
+                  auto reply = local::mockup::commit::reply( caller, correlation);
+
+                  EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::commit);
+                  EXPECT_TRUE( reply.trid == trid);
+                  EXPECT_TRUE( reply.state == XA_OK);
+               }
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
 
       /*
       TEST( casual_transaction_manager, one_resource_connect__expect_no_broker_connect)

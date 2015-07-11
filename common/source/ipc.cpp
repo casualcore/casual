@@ -52,6 +52,40 @@ namespace casual
 
          namespace message
          {
+            inline bool send_error( int code, id_type id, const Transport& transport)
+            {
+               switch( code)
+               {
+                  case EAGAIN:
+                  {
+                     return false;
+                  }
+                  case EIDRM:
+                  {
+                     throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                  }
+                  case ENOMEM:
+                  {
+                     throw exception::limit::Memory{ "id: " + std::to_string( id) + " - " + common::error::string()};
+                  }
+                  case EINVAL:
+                  {
+                     if( /* message.size() < MSGMAX  && */ transport.message.type > 0)
+                     {
+                        //
+                        // The problem is with queue-id. We guess that it has been removed.
+                        //
+                        throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                     }
+                     // we let it fall through to default
+                  }
+                  case EFAULT:
+                  default:
+                  {
+                     throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
+                  }
+               }
+            }
 
             bool send( id_type id, const Transport& transport, long flags)
             {
@@ -66,49 +100,51 @@ namespace casual
 
                if( result == -1)
                {
-                  switch( errno)
+                  auto code = errno;
+
+                  switch( code)
                   {
                      case EINTR:
                      {
                         common::signal::handle();
 
-                        return false;
+                        //
+                        // we got a signal we don't have a handle for
+                        // We continue
+                        //
+                        return send( id, transport, flags);
                      }
-                     case EAGAIN:
-                     {
-                        return false;
-                     }
-                     case EIDRM:
-                     {
-                        throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
-                     }
-                     case ENOMEM:
-                     {
-                        throw exception::limit::Memory{ "id: " + std::to_string( id) + " - " + common::error::string()};
-                     }
-                     case EINVAL:
-                     {
-                        if( /* message.size() < MSGMAX  && */ transport.message.type > 0)
-                        {
-                           //
-                           // The problem is with queue-id. We guess that it has been removed.
-                           //
-                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
-                        }
-                        // we let it fall through to default
-                     }
-                     case EFAULT:
                      default:
                      {
-                        throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
+                        return send_error( code, id, transport);
                      }
                   }
                }
 
-               // log::internal::ipc << "ipc > [" << id << "] sent transport - " << transport << std::endl;
-
                return true;
+            }
 
+            inline bool receive_error( int code, id_type id, const Transport& transport, long flags)
+            {
+               switch( code)
+               {
+                  case ENOMSG:
+                  case EAGAIN:
+                  {
+                     return false;
+                  }
+                  case EIDRM:
+                  {
+                     throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( id) + " - " + common::error::string()};
+                  }
+                  default:
+                  {
+                     std::ostringstream msg;
+                     msg << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: " << flags << " - " << common::error::string();
+                     log::internal::ipc << msg.str() << std::endl;
+                     throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
+                  }
+               }
             }
 
             bool receive( id_type id, Transport& transport, long flags)
@@ -122,7 +158,9 @@ namespace casual
 
                if( result == -1)
                {
-                  switch( errno)
+                  auto code = errno;
+
+                  switch( code)
                   {
                      case EINTR:
                      {
@@ -134,30 +172,68 @@ namespace casual
                         //
                         return receive( id, transport, flags);
                      }
-                     case ENOMSG:
-                     case EAGAIN:
-                     {
-                        return false;
-                     }
-                     case EIDRM:
-                     {
-                        throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( id) + " - " + common::error::string()};
-                     }
                      default:
                      {
-                        std::ostringstream msg;
-                        msg << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: " << flags << " - " << common::error::string();
-                        log::internal::ipc << msg.str() << std::endl;
-                        throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
+                        return receive_error( code, id, transport, flags);
                      }
                   }
                }
                transport.m_size = result - Transport::header_size;
 
-               // log::internal::ipc << "ipc < [" << id << "] received transport - " << transport << std::endl;
-
                return result > 0;
             }
+
+            namespace ignore
+            {
+               namespace signal
+               {
+                  bool send( id_type id, const Transport& transport, long flags)
+                  {
+                     //
+                     // We don't check signals..., and we block any coming signals.
+                     //
+
+                     common::signal::thread::scope::Block signal_block;
+
+
+                     auto size = message::Transport::header_size + transport.size();
+
+                     auto result = msgsnd( id, &const_cast< Transport&>( transport).message, size, flags);
+
+                     if( result == -1)
+                     {
+                        //
+                        // Will throw on EINTR
+                        //
+                        return send_error( errno, id, transport);
+                     }
+                     return true;
+                  }
+
+                  bool receive( id_type id, Transport& transport, long flags)
+                  {
+                     //
+                     // We don't check signals..., and we block any coming signals.
+                     //
+                     common::signal::thread::scope::Block signal_block;
+
+                     auto result = msgrcv( id, &transport.message, message::Transport::message_max_size, 0, flags);
+
+                     if( result == -1)
+                     {
+                        //
+                        // Will throw on EINTR
+                        //
+                        return receive_error( errno, id, transport, flags);
+                     }
+
+                     transport.m_size = result - Transport::header_size;
+
+                     return result > 0;
+                  }
+
+               } // signal
+            } // ignore
 
             Transport::Transport()
             {
