@@ -712,15 +712,13 @@ namespace casual
                      }
 
                   }
-
-
                   return false;
                }
             } // reply
          } // resource
 
 
-         void Begin::operator () ( message_type& message)
+         void basic_begin::operator () ( message_type& message)
          {
             common::trace::Scope trace{ "transaction::handle::Begin", common::log::internal::transaction};
             ;
@@ -755,20 +753,15 @@ namespace casual
             }
             else
             {
-               common::log::error << "XAER_DUPID Attempt to start a transaction " << message.trid << ", which is already in progress" << std::endl;
-
-               //
-               // Send reply
-               //
-               {
-                  auto reply = internal::transform::reply( message);
-                  reply.state = XAER_DUPID;
-                  internal::send::persistent::reply( m_state, std::move( reply), message.process);
-               }
+               throw user::error{ XAER_DUPID, "Attempt to start a transaction, which is already in progress", CASUAL_NIP( message.trid)};
             }
          }
 
-         void Commit::operator () ( message_type& message)
+
+         template struct user_reply_wrapper< basic_begin>;
+
+
+         void basic_commit::operator () ( message_type& message)
          {
             common::trace::Scope trace{ "transaction::handle::Commit", common::log::internal::transaction};
 
@@ -778,11 +771,23 @@ namespace casual
             {
                auto& transaction = *found;
 
+               switch( transaction.state())
+               {
+                  case Transaction::Resource::State::cInvolved:
+                  case Transaction::Resource::State::cNotInvolved:
+                  {
+                     break;
+                  }
+                  default:
+                  {
+                     throw user::error{ XAER_PROTO, "Attempt to commit transaction, which is not in a state for commit", CASUAL_NIP( message.trid)};
+                  }
+               }
+
                //
-               // Only the instigator can fiddle with the transaction
+               // Only the owner of the transaction can fiddle with the transaction ?
                //
-               //if( ! internal::check::owner< reply_type>( this->m_state, transaction, message))
-               //   return;
+
 
                switch( transaction.resources.size())
                {
@@ -855,23 +860,14 @@ namespace casual
             }
             else
             {
-               common::log::error << "XAER_NOTA Attempt to commit transaction " << message.trid << ", which is not known to TM - action: XAER_NOTA reply" << std::endl;
-
-               //
-               // Send error reply
-               //
-               {
-                  auto reply = internal::transform::reply( message);
-                  reply.state = XAER_NOTA;
-                  reply.stage = reply_type::Stage::error;
-
-                  internal::send::reply( m_state, std::move( reply), message.process);
-               }
+               throw user::error{ XAER_NOTA, "Attempt to commit transaction, which is not known to TM", CASUAL_NIP( message.trid)};
             }
          }
 
+         template struct user_reply_wrapper< basic_commit>;
 
-         void Rollback::operator () ( message_type& message)
+
+         void basic_rollback::operator () ( message_type& message)
          {
             common::trace::Scope trace{ "transaction::handle::Rollback", common::log::internal::transaction};
 
@@ -919,20 +915,11 @@ namespace casual
             }
             else
             {
-               common::log::error << "XAER_NOTA Attempt to rollback a transaction " << message.trid << ", which is not known to TM - action: error reply" << std::endl;
-
-               //
-               // Send reply
-               //
-               {
-                  auto reply = internal::transform::reply( message);
-                  reply.state = XAER_NOTA;
-
-                  internal::send::reply( m_state, std::move( reply), message.process);
-               }
+               throw user::error{ XAER_NOTA, "Attempt to rollback transaction, which is not known to TM", CASUAL_NIP( message.trid)};
             }
-
          }
+
+         template struct user_reply_wrapper< basic_rollback>;
 
 
          namespace domain

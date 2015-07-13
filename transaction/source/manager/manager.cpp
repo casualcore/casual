@@ -211,7 +211,7 @@ namespace casual
 
                         try
                         {
-                           common::signal::timer::Scoped timeout{ state.log.timeout()};
+                           common::signal::timer::Deadline deadline{ state.log.deadline()};
 
                            handler( queueReader.next());
                         }

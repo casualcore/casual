@@ -10,6 +10,7 @@
 
 
 #include "transaction/manager/state.h"
+#include "transaction/manager/action.h"
 
 #include "common/message/transaction.h"
 #include "common/log.h"
@@ -28,6 +29,14 @@ namespace casual
    namespace transaction
    {
 
+      namespace user
+      {
+         struct error : common::exception::code::base
+         {
+            using common::exception::code::base::base;
+         };
+
+      } // transaction
 
       namespace queue
       {
@@ -50,6 +59,23 @@ namespace casual
       namespace handle
       {
 
+         namespace internal
+         {
+            namespace transform
+            {
+
+               template< typename M>
+               auto reply( M&& message) -> decltype( common::message::reverse::type( message));
+
+            } // transform
+
+            namespace send
+            {
+               template< typename R>
+               void reply( State& state, R&& message, const common::process::Handle& target);
+
+            } // send
+         } // internal
 
          namespace resource
          {
@@ -137,9 +163,44 @@ namespace casual
 
          } // resource
 
+         template< typename Handler>
+         struct user_reply_wrapper : Handler
+         {
+            using Handler::Handler;
+
+            void operator () ( typename Handler::message_type& message)
+            {
+               try
+               {
+                  Handler::operator() ( message);
+               }
+               catch( const user::error& exception)
+               {
+                  common::log::error << common::error::xa::error( exception.code ) << " - " << exception.what() << '\n';
+
+                  auto reply = internal::transform::reply( message);
+                  reply.stage = decltype( reply)::Stage::error;
+                  reply.state = exception.code;
+
+                  internal::send::reply( Handler::m_state, std::move( reply), message.process);
+               }
+               catch( ...)
+               {
+                  common::log::error << "unexpected error - action: send reply XAER_RMERR\n";
+
+                  common::error::handler();
+
+                  auto reply = internal::transform::reply( message);
+                  reply.stage = decltype( reply)::Stage::error;
+                  reply.state = XAER_RMERR;
+
+                  internal::send::reply( Handler::m_state, std::move( reply), message.process);
+               }
+            }
+         };
 
 
-         struct Begin : public state::Base
+         struct basic_begin : public state::Base
          {
 
             typedef common::message::transaction::begin::Request message_type;
@@ -150,7 +211,9 @@ namespace casual
             void operator () ( message_type& message);
          };
 
-         struct Commit : public state::Base
+         using Begin = user_reply_wrapper< basic_begin>;
+
+         struct basic_commit : public state::Base
          {
             typedef common::message::transaction::commit::Request message_type;
             typedef common::message::transaction::commit::Reply reply_type;
@@ -160,8 +223,10 @@ namespace casual
             void operator () ( message_type& message);
          };
 
+         using Commit = user_reply_wrapper< basic_commit>;
 
-         struct Rollback : public state::Base
+
+         struct basic_rollback : public state::Base
          {
             typedef common::message::transaction::rollback::Request message_type;
             typedef common::message::transaction::rollback::Reply reply_type;
@@ -170,6 +235,8 @@ namespace casual
 
             void operator () ( message_type& message);
          };
+
+         using Rollback = user_reply_wrapper< basic_rollback>;
 
 
          //!

@@ -696,8 +696,8 @@ namespace casual
          auto second = state.pending.reserve( uuid::make());
          EXPECT_TRUE( second == 2);
 
-         state.pending.unreserve( first);
-         state.pending.unreserve( second);
+         state.pending.unreserve( first.descriptor);
+         state.pending.unreserve( second.descriptor);
       }
 
    } // common

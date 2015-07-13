@@ -10,7 +10,6 @@
 
 #include "common/message/server.h"
 #include "common/call/context.h"
-#include "common/call/timeout.h"
 
 
 #include "common/queue.h"
@@ -166,7 +165,6 @@ namespace casual
 
          void Context::finalize()
          {
-            call::Timeout::instance().clear();
             buffer::pool::Holder::instance().clear();
             execution::service( "");
             execution::parent::service( "");

@@ -175,7 +175,7 @@ namespace casual
          state( xid, State::cTimeout);
       }
 
-      std::chrono::microseconds Log::timeout()
+      common::platform::time_point Log::deadline()
       {
          auto query = m_statement.deadline.earliest.query();
 
@@ -183,12 +183,11 @@ namespace casual
 
          if( query.fetch( row) && ! row.null( 0))
          {
-            auto timeout = row.get< common::platform::time_point::rep>( 0);
+            auto dealine = row.get< common::platform::time_point::rep>( 0);
 
-            return std::chrono::duration_cast< std::chrono::microseconds>(
-                  common::platform::time_point{ std::chrono::microseconds{ timeout}} - common::platform::clock_type::now());
+            return common::platform::time_point{ std::chrono::microseconds{ dealine}};
          }
-         return std::chrono::microseconds::min();
+         return common::platform::time_point::max();
       }
 
       std::vector< common::transaction::ID> Log::passed( const common::platform::time_point& now)

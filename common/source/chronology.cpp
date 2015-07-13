@@ -30,6 +30,11 @@ namespace chronology
       template<typename F>
       std::string format( const platform::time_point& time, F function)
       {
+         if( time == platform::time_point::min())
+         {
+            return "0000-00-00T00:00:00.000";
+         }
+
          //
          // to_time_t does not exist as a static member in common::clock_type
          //

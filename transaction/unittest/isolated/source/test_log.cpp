@@ -107,7 +107,7 @@ namespace casual
 
          log.begin( begin);
 
-         EXPECT_TRUE( log.timeout() == std::chrono::microseconds::min());
+         EXPECT_TRUE( log.deadline() == common::platform::time_point::max());
 
          auto trans = log.passed( common::platform::clock_type::now() - begin.timeout - std::chrono::seconds{ 1});
 
@@ -123,10 +123,10 @@ namespace casual
 
          log.begin( begin);
 
-         auto timeout = log.timeout();
-         EXPECT_TRUE( timeout != std::chrono::microseconds::min());
+         auto deadline = log.deadline();
+         EXPECT_TRUE( deadline != common::platform::time_point::max());
 
-         auto trans = log.passed( common::platform::clock_type::now() - timeout);
+         auto trans = log.passed( common::platform::clock_type::now());
 
          ASSERT_TRUE( trans.size() == 1) << "trans.size(): " << trans.size() << std::endl;
          EXPECT_TRUE( trans.front() == begin.trid) << "trans.front(): " << trans.front() << std::endl;

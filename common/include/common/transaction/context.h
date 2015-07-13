@@ -139,6 +139,7 @@ namespace casual
 
             using commit_return_type = COMMIT_RETURN;
 
+            // TODO: change name
             enum class Commit_Return : commit_return_type
             {
                completed = TX_COMMIT_COMPLETED,

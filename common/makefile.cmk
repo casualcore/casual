@@ -35,7 +35,7 @@ casual_common_objectfiles = [
     Compile( 'source/server/service.cpp'),
     
     Compile( 'source/call/context.cpp'),
-    Compile( 'source/call/timeout.cpp'),
+    Compile( 'source/call/state.cpp'),
     Compile( 'source/call/lookup.cpp'),
     
     Compile( 'source/buffer/x_octet.cpp'),
@@ -73,6 +73,7 @@ casual_common_objectfiles = [
     Compile( 'source/execution.cpp'),
     Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
+    Compile( 'source/timeout.cpp'),
     
     
     Compile( 'source/terminal.cpp'),

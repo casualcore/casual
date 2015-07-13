@@ -235,6 +235,17 @@ namespace casual
 
          namespace code
          {
+
+            struct base : common::exception::base
+            {
+               template< typename... Args>
+               base( long code, std::string description, Args&&... information)
+                : common::exception::base( std::move( description), std::forward< Args>( information)...), code( code) {}
+
+               long code;
+            };
+
+
             struct Base : public exception::Base
             {
                using common::exception::Base::Base;
@@ -264,6 +275,8 @@ namespace casual
                int code() const noexcept { return code_value;}
             };
          } // code
+
+
 
          namespace category
          {

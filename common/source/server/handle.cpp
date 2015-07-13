@@ -7,7 +7,6 @@
 
 #include "common/server/handle.h"
 
-#include "common/call/timeout.h"
 #include "common/call/lookup.h"
 
 namespace casual
@@ -127,12 +126,9 @@ namespace casual
                   }
 
                   //
-                  // Add 'global' deadline
+                  // Set 'global deadline'
                   //
-                  call::Timeout::instance().add(
-                        transaction::Context::instance().current().trid,
-                        message.service.timeout,
-                        now);
+                  transaction::Context::instance().current().timout.set( now, message.service.timeout);
 
                }
 

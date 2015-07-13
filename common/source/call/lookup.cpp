@@ -17,10 +17,10 @@ namespace casual
       {
          namespace service
          {
-            Lookup::Lookup( const std::string& service, long flags)
+            Lookup::Lookup( std::string service, long flags) : m_service( std::move( service))
             {
                message::service::lookup::Request request;
-               request.requested = service;
+               request.requested = m_service;
                request.process = process::handle();
                request.flags = flags;
 
@@ -30,6 +30,13 @@ namespace casual
 
             Lookup::~Lookup()
             {
+               if( ! m_service.empty())
+               {
+                  //
+                  //
+                  //
+               }
+
                if( m_correlation != uuid::empty())
                {
                   ipc::receive::queue().discard( m_correlation);

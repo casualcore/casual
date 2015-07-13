@@ -43,7 +43,6 @@ namespace casual
                }, m_broker{ queue.id(), common::mockup::create::broker()}
                , m_broker_link{ common::mockup::ipc::broker::queue().output().id(), m_broker.input()}
                {
-                  common::signal::clear();
                }
 
 
@@ -55,6 +54,16 @@ namespace casual
                   m_thread.join();
                }
 
+               struct clear_t
+               {
+                  clear_t()
+                  {
+                     common::signal::clear();
+                  }
+               };
+
+
+               clear_t dummy;
                common::ipc::receive::Queue queue;
 
                // Links the global mockup-tm-queue to this tm-queue, hence, when
@@ -62,6 +71,8 @@ namespace casual
                common::mockup::ipc::Link tm_queue_link;
 
             private:
+
+
                std::thread m_thread;
 
                common::mockup::ipc::Router m_broker;
@@ -78,6 +89,8 @@ namespace casual
                   template< typename M>
                   common::Uuid tm( M&& message)
                   {
+                     common::log::internal::debug << "mockup::send::tm\n";
+
                      common::queue::blocking::Send send;
                      return send( common::mockup::ipc::transaction::manager::id(), std::forward< M>( message));
                   }
@@ -88,6 +101,8 @@ namespace casual
                {
                   bool tm()
                   {
+                     common::log::internal::debug << "mockup::ping::tm\n";
+
                      common::mockup::ipc::Instance caller{ 501};
 
                      common::message::server::ping::Request request;
@@ -105,6 +120,9 @@ namespace casual
 
                common::message::transaction::begin::Reply begin( common::mockup::ipc::Instance& caller, std::chrono::microseconds timout = std::chrono::microseconds{ 0})
                {
+
+                  common::log::internal::debug << "mockup::begin\n";
+
                   common::message::transaction::begin::Request request;
                   request.process = caller.process();
 
@@ -128,6 +146,8 @@ namespace casual
                {
                   common::message::transaction::commit::Reply reply( common::mockup::ipc::Instance& caller, const common::Uuid& correlation)
                   {
+                     common::log::internal::debug << "mockup::commit::reply - correlation: " << correlation << "\n";
+
                      common::queue::blocking::Reader receive{ caller.output()};
                      common::message::transaction::commit::Reply reply;
                      receive( reply, correlation);
@@ -142,10 +162,30 @@ namespace casual
                      request.process = caller.process();
                      request.trid = trid;
 
-                     return local::mockup::send::tm( request);
+                     auto correlation = local::mockup::send::tm( request);
+                     common::log::internal::debug << "mockup::commit::reqeust - trid: " << trid << ", correlation: " << correlation << "\n";
+
+                     return correlation;
                   }
 
                } // commit
+
+               common::message::transaction::rollback::Reply rollback( common::mockup::ipc::Instance& caller, const common::transaction::ID& trid)
+               {
+                  common::log::internal::debug << "mockup::rollback\n";
+
+                  common::message::transaction::rollback::Request request;
+                  request.process = caller.process();
+                  request.trid = trid;
+
+                  auto correlation = local::mockup::send::tm( request);
+
+                  common::queue::blocking::Reader receive{ caller.output()};
+                  common::message::transaction::rollback::Reply reply;
+                  receive( reply, correlation);
+
+                  return reply;
+               }
 
 
                namespace error_state
@@ -185,6 +225,8 @@ namespace casual
                         // prepare
                         [=]( common::message::transaction::resource::prepare::Request message)
                         {
+                           common::log::internal::debug << "rm-proxy prepare::Request\n";
+
                            common::message::transaction::resource::prepare::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
@@ -199,6 +241,8 @@ namespace casual
                         // commit
                         [=]( common::message::transaction::resource::commit::Request message)
                         {
+                           common::log::internal::debug << "rm-proxy commit::Request\n";
+
                            common::message::transaction::resource::commit::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
@@ -213,6 +257,8 @@ namespace casual
                         // rollback
                         [=]( common::message::transaction::resource::rollback::Request message)
                         {
+                           common::log::internal::debug << "rm-proxy rollback::Request\n";
+
                            common::message::transaction::resource::rollback::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
@@ -227,6 +273,8 @@ namespace casual
                      }
                   }
                   {
+
+                     common::log::internal::debug << "rm-proxy resource connect\n";
 
                      common::message::transaction::resource::connect::Reply connect;
                      connect.resource = rm_id;
@@ -417,6 +465,61 @@ namespace casual
       }
 
 
+      TEST( casual_transaction_manager, commit_non_existent_transaction__expect_XAER_NOTA)
+      {
+         common::mockup::ipc::Instance server1{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid = common::transaction::ID::create( server1.process());
+
+         {
+            local::Manager manager{ domain.state};
+
+            // commit
+            {
+
+               auto correlation = local::mockup::commit::request( server1, trid);
+
+               auto reply = local::mockup::commit::reply( server1, correlation);
+
+               EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::error);
+               EXPECT_TRUE( reply.trid == trid);
+               EXPECT_TRUE( reply.state == XAER_NOTA);
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
+      TEST( casual_transaction_manager, rollback_non_existent_transaction__expect_XAER_NOTA)
+      {
+         common::mockup::ipc::Instance server1{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid = common::transaction::ID::create( server1.process());
+
+         {
+            local::Manager manager{ domain.state};
+
+            // rollback
+            {
+
+               auto reply = local::mockup::rollback( server1, trid);
+
+               EXPECT_TRUE( reply.stage == common::message::transaction::rollback::Reply::Stage::error);
+               EXPECT_TRUE( reply.trid == trid);
+               EXPECT_TRUE( reply.state == XAER_NOTA);
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
+
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
          common::mockup::ipc::Instance caller{ 500};
@@ -460,6 +563,94 @@ namespace casual
                   EXPECT_TRUE( reply.trid == trid);
                   EXPECT_TRUE( reply.state == XA_OK);
                }
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
+
+      TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_XA_OK)
+      {
+         common::mockup::ipc::Instance caller{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid;
+
+
+         {
+            local::Manager manager{ domain.state};
+
+            // begin
+            {
+               auto reply = local::mockup::begin( caller);
+               trid = reply.trid;
+            }
+
+            // involved
+            {
+               common::message::transaction::resource::Involved message;
+               message.trid = trid;
+               message.process = caller.process();
+               message.resources = { domain.state.resources.at( 0).id};
+
+               local::mockup::send::tm( message);
+            }
+
+            // rollback
+            {
+
+               auto reply = local::mockup::rollback( caller, trid);
+
+               EXPECT_TRUE( reply.stage == common::message::transaction::rollback::Reply::Stage::rollback);
+               EXPECT_TRUE( reply.trid == trid);
+               EXPECT_TRUE( reply.state == XA_OK);
+            }
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
+
+      TEST( casual_transaction_manager, begin_rollback_transaction__2_resources_involved__expect_XA_OK)
+      {
+         common::mockup::ipc::Instance caller{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid;
+
+
+         {
+            local::Manager manager{ domain.state};
+
+            // begin
+            {
+               auto reply = local::mockup::begin( caller);
+               trid = reply.trid;
+            }
+
+            // involved
+            {
+               common::message::transaction::resource::Involved message;
+               message.trid = trid;
+               message.process = caller.process();
+               message.resources = { domain.state.resources.at( 0).id, domain.state.resources.at( 1).id};
+
+               local::mockup::send::tm( message);
+            }
+
+            // rollback
+            {
+
+               auto reply = local::mockup::rollback( caller, trid);
+
+               EXPECT_TRUE( reply.stage == common::message::transaction::rollback::Reply::Stage::rollback);
+               EXPECT_TRUE( reply.trid == trid);
+               EXPECT_TRUE( reply.state == XA_OK);
             }
          }
 
@@ -514,7 +705,7 @@ namespace casual
 
                   EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::error);
                   EXPECT_TRUE( reply.trid == trid);
-                  EXPECT_TRUE( reply.state == XAER_NOTA);
+                  EXPECT_TRUE( reply.state == XAER_NOTA || reply.state == XAER_PROTO);
                }
             }
          }
@@ -584,118 +775,6 @@ namespace casual
          auto trans = domain.state.log.select( trid);
          EXPECT_TRUE( trans.empty());
       }
-
-      /*
-      TEST( casual_transaction_manager, one_resource_connect__expect_no_broker_connect)
-      {
-         local::domain_1 domain;
-
-
-         auto& rm = domain.state.get( 100);
-
-         common::message::transaction::resource::connect::Reply reply;
-         reply.process = rm.process();
-         reply.resource = 1;
-         reply.state = XA_OK;
-
-         common::queue::blocking::Writer( router.input())( reply);
-
-         local::handleDispatch( state);
-
-         common::queue::non_blocking::Reader broker( common::mockup::ipc::broker::queue().output());
-         common::message::transaction::manager::Ready ready;
-         EXPECT_FALSE( broker( ready));
-      }
-
-
-      TEST( casual_transaction_manager, two_instance_of_one_resource_connect__expect_no_broker_connect)
-      {
-
-         common::mockup::ipc::clear();
-
-         // just a cache to keep queue writable
-         common::mockup::ipc::Router router{ common::ipc::receive::id()};
-
-         common::queue::blocking::Writer send( router.input());
-
-         auto state = local::state();
-
-         {
-            auto& rm = state.get( 200);
-
-            common::message::transaction::resource::connect::Reply reply;
-            reply.process = rm.process();
-            reply.resource = 2;
-            reply.state = XA_OK;
-            send( reply);
-         }
-
-         {
-            auto& rm = state.get( 201);
-
-            common::message::transaction::resource::connect::Reply reply;
-            reply.process = rm.process();
-            reply.resource = 2;
-            reply.state = XA_OK;
-            send( reply);
-         }
-
-
-         local::handleDispatch( state);
-
-         common::queue::non_blocking::Reader broker( common::mockup::ipc::broker::queue().output());
-         common::message::transaction::manager::Ready ready;
-         EXPECT_FALSE( broker( ready));
-
-      }
-
-
-
-      TEST( casual_transaction_manager, one_instance_of_each_resource_connect__expect_broker_connect)
-      {
-         common::mockup::ipc::clear();
-
-         // just a cache to keep queue writable
-         common::mockup::ipc::Router router{ common::ipc::receive::id()};
-
-         common::queue::blocking::Writer send( router.input());
-
-
-         auto state = local::state();
-
-         {
-            auto& rm = state.get( 100);
-
-            common::message::transaction::resource::connect::Reply reply;
-            reply.process = rm.process();
-            reply.resource = 1;
-            reply.state = XA_OK;
-            send( reply);
-         }
-
-         {
-            auto& rm = state.get( 200);
-
-            common::message::transaction::resource::connect::Reply reply;
-            reply.process = rm.process();
-            reply.resource = 2;
-            reply.state = XA_OK;
-            send( reply);
-         }
-
-
-
-         local::handleDispatch( state);
-
-         // We expect broker reply
-         common::queue::blocking::Reader broker( common::mockup::ipc::broker::queue().output());
-         common::message::transaction::manager::Ready ready;
-         broker( ready);
-         EXPECT_TRUE( ready.success);
-
-      }
-      */
-
 
    } // transaction
 

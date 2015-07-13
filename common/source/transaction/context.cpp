@@ -505,9 +505,12 @@ namespace casual
             //
             // XA-spec - RM can't reg when it's already regged... Why?
             //
+            // We'll interpret this as the transaction has been suspended, and
+            // then resumed.
+            //
             if( common::range::find( transaction.resources, rmid))
             {
-               return TMER_PROTO;
+               return TM_RESUME;
             }
 
             if( transaction.trid)
@@ -520,15 +523,7 @@ namespace casual
 
             transaction.resources.push_back( rmid);
 
-            *xid = transaction.trid.xid;
-
-            if( transaction.suspended)
-            {
-               return TM_RESUME;
-            }
-
             return TM_OK;
-
          }
 
          int Context::resourceUnregistration( int rmid, long flags)

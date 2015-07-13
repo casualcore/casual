@@ -161,7 +161,22 @@ namespace casual
                   })
                };
 
-               typedef basic_reply< cTransactionBeginReply> Reply;
+               struct Reply : basic_reply< cTransactionBeginReply>
+               {
+                  enum class Stage : char
+                  {
+                     begin = 0,
+                     error = 2,
+                  };
+
+                  Stage stage = Stage::begin;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_reply< cTransactionBeginReply>::marshal( archive);
+                     archive & stage;
+                  })
+               };
 
             } // begin
 
@@ -194,7 +209,23 @@ namespace casual
             namespace rollback
             {
                typedef basic_request< cTransactionRollbackRequest> Request;
-               typedef basic_reply< cTransactionRollbackReply> Reply;
+
+               struct Reply : basic_reply< cTransactionRollbackReply>
+               {
+                  enum class Stage : char
+                  {
+                     rollback = 0,
+                     error = 2,
+                  };
+
+                  Stage stage = Stage::rollback;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_reply< cTransactionRollbackReply>::marshal( archive);
+                     archive & stage;
+                  })
+               };
             } // rollback
 
 

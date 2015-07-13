@@ -12,6 +12,7 @@
 #include <cstddef>
 
 #include "common/platform.h"
+#include "common/move.h"
 
 
 #include <thread>
@@ -132,7 +133,30 @@ namespace casual
 
             private:
                platform::time_point m_old;
+               move::Moved m_moved;
 
+            };
+
+            //!
+            //! Sets a scoped Deadline.
+            //! dtor will 'unset' timeout regardless
+            //!
+            class Deadline
+            {
+            public:
+
+               Deadline( const platform::time_point& deadline, const platform::time_point& now);
+               Deadline( const platform::time_point& deadline);
+               Deadline( std::chrono::microseconds timeout, const platform::time_point& now);
+               Deadline( std::chrono::microseconds timeout);
+               ~Deadline();
+
+               Deadline( Deadline&&);
+               Deadline& operator = ( Deadline&&);
+
+            private:
+               move::Moved m_moved;
+               platform::time_point m_old;
             };
 
 			}

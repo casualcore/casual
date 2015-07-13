@@ -18,11 +18,11 @@ namespace casual
 
          Transaction::Transaction() = default;
 
-         Transaction::Transaction( ID trid) : trid( std::move( trid)), state( State::active), suspended( false) {}
+         Transaction::Transaction( ID trid) : trid( std::move( trid)), state( State::active) {}
 
 
 
-         Transaction::operator bool() const { return trid && ! suspended;}
+         Transaction::operator bool() const { return static_cast< bool>( trid);}
 
          void Transaction::discard( platform::descriptor_type descriptor)
          {
@@ -39,7 +39,7 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
          {
             return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<
-                  ", suspended: " << std::boolalpha << rhs.suspended <<
+                  ", timeout: " << rhs.timout <<
                   ", resources: " << range::make( rhs.resources) <<
                   ", descriptors: " << range::make( rhs.descriptors) << "}";
          }

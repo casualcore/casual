@@ -59,9 +59,9 @@ namespace casual
          void timeout( const common::transaction::ID& xid);
 
          //!
-         //! @returns the earliest timeout there is.
+         //! @returns the earliest deadline there is.
          //!
-         std::chrono::microseconds timeout();
+         common::platform::time_point deadline();
 
          std::vector< common::transaction::ID> passed( const common::platform::time_point& now);
 
