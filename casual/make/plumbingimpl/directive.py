@@ -4,6 +4,10 @@ Created on 13 maj 2012
 @author: hbergk
 '''
 
+import logging
+logging.basicConfig(filename='cmk.log',level=logging.DEBUG)
+
+
 import os
 import sys
 import re
@@ -14,6 +18,8 @@ from casual.make.internal.engine import engine
 
 import casual.make.internal.directive as internal
 import casual.make.internal.path as path
+
+from casual.make.output import Output
 
 _platform = casual.make.platform.platform.platform()
 
@@ -373,17 +379,29 @@ def register_path_for_create( path):
 
 def normalize_path(path, platformSpefic = None):
 
-    path = os.path.abspath( path)
+    path = os.path.abspath( extract_path(path))
+    extracted_path = extract_path(path)
     if platformSpefic:
-        return os.path.dirname( path) + '/' + platformSpefic( os.path.basename( path))
+        return os.path.dirname(extracted_path) + '/' + platformSpefic( os.path.basename( extracted_path))
     else:
-        return path
+        return extracted_path
 
-
+def extract_path( output):
+    
+    if isinstance( output, basestring):
+        return output
+    elif isinstance( output, Output):
+        return output.name
+    else:
+        raise SystemError, "Unknown output type"
 
 def shared_library_name_path( path):
 
-    return normalize_path( path, _platform.library_name)
+    if isinstance( path, Output):
+        path.file = normalize_path( path.name, _platform.library_name)
+        return path
+    else:
+        return normalize_path( path, _platform.library_name)
 
 
 def archive_name_path( path):
@@ -423,9 +441,9 @@ def object_name_list( objects):
 def normalize_string( string):
     return internal.normalize_string(string)
 
-def target(filename, source = '', name = None, version = None):
+def target(output, source = '', name = None, operation = None):
     
-    return internal.Target( filename, source, name, version)
+    return internal.Target( output, source, name, operation)
 
 
 def cross_object_name(name):
@@ -495,7 +513,9 @@ def library_targets( libs):
     #
         
     for lib in libs:
+        
         if not isinstance( lib, internal.Target):
+            
             library = internal.target_name( _platform.library_name( lib))
             archive = internal.target_name( _platform.archive_name( lib))
             
@@ -523,16 +543,18 @@ def library_targets( libs):
     
     return targets
 
+def symlink(filename, linkname):
+    
+    print '\t' + platform().remove( linkname)
+    print '\t' + platform().symlink( filename, linkname)
+    
 
 def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix = ''):
 
     internal.validate_list( objectfiles);
     internal.validate_list( libraries);
 
-    if target.versioned_file:
-        filename = target.versioned_file
-    else:
-        filename = target.file
+    filename = target.file
                 
     print "#"
     print "# Links: " + os.path.basename( filename)
@@ -566,15 +588,13 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     print '   depenency_' + target.name + ' = ' + internal.multiline( dependent_targets)
     print 
     print filename + ': $(objects_' + target.name + ') $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + prefix + operation( filename, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives, target.soname)
+    print '\t' + prefix + operation( filename, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives)
     
-    if target.versioned_file:
-        soname_fullpath = target.dirname + '/' + target.soname
-        print '\t' + platform().remove( target.file)  
-        print '\t' + platform().remove( soname_fullpath)
-         
-        print '\t' + platform().unix_link( target.versioned_file, soname_fullpath)
-        print '\t' + platform().unix_link( soname_fullpath, target.file)
+    if target.output:
+        soname_fullpath = target.stem + '.' + target.output.version.soname_version()
+        symlink(target.file, soname_fullpath)
+        symlink(soname_fullpath, target.stem)
+        
     print
     
     
@@ -630,10 +650,7 @@ def install(target, destination):
         install( internal.Target( target), destination)
     else:
         
-        if target.versioned_file:
-            filename = target.versioned_file
-        else:
-            filename = target.file
+        filename = target.file
 
         target.name = 'install_' + target.name
         
@@ -643,15 +660,12 @@ def install(target, destination):
         print
         print target.name + ": " + filename + ' | ' + destination
         print "\t" + platform().install( filename, destination)
-        if target.versioned_file:
-            soname_fullpath = target.dirname + '/' + target.soname
-            print '\t' + platform().remove( destination + '/' + os.path.basename(soname_fullpath))
-            print '\t' + platform().remove( destination + '/' + os.path.basename(target.file))
-
-            print '\t' + platform().unix_link( destination + '/' + os.path.basename(target.versioned_file), destination + '/' + os.path.basename(soname_fullpath))
-            print '\t' + platform().unix_link( destination + '/'  + os.path.basename(soname_fullpath), destination + '/' + os.path.basename(target.file))
-        print
         
+        if target.output:
+            soname_fullpath = target.stem + '.' + target.output.version.soname_version()
+            symlink(destination + '/' + os.path.basename(target.file), destination + '/' + os.path.basename(soname_fullpath))
+            symlink(destination + '/' + os.path.basename(soname_fullpath), destination + '/' + os.path.basename(target.stem))
+         
         return target;
 
 

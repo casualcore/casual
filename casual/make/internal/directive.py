@@ -7,32 +7,77 @@ Created on 13 maj 2012
 import os
 import sys
 import re
-from casual.make.version import Version
 
+from casual.make.output import Output
 #
 # Defines the return from "all" functions, that can be used
 # in other function, as Install or whatnot...
 # 
 class Target:
     
-    def __init__(self, filename, source = '', name = None, version = None):
-        if not version:
-            self.file = filename
-            self.soname = None
-            self.versioned_file = None
-        else:
-            self.file = filename
-            self.soname = os.path.basename( filename) + '.' + version.soname()
-            self.versioned_file = filename + '.' + version.full() 
+    def __init__(self, output, source = '', name = None, operation = None):
         
+        #
+        # Storage of eventual Output instance
+        #
+        if isinstance( output, Output):
+            self.output = output
+        else:
+            self.output = None
+        
+        #
+        # Stem and filename
+        #    
+        self.stem = None
+        filename = extract_name( output)
+        if operation:
+            filename = operation( filename)
+            self.stem = filename
+            if self.output:
+                filename += '.' + self.output.version.full_version()
+        self.file = filename
+
+        #
+        # dirname
+        #
         self.dirname = os.path.dirname( filename)
         
+        #
+        # name
+        #
         if name:
             self.name = name
         else:
             self.name = target_name( filename)
-        self.source = source
-        self.base = os.path.basename( source);
+        
+        #
+        # source
+        #
+        if isinstance( source, Output):
+            self.source = source.name
+        else:
+            self.source = source
+        
+        #
+        # base
+        #   
+        self.base = os.path.basename( self.source);
+        
+
+def base_extract( output, parameter): 
+    
+    if isinstance( output, Output):
+        return parameter
+    else:
+        raise SystemError, "Unknown output type"
+       
+def extract_name( output):
+    
+    if isinstance( output, basestring):
+        return output
+    else:
+        return base_extract( output, output.name)
+        
 
 def normalize_string( string):
     return re.sub( '[^\w]+', '_', string)

@@ -64,26 +64,27 @@ class CommonUNIX( Platform):
 
 
 
-    def link_generic(self, linker, filename, objectfiles, libs, directive, extraDirective):
-        return linker + ' -o ' + filename + ' ' + objectfiles + ' $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) ' + libs + ' $(DEFAULT_LIBS) ' + directive + ' ' + extraDirective
+    def link_generic(self, linker, output, objectfiles, libs, directive, extraDirective):
+        return linker + ' -o ' + output + ' ' + objectfiles + ' $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) ' + libs + ' $(DEFAULT_LIBS) ' + directive + ' ' + extraDirective
 
-    def link_library(self, filename, objectfiles, libs, directive, soname):
-        if not soname:
-            return self.link_generic( '$(LIBRARY_LINKER)' , filename, objectfiles, libs, '$(LINK_DIRECTIVES_LIB)', directive)
+    def link_library(self, output, objectfiles, libs, directive):
+        if isinstance( output, basestring):
+            return self.link_generic( '$(LIBRARY_LINKER)', output, objectfiles, libs, '$(LINK_DIRECTIVES_LIB)', directive)
+        elif isinstance( output, Output):
+            return '$(LIBRARY_LINKER)' + ' -o ' + output.name + ' ' + '$(LINKER_SONAME_DIRECTIVE)' + output.soname() + ' ' + objectfiles + ' $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) ' + libs + ' $(DEFAULT_LIBS) ' + '$(LINK_DIRECTIVES_LIB)' + directive
         else:
-            return '$(LIBRARY_LINKER)' + ' -o ' + filename + ' ' + '$(LINKER_SONAME_DIRECTIVE)' + soname + ' ' + objectfiles + ' $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) ' + libs + ' $(DEFAULT_LIBS) ' + '$(LINK_DIRECTIVES_LIB)' + directive
+            raise SyntaxError, 'Unknown type for output'
     
+    def link_executable(self, output, objectfiles, libs, directive):
+        return self.link_generic( '$(EXECUTABLE_LINKER)' , output, objectfiles, libs, '$(LINK_DIRECTIVES_EXE)', directive)
     
-    def link_executable(self, filename, objectfiles, libs, directive, version):
-        return self.link_generic( '$(EXECUTABLE_LINKER)' , filename, objectfiles, libs, '$(LINK_DIRECTIVES_EXE)', directive)
-    
-    def link_archive(self, filename, objectfiles, libs, directive, version):
-        return '$(ARCHIVE_LINKER) ' + filename + ' ' + objectfiles + ' ' + directive
+    def link_archive(self, output, objectfiles, libs, directive):
+        return '$(ARCHIVE_LINKER) ' + output + ' ' + objectfiles + ' ' + directive
     
     
     # should not be here...
-    def link_server(self, filename, objectfiles, libs, directive, version):
-        return '$(BUILDSERVER) -o ' + filename + directive + ' -f "' + objectfiles + '" -f "' + libs + '" -f "$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(LINK_DIRECTIVES_EXE) $(INCLUDE_PATHS)" ' 
+    def link_server(self, output, objectfiles, libs, directive):
+        return '$(BUILDSERVER) -o ' + output + directive + ' -f "' + objectfiles + '" -f "' + libs + '" -f "$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(LINK_DIRECTIVES_EXE) $(INCLUDE_PATHS)" ' 
     
         
     
@@ -102,8 +103,8 @@ class CommonUNIX( Platform):
     def install_link(self, source, destination):
         return 'rsync --checksum -i --links ' + source + ' ' +  destination
      
-    def unix_link(self, source, linkname):
-        return 'ln -s ' + source + ' ' +  linkname
+    def symlink(self, filename, linkname):
+        return 'ln -s ' + filename + ' ' +  linkname
    
     
     
