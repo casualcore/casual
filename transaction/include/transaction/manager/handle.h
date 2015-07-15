@@ -77,6 +77,16 @@ namespace casual
             } // send
          } // internal
 
+         namespace dead
+         {
+            struct Process : state::Base
+            {
+               using Base::Base;
+
+               void operator() ( const common::message::dead::process::Event& message);
+            };
+         } // dead
+
          namespace resource
          {
 

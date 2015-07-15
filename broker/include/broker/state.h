@@ -13,6 +13,7 @@
 
 #include "common/message/server.h"
 #include "common/message/service.h"
+#include "common/message/pending.h"
 
 #include "common/exception.h"
 
@@ -236,7 +237,12 @@ namespace casual
          state::Group::id_type  casual_group_id = 0;
 
 
-         pending_requests_type pending;
+         struct pending_t
+         {
+            pending_requests_type requests;
+            std::vector< common::message::pending::Message> replies;
+         } pending;
+
 
          struct Standard
          {
@@ -257,6 +263,16 @@ namespace casual
 
          common::process::Handle forward;
 
+         struct dead_t
+         {
+            struct process_t
+            {
+               std::vector< common::process::Handle> listeners;
+            } process;
+         } dead;
+
+
+
 
          state::Group& getGroup( state::Group::id_type id);
 
@@ -268,7 +284,8 @@ namespace casual
          const state::Server::Instance& getInstance( state::Server::pid_type pid) const;
 
 
-         void removeProcess( state::Server::pid_type pid);
+         void process( common::process::lifetime::Exit death);
+         void remove_process( state::Server::pid_type pid);
 
 
          void addInstances( state::Executable::id_type id, const std::vector< state::Server::pid_type>& pids);

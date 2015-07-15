@@ -133,6 +133,22 @@ namespace casual
          } // forward
 
 
+         namespace dead
+         {
+            namespace process
+            {
+               struct Registration : Base
+               {
+                  using Base::Base;
+
+                  void operator () ( const common::message::dead::process::Registration& message);
+               };
+
+            } // process
+
+         } // dead
+
+
          //!
          //! Advertise 0..N services for a server.
          //!

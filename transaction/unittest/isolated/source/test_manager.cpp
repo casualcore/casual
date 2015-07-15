@@ -776,6 +776,53 @@ namespace casual
          EXPECT_TRUE( trans.empty());
       }
 
+      TEST( casual_transaction_manager, begin_transaction__1_resource_involved__owner_dies__expect_rollback)
+      {
+         common::mockup::ipc::Instance caller{ 500};
+
+         local::domain_1 domain;
+
+         common::transaction::ID trid;
+
+
+         {
+            local::Manager manager{ domain.state};
+
+            // begin
+            {
+               auto reply = local::mockup::begin( caller);
+               trid = reply.trid;
+            }
+
+            // involved
+            {
+               common::message::transaction::resource::Involved message;
+               message.trid = trid;
+               message.process = caller.process();
+               message.resources = { domain.state.resources.at( 0).id};
+
+               local::mockup::send::tm( message);
+            }
+
+            // caller dies
+            {
+               common::message::dead::process::Event event;
+               event.death.pid = caller.process().pid;
+               event.death.reason = common::process::lifetime::Exit::Reason::core;
+
+               local::mockup::send::tm( event);
+            }
+
+            local::mockup::ping::tm();
+
+            // 5ms should be more than enough for the TM to finish the rollback.
+            common::process::sleep( std::chrono::milliseconds{ 5});
+         }
+
+         auto trans = domain.state.log.select( trid);
+         EXPECT_TRUE( trans.empty());
+      }
+
    } // transaction
 
 } // casual

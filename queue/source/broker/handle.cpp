@@ -71,9 +71,9 @@ namespace casual
                   std::vector< common::process::Handle> groups;
                   common::range::transform( m_state.groups, groups, std::mem_fn( &broker::State::Group::process));
 
-                  for( auto pid : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
+                  for( auto terminated : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
                   {
-                     m_state.removeProcess( pid);
+                     m_state.process( terminated);
                   }
 
                   throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};

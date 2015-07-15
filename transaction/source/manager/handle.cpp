@@ -287,6 +287,41 @@ namespace casual
 
          } // internal
 
+         namespace dead
+         {
+            void Process::operator() ( const common::message::dead::process::Event& message)
+            {
+               common::trace::Scope trace{ "transaction::handle::dead::Process", common::log::internal::transaction};
+
+               //
+               // Check if the now dead process is owner to any transactions, if so, roll'em back...
+               //
+               std::vector< common::transaction::ID> trids;
+
+               for( auto& trans : m_state.transactions)
+               {
+                  if( trans.trid.owner().pid == message.death.pid)
+                  {
+                     trids.push_back( trans.trid);
+                  }
+               }
+
+               for( auto& trid : trids)
+               {
+                  common::message::transaction::rollback::Request request;
+                  request.process = common::process::handle();
+                  request.trid = trid;
+
+                  //
+                  // This could change the state, that's why we don't do it directly in the loop above.
+                  //
+                  handle::Rollback{ m_state}( request);
+               }
+            }
+
+         } // dead
+
+
          namespace resource
          {
             void Involved::operator () ( message_type& message)

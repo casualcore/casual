@@ -632,6 +632,21 @@ namespace casual
             return make( container);
          }
 
+         template< typename R, typename C, typename P>
+         C& move_if( R&& range, C& container, P predicate)
+         {
+            auto first = std::begin( range);
+            while (first != std::end( range))
+            {
+               if( predicate( *first))
+               {
+                  container.push_back( std::move(*first));
+               }
+              ++first;
+            }
+            return container;
+         }
+
 
          //!
          //! Transform @p range to @p container, using @p transform

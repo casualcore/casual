@@ -156,11 +156,11 @@ namespace casual
             return result;
          }
 
-         void State::removeProcess( common::platform::pid_type pid)
+         void State::process( common::process::lifetime::Exit death)
          {
             {
                auto found = common::range::find_if( groups, [=]( const Group& g){
-                  return g.process.pid == pid;
+                  return g.process.pid == death.pid;
                });
 
                if( found)
@@ -179,7 +179,7 @@ namespace casual
             {
 
                auto predicate = [=]( decltype( *queues.begin())& value){
-                  return value.second.process.pid == pid;
+                  return value.second.process.pid == death.pid;
                };
 
                auto range = common::range::make( queues);
@@ -203,7 +203,7 @@ namespace casual
                {
                   for( auto& reqeust : corr.second.requests)
                   {
-                     if( reqeust.group.pid == pid && reqeust.state <= Correlation::State::pending)
+                     if( reqeust.group.pid == death.pid && reqeust.state <= Correlation::State::pending)
                      {
                         reqeust.state = Correlation::State::error;
                      }

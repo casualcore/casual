@@ -369,8 +369,8 @@ namespace casual
             EXPECT_FALSE( static_cast< bool>( reply.process)) << "process: " <<  reply.process;
             EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::busy);
          }
-         ASSERT_TRUE( domain.state.pending.size() == 1);
-         EXPECT_TRUE( domain.state.pending.at( 0).process == domain.server2.process());
+         ASSERT_TRUE( domain.state.pending.requests.size() == 1);
+         EXPECT_TRUE( domain.state.pending.requests.at( 0).process == domain.server2.process());
       }
 
 
@@ -398,7 +398,7 @@ namespace casual
             EXPECT_TRUE( reply.process == domain.state.forward) << "process: " <<  reply.process;
             EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::idle);
          }
-         EXPECT_TRUE( domain.state.pending.empty());
+         EXPECT_TRUE( domain.state.pending.requests.empty());
       }
 
 
@@ -430,8 +430,8 @@ namespace casual
             EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::busy);
          }
 
-         ASSERT_TRUE( domain.state.pending.size() == 1);
-         EXPECT_TRUE( domain.state.pending.at( 0).process == domain.server2.process());
+         ASSERT_TRUE( domain.state.pending.requests.size() == 1);
+         EXPECT_TRUE( domain.state.pending.requests.at( 0).process == domain.server2.process());
 
          {
             local::Broker broker{ domain.state};

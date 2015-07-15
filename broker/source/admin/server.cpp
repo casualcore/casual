@@ -185,7 +185,7 @@ namespace broker
          }
 
          {
-            common::range::transform( state.pending, result.pending,
+            common::range::transform( state.pending.requests, result.pending,
                   admin::transform::Pending{});
          }
 

@@ -66,17 +66,7 @@ namespace casual
                      auto terminated = process::lifetime::ended();
                      for( auto& death : terminated)
                      {
-                        switch( death.reason)
-                        {
-                           case process::lifetime::Exit::Reason::core:
-                              log::error << death << std::endl;
-                              break;
-                           default:
-                              log::internal::debug << death << std::endl;
-                              break;
-                        }
-
-                        m_state.removeProcess( death.pid);
+                        m_state.process( death);
                      }
                   }
                }

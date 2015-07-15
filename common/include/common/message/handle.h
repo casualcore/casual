@@ -12,6 +12,7 @@
 #include "common/message/server.h"
 #include "common/queue.h"
 #include "common/process.h"
+#include "common/internal/log.h"
 
 namespace casual
 {
@@ -33,7 +34,7 @@ namespace casual
 
                void operator () ( message_type& message)
                {
-                  // no op
+                  log::internal::debug << "discard message: " << message.message_type << '\n';
                }
             };
 
@@ -44,14 +45,14 @@ namespace casual
 
                using queue_type = common::queue::blocking::basic_send< queue_policy>;
 
-               using message_type = server::ping::Request;
-
                template< typename... Args>
                Ping( Args&&... args)
                   :  m_send( std::forward< Args>( args)...) {}
 
-               void operator () ( message_type& message)
+               void operator () ( server::ping::Request& message)
                {
+                  log::internal::debug << "pinged by process: " << message.process << '\n';
+
                   server::ping::Reply reply;
                   reply.correlation = message.correlation;
                   reply.process = process::handle();

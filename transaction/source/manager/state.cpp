@@ -282,24 +282,24 @@ namespace casual
          return result;
       }
 
-      void State::removeProcess( common::platform::pid_type pid)
+      void State::process( common::process::lifetime::Exit death)
       {
 
          for( auto& resource : resources)
          {
             auto found = common::range::find_if(
                resource.instances,
-               state::filter::Instance{ pid});
+               state::filter::Instance{ death.pid});
 
             if( found)
             {
                resource.instances.erase( found.first);
-               log::internal::transaction << "remove instance: " << pid << std::endl;
+               log::internal::transaction << "remove dead process: " << death << std::endl;
                return;
             }
          }
 
-         log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
+         log::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
       state::resource::Proxy& State::get_resource( common::platform::resource::id_type rm)

@@ -25,9 +25,12 @@ namespace casual
 
             UTILITY_BASE = 500,
             cFlushIPC, // dummy message used to flush queue (into cache)
+            cPoke,
             cShutdowndRequest,
             cShutdowndReply,
             cForwardConnect,
+            cProcessDeathRegistration,
+            cProcessDeathEvent,
 
             // Server
             SERVER_BASE = 1000, // message type can't be 0!
@@ -174,6 +177,15 @@ namespace casual
             };
          } // flush
 
+         //!
+         //! 'dummy' message to trigger a read from ipc.
+         //!
+         struct Poke : basic_message< cPoke>
+         {
+
+         };
+
+
 
          //!
          //! Deduce witch type of message it is.
@@ -314,6 +326,29 @@ namespace casual
             };
 
          } // server
+
+         namespace dead
+         {
+            namespace process
+            {
+               using Registration = server::basic_id< cProcessDeathRegistration>;
+
+               struct Event : basic_message< cProcessDeathEvent>
+               {
+                  Event() = default;
+                  Event( common::process::lifetime::Exit death) : death{ std::move( death)} {}
+
+                  common::process::lifetime::Exit death;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_message< cProcessDeathEvent>::marshal( archive);
+                     archive & death;
+                  })
+               };
+
+            } // process
+         } // dead
 
          namespace forward
          {

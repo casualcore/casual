@@ -66,6 +66,15 @@ namespace casual
 
          namespace handle
          {
+            namespace dead
+            {
+               struct Process : Base
+               {
+                  using Base::Base;
+
+                  void operator() ( const common::message::dead::process::Event& message);
+               };
+            } // dead
 
             namespace information
             {

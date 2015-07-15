@@ -31,7 +31,7 @@ namespace casual
          void configure( State& state)
          {
             {
-               common::trace::internal::Scope trace( "connect to broker");
+               common::Trace trace( "connect to broker", log::internal::transaction);
 
                //
                // Do the initialization dance with the broker
@@ -43,10 +43,11 @@ namespace casual
 
                queue::blocking::Writer broker( common::ipc::broker::id(), state);
                broker( connect);
+
             }
 
             {
-               common::trace::internal::Scope trace( "configure");
+               common::Trace trace( "configure", log::internal::transaction);
 
                //
                // Wait for configuration
@@ -60,6 +61,17 @@ namespace casual
                // configure state
                //
                state::configure( state, configuration);
+            }
+
+            {
+               common::Trace trace( "event registration", log::internal::transaction);
+
+               common::message::dead::process::Registration message;
+               message.process = common::process::handle();
+
+               queue::blocking::Writer broker( common::ipc::broker::id(), state);
+               broker( message);
+
             }
 
          }

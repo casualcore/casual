@@ -236,7 +236,63 @@ namespace casual
       }
 
 
-      void State::removeProcess( state::Server::pid_type pid)
+      void State::process( common::process::lifetime::Exit death)
+      {
+         if( death.deceased())
+         {
+            if( death.reason == common::process::lifetime::Exit::Reason::exited)
+            {
+               log::information << "process exited: " << death << '\n';
+            }
+            else
+            {
+               log::error << "process terminated: " << death << '\n';
+            }
+
+            //
+            // We remove from listeners if one of them has died.
+            //
+            dead.process.listeners.erase(
+                  range::find_if( dead.process.listeners, process::Handle::equal::pid{ death.pid}).first, std::end( dead.process.listeners));
+
+            if( ! dead.process.listeners.empty())
+            {
+               auto queues = [&](){
+                  std::vector< platform::queue_id_type> result;
+                  for( auto& listener : dead.process.listeners)
+                  {
+                     result.push_back( listener.queue);
+                  }
+                  return result;
+               };
+
+               pending.replies.emplace_back( message::dead::process::Event{ death}, queues());
+            }
+
+            remove_process( death.pid);
+
+            //
+            // We need to poke our queue, just in case there's no coming messages.
+            // This does not feel right, but we're probably invoked from a signal event, so
+            // we're right in the middle of doing stuff
+            //
+            {
+               common::queue::non_blocking::Send send;
+               send( common::ipc::broker::id(), common::message::Poke{});
+            }
+
+
+         }
+         else
+         {
+            //
+            // TODO: should we warn about this? Don't even know if it's possible for this to happen
+            //
+            log::warning << "process is not in a proper state - " << death << '\n';
+         }
+      }
+
+      void State::remove_process( state::Server::pid_type pid)
       {
          auto found = common::range::find( instances, pid);
 
@@ -485,11 +541,12 @@ namespace casual
             }
          }
 
-         auto result = common::server::lifetime::soft::shutdown( servers, std::chrono::milliseconds( 500));
+         std::vector< common::platform::pid_type> result;
 
-         for( auto& pid : result)
+         for( auto& death : common::server::lifetime::soft::shutdown( servers, std::chrono::seconds( 5)))
          {
-            removeProcess( pid);
+            process( death);
+            result.push_back( death.pid);
          }
 
          return result;

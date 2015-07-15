@@ -90,6 +90,7 @@ namespace casual
                         handle::transaction::manager::Connect{ m_state},
                         handle::transaction::manager::Ready{ m_state},
                         handle::forward::Connect{ m_state},
+                        handle::dead::process::Registration{ m_state},
                         handle::Connect{ m_state},
                         handle::transaction::client::Connect{ m_state},
                         handle::Advertise{ m_state},
@@ -99,7 +100,8 @@ namespace casual
                         //handle::ServiceLookup{ m_state},
                         //handle::ACK{ m_state},
                         common::message::handle::ping( m_state),
-                        common::message::handle::Shutdown{}
+                        common::message::handle::Shutdown{},
+                        common::message::handle::Discard< common::message::Poke>{},
                      };
 
                      //
@@ -379,6 +381,26 @@ namespace casual
 
          } // forward
 
+         namespace dead
+         {
+            namespace process
+            {
+               void Registration::operator () ( const common::message::dead::process::Registration& message)
+               {
+                  common::trace::internal::Scope trace{ "broker::handle::dead::process::Registration"};
+
+                  m_state.dead.process.listeners.push_back( message.process);
+
+                  m_state.dead.process.listeners = range::to_vector( range::unique( range::sort( m_state.dead.process.listeners)));
+
+                  common::log::internal::debug << "dead process listeners: " << common::range::make( m_state.dead.process.listeners) << '\n';
+
+               }
+
+            } // process
+
+         } // dead
+
          void Advertise::operator () ( message_type& message)
          {
             try
@@ -536,7 +558,7 @@ namespace casual
                   //
                   // All instances are busy, we stack the request
                   //
-                  m_state.pending.push_back( std::move( message));
+                  m_state.pending.requests.push_back( std::move( message));
 
                   //
                   // ...and send busy-message to caller, to set timeouts and stuff
@@ -582,7 +604,7 @@ namespace casual
                //
                {
                   auto pending = common::range::find_if(
-                     m_state.pending,
+                     m_state.pending.requests,
                      filter::Pending( instance));
 
                   if( pending)
@@ -599,7 +621,7 @@ namespace casual
                      //
                      // Remove pending
                      //
-                     m_state.pending.erase( pending.first);
+                     m_state.pending.requests.erase( pending.first);
                   }
 
                }

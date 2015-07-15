@@ -179,7 +179,7 @@ namespace casual
             //
             // We have to remove this process first, so we don't try to terminate our self
             //
-            m_state.removeProcess( common::process::id());
+            m_state.remove_process( common::process::id());
 
             //
             // Terminate children
@@ -259,6 +259,7 @@ namespace casual
                   handle::transaction::manager::Connect{ state},
                   handle::transaction::manager::Ready{ state},
                   handle::forward::Connect{ state},
+                  handle::dead::process::Registration{ state},
                   handle::Connect{ state},
                   handle::Advertise{ state},
                   handle::Unadvertise{ state},
@@ -270,6 +271,7 @@ namespace casual
                   handle::Call{ ipc::receive::queue(), admin::services( state), state},
                   common::message::handle::ping( state),
                   common::message::handle::Shutdown{},
+                  common::message::handle::Discard< common::message::Poke>{},
                };
 
 
@@ -277,9 +279,57 @@ namespace casual
 
                common::log::internal::debug << "start message pump\n";
 
-               queue::blocking::Reader blockingReader( ipc, state);
+               while( true)
+               {
+                  if( state.pending.replies.empty())
+                  {
+                     queue::blocking::Reader blockingReader( ipc, state);
 
-               common::message::dispatch::pump( handler, blockingReader);
+                     handler( blockingReader.next());
+                  }
+                  else
+                  {
+
+                     //
+                     // Send pending replies
+                     //
+                     {
+
+                        common::log::internal::debug << "pending replies: " << range::make( state.pending.replies) << '\n';
+
+                        decltype( state.pending.replies) replies;
+                        std::swap( replies, state.pending.replies);
+
+                        queue::non_blocking::Send send{ state};
+
+                        auto remain = std::get< 1>( common::range::partition(
+                              replies,
+                              common::message::pending::sender( send)));
+
+                        range::move( remain, state.pending.replies);
+                     }
+
+                     //
+                     // Take care of broker dispatch
+                     //
+                     {
+                        queue::non_blocking::Reader non_block( ipc, state);
+
+                        //
+                        // If we've got pending that is 'never' sent, we still want to
+                        // do a lot of broker stuff. Hence, if we got into an 'error state'
+                        // we'll still function...
+                        //
+                        // TODO: Should we have some sort of TTL for the pending?
+                        //
+                        auto count = common::platform::batch::transaction;
+
+                        while( handler( non_block.next()) && count-- > 0)
+                           ;
+                     }
+
+                  }
+               }
 
 
             }
