@@ -108,6 +108,42 @@ namespace casual
             return false;
          }
 
+         namespace local
+         {
+            namespace
+            {
+               std::ostream& base_print( std::ostream& out, const Executable& value)
+               {
+                  return out << "alias: " << value.alias
+                        << ", id: " << value.id
+                        << ", configured_instances: " << value.configuredInstances
+                        << ", instances: " << range::make( value.instances)
+                        << ", memberships" << range::make( value.memberships)
+                        << ", arguments: " << range::make( value.arguments)
+                        << ", restart: " << std::boolalpha << value.restart
+                        << ", path: " << value.path;
+               }
+            } // <unnamed>
+         } // local
+
+         std::ostream& operator << ( std::ostream& out, const Executable& value)
+         {
+            out << "{ ";
+            local::base_print( out, value);
+            out << "}";
+
+            return out;
+         }
+
+         std::ostream& operator << ( std::ostream& out, const Server& value)
+         {
+            out << "{ ";
+            local::base_print( out, value);
+            out << ", restrictions: " << range::make( value.restrictions) << "}";
+
+            return out;
+         }
+
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
             return out << "{ name: " << service.information.name
@@ -189,16 +225,15 @@ namespace casual
                {
                   service.information.timeout = standard.service.information.timeout;
                }
-            }
-            else
-            {
                service.information.type = s.information.type;
                service.information.transaction = s.information.transaction;
             }
 
             service.instances.push_back( instance);
-            range::sort( service.instances);
+            range::trim( service.instances, range::unique( range::sort( service.instances)));;
+
             instance.services.push_back( service);
+            range::trim( instance.services, range::unique( range::sort( instance.services)));;
          }
       }
 
@@ -238,57 +273,17 @@ namespace casual
 
       void State::process( common::process::lifetime::Exit death)
       {
-         if( death.deceased())
+         //
+         // We try to send a event to our self, if it's not possible (queue is full) we put it in pending
+         //
+
+         message::dead::process::Event event{ death};
+
+         queue::non_blocking::Send send{ *this};
+
+         if( ! send( common::ipc::broker::id(), event))
          {
-            if( death.reason == common::process::lifetime::Exit::Reason::exited)
-            {
-               log::information << "process exited: " << death << '\n';
-            }
-            else
-            {
-               log::error << "process terminated: " << death << '\n';
-            }
-
-            //
-            // We remove from listeners if one of them has died.
-            //
-            dead.process.listeners.erase(
-                  range::find_if( dead.process.listeners, process::Handle::equal::pid{ death.pid}).first, std::end( dead.process.listeners));
-
-            if( ! dead.process.listeners.empty())
-            {
-               auto queues = [&](){
-                  std::vector< platform::queue_id_type> result;
-                  for( auto& listener : dead.process.listeners)
-                  {
-                     result.push_back( listener.queue);
-                  }
-                  return result;
-               };
-
-               pending.replies.emplace_back( message::dead::process::Event{ death}, queues());
-            }
-
-            remove_process( death.pid);
-
-            //
-            // We need to poke our queue, just in case there's no coming messages.
-            // This does not feel right, but we're probably invoked from a signal event, so
-            // we're right in the middle of doing stuff
-            //
-            {
-               common::queue::non_blocking::Send send;
-               send( common::ipc::broker::id(), common::message::Poke{});
-            }
-
-
-         }
-         else
-         {
-            //
-            // TODO: should we warn about this? Don't even know if it's possible for this to happen
-            //
-            log::warning << "process is not in a proper state - " << death << '\n';
+            pending.replies.emplace_back( event, common::ipc::broker::id());
          }
       }
 

@@ -122,7 +122,7 @@ namespace casual
             //!
             //! The execution-id
             //!
-            Uuid execution;
+            mutable Uuid execution;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -151,7 +151,7 @@ namespace casual
             //!
             //! The execution-id
             //!
-            Uuid execution;
+            mutable Uuid execution;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {

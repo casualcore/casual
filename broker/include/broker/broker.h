@@ -74,7 +74,7 @@ namespace casual
 
       } // update
 
-      admin::ShutdownVO shutdown( State& state, bool broker);
+      admin::ShutdownVO shutdown( State& state, common::ipc::receive::Queue& ipc, bool broker);
 
 
 		namespace message

@@ -255,26 +255,7 @@ namespace casual
                common::log::internal::debug << "prepare message-pump handlers\n";
 
 
-               common::message::dispatch::Handler handler{
-                  handle::transaction::manager::Connect{ state},
-                  handle::transaction::manager::Ready{ state},
-                  handle::forward::Connect{ state},
-                  handle::dead::process::Registration{ state},
-                  handle::Connect{ state},
-                  handle::Advertise{ state},
-                  handle::Unadvertise{ state},
-                  handle::ServiceLookup{ state},
-                  handle::ACK{ state},
-                  handle::traffic::Connect{ state},
-                  handle::traffic::Disconnect{ state},
-                  handle::transaction::client::Connect{ state},
-                  handle::Call{ ipc::receive::queue(), admin::services( state), state},
-                  common::message::handle::ping( state),
-                  common::message::handle::Shutdown{},
-                  common::message::handle::Discard< common::message::Poke>{},
-               };
-
-
+               auto& handler = broker::handler( state);
 
 
                common::log::internal::debug << "start message pump\n";
@@ -368,15 +349,26 @@ namespace casual
 
       } // update
 
-      admin::ShutdownVO shutdown( State& state, bool broker)
+      admin::ShutdownVO shutdown( State& state, common::ipc::receive::Queue& ipc, bool broker)
       {
          common::trace::internal::Scope trace( "broker::shutdown");
 
-         auto orginal = state.processes();
-
          admin::ShutdownVO result;
 
-         handle::shutdown( state);
+
+         if( state.mode == State::Mode::shutdown)
+         {
+            log::error << "broker already in shutdown mode" << std::endl;
+            return result;
+         }
+
+
+
+         auto orginal = state.processes();
+
+
+
+         handle::shutdown( state, ipc);
 
          result.online = state.processes();
          result.offline = range::to_vector( range::difference( orginal, result.online));
@@ -388,10 +380,7 @@ namespace casual
 
          return result;
       }
-
-
 	} // broker
-
 } // casual
 
 

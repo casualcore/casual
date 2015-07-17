@@ -34,7 +34,8 @@ logic_archive = LinkArchive( 'bin/casual-broker-logic',
    Compile( 'source/handle.cpp'),
    Compile( 'source/state.cpp'),
    Compile( 'source/transform.cpp'),
-   Compile( 'source/admin/server.cpp')
+   Compile( 'source/admin/server.cpp'),
+   Compile( 'source/admin/brokervo.cpp'),
    ])
 
 
@@ -75,7 +76,7 @@ install_bins.append( target)
 
 target = LinkExecutable( 'bin/casual-broker-admin',
     [ Compile( 'source/admin/client.cpp')],
-    ['casual-common', 'casual-sf', 'casual-xatmi'])
+    [ logic_archive, 'casual-common', 'casual-sf', 'casual-xatmi'])
 	
 
 Install( target,'$(CASUAL_HOME)/internal/bin')

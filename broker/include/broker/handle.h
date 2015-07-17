@@ -12,6 +12,7 @@
 #include "broker/state.h"
 #include "broker/broker.h"
 
+#include "common/message/dispatch.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 
@@ -38,7 +39,7 @@ namespace casual
          //!
          //! Shutdown
          //!
-         void shutdown( State& state);
+         void shutdown( State& state, common::ipc::receive::Queue& ipc);
 
          void send_shutdown( State& state);
 
@@ -142,6 +143,13 @@ namespace casual
                   using Base::Base;
 
                   void operator () ( const common::message::dead::process::Registration& message);
+               };
+
+               struct Event : Base
+               {
+                  using Base::Base;
+
+                  void operator() ( const common::message::dead::process::Event& message);
                };
 
             } // process
@@ -257,6 +265,10 @@ namespace casual
 
 
 		} // handle
+
+      const common::message::dispatch::Handler& handler( State& state);
+
+      const common::message::dispatch::Handler& handler_no_services( State& state);
 
 	} // broker
 } // casual

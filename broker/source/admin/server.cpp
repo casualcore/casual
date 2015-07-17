@@ -3,7 +3,7 @@
 //## includes protected section begin [.10]
 
 #include "broker/admin/server.h"
-#include "broker/admin/transformation.h"
+#include "broker/admin/transform.h"
 
 
 #include "broker/broker.h"
@@ -104,7 +104,7 @@ namespace broker
 
             service_io >> CASUAL_MAKE_NVP( broker);
 
-            auto serviceReturn = broker::shutdown( state, broker);
+            auto serviceReturn = broker::shutdown( state, common::ipc::receive::queue(), broker);
 
             service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -161,6 +161,18 @@ namespace broker
       admin::StateVO broker_state( const broker::State& state)
       {
          admin::StateVO result;
+
+         {
+            common::range::transform( state.groups, result.groups,
+                  admin::transform::Group{});
+         }
+
+         {
+            common::range::transform( state.executables, result.executables,
+               common::chain::Nested::link(
+                  admin::transform::Executable{},
+                  common::extract::Second()));
+         }
 
          {
             common::range::transform( state.servers, result.servers,

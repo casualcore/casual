@@ -137,6 +137,8 @@ namespace casual
 
             bool remove( pid_type instance);
 
+            friend std::ostream& operator << ( std::ostream& out, const Executable& value);
+
          };
 
 
@@ -186,6 +188,8 @@ namespace casual
             //! if not empty, only these services are allowed to be publish
             //!
             std::vector< std::string> restrictions;
+
+            friend std::ostream& operator << ( std::ostream& out, const Server& value);
          };
 
 
@@ -202,6 +206,7 @@ namespace casual
             void remove( const Server::Instance& instance);
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
+            friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.information.name < rhs.information.name;}
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
          };
@@ -213,6 +218,13 @@ namespace casual
 
       struct State
       {
+         enum class Mode
+         {
+            boot,
+            running,
+            shutdown
+         };
+
          State() = default;
 
          State( State&&) = default;
@@ -244,7 +256,7 @@ namespace casual
          } pending;
 
 
-         struct Standard
+         struct standard_t
          {
             state::Service service;
 
@@ -271,6 +283,7 @@ namespace casual
             } process;
          } dead;
 
+         Mode mode = Mode::boot;
 
 
 

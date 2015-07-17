@@ -543,7 +543,12 @@ namespace casual
          }
 
 
-
+         template< typename R>
+         auto reverse( R&& range) -> decltype( std::forward< R>( range))
+         {
+            std::reverse( std::begin( range), std::end( range));
+            return std::forward< R>( range);
+         }
 
 
          template< typename R, typename C>
@@ -709,20 +714,20 @@ namespace casual
          //! @return range that matches the trimmed @p container
          //!
          template< typename C, typename R>
-         auto trim( C& container, R&& range) -> decltype( make( container))
+         C& trim( C& container, R&& range)
          {
             auto index = range.first - std::begin( container);
             container.erase( range.last, std::end( container));
             container.erase( std::begin( container), std::begin( container) + index);
-            return make( container);
+            return container;
          }
 
 
          template< typename C, typename Iter>
-         auto erase( C& container, Range< Iter> range) -> decltype( make( container))
+         C& erase( C& container, Range< Iter> range)
          {
             container.erase( range.first, range.last);
-            return make( container);
+            return container;
          }
 
          template< typename R, typename P>

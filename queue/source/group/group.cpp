@@ -188,6 +188,7 @@ namespace casual
          void Server::start()
          {
             common::message::dispatch::Handler handler{
+               handle::dead::Process{ m_state},
                handle::enqueue::Request{ m_state},
                handle::dequeue::Request{ m_state},
                handle::dequeue::forget::Request{ m_state},

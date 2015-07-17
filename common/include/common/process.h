@@ -180,13 +180,6 @@ namespace casual
 
 
          //!
-         //! check if there are child processes that has been terminated
-         //!
-         //! @return 0..N terminated process id's
-         //!
-         //std::vector< platform::pid_type> terminated();
-
-         //!
          //! Wait for a specific process to terminate.
          //!
          //! @return return code from process

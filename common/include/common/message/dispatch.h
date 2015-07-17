@@ -46,7 +46,7 @@ namespace casual
                //! @return true if the message was handled.
                //!
                template< typename M>
-               bool operator () ( M&& complete)
+               bool operator () ( M&& complete) const
                {
                   return do_dispatch( complete);
                }
@@ -62,8 +62,8 @@ namespace casual
             private:
 
 
-               bool do_dispatch( ipc::message::Complete& complete);
-               bool do_dispatch( std::vector<ipc::message::Complete>& complete);
+               bool do_dispatch( ipc::message::Complete& complete) const;
+               bool do_dispatch( std::vector<ipc::message::Complete>& complete) const;
 
                class base_handler
                {

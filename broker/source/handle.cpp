@@ -8,6 +8,7 @@
 #include "broker/handle.h"
 #include "broker/transform.h"
 #include "broker/filter.h"
+#include "broker/admin/server.h"
 
 #include "common/server/lifetime.h"
 #include "common/queue.h"
@@ -86,23 +87,7 @@ namespace casual
 
                      queue::blocking::Reader queueReader{ common::ipc::receive::queue(), m_state};
 
-                     common::message::dispatch::Handler handler{
-                        handle::transaction::manager::Connect{ m_state},
-                        handle::transaction::manager::Ready{ m_state},
-                        handle::forward::Connect{ m_state},
-                        handle::dead::process::Registration{ m_state},
-                        handle::Connect{ m_state},
-                        handle::transaction::client::Connect{ m_state},
-                        handle::Advertise{ m_state},
-                        handle::Unadvertise{ m_state},
-                        handle::traffic::Connect{ m_state},
-                        handle::traffic::Disconnect{ m_state},
-                        //handle::ServiceLookup{ m_state},
-                        //handle::ACK{ m_state},
-                        common::message::handle::ping( m_state),
-                        common::message::handle::Shutdown{},
-                        common::message::handle::Discard< common::message::Poke>{},
-                     };
+                     auto& handler = broker::handler( m_state);
 
                      //
                      // Use a filter so we don't consume any incoming messages that
@@ -136,22 +121,30 @@ namespace casual
 
                struct Shutdown : state::Base
                {
-                  using state::Base::Base;
+                  Shutdown( State& state, common::ipc::receive::Queue& ipc) : Base( state), m_ipc( ipc) {}
 
 
                   void operator () ( State::Batch& batch)
                   {
                      common::log::information << "shutdown group '" << batch.group << "'\n";
 
+
+                     auto& handler = broker::handler_no_services( m_state);
+
+                     auto filter = handler.types();
+
+                     queue::non_blocking::Reader non_blocking{ m_ipc, m_state};
+
                      //
                      // Take care of executables
                      //
 
-                     std::vector< platform::pid_type> executables;
-
                      for( auto& executable : batch.executables)
                      {
-                        range::append( executable.get().instances, executables);
+                        server::lifetime::shutdown( m_state, {}, { executable.get().instances}, std::chrono::seconds( 2));
+
+                        while( handler( non_blocking.next( filter)))
+                           ;
                      }
 
 
@@ -159,23 +152,29 @@ namespace casual
                      // Take care of xatmi-servers
                      //
 
-                     std::vector< process::Handle> servers;
-
                      for( auto& server : batch.servers)
                      {
-                        for( auto& pid : server.get().instances)
+                        auto pids = server.get().instances;
+
+                        log::internal::debug << "shutdown pids: " << range::make( pids) << '\n';
+
+                        for( auto pid : pids)
                         {
                            //
                            // Make sure we don't add our self
                            //
                            if( pid != process::id())
                            {
-                              servers.push_back( m_state.getInstance( pid).process);
+                              server::lifetime::shutdown( m_state, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
+
+                              while( handler( non_blocking.next()))
+                                 ;
                            }
                         }
                      }
-                     server::lifetime::shutdown( m_state, servers, executables, std::chrono::seconds( 2));
                   }
+               private:
+                  common::ipc::receive::Queue& m_ipc;
                };
 
 
@@ -201,22 +200,21 @@ namespace casual
          void boot( State& state)
          {
 
-            auto bootOrder = state.bootOrder();
+            auto boot_order = state.bootOrder();
 
-            range::for_each( bootOrder, local::Boot{ state});
+            range::for_each( boot_order, local::Boot{ state});
          }
 
 
-         void shutdown( State& state)
+         void shutdown( State& state, common::ipc::receive::Queue& ipc)
          {
-            auto shutdownOrder = state.bootOrder();
-            std::reverse( std::begin( shutdownOrder), std::end( shutdownOrder));
+            auto shutdown_order = range::reverse( state.bootOrder());
 
             try
             {
                signal::timer::Scoped alarm( std::chrono::seconds( 10));
 
-               range::for_each( shutdownOrder, local::Shutdown{ state});
+               range::for_each( shutdown_order, local::Shutdown{ state, ipc});
             }
             catch( const exception::signal::Timeout&)
             {
@@ -396,6 +394,67 @@ namespace casual
                   common::log::internal::debug << "dead process listeners: " << common::range::make( m_state.dead.process.listeners) << '\n';
 
                }
+
+
+               void Event::operator() ( const common::message::dead::process::Event& event)
+               {
+                  common::trace::internal::Scope trace{ "broker::handle::dead::process::Event"};
+
+                  if( event.death.deceased())
+                  {
+                     if( event.death.reason == common::process::lifetime::Exit::Reason::exited)
+                     {
+                        log::information << "process exited: " << event.death << '\n';
+                     }
+                     else
+                     {
+                        log::error << "process terminated: " << event.death << '\n';
+                     }
+
+                     //
+                     // We remove from listeners if one of them has died.
+                     //
+                     m_state.dead.process.listeners.erase(
+                           range::find_if(
+                                 m_state.dead.process.listeners, common::process::Handle::equal::pid{ event.death.pid}).first,
+                            std::end( m_state.dead.process.listeners));
+
+                     if( ! m_state.dead.process.listeners.empty())
+                     {
+                        auto get_queues = [&](){
+                           std::vector< platform::queue_id_type> result;
+                           for( auto& listener : m_state.dead.process.listeners)
+                           {
+                              result.push_back( listener.queue);
+                           }
+                           return result;
+                        };
+
+                        common::message::pending::Message message{ event, get_queues()};
+
+                        queue::non_blocking::Send send{ m_state};
+                        auto sender = common::message::pending::sender( send);
+
+                        if( ! sender( message))
+                        {
+                           m_state.pending.replies.push_back( std::move( message));
+                        }
+
+                     }
+
+                     m_state.remove_process( event.death.pid);
+
+                  }
+                  else
+                  {
+                     //
+                     // TODO: should we warn about this? Don't even know if it's possible for this to happen
+                     //
+                     log::warning << "process is not in a proper state - " << event.death << '\n';
+                  }
+
+               }
+
 
             } // process
 
@@ -637,26 +696,28 @@ namespace casual
          {
 
             //
-            // We add the server
-            // TODO:
-            auto& server = [&]() -> state::Server& {
+            // We add the server, and make sure we only construct one (if this is called more than once...)
+            //
+            static auto& server = [&]() -> state::Server& {
                state::Server server;
                server.alias = "casual-broker";
                server.configuredInstances = 1;
                server.path = common::process::path();
                server.instances.push_back( common::process::id());
+
+               {
+                  state::Server::Instance instance;
+                  instance.process = common::process::handle();
+                  instance.server = server.id;
+                  instance.alterState( state::Server::Instance::State::idle);
+
+                  m_state.add( std::move( instance));
+               }
+
                return m_state.add( std::move( server));
             }();
 
-
-            {
-               state::Server::Instance instance;
-               instance.process = common::process::handle();
-               instance.server = server.id;
-               instance.alterState( state::Server::Instance::State::idle);
-
-               m_state.add( std::move( instance));
-            }
+            log::internal::debug << "broker server: " << server << '\n';
 
             //
             // Add services
@@ -710,8 +771,54 @@ namespace casual
             //
          }
 
-
-
       } // handle
+
+      const common::message::dispatch::Handler& handler( State& state)
+      {
+         static common::message::dispatch::Handler singleton{
+            handle::transaction::manager::Connect{ state},
+            handle::transaction::manager::Ready{ state},
+            handle::forward::Connect{ state},
+            handle::dead::process::Registration{ state},
+            handle::dead::process::Event{ state},
+            handle::Connect{ state},
+            handle::Advertise{ state},
+            handle::Unadvertise{ state},
+            handle::ServiceLookup{ state},
+            handle::ACK{ state},
+            handle::traffic::Connect{ state},
+            handle::traffic::Disconnect{ state},
+            handle::transaction::client::Connect{ state},
+            handle::Call{ ipc::receive::queue(), admin::services( state), state},
+            common::message::handle::ping( state),
+            common::message::handle::Shutdown{},
+            common::message::handle::Discard< common::message::Poke>{}
+         };
+         return singleton;
+      }
+
+      const common::message::dispatch::Handler& handler_no_services( State& state)
+      {
+         static common::message::dispatch::Handler singleton{
+            handle::transaction::manager::Connect{ state},
+            handle::transaction::manager::Ready{ state},
+            handle::forward::Connect{ state},
+            handle::dead::process::Registration{ state},
+            handle::dead::process::Event{ state},
+            handle::Connect{ state},
+            handle::Advertise{ state},
+            handle::Unadvertise{ state},
+            handle::ServiceLookup{ state},
+            handle::ACK{ state},
+            handle::traffic::Connect{ state},
+            handle::traffic::Disconnect{ state},
+            handle::transaction::client::Connect{ state},
+            //handle::Call{ ipc::receive::queue(), admin::services( state), state},
+            common::message::handle::ping( state),
+            common::message::handle::Shutdown{},
+            common::message::handle::Discard< common::message::Poke>{}
+         };
+         return singleton;
+      }
    } // broker
 } // casual

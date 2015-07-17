@@ -214,6 +214,19 @@ namespace casual
 
       }
 
+
+      TEST( casual_common_algorithm, sort_unique_trim_container)
+      {
+         std::vector< int> set{ 3, 1, 3, 2, 1, 3, 1, 2, 3};
+
+         range::trim( set, range::unique( range::sort( set)));
+
+         ASSERT_TRUE( set.size() == 3);
+         EXPECT_TRUE( set.at( 0) == 1);
+         EXPECT_TRUE( set.at( 1) == 2);
+         EXPECT_TRUE( set.at( 2) == 3);
+      }
+
       enum class Enum
       {
          zero,

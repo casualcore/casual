@@ -64,6 +64,7 @@ namespace casual
             return serviceReply;
          }
 
+
          admin::ShutdownVO shutdown()
          {
             sf::xatmi::service::binary::Sync service( ".casual.broker.shutdown");
@@ -80,6 +81,7 @@ namespace casual
             return serviceReply;
          }
 
+
          admin::StateVO boot()
          {
             common::process::spawn( common::environment::variable::get( "CASUAL_HOME") + "/bin/casual-broker", {});
@@ -88,6 +90,24 @@ namespace casual
 
             return call::state();
          }
+
+
+         namespace instance
+         {
+            void update( std::string alias, std::size_t count)
+            {
+               admin::update::InstancesVO instance;
+
+               instance.alias = std::move( alias);
+               instance.instances = count;
+
+               sf::xatmi::service::binary::Sync service( ".casual.broker.update.instances");
+
+               service << CASUAL_MAKE_NVP( std::vector< admin::update::InstancesVO>{ instance});
+
+               service();
+            }
+         } // instance
 
       } // call
 
@@ -330,7 +350,15 @@ namespace casual
 
             struct format_state
             {
-               std::size_t width( const admin::InstanceVO& value) const { return 6;}
+               std::size_t width( const admin::InstanceVO& value) const
+               {
+                  switch( value.state)
+                  {
+                     case admin::InstanceVO::State::booted: return 6;
+                     case admin::InstanceVO::State::shutdown: return 8;
+                     default: return 4;
+                  }
+               }
 
                void print( std::ostream& out, const admin::InstanceVO& value, std::size_t width, bool color) const
                {
@@ -338,22 +366,22 @@ namespace casual
 
                   if( color)
                   {
-                     switch( state::Server::Instance::State( value.state))
+                     switch( value.state)
                      {
-                        case state::Server::Instance::State::booted: out << std::right << std::setw( width) << terminal::color::red << "booted"; break;
-                        case state::Server::Instance::State::idle: out << std::right << std::setw( width) << terminal::color::green << "idle"; break;
-                        case state::Server::Instance::State::busy: out << std::right << std::setw( width) << terminal::color::yellow << "busy"; break;
-                        case state::Server::Instance::State::shutdown: out << std::right << std::setw( width) << terminal::color::red << "shutdown"; break;
+                        case admin::InstanceVO::State::booted: out << std::right << std::setw( width) << terminal::color::red << "booted"; break;
+                        case admin::InstanceVO::State::idle: out << std::right << std::setw( width) << terminal::color::green << "idle"; break;
+                        case admin::InstanceVO::State::busy: out << std::right << std::setw( width) << terminal::color::yellow << "busy"; break;
+                        case admin::InstanceVO::State::shutdown: out << std::right << std::setw( width) << terminal::color::red << "shutdown"; break;
                      }
                   }
                   else
                   {
-                     switch( state::Server::Instance::State( value.state))
+                     switch( value.state)
                      {
-                        case state::Server::Instance::State::booted: out << std::right << std::setw( width) << "booted"; break;
-                        case state::Server::Instance::State::idle: out << std::right << std::setw( width) << "idle"; break;
-                        case state::Server::Instance::State::busy: out << std::right << std::setw( width) << "busy"; break;
-                        case state::Server::Instance::State::shutdown: out  << std::right << std::setw( width) << "shutdown"; break;
+                        case admin::InstanceVO::State::booted: out << std::right << std::setw( width) << "booted"; break;
+                        case admin::InstanceVO::State::idle: out << std::right << std::setw( width) << "idle"; break;
+                        case admin::InstanceVO::State::busy: out << std::right << std::setw( width) << "busy"; break;
+                        case admin::InstanceVO::State::shutdown: out  << std::right << std::setw( width) << "shutdown"; break;
                      }
                   }
                }
@@ -410,13 +438,19 @@ namespace casual
             formatter.print( std::cout, std::begin( state.services), std::end( state.services));
          }
 
-         void instances( std::ostream& out, admin::StateVO& state)
+         template< typename IR>
+         void instances( std::ostream& out, admin::StateVO& state, IR instances_range)
          {
-            range::sort( state.instances, []( const admin::InstanceVO& l, const admin::InstanceVO& r){ return l.server < r.server;});
+            range::sort( instances_range, []( const admin::InstanceVO& l, const admin::InstanceVO& r){ return l.server < r.server;});
 
             auto formatter = format::instances( state.servers);
 
-            formatter.print( std::cout, std::begin( state.instances), std::end( state.instances));
+            formatter.print( std::cout, std::begin( instances_range), std::end( instances_range));
+         }
+
+         void instances( std::ostream& out, admin::StateVO& state)
+         {
+            instances( out, state, state.instances);
          }
 
       } // print
@@ -466,24 +500,134 @@ namespace casual
             }
          }
 
+         namespace local
+         {
+            namespace
+            {
+               struct Batch
+               {
+                  std::vector< admin::ExecutableVO> executables;
+                  std::vector< admin::ServerVO> servers;
+               };
+
+               struct Membership
+               {
+                  Membership( std::size_t group) : m_group( group) {}
+
+                  bool operator () ( const admin::ExecutableVO& value) const
+                  {
+                     return static_cast< bool>( range::find( value.memberships, m_group));
+                  }
+               private:
+                  std::size_t m_group;
+               };
+
+               std::vector< Batch> shutdown_order( admin::StateVO& state)
+               {
+                  std::vector< Batch> result;
+
+                  auto group_order = range::reverse( range::stable_sort( state.groups));
+
+                  auto executables = range::make( state.executables);
+                  auto servers = range::make( state.servers);
+
+                  for( auto& group : group_order)
+                  {
+                     Batch batch;
+                     {
+                        auto partition = range::stable_partition( servers, Membership{ group.id});
+                        range::copy( std::get< 0>( partition), std::back_inserter( batch.servers));
+                        servers = std::get< 1>( partition);
+                     }
+                     {
+                        auto partition = range::stable_partition( executables, Membership{ group.id});
+                        range::copy( std::get< 0>( partition), std::back_inserter( batch.executables));
+                        executables = std::get< 1>( partition);
+                     }
+                     result.push_back( std::move( batch));
+                  }
+                  return result;
+               }
+
+            } // <unnamed>
+         } // local
 
          void shutdown()
          {
-            auto state = call::state();
+            auto set_state = []( admin::InstanceVO& value)
+                 {
+                    value.state = admin::InstanceVO::State::shutdown;
+                 };
 
-            auto result = call::shutdown();
+            auto origin = call::state();
 
-            {
-               for( auto& instance : state.instances)
-               {
-                  if( common::range::find( result.offline, instance.process.pid))
+            auto origin_instances = origin.instances;
+            auto origin_active = range::make( origin_instances);
+
+            auto active = range::make( origin.instances);
+            range::for_each( active, set_state);
+
+            auto formatter = format::instances( origin.servers);
+            formatter.calculate_width( active);
+
+            formatter.print_headers( std::cout);
+
+
+            auto print_shutdown = [&]( admin::StateVO& state)
                   {
-                     instance.state = static_cast< long>( state::Server::Instance::State::shutdown);
-                  }
+                     auto instance_less = []( const admin::InstanceVO& l, const admin::InstanceVO& r){ return l.process.pid < r.process.pid;};
+
+                     {
+                        auto split = range::intersection( active, state.instances, instance_less);
+                        active = std::get< 0>( split);
+                        formatter.print_rows( std::cout, std::get< 1>( split));
+                     }
+                     {
+                        origin_active = std::get< 0>( range::intersection( origin_active, state.instances, instance_less));
+                     }
+                  };
+
+            try
+            {
+               for( auto& batch : local::shutdown_order( origin))
+               {
+                  auto do_shutdown = [&]( const admin::ExecutableVO& value)
+                        {
+                           if( ! value.instances.empty())
+                           {
+                              call::instance::update( value.alias, 0);
+
+                              auto state = call::state();
+                              print_shutdown( state);
+                           }
+                        };
+
+                  range::for_each( batch.executables, do_shutdown);
+                  range::for_each( batch.servers, do_shutdown);
                }
+
+               call::shutdown();
+            }
+            catch( ...)
+            {
+
             }
 
-            print::servers( std::cout, state);
+            auto count = 100;
+
+            while( count-- > 0 && active)
+            {
+               process::sleep( std::chrono::milliseconds{ 10});
+
+               auto state = call::state();
+               print_shutdown( state);
+            }
+
+            if( active)
+            {
+               formatter.print_rows( std::cerr, origin_active);
+            }
+
          }
 
          void boot()
