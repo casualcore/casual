@@ -88,6 +88,9 @@ namespace casual
                archive & CASUAL_MAKE_NVP( last);
                archive & CASUAL_MAKE_NVP( server);
             })
+
+            friend bool operator < ( const InstanceVO& lhs, const InstanceVO& rhs) { return lhs.process.pid < rhs.process.pid;}
+            friend bool operator == ( const InstanceVO& lhs, const InstanceVO& rhs) { return lhs.process.pid == rhs.process.pid;}
          };
 
          struct ExecutableVO
@@ -96,6 +99,7 @@ namespace casual
             std::string alias;
             std::string path;
             std::vector< sf::platform::pid_type> instances;
+            std::size_t configured_instances;
             std::vector< std::size_t> memberships;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
@@ -104,6 +108,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( alias);
                archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( instances);
+               archive & CASUAL_MAKE_NVP( configured_instances);
                archive & CASUAL_MAKE_NVP( memberships);
             })
          };

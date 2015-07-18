@@ -83,6 +83,7 @@ namespace casual
                   result.alias = value.alias;
                   result.path = value.path;
                   result.instances = value.instances;
+                  result.configured_instances = value.configuredInstances;
                   result.memberships = value.memberships;
 
                   return result;
@@ -99,6 +100,7 @@ namespace casual
                   result.alias = value.alias;
                   result.path = value.path;
                   result.instances = value.instances;
+                  result.configured_instances = value.configuredInstances;
                   result.memberships = value.memberships;
                   result.restrictions = value.restrictions;
 

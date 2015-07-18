@@ -575,15 +575,13 @@ namespace casual
 
             auto print_shutdown = [&]( admin::StateVO& state)
                   {
-                     auto instance_less = []( const admin::InstanceVO& l, const admin::InstanceVO& r){ return l.process.pid < r.process.pid;};
-
                      {
-                        auto split = range::intersection( active, state.instances, instance_less);
+                        auto split = range::intersection( active, state.instances);
                         active = std::get< 0>( split);
                         formatter.print_rows( std::cout, std::get< 1>( split));
                      }
                      {
-                        origin_active = std::get< 0>( range::intersection( origin_active, state.instances, instance_less));
+                        origin_active = std::get< 0>( range::intersection( origin_active, state.instances));
                      }
                   };
 
@@ -606,7 +604,8 @@ namespace casual
                   range::for_each( batch.servers, do_shutdown);
                }
 
-               call::shutdown();
+               auto shutdown_result = call::shutdown();
+               print_shutdown( shutdown_result.state);
             }
             catch( ...)
             {
@@ -615,7 +614,7 @@ namespace casual
 
             auto count = 100;
 
-            while( count-- > 0 && active)
+            while( count-- > 0 && active.size() > 1)
             {
                process::sleep( std::chrono::milliseconds{ 10});
 
@@ -630,11 +629,74 @@ namespace casual
 
          }
 
+         namespace local
+         {
+            namespace
+            {
+               template< typename S>
+               auto format_instances( S& servers) -> decltype( format::instances( servers))
+               {
+                  admin::InstanceVO max;
+                  max.process.pid = std::numeric_limits< decltype( max.process.pid)>::max();
+                  max.process.queue = std::numeric_limits< decltype( max.process.queue)>::max();
+                  max.state = admin::InstanceVO::State::shutdown;
+
+                  std::vector< admin::InstanceVO> mockup_instances;
+
+                  for( auto& s : servers)
+                  {
+                     max.server = s.id;
+                     mockup_instances.push_back( max);
+                  }
+
+                  auto result = format::instances( servers);
+                  result.calculate_width( mockup_instances);
+
+                  return result;
+               }
+            } // <unnamed>
+         } // local
+
          void boot()
          {
-            auto state =  call::boot();
 
-            print::servers( std::cout, state);
+            auto startup =  call::boot();
+
+            const auto number_of_instances = range::accumulate( startup.servers, 0, []( std::size_t s, const admin::ServerVO& server){
+               return server.configured_instances + s;
+            });
+
+
+            auto state_running = []( const admin::InstanceVO& i)
+                  {
+                     return i.state != admin::InstanceVO::State::booted;
+                  };
+
+            auto booted = std::get< 0>( range::partition( startup.instances, state_running));
+
+            auto formatter = local::format_instances( startup.servers);
+
+            formatter.print_headers( std::cout);
+            formatter.print_rows( std::cout, booted);
+
+
+            auto count = 1000;
+
+            while( booted.size() < number_of_instances && count-- > 0)
+            {
+               process::sleep( std::chrono::milliseconds{ 10});
+
+               auto state = call::state();
+
+               auto total_booted = std::get< 0>( range::partition( state.instances, state_running));
+
+               auto booted_since_last = std::get< 1>( range::intersection( total_booted, booted));
+
+               formatter.print_rows( std::cout, booted_since_last);
+
+               std::swap( state.instances, startup.instances);
+               booted = total_booted;
+            }
          }
 
       } // action

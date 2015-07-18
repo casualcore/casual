@@ -758,7 +758,7 @@ namespace casual
 
 
          template< typename R, typename T>
-         auto accumulate( R&& range, T&& value) -> decltype( value + value)
+         auto accumulate( R&& range, T&& value) -> decltype( *std::begin( range) + value)
          {
             return std::accumulate( std::begin( range), std::end( range), std::forward< T>( value));
          }
