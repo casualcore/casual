@@ -94,12 +94,12 @@ namespace casual
 
             log::internal::transaction << "send client connect request" << std::endl;
             queue::blocking::Writer writer( ipc::broker::id());
-            writer( request);
+            auto correlation = writer( request);
 
 
             queue::blocking::Reader reader( ipc::receive::queue());
             message::transaction::client::connect::Reply reply;
-            reader( reply);
+            reader( reply, correlation);
 
 
             queue = reply.transaction_manager;

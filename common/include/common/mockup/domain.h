@@ -10,6 +10,7 @@
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
+#include "common/mockup/reply.h"
 
 #include "common/message/service.h"
 #include "common/message/server.h"
@@ -140,6 +141,102 @@ namespace casual
             } // transaction
 
          } // create
+
+
+         namespace domain
+         {
+            namespace service
+            {
+               struct Echo
+               {
+                  std::vector< reply::result_t> operator()( message::service::call::callee::Request reqeust);
+               };
+            } // server
+
+            namespace broker
+            {
+               struct Lookup
+               {
+                  Lookup( std::vector< common::message::service::lookup::Reply> replies);
+                  std::vector< reply::result_t> operator()( message::service::lookup::Request reqeust);
+               private:
+                  std::map< std::string, common::message::service::lookup::Reply> m_services;
+               };
+
+               reply::Handler default_handler();
+
+               template< typename... Args>
+               reply::Handler default_handler( Args&& ...args)
+               {
+                  auto result = default_handler();
+                  result.insert( std::forward< Args>( args)...);
+                  return result;
+               }
+
+            } // broker
+
+            struct Broker
+            {
+               Broker();
+
+               template< typename... Args>
+               Broker( Args&& ...args) : Broker( broker::default_handler( std::forward< Args>( args)...)) {}
+
+               ~Broker();
+
+            private:
+
+               Broker( reply::Handler handler);
+
+               ipc::Replier m_replier;
+               ipc::Link m_broker_replier_link;
+            };
+
+            namespace transaction
+            {
+               namespace manager
+               {
+                  reply::Handler default_handler();
+
+                  template< typename... Args>
+                  reply::Handler default_handler( Args&& ...args)
+                  {
+                     auto result = default_handler();
+                     result.insert( std::forward< Args>( args)...);
+                     return result;
+                  }
+
+               } // manager
+
+
+               struct Manager
+               {
+                  Manager();
+
+                  template< typename... Args>
+                  Manager( Args&& ...args) : Manager( broker::default_handler( std::forward< Args>( args)...)) {}
+
+                  Manager( reply::Handler handler);
+
+                  ipc::Replier m_replier;
+                  ipc::Link m_tm_replier_link;
+               };
+
+            } // transaction
+
+
+            struct Domain
+            {
+               Domain();
+
+               ipc::Replier server1;
+               Broker m_broker;
+               transaction::Manager m_manager;
+
+            };
+
+
+         } // domain
 
       } // mockup
    } // common

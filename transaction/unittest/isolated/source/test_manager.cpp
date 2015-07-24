@@ -37,11 +37,9 @@ namespace casual
             struct Manager
             {
                Manager( transaction::State& state)
-               : tm_queue_link{ common::mockup::ipc::transaction::manager::queue().output().id(), queue.id()},
-                  m_thread{
-                  &transaction::message::pump, std::ref( state), std::ref( queue)
-               }, m_broker{ queue.id(), common::mockup::create::broker()}
-               , m_broker_link{ common::mockup::ipc::broker::queue().output().id(), m_broker.input()}
+               :
+                  m_thread{ &transaction::message::pump, std::ref( state)},
+                  tm_queue_link{ common::mockup::ipc::transaction::manager::queue().output().id(), common::ipc::receive::id()}
                {
                }
 
@@ -50,7 +48,7 @@ namespace casual
                {
                   common::queue::blocking::Send send;
                   // make sure we quit
-                  send( queue.id(), common::message::shutdown::Request{});
+                  send( common::ipc::receive::id(), common::message::shutdown::Request{});
                   m_thread.join();
                }
 
@@ -61,22 +59,23 @@ namespace casual
                      common::signal::clear();
                   }
                };
-
-
-               clear_t dummy;
-               common::ipc::receive::Queue queue;
-
-               // Links the global mockup-tm-queue to this tm-queue, hence, when
-               // some message is sent to global-mockup-queue it will eventually get to this queue
-               common::mockup::ipc::Link tm_queue_link;
-
             private:
 
 
+               clear_t dummy;
+
                std::thread m_thread;
 
-               common::mockup::ipc::Router m_broker;
-               common::mockup::ipc::Link m_broker_link;
+               //
+               // Block signals, so that broker doesn't pick up signals...
+               //
+               common::signal::thread::scope::Block m_signal_block;
+
+               common::mockup::domain::Broker m_broker;
+
+               // Links the global mockup-tm-queue to this process-receive-queue, hence, when
+               // some message is sent to global-mockup-queue it will eventually get to this 'local-queue'
+               common::mockup::ipc::Link tm_queue_link;
 
             };
 
@@ -661,7 +660,6 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved_10ms_timeout___expect__timeout_rollback_XAER_NOTA)
       {
-         common::mockup::ipc::Instance caller{ 500};
 
          local::domain_1 domain;
 
@@ -671,7 +669,7 @@ namespace casual
          {
             local::Manager manager{ domain.state};
 
-            common::signal::thread::scope::Block signal_block;
+            common::mockup::ipc::Instance caller{ 500};
 
             // begin
             {
@@ -692,7 +690,7 @@ namespace casual
             // commit
             {
 
-               common::process::sleep( std::chrono::milliseconds{ 10});
+               common::process::sleep( std::chrono::milliseconds{ 20});
 
                auto correlation = local::mockup::commit::request( caller, trid);
 

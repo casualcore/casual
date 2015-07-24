@@ -13,6 +13,10 @@
 #include "common/platform.h"
 #include "common/message/type.h"
 
+#include "common/marshal/binary.h"
+
+#include "common/mockup/reply.h"
+
 
 namespace casual
 {
@@ -26,6 +30,34 @@ namespace casual
 
             using transform_type = std::function< std::vector< common::ipc::message::Complete>( common::ipc::message::Complete&)>;
 
+
+
+            //!
+            //! Replies to a request
+            //!
+            //!
+            struct Replier
+            {
+               //!
+               //! @param replier invoked on receive, and could send a reply
+               //!
+               Replier( reply::Handler replier);
+
+               ~Replier();
+
+
+               Replier( Replier&&) noexcept;
+               Replier& operator = ( Replier&&) noexcept;
+
+               //!
+               //! input-queue is owned by the Replier
+               //!
+               id_type input() const;
+
+            private:
+               struct Implementation;
+               move::basic_pimpl< Implementation> m_implementation;
+            };
 
 
 

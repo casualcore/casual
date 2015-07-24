@@ -433,6 +433,13 @@ namespace casual
                return result;
             }
 
+            set_type mask( set_type set)
+            {
+               set_type result;
+               pthread_sigmask(SIG_SETMASK, &set, &result);
+               return result;
+            }
+
             namespace scope
             {
 

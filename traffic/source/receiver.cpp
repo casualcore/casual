@@ -91,13 +91,18 @@ namespace casual
          // Register this traffic-logger
          //
          {
-            common::message::traffic::monitor::Connect message;
+            common::message::traffic::monitor::connect::Reqeust request;
 
-            message.path = common::process::path();
-            message.process = common::process::handle();
+            request.path = common::process::path();
+            request.process = common::process::handle();
 
             common::queue::blocking::Send send;
-            send( common::ipc::broker::id(), message);
+            auto correlation = send( common::ipc::broker::id(), request);
+
+            common::message::handle::connect::reply(
+                  common::queue::blocking::Reader{ common::ipc::receive::queue()},
+                  correlation,
+                  common::message::traffic::monitor::connect::Reply{});
          }
       }
 

@@ -246,7 +246,9 @@ namespace casual
          executable_mapping_type executables;
          std::vector< state::Group> groups;
 
-         state::Group::id_type  casual_group_id = 0;
+         state::Group::id_type casual_group_id = 0;
+
+         std::map< common::Uuid, common::process::Handle> singeltons;
 
 
          struct pending_t
@@ -312,6 +314,9 @@ namespace casual
 
          state::Executable& getExecutable( state::Executable::id_type id);
 
+
+         void connect_broker( std::vector< common::message::Service> services);
+
          struct Batch
          {
             std::string group;
@@ -355,6 +360,7 @@ namespace casual
          {
             using Reader = common::queue::blocking::remove::basic_reader< State>;
             using Writer = common::queue::blocking::remove::basic_writer< State>;
+            using Send = common::queue::blocking::remove::basic_send< State>;
 
          } // blocking
 

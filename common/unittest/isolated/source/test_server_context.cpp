@@ -170,45 +170,28 @@ namespace casual
 
       TEST( casual_common_server_context, connect)
       {
+         common::Trace trace{ "casual_common_server_context.connect", log::internal::debug};
          mockup::ipc::clear();
 
-         mockup::ipc::Router router{ ipc::receive::id()};
+         mockup::domain::Broker broker;
 
-         //
-         // Prepare "broker response"
-         //
-         {
-            local::broker::prepare( router.input());
-         }
-
-         server::handle::Call callHandler( local::arguments());
-
-         message::server::connect::Request message;
-
-         queue::blocking::Reader read( mockup::ipc::broker::queue().output());
-         read( message);
-
-         EXPECT_TRUE( message.process == process::handle());
-
-         ASSERT_TRUE( message.services.size() > 1);
-         EXPECT_TRUE( message.services.at( 0).name == "test_service");
-
+         EXPECT_NO_THROW({
+            server::handle::Call callHandler( local::arguments());
+         });
       }
 
 
 
       TEST( casual_common_server_context, call_service__gives_reply)
       {
+         common::Trace trace{ "casual_common_server_context.call_service__gives_reply", log::internal::debug};
          mockup::ipc::clear();
 
-         // just a cache to keep queue writable
-         mockup::ipc::Router router{ ipc::receive::id()};
-
-         // instance that "calls" a service in callee::handle::Call, and get's a reply
-         mockup::ipc::Instance caller( 10);
+         mockup::ipc::Instance caller;
+         mockup::domain::Domain domain;
 
          {
-            local::broker::prepare( router.input());
+
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
@@ -228,17 +211,19 @@ namespace casual
       TEST( casual_common_server_context, call_service__gives_broker_ack)
       {
          mockup::ipc::clear();
+         mockup::ipc::Instance caller{ 42};
 
-         // just a cache to keep queue writable
-         mockup::ipc::Router router{ ipc::receive::id()};
+         //
+         // We only need the mockup-broker during initialization.
+         //
+         auto prepare_caller = [](){
 
-         // instance that "calls" a service in callee::handle::Call, and get's a reply
-         mockup::ipc::Instance caller( 10);
+            mockup::domain::Broker broker;
+            return server::handle::Call{ local::arguments()};
+         };
 
          {
-            local::broker::prepare( router.input());
-            server::handle::Call callHandler( local::arguments());
-
+            auto callHandler = prepare_caller();
             auto message = local::callMessage( caller.id());
             callHandler( message);
          }
@@ -254,36 +239,31 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, call_service__gives_monitor_notify)
+      TEST( casual_common_server_context, call_service__gives_traffic_notify)
       {
          mockup::ipc::clear();
 
-         // just a cache to keep queue writable
-         mockup::ipc::Router router{ ipc::receive::id()};
+         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Instance traffic{ 42};
 
-         // instance that "calls" a service in callee::handle::Call, and get's a reply
-         mockup::ipc::Instance caller( 10);
+         mockup::domain::Broker broker;
 
-         mockup::ipc::Instance monitor( 42);
 
          {
-            local::broker::prepare( router.input());
 
             server::handle::Call callHandler( local::arguments());
 
             auto message = local::callMessage( caller.id());
-            message.service.traffic_monitors.push_back(  monitor.id());
+            message.service.traffic_monitors = { traffic.id()};
             callHandler( message);
          }
 
-         queue::blocking::Reader reader( monitor.output());
+         queue::blocking::Reader reader( traffic.output());
 
          message::traffic::Event message;
          reader( message);
          EXPECT_TRUE( message.service == "test_service");
 
-         mockup::ipc::broker::queue().clear();
-         ipc::receive::queue().clear();
       }
 
 
@@ -294,26 +274,8 @@ namespace casual
 
             struct Domain
             {
-               //
-               // Set up a 'domain'
-               //
-               Domain()
-                  :
-                  broker{ ipc::receive::id(), mockup::create::broker()},
-                  // link the global mockup-broker-queue's output to 'our' broker
-                  link_broker_reply{ mockup::ipc::broker::queue().output().id(), broker.input()},
-
-                  tm{ ipc::receive::id(), mockup::create::transaction::manager()},
-                  // link the global mockup-transaction-manager-queue's output to 'our' tm
-                  link_tm_reply{ mockup::ipc::transaction::manager::queue().output().id(), tm.input()}
-               {
-
-               }
-
-               mockup::ipc::Router broker;
-               mockup::ipc::Link link_broker_reply;
-               mockup::ipc::Router tm;
-               mockup::ipc::Link link_tm_reply;
+               mockup::domain::Broker broker;
+               mockup::domain::transaction::Manager tm;
 
             };
 
@@ -361,17 +323,34 @@ namespace casual
             } // transaction
 
 
-            /*
-               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cNone);
-               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAtomic);
-               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cJoin);
-               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::cAuto);
+            namespace crete
+            {
+               struct handle_holder
+               {
+                  handle_holder() : m_handler( local::arguments()) {}
 
-               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::cNone);
-               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAtomic);
-               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::cJoin);
-               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::cAuto);
-             */
+                  handle_holder(handle_holder&&) noexcept = default;
+                  handle_holder& operator = (handle_holder&&) noexcept = default;
+
+                  std::vector< mockup::reply::result_t> operator () ( message::service::call::callee::Request request)
+                  {
+                     m_handler( request);
+
+                     return {};
+                  }
+
+                  server::handle::Call m_handler;
+               };
+
+               mockup::ipc::Replier server()
+               {
+                  return mockup::ipc::Replier{
+                     mockup::reply::Handler{
+                        handle_holder{}
+                     }
+                  };
+               }
+            } // crete
 
 
 
@@ -381,9 +360,9 @@ namespace casual
 
       TEST( casual_common_server_context, connect_server)
       {
-         local::Domain domain;
+         mockup::domain::Broker broker;
 
-         server::handle::Call server( local::arguments());
+         auto server = local::crete::server();
       }
 
 

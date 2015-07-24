@@ -7,6 +7,7 @@
 
 #include "broker/state.h"
 #include "broker/filter.h"
+#include "broker/transform.h"
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
@@ -392,6 +393,46 @@ namespace casual
          return local::get( executables, id);
       }
 
+
+      void State::connect_broker( std::vector< common::message::Service> services)
+      {
+         try
+         {
+            getInstance( common::process::id());
+         }
+         catch( const state::exception::Missing&)
+         {
+            {
+               state::Server server;
+               server.alias = "casual-broker";
+               server.configuredInstances = 1;
+               server.path = common::process::path();
+               server.instances.push_back( common::process::id());
+
+               {
+                  state::Server::Instance instance;
+                  instance.process = common::process::handle();
+                  instance.server = server.id;
+                  instance.alterState( state::Server::Instance::State::idle);
+
+                  add( std::move( instance));
+               }
+
+               add( std::move( server));
+            }
+
+            //
+            // Add services
+            //
+            {
+               std::vector< state::Service> brokerServices;
+
+               common::range::transform( services, brokerServices, transform::Service{});
+
+               addServices( common::process::id(), std::move( brokerServices));
+            }
+         }
+      }
 
       std::vector< State::Batch> State::bootOrder()
       {

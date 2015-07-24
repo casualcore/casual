@@ -24,6 +24,7 @@
 
 #include "common/message/service.h"
 #include "common/message/server.h"
+#include "common/message/handle.h"
 
 #include "common/flag.h"
 
@@ -45,7 +46,7 @@ namespace casual
             using policy_type = P;
 
             template< typename... Args>
-            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, std::vector< message::Service> services, Args&& ...args)
+            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, const Uuid& identification, std::vector< message::Service> services, Args&& ...args)
             {
                using queue_writer = common::queue::blocking::basic_writer< policy_type>;
                using queue_reader = common::queue::blocking::basic_reader< policy_type>;
@@ -55,18 +56,28 @@ namespace casual
                message.process = common::process::handle();
                message.path = common::process::path();
                message.services = std::move( services);
+               message.identification = identification;
 
                queue_writer broker( ipc::broker::id(), args...);
-               broker( message);
+               auto correlation = broker( message);
 
-               //
-               // Wait for configuration reply
-               //
+
+
                queue_reader reader( ipc, args...);
-               message::server::connect::Reply reply;
-               reader( reply);
 
-               return reply;
+               //
+               // Wait for the connect reply
+               //
+               return common::message::handle::connect::reply(
+                     reader,
+                     correlation,
+                     message::server::connect::Reply{});
+            }
+
+            template< typename... Args>
+            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, std::vector< message::Service> services, Args&& ...args)
+            {
+               return operator()( ipc, uuid::empty(), std::move( services), std::forward< Args>( args)...);
             }
          };
 
@@ -105,8 +116,8 @@ namespace casual
 
                typedef message::service::call::callee::Request message_type;
 
-               basic_call( basic_call&&) = default;
-               basic_call& operator = ( basic_call&&) = default;
+               basic_call( basic_call&&) noexcept = default;
+               basic_call& operator = ( basic_call&&) noexcept = default;
 
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
@@ -558,14 +569,15 @@ namespace casual
                   using queue_reader = common::queue::blocking::basic_reader< policy_type>;
 
 
-                  Admin( state_type& state) : m_state( state) {}
+                  Admin( state_type& state, const Uuid& identification) : m_state( state), m_identification{ identification} {}
+                  Admin( state_type& state) : Admin( state, uuid::empty()) {}
 
 
                   void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                   {
                      Connect< policy_type> connect;
 
-                     connect( ipc, std::move( services), m_state);
+                     connect( ipc, m_identification, std::move( services), m_state);
                   }
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message)
@@ -606,6 +618,7 @@ namespace casual
 
 
                   state_type& m_state;
+                  Uuid m_identification;
                };
 
 

@@ -85,6 +85,35 @@ namespace casual
             };
 
 
+
+            namespace connect
+            {
+               template< typename Q, typename C, typename M>
+               auto reply( Q&& queue, C&& correlation, M&& message) -> decltype( std::forward< M>( message))
+               {
+                  queue( message, correlation);
+
+                  switch( message.directive)
+                  {
+                     case M::Directive::singleton:
+                     {
+                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
+                     }
+                     case M::Directive::shutdown:
+                     {
+                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
+                     }
+                     default:
+                     {
+                        break;
+                     }
+                  }
+                  return std::forward< M>( message);
+               }
+            } // connect
+
          } // handle
 
 

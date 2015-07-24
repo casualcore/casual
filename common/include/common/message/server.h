@@ -47,14 +47,14 @@ namespace casual
 
             namespace connect
             {
-               struct Request : public basic_connect< cServerConnectRequest>
+               struct Request : public connect::basic_request< cServerConnectRequest>
                {
                   std::vector< Service> services;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                        basic_connect< cServerConnectRequest>::marshal( archive);
-                        archive & services;
+                     connect::basic_request< cServerConnectRequest>::marshal( archive);
+                     archive & services;
                   })
                };
 
@@ -62,22 +62,18 @@ namespace casual
                //!
                //! Sent from the broker with "start-up-information" for a server
                //!
-               struct Reply : basic_message< cServerConnectReply>
-               {
-
-                  Reply() = default;
-                  Reply( Reply&&) = default;
-                  Reply& operator = ( Reply&&) = default;
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     base_type::marshal( archive);
-                  })
-               };
+               using Reply = connect::basic_reply< cServerConnectReply>;
 
 
             } // connect
          } // server
 
+         namespace reverse
+         {
+            template<>
+            struct type_traits< server::connect::Request> : detail::type< server::connect::Reply> {};
+
+         } // reverse
 
 
       } // message

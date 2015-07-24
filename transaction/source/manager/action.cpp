@@ -13,6 +13,7 @@
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/internal/trace.h"
+#include "common/message/handle.h"
 
 
 #include "sf/log.h"
@@ -36,13 +37,21 @@ namespace casual
                //
                // Do the initialization dance with the broker
                //
-               common::message::transaction::manager::Connect connect;
+               common::message::transaction::manager::connect::Request connect;
 
                connect.path = common::process::path();
                connect.process = common::process::handle();
+               connect.identification = common::process::instance::identity::transaction::manager();
 
                queue::blocking::Writer broker( common::ipc::broker::id(), state);
-               broker( connect);
+               auto correlation = broker( connect);
+
+               {
+                  common::message::handle::connect::reply(
+                        queue::blocking::Reader{common::ipc::receive::queue(), state},
+                        correlation,
+                        common::message::transaction::manager::connect::Reply{});
+               }
 
             }
 

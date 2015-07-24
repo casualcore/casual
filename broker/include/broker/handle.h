@@ -52,11 +52,9 @@ namespace casual
             //!
             struct Connect: public Base
             {
-               typedef common::message::traffic::monitor::Connect message_type;
-
                using Base::Base;
 
-               void operator () ( message_type& message);
+               void operator () ( common::message::traffic::monitor::connect::Reqeust& message);
             };
 
             struct Disconnect: public Base
@@ -83,11 +81,9 @@ namespace casual
                //!
                struct Connect : public Base
                {
-                  using message_type = common::message::transaction::manager::Connect;
-
                   using Base::Base;
 
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::transaction::manager::connect::Request& message);
                };
 
                //!
@@ -128,7 +124,7 @@ namespace casual
             {
                using Base::Base;
 
-               void operator () ( const common::message::forward::Connect& message);
+               void operator () ( const common::message::forward::connect::Request& message);
             };
 
          } // forward
@@ -266,9 +262,9 @@ namespace casual
 
 		} // handle
 
-      const common::message::dispatch::Handler& handler( State& state);
+      common::message::dispatch::Handler handler( State& state);
 
-      const common::message::dispatch::Handler& handler_no_services( State& state);
+      common::message::dispatch::Handler handler_no_services( State& state);
 
 	} // broker
 } // casual

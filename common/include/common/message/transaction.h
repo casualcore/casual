@@ -46,12 +46,12 @@ namespace casual
                namespace connect
                {
 
-                  typedef server::basic_connect< cTransactionClientConnectRequest> Request;
+                  using Request = server::connect::basic_request< cTransactionClientConnectRequest>;
 
                   //!
                   //! Sent from the broker with "transaction-information" for a server/client
                   //!
-                  struct Reply : basic_message< cTransactionClientConnectReply>
+                  struct Reply : server::connect::basic_reply< cTransactionClientConnectReply>
                   {
 
                      using queue_id_type = platform::queue_id_type;
@@ -62,7 +62,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        base_type::marshal( archive);
+                        server::connect::basic_reply< cTransactionClientConnectReply>::marshal( archive);
                         archive & transaction_manager;
                         archive & resources;
                         archive & domain;
@@ -77,7 +77,13 @@ namespace casual
                //!
                //! Used to connect the transaction manager to broker
                //!
-               typedef server::basic_connect< cTransactionManagerConnect> Connect;
+               namespace connect
+               {
+                  using Request = server::connect::basic_request< cTransactionManagerConnectRequest>;
+                  using Reply = server::connect::basic_reply< cTransactionManagerConnectReply>;
+
+               } // connect
+
 
 
                struct Configuration : message::basic_message< cTransactionManagerConfiguration>
@@ -361,6 +367,13 @@ namespace casual
 
          namespace reverse
          {
+
+            template<>
+            struct type_traits< transaction::manager::connect::Request> : detail::type< transaction::manager::connect::Reply> {};
+            template<>
+            struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
+
+
             template<>
             struct type_traits< transaction::begin::Request> : detail::type< transaction::begin::Reply> {};
             template<>

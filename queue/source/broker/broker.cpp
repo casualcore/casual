@@ -273,7 +273,8 @@ namespace casual
             broker::handle::transaction::rollback::Request{ m_state},
             broker::handle::transaction::rollback::Reply{ m_state},
             //broker::handle::peek::queue::Request{ m_state},
-            common::server::handle::basic_admin_call< broker::State>{ broker::admin::Server::services( *this), m_state},
+            common::server::handle::basic_admin_call< broker::State>{
+               broker::admin::Server::services( *this), m_state, common::process::instance::identity::queue::broker()},
             common::message::handle::ping( m_state),
          };
 

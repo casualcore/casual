@@ -12,6 +12,10 @@
 
 #include "common/transaction/context.h"
 
+
+#include "common/trace.h"
+#include "common/internal/log.h"
+
 namespace casual
 {
    namespace common
@@ -19,35 +23,9 @@ namespace casual
       namespace transaction
       {
 
-         namespace local
-         {
-            namespace
-            {
-
-               struct Domain
-               {
-                  //
-                  // Set up a tm
-                  //
-                  Domain()
-                     : tm{ ipc::receive::id(), mockup::create::transaction::manager()},
-                     // link the global mockup-transaction-manager-queue's output to 'our' tm
-                     link_tm_reply{ mockup::ipc::transaction::manager::queue().output().id(), tm.input()}
-                  {
-
-                  }
-
-                  mockup::ipc::Router tm;
-                  mockup::ipc::Link link_tm_reply;
-
-               };
-
-            } // <unnamed>
-         } // local
-
          TEST( casual_common_transaction, context_current__expect_null_transaction)
          {
-            local::Domain domain;
+            mockup::domain::Domain domain;
 
             EXPECT_TRUE( Context::instance().current().trid.null());
 
@@ -55,7 +33,7 @@ namespace casual
 
          TEST( casual_common_transaction, context_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
-            local::Domain domain;
+            mockup::domain::Domain domain;
 
             XID xid;
 
@@ -64,7 +42,10 @@ namespace casual
 
          TEST( casual_common_transaction, context_begin__expect_transaction)
          {
-            local::Domain domain;
+            Trace trace{ "casual_common_transaction.context_begin__expect_transaction", log::internal::debug};
+
+            mockup::domain::Domain domain;
+
 
             ASSERT_TRUE( Context::instance().begin() == TX_OK);
             EXPECT_TRUE( ! Context::instance().current().trid.null());
@@ -73,7 +54,7 @@ namespace casual
 
          TEST( casual_common_transaction, context__two_begin__expect_TX_PROTOCOLL_ERROR)
          {
-            local::Domain domain;
+            mockup::domain::Domain domain;
 
             ASSERT_TRUE( Context::instance().begin() == TX_OK);
             EXPECT_THROW( Context::instance().begin(), exception::tx::Protocoll);
@@ -82,7 +63,7 @@ namespace casual
 
          TEST( casual_common_transaction, context__begin_suspend_resume__rollback__expect_TX_OK)
          {
-            local::Domain domain;
+            mockup::domain::Domain domain;
 
             XID xid;
 
@@ -95,7 +76,7 @@ namespace casual
 
          TEST( casual_common_transaction, context__begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
          {
-            local::Domain domain;
+            mockup::domain::Domain domain;
 
             // global...
             ASSERT_TRUE( Context::instance().begin() == TX_OK);

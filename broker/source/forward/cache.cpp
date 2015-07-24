@@ -190,11 +190,23 @@ namespace casual
             server::connect( ipc::receive::queue(), {});
 
             {
-               message::forward::Connect connect;
+               message::forward::connect::Request connect;
                connect.process = process::handle();
+               connect.identification = common::Uuid{ "f17d010925644f728d432fa4a6cf5257"};
 
                common::queue::blocking::Send send;
-               send( ipc::broker::id(), connect);
+               auto correlation = send( ipc::broker::id(), connect);
+
+               {
+                  common::queue::blocking::Reader reader{ ipc::receive::queue()};
+                  auto reply = message::reverse::type( connect);
+                  reader( reply, correlation);
+
+                  if( reply.directive != decltype( reply)::Directive::start)
+                  {
+                     throw exception::Shutdown{ "broker denied startup"};
+                  }
+               }
             }
          }
 

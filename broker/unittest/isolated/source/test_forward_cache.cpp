@@ -19,48 +19,13 @@ namespace casual
    using namespace common;
    namespace broker
    {
-      namespace local
-      {
-         namespace
-         {
-
-            struct Domain
-            {
-               //
-               // Set up a "broker" that transforms request to replies, set destination to our receive queue
-               //
-               // Link 'output' from mockup-broker-queue to our "broker"
-               //
-               Domain()
-                  : server{ 666},
-                  broker{ ipc::receive::id(), mockup::create::broker({
-                     mockup::create::lookup::reply( "service_1", server.input()),
-                     mockup::create::lookup::reply( "timeout_2", server.input(), std::chrono::milliseconds{ 2}),
-                     mockup::create::lookup::reply( "removed_ipc_queue", 0)
-                  })},
-                  link_broker_reply{ mockup::ipc::broker::queue().output().id(), broker.input()},
-                  forward{ ipc::receive::id()}
-               {
-
-               }
-
-               mockup::ipc::Instance server;
-               mockup::ipc::Router broker;
-               mockup::ipc::Link link_broker_reply;
-
-               mockup::ipc::Router forward;
-            };
-
-
-         } // <unnamed>
-      } // local
 
       TEST( casual_broker_forward_cache, construction_destruction)
       {
          //
          // Take care of the connect
          //
-         local::Domain domain;
+         mockup::domain::Domain domain;
 
          EXPECT_NO_THROW({
             forward::Cache cache;
@@ -70,7 +35,7 @@ namespace casual
 
       TEST( casual_broker_forward_cache, forward_call_TPNOREPLY_TPNOTRAN)
       {
-         local::Domain domain;
+         mockup::domain::Domain domain;
 
          mockup::ipc::Instance caller;
 
@@ -78,7 +43,7 @@ namespace casual
 
          {
             request.process = caller.process();
-            request.service.name = "timeout_2";
+            request.service.name = "service3_2ms_timout";
             request.trid = transaction::ID::create( caller.process());
             request.flags = TPNOREPLY | TPNOTRAN;
          }
@@ -97,25 +62,23 @@ namespace casual
 
 
          //
-         // Send it to our forward (that will rout it to the ipc-queue that the forward is listening to)
+         // Send it to our forward
          //
-         auto correlation = send( domain.forward.input(), request);
+         auto correlation = send( common::ipc::receive::id(), request);
 
          {
-            common::queue::blocking::Reader receive{ domain.server.output()};
+            common::queue::blocking::Reader receive{ caller.output()};
 
-            message::service::call::callee::Request forward;
-            receive( forward);
+            message::service::call::Reply reply;
+            receive( reply);
 
-            EXPECT_TRUE( forward.correlation == correlation);
-            EXPECT_TRUE( forward.trid == request.trid);
-            EXPECT_TRUE( forward.service.name == request.service.name);
-            EXPECT_TRUE( forward.service.timeout == std::chrono::milliseconds{ 2}) << "timeout: " << forward.service.timeout.count();
-
+            EXPECT_TRUE( reply.correlation == correlation);
+            EXPECT_TRUE( reply.transaction.trid == request.trid);
+            EXPECT_TRUE( reply.error == 0);
          }
 
          // make sure we quit
-         send( domain.forward.input(), message::shutdown::Request{});
+         send( common::ipc::receive::id(), message::shutdown::Request{});
 
          cache_thread.join();
 
@@ -124,7 +87,7 @@ namespace casual
 
       TEST( casual_broker_forward_cache, forward_call__missing_ipc_queue__expect_error_reply)
       {
-         local::Domain domain;
+         mockup::domain::Domain domain;
 
          mockup::ipc::Instance caller;
 
@@ -150,7 +113,7 @@ namespace casual
          //
          // Send it to our forward (that will rout it to the ipc-queue that the forward is listening to)
          //
-         auto correlation = send( domain.forward.input(), request);
+         auto correlation = send( common::ipc::receive::id(), request);
 
          {
             //
@@ -168,7 +131,7 @@ namespace casual
          }
 
          // make sure we quit
-         send( domain.forward.input(), message::shutdown::Request{});
+         send( common::ipc::receive::id(), message::shutdown::Request{});
 
          cache_thread.join();
 

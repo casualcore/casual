@@ -53,7 +53,6 @@ namespace casual
 
 
          common::file::scoped::Path m_queueFilePath;
-         common::ipc::receive::Queue& m_receiveQueue;
          State m_state;
 
 
@@ -61,7 +60,7 @@ namespace casual
 
       namespace message
       {
-         void pump( State& state, common::ipc::receive::Queue& ipc);
+         void pump( State& state);
 
       } // message
 

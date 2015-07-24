@@ -140,7 +140,7 @@ namespace casual
 
             non_blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cTrafficMonitorConnect, message::Type::cTrafficEvent});
+            auto result = reader.next( { message::Type::cTrafficMonitorConnectRequest, message::Type::cTrafficEvent});
 
             EXPECT_TRUE( result.empty());
          }
@@ -175,7 +175,7 @@ namespace casual
 
             blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cTrafficMonitorConnect, message::service::Advertise::message_type});
+            auto result = reader.next( { message::Type::cTrafficMonitorConnectRequest, message::service::Advertise::message_type});
             EXPECT_TRUE( result.type == message::service::Advertise::message_type);
          }
 

@@ -255,8 +255,7 @@ namespace casual
                common::log::internal::debug << "prepare message-pump handlers\n";
 
 
-               auto& handler = broker::handler( state);
-
+               auto handler = broker::handler( state);
 
                common::log::internal::debug << "start message pump\n";
 

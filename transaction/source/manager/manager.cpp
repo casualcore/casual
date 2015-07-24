@@ -42,7 +42,6 @@ namespace casual
 
       Manager::Manager( const Settings& settings) :
           m_queueFilePath( common::process::singleton( common::environment::domain::singleton::path() + "/.casual-transaction-manager-queue")),
-          m_receiveQueue( ipc::receive::queue()),
           m_state( settings.database)
       {
 
@@ -133,7 +132,7 @@ namespace casual
             //
             // We're ready to start....
             //
-            message::pump( m_state, m_receiveQueue);
+            message::pump( m_state);
 
 
          }
@@ -155,8 +154,10 @@ namespace casual
 
       namespace message
       {
-         void pump( State& state, common::ipc::receive::Queue& ipc)
+         void pump( State& state)
          {
+            auto& ipc = common::ipc::receive::queue();
+
             try
             {
 
@@ -183,7 +184,8 @@ namespace casual
                   handle::domain::resource::reply::Prepare{ state},
                   handle::domain::resource::reply::Commit{ state},
                   handle::domain::resource::reply::Rollback{ state},
-                  common::server::handle::basic_admin_call< State>{ ipc, admin::services( state), state},
+                  common::server::handle::basic_admin_call< State>{
+                     ipc, admin::services( state), state, common::process::instance::identity::transaction::manager()},
                   common::message::handle::ping( state),
 
                   //
@@ -191,6 +193,7 @@ namespace casual
                   //
                   common::message::handle::Discard< common::message::server::connect::Reply>{},
                };
+
 
                common::log::internal::transaction << "start message pump\n";
 

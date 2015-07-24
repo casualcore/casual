@@ -121,6 +121,11 @@ namespace casual
             namespace implementation
             {
 
+               struct Disconnect : common::exception::Base
+               {
+                  using common::exception::Base::Base;
+               };
+
                struct Worker
                {
 
@@ -180,12 +185,6 @@ namespace casual
                   }
 
                private:
-
-
-                  struct Disconnect : common::exception::Base
-                  {
-                     using common::exception::Base::Base;
-                  };
 
                   void read( State& state)
                   {
@@ -268,6 +267,47 @@ namespace casual
                   }
                };
 
+
+
+               void shutdown_thread( std::thread& thread, id_type input)
+               {
+                  try
+                  {
+                     common::ipc::message::Transport transport;
+                     transport.message.type = local::message::Disconnect::message_type;
+
+                     bool resend = true;
+
+                     while( resend)
+                     {
+                        try
+                        {
+                           common::ipc::message::ignore::signal::send( input, transport, 0);
+                           resend = false;
+                        }
+                        catch( const exception::signal::Base&) {}
+                     }
+                  }
+                  catch( const std::exception& exception)
+                  {
+                     log::internal::ipc << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
+                  }
+
+                  try
+                  {
+                     thread.join();
+                  }
+                  catch( const std::exception& exception)
+                  {
+                     log::internal::ipc << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                  }
+               }
+
+
                class Router
                {
                public:
@@ -291,43 +331,106 @@ namespace casual
 
                   ~Router()
                   {
-                     try
-                     {
-                        common::queue::blocking::Writer send{ input};
-                        local::message::Disconnect message;
-
-                        bool resend = true;
-
-                        while( resend)
-                        {
-                           try
-                           {
-                              send( message);
-                              resend = false;
-                           }
-                           catch( const exception::signal::Base&) {}
-                        }
-
-                     }
-                     catch( const std::exception& exception)
-                     {
-                        log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
-                     }
-
-                     try
-                     {
-                        m_thread.join();
-                     }
-                     catch( const std::exception& exception)
-                     {
-                        log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
-                     }
+                     shutdown_thread( m_thread, input);
                   }
 
                   id_type input;
                   id_type output;
                   std::thread m_thread;
+               };
 
+               struct Replier
+               {
+
+                  void operator () ( common::ipc::receive::Queue&& input, reply::Handler replier)
+                  {
+                     try
+                     {
+                        while( true)
+                        {
+                           auto check_message = [&]( common::ipc::message::Complete& message)
+                              {
+                                 switch( message.type)
+                                 {
+                                    case local::message::Disconnect::message_type:
+                                    {
+                                       throw Disconnect( "disconnect", __FILE__, __LINE__);
+                                    }
+                                    case local::message::Clear::message_type:
+                                    {
+                                       m_pending.clear();
+
+                                       common::queue::non_blocking::Reader reader{ input};
+                                       do
+                                       {
+                                          process::sleep( std::chrono::microseconds{ 10});
+                                       }
+                                       while( ! reader.next().empty());
+                                       break;
+                                    }
+                                 }
+                              };
+
+                           auto send_messages = [&]( std::vector< reply::result_t> messages)
+                              {
+                                 common::queue::non_blocking::Send send;
+
+                                 for( auto& message : messages)
+                                 {
+                                    if( ! send.send( message.queue, message.complete))
+                                    {
+                                       m_pending.push_back( std::move( message));
+                                    }
+                                 }
+                              };
+
+                           if( m_pending.empty())
+                           {
+                              common::queue::blocking::Reader reader{ input};
+                              auto message = reader.next();
+
+                              check_message( message);
+
+                              send_messages( replier( message));
+                           }
+                           else
+                           {
+
+                              common::queue::non_blocking::Reader reader{ input};
+                              auto message = reader.next();
+
+                              if( ! message.empty())
+                              {
+                                 check_message( message.front());
+
+                                 send_messages( replier( message.front()));
+                              }
+                              process::sleep( std::chrono::microseconds{ 10});
+
+                              //
+                              // Try to send all pending
+                              //
+                              {
+                                 std::vector< reply::result_t> pending;
+                                 std::swap( m_pending, pending);
+
+                                 send_messages( std::move( pending));
+                              }
+                           }
+
+                        }
+                     }
+                     catch( const Disconnect&)
+                     {
+                        log::internal::ipc << "mockup::ipc::implementation::Replier disconnect\n";
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                     }
+                  }
+
+                  std::vector< reply::result_t> m_pending;
                };
 
             } // implementation
@@ -351,6 +454,44 @@ namespace casual
 
             id_type Router::input() const { return m_implementation->input;}
             id_type Router::output() const { return m_implementation->output;}
+
+
+
+
+            struct Replier::Implementation
+            {
+               Implementation( reply::Handler replier)
+               {
+                  common::ipc::receive::Queue ipc;
+                  input = ipc.id();
+
+                  m_thread = std::thread{ implementation::Replier{}, std::move( ipc), std::move( replier)};
+               }
+
+               ~Implementation()
+               {
+                  implementation::shutdown_thread( m_thread, input);
+               }
+
+               id_type input;
+            private:
+               std::thread m_thread;
+
+            };
+
+            Replier::Replier( reply::Handler replier) : m_implementation{ std::move( replier)} {}
+
+            Replier::~Replier() = default;
+
+
+            Replier::Replier( Replier&&) noexcept = default;
+            Replier& Replier::operator = ( Replier&&) noexcept = default;
+
+            //!
+            //! input-queue is owned by the Replier
+            //!
+            id_type Replier::input() const { return m_implementation->input;}
+
 
 
 
@@ -402,38 +543,7 @@ namespace casual
 
                ~Implementation()
                {
-                  try
-                  {
-                     common::ipc::message::Transport transport;
-                     transport.message.type = local::message::Disconnect::message_type;
-
-                     bool resend = true;
-
-                     while( resend)
-                     {
-                        try
-                        {
-                           common::ipc::message::ignore::signal::send( input, transport, 0);
-                           resend = false;
-                        }
-                        catch( const exception::signal::Base&) {}
-                     }
-
-
-                  }
-                  catch( const std::exception& exception)
-                  {
-                     log::internal::ipc << "mockup - failed to send disconnect to thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
-                  }
-
-                  try
-                  {
-                     m_thread.join();
-                  }
-                  catch( const std::exception& exception)
-                  {
-                     log::internal::ipc << "mockup - failed to join thread: " << m_thread.get_id() << " - " << exception.what() << std::endl;
-                  }
+                  implementation::shutdown_thread( m_thread, input);
                }
 
                id_type input;

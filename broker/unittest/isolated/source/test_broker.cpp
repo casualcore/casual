@@ -187,6 +187,8 @@ namespace casual
 
       TEST( casual_broker, server_connect)
       {
+         common::Trace trace{ "casual_broker.casual_broker", common::log::internal::debug};
+
          local::domain_1 domain;
 
          {
@@ -469,7 +471,7 @@ namespace casual
          {
             local::Broker broker{ domain.state};
 
-            common::message::forward::Connect connect;
+            common::message::forward::connect::Request connect;
             connect.process = domain.server2.process();
 
             common::queue::blocking::Send send;
@@ -486,7 +488,7 @@ namespace casual
          {
             local::Broker broker{ domain.state};
 
-            common::message::traffic::monitor::Connect connect;
+            common::message::traffic::monitor::connect::Reqeust connect;
             connect.process = domain.traffic1.process();
 
             common::queue::blocking::Send send;
@@ -503,14 +505,14 @@ namespace casual
             local::Broker broker{ domain.state};
 
             {
-               common::message::traffic::monitor::Connect connect;
+               common::message::traffic::monitor::connect::Reqeust connect;
                connect.process = domain.traffic1.process();
 
                common::queue::blocking::Send send;
                send( broker.queue.id(), connect);
             }
             {
-               common::message::traffic::monitor::Connect connect;
+               common::message::traffic::monitor::connect::Reqeust connect;
                connect.process = domain.traffic2.process();
 
                common::queue::blocking::Send send;
@@ -547,7 +549,7 @@ namespace casual
          {
             local::Broker broker{ domain.state};
 
-            common::message::transaction::manager::Connect connect;
+            common::message::transaction::manager::connect::Request connect;
             connect.process = domain.tm.process();
 
             common::queue::blocking::Send send;
@@ -562,6 +564,25 @@ namespace casual
          EXPECT_TRUE( domain.state.getInstance( domain.tm.process().pid).state == state::Server::Instance::State::idle);
       }
 
+      TEST( casual_broker, singelton_connect__expect_stored_uuid)
+      {
+         local::domain_5 domain;
 
+         auto& tm_uuid = common::process::instance::identity::transaction::manager();
+         {
+
+            local::Broker broker{ domain.state};
+
+            common::message::transaction::manager::connect::Request connect;
+            connect.process = domain.tm.process();
+            connect.identification = tm_uuid;
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), connect);
+
+         }
+         EXPECT_TRUE( domain.state.singeltons.size() == 1);
+         EXPECT_TRUE( domain.state.singeltons.at( tm_uuid) == domain.tm.process());
+      }
 	}
 }

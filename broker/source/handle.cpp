@@ -87,7 +87,7 @@ namespace casual
 
                      queue::blocking::Reader queueReader{ common::ipc::receive::queue(), m_state};
 
-                     auto& handler = broker::handler( m_state);
+                     auto handler = broker::handler( m_state);
 
                      //
                      // Use a filter so we don't consume any incoming messages that
@@ -129,7 +129,7 @@ namespace casual
                      common::log::information << "shutdown group '" << batch.group << "'\n";
 
 
-                     auto& handler = broker::handler_no_services( m_state);
+                     auto handler = broker::handler_no_services( m_state);
 
                      auto filter = handler.types();
 
@@ -192,6 +192,51 @@ namespace casual
                      }
                   }
 
+
+                  template< typename M>
+                  bool connect( State& state, M&& message)
+                  {
+                     if( state.mode == State::Mode::shutdown)
+                     {
+                        //
+                        // We're in a shtudown mode, we don't allow any connections
+                        //
+                        auto reply = common::message::reverse::type( message);
+                        reply.directive = decltype( reply)::Directive::shutdown;
+
+                        queue::blocking::Send send{ state};
+                        send( message.process.queue, reply);
+                     }
+                     else if( message.identification)
+                     {
+                        //
+                        // Make sure we only start one instance of a singleton
+                        //
+
+                        auto found = common::range::find( state.singeltons, message.identification);
+
+                        if( found)
+                        {
+                           if( found->second != message.process)
+                           {
+                              auto reply = common::message::reverse::type( message);
+                              reply.directive = decltype( reply)::Directive::singleton;
+
+                              queue::blocking::Send send{ state};
+                              send( message.process.queue, reply);
+                           }
+                        }
+                        else
+                        {
+                           state.singeltons[ message.identification] = message.process;
+                        }
+                     }
+
+
+
+                     return true;
+                  }
+
                } // handle
 
             } // <unnamed>
@@ -239,7 +284,7 @@ namespace casual
 
          namespace traffic
          {
-            void Connect::operator () ( message_type& message)
+            void Connect::operator () ( common::message::traffic::monitor::connect::Reqeust& message)
             {
                trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
 
@@ -282,22 +327,26 @@ namespace casual
             namespace manager
             {
 
-               void Connect::operator () ( message_type& message)
+               void Connect::operator () ( common::message::transaction::manager::connect::Request& message)
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Connect::dispatch"};
 
                   common::log::internal::debug << "connect request: " << message.process << std::endl;
 
-                  m_state.transaction_manager = message.process.queue;
 
-                  //
-                  // Send configuration to TM
-                  //
-                  auto configuration = transform::transaction::configuration( m_state);
+                  if( local::handle::connect( m_state, message))
+                  {
 
-                  queue::blocking::Writer tmQueue{ message.process.queue, m_state};
-                  tmQueue( configuration);
+                     m_state.transaction_manager = message.process.queue;
 
+                     //
+                     // Send configuration to TM
+                     //
+                     auto configuration = transform::transaction::configuration( m_state);
+
+                     queue::blocking::Writer tmQueue{ message.process.queue, m_state};
+                     tmQueue( configuration);
+                  }
                }
 
                void Ready::operator () ( message_type& message)
@@ -336,18 +385,22 @@ namespace casual
 
                   try
                   {
-                     auto& instance = m_state.getInstance( message.process.pid);
+                     if( local::handle::connect( m_state, message))
+                     {
+                        auto& instance = m_state.getInstance( message.process.pid);
 
 
-                     //
-                     // Instance is started for the first time.
-                     // Send some configuration
-                     //
-                     auto reply =
-                           transform::transaction::client::reply( m_state, instance);
+                        //
+                        // Instance is started for the first time.
+                        // Send some configuration
+                        //
+                        auto reply =
+                              transform::transaction::client::reply( m_state, instance);
 
-                     queue::blocking::Writer write( message.process.queue, m_state);
-                     write( reply);
+                        queue::blocking::Writer
+                        write( message.process.queue, m_state);
+                        write( reply);
+                     }
                   }
                   catch( const state::exception::Missing& exception)
                   {
@@ -370,11 +423,14 @@ namespace casual
          namespace forward
          {
 
-            void Connect::operator () ( const common::message::forward::Connect& message)
+            void Connect::operator () ( const common::message::forward::connect::Request& message)
             {
                common::trace::internal::Scope trace{ "broker::handle::forward::Connect"};
 
-               m_state.forward = message.process;
+               if( local::handle::connect( m_state, message))
+               {
+                  m_state.forward = message.process;
+               }
             }
 
          } // forward
@@ -499,6 +555,11 @@ namespace casual
             common::trace::internal::Scope trace{ "broker::handle::Connect::dispatch"};
 
             common::log::internal::debug << "connect request: " << message.process << std::endl;
+
+            if( ! local::handle::connect( m_state, message))
+            {
+               return;
+            }
 
             try
             {
@@ -694,41 +755,7 @@ namespace casual
 
          void Policy::connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
-
-            //
-            // We add the server, and make sure we only construct one (if this is called more than once...)
-            //
-            static auto& server = [&]() -> state::Server& {
-               state::Server server;
-               server.alias = "casual-broker";
-               server.configuredInstances = 1;
-               server.path = common::process::path();
-               server.instances.push_back( common::process::id());
-
-               {
-                  state::Server::Instance instance;
-                  instance.process = common::process::handle();
-                  instance.server = server.id;
-                  instance.alterState( state::Server::Instance::State::idle);
-
-                  m_state.add( std::move( instance));
-               }
-
-               return m_state.add( std::move( server));
-            }();
-
-            log::internal::debug << "broker server: " << server << '\n';
-
-            //
-            // Add services
-            //
-            {
-               std::vector< state::Service> brokerServices;
-
-               common::range::transform( services, brokerServices, transform::Service{});
-
-               m_state.addServices( common::process::id(), std::move( brokerServices));
-            }
+            m_state.connect_broker( std::move( services));
          }
 
 
@@ -773,9 +800,9 @@ namespace casual
 
       } // handle
 
-      const common::message::dispatch::Handler& handler( State& state)
+      common::message::dispatch::Handler handler( State& state)
       {
-         static common::message::dispatch::Handler singleton{
+         return {
             handle::transaction::manager::Connect{ state},
             handle::transaction::manager::Ready{ state},
             handle::forward::Connect{ state},
@@ -792,14 +819,12 @@ namespace casual
             handle::Call{ ipc::receive::queue(), admin::services( state), state},
             common::message::handle::ping( state),
             common::message::handle::Shutdown{},
-            common::message::handle::Discard< common::message::Poke>{}
          };
-         return singleton;
       }
 
-      const common::message::dispatch::Handler& handler_no_services( State& state)
+      common::message::dispatch::Handler handler_no_services( State& state)
       {
-         static common::message::dispatch::Handler singleton{
+         return {
             handle::transaction::manager::Connect{ state},
             handle::transaction::manager::Ready{ state},
             handle::forward::Connect{ state},
@@ -816,9 +841,7 @@ namespace casual
             //handle::Call{ ipc::receive::queue(), admin::services( state), state},
             common::message::handle::ping( state),
             common::message::handle::Shutdown{},
-            common::message::handle::Discard< common::message::Poke>{}
          };
-         return singleton;
       }
    } // broker
 } // casual

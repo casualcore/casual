@@ -185,6 +185,8 @@ namespace casual
 			   //!
 			   set_type block();
 
+			   set_type mask( set_type set);
+
 			   namespace scope
             {
 			      //!
