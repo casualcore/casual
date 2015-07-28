@@ -87,6 +87,8 @@ namespace casual
          {
             common::log::internal::transaction << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
 
+            common::log::internal::queue << "casual-queue ipc: " << environment::broker::queue::id() << std::endl;
+
             rm::id( rmid);
 
             return XA_OK;

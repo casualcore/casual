@@ -32,6 +32,8 @@ namespace casual
             cForwardConnectReply,
             cProcessDeathRegistration,
             cProcessDeathEvent,
+            cLookupProcessRequest,
+            cLookupProcessReply,
 
             // Server
             SERVER_BASE = 1000, // message type can't be 0!
@@ -366,6 +368,35 @@ namespace casual
             } // process
          } // dead
 
+         namespace lookup
+         {
+            namespace process
+            {
+               struct Request : server::basic_id< cLookupProcessRequest>
+               {
+                  enum class Directive : char
+                  {
+                     wait,
+                     direct
+                  };
+
+                  Uuid identification;
+                  Directive directive;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     server::basic_id< cLookupProcessRequest>::marshal( archive);
+                     archive & identification;
+                     archive & directive;
+                  })
+               };
+
+               using Reply = server::basic_id< cLookupProcessReply>;
+
+            } // process
+
+         } // lookup
+
          namespace forward
          {
             namespace connect
@@ -403,6 +434,9 @@ namespace casual
 
             template<>
             struct type_traits< forward::connect::Request> : detail::type< forward::connect::Reply> {};
+
+            template<>
+            struct type_traits< lookup::process::Request> : detail::type< lookup::process::Reply> {};
 
 
             template< typename T>

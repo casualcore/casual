@@ -8,6 +8,7 @@
 
 #include "sf/xatmi_call.h"
 #include "sf/namevaluepair.h"
+#include "sf/archive/log.h"
 
 #include "broker/admin/brokervo.h"
 
@@ -163,12 +164,12 @@ namespace casual
                {
                   for( auto& instance : instances( value.instances))
                   {
-                     switch( static_cast< state::Server::Instance::State>( instance.state))
+                     switch( instance.state)
                      {
-                        case state::Server::Instance::State::booted: out << terminal::color::magenta.start() << '^'; break;
-                        case state::Server::Instance::State::idle: out << terminal::color::green.start() << '+'; break;
-                        case state::Server::Instance::State::busy: out << terminal::color::yellow.start() << '*'; break;
-                        case state::Server::Instance::State::shutdown: out << terminal::color::red.start() << 'x'; break;
+                        case admin::InstanceVO::State::booted: out << terminal::color::magenta.start() << '^'; break;
+                        case admin::InstanceVO::State::idle: out << terminal::color::green.start() << '+'; break;
+                        case admin::InstanceVO::State::busy: out << terminal::color::yellow.start() << '*'; break;
+                        case admin::InstanceVO::State::shutdown: out << terminal::color::red.start() << 'x'; break;
                         default: out << terminal::color::red.start() <<  '-'; break;
                      }
                   }
@@ -178,12 +179,12 @@ namespace casual
                {
                   for( auto& instance : instances( value.instances))
                   {
-                     switch( static_cast< state::Server::Instance::State>( instance.state))
+                     switch( instance.state)
                      {
-                        case state::Server::Instance::State::booted: out << '^'; break;
-                        case state::Server::Instance::State::idle: out << '+'; break;
-                        case state::Server::Instance::State::busy: out << '*'; break;
-                        case state::Server::Instance::State::shutdown: out << 'x'; break;
+                        case admin::InstanceVO::State::booted: out << '^'; break;
+                        case admin::InstanceVO::State::idle: out << '+'; break;
+                        case admin::InstanceVO::State::busy: out << '*'; break;
+                        case admin::InstanceVO::State::shutdown: out << 'x'; break;
                         default: out <<  '-'; break;
                      }
                   }
@@ -291,6 +292,7 @@ namespace casual
                terminal::format::column( "alias", std::mem_fn( &admin::ServerVO::alias), terminal::color::yellow, terminal::format::Align::left),
                terminal::format::column( "invoked", format_invoked{ instances}, terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "last", format_last{ instances}, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "restart", std::mem_fn( &admin::ServerVO::restart), terminal::color::no_color, terminal::format::Align::left),
                terminal::format::column( "#", format_instances{}, terminal::color::white, terminal::format::Align::right),
                terminal::format::custom_column( "state", format_state{ instances}),
                terminal::format::column( "path", std::mem_fn( &admin::ServerVO::path), terminal::color::no_color, terminal::format::Align::left)
@@ -422,6 +424,7 @@ namespace casual
 
          void servers( std::ostream& out, admin::StateVO& state)
          {
+            out << std::boolalpha;
             range::sort( state.servers, []( const admin::ServerVO& l, const admin::ServerVO& r){ return l.alias < r.alias;});
 
             auto formatter = format::servers( state.instances);
@@ -508,6 +511,11 @@ namespace casual
                {
                   std::vector< admin::ExecutableVO> executables;
                   std::vector< admin::ServerVO> servers;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE({
+                     archive & CASUAL_MAKE_NVP( executables);
+                     archive & CASUAL_MAKE_NVP( servers);
+                  })
                };
 
                struct Membership
@@ -527,6 +535,10 @@ namespace casual
                   std::vector< Batch> result;
 
                   auto group_order = range::reverse( range::stable_sort( state.groups));
+                  //auto group_order = range::stable_sort( state.groups);
+
+                  log::internal::debug << CASUAL_MAKE_NVP( group_order);
+
 
                   auto executables = range::make( state.executables);
                   auto servers = range::make( state.servers);
@@ -546,6 +558,9 @@ namespace casual
                      }
                      result.push_back( std::move( batch));
                   }
+
+                  log::internal::debug << sf::makeNameValuePair( "shutdown-order",  result);
+
                   return result;
                }
 
@@ -587,7 +602,10 @@ namespace casual
 
             try
             {
-               for( auto& batch : local::shutdown_order( origin))
+               auto shutdown_set = local::shutdown_order( origin);
+
+
+               for( auto& batch : shutdown_set)
                {
                   auto do_shutdown = [&]( const admin::ExecutableVO& value)
                         {
@@ -612,11 +630,11 @@ namespace casual
 
             }
 
-            auto count = 100;
+            auto count = 10;
 
             while( count-- > 0 && active.size() > 1)
             {
-               process::sleep( std::chrono::milliseconds{ 10});
+               process::sleep( std::chrono::milliseconds{ 100});
 
                auto state = call::state();
                print_shutdown( state);
@@ -660,11 +678,13 @@ namespace casual
          void boot()
          {
 
-            auto startup =  call::boot();
+            auto state = call::boot();
 
-            const auto number_of_instances = range::accumulate( startup.servers, 0, []( std::size_t s, const admin::ServerVO& server){
-               return server.configured_instances + s;
-            });
+            auto calculate_instances = []( const admin::StateVO& state){
+               return range::accumulate( state.servers, 0, []( std::size_t s, const admin::ServerVO& server){
+                  return server.configured_instances + s;
+               });
+            };
 
 
             auto state_running = []( const admin::InstanceVO& i)
@@ -672,9 +692,9 @@ namespace casual
                      return i.state != admin::InstanceVO::State::booted;
                   };
 
-            auto booted = std::get< 0>( range::partition( startup.instances, state_running));
+            auto booted = std::get< 0>( range::partition( state.instances, state_running));
 
-            auto formatter = local::format_instances( startup.servers);
+            auto formatter = local::format_instances( state.servers);
 
             formatter.print_headers( std::cout);
             formatter.print_rows( std::cout, booted);
@@ -682,11 +702,11 @@ namespace casual
 
             auto count = 1000;
 
-            while( booted.size() < number_of_instances && count-- > 0)
+            while( booted.size() < calculate_instances( state) && count-- > 0)
             {
                process::sleep( std::chrono::milliseconds{ 10});
 
-               auto state = call::state();
+               state = call::state();
 
                auto total_booted = std::get< 0>( range::partition( state.instances, state_running));
 
@@ -694,7 +714,7 @@ namespace casual
 
                formatter.print_rows( std::cout, booted_since_last);
 
-               std::swap( state.instances, startup.instances);
+               //std::swap( state.instances, startup.instances);
                booted = total_booted;
             }
          }

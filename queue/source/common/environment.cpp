@@ -12,6 +12,9 @@
 #include "common/exception.h"
 #include "common/process.h"
 
+#include "common/queue.h"
+#include "common/message/type.h"
+
 
 
 
@@ -32,54 +35,36 @@ namespace casual
                {
                   namespace
                   {
-                     common::platform::queue_id_type initializeBrokerQueueId()
+                     common::platform::queue_id_type initialize_broker_queue_id()
                      {
-                        std::ifstream file;
 
-                        //
-                        // Not sure if the queue-broker is up and running, we need try a few times
-                        // TODO: Should we implement some functionality in the real broker that can act like a
-                        // dispatch for queries like these? Not sure what we will use as a key in that case though...
-                        //
+                        common::message::lookup::process::Request request;
+                        request.directive = common::message::lookup::process::Request::Directive::wait;
+                        request.identification = broker::identification();
+                        request.process = common::process::handle();
 
-                        auto sleep = std::chrono::milliseconds{ 2};
+                        auto reply = common::queue::blocking::call( common::ipc::broker::id(), request);
 
-                        while( sleep < std::chrono::seconds{ 10})
-                        {
-                           file.open( path());
-
-                           if( file)
-                           {
-                              common::platform::queue_id_type id{ 0};
-                              file >> id;
-
-                              return id;
-                           }
-                           common::process::sleep( sleep);
-                           sleep *= 2;
-                        }
-
-
-                        common::log::internal::queue << "failed to open queue-broker queue-key-file" << std::endl;
-                        throw common::exception::xatmi::SystemError( "failed to open queue-broker queue-key-file: " + path());
+                        return reply.process.queue;
                      }
                   }
-               }
-               std::string path()
-               {
-                  return casual::common::environment::domain::singleton::path() + "/.casual-queue-broker-queue";
                }
 
 
                common::platform::queue_id_type id()
                {
-                  static const auto id = local::initializeBrokerQueueId();
+                  static const auto id = local::initialize_broker_queue_id();
                   return id;
                }
 
 
             } // queue
 
+            const common::Uuid& identification()
+            {
+               static const common::Uuid id{ "c0c5a19dfc27465299494ad7a5c229cd"};
+               return id;
+            }
          } // broker
 
       } // environment

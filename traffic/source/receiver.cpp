@@ -91,7 +91,7 @@ namespace casual
          // Register this traffic-logger
          //
          {
-            common::message::traffic::monitor::connect::Reqeust request;
+            common::message::traffic::monitor::connect::Request request;
 
             request.path = common::process::path();
             request.process = common::process::handle();

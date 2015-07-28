@@ -255,6 +255,7 @@ namespace casual
          {
             pending_requests_type requests;
             std::vector< common::message::pending::Message> replies;
+            std::vector< common::message::lookup::process::Request> process_lookup;
          } pending;
 
 

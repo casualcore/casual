@@ -107,11 +107,6 @@ namespace casual
                   const Uuid& manager();
                } // transaction
 
-               namespace queue
-               {
-                  const Uuid& broker();
-               } // queue
-
                namespace traffic
                {
                   const Uuid& manager();

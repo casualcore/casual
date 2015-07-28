@@ -60,12 +60,8 @@ namespace casual
 
             };
 
-            struct domain_1
+            struct domain_0
             {
-               domain_1() : server1{ 10}
-               {
-                  add_instance( "server1", server1.process().pid);
-               }
 
                void add_instance( const std::string& alias, platform::pid_type pid)
                {
@@ -83,10 +79,17 @@ namespace casual
                   state.add( std::move( instance));
                }
 
+               broker::State state;
+            };
+
+            struct domain_1 : domain_0
+            {
+               domain_1() : server1{ 10}
+               {
+                  add_instance( "server1", server1.process().pid);
+               }
 
                mockup::ipc::Instance server1;
-
-               broker::State state;
 
             };
 
@@ -159,6 +162,18 @@ namespace casual
                mockup::ipc::Instance traffic2;
 
                broker::State state;
+
+            };
+
+            struct domain_singleton : domain_0
+            {
+               domain_singleton() : server1{ 1000}, server2{ 2000}
+               {
+                  add_instance( "server1", server1.process().pid);
+                  add_instance( "server2", server2.process().pid);
+               }
+               mockup::ipc::Instance server1;
+               mockup::ipc::Instance server2;
 
             };
 
@@ -488,7 +503,7 @@ namespace casual
          {
             local::Broker broker{ domain.state};
 
-            common::message::traffic::monitor::connect::Reqeust connect;
+            common::message::traffic::monitor::connect::Request connect;
             connect.process = domain.traffic1.process();
 
             common::queue::blocking::Send send;
@@ -505,14 +520,14 @@ namespace casual
             local::Broker broker{ domain.state};
 
             {
-               common::message::traffic::monitor::connect::Reqeust connect;
+               common::message::traffic::monitor::connect::Request connect;
                connect.process = domain.traffic1.process();
 
                common::queue::blocking::Send send;
                send( broker.queue.id(), connect);
             }
             {
-               common::message::traffic::monitor::connect::Reqeust connect;
+               common::message::traffic::monitor::connect::Request connect;
                connect.process = domain.traffic2.process();
 
                common::queue::blocking::Send send;
@@ -583,6 +598,182 @@ namespace casual
          }
          EXPECT_TRUE( domain.state.singeltons.size() == 1);
          EXPECT_TRUE( domain.state.singeltons.at( tm_uuid) == domain.tm.process());
+      }
+
+      TEST( casual_broker, singelton_connect_2x__expect__connect_reply_error)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+            common::message::server::connect::Request connect;
+            {
+               connect.process = domain.server1.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+            {
+               connect.process = domain.server2.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+            common::message::server::connect::Reply reply;
+
+            {
+               common::queue::blocking::Reader reader{ domain.server1.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
+
+            }
+            {
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::singleton);
+            }
+         }
+      }
+
+      TEST( casual_broker, singelton_connect__lookup_process__expect_reply)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::server::connect::Request connect;
+               connect.process = domain.server1.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+
+
+            {
+               common::message::server::connect::Reply reply;
+
+               common::queue::blocking::Reader reader{ domain.server1.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
+            }
+
+            {
+               common::message::lookup::process::Request request;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+
+               common::message::lookup::process::Reply reply;
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.process == domain.server1.process());
+            }
+         }
+      }
+
+      TEST( casual_broker, lookup_process__direct__expect_reply_with_null_process)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::lookup::process::Request request;
+               request.directive = common::message::lookup::process::Request::Directive::direct;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+
+               common::message::lookup::process::Reply reply;
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.process.pid == 0);
+               EXPECT_TRUE( reply.process.queue == 0);
+
+            }
+         }
+      }
+
+      TEST( casual_broker, lookup_process_wait__expect_pending_reply)
+      {
+         local::domain_singleton domain;
+
+         auto some_uuid = common::uuid::make();
+
+         {
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::lookup::process::Request request;
+               request.directive = common::message::lookup::process::Request::Directive::wait;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+            }
+         }
+         ASSERT_TRUE( domain.state.pending.process_lookup.size() == 1);
+         EXPECT_TRUE( domain.state.pending.process_lookup.front().identification == some_uuid);
+         EXPECT_TRUE( domain.state.pending.process_lookup.front().process == domain.server2.process());
+      }
+
+      TEST( casual_broker, lookup_process_wait__singleton_connect__expect_reply)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+
+
+            {
+               common::message::lookup::process::Request request;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+            }
+
+            {
+               common::message::server::connect::Request connect;
+               connect.process = domain.server1.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+
+               common::message::server::connect::Reply reply;
+
+               common::queue::blocking::Reader reader{ domain.server1.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
+            }
+
+            {
+               common::message::lookup::process::Reply reply;
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.process == domain.server1.process());
+
+            }
+         }
       }
 	}
 }

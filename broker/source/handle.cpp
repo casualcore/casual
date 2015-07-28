@@ -193,19 +193,23 @@ namespace casual
                   }
 
 
-                  template< typename M>
-                  bool connect( State& state, M&& message)
+                  template< typename M, typename R>
+                  bool connect( State& state, M&& message, R&& reply)
                   {
+                     queue::blocking::Send send{ state};
+                     reply.correlation = message.correlation;
+
                      if( state.mode == State::Mode::shutdown)
                      {
+                        log::error << "application connect while in 'shutdown-mode' - instance: " << message.process << " - action: reply with 'shutdown-error'\n";
+
                         //
                         // We're in a shtudown mode, we don't allow any connections
                         //
-                        auto reply = common::message::reverse::type( message);
-                        reply.directive = decltype( reply)::Directive::shutdown;
-
-                        queue::blocking::Send send{ state};
+                        reply.directive = R::Directive::shutdown;
                         send( message.process.queue, reply);
+
+                        return false;
                      }
                      else if( message.identification)
                      {
@@ -219,20 +223,33 @@ namespace casual
                         {
                            if( found->second != message.process)
                            {
-                              auto reply = common::message::reverse::type( message);
-                              reply.directive = decltype( reply)::Directive::singleton;
+                              log::error << "only one instance of application with id " << message.identification << " is allowed - instance: " << message.process << "- action: reply with 'singleton-error'\n";
+
+                              reply.directive = R::Directive::singleton;
 
                               queue::blocking::Send send{ state};
                               send( message.process.queue, reply);
+
+                              auto& server = state.getServer( state.getInstance( message.process.pid).server);
+                              server.configuredInstances = 1;
+
+                              return false;
                            }
                         }
                         else
                         {
                            state.singeltons[ message.identification] = message.process;
+
+                           decltype( state.pending.process_lookup) pending;
+                           std::swap( pending, state.pending.process_lookup);
+
+                           range::for_each( pending, broker::handle::lookup::Process{ state});
                         }
                      }
 
+                     common::log::internal::debug << "connect reply: " << message.process << std::endl;
 
+                     send( message.process.queue, reply);
 
                      return true;
                   }
@@ -248,6 +265,17 @@ namespace casual
             auto boot_order = state.bootOrder();
 
             range::for_each( boot_order, local::Boot{ state});
+
+            if( log::internal::debug)
+            {
+               std::vector< std::reference_wrapper< state::Server>> servers;
+
+               for( auto& s : state.servers)
+               {
+                  servers.emplace_back( s.second);
+               }
+               log::internal::debug << "booted servers: " << range::make( servers) << '\n';
+            }
          }
 
 
@@ -284,17 +312,20 @@ namespace casual
 
          namespace traffic
          {
-            void Connect::operator () ( common::message::traffic::monitor::connect::Reqeust& message)
+            void Connect::operator () ( common::message::traffic::monitor::connect::Request& message)
             {
                trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
 
-               if( ! range::find( m_state.traffic.monitors, message.process.queue))
+               if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
                {
-                  m_state.traffic.monitors.push_back( message.process.queue);
-               }
-               else
-               {
-                  log::error << "traffic monitor already connected - action: ignore" << std::endl;
+                  if( ! range::find( m_state.traffic.monitors, message.process.queue))
+                  {
+                     m_state.traffic.monitors.push_back( message.process.queue);
+                  }
+                  else
+                  {
+                     log::error << "traffic monitor already connected - action: ignore" << std::endl;
+                  }
                }
 
             }
@@ -334,7 +365,7 @@ namespace casual
                   common::log::internal::debug << "connect request: " << message.process << std::endl;
 
 
-                  if( local::handle::connect( m_state, message))
+                  if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
                   {
 
                      m_state.transaction_manager = message.process.queue;
@@ -343,6 +374,7 @@ namespace casual
                      // Send configuration to TM
                      //
                      auto configuration = transform::transaction::configuration( m_state);
+                     configuration.correlation = message.correlation;
 
                      queue::blocking::Writer tmQueue{ message.process.queue, m_state};
                      tmQueue( configuration);
@@ -385,22 +417,10 @@ namespace casual
 
                   try
                   {
-                     if( local::handle::connect( m_state, message))
-                     {
-                        auto& instance = m_state.getInstance( message.process.pid);
+                     auto& instance = m_state.getInstance( message.process.pid);
 
+                     local::handle::connect( m_state, message, transform::transaction::client::reply( m_state, instance));
 
-                        //
-                        // Instance is started for the first time.
-                        // Send some configuration
-                        //
-                        auto reply =
-                              transform::transaction::client::reply( m_state, instance);
-
-                        queue::blocking::Writer
-                        write( message.process.queue, m_state);
-                        write( reply);
-                     }
                   }
                   catch( const state::exception::Missing& exception)
                   {
@@ -427,7 +447,7 @@ namespace casual
             {
                common::trace::internal::Scope trace{ "broker::handle::forward::Connect"};
 
-               if( local::handle::connect( m_state, message))
+               if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
                {
                   m_state.forward = message.process;
                }
@@ -495,11 +515,16 @@ namespace casual
                         {
                            m_state.pending.replies.push_back( std::move( message));
                         }
-
                      }
+
+                     auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
 
                      m_state.remove_process( event.death.pid);
 
+                     if( server.restart)
+                     {
+                        m_state.instance( server, server.configuredInstances);
+                     }
                   }
                   else
                   {
@@ -515,6 +540,40 @@ namespace casual
             } // process
 
          } // dead
+
+         namespace lookup
+         {
+            void Process::operator () ( const common::message::lookup::process::Request& message)
+            {
+               common::trace::internal::Scope trace{ "broker::handle::lookup::Process"};
+
+               auto reply = common::message::reverse::type( message);
+
+               auto found = range::find( m_state.singeltons, message.identification);
+
+               auto send_reply = [&](){
+                  queue::non_blocking::Send send{ m_state};
+                  if( ! send( message.process.queue, reply))
+                  {
+                     m_state.pending.replies.emplace_back( reply, message.process.queue);
+                  }
+               };
+
+               if( found)
+               {
+                  reply.process = found->second;
+                  send_reply();
+               }
+               else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+               {
+                  send_reply();
+               }
+               else
+               {
+                  m_state.pending.process_lookup.push_back( message);
+               }
+            }
+         }
 
          void Advertise::operator () ( message_type& message)
          {
@@ -556,11 +615,6 @@ namespace casual
 
             common::log::internal::debug << "connect request: " << message.process << std::endl;
 
-            if( ! local::handle::connect( m_state, message))
-            {
-               return;
-            }
-
             try
             {
                //
@@ -570,32 +624,24 @@ namespace casual
                auto& instance = m_state.getInstance( message.process.pid);
                instance.process.queue = message.process.queue;
 
-
-               //
-               // Add services
-               //
+               if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
                {
-                  std::vector< state::Service> services;
+                  //
+                  // Add services
+                  //
+                  {
+                     std::vector< state::Service> services;
 
-                  common::range::transform( message.services, services, transform::Service{});
+                     common::range::transform( message.services, services, transform::Service{});
 
-                  m_state.addServices( message.process.pid, std::move( services));
+                     m_state.addServices( message.process.pid, std::move( services));
+                  }
+
+                  //
+                  // Set the instance to idle state
+                  //
+                  instance.alterState( state::Server::Instance::State::idle);
                }
-
-               //
-               // Set the instance to idle state
-               //
-               instance.alterState( state::Server::Instance::State::idle);
-
-               //
-               // Send some configuration
-               //
-               common::message::server::connect::Reply reply;
-
-               common::log::internal::debug << "connect reply: " << message.process << std::endl;
-
-               queue::blocking::Writer writer( message.process.queue, m_state);
-               writer( reply);
 
             }
             catch( const state::exception::Missing& exception)
@@ -808,6 +854,7 @@ namespace casual
             handle::forward::Connect{ state},
             handle::dead::process::Registration{ state},
             handle::dead::process::Event{ state},
+            handle::lookup::Process{ state},
             handle::Connect{ state},
             handle::Advertise{ state},
             handle::Unadvertise{ state},
@@ -830,6 +877,7 @@ namespace casual
             handle::forward::Connect{ state},
             handle::dead::process::Registration{ state},
             handle::dead::process::Event{ state},
+            handle::lookup::Process{ state},
             handle::Connect{ state},
             handle::Advertise{ state},
             handle::Unadvertise{ state},

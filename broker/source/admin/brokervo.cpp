@@ -18,10 +18,19 @@ namespace casual
 
          bool operator < ( const GroupVO& lhs, const GroupVO& rhs)
          {
-            if( ! lhs.dependencies.empty() && rhs.dependencies.empty()) { return true;}
+            if( lhs.dependencies.empty() && rhs.dependencies.empty()) { return lhs.id < rhs.id;}
 
-            if( common::range::find( rhs.dependencies, lhs.id)
-               && ! common::range::find( lhs.dependencies, rhs.id)) { return true;}
+            if( common::range::find( rhs.dependencies, lhs.id))
+            {
+               if( ! common::range::find( lhs.dependencies, rhs.id))
+               {
+                  return true;
+               }
+               else
+               {
+                  return lhs.id < rhs.id;
+               }
+            }
 
             return false;
          }

@@ -15,6 +15,12 @@ namespace casual
    {
       namespace server
       {
+         message::server::connect::Reply connect( const Uuid& identification)
+         {
+            Connect< queue::policy::NoAction> connect;
+
+            return connect( ipc::receive::queue(), identification, {});
+         }
 
          message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services)
          {

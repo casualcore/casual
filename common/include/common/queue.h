@@ -426,6 +426,17 @@ namespace casual
                using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
             }
 
+            template< typename M>
+            auto call( platform::queue_id_type destination, M&& message) -> decltype( message::reverse::type( std::forward< M>( message)))
+            {
+               auto correlation = Send{}( destination, message);
+
+               auto reply = message::reverse::type( std::forward< M>( message));
+               blocking::Reader receive{ ipc::receive::queue()};
+               receive( reply, correlation);
+
+               return reply;
+            }
 
 
          } // blocking

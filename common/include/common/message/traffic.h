@@ -26,7 +26,7 @@ namespace casual
                   //!
                   //! Used to advertise the monitorserver
                   //!
-                  using Reqeust = server::connect::basic_request< cTrafficMonitorConnectRequest>;
+                  using Request = server::connect::basic_request< cTrafficMonitorConnectRequest>;
                   using Reply = server::connect::basic_reply< cTrafficMonitorConnectReply>;
 
                } // connect
@@ -70,6 +70,13 @@ namespace casual
             };
 
          } // traffic
+
+         namespace reverse
+         {
+            template<>
+            struct type_traits< traffic::monitor::connect::Request> : detail::type< traffic::monitor::connect::Reply> {};
+
+         } // reverse
       } // message
    } // common
 } // casual

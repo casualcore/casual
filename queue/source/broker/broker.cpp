@@ -38,32 +38,6 @@ namespace casual
             namespace
             {
 
-               template< typename Q>
-               void exportBrokerQueueKey( const Q& queue, const std::string& path)
-               {
-                  if( casual::common::file::exists( path))
-                  {
-                     //
-                     // TODO: ping to see if there are another queue broker running
-                     //
-                     common::file::remove( path);
-                  }
-
-                  common::log::internal::queue << "writing queue broker queue file: " << path << std::endl;
-
-                  std::ofstream brokerQueueFile( path);
-
-                  if( brokerQueueFile)
-                  {
-                     brokerQueueFile << queue.id() << std::endl;
-                     brokerQueueFile.close();
-                  }
-                  else
-                  {
-                     throw common::exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
-                  }
-               }
-
                namespace transform
                {
                   struct Queue
@@ -220,11 +194,11 @@ namespace casual
 
 
       Broker::Broker( broker::Settings settings)
-       : m_queueFilePath( common::process::singleton( environment::broker::queue::path()))
       {
-
-         broker::local::exportBrokerQueueKey( casual::common::ipc::receive::queue(), m_queueFilePath);
-
+         //
+         // Will throw if another queue-broker is up and running.
+         //
+         common::server::connect( environment::broker::identification());
 
          if( ! settings.configuration.empty())
          {
@@ -274,7 +248,7 @@ namespace casual
             broker::handle::transaction::rollback::Reply{ m_state},
             //broker::handle::peek::queue::Request{ m_state},
             common::server::handle::basic_admin_call< broker::State>{
-               broker::admin::Server::services( *this), m_state, common::process::instance::identity::queue::broker()},
+               broker::admin::Server::services( *this), m_state, environment::broker::identification()},
             common::message::handle::ping( m_state),
          };
 

@@ -51,11 +51,7 @@ namespace casual
 
          void handlePending();
 
-
-         common::file::scoped::Path m_queueFilePath;
          State m_state;
-
-
       };
 
       namespace message

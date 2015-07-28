@@ -100,6 +100,7 @@ namespace casual
             std::string path;
             std::vector< sf::platform::pid_type> instances;
             std::size_t configured_instances;
+            bool restart;
             std::vector< std::size_t> memberships;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
@@ -109,6 +110,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( configured_instances);
+               archive & CASUAL_MAKE_NVP( restart);
                archive & CASUAL_MAKE_NVP( memberships);
             })
          };

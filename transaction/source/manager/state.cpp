@@ -254,7 +254,7 @@ namespace casual
 
       bool State::pending() const
       {
-         return ! pendingRequests.empty() || ! persistentReplies.empty();
+         return ! persistentReplies.empty();
       }
 
       std::size_t State::instances() const

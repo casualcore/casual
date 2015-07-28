@@ -41,7 +41,6 @@ namespace casual
    {
 
       Manager::Manager( const Settings& settings) :
-          m_queueFilePath( common::process::singleton( common::environment::domain::singleton::path() + "/.casual-transaction-manager-queue")),
           m_state( settings.database)
       {
 

@@ -324,6 +324,20 @@ namespace casual
                }
             }
          }
+
+         //
+         // Erase from singeltons, if any...
+         //
+         {
+            auto found = range::find_if( singeltons, [=]( const decltype( singeltons)::value_type& v){
+               return v.second.pid == pid;
+            });
+
+            if( found)
+            {
+               singeltons.erase( found.first);
+            }
+         }
       }
 
 
@@ -513,6 +527,8 @@ namespace casual
 
       std::vector< common::platform::pid_type> State::instance( state::Server& server, std::size_t instances)
       {
+         server.configuredInstances = instances;
+
          if( instances > server.instances.size())
          {
             return boot( server, instances - server.instances.size());

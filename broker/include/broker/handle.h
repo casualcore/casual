@@ -54,7 +54,7 @@ namespace casual
             {
                using Base::Base;
 
-               void operator () ( common::message::traffic::monitor::connect::Reqeust& message);
+               void operator () ( common::message::traffic::monitor::connect::Request& message);
             };
 
             struct Disconnect: public Base
@@ -151,6 +151,17 @@ namespace casual
             } // process
 
          } // dead
+
+         namespace lookup
+         {
+            struct Process : Base
+            {
+               using Base::Base;
+
+               void operator () ( const common::message::lookup::process::Request& message);
+            };
+
+         } // lookup
 
 
          //!

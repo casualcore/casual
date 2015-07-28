@@ -84,6 +84,7 @@ namespace casual
                   result.path = value.path;
                   result.instances = value.instances;
                   result.configured_instances = value.configuredInstances;
+                  result.restart = value.restart;
                   result.memberships = value.memberships;
 
                   return result;
@@ -101,6 +102,7 @@ namespace casual
                   result.path = value.path;
                   result.instances = value.instances;
                   result.configured_instances = value.configuredInstances;
+                  result.restart = value.restart;
                   result.memberships = value.memberships;
                   result.restrictions = value.restrictions;
 

@@ -155,8 +155,6 @@ namespace casual
 
       private:
 
-
-         casual::common::file::scoped::Path m_queueFilePath;
          broker::State m_state;
 
       };

@@ -128,14 +128,6 @@ namespace casual
                   }
                } // transaction
 
-               namespace queue
-               {
-                  const Uuid& broker()
-                  {
-                     const static Uuid singleton{ "4d18d4d0b8654890ba87310ad1860f5a"};
-                     return singleton;
-                  }
-               } // queue
 
                namespace traffic
                {
