@@ -132,6 +132,10 @@ typedef enum { c_log_error, c_log_warning, c_log_information, c_log_debug } casu
 extern int casual_log( casual_log_category_t category, const char* const format, ...);
 extern int casual_vlog( casual_log_category_t category, const char* const format, va_list ap);
 
+extern int casual_user_vlog( const char* category, const char* const format, va_list ap);
+
+extern int casual_user_log( const char* category, const char* const message);
+
 
 
 #ifdef __cplusplus

@@ -158,13 +158,11 @@ namespace casual
          void deactivate( category::Type category);
 
 
-         //std::ostream& stream( category::Type category);
-
 
          void write( category::Type category, const char* message);
-
          void write( category::Type category, const std::string& message);
 
+         void write( const std::string& category, const std::string& message);
 
 
       } // log

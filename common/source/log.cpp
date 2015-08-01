@@ -58,7 +58,7 @@ namespace casual
                      return singleton;
                   }
 
-                  void log( const std::string& category, const std::string& message)
+                  void log( const std::string& category, const char* message)
                   {
                      const std::string basename{ file::name::base( process::path())};
 
@@ -73,6 +73,11 @@ namespace casual
                         << '|' << execution::service()
                         << '|' << category
                         << '|' << message << std::endl;
+                  }
+
+                  void log( const std::string& category, const std::string& message)
+                  {
+                     log( category, message.c_str());
                   }
 
                private:
@@ -324,6 +329,12 @@ namespace casual
          void write( category::Type category, const std::string& message)
          {
             local::stream( category) << message << std::endl;
+         }
+
+         void write( const std::string& category, const std::string& message)
+         {
+            thread::Safe guard{ std::cout};
+            local::File::instance().log( category, message);
          }
       } // log
 

@@ -291,47 +291,79 @@ void casual_service_forward( const char* service, char* data, long size)
    casual::common::server::Context::instance().forward( service, data, size);
 }
 
+namespace local
+{
+   namespace
+   {
+      template< typename L>
+      int vlog( L&& logger, const char* const format, va_list arglist)
+      {
+         std::array< char, 2048> buffer;
+         std::vector< char> backup;
+
+         va_list argcopy;
+         va_copy( argcopy, arglist);
+         auto written = vsnprintf( buffer.data(), buffer.max_size(), format, argcopy);
+         va_end( argcopy );
+
+         auto data = buffer.data();
+
+         if( written >= static_cast< decltype( written)>( buffer.max_size()))
+         {
+            backup.resize( written + 1);
+            va_copy( argcopy, arglist);
+            written = vsnprintf( backup.data(), backup.size(), format, argcopy);
+            va_end( argcopy );
+            data = backup.data();
+         }
+
+         logger( data);
+
+         return written;
+      }
+
+   } // <unnamed>
+} // local
 
 int casual_vlog( casual_log_category_t category, const char* const format, va_list arglist)
 {
-   std::array< char, 2048> buffer;
-   std::vector< char> backup;
 
-   va_list argcopy;
-   va_copy( argcopy, arglist);
-   auto written = vsnprintf( buffer.data(), buffer.max_size(), format, argcopy);
-   va_end( argcopy );
+   auto catagory_logger = [=]( const char* data){
 
-   auto data = buffer.data();
+      switch( category)
+      {
+      case casual_log_category_t::c_log_debug:
+         casual::common::log::write( casual::common::log::category::Type::debug, data);
+         break;
+      case casual_log_category_t::c_log_information:
+         casual::common::log::write( casual::common::log::category::Type::information, data);
+         break;
+      case casual_log_category_t::c_log_warning:
+         casual::common::log::write( casual::common::log::category::Type::warning, data);
+         break;
+      default:
+         casual::common::log::write( casual::common::log::category::Type::error, data);
+         break;
+      }
+   };
 
-   if( written >= static_cast< decltype( written)>( buffer.max_size()))
-   {
-      backup.resize( written + 1);
-      va_copy( argcopy, arglist);
-      vsnprintf( backup.data(), backup.size(), format, argcopy);
-      va_end( argcopy );
-      data = backup.data();
-   }
+   return local::vlog( catagory_logger, format, arglist);
+}
 
+int casual_user_vlog( const char* category, const char* const format, va_list arglist)
+{
+   auto user_logger = [=]( const char* data){
+      casual::common::log::write( category, data);
+   };
 
-   switch( category)
-   {
-   case casual_log_category_t::c_log_debug:
-      casual::common::log::write( casual::common::log::category::Type::debug, data);
-      break;
-   case casual_log_category_t::c_log_information:
-      casual::common::log::write( casual::common::log::category::Type::information, data);
-      break;
-   case casual_log_category_t::c_log_warning:
-      casual::common::log::write( casual::common::log::category::Type::warning, data);
-      break;
-   default:
-      casual::common::log::write( casual::common::log::category::Type::error, data);
-      break;
-   }
+   return local::vlog( user_logger, format, arglist);
+}
+
+int casual_user_log( const char* category, const char* const message)
+{
+   casual::common::log::write( category, message);
 
    return 0;
-
 }
 
 int casual_log( casual_log_category_t category, const char* const format, ...)
