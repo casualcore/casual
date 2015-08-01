@@ -100,7 +100,10 @@ namespace casual
             std::string path;
             std::vector< sf::platform::pid_type> instances;
             std::size_t configured_instances;
+
             bool restart;
+            std::size_t deaths;
+
             std::vector< std::size_t> memberships;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
@@ -111,17 +114,20 @@ namespace casual
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( configured_instances);
                archive & CASUAL_MAKE_NVP( restart);
+               archive & CASUAL_MAKE_NVP( deaths);
                archive & CASUAL_MAKE_NVP( memberships);
             })
          };
 
          struct ServerVO : ExecutableVO
          {
+            std::size_t invoked;
             std::vector< std::string> restrictions;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                ExecutableVO::serialize( archive);
+               archive & CASUAL_MAKE_NVP( invoked);
                archive & CASUAL_MAKE_NVP( restrictions);
             })
          };

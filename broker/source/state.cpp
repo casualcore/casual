@@ -117,7 +117,7 @@ namespace casual
                {
                   return out << "alias: " << value.alias
                         << ", id: " << value.id
-                        << ", configured_instances: " << value.configuredInstances
+                        << ", configured_instances: " << value.configured_instances
                         << ", instances: " << range::make( value.instances)
                         << ", memberships" << range::make( value.memberships)
                         << ", arguments: " << range::make( value.arguments)
@@ -312,6 +312,9 @@ namespace casual
 
             server.remove( pid);
 
+            server.invoked += instance.invoked;
+
+
             instances.erase( found.first);
          }
          else
@@ -419,7 +422,7 @@ namespace casual
             {
                state::Server server;
                server.alias = "casual-broker";
-               server.configuredInstances = 1;
+               server.configured_instances = 1;
                server.path = common::process::path();
                server.instances.push_back( common::process::id());
 
@@ -527,7 +530,7 @@ namespace casual
 
       std::vector< common::platform::pid_type> State::instance( state::Server& server, std::size_t instances)
       {
-         server.configuredInstances = instances;
+         server.configured_instances = instances;
 
          if( instances > server.instances.size())
          {

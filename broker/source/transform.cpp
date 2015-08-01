@@ -62,7 +62,7 @@ namespace casual
                   {
                      result.alias = value.alias;
                      result.arguments = value.arguments;
-                     result.configuredInstances = std::stoul( value.instances);
+                     result.configured_instances = std::stoul( value.instances);
                      result.note = value.note;
                      result.path = value.path;
                      result.restart = value.restart == "true";
@@ -219,7 +219,7 @@ namespace casual
                   state::Server forward;
                   forward.alias = "casual-forward-cache";
                   forward.path = "casual-forward-cache";
-                  forward.configuredInstances = 1;
+                  forward.configured_instances = 1;
                   forward.memberships.push_back( result.casual_group_id);
                   forward.note = "TODO...";
 
@@ -277,7 +277,7 @@ namespace casual
 
                   result.alias = "casual-transaction-manager";
                   result.path = manager.path;
-                  result.configuredInstances = 1;
+                  result.configured_instances = 1;
                   result.arguments = { "--database", manager.database};
                   result.note = "the one and only transaction manager in this domain";
 

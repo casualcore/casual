@@ -46,11 +46,11 @@ namespace casual
 
                   void operator () ( const state::Executable& executable)
                   {
-                     if( executable.configuredInstances > executable.instances.size())
+                     if( executable.configured_instances > executable.instances.size())
                      {
                         decltype( executable.instances) pids;
 
-                        auto count = executable.configuredInstances - executable.instances.size();
+                        auto count = executable.configured_instances - executable.instances.size();
 
                         //
                         // Prepare environment. We use the default first and add
@@ -231,7 +231,7 @@ namespace casual
                               send( message.process.queue, reply);
 
                               auto& server = state.getServer( state.getInstance( message.process.pid).server);
-                              server.configuredInstances = 1;
+                              server.configured_instances = 1;
 
                               return false;
                            }
@@ -519,11 +519,13 @@ namespace casual
 
                      auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
 
+                     ++server.deaths;
+
                      m_state.remove_process( event.death.pid);
 
                      if( server.restart)
                      {
-                        m_state.instance( server, server.configuredInstances);
+                        m_state.instance( server, server.configured_instances);
                      }
                   }
                   else

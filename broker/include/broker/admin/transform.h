@@ -83,8 +83,9 @@ namespace casual
                   result.alias = value.alias;
                   result.path = value.path;
                   result.instances = value.instances;
-                  result.configured_instances = value.configuredInstances;
+                  result.configured_instances = value.configured_instances;
                   result.restart = value.restart;
+                  result.deaths = value.deaths;
                   result.memberships = value.memberships;
 
                   return result;
@@ -101,8 +102,10 @@ namespace casual
                   result.alias = value.alias;
                   result.path = value.path;
                   result.instances = value.instances;
-                  result.configured_instances = value.configuredInstances;
+                  result.configured_instances = value.configured_instances;
                   result.restart = value.restart;
+                  result.deaths = value.deaths;
+                  result.invoked = value.invoked;
                   result.memberships = value.memberships;
                   result.restrictions = value.restrictions;
 

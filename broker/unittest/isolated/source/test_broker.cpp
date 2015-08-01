@@ -67,7 +67,7 @@ namespace casual
                {
                   state::Server server;
                   server.alias = alias;
-                  server.configuredInstances = 1;
+                  server.configured_instances = 1;
                   server.path = "some/path/" + alias;
                   server.instances.push_back( pid);
                   state.add( std::move( server));
