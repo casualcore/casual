@@ -110,6 +110,20 @@ namespace casual
 
 			bool integer( const std::string& value);
 
+
+			template< typename T>
+			typename std::enable_if< std::is_integral< T>::value, std::size_t>::type
+			digits( T value)
+			{
+			   std::size_t result{ 1};
+
+			   while( value /= 10)
+			   {
+			      ++result;
+			   }
+			   return result;
+			}
+
 		} // string
 
 		namespace internal

@@ -132,8 +132,15 @@ namespace casual
             } environment;
 
 
-            std::size_t configuredInstances = 0;
+            std::size_t configured_instances = 0;
+
             bool restart = false;
+
+            //!
+            //! Number of instances that has died in some way.
+            //!
+            std::size_t deaths = 0;
+
 
             bool remove( pid_type instance);
 
@@ -168,7 +175,7 @@ namespace casual
 
                common::process::Handle process;
                std::size_t invoked = 0;
-               common::platform::time_point last;
+               common::platform::time_point last = common::platform::time_point::min();
                Server::id_type server = 0;
                std::vector< std::reference_wrapper< Service>> services;
 
@@ -188,6 +195,14 @@ namespace casual
             //! if not empty, only these services are allowed to be publish
             //!
             std::vector< std::string> restrictions;
+
+            //!
+            //! If an instance terminates, it's invoke-count is added to this variable. So
+            //! we can give an accurate invoke-figure to users.
+            //! Hence, the total number of invocation for a server is the sum of all instances
+            //! invoke-count + this variable
+            //!
+            std::size_t invoked = 0;
 
             friend std::ostream& operator << ( std::ostream& out, const Server& value);
          };

@@ -258,7 +258,7 @@ namespace casual
                {
                   auto inst = instances( value.instances);
 
-                  decltype( inst.front().last) last;
+                  platform::time_point last = platform::time_point::min();
 
                   for( auto& instance : inst)
                   {
@@ -282,7 +282,36 @@ namespace casual
                   {
                      invoked += instance.invoked;
                   }
-                  return invoked;
+                  return invoked + value.invoked;
+               }
+            };
+
+            struct format_restart
+            {
+               char operator () ( const admin::ServerVO& value) const
+               {
+                  return value.restart ? 'Y' : 'N';
+               }
+            };
+
+            struct format_deaths
+            {
+               std::size_t width( const admin::ServerVO& value) const
+               {
+                  return string::digits( value.deaths);
+               }
+
+               void print( std::ostream& out, const admin::ServerVO& value, std::size_t width, bool color) const
+               {
+                  if( value.deaths > 0 && color)
+                  {
+                     out << std::right << terminal::color::red.start() << std::setfill( ' ') << std::setw( width) << value.deaths << terminal::color::red.end();
+                  }
+                  else
+                  {
+                     out << std::right << std::setfill( ' ') << std::setw( width) << value.deaths;
+                  }
+
                }
             };
 
@@ -292,7 +321,8 @@ namespace casual
                terminal::format::column( "alias", std::mem_fn( &admin::ServerVO::alias), terminal::color::yellow, terminal::format::Align::left),
                terminal::format::column( "invoked", format_invoked{ instances}, terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "last", format_last{ instances}, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "restart", std::mem_fn( &admin::ServerVO::restart), terminal::color::no_color, terminal::format::Align::left),
+               terminal::format::column( "r", format_restart{}, terminal::color::no_color, terminal::format::Align::left),
+               terminal::format::custom_column( "d#", format_deaths{}),
                terminal::format::column( "#", format_instances{}, terminal::color::white, terminal::format::Align::right),
                terminal::format::custom_column( "state", format_state{ instances}),
                terminal::format::column( "path", std::mem_fn( &admin::ServerVO::path), terminal::color::no_color, terminal::format::Align::left)
