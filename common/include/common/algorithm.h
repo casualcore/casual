@@ -444,6 +444,18 @@ namespace casual
             T m_functor;
          };
 
+         template< typename R>
+         struct size_traits
+         {
+            static std::size_t size( const R& range) { return range.size();}
+         };
+
+         template< typename T, std::size_t s>
+         struct size_traits< T[ s]>
+         {
+            constexpr static std::size_t size( const T(&range)[ s]) { return s;}
+         };
+
       } // detail
 
 
@@ -541,6 +553,13 @@ namespace casual
             }
             return result;
          }
+
+         template< typename R>
+         std::size_t size( const R& range)
+         {
+            return detail::size_traits< typename std::remove_reference< R>::type>::size( range);
+         }
+
 
 
          template< typename R>
@@ -744,7 +763,7 @@ namespace casual
          template< typename R1, typename R2, typename P>
          bool equal( R1&& lhs, R2&& rhs, P predicate)
          {
-            //if( lhs.size() != rhs.size()) { return false;}
+            if( size( lhs) != size( rhs)) { return false;}
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), predicate);
          }
 
@@ -752,7 +771,7 @@ namespace casual
          template< typename R1, typename R2>
          bool equal( R1&& lhs, R2&& rhs)
          {
-            //if( lhs.size() != rhs.size()) { return false;}
+            if( size( lhs) != size( rhs)) { return false;}
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs));
          }
 
@@ -1149,6 +1168,25 @@ namespace casual
 
          } // sorted
       } // range
+
+      template< typename Iter1, typename Iter2>
+      bool operator == ( const Range< Iter1>& lhs, const Range< Iter2>& rhs)
+      {
+         return range::equal( lhs, rhs);
+      }
+
+      template< typename Iter, typename C>
+      bool operator == ( const Range< Iter>& lhs, const C& rhs)
+      {
+         return range::equal( lhs, rhs);
+      }
+
+      template< typename C, typename Iter>
+      bool operator == ( C& lhs, const Range< Iter>& rhs)
+      {
+         return range::equal( lhs, rhs);
+      }
+
 
 
    } // common

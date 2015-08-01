@@ -692,7 +692,8 @@ namespace casual
                      return i.state != admin::InstanceVO::State::booted;
                   };
 
-            auto booted = std::get< 0>( range::partition( state.instances, state_running));
+
+            auto booted = std::get< 0>( range::stable_partition( state.instances, state_running));
 
             auto formatter = local::format_instances( state.servers);
 
@@ -706,16 +707,24 @@ namespace casual
             {
                process::sleep( std::chrono::milliseconds{ 10});
 
-               state = call::state();
+               auto check_state = call::state();
 
-               auto total_booted = std::get< 0>( range::partition( state.instances, state_running));
+               auto total_booted = std::get< 0>( range::stable_partition( check_state.instances, state_running));
 
                auto booted_since_last = std::get< 1>( range::intersection( total_booted, booted));
 
                formatter.print_rows( std::cout, booted_since_last);
 
-               //std::swap( state.instances, startup.instances);
+               state = std::move( check_state);
                booted = total_booted;
+            }
+
+            if( booted.size() < calculate_instances( state))
+            {
+               auto check_state = call::state();
+               auto not_booted = std::get< 1>( range::stable_partition( check_state.instances, state_running));
+
+               formatter.print_rows( std::cout, not_booted);
             }
          }
 

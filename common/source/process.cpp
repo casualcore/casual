@@ -557,12 +557,7 @@ namespace casual
                   case Exit::Reason::exited: out << "exited"; break;
                   case Exit::Reason::stopped: out << "stopped"; break;
                   case Exit::Reason::continued: out << "continued"; break;
-                  case Exit::Reason::signaled:
-                     {
-                        assert( std::abs( terminated.status) < sizeof( sys_signame));
-                        out <<  "signal[ " << sys_signame[ std::abs( terminated.status)] << ']';
-                        break;
-                     }
+                  case Exit::Reason::signaled: out <<  "signal[ " << signal::type::string( terminated.status) << ']'; break;
                   case Exit::Reason::core: out <<  "core"; break;
                }
                return out << '}';

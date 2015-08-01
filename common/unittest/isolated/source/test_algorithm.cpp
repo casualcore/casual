@@ -501,6 +501,18 @@ namespace casual
       }
 
 
+      TEST( casual_common_algorithm, intersection)
+      {
+         std::vector< int> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
+         std::vector< int> lookup{ 4, 1, 3, 5, 2};
+
+         auto split = range::intersection( range, lookup);
+
+         EXPECT_TRUE( range::sort( std::get< 0>( split)) == range::sort( lookup)) << std::get< 0>( split);
+         EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
+      }
+
+
 
 
    } // common

@@ -199,7 +199,7 @@ namespace casual
                }
                catch( const exception::queue::Unavailable&)
                {
-                  common::log::error << "failed to send reply to " << message.target << " TODO: rollback transaction?\n";
+                  common::log::error << "failed to send reply: " << message.message << " - TODO: rollback transaction?\n";
                   //
                   // ipc-queue has been removed...
                   // TODO: deduce from message.message.type what we should do
