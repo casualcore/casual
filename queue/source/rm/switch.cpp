@@ -11,6 +11,7 @@
 
 #include "common/transaction/id.h"
 #include "common/internal/log.h"
+#include "common/trace.h"
 #include "common/message/transaction.h"
 #include "common/queue.h"
 
@@ -100,6 +101,8 @@ namespace casual
          }
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "queue::xa::xa_start_entry", common::log::internal::transaction};
+
             common::transaction::ID transaction{ *xid};
             common::log::internal::transaction << "xa_start_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
             return XA_OK;
@@ -107,6 +110,8 @@ namespace casual
 
          int xa_end_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "queue::xa::xa_end_entry", common::log::internal::transaction};
+
             common::transaction::ID transaction{ *xid};
             common::log::internal::transaction << "xa_end_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
             return XA_OK;
@@ -117,6 +122,8 @@ namespace casual
 
          int xa_rollback_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "queue::xa::xa_rollback_entry", common::log::internal::transaction};
+
             common::transaction::ID transaction{ *xid};
             common::log::internal::transaction << "xa_rollback_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
 
@@ -127,6 +134,8 @@ namespace casual
 
          int xa_prepare_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "queue::xa::xa_prepare_entry", common::log::internal::transaction};
+
             common::transaction::ID transaction{ *xid};
             common::log::internal::transaction << "xa_prepare_entry NO-OP - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
 
@@ -135,6 +144,8 @@ namespace casual
 
          int xa_commit_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "queue::xa::xa_commit_entry", common::log::internal::transaction};
+
             common::transaction::ID transaction{ *xid};
             common::log::internal::transaction << "xa_commit_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
 
@@ -146,9 +157,9 @@ namespace casual
 
          int xa_recover_entry( XID* xid, long count, int rmid, long flags)
          {
-            common::transaction::ID transaction{ *xid};
-            common::log::internal::transaction << "xa_recover_entry - xid: " << transaction << " count: " << count << " rmid: " << rmid << " flags: " << flags << std::endl;
+            common::Trace trace{ "queue::xa::xa_recover_entry", common::log::internal::transaction};
 
+            // TODO: ask casual-queue-broker
             return XA_OK;
          }
 

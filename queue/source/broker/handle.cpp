@@ -9,6 +9,7 @@
 
 #include "common/log.h"
 #include "common/internal/log.h"
+#include "common/trace.h"
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/process.h"
@@ -86,6 +87,8 @@ namespace casual
 
                void Request::operator () ( message_type& message)
                {
+                  common::Trace trace{ "handle::lookup::Request", common::log::internal::queue};
+
                   queue::blocking::Writer write{ message.process.queue, m_state};
 
                   auto found =  common::range::find( m_state.queues, message.name);
