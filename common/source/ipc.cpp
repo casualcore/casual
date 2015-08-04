@@ -15,6 +15,7 @@
 #include "common/uuid.h"
 #include "common/internal/log.h"
 #include "common/algorithm.h"
+#include "common/message/type.h"
 
 
 #include <fstream>
@@ -600,6 +601,19 @@ namespace casual
                return result;
             }
 
+            void Queue::flush()
+            {
+               //
+               // We try to find a non existing message, until the ipc-queue is consumed
+               // and in the cache
+               //
+               find(
+                     &message::ignore::signal::receive,
+                     chain::And::link(
+                           local::find::Type( common::message::Type::cFlushIPC),
+                           local::find::Complete()), cNoBlocking);
+            }
+
             void Queue::discard( const Uuid& correlation)
             {
 
@@ -624,14 +638,14 @@ namespace casual
             }
 
 
-            template< typename P>
-            Queue::range_type Queue::find( P predicate, const long flags)
+            template< typename IPC, typename P>
+            Queue::range_type Queue::find( IPC ipc, P predicate, const long flags)
             {
                auto found = range::find_if( m_cache, predicate);
 
                message::Transport transport;
 
-               while( ! found && message::receive( m_id, transport, flags))
+               while( ! found && ipc( m_id, transport, flags))
                {
                   //
                   // Check if the message should be discarded
@@ -644,6 +658,12 @@ namespace casual
                }
 
                return found;
+            }
+
+            template< typename P>
+            Queue::range_type Queue::find( P predicate, const long flags)
+            {
+               return find( &message::receive, predicate, flags);
             }
 
 

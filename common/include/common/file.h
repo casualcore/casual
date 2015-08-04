@@ -107,6 +107,17 @@ namespace casual
          //!
          bool exists( const std::string& path);
 
+         namespace permission
+         {
+            //!
+            //! @return true if calling process has execution permission on @p path
+            //!
+            //! @note returns false if the file does not exists
+            //!
+            bool execution( const std::string& path);
+
+         } // permission
+
       } // file
 
       namespace directory

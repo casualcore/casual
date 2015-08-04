@@ -173,9 +173,17 @@ namespace casual
 
          bool exists( const std::string& path)
          {
-            std::ifstream file( path);
-            return file.good();
+            return access( path.c_str(), F_OK) == 0;
          }
+
+         namespace permission
+         {
+            bool execution( const std::string& path)
+            {
+               return access( path.c_str(), R_OK | X_OK) == 0;
+            }
+
+         } // permission
 
       } // file
 

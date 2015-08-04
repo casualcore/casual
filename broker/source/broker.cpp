@@ -339,7 +339,8 @@ namespace casual
                      {
                         if( server.second.alias == value.alias)
                         {
-                           state.instance( server.second, value.instances);
+                           server.second.configured_instances = value.instances;
+                           handle::update::instances( state, server.second);
                         }
                      }
                   };

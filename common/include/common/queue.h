@@ -475,6 +475,21 @@ namespace casual
                using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
             }
 
+            namespace force
+            {
+               template< typename IPC, typename S, typename M>
+               void send( IPC& ipc, S&& send, M&& message)
+               {
+                  while( ! send( ipc.id(), message))
+                  {
+                     //
+                     // Queue is full, flush it and try again...
+                     //
+                     ipc.flush();
+                  }
+               }
+
+            } // force
 
          } // non_blocking
 

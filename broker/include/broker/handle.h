@@ -43,6 +43,16 @@ namespace casual
 
          void send_shutdown( State& state);
 
+         std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances);
+
+         void boot( State& state, const state::Executable& executable, std::size_t instances);
+
+         void shutdown( State& state, const state::Server& server, std::size_t instances);
+
+         namespace update
+         {
+            void instances( State& state, const state::Server& server);
+         } // update
 
 
          namespace traffic

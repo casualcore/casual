@@ -346,14 +346,6 @@ namespace casual
          std::size_t size() const;
 
          std::vector< common::platform::pid_type> processes() const;
-
-         std::vector< common::platform::pid_type> instance( state::Server::id_type id, std::size_t instance);
-         std::vector< common::platform::pid_type> instance( state::Server& server, std::size_t instance);
-
-      private:
-         std::vector< common::platform::pid_type> boot( state::Server& server, std::size_t instances);
-         std::vector< common::platform::pid_type> shutdown( state::Server& server, std::size_t instances);
-
       };
 
 
