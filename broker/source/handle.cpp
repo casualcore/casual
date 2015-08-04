@@ -46,28 +46,13 @@ namespace casual
 
                   void operator () ( const state::Executable& executable)
                   {
-                     if( executable.configured_instances > executable.instances.size())
+                     try
                      {
-                        decltype( executable.instances) pids;
-
-                        auto count = executable.configured_instances - executable.instances.size();
-
-                        //
-                        // Prepare environment. We use the default first and add
-                        // specific for the executable
-                        //
-                        auto environment = m_state.standard.environment;
-                        environment.insert(
-                           std::end( environment),
-                           std::begin( executable.environment.variables),
-                           std::end( executable.environment.variables));
-
-                        while( count-- > 0)
-                        {
-                           pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
-                        }
-
-                        m_state.addInstances( executable.id, std::move( pids));
+                        handle::boot( m_state, executable, executable.configured_instances);
+                     }
+                     catch( const exception::invalid::Argument& exception)
+                     {
+                        log::error << "failed to boot executable: " << executable << " - why: " << exception << std::endl;
                      }
                   }
 
@@ -298,17 +283,91 @@ namespace casual
          void send_shutdown( State& state)
          {
             queue::non_blocking::Send send{ state};
-            common::message::shutdown::Request message;
 
-            while( ! send( common::ipc::receive::queue().id(), message))
+            common::queue::non_blocking::force::send(
+               common::ipc::receive::queue(),
+               send,
+               common::message::shutdown::Request{});
+         }
+
+
+         std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances)
+         {
+            std::vector< common::platform::pid_type> pids;
+
+            //
+            // Prepare environment. We use the default first and add
+            // specific for the executable
+            //
+            auto environment = state.standard.environment;
+            environment.insert(
+               std::end( environment),
+               std::begin( executable.environment.variables),
+               std::end( executable.environment.variables));
+
+            while( instances-- > 0)
             {
-               //
-               // Queue is full, try to read non-existent message to flush the queue
-               //
-               common::message::flush::IPC flush;
-               queue::non_blocking::Reader{ common::ipc::receive::queue(), state}( flush);
+               pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
+            }
+
+            return pids;
+         }
+
+         void boot( State& state, const state::Executable& executable, std::size_t instances)
+         {
+            instances = std::min( executable.configured_instances, instances);
+
+            auto count = instances - executable.instances.size();
+
+            if( count > 0)
+            {
+               state.addInstances( executable.id, spawn( state, executable, count));
             }
          }
+
+         void shutdown( State& state, const state::Server& server, std::size_t instances)
+         {
+            instances = std::min( server.instances.size(), instances);
+
+            auto range = common::range::make( server.instances);
+
+            range.first = range.last - instances;
+
+            std::vector< common::process::Handle> servers;
+
+            for( auto& pid : range)
+            {
+               //
+               // make sure we don't try to shutdown our self...
+               //
+               if( pid != common::process::id())
+               {
+                  servers.push_back( state.getInstance( pid).process);
+               }
+            }
+
+            std::vector< common::platform::pid_type> result;
+
+            for( auto& death : common::server::lifetime::soft::shutdown( servers, std::chrono::seconds( 5)))
+            {
+               state.process( death);
+            }
+         }
+
+         namespace update
+         {
+            void instances( State& state, const state::Server& server)
+            {
+               if( server.configured_instances > server.instances.size())
+               {
+                  return boot( state, server, server.configured_instances - server.instances.size());
+               }
+               else
+               {
+                  return shutdown( state, server, server.instances.size() - server.configured_instances);
+               }
+            }
+         } // update
 
          namespace traffic
          {
@@ -525,7 +584,7 @@ namespace casual
 
                      if( server.restart)
                      {
-                        m_state.instance( server, server.configured_instances);
+                        update::instances( m_state, server);
                      }
                   }
                   else
@@ -535,12 +594,8 @@ namespace casual
                      //
                      log::warning << "process is not in a proper state - " << event.death << '\n';
                   }
-
                }
-
-
             } // process
-
          } // dead
 
          namespace lookup

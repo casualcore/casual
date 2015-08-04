@@ -217,6 +217,18 @@ namespace casual
             trace::Scope trace{ "process::spawn", log::internal::trace};
 
             //
+            // check if path exist and process has permission to execute it.
+            // could still go wrong, since we don't know if the path will actually execute,
+            // but we'll probably get rid of most of the errors (due to bad configuration and such)
+            //
+            if( ! file::permission::execution( path))
+            {
+               throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                  exception::make_nip( "arguments", range::make( arguments)),
+                  exception::make_nip( "environment", range::make( environment)));
+            }
+
+            //
             // prepare arguments
             //
             std::vector< const char*> c_arguments;
