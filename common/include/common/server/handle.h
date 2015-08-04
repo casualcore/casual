@@ -284,7 +284,7 @@ namespace casual
 
                   if( ! found)
                   {
-                     throw common::exception::xatmi::SystemError( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
+                     throw common::exception::xatmi::System( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
                   }
 
                   auto& service = found->second;
@@ -615,7 +615,7 @@ namespace casual
 
                   void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
                   {
-                     throw common::exception::xatmi::SystemError{ "can't forward within an administration server"};
+                     throw common::exception::xatmi::System{ "can't forward within an administration server"};
                   }
 
 

@@ -323,7 +323,7 @@ namespace casual
 
                if( ! found)
                {
-                  throw exception::xatmi::SystemError{ "failed to find transaction", __FILE__, __LINE__};
+                  throw exception::xatmi::System{ "failed to find transaction", __FILE__, __LINE__};
                }
 
                auto& transaction = *found;

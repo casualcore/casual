@@ -30,7 +30,7 @@ namespace casual
 
                if( ! pool)
                {
-                  throw exception::xatmi::buffer::TypeNotSupported{};
+                  throw exception::xatmi::buffer::type::Input{};
                }
                return **pool;
             }
@@ -43,7 +43,7 @@ namespace casual
 
                if( ! pool)
                {
-                  throw exception::xatmi::InvalidArguments{ "buffer not valid"};
+                  throw exception::xatmi::invalid::Argument{ "buffer not valid"};
                }
                return **pool;
             }

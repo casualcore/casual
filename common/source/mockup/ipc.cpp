@@ -121,9 +121,9 @@ namespace casual
             namespace implementation
             {
 
-               struct Disconnect : common::exception::Base
+               struct Disconnect : common::exception::base
                {
-                  using common::exception::Base::Base;
+                  using common::exception::base::base;
                };
 
                struct Worker
@@ -285,7 +285,7 @@ namespace casual
                            common::ipc::message::ignore::signal::send( input, transport, 0);
                            resend = false;
                         }
-                        catch( const exception::signal::Base&) {}
+                        catch( const exception::signal::base&) {}
                      }
                   }
                   catch( const std::exception& exception)

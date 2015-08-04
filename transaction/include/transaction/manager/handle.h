@@ -31,10 +31,8 @@ namespace casual
 
       namespace user
       {
-         struct error : common::exception::code::base
-         {
-            using common::exception::code::base::base;
-         };
+
+         using error = common::exception::code::category::error;
 
       } // transaction
 
@@ -186,11 +184,11 @@ namespace casual
                }
                catch( const user::error& exception)
                {
-                  common::log::error << common::error::xa::error( exception.code ) << " - " << exception.what() << '\n';
+                  common::log::stream::get( exception.category()) << common::error::xa::error( exception.code()) << " - " << exception << '\n';
 
                   auto reply = internal::transform::reply( message);
                   reply.stage = decltype( reply)::Stage::error;
-                  reply.state = exception.code;
+                  reply.state = exception.code();
 
                   internal::send::reply( Handler::m_state, std::move( reply), message.process);
                }

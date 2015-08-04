@@ -300,7 +300,7 @@ namespace casual
                   {
                      return *buffer;
                   }
-                  throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
+                  throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
                }
 
 
@@ -315,7 +315,7 @@ namespace casual
 
                      return result;
                   }
-                  throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
+                  throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
                }
 
 

@@ -86,7 +86,7 @@ The following categories are supported:
             arguments.parse( argc, argv);
 
          }
-         catch( const common::exception::Base& exception)
+         catch( const common::exception::base& exception)
          {
             std::cerr << exception << std::endl;
          }

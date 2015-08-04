@@ -721,7 +721,7 @@ namespace casual
                   if( ! file)
                   {
                      log::internal::ipc << "Failed to open broker queue configuration file" << std::endl;
-                     throw common::exception::xatmi::SystemError( "Failed to open broker queue configuration file: " + brokerFile);
+                     throw common::exception::xatmi::System( "Failed to open broker queue configuration file: " + brokerFile);
                   }
 
                   send::Queue::id_type id{ 0};

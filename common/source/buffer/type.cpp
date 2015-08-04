@@ -116,7 +116,7 @@ namespace casual
          {
             if( user_size > payload.memory.size())
             {
-               throw exception::xatmi::InvalidArguments{ "user supplied size is larger than the buffer actual size"};
+               throw exception::xatmi::invalid::Argument{ "user supplied size is larger than the buffer actual size"};
             }
 
             return user_size;

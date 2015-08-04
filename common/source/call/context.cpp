@@ -82,7 +82,7 @@ namespace casual
                   {
                      if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags))
                      {
-                        throw exception::xatmi::InvalidArguments{ "TPNOREPLY can only be used with TPNOTRAN"};
+                        throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
                      }
                   }
 
@@ -204,7 +204,7 @@ namespace casual
 
             if( target.state == message::service::lookup::Reply::State::absent)
             {
-               throw common::exception::xatmi::service::NoEntry( service);
+               throw common::exception::xatmi::service::no::Entry( service);
             }
 
             //
@@ -293,7 +293,7 @@ namespace casual
 
             if( ! receive( reply, descriptor, flags))
             {
-               throw common::exception::xatmi::NoMessage();
+               throw common::exception::xatmi::no::Message();
             }
 
             descriptor = reply.descriptor;
@@ -320,7 +320,7 @@ namespace casual
 
                if( output.payload.type != reply.buffer.type)
                {
-                  throw exception::xatmi::buffer::TypeNotExpected{};
+                  throw exception::xatmi::buffer::type::Output{};
                }
             }
 

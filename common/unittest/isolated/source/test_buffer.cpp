@@ -64,7 +64,7 @@ namespace casual
          {
             EXPECT_THROW({
                pool::Holder::instance().allocate( { "non-existing", "non-existing"}, 1024);
-            }, exception::xatmi::buffer::TypeNotSupported);
+            }, exception::xatmi::buffer::type::Input);
          }
 
 
@@ -91,7 +91,7 @@ namespace casual
 
             EXPECT_THROW({
                pool::Holder::instance().reallocate( small, 2048);
-            }, exception::xatmi::InvalidArguments);
+            }, exception::xatmi::invalid::Argument);
 
          }
 

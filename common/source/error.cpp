@@ -57,24 +57,9 @@ namespace casual
             {
                log::error << exception << std::endl;
             }
-            catch( const exception::xatmi::category::Error& exception)
+            catch( const exception::xatmi::base& exception)
             {
-               log::error << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::Warning& exception)
-            {
-               log::warning << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::Information& exception)
-            {
-               log::information << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::User& exception)
-            {
-               log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
+               log::stream::get( exception.category()) << "xatmi - " << exception << std::endl;
                return exception.code();
             }
 
@@ -99,7 +84,13 @@ namespace casual
                return exception.code();
             }
             */
-            catch( const exception::Base& exception)
+
+            catch( const exception::code::base& exception)
+            {
+               log::stream::get( exception.category()) << exception.tag_name() << " - " << exception << std::endl;
+               return exception.code();
+            }
+            catch( const exception::base& exception)
             {
                log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
                return TPESYSTEM;

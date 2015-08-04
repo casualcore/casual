@@ -417,11 +417,6 @@ int main( int argc, char **argv)
       return build( path, settings);
 
    }
-   catch( const casual::common::exception::Base& exception)
-   {
-      std::cerr << "error: " << exception << std::endl;
-      return common::error::handler();
-   }
    catch( const casual::common::exception::base& exception)
    {
       std::cerr << "error: " << exception << std::endl;

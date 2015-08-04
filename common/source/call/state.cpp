@@ -68,7 +68,7 @@ namespace casual
             }
             else
             {
-               throw exception::xatmi::service::InvalidDescriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
+               throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
             }
          }
 
@@ -90,7 +90,7 @@ namespace casual
             {
                return *found;
             }
-            throw exception::xatmi::service::InvalidDescriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
+            throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
          }
 
          signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time_point& now) const
@@ -115,7 +115,7 @@ namespace casual
             //
             if( transaction::Context::instance().associated( descriptor))
             {
-               throw exception::xatmi::TransactionNotSupported{ "descriptor " + std::to_string( descriptor) + " is associated with a transaction"};
+               throw exception::xatmi::transaction::Support{ "descriptor " + std::to_string( descriptor) + " is associated with a transaction"};
             }
 
             //

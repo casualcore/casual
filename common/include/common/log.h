@@ -148,6 +148,17 @@ namespace casual
          //!
          extern internal::Stream error;
 
+         namespace stream
+         {
+            //!
+            //! @returns the corresponding stream for the @p category
+            //!
+            internal::Stream& get( category::Type category);
+         } // stream
+
+
+
+
          //!
          //! @return true if the log-category is active.
          //!

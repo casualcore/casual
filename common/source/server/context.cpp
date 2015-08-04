@@ -117,7 +117,7 @@ namespace casual
                //
                if( found->second != prospect)
                {
-                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + prospect.name);
+                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
                }
 
             }
@@ -145,7 +145,7 @@ namespace casual
 
             if( m_state.services.erase( service) != 1)
             {
-               throw common::exception::xatmi::service::NoEntry( "service name: " + service);
+               throw common::exception::xatmi::service::no::Entry( "service name: " + service);
             }
 
             message::service::Unadvertise message;

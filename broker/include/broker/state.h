@@ -56,9 +56,9 @@ namespace casual
 
          namespace exception
          {
-            struct Missing : public common::exception::Base
+            struct Missing : public common::exception::base
             {
-               using common::exception::Base::Base;
+               using common::exception::base::base;
             };
 
          }
