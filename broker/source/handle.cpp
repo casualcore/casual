@@ -315,7 +315,7 @@ namespace casual
 
          void boot( State& state, const state::Executable& executable, std::size_t instances)
          {
-            instances = std::min( executable.configured_instances, instances);
+            instances = std::max( executable.configured_instances, instances);
 
             auto count = instances - executable.instances.size();
 
