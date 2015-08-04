@@ -422,6 +422,11 @@ int main( int argc, char **argv)
       std::cerr << "error: " << exception << std::endl;
       return common::error::handler();
    }
+   catch( const casual::common::exception::base& exception)
+   {
+      std::cerr << "error: " << exception << std::endl;
+      return common::error::handler();
+   }
    catch( ...)
    {
       std::cerr << "error: unknown" << std::endl;

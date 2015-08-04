@@ -117,7 +117,6 @@ namespace casual
             bool execution( const std::string& path);
 
          } // permission
-
       } // file
 
       namespace directory

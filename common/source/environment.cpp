@@ -48,7 +48,7 @@ namespace casual
 					}
 				}
 
-            std::string get( const std::string& name, const std::string& alternative)
+            std::string get( const std::string& name, std::string alternative)
             {
                if( exists( name))
                {
