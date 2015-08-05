@@ -666,26 +666,17 @@ namespace casual
             return result;
          }
 
-         void Database::persistenceBegin()
-         {
-            m_connection.begin();
-         }
-
-
-
-         void Database::persistenceCommit()
-         {
-            m_connection.commit();
-         }
 
          std::size_t Database::affected() const
          {
             return m_connection.affected();
          }
 
-         void Database::begin() { m_connection.begin();}
+
+         void Database::begin() { m_connection.exclusive_begin();}
          void Database::commit() { m_connection.commit();}
          void Database::rollback() { m_connection.rollback();}
+
 
       } // server
    } // queue

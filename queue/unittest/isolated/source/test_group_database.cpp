@@ -206,7 +206,7 @@ namespace casual
          group::Database database( path, "test_group");
 
          {
-            group::scoped::Writer writer{ database};
+            auto writer = sql::database::scoped::write( database);
 
             auto count = 0;
 
@@ -406,12 +406,12 @@ namespace casual
          }
 
          {
-            group::scoped::Writer writer{ database};
+            auto writer = sql::database::scoped::write( database);
             common::range::for_each( messages, [&]( const message_type& m){
                database.enqueue( m);});
          }
 
-         group::scoped::Writer writer{ database};
+         auto writer = sql::database::scoped::write( database);
 
          common::range::for_each( messages,[&]( const message_type& origin){
 
