@@ -76,6 +76,29 @@ namespace casual
       const common::platform::time_point& Event::start() const { return get_start(); }
       const common::platform::time_point& Event::end() const { return get_end(); }
 
+      namespace local
+      {
+         namespace
+         {
+            void connect()
+            {
+
+               common::message::traffic::monitor::connect::Request request;
+
+               request.path = common::process::path();
+               request.process = common::process::handle();
+
+               common::queue::blocking::Send send;
+               auto correlation = send( common::ipc::broker::id(), request);
+
+               common::message::handle::connect::reply(
+                     common::queue::blocking::Reader{ common::ipc::receive::queue()},
+                     correlation,
+                     common::message::traffic::monitor::connect::Reply{});
+
+            }
+         } // <unnamed>
+      } // local
 
 
       Receiver::Receiver()
@@ -90,20 +113,22 @@ namespace casual
          //
          // Register this traffic-logger
          //
-         {
-            common::message::traffic::monitor::connect::Request request;
+         local::connect();
+      }
 
-            request.path = common::process::path();
-            request.process = common::process::handle();
+      Receiver::Receiver( const common::Uuid& application)
+      {
+         common::trace::internal::Scope trace( "traffic::Receiver::Receiver( application)");
 
-            common::queue::blocking::Send send;
-            auto correlation = send( common::ipc::broker::id(), request);
+         //
+         // Connect as a singleton...
+         //
+         common::server::connect( application);
 
-            common::message::handle::connect::reply(
-                  common::queue::blocking::Reader{ common::ipc::receive::queue()},
-                  correlation,
-                  common::message::traffic::monitor::connect::Reply{});
-         }
+         //
+         // Register this traffic-logger
+         //
+         local::connect();
       }
 
       Receiver::~Receiver()
@@ -148,7 +173,7 @@ namespace casual
 
 
                //
-               // Consume until the queue is empty or we've got pending replies equal to statistics_batch
+               // Consume until the queue is empty or we've got pending events equal to statistics_batch
                //
                {
                   common::queue::non_blocking::Reader non_blocking( common::ipc::receive::queue());
