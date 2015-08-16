@@ -113,6 +113,72 @@ namespace casual
             requests.erase( std::begin( found), std::end( found));
          }
 
+
+         namespace message
+         {
+            void pump( group::State& state)
+            {
+               common::message::dispatch::Handler handler{
+                  handle::dead::Process{ state},
+                  handle::enqueue::Request{ state},
+                  handle::dequeue::Request{ state},
+                  handle::dequeue::forget::Request{ state},
+                  handle::transaction::commit::Request{ state},
+                  handle::transaction::rollback::Request{ state},
+                  handle::information::queues::Request{ state},
+                  handle::information::messages::Request{ state},
+                  common::message::handle::Shutdown{},
+               };
+
+
+               group::queue::blocking::Reader blockedRead( state.receive, state);
+
+               while( true)
+               {
+                  {
+                     auto persistent = sql::database::scoped::write( state.queuebase);
+
+
+                     if( state.persistent.empty())
+                     {
+                        //
+                        // We can only block if our back log is empty...
+                        //
+
+                        handler( blockedRead.next());
+                     }
+
+                     //
+                     // Consume until the queue is empty or we've got pending replies equal to transaction_batch
+                     //
+
+                     group::queue::non_blocking::Reader nonBlocking( state.receive, state);
+
+                     while( handler( nonBlocking.next()) &&
+                           state.persistent.size() < common::platform::batch::transaction)
+                     {
+                        ;
+                     }
+                  }
+
+                  //
+                  // queuebase is persistent - send pending persistent replies
+                  //
+                  group::queue::non_blocking::Send send{ state};
+
+                  auto remain = common::range::remove_if(
+                     state.persistent,
+                     common::message::pending::sender( send));
+
+                  state.persistent.erase( remain.last, std::end( state.persistent));
+
+
+               }
+
+            }
+         } // message
+
+
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
             //
@@ -182,68 +248,20 @@ namespace casual
 
                queueBroker( information);
             }
-         } // group
+         }
 
 
-         void Server::start()
+         int Server::start() noexcept
          {
-            common::message::dispatch::Handler handler{
-               handle::dead::Process{ m_state},
-               handle::enqueue::Request{ m_state},
-               handle::dequeue::Request{ m_state},
-               handle::dequeue::forget::Request{ m_state},
-               handle::transaction::commit::Request{ m_state},
-               handle::transaction::rollback::Request{ m_state},
-               handle::information::queues::Request{ m_state},
-               handle::information::messages::Request{ m_state},
-               common::message::handle::Shutdown{},
-            };
-
-
-            group::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
-
-            while( true)
+            try
             {
-               {
-                  auto persistent = sql::database::scoped::write( m_state.queuebase);
-
-
-                  if( m_state.persistent.empty())
-                  {
-                     //
-                     // We can only block if our back log is empty...
-                     //
-
-                     handler( blockedRead.next());
-                  }
-
-                  //
-                  // Consume until the queue is empty or we've got pending replies equal to transaction_batch
-                  //
-
-                  group::queue::non_blocking::Reader nonBlocking( common::ipc::receive::queue(), m_state);
-
-                  while( handler( nonBlocking.next()) &&
-                        m_state.persistent.size() < common::platform::batch::transaction)
-                  {
-                     ;
-                  }
-               }
-
-               //
-               // queuebase is persistent - send pending persistent replies
-               //
-               group::queue::non_blocking::Send send{ m_state};
-
-               auto remain = common::range::remove_if(
-                  m_state.persistent,
-                  common::message::pending::sender( send));
-
-               m_state.persistent.erase( remain.last, std::end( m_state.persistent));
-
-
+               message::pump( m_state);
             }
-
+            catch( ...)
+            {
+               return common::error::handler();
+            }
+            return 0;
          }
       } // server
 

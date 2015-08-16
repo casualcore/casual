@@ -280,7 +280,7 @@ namespace casual
             // Should be a waiting correlation for the xid
             EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.process());
             EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).group == state.group10.process());
-            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).state == broker::State::Correlation::State::pending);
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).stage == broker::State::Correlation::Stage::pending);
          }
       }
 
@@ -336,7 +336,7 @@ namespace casual
             // Should be a waiting correlation for the xid
             EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.process());
             EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).group == group.process());
-            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).state == broker::State::Correlation::State::pending);
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).stage == broker::State::Correlation::Stage::pending);
          };
 
          check( state.group10, 0);

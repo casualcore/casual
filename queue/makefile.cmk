@@ -77,6 +77,7 @@ broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
    [
      Compile( 'source/broker/handle.cpp'),
      Compile( 'source/broker/broker.cpp'),
+     Compile( 'source/broker/state.cpp'),
      Compile( 'source/broker/admin/server.cpp'),
    ])
 
@@ -214,10 +215,12 @@ Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 
 test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
+     Compile( 'unittest/isolated/source/test_broker_state.cpp'),
      Compile( 'unittest/isolated/source/test_group_database.cpp'),
      Compile( 'unittest/isolated/source/test_transform.cpp'),
      Compile( 'unittest/isolated/source/test_broker_handle.cpp'),
      Compile( 'unittest/isolated/source/test_group_pending.cpp'),
+     Compile( 'unittest/isolated/source/test_queue.cpp'),
     ],
     [
      group_archive,

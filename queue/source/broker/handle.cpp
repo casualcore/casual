@@ -186,7 +186,7 @@ namespace casual
                         state.correlation.emplace(
                               std::piecewise_construct,
                               std::forward_as_tuple( std::move( found->first)),
-                              std::forward_as_tuple( message.process, std::move( found->second)));
+                              std::forward_as_tuple( message.process, message.correlation, std::move( found->second)));
 
                         state.involved.erase( found.first);
 
@@ -218,28 +218,32 @@ namespace casual
 
                   if( message.state == XA_OK)
                   {
-                     found->second.state( message.process, State::Correlation::State::replied);
+                     found->second.stage( message.process, State::Correlation::Stage::replied);
                   }
                   else
                   {
-                     found->second.state( message.process, State::Correlation::State::error);
+                     found->second.stage( message.process, State::Correlation::Stage::error);
                   }
 
-                  auto groupState = found->second.state();
-
-                  if( groupState >= State::Correlation::State::replied )
+                  if( found->second.replied())
                   {
                      //
                      // All groups has responded, reply to RM-proxy
                      //
                      message_type reply( message);
                      reply.process = common::process::handle();
-                     reply.state = groupState == State::Correlation::State::replied ? XA_OK : XAER_RMFAIL;
+                     reply.correlation = found->second.reply_correlation;
+                     reply.state = found->second.stage() == State::Correlation::Stage::replied ? XA_OK : XAER_RMFAIL;
 
                      common::log::internal::queue << "all groups has responded - send reply to RM: " << found->second.caller << std::endl;
 
                      queue::blocking::Writer send{ found->second.caller.queue, state};
                      send( reply);
+
+                     //
+                     // We're done with the correlation.
+                     //
+                     state.correlation.erase( found.first);
                   }
 
                }
