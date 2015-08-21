@@ -330,7 +330,8 @@ namespace casual
 
                typedef code::basic_exeption< TPESVCFAIL, category::User> Fail;
 
-               typedef code::basic_exeption< TPENOENT, category::User> NoEntry;
+               //typedef code::basic_exeption< TPENOENT, category::User> NoEntry;
+               typedef code::basic_exeption< TPENOENT, category::Error> NoEntry;
 
                typedef code::basic_exeption< TPEMATCH, category::User> AllreadyAdvertised;
             }
@@ -373,7 +374,7 @@ namespace casual
                using base::base;
             };
 
-            struct Protocoll : base
+            struct Protocol : base
             {
                using base::base;
             };

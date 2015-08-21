@@ -59,7 +59,7 @@ namespace casual
 
             XID xid;
 
-            EXPECT_THROW( Context::instance().suspend( &xid), exception::tx::Protocoll);
+            EXPECT_THROW( Context::instance().suspend( &xid), exception::tx::Protocol);
          }
 
          TEST( casual_common_transaction, context_begin__expect_transaction)
@@ -76,7 +76,7 @@ namespace casual
             local::Domain domain;
 
             ASSERT_TRUE( Context::instance().begin() == TX_OK);
-            EXPECT_THROW( Context::instance().begin(), exception::tx::Protocoll);
+            EXPECT_THROW( Context::instance().begin(), exception::tx::Protocol);
             EXPECT_TRUE( Context::instance().rollback() == TX_OK);
          }
 

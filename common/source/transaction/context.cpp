@@ -553,7 +553,7 @@ namespace casual
             {
                if( m_control != Control::stacked)
                {
-                  throw exception::tx::Protocoll{ "begin - already in transaction mode", CASUAL_NIP( transaction)};
+                  throw exception::tx::Protocol{ "begin - already in transaction mode", CASUAL_NIP( transaction)};
                }
 
                //
@@ -643,17 +643,17 @@ namespace casual
 
             if( transaction.trid.owner() != process)
             {
-               throw exception::tx::Protocoll{ "commit - not owner of transaction", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ "commit - not owner of transaction", CASUAL_NIP( transaction)};
             }
 
             if( transaction.state != Transaction::State::active)
             {
-               throw exception::tx::Protocoll{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
             }
 
             if( ! transaction.descriptors.empty())
             {
-               throw exception::tx::Protocoll{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }
 
             //
@@ -746,14 +746,14 @@ namespace casual
 
             if( ! transaction)
             {
-               throw exception::tx::Protocoll{ "no ongoing transaction"};
+               throw exception::tx::Protocol{ "no ongoing transaction"};
             }
 
             const auto process = process::handle();
 
             if( transaction.trid.owner() != process)
             {
-               throw exception::tx::Protocoll{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
+               throw exception::tx::Protocol{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
             }
 
             //
@@ -875,7 +875,7 @@ namespace casual
 
             if( transaction::null( ongoing.trid))
             {
-               throw exception::tx::Protocoll{ "attempt to suspend a null xid"};
+               throw exception::tx::Protocol{ "attempt to suspend a null xid"};
             }
 
             //
@@ -915,7 +915,7 @@ namespace casual
 
             if( ongoing.trid)
             {
-               throw exception::tx::Protocoll{ "active transaction"};
+               throw exception::tx::Protocol{ "active transaction"};
             }
 
             if( ! ongoing.resources.empty())
