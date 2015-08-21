@@ -72,6 +72,7 @@ namespace casual
       public:
 
          Receiver();
+         Receiver( const common::Uuid& application);
          ~Receiver();
 
          Receiver( const Receiver&) = delete;

@@ -148,7 +148,7 @@ namespace casual
 
 
             auto format_error = [&]( const q_type& q){
-               return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error;}).at( 0).name;
+               return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
             };
 
             auto format_group = [&]( const q_type& q){
@@ -159,12 +159,11 @@ namespace casual
             return {
                { global::porcelain, global::color, global::header},
                terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
-               terminal::format::column( "msg#", []( const q_type& q){ return q.message.counts;}, terminal::color::green, terminal::format::Align::right),
-               terminal::format::column( "size", []( const q_type& q){ return q.message.size.total;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "avg", []( const q_type& q){ return q.message.size.average;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "min", []( const q_type& q){ return q.message.size.min;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "max", []( const q_type& q){ return q.message.size.max;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.message.timestamp);}),
+               terminal::format::column( "count", []( const q_type& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
+               terminal::format::column( "size", []( const q_type& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "avg", []( const q_type& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "uc", []( const q_type& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
+               terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}),
                terminal::format::column( "r", []( const q_type& q){ return q.retries;}, common::terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "error queue", format_error, common::terminal::color::blue),
                terminal::format::column( "group", format_group),

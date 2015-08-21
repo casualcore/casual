@@ -74,6 +74,9 @@ namespace casual
 
                void rollback( const common::transaction::ID& trid);
 
+
+               void erase( common::platform::pid_type pid);
+
             } pending;
 
          };

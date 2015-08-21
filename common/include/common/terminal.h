@@ -133,8 +133,54 @@ namespace casual
                   }
                }
 
+               template< typename R>
+               void calculate_width( R&& range)
+               {
+                  calculate_width( std::begin( range), std::end( range));
+               }
+
+               void print_headers( std::ostream& out)
+               {
+                  if( m_directives.headers)
+                  {
+                     {
+                        out << std::setfill( ' ');
+
+                        auto current = std::begin( m_columns);
+
+                        for( ; current != std::end( m_columns); ++current)
+                        {
+                           out << std::left << std::setw( current->width()) << current->name();
+                           if( current + 1 != std::end( m_columns))
+                           {
+                              out << "  ";
+                           }
+                        }
+
+                        out << std::endl;
+                     }
+
+                     {
+                        out << std::setfill( ' ');
+
+                        auto current = std::begin( m_columns);
+
+                        for( ; current != std::end( m_columns); ++current)
+                        {
+                           out << std::string( current->width(), '-');
+                           if( current + 1 != std::end( m_columns))
+                           {
+                              out << "  ";
+                           }
+                        }
+
+                        out << std::endl;
+                     }
+                  }
+               }
+
                template< typename Iter>
-               std::ostream& print( std::ostream& out, Iter first, Iter last)
+               std::ostream& print_rows( std::ostream& out, Iter first, Iter last)
                {
 
                   if( m_directives.porcelain)
@@ -156,46 +202,6 @@ namespace casual
                   }
                   else
                   {
-
-                     calculate_width( first, last);
-
-                     if( m_directives.headers)
-                     {
-                        {
-                           out << std::setfill( ' ');
-
-                           auto current = std::begin( m_columns);
-
-                           for( ; current != std::end( m_columns); ++current)
-                           {
-                              out << std::left << std::setw( current->width()) << current->name();
-                              if( current + 1 != std::end( m_columns))
-                              {
-                                 out << "  ";
-                              }
-                           }
-
-                           out << std::endl;
-                        }
-
-                        {
-                           out << std::setfill( ' ');
-
-                           auto current = std::begin( m_columns);
-
-                           for( ; current != std::end( m_columns); ++current)
-                           {
-                              out << std::string( current->width(), '-');
-                              if( current + 1 != std::end( m_columns))
-                              {
-                                 out << "  ";
-                              }
-                           }
-
-                           out << std::endl;
-                        }
-                     }
-
                      for( ; first != last; ++first)
                      {
                         auto current = std::begin( m_columns);
@@ -211,6 +217,27 @@ namespace casual
                         out << std::endl;
                      }
                   }
+                  return out;
+               }
+
+               template< typename R>
+               std::ostream& print_rows( std::ostream& out, R&& range)
+               {
+                  return print_rows( out, std::begin( range), std::end( range));
+               }
+
+
+               template< typename Iter>
+               std::ostream& print( std::ostream& out, Iter first, Iter last)
+               {
+
+                  if( ! m_directives.porcelain)
+                  {
+                     calculate_width( first, last);
+                     print_headers( out);
+                  }
+
+                  print_rows( out, first, last);
 
                   return out;
                }

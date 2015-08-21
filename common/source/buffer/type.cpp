@@ -83,6 +83,11 @@ namespace casual
          Payload::Payload( const Payload&)  = default;
          Payload& Payload::operator = ( const Payload&) = default;
 
+         bool Payload::null() const
+         {
+            return type.name == "NULL";
+         }
+
 
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {
@@ -111,7 +116,7 @@ namespace casual
          {
             if( user_size > payload.memory.size())
             {
-               throw exception::xatmi::InvalidArguments{ "user supplied size is larger than the buffer actual size"};
+               throw exception::xatmi::invalid::Argument{ "user supplied size is larger than the buffer actual size"};
             }
 
             return user_size;

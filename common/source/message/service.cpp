@@ -6,7 +6,7 @@
  */
 
 
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 namespace casual
 {
@@ -16,6 +16,23 @@ namespace casual
       {
          namespace service
          {
+            namespace lookup
+            {
+
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  out << "{ service: " << value.service << ", process: " << value.process << ", state: ";
+                  switch( value.state)
+                  {
+                     case Reply::State::absent: out << "absent"; break;
+                     case Reply::State::idle: out << "idle"; break;
+                     case Reply::State::busy: out << "busy"; break;
+                  }
+
+                  return out << '}';
+               }
+
+            } // lookup
 
             namespace call
             {

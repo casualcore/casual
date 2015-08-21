@@ -47,7 +47,7 @@ namespace casual
                   //
                   if( user_size > payload.memory.size())
                   {
-                     throw common::exception::xatmi::InvalidArguments{ "user supplied size is larger than allocated size"};
+                     throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
                   }
 
                   return std::strlen( payload.memory.data()) + 1;

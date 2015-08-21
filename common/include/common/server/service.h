@@ -46,13 +46,15 @@ namespace casual
             };
 
 
-            using function_type = std::function< void( TPSVCINFO *)>;
-            using adress_type = void(*)( TPSVCINFO *);
+
+            using function_type = std::function< void( TPSVCINFO*)>;
+
 
             Service( std::string name, function_type function, std::uint64_t type, Transaction transaction);
             Service( std::string name, function_type function);
 
             Service( Service&&);
+            Service& operator = ( Service&&);
 
 
             void call( TPSVCINFO* serviceInformation);
@@ -69,8 +71,12 @@ namespace casual
             friend bool operator == ( const Service& lhs, const Service& rhs);
             friend bool operator != ( const Service& lhs, const Service& rhs);
 
+
          private:
-            adress_type m_adress;
+            typedef void(*const* target_type)(TPSVCINFO*);
+            target_type adress() const;
+
+
          };
 
          namespace service

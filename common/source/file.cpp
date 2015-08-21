@@ -10,6 +10,8 @@
 #include "common/error.h"
 #include "common/uuid.h"
 #include "common/exception.h"
+#include "common/algorithm.h"
+#include "common/environment.h"
 
 #include <cstdio>
 
@@ -173,9 +175,38 @@ namespace casual
 
          bool exists( const std::string& path)
          {
-            std::ifstream file( path);
-            return file.good();
+            return access( path.c_str(), F_OK) == 0;
          }
+
+         namespace permission
+         {
+            bool execution( const std::string& path)
+            {
+               //
+               // Check if path contains any directory, if so, we can check it directly
+               //
+               if( range::find( path, '/'))
+               {
+                  return access( path.c_str(), R_OK | X_OK) == 0;
+               }
+               else
+               {
+                  //
+                  // We need to go through PATH environment variable...
+                  //
+                  for( auto total_path : string::split( environment::variable::get( "PATH", ""), ':'))
+                  {
+                     total_path += '/' + path;
+                     if( access( total_path.c_str(), F_OK) == 0)
+                     {
+                        return access( total_path.c_str(), X_OK) == 0;
+                     }
+                  }
+               }
+               return false;
+            }
+
+         } // permission
 
       } // file
 

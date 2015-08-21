@@ -25,8 +25,15 @@ namespace casual
 
             UTILITY_BASE = 500,
             cFlushIPC, // dummy message used to flush queue (into cache)
+            cPoke,
             cShutdowndRequest,
             cShutdowndReply,
+            cForwardConnectRequest,
+            cForwardConnectReply,
+            cProcessDeathRegistration,
+            cProcessDeathEvent,
+            cLookupProcessRequest,
+            cLookupProcessReply,
 
             // Server
             SERVER_BASE = 1000, // message type can't be 0!
@@ -48,7 +55,8 @@ namespace casual
 
             // Monitor
             TRAFFICMONITOR_BASE = 3000,
-            cTrafficMonitorConnect,
+            cTrafficMonitorConnectRequest,
+            cTrafficMonitorConnectReply,
             cTrafficMonitorDisconnect,
             cTrafficEvent,
 
@@ -56,13 +64,13 @@ namespace casual
             TRANSACTION_BASE = 4000,
             cTransactionClientConnectRequest,
             cTransactionClientConnectReply,
-            cTransactionManagerConnect,
+            cTransactionManagerConnectRequest,
+            cTransactionManagerConnectReply,
             cTransactionManagerConfiguration,
             cTransactionManagerReady,
             cTransactionBeginRequest = 4100,
             cTransactionBeginReply,
             cTransactionCommitRequest,
-            cTransactionPrepareReply,
             cTransactionCommitReply,
             cTransactionRollbackRequest,
             cTransactionRollbackReply,
@@ -119,7 +127,7 @@ namespace casual
             //!
             //! The execution-id
             //!
-            Uuid execution;
+            mutable Uuid execution;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -148,7 +156,7 @@ namespace casual
             //!
             //! The execution-id
             //!
-            Uuid execution;
+            mutable Uuid execution;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -164,15 +172,11 @@ namespace casual
 
          namespace flush
          {
-            struct IPC : basic_message< cFlushIPC>
-            {
-               char dummy;
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  archive & dummy;
-               })
-            };
+            using IPC = basic_message< cFlushIPC>;
+
          } // flush
+
+
 
 
          //!
@@ -256,7 +260,7 @@ namespace casual
                : name( std::move( name)), type( type), transaction( transaction)
             {}
 
-            explicit Service( std::string name)
+            Service( std::string name)
                : Service( std::move( name), 0, 0)
             {}
 
@@ -293,19 +297,45 @@ namespace casual
                })
             };
 
-
-            template< message::Type type>
-            struct basic_connect : basic_id< type>
+            namespace connect
             {
 
-               std::string path;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
+               template< message::Type type>
+               struct basic_request : basic_id< type>
                {
-                  basic_id< type>::marshal( archive);
-                  archive & path;
-               })
-            };
+
+                  std::string path;
+                  Uuid identification;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_id< type>::marshal( archive);
+                     archive & path;
+                     archive & identification;
+                  })
+               };
+
+               template< message::Type type>
+               struct basic_reply : basic_message< type>
+               {
+                  enum class Directive : char
+                  {
+                     start,
+                     singleton,
+                     shutdown
+                  };
+
+                  Directive directive = Directive::start;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_message< type>::marshal( archive);
+                     archive & directive;
+                  })
+               };
+            } // connect
+
+
 
             template< message::Type type>
             struct basic_disconnect : basic_id< type>
@@ -314,6 +344,68 @@ namespace casual
             };
 
          } // server
+
+         namespace dead
+         {
+            namespace process
+            {
+               using Registration = server::basic_id< cProcessDeathRegistration>;
+
+               struct Event : basic_message< cProcessDeathEvent>
+               {
+                  Event() = default;
+                  Event( common::process::lifetime::Exit death) : death{ std::move( death)} {}
+
+                  common::process::lifetime::Exit death;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_message< cProcessDeathEvent>::marshal( archive);
+                     archive & death;
+                  })
+               };
+
+            } // process
+         } // dead
+
+         namespace lookup
+         {
+            namespace process
+            {
+               struct Request : server::basic_id< cLookupProcessRequest>
+               {
+                  enum class Directive : char
+                  {
+                     wait,
+                     direct
+                  };
+
+                  Uuid identification;
+                  Directive directive;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     server::basic_id< cLookupProcessRequest>::marshal( archive);
+                     archive & identification;
+                     archive & directive;
+                  })
+               };
+
+               using Reply = server::basic_id< cLookupProcessReply>;
+
+            } // process
+
+         } // lookup
+
+         namespace forward
+         {
+            namespace connect
+            {
+               using Request = server::connect::basic_request< cForwardConnectRequest>;
+               using Reply = server::connect::basic_reply< cForwardConnectReply>;
+            } // connect
+
+         } // forward
 
          namespace reverse
          {
@@ -339,6 +431,12 @@ namespace casual
 
             template<>
             struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
+
+            template<>
+            struct type_traits< forward::connect::Request> : detail::type< forward::connect::Reply> {};
+
+            template<>
+            struct type_traits< lookup::process::Request> : detail::type< lookup::process::Reply> {};
 
 
             template< typename T>

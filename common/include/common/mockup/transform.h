@@ -10,6 +10,7 @@
 
 #include "common/ipc.h"
 
+#include "common/traits.h"
 #include "common/mockup/ipc.h"
 #include "common/marshal/binary.h"
 
@@ -27,7 +28,8 @@ namespace casual
                template< typename F>
                struct basic_transform
                {
-                  typedef typename F::message_type message_type;
+                  using traits_type = traits::function< F>;
+                  using message_type = typename std::decay< typename traits_type::template argument< 0>::type>::type;
 
                   basic_transform( F functor) : m_functor( std::move( functor)) {}
 
@@ -68,8 +70,10 @@ namespace casual
                template< typename H>
                void assign( H&& handler)
                {
+                  using message_type = typename std::decay< typename traits::function< H>::template argument< 0>::type>::type;
+
                   m_transformers.emplace(
-                        H::message_type::message_type,
+                        message_type::message_type,
                         basic_transform< typename std::decay< H>::type>{ std::forward< H>( handler)});
                }
 

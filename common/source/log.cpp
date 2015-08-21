@@ -58,7 +58,7 @@ namespace casual
                      return singleton;
                   }
 
-                  void log( const std::string& category, const std::string& message)
+                  void log( const std::string& category, const char* message)
                   {
                      const std::string basename{ file::name::base( process::path())};
 
@@ -73,6 +73,11 @@ namespace casual
                         << '|' << execution::service()
                         << '|' << category
                         << '|' << message << std::endl;
+                  }
+
+                  void log( const std::string& category, const std::string& message)
+                  {
+                     log( category, message.c_str());
                   }
 
                private:
@@ -269,32 +274,27 @@ namespace casual
          internal::Stream error{ local::getBuffer( log::category::Type::error).factory()};
 
 
-
-
-         namespace local
+         namespace stream
          {
-            namespace
+            internal::Stream& get( category::Type category)
             {
-               std::ostream& stream( category::Type category)
-               {
-                  static std::map< category::Type, std::ostream&> streams{
-                     { category::Type::casual_debug, internal::debug },
-                     { category::Type::casual_trace, internal::trace },
-                     { category::Type::casual_transaction, internal::transaction },
-                     { category::Type::casual_queue, internal::queue },
-                     { category::Type::casual_buffer, internal::buffer },
-                     { category::Type::debug, debug },
-                     { category::Type::trace, trace },
-                     { category::Type::parameter, parameter },
-                     { category::Type::information, information },
-                     { category::Type::warning, warning },
-                     { category::Type::error, error},
-                  };
+               static std::map< category::Type, internal::Stream&> streams{
+                  { category::Type::casual_debug, internal::debug },
+                  { category::Type::casual_trace, internal::trace },
+                  { category::Type::casual_transaction, internal::transaction },
+                  { category::Type::casual_queue, internal::queue },
+                  { category::Type::casual_buffer, internal::buffer },
+                  { category::Type::debug, debug },
+                  { category::Type::trace, trace },
+                  { category::Type::parameter, parameter },
+                  { category::Type::information, information },
+                  { category::Type::warning, warning },
+                  { category::Type::error, error},
+               };
 
-                  return streams.at( category);
-               }
-            } // <unnamed>
-         } // local
+               return streams.at( category);
+            }
+         } // stream
 
 
          bool active( category::Type category)
@@ -305,12 +305,12 @@ namespace casual
 
          void activate( category::Type category)
          {
-            local::stream( category).rdbuf( local::getBuffer( category).factory());
+            stream::get( category).rdbuf( local::getBuffer( category).factory());
          }
 
          void deactivate( category::Type category)
          {
-            local::stream( category).rdbuf( nullptr);
+            stream::get( category).rdbuf( nullptr);
          }
 
 
@@ -318,12 +318,18 @@ namespace casual
 
          void write( category::Type category, const char* message)
          {
-            local::stream( category) << message << std::endl;
+            stream::get( category) << message << std::endl;
          }
 
          void write( category::Type category, const std::string& message)
          {
-            local::stream( category) << message << std::endl;
+            stream::get( category) << message << std::endl;
+         }
+
+         void write( const std::string& category, const std::string& message)
+         {
+            thread::Safe guard{ std::cout};
+            local::File::instance().log( category, message);
          }
       } // log
 

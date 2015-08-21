@@ -9,6 +9,7 @@
 
 #include "common/log.h"
 #include "common/internal/log.h"
+#include "common/trace.h"
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/process.h"
@@ -71,9 +72,9 @@ namespace casual
                   std::vector< common::process::Handle> groups;
                   common::range::transform( m_state.groups, groups, std::mem_fn( &broker::State::Group::process));
 
-                  for( auto pid : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
+                  for( auto terminated : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
                   {
-                     m_state.removeProcess( pid);
+                     m_state.process( terminated);
                   }
 
                   throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
@@ -86,6 +87,8 @@ namespace casual
 
                void Request::operator () ( message_type& message)
                {
+                  common::Trace trace{ "handle::lookup::Request", common::log::internal::queue};
+
                   queue::blocking::Writer write{ message.process.queue, m_state};
 
                   auto found =  common::range::find( m_state.queues, message.name);

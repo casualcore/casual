@@ -116,7 +116,7 @@ namespace casual
                   //
                   if( user_size > reserved())
                   {
-                     throw common::exception::xatmi::InvalidArguments{ "user supplied size is larger than allocated size"};
+                     throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
                   }
 
                   return utilized();

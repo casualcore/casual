@@ -92,6 +92,18 @@ namespace casual
                } // <unnamed>
             } // local
 
+            namespace dead
+            {
+               void Process::operator() ( const common::message::dead::process::Event& message)
+               {
+                  //
+                  // We check and do some clean up, if the dead process has any pending replies.
+                  //
+                  m_state.pending.erase( message.death.pid);
+               }
+
+            } // dead
+
             namespace information
             {
 

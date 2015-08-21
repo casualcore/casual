@@ -33,7 +33,7 @@ namespace casual
             //! @return value of environment variable with @p name or value of alternative if
             //!   variable isn't found
             //!
-            std::string get( const std::string& name, const std::string& alternative);
+            std::string get( const std::string& name, std::string alternative);
 
 				template< typename T>
 				T get( const std::string& name)

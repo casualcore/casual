@@ -43,6 +43,8 @@ namespace casual
                   archive & type;
                   archive & payload;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const base_message& value);
             };
 
             namespace lookup
@@ -100,6 +102,8 @@ namespace casual
                      archive & queue;
                      archive & message;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
 
                struct Reply : basic_message< Type::cQueueEnqueueReply>
@@ -127,7 +131,9 @@ namespace casual
                      archive & properties;
                      archive & id;
                   })
+                  friend std::ostream& operator << ( std::ostream& out, const Selector& value);
                };
+
                struct Request : basic_message< Type::cQueueDequeueRequest>
                {
                   process::Handle process;
@@ -240,6 +246,8 @@ namespace casual
                   archive & error;
                   archive & type;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Queue& value);
             };
 
 
@@ -252,40 +260,19 @@ namespace casual
 
                struct Queue : message::queue::Queue
                {
-                  struct message_t
-                  {
-                     std::size_t counts;
-                     platform::time_point timestamp = platform::time_point::min();
+                  std::size_t count;
+                  std::size_t size;
+                  std::size_t uncommitted;
+                  platform::time_point timestamp;
 
-                     struct size_t
-                     {
-                        std::size_t min;
-                        std::size_t max;
-                        std::size_t average;
-                        std::size_t total;
-
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-                           archive & min;
-                           archive & max;
-                           archive & average;
-                           archive & total;
-                        })
-                     } size;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        archive & counts;
-                        archive & timestamp;
-                        archive & size;
-                     })
-
-                  } message;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      message::queue::Queue::marshal( archive);
-                     archive & message;
+                     archive & count;
+                     archive & size;
+                     archive & uncommitted;
+                     archive & timestamp;
                   })
                };
 

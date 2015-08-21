@@ -21,7 +21,7 @@ namespace casual
          {
 
 
-            bool Handler::do_dispatch( ipc::message::Complete& complete)
+            bool Handler::do_dispatch( ipc::message::Complete& complete) const
             {
                auto findIter = m_handlers.find( complete.type);
 
@@ -38,7 +38,7 @@ namespace casual
             }
 
 
-            bool Handler::do_dispatch( std::vector<ipc::message::Complete>& complete)
+            bool Handler::do_dispatch( std::vector<ipc::message::Complete>& complete) const
             {
                if( complete.empty())
                {

@@ -10,7 +10,6 @@
 
 #include "common/message/server.h"
 #include "common/call/context.h"
-#include "common/call/timeout.h"
 
 
 #include "common/queue.h"
@@ -35,6 +34,13 @@ namespace casual
    {
       namespace server
       {
+
+         std::ostream& operator << ( std::ostream& out, const State::jump_t& value)
+         {
+            return out << "{ value: " << value.state.value << ", code: " << value.state.code << ", data: @" << static_cast< void*>( value.buffer.data)
+               << ", len: " << value.buffer.len << ", service: " << value.forward.service << '}';
+         }
+
          Context& Context::instance()
          {
             static Context singleton;
@@ -51,8 +57,6 @@ namespace casual
 
          void Context::long_jump_return( int rval, long rcode, char* data, long len, long flags)
          {
-            log::internal::debug << "tpreturn - rval: " << rval << " - rcode: " << rcode << " - data: @" << static_cast< void*>( data) << " - len: " << len << " - flags: " << flags << std::endl;
-
             //
             // Prepare buffer.
             // We have to keep state, since there seems not to be any way to send information
@@ -61,10 +65,28 @@ namespace casual
 
             m_state.jump.state.value = rval;
             m_state.jump.state.code = rcode;
-            m_state.jump.state.data = data;
-            m_state.jump.state.len = len;
+            m_state.jump.buffer.data = data;
+            m_state.jump.buffer.len = len;
+            m_state.jump.forward.service.clear();
 
-            longjmp( m_state.long_jump_buffer, 1);
+            log::internal::debug << "Context::long_jump_return - jump state: " << m_state.jump << '\n';
+
+            longjmp( m_state.long_jump_buffer, State::jump_t::From::c_return);
+         }
+
+
+         void Context::forward( const char* service, char* data, long size)
+         {
+            m_state.jump.state.value = 0;
+            m_state.jump.state.code = 0;
+            m_state.jump.buffer.data = data;
+            m_state.jump.buffer.len = size;
+
+            m_state.jump.forward.service = service ? service : "";
+
+            log::internal::debug << "Context::forward - jump state: " << m_state.jump << '\n';
+
+            longjmp( m_state.long_jump_buffer, State::jump_t::From::c_forward);
          }
 
          void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))
@@ -95,7 +117,7 @@ namespace casual
                //
                if( found->second != prospect)
                {
-                  throw common::exception::xatmi::service::AllreadyAdvertised( "service name: " + prospect.name);
+                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
                }
 
             }
@@ -123,7 +145,7 @@ namespace casual
 
             if( m_state.services.erase( service) != 1)
             {
-               throw common::exception::xatmi::service::NoEntry( "service name: " + service);
+               throw common::exception::xatmi::service::no::Entry( "service name: " + service);
             }
 
             message::service::Unadvertise message;
@@ -143,7 +165,6 @@ namespace casual
 
          void Context::finalize()
          {
-            call::Timeout::instance().clear();
             buffer::pool::Holder::instance().clear();
             execution::service( "");
             execution::parent::service( "");

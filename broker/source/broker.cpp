@@ -179,7 +179,7 @@ namespace casual
             //
             // We have to remove this process first, so we don't try to terminate our self
             //
-            m_state.removeProcess( common::process::id());
+            m_state.remove_process( common::process::id());
 
             //
             // Terminate children
@@ -218,28 +218,6 @@ namespace casual
                handle::boot( m_state);
             }
 
-            //
-            // Prepare message-pump handlers
-            //
-
-            common::log::internal::debug << "prepare message-pump handlers\n";
-
-
-            message::dispatch::Handler handler{
-               handle::Connect{ m_state},
-               handle::Advertise{ m_state},
-               handle::Unadvertise{ m_state},
-               handle::ServiceLookup{ m_state},
-               handle::ACK{ m_state},
-               handle::traffic::Connect{ m_state},
-               handle::traffic::Disconnect{ m_state},
-               handle::transaction::client::Connect{ m_state},
-               handle::Call{ admin::Server::services( *this), m_state},
-               common::message::handle::ping( m_state),
-               common::message::handle::Shutdown{},
-            };
-
-
 
             auto end = common::platform::clock_type::now();
 
@@ -247,12 +225,7 @@ namespace casual
                   << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
 
-
-            common::log::internal::debug << "start message pump\n";
-
-            queue::blocking::Reader blockingReader( m_receiveQueue, m_state);
-
-            message::dispatch::pump( handler, blockingReader);
+            message::pump( m_state, m_receiveQueue);
 
 
          }
@@ -267,46 +240,147 @@ namespace casual
          }
 		}
 
-      void Broker::serverInstances( const std::vector<admin::update::InstancesVO>& instances)
-      {
-         common::trace::internal::Scope trace( "Broker::serverInstances");
 
-         auto updateInstances = [&]( const admin::update::InstancesVO& value)
+
+      namespace message
+      {
+         void pump( State& state, common::ipc::receive::Queue& ipc)
+         {
+            try
+            {
+               //
+               // Prepare message-pump handlers
+               //
+
+               common::log::internal::debug << "prepare message-pump handlers\n";
+
+
+               auto handler = broker::handler( state);
+
+               common::log::internal::debug << "start message pump\n";
+
+               while( true)
                {
-                  for( auto&& server : m_state.servers)
+                  if( state.pending.replies.empty())
                   {
-                     if( server.second.alias == value.alias)
-                     {
-                        m_state.instance( server.second, value.instances);
-                     }
+                     queue::blocking::Reader blockingReader( ipc, state);
+
+                     handler( blockingReader.next());
                   }
-               };
-         common::range::for_each( instances, updateInstances);
-      }
+                  else
+                  {
 
-      admin::ShutdownVO Broker::shutdown( bool broker)
+                     //
+                     // Send pending replies
+                     //
+                     {
+
+                        common::log::internal::debug << "pending replies: " << range::make( state.pending.replies) << '\n';
+
+                        decltype( state.pending.replies) replies;
+                        std::swap( replies, state.pending.replies);
+
+                        queue::non_blocking::Send send{ state};
+
+                        auto remain = std::get< 1>( common::range::partition(
+                              replies,
+                              common::message::pending::sender( send)));
+
+                        range::move( remain, state.pending.replies);
+                     }
+
+                     //
+                     // Take care of broker dispatch
+                     //
+                     {
+                        queue::non_blocking::Reader non_block( ipc, state);
+
+                        //
+                        // If we've got pending that is 'never' sent, we still want to
+                        // do a lot of broker stuff. Hence, if we got into an 'error state'
+                        // we'll still function...
+                        //
+                        // TODO: Should we have some sort of TTL for the pending?
+                        //
+                        auto count = common::platform::batch::transaction;
+
+                        while( handler( non_block.next()) && count-- > 0)
+                           ;
+                     }
+
+                  }
+               }
+
+
+            }
+            catch( const common::exception::signal::Terminate&)
+            {
+               // we do nothing, and let the dtor take care of business
+               common::log::internal::debug << "broker has been terminated\n";
+            }
+            catch( ...)
+            {
+               common::error::handler();
+            }
+         }
+
+      } // message
+
+
+      namespace update
       {
-         common::trace::internal::Scope trace( "Broker::shutdown");
+         void instances( State& state, const std::vector< admin::update::InstancesVO>& instances)
+         {
+            common::trace::internal::Scope trace( "broker::update::instances");
 
-         auto orginal = m_state.processes();
+            auto updateInstances = [&]( const admin::update::InstancesVO& value)
+                  {
+                     for( auto&& server : state.servers)
+                     {
+                        if( server.second.alias == value.alias)
+                        {
+                           server.second.configured_instances = value.instances;
+                           handle::update::instances( state, server.second);
+                        }
+                     }
+                  };
+            common::range::for_each( instances, updateInstances);
+         }
+
+      } // update
+
+      admin::ShutdownVO shutdown( State& state, common::ipc::receive::Queue& ipc, bool broker)
+      {
+         common::trace::internal::Scope trace( "broker::shutdown");
 
          admin::ShutdownVO result;
 
-         handle::shutdown( m_state);
 
-         result.online = m_state.processes();
+         if( state.mode == State::Mode::shutdown)
+         {
+            log::error << "broker already in shutdown mode" << std::endl;
+            return result;
+         }
+
+
+
+         auto orginal = state.processes();
+
+
+
+         handle::shutdown( state, ipc);
+
+         result.online = state.processes();
          result.offline = range::to_vector( range::difference( orginal, result.online));
 
          if( broker)
          {
-            handle::send_shutdown( m_state);
+            handle::send_shutdown( state);
          }
 
          return result;
       }
-
 	} // broker
-
 } // casual
 
 

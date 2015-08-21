@@ -108,16 +108,18 @@ namespace casual
                 (
                   id           INTEGER  PRIMARY KEY,
                   name         TEXT     UNIQUE,
-                  retries      INTEGER,
-                  error        INTEGER,
-                  type         INTEGER ); )"
+                  retries      INTEGER  NOT NULL,
+                  error        INTEGER  NOT NULL,
+                  type         INTEGER  NOT NULL,
+                  count        INTEGER  NOT NULL, -- number of (committed) messages
+                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
+                  uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+                  timestamp    INTEGER NOT NULL -- last update to the queue 
+                   ); )"
               );
 
             m_connection.execute(
                   "CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);" );
-
-            m_connection.execute(
-                  "CREATE INDEX IF NOT EXISTS i_id_queue  ON queue( id);" );
 
 
             m_connection.execute(
@@ -149,15 +151,14 @@ namespace casual
             m_connection.execute(
               "CREATE INDEX IF NOT EXISTS i_dequeue_message_properties ON message ( queue, state, properties, timestamp ASC);" );
 
-            /*
             m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_timestamp_message  ON message ( timestamp ASC);" );
-            */
 
             m_connection.execute(
                "CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);" );
 
 
+            auto now = common::platform::clock_type::now();
             //
             // group error queue
             //
@@ -165,9 +166,77 @@ namespace casual
             {
                groupname = common::uuid::string( common::uuid::make());
             }
-            m_connection.execute( "INSERT OR REPLACE INTO queue VALUES ( 1, ?, 0, 1, 1); ", groupname + ".group.error");
+            m_connection.execute( "INSERT OR REPLACE INTO queue VALUES ( 1, ?, 0, 1, 1, 0, 0, 0, ?); ", groupname + ".group.error", now);
             m_error_queue = 1;
 
+
+
+            //
+            // Triggers
+            //
+
+            m_connection.execute( R"(
+               CREATE TRIGGER IF NOT EXISTS insert_message INSERT ON message 
+               BEGIN
+                  UPDATE queue SET
+                     timestamp = new.timestamp,
+                     uncommitted_count = uncommitted_count + 1
+                  WHERE id = new.queue AND new.state = 1;
+
+                 UPDATE queue SET
+                     timestamp = new.timestamp,
+                     count = count + 1,
+                     size = size + length( new.payload)
+                  WHERE id = new.queue AND new.state = 2;
+
+               END;
+
+               )");
+
+            m_connection.execute( R"(
+               CREATE TRIGGER IF NOT EXISTS update_message_state UPDATE OF state ON message 
+               BEGIN
+                  UPDATE queue SET
+                     count = count + 1,
+                     size = size + length( new.payload),
+                     uncommitted_count = uncommitted_count - 1
+                  WHERE id = new.queue AND old.state = 1 AND new.state = 2;
+               END;
+
+               )");
+
+            m_connection.execute( R"(
+               CREATE TRIGGER IF NOT EXISTS update_message_queue UPDATE OF queue ON message 
+               BEGIN
+
+                  UPDATE queue SET  -- 'queue move' update the new queue
+                     count = count + 1,
+                     size = size + length( new.payload)
+                  WHERE id = new.queue AND new.queue != old.queue;
+
+                  UPDATE queue SET  -- 'queue move' update the old queue
+                     count = count - 1,
+                     size = size - length( old.payload)
+                  WHERE id = old.queue AND old.queue != new.queue;
+
+               END;
+
+               )");
+
+            m_connection.execute( R"(
+               CREATE TRIGGER IF NOT EXISTS delete_message DELETE ON message 
+               BEGIN
+                  UPDATE queue SET 
+                     count = count - 1,
+                     size = size - length( old.payload)
+                  WHERE id = old.queue AND old.state IN ( 2, 3);
+
+                  UPDATE queue SET 
+                      uncommitted_count = uncommitted_count - 1
+                  WHERE id = old.queue AND old.state = 1;
+               END;
+
+               )");
 
             //
             // Precompile all other statements
@@ -225,14 +294,24 @@ namespace casual
                      "UPDATE message SET redelivered = 0, queue = ( SELECT error FROM queue WHERE id = message.queue)"
                      " WHERE message.redelivered > ( SELECT retries FROM queue WHERE id = message.queue);");
 
+
+               /*
+                  id           INTEGER  PRIMARY KEY,
+                  name         TEXT     UNIQUE,
+                  retries      INTEGER,
+                  error        INTEGER,
+                  type         INTEGER,
+                  count        INTEGER, -- number of (committed) messages
+                  size         INTEGER, -- total size of all (committed) messages
+                  uncommitted_count INTEGER, -- uncommitted messages
+                  timestamp    INTEGER, -- last update to the queue
+                */
+
                m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
-                     q.id, q.name, q.retries, q.error, q.type, COUNT( m.id), 
-                       MIN( length( m.payload)), MAX( length( m.payload)), AVG( length( m.payload)), 
-                       SUM( length( m.payload)), MAX( m.timestamp)
+                     q.id, q.name, q.retries, q.error, q.type, q.count, q.size, q.uncommitted_count, q.timestamp
                   FROM
-                     queue q LEFT JOIN message m ON q.id = m.queue
-                  GROUP BY q.id  
+                     queue q  
                       ;
                   )");
 
@@ -274,17 +353,33 @@ namespace casual
 
             common::trace::internal::Scope trace{ "queue::Database::create", common::log::internal::queue};
 
-            common::log::internal::queue << "queue.name: " << queue.name << std::endl;
 
+
+            /*
+                  id           INTEGER  PRIMARY KEY,
+                  name         TEXT     UNIQUE,
+                  retries      INTEGER  NOT NULL,
+                  error        INTEGER  NOT NULL,
+                  type         INTEGER  NOT NULL,
+                  count        INTEGER  NOT NULL, -- number of (committed) messages
+                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
+                  uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+                  timestamp    INTEGER NOT NULL -- last update to the queue
+             */
+
+            auto now = common::platform::clock_type::now();
 
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?);", queue.name + ".error", queue.retries, m_error_queue, Queue::cErrorQueue);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name + ".error", queue.retries, m_error_queue, Queue::cErrorQueue, now);
             queue.error = m_connection.rowid();
 
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?);", queue.name, queue.retries, queue.error, Queue::cQueue);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name, queue.retries, queue.error, Queue::cQueue, now);
             queue.id = m_connection.rowid();
+            queue.type = Queue::cQueue;
+
+            common::log::internal::queue << "queue: " << queue << std::endl;
 
             return queue;
          }
@@ -354,6 +449,8 @@ namespace casual
          {
             common::trace::internal::Scope trace{ "queue::Database::enqueue", common::log::internal::queue};
 
+            common::log::internal::queue << "request: " << message << std::endl;
+
             common::message::queue::enqueue::Reply reply;
 
             //
@@ -362,7 +459,7 @@ namespace casual
             reply.id = message.message.id ? message.message.id : common::uuid::make();
 
 
-            common::log::internal::queue << "enqueue - qid: " << message.queue << " id: " << reply.id << " size: " << message.message.payload.size() << " trid: " << message.trid << std::endl;
+
 
             auto gtrid = common::transaction::global( message.trid);
 
@@ -394,6 +491,8 @@ namespace casual
          {
             common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
 
+            common::log::internal::queue << "request: " << message << std::endl;
+
             common::message::queue::dequeue::Reply reply;
 
             auto now = std::chrono::time_point_cast< std::chrono::microseconds>(
@@ -402,11 +501,11 @@ namespace casual
             auto query = [&](){
                if( message.selector.id)
                {
-                  return m_statement.dequeue.first_id.query( message.queue, now, message.selector.id.get());
+                  return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue, now);
                }
                if( ! message.selector.properties.empty())
                {
-                  return m_statement.dequeue.first_match.query( message.queue, now, message.selector.properties);
+                  return m_statement.dequeue.first_match.query( message.queue, message.selector.properties, now);
                }
                return m_statement.dequeue.first.query( message.queue, now);
             };
@@ -504,6 +603,18 @@ namespace casual
 
             while( query.fetch( row))
             {
+
+               /*
+                  id           INTEGER  PRIMARY KEY,
+                  name         TEXT     UNIQUE,
+                  retries      INTEGER  NOT NULL,
+                  error        INTEGER  NOT NULL,
+                  type         INTEGER  NOT NULL,
+                  count        INTEGER  NOT NULL, -- number of (committed) messages
+                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
+                  uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+                  timestamp    INTEGER NOT NULL, -- last update to the queue
+                */
                common::message::queue::information::Queue queue;
 
                row.get( 0, queue.id);
@@ -511,12 +622,10 @@ namespace casual
                row.get( 2, queue.retries);
                row.get( 3, queue.error);
                row.get( 4, queue.type);
-               row.get( 5, queue.message.counts);
-               row.get( 6, queue.message.size.min);
-               row.get( 7, queue.message.size.max);
-               row.get( 8, queue.message.size.average);
-               row.get( 9, queue.message.size.total);
-               row.get( 10, queue.message.timestamp);
+               row.get( 5, queue.count);
+               row.get( 6, queue.size);
+               row.get( 7, queue.uncommitted);
+               row.get( 8, queue.timestamp);
 
                result.push_back( std::move( queue));
             }
@@ -557,26 +666,17 @@ namespace casual
             return result;
          }
 
-         void Database::persistenceBegin()
-         {
-            m_connection.begin();
-         }
-
-
-
-         void Database::persistenceCommit()
-         {
-            m_connection.commit();
-         }
 
          std::size_t Database::affected() const
          {
             return m_connection.affected();
          }
 
-         void Database::begin() { m_connection.begin();}
+
+         void Database::begin() { m_connection.exclusive_begin();}
          void Database::commit() { m_connection.commit();}
          void Database::rollback() { m_connection.rollback();}
+
 
       } // server
    } // queue

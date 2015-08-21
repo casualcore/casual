@@ -135,11 +135,30 @@ namespace casual
             auto is_same = std::is_same< long, result_type>::value;
             EXPECT_TRUE( is_same);
          }
-
-
-
       }
 
+      /*
+       * To bad std::function does not support move-only functors...
+       *
+      struct move_only_functor
+      {
+         move_only_functor( move_only_functor&&) = default;
+         move_only_functor& operator = ( move_only_functor&&) = default;
+
+         bool operator () ( long value)
+         {
+            return value == 42;
+         }
+      };
+
+
+      TEST( casual_common_conformance, std_function__move_only_functor)
+      {
+         std::function< bool(long)> f1{ move_only_functor{}};
+
+         EXPECT_TRUE( f1( 42));
+      }
+      */
 
 
 

@@ -20,19 +20,25 @@ namespace casual
 
 
          Service::Service( std::string name, function_type function, std::uint64_t type, Transaction transaction)
-            : name( std::move( name)), function( function), type( type), transaction( transaction), m_adress( *function.target< adress_type>()) {}
+            : name( std::move( name)), function( function), type( type), transaction( transaction) {}
 
          Service::Service( std::string name, function_type function)
             : Service( std::move( name), std::move( function), Type::cXATMI, Transaction::automatic) {}
 
 
          Service::Service( Service&&) = default;
+         Service& Service::operator = ( Service&&) = default;
 
 
 
          void Service::call( TPSVCINFO* serviceInformation)
          {
             function( serviceInformation);
+         }
+
+         Service::target_type Service::adress() const
+         {
+            return function.target<void(*)(TPSVCINFO*)>();
          }
 
 
@@ -44,12 +50,15 @@ namespace casual
 
          bool operator == ( const Service& lhs, const Service& rhs)
          {
-            return lhs.m_adress == rhs.m_adress;
+            if( lhs.adress() && rhs.adress())
+               return *lhs.adress() == *rhs.adress();
+
+            return lhs.adress() == rhs.adress();
          }
 
          bool operator != ( const Service& lhs, const Service& rhs)
          {
-            return lhs.m_adress != rhs.m_adress;
+            return ! ( lhs == rhs);
          }
 
 

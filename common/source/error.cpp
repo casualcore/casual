@@ -57,24 +57,9 @@ namespace casual
             {
                log::error << exception << std::endl;
             }
-            catch( const exception::xatmi::category::Error& exception)
+            catch( const exception::xatmi::base& exception)
             {
-               log::error << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::Warning& exception)
-            {
-               log::warning << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::Information& exception)
-            {
-               log::information << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::User& exception)
-            {
-               log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
+               log::stream::get( exception.category()) << "xatmi - " << exception << std::endl;
                return exception.code();
             }
 
@@ -99,6 +84,17 @@ namespace casual
                return exception.code();
             }
             */
+
+            catch( const exception::code::base& exception)
+            {
+               log::stream::get( exception.category()) << exception.tag_name() << " - " << exception << std::endl;
+               return exception.code();
+            }
+            catch( const exception::base& exception)
+            {
+               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
+               return TPESYSTEM;
+            }
             catch( const std::exception& exception)
             {
                log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
@@ -120,14 +116,14 @@ namespace casual
             return string( errno);
          }
 
-         std::string string( int code)
+         std::string string( const int code)
          {
             return std::string( std::strerror( code)) + " (" + std::to_string( code) + ")";
          }
 
          namespace xatmi
          {
-            const std::string& error( int code)
+            const std::string& error( const int code)
             {
                static const std::map< int, std::string> mapping{
                   { TPEBADDESC, "TPEBADDESC"},
@@ -202,6 +198,7 @@ namespace casual
 
          namespace tx
          {
+
             const char* error( const int code)
             {
                static const std::map< int, const char*> mapping{

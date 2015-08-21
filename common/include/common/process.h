@@ -63,7 +63,20 @@ namespace casual
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
             inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
+            inline friend bool operator < ( const Handle& lhs, const Handle& rhs) { return lhs.pid < rhs.pid;}
+
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
+
+            struct equal
+            {
+               struct pid
+               {
+                  pid( platform::pid_type pid) : m_pid( pid) {}
+                  bool operator() ( const Handle& lhs) { return lhs.pid == m_pid;}
+               private:
+                  platform::pid_type m_pid;
+               };
+            };
 
             explicit operator bool() const
             {
@@ -93,11 +106,6 @@ namespace casual
                {
                   const Uuid& manager();
                } // transaction
-
-               namespace queue
-               {
-                  const Uuid& broker();
-               } // queue
 
                namespace traffic
                {
@@ -167,13 +175,6 @@ namespace casual
 
 
          //!
-         //! check if there are child processes that has been terminated
-         //!
-         //! @return 0..N terminated process id's
-         //!
-         //std::vector< platform::pid_type> terminated();
-
-         //!
          //! Wait for a specific process to terminate.
          //!
          //! @return return code from process
@@ -203,27 +204,40 @@ namespace casual
          {
             struct Exit
             {
-               enum class Reason
+               enum class Reason : char
                {
-                  unknown,
+                  core,
                   exited,
                   stopped,
+                  continued,
                   signaled,
-                  core,
+                  unknown,
                };
 
                platform::pid_type pid = 0;
                int status = 0;
                Reason reason = Reason::unknown;
 
-               explicit operator bool () { return pid != 0;}
+               explicit operator bool () const;
+
+               //!
+               //! @return true if the process life has ended
+               //!
+               bool deceased() const;
 
 
-               friend bool operator == ( platform::pid_type pid, const Exit& rhs) { return pid == rhs.pid;}
-               friend bool operator == ( const Exit& lhs, platform::pid_type pid) { return pid == lhs.pid;}
+               friend bool operator == ( platform::pid_type pid, const Exit& rhs);
+               friend bool operator == ( const Exit& lhs, platform::pid_type pid);
+               friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
                friend std::ostream& operator << ( std::ostream& out, const Exit& terminated);
 
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & pid;
+                  archive & status;
+                  archive & reason;
+               })
 
             };
 
@@ -240,13 +254,13 @@ namespace casual
             //!
             //! Terminates and waits for the termination.
             //!
-            //! @return the terminated pids
+            //! @return the terminated l
             //!
             //
-            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids);
-            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( std::vector< platform::pid_type> pids);
+            std::vector< Exit> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
 
-         }
+         } // lifetime
 
          namespace children
          {
@@ -262,9 +276,9 @@ namespace casual
             template< typename S>
             void terminate( S& state, std::vector< platform::pid_type> pids)
             {
-               for( auto& pid : lifetime::terminate( std::move( pids)))
+               for( auto& death : lifetime::terminate( std::move( pids)))
                {
-                  state.removeProcess( pid);
+                  state.process( death);
                }
             }
 

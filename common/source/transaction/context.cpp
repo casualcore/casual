@@ -94,12 +94,12 @@ namespace casual
 
             log::internal::transaction << "send client connect request" << std::endl;
             queue::blocking::Writer writer( ipc::broker::id());
-            writer( request);
+            auto correlation = writer( request);
 
 
             queue::blocking::Reader reader( ipc::receive::queue());
             message::transaction::client::connect::Reply reply;
-            reader( reply);
+            reader( reply, correlation);
 
 
             queue = reply.transaction_manager;
@@ -212,6 +212,16 @@ namespace casual
 
          }
 
+
+         bool Context::pending() const
+         {
+            const auto process = process::handle();
+
+            return ! range::find_if( m_transactions, [&]( const Transaction& transaction){
+               return ! transaction.trid.null() && transaction.trid.owner() != process;
+            }).empty();
+         }
+
          namespace local
          {
             namespace pop
@@ -313,7 +323,7 @@ namespace casual
 
                if( ! found)
                {
-                  throw exception::xatmi::SystemError{ "failed to find transaction", __FILE__, __LINE__};
+                  throw exception::xatmi::System{ "failed to find transaction", __FILE__, __LINE__};
                }
 
                auto& transaction = *found;
@@ -401,9 +411,11 @@ namespace casual
                }
             };
 
-            if( return_state != TPSUCCESS)
+            switch( return_state)
             {
-               message.error = TPESVCFAIL;
+               case TPESVCERR: break;
+               case TPSUCCESS: break;
+               default: message.error = TPESVCFAIL; break;
             }
 
 
@@ -493,9 +505,12 @@ namespace casual
             //
             // XA-spec - RM can't reg when it's already regged... Why?
             //
+            // We'll interpret this as the transaction has been suspended, and
+            // then resumed.
+            //
             if( common::range::find( transaction.resources, rmid))
             {
-               return TMER_PROTO;
+               return TM_RESUME;
             }
 
             if( transaction.trid)
@@ -508,15 +523,7 @@ namespace casual
 
             transaction.resources.push_back( rmid);
 
-            *xid = transaction.trid.xid;
-
-            if( transaction.suspended)
-            {
-               return TM_RESUME;
-            }
-
             return TM_OK;
-
          }
 
          int Context::resourceUnregistration( int rmid, long flags)
@@ -665,60 +672,67 @@ namespace casual
             request.trid = transaction.trid;
             request.process = process;
 
-            queue::blocking::Writer writer( manager().queue);
-            writer( request);
+            queue::blocking::Send send;
 
+            auto correlation = send( manager().queue, request);
 
-            queue::blocking::Reader reader( ipc::receive::queue());
 
             //
-            // We could get commit-reply directly in an one-phase-commit
+            // Get reply
             //
-
-            auto reply = reader.next( {
-               message::transaction::prepare::Reply::message_type,
-               message::transaction::commit::Reply::message_type});
-
-            //
-            // Did we get commit reply directly?
-            //
-            if( reply.type == message::transaction::commit::Reply::message_type)
             {
-               message::transaction::commit::Reply commitReply;
-               reply >> commitReply;
+               queue::blocking::Reader reader( ipc::receive::queue());
 
-               log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
+               message::transaction::commit::Reply reply;
+               reader( reply, correlation);
 
-               return xaTotx( commitReply.state);
-            }
-            else
-            {
+               //
+               // We could get commit-reply directly in an one-phase-commit
+               //
 
-               message::transaction::prepare::Reply prepareReply;
-               reply >> prepareReply;
-
-               log::internal::transaction << "prepare reply: " << error::xa::error( prepareReply.state) << std::endl;
-
-
-               if( prepareReply.state == XA_OK)
+               switch( reply.stage)
                {
-                  //
-                  // Now we wait for the commit
-                  //
-                  message::transaction::commit::Reply commitReply;
-                  reader( commitReply);
+                  case message::transaction::commit::Reply::Stage::prepare:
+                  {
+                     log::internal::transaction << "prepare reply: " << error::xa::error( reply.state) << '\n';
 
-                  log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
+                     if( m_commit_return == Commit_Return::logged)
+                     {
+                        log::internal::transaction << "decision logged directive\n";
 
-                  return xaTotx( commitReply.state);
+                        //
+                        // Discard the coming commit-message
+                        //
+                        ipc::receive::queue().discard( correlation);
+                     }
+                     else
+                     {
+                        //
+                        // Wait for the commit
+                        //
+                        reader( reply, correlation);
+
+                        log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+                     }
+
+                     break;
+                  }
+                  case message::transaction::commit::Reply::Stage::commit:
+                  {
+                     log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+
+                     break;
+                  }
+                  case message::transaction::commit::Reply::Stage::error:
+                  {
+                     log::error << "commit error: " << error::xa::error( reply.state) << std::endl;
+
+                     break;
+                  }
                }
-               return xaTotx( prepareReply.state);
 
+               return xaTotx( reply.state);
             }
-
-
-
-            return TX_OK;
          }
 
          int Context::commit()
@@ -798,17 +812,25 @@ namespace casual
 
          int Context::setCommitReturn( COMMIT_RETURN value)
          {
-            if( value == TX_COMMIT_COMPLETED)
+            switch( value)
             {
-               return TX_OK;
+               case TX_COMMIT_COMPLETED:
+               case TX_COMMIT_DECISION_LOGGED:
+               {
+                  m_commit_return = static_cast< Commit_Return>( value);
+                  break;
+               }
+               default:
+               {
+                  return TX_EINVAL;
+               }
             }
-
-            return TX_NOT_SUPPORTED;
+            return TX_OK;
          }
 
          COMMIT_RETURN Context::get_commit_return()
          {
-            return TX_COMMIT_COMPLETED;
+            return static_cast< COMMIT_RETURN>( m_commit_return);
          }
 
          int Context::setTransactionControl(TRANSACTION_CONTROL control)

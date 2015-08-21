@@ -22,6 +22,39 @@ namespace casual
          namespace transform
          {
 
+
+            struct Group
+            {
+               struct Resource
+               {
+                  admin::GroupVO::ResourceVO operator () ( const state::Group::Resource& value) const
+                  {
+                     admin::GroupVO::ResourceVO result;
+
+                     result.id = value.id;
+                     result.key = value.key;
+                     result.openinfo = value.openinfo;
+                     result.closeinfo = value.closeinfo;
+                     result.instances = value.instances;
+
+                     return result;
+                  }
+               };
+
+               admin::GroupVO operator () ( const state::Group& value) const
+               {
+                  admin::GroupVO result;
+
+                  result.id = value.id;
+                  result.name = value.name;
+                  result.note = value.note;
+                  result.dependencies = value.dependencies;
+                  common::range::transform( value.resources, result.resources, Resource{});
+
+                  return result;
+               }
+            };
+
             struct Instance
             {
                admin::InstanceVO operator () ( const state::Server::Instance& value) const
@@ -30,7 +63,7 @@ namespace casual
 
                   result.process.pid = value.process.pid;
                   result.process.queue = value.process.queue;
-                  result.state = static_cast< long>( value.state);
+                  result.state = static_cast< admin::InstanceVO::State>( value.state);
                   result.invoked = value.invoked;
                   result.last = value.last;
                   result.server = value.server;
@@ -38,6 +71,25 @@ namespace casual
                   return result;
                }
 
+            };
+
+            struct Executable
+            {
+               admin::ExecutableVO operator () ( const state::Executable& value) const
+               {
+                  admin::ExecutableVO result;
+
+                  result.id = value.id;
+                  result.alias = value.alias;
+                  result.path = value.path;
+                  result.instances = value.instances;
+                  result.configured_instances = value.configured_instances;
+                  result.restart = value.restart;
+                  result.deaths = value.deaths;
+                  result.memberships = value.memberships;
+
+                  return result;
+               }
             };
 
             struct Server
@@ -50,6 +102,12 @@ namespace casual
                   result.alias = value.alias;
                   result.path = value.path;
                   result.instances = value.instances;
+                  result.configured_instances = value.configured_instances;
+                  result.restart = value.restart;
+                  result.deaths = value.deaths;
+                  result.invoked = value.invoked;
+                  result.memberships = value.memberships;
+                  result.restrictions = value.restrictions;
 
                   return result;
                }
@@ -84,7 +142,7 @@ namespace casual
 
             struct Pending
             {
-               admin::PendingVO operator () ( const common::message::service::name::lookup::Request& value) const
+               admin::PendingVO operator () ( const common::message::service::lookup::Request& value) const
                {
                   admin::PendingVO result;
 

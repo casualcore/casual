@@ -83,16 +83,17 @@ namespace casual
 
                //
                // Move all request that is interested in committed queues to the end.
+               // We use the second part of the partition directly
                //
-               auto split = common::range::stable_partition( requests, [&]( const request_type& r){
+               auto interested = std::get< 1>( common::range::stable_partition( requests, [&]( const request_type& r){
                   return ! common::range::find( result.enqueued, r.queue);
-               });
+               }));
 
                //
                // move the requests to the result, and erase them in pending
                //
-               common::range::move( std::get< 1>( split), result.requests);
-               requests.erase( std::begin( std::get< 1>( split)), std::end( std::get< 1>( split)));
+               common::range::move( interested, result.requests);
+               requests.erase( std::begin( interested), std::end( interested));
             }
 
             return result;
@@ -101,6 +102,15 @@ namespace casual
          void State::Pending::rollback( const common::transaction::ID& trid)
          {
             transactions.erase( trid);
+         }
+
+         void State::Pending::erase( common::platform::pid_type pid)
+         {
+            auto found = std::get< 1>( common::range::stable_partition( requests, [=]( const request_type& r){
+               return r.process.pid != pid;
+            }));
+
+            requests.erase( std::begin( found), std::end( found));
          }
 
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
@@ -115,6 +125,18 @@ namespace casual
                common::message::queue::connect::Request request;
                request.process = common::process::handle();
                queueBroker( request);
+            }
+
+            //
+            // Make sure we'll get notify when processes dies
+            // TODO: we could wait until we know there's a blocking dequeue
+            //
+            {
+               common::message::dead::process::Registration registration;
+               registration.process = common::process::handle();
+
+               group::queue::blocking::Send send{ m_state};
+               send( common::ipc::broker::id(), registration);
             }
 
             {
@@ -166,6 +188,7 @@ namespace casual
          void Server::start()
          {
             common::message::dispatch::Handler handler{
+               handle::dead::Process{ m_state},
                handle::enqueue::Request{ m_state},
                handle::dequeue::Request{ m_state},
                handle::dequeue::forget::Request{ m_state},

@@ -128,14 +128,6 @@ namespace casual
                   }
                } // transaction
 
-               namespace queue
-               {
-                  const Uuid& broker()
-                  {
-                     const static Uuid singleton{ "4d18d4d0b8654890ba87310ad1860f5a"};
-                     return singleton;
-                  }
-               } // queue
 
                namespace traffic
                {
@@ -223,6 +215,18 @@ namespace casual
             std::vector< std::string> environment)
          {
             trace::Scope trace{ "process::spawn", log::internal::trace};
+
+            //
+            // check if path exist and process has permission to execute it.
+            // could still go wrong, since we don't know if the path will actually execute,
+            // but we'll probably get rid of most of the errors (due to bad configuration and such)
+            //
+            if( ! file::permission::execution( path))
+            {
+               throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                  exception::make_nip( "arguments", range::make( arguments)),
+                  exception::make_nip( "environment", range::make( environment)));
+            }
 
             //
             // prepare arguments
@@ -405,6 +409,11 @@ namespace casual
                            exit.reason = lifetime::Exit::Reason::stopped;
                            exit.status = WSTOPSIG( exit.status);
                         }
+                        else if( WIFCONTINUED( exit.status))
+                        {
+                           exit.reason = lifetime::Exit::Reason::continued;
+                           exit.status = 0;
+                        }
                      }
                      return false;
                   };
@@ -434,19 +443,6 @@ namespace casual
                   }
                }
 
-               void terminate( std::vector< platform::pid_type> pids, std::vector< platform::pid_type>& result)
-               {
-                  auto terminated = process::terminate( pids);
-
-                  range::append( range::difference( pids, terminated), result);
-
-                  for( const auto& exit : lifetime::wait( terminated))
-                  {
-                     result.push_back( exit.pid);
-                  }
-
-                  log::internal::debug << "terminated processes: " << range::make( result) << std::endl;
-               }
             } // <unnamed>
 
          } // local
@@ -553,16 +549,27 @@ namespace casual
 
          namespace lifetime
          {
+            Exit::operator bool () const { return pid != 0;}
+
+            bool Exit::deceased() const
+            {
+               return reason == Reason::core || reason == Reason::exited || reason == Reason::signaled;
+            }
+
+            bool operator == ( platform::pid_type pid, const Exit& rhs) { return pid == rhs.pid;}
+            bool operator == ( const Exit& lhs, platform::pid_type pid) { return pid == lhs.pid;}
+            bool operator < ( const Exit& lhs, const Exit& rhs) { return lhs.pid < rhs.pid;}
 
             std::ostream& operator << ( std::ostream& out, const Exit& terminated)
             {
-               out << "{pid: " << terminated.pid << " terminated - reason: ";
+               out << "{pid: " << terminated.pid << ", reason: ";
                switch( terminated.reason)
                {
                   case Exit::Reason::unknown: out << "unknown"; break;
                   case Exit::Reason::exited: out << "exited"; break;
                   case Exit::Reason::stopped: out << "stopped"; break;
-                  case Exit::Reason::signaled: out <<  "signaled"; break;
+                  case Exit::Reason::continued: out << "continued"; break;
+                  case Exit::Reason::signaled: out <<  "signal[ " << signal::type::string( terminated.status) << ']'; break;
                   case Exit::Reason::core: out <<  "core"; break;
                }
                return out << '}';
@@ -626,34 +633,14 @@ namespace casual
             }
 
 
-            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids)
+            std::vector< Exit> terminate( std::vector< platform::pid_type> pids)
             {
-               std::vector< platform::pid_type> result;
-
-               local::terminate( pids, result);
-
-               return result;
+               return wait( process::terminate( pids));
             }
 
-            std::vector< platform::pid_type> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
             {
-               if( pids.empty())
-                  return {};
-
-               std::vector< platform::pid_type> result;
-
-               try
-               {
-                  signal::timer::Scoped alarm( timeout);
-
-                  local::terminate( pids, result);
-               }
-               catch( const exception::signal::Timeout&)
-               {
-
-               }
-               return result;
-
+               return wait( process::terminate( pids), timeout);
             }
 
          } // lifetime

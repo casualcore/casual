@@ -41,8 +41,6 @@ namespace casual
 
          struct base : std::exception
          {
-
-
             base( std::string description);
 
             template< typename... Args>
@@ -95,34 +93,16 @@ namespace casual
          };
 
 
-
-
-         struct Base : public std::runtime_error
-         {
-
-            Base( const std::string& description)
-               : std::runtime_error( description) {}
-
-            Base( const std::string& description, const char* file, decltype( __LINE__) line)
-               : std::runtime_error( description + " - " + file + ":" + std::to_string( line)) {}
-
-            friend std::ostream& operator << ( std::ostream& out, const Base& exception)
-            {
-               return out << exception.what();
-            }
-         };
-
-
          //
          // Serves as a placeholder for later correct exception, with hopefully a good name...
          //
-         struct NotReallySureWhatToNameThisException : public Base
+         struct NotReallySureWhatToNameThisException : public base
          {
             NotReallySureWhatToNameThisException( )
-               : Base( "NotReallySureWhatToNameThisException") {}
+               : base( "NotReallySureWhatToNameThisException") {}
 
             NotReallySureWhatToNameThisException( const std::string& information)
-               : Base( information) {}
+               : base( information) {}
          };
 
 
@@ -133,15 +113,15 @@ namespace casual
 
          namespace invalid
          {
-            struct Base : common::exception::base
+            struct base : common::exception::base
             {
                using common::exception::base::base;
 
             };
 
-            struct Argument : Base
+            struct Argument : base
             {
-               using Base::Base;
+               using base::base;
             };
 
             namespace environment
@@ -153,19 +133,19 @@ namespace casual
 
             } // environment
 
-            struct Configuration : Base
+            struct Configuration : base
             {
-               using Base::Base;
+               using base::base;
             };
 
-            struct Process : Base
+            struct Process : base
             {
-               using Base::Base;
+               using base::base;
             };
 
-            struct File : Base
+            struct File : base
             {
-               using Base::Base;
+               using base::base;
             };
          }
 
@@ -190,33 +170,22 @@ namespace casual
 
          namespace signal
          {
-            struct Base : public exception::Base
+            struct base : common::exception::base
             {
-               using common::exception::Base::Base;
-
-               virtual common::platform::signal_type getSignal() const = 0;
+               using common::exception::base::base;
             };
 
             template< common::platform::signal_type signal>
-            struct basic_signal : public Base
+            struct basic_signal : signal::base
             {
-               enum
-               {
-                  value = signal
-               };
-               basic_signal( const std::string& description)
-                  : Base( description) {}
+
+               template< typename... Args>
+               basic_signal( std::string description, Args&&... information)
+                  : signal::base( description, make_nip( "signal", common::signal::type::string( signal)), std::forward< Args>( information)...) {}
 
                basic_signal()
-                  : Base( common::signal::type::string( signal)) {}
+                  : signal::base( "signal: " + common::signal::type::string( signal)) {}
 
-               basic_signal( const std::string& description, const char* file, decltype( __LINE__) line)
-                  : Base( description, file, line) {}
-
-               common::platform::signal_type getSignal() const
-               {
-                  return value;
-               }
             };
 
             typedef basic_signal< common::signal::alarm> Timeout;
@@ -235,122 +204,154 @@ namespace casual
 
          namespace code
          {
-            struct Base : public exception::Base
-            {
-               using common::exception::Base::Base;
 
-               virtual int code() const noexcept = 0;
+            struct base : common::exception::base
+            {
+               using common::exception::base::base;
+
+               virtual std::string tag_name() const noexcept = 0;
+               virtual long code() const noexcept = 0;
                virtual log::category::Type category() const noexcept = 0;
             };
 
-
-            template< int value, typename base_type>
-            struct basic_exeption : public base_type
+            template< typename base_tag>
+            struct tag_base : base
             {
-               enum
-               {
-                  code_value = value
-               };
+               using tag = base_tag;
 
-               basic_exeption( const std::string& description)
-                  : base_type( description) {}
-
-               basic_exeption( const std::string& description, const char* file, decltype( __LINE__) line)
-                  : base_type( description, file, line) {}
-
-               basic_exeption()
-                  : base_type( "No additional information") {}
-
-               int code() const noexcept { return code_value;}
-            };
-         } // code
-
-         namespace category
-         {
-            template< log::category::Type value, typename base>
-            struct basic_category : public base
-            {
                using base::base;
 
-               enum
+               template< typename... Args>
+               tag_base( std::string description, Args&&... information)
+                : base( std::move( description), std::forward< Args>( information)...) {}
+
+               std::string tag_name() const noexcept override
                {
-                  category_value = static_cast< long>( value)
-               };
-
-               log::category::Type category() const noexcept { return value;}
+                  return common::type::name< tag>();
+               }
             };
 
-
-            template< typename base>
-            using Error = basic_category< log::category::Type::error, base>;
-
-            template< typename base>
-            using Warning = basic_category< log::category::Type::warning, base>;
-
-            template< typename base>
-            using Information = basic_category< log::category::Type::information, base>;
-
-            template< typename base>
-            using User = basic_category< log::category::Type::debug, base>;
-
-         } // category
-
-         namespace xatmi
-         {
-            struct Base : public code::Base
+            template< long code_value, log::category::Type categor_value, typename base_tag>
+            struct basic_code : public tag_base< base_tag>
             {
-               using code::Base::Base;
+               using tag_base< base_tag>::tag_base;
+
+               long code() const noexcept override { return code_value;}
+               log::category::Type category() const noexcept override { return categor_value;}
             };
+
 
             namespace category
             {
-               using Error = exception::category::Error< Base>;
-               using Warning = exception::category::Warning< Base>;
-               using Information = exception::category::Information< Base>;
-               using User = exception::category::User< Base>;
-            }
+               template< log::category::Type categor_value, typename base_tag>
+               struct basic_category : tag_base< base_tag>
+               {
+                  using base_type = tag_base< base_tag>;
+                  using base_type::base_type;
+
+                  template< typename... Args>
+                  basic_category( long code, std::string description, Args&&... information)
+                   : base_type( std::move( description), std::forward< Args>( information)...), m_code( code) {}
+
+                  long code() const noexcept override { return m_code;}
+                  log::category::Type category() const noexcept override { return categor_value;}
+
+               private:
+                  long m_code;
+               };
+
+               struct category_tag {};
+
+               template< typename base_tag>
+               using basic_error = basic_category< log::category::Type::error, base_tag>;
+
+               using error = basic_error< category_tag>;
+
+            } // category
+
+         } // code
 
 
 
-            typedef code::basic_exeption< TPEBLOCK, category::User> NoMessage;
+         namespace xatmi
+         {
+            struct base_tag {};
 
-            typedef code::basic_exeption< TPELIMIT, category::Information> LimitReached;
+            using base = code::tag_base< base_tag>;
 
-            typedef code::basic_exeption< TPEINVAL, category::User> InvalidArguments;
 
-            typedef code::basic_exeption< TPEOS, category::Error> OperatingSystemError;
+            template< long code, log::category::Type category>
+            struct basic_xatmi : public code::basic_code< code, category, base_tag>
+            {
+               using base_type = code::basic_code< code, category, base_tag>;
 
-            typedef code::basic_exeption< TPEPROTO, category::Error> ProtocollError;
+               template< typename... Args>
+               basic_xatmi( const std::string& description, Args&&... information)
+                : base_type( error::xatmi::error( code) + " - " + description, std::forward< Args>( information)...) {}
+
+               basic_xatmi()
+                  : basic_xatmi( error::xatmi::error( code)) {}
+            };
+
+            namespace no
+            {
+               using Message = basic_xatmi< TPEBLOCK, log::category::Type::debug>;
+            } // no
+
+            using Limit = basic_xatmi< TPELIMIT, log::category::Type::information>;
+
+
+            namespace os
+            {
+               using Error = basic_xatmi< TPEOS, log::category::Type::error>;
+            } // os
+
+
+            using Protocoll = basic_xatmi< TPEPROTO, log::category::Type::error>;
+
+            namespace invalid
+            {
+               using Argument = basic_xatmi< TPEINVAL, log::category::Type::debug>;
+
+               using Descriptor = basic_xatmi< TPEBADDESC, log::category::Type::debug>;
+            } // invalid
 
             namespace service
             {
-               typedef code::basic_exeption< TPEBADDESC, category::User> InvalidDescriptor;
+               using Error = basic_xatmi< TPESVCERR, log::category::Type::error>;
 
-               typedef code::basic_exeption< TPESVCERR, category::Error> Error;
+               using Fail = basic_xatmi< TPESVCFAIL, log::category::Type::debug>;
 
-               typedef code::basic_exeption< TPESVCFAIL, category::User> Fail;
+               namespace no
+               {
+                  using Entry = basic_xatmi< TPENOENT, log::category::Type::debug>;
+               } // no
 
-               //typedef code::basic_exeption< TPENOENT, category::User> NoEntry;
-               typedef code::basic_exeption< TPENOENT, category::Error> NoEntry;
+               //typedef basic_xatmi< TPENOENT, log::category::Type::user> NoEntry;
+               typedef basic_xatmi< TPENOENT, log::category::Type::error> NoEntry;
 
-               typedef code::basic_exeption< TPEMATCH, category::User> AllreadyAdvertised;
+               typedef basic_xatmi< TPEMATCH, log::category::Type::debug> Advertised;
             }
 
-            typedef code::basic_exeption< TPESYSTEM, category::Error> SystemError;
+            using System = basic_xatmi< TPESYSTEM, log::category::Type::error>;
 
-            typedef code::basic_exeption< TPETIME, category::User> Timeout;
+            using Timeout = basic_xatmi< TPETIME, log::category::Type::debug>;
 
-            typedef code::basic_exeption< TPETRAN, category::User> TransactionNotSupported;
+            namespace transaction
+            {
+               using Support = basic_xatmi< TPETRAN, log::category::Type::debug>;
+            } // transaction
 
-            typedef code::basic_exeption< TPGOTSIG, category::Information> Signal;
+            using Signal = basic_xatmi< TPGOTSIG, log::category::Type::information>;
 
             namespace buffer
             {
+               namespace type
+               {
+                  using Input = basic_xatmi< TPEITYPE, log::category::Type::debug>;
 
-               typedef code::basic_exeption< TPEITYPE, category::User> TypeNotSupported;
-
-               typedef code::basic_exeption< TPEOTYPE, category::User> TypeNotExpected;
-
+                  using Output = basic_xatmi< TPEOTYPE, log::category::Type::debug>;
+               } // type
             }
 
             namespace conversational
@@ -364,48 +365,28 @@ namespace casual
 
          namespace tx
          {
-            struct base : public common::exception::base
-            {
-               using common::exception::base::base;
-            };
+            struct base_tag {};
 
-            struct Fail : base
-            {
-               using base::base;
-            };
+            using base = code::tag_base< base_tag>;
 
-            struct Protocol : base
-            {
-               using base::base;
-            };
+            template< long code, log::category::Type category>
+            using basic_tx = code::basic_code< code, category, base_tag>;
 
-            struct Argument : base
-            {
-               using base::base;
-            };
+            using Fail = basic_tx< TX_FAIL, log::category::Type::error>;
 
-            struct Outside : base
-            {
-               using base::base;
-            };
+            using Error = basic_tx< TX_ERROR, log::category::Type::error>;
 
-            struct Error : base
-            {
-               using base::base;
-            };
+            using Protocol = basic_tx< TX_PROTOCOL_ERROR, log::category::Type::error>;
 
+            using Argument = basic_tx< TX_EINVAL, log::category::Type::error>;
+
+            using Outside = basic_tx< TX_OUTSIDE, log::category::Type::error>;
 
             namespace no
             {
-               struct Begin : base
-               {
-                  using base::base;
-               };
+               using Begin = basic_tx< TX_NO_BEGIN, log::category::Type::error>;
 
-               struct Support : base
-               {
-                  using base::base;
-               };
+               using Support = basic_tx< TX_NOT_SUPPORTED, log::category::Type::debug>;
             } // no
          }
 

@@ -71,10 +71,6 @@ namespace casual
 
             std::vector< common::message::queue::information::Message> messages( Queue::id_type id);
 
-
-            void persistenceBegin();
-            void persistenceCommit();
-
             
             //!
             //! @return "global" error queue
@@ -92,6 +88,7 @@ namespace casual
             void begin();
             void commit();
             void rollback();
+
 
          private:
 
@@ -144,27 +141,6 @@ namespace casual
             } m_statement;
 
          };
-
-
-         namespace scoped
-         {
-            struct Writer
-            {
-               Writer( Database& db) : m_db( db)
-               {
-                  // TODO: error checking?
-                  m_db.persistenceBegin();
-               }
-
-               ~Writer()
-               {
-                  m_db.persistenceCommit();
-               }
-
-            private:
-               Database& m_db;
-            };
-         } // scoped
 
       } // server
    } // queue

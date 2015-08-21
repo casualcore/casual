@@ -24,12 +24,12 @@ namespace casual
 
             namespace soft
             {
-               std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout);
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout);
             } // soft
 
             namespace hard
             {
-               std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout);
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout);
             } // hard
 
 
@@ -46,14 +46,14 @@ namespace casual
             template< typename S>
             void shutdown( S& state, const std::vector< process::Handle>& servers, std::vector< platform::pid_type> executables, std::chrono::microseconds timeout)
             {
-               for( auto& pid : process::lifetime::terminate( std::move( executables), timeout))
+               for( auto& death : process::lifetime::terminate( std::move( executables), timeout))
                {
-                  state.removeProcess( pid);
+                  state.process( death);
                }
 
-               for( auto& pid : hard::shutdown( servers, timeout))
+               for( auto& death : hard::shutdown( servers, timeout))
                {
-                  state.removeProcess( pid);
+                  state.process( death);
                }
             }
 

@@ -17,7 +17,7 @@
 
 #include "common/ipc.h"
 #include "common/message/transaction.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 
 #include <stack>
@@ -119,6 +119,12 @@ namespace casual
             void set( const std::vector< Resource>& resources);
 
 
+            //!
+            //! @return true if there are pending transactions that is owned by this
+            //! process
+            //!
+            bool pending() const;
+
          private:
 
             using control_type = TRANSACTION_CONTROL;
@@ -130,6 +136,18 @@ namespace casual
             };
 
             Control m_control = Control::unchained;
+
+            using commit_return_type = COMMIT_RETURN;
+
+            // TODO: change name
+            enum class Commit_Return : commit_return_type
+            {
+               completed = TX_COMMIT_COMPLETED,
+               logged = TX_COMMIT_DECISION_LOGGED
+            };
+
+            Commit_Return m_commit_return = Commit_Return::completed;
+
 
 
             struct resources_type

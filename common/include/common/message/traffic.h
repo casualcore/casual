@@ -21,10 +21,16 @@ namespace casual
          {
             namespace monitor
             {
-               //!
-               //! Used to advertise the monitorserver
-               //!
-               typedef server::basic_connect< cTrafficMonitorConnect> Connect;
+               namespace connect
+               {
+                  //!
+                  //! Used to advertise the monitorserver
+                  //!
+                  using Request = server::connect::basic_request< cTrafficMonitorConnectRequest>;
+                  using Reply = server::connect::basic_reply< cTrafficMonitorConnectReply>;
+
+               } // connect
+
 
                //!
                //! Used to unadvertise the monitorserver
@@ -64,6 +70,13 @@ namespace casual
             };
 
          } // traffic
+
+         namespace reverse
+         {
+            template<>
+            struct type_traits< traffic::monitor::connect::Request> : detail::type< traffic::monitor::connect::Reply> {};
+
+         } // reverse
       } // message
    } // common
 } // casual

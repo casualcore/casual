@@ -10,7 +10,7 @@
 #include "common/queue.h"
 #include "common/ipc.h"
 #include "common/mockup/ipc.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 #include "common/exception.h"
 #include "common/signal.h"
 
@@ -140,7 +140,7 @@ namespace casual
 
             non_blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cTrafficMonitorConnect, message::Type::cTrafficEvent});
+            auto result = reader.next( { message::Type::cTrafficMonitorConnectRequest, message::Type::cTrafficEvent});
 
             EXPECT_TRUE( result.empty());
          }
@@ -150,7 +150,7 @@ namespace casual
          {
             mockup::ipc::Router route{ ipc::receive::id()};
             {
-               blocking::Writer send{ route.id()};
+               blocking::Writer send{ route.input()};
 
 
                {
@@ -175,7 +175,7 @@ namespace casual
 
             blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cTrafficMonitorConnect, message::service::Advertise::message_type});
+            auto result = reader.next( { message::Type::cTrafficMonitorConnectRequest, message::service::Advertise::message_type});
             EXPECT_TRUE( result.type == message::service::Advertise::message_type);
          }
 

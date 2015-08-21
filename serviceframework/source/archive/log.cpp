@@ -66,10 +66,19 @@ namespace casual
             }
 
 
+
+
             void Implementation::write( std::string&& value, const char* name)
             {
                add( name);
                m_buffer.back().value = std::move( value);
+            }
+
+            void Implementation::write( const bool& value, const char* name)
+            {
+               add( name);
+
+               m_buffer.back().value = value ? "true" : "false";
             }
 
             void Implementation::write( const std::string& value, const char* name)
@@ -116,7 +125,7 @@ namespace casual
 
                auto writer = [&]( const Implementation::buffer_type& value)
                {
-                  m_output << std::setfill( '|') << std::setw( value.indent);
+                  m_output << std::right << std::setfill( '|') << std::setw( value.indent);
 
                   switch( value.type)
                   {

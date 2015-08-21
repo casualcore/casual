@@ -13,6 +13,7 @@
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/internal/trace.h"
+#include "common/message/handle.h"
 
 
 #include "sf/log.h"
@@ -31,22 +32,31 @@ namespace casual
          void configure( State& state)
          {
             {
-               common::trace::internal::Scope trace( "connect to broker");
+               common::Trace trace( "connect to broker", log::internal::transaction);
 
                //
                // Do the initialization dance with the broker
                //
-               common::message::transaction::manager::Connect connect;
+               common::message::transaction::manager::connect::Request connect;
 
                connect.path = common::process::path();
                connect.process = common::process::handle();
+               connect.identification = common::process::instance::identity::transaction::manager();
 
                queue::blocking::Writer broker( common::ipc::broker::id(), state);
-               broker( connect);
+               auto correlation = broker( connect);
+
+               {
+                  common::message::handle::connect::reply(
+                        queue::blocking::Reader{common::ipc::receive::queue(), state},
+                        correlation,
+                        common::message::transaction::manager::connect::Reply{});
+               }
+
             }
 
             {
-               common::trace::internal::Scope trace( "configure");
+               common::Trace trace( "configure", log::internal::transaction);
 
                //
                // Wait for configuration
@@ -62,30 +72,80 @@ namespace casual
                state::configure( state, configuration);
             }
 
+            {
+               common::Trace trace( "event registration", log::internal::transaction);
+
+               common::message::dead::process::Registration message;
+               message.process = common::process::handle();
+
+               queue::blocking::Writer broker( common::ipc::broker::id(), state);
+               broker( message);
+
+            }
+
          }
+
+         namespace local
+         {
+            namespace
+            {
+               struct Timout : state::Base
+               {
+                  using state::Base::Base;
+
+                  inline void operator () ( const common::transaction::ID& trid)
+                  {
+                     //
+                     // Find the transaction
+                     //
+                     auto found = common::range::find_if(
+                           common::range::make( m_state.transactions), find::Transaction{ trid});
+
+                     if( found)
+                     {
+                        if( found->state() == Transaction::Resource::State::cInvolved)
+                        {
+
+                           handle::Rollback::message_type message;
+                           message.trid = trid;
+
+                           //
+                           // We make our self the sender, and we'll discard the response  (from our self)
+                           //
+                           message.process = process::handle();
+
+                           handle::Rollback{ m_state}( message);
+                        }
+                        else
+                        {
+                           log::internal::transaction << "transaction: " << *found << " already in transition\n";
+                        }
+                     }
+                     else
+                     {
+                        log::error << "persistent transaction is not active - action: discard\n";
+                     }
+
+
+                     //
+                     // Set the transaction in "timeout-mode"
+                     //
+                     m_state.log.timeout( trid);
+
+                  }
+               };
+
+            } // <unnamed>
+         } // local
+
 
          void timeout( State& state)
          {
+            trace::internal::Scope trace( "action::timeout", common::log::internal::transaction);
+
             auto transactions = state.log.passed( common::platform::clock_type::now());
 
-            handle::Rollback::message_type message;
-
-            //
-            // We make our self the sender, and we'll discard the response  (from our self)
-            //
-            message.process = process::handle();
-
-            for( auto& transaction : transactions)
-            {
-               message.trid = transaction;
-
-               handle::Rollback{ state}( message);
-
-               //
-               // Set the transaction in "timeout-mode"
-               //
-               state.log.timeout( transaction);
-            }
+            range::for_each( transactions, local::Timout{ state});
          }
 
          namespace boot
@@ -139,7 +199,7 @@ namespace casual
                }
                catch( const exception::queue::Unavailable&)
                {
-                  common::log::error << "failed to send reply to " << message.target << " TODO: rollback transaction?\n";
+                  common::log::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
                   //
                   // ipc-queue has been removed...
                   // TODO: deduce from message.message.type what we should do

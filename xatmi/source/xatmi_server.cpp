@@ -15,6 +15,7 @@
 #include "common/server/handle.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/ipc.h"
 
 
 #include "common/error.h"
@@ -78,9 +79,10 @@ int casual_start_server( casual_server_argument* serverArgument)
       common::process::path( serverArgument->argv[ 0]);
 
       common::message::dispatch::Handler handler{
-         common::server::handle::Call{ local::transform::ServerArguments()( *serverArgument)},
+         common::server::handle::Call( common::ipc::receive::queue(), local::transform::ServerArguments()( *serverArgument)),
          common::message::handle::Shutdown{},
       };
+
 
       //
       // Start the message-pump

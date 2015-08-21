@@ -35,7 +35,8 @@ casual_common_objectfiles = [
     Compile( 'source/server/service.cpp'),
     
     Compile( 'source/call/context.cpp'),
-    Compile( 'source/call/timeout.cpp'),
+    Compile( 'source/call/state.cpp'),
+    Compile( 'source/call/lookup.cpp'),
     
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),
@@ -53,7 +54,7 @@ casual_common_objectfiles = [
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/dispatch.cpp'),
-    Compile( 'source/message/server.cpp'),
+    Compile( 'source/message/service.cpp'),
     Compile( 'source/message/traffic.cpp'),
     Compile( 'source/message/queue.cpp'),
     Compile( 'source/message/transaction.cpp'),
@@ -72,6 +73,7 @@ casual_common_objectfiles = [
     Compile( 'source/execution.cpp'),
     Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
+    Compile( 'source/timeout.cpp'),
     
     
     Compile( 'source/terminal.cpp'),
@@ -144,6 +146,7 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_queue.cpp'),
    Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
    Compile( 'unittest/isolated/source/test_server_context.cpp'),
+   Compile( 'unittest/isolated/source/test_service.cpp'),
    
    Compile( 'unittest/isolated/source/test_uuid.cpp'),
    Compile( 'unittest/isolated/source/test_arguments.cpp'),

@@ -59,7 +59,7 @@ namespace casual
 
             std::vector< common::platform::pid_type> processes() const;
 
-            void removeProcess( common::platform::pid_type);
+            void process( common::process::lifetime::Exit death);
 
 
             struct Correlation
@@ -155,8 +155,6 @@ namespace casual
 
       private:
 
-
-         casual::common::file::scoped::Path m_queueFilePath;
          broker::State m_state;
 
       };

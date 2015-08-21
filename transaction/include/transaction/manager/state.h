@@ -300,6 +300,11 @@ namespace casual
          common::transaction::ID trid;
          std::vector< Resource> resources;
 
+         //!
+         //! Used to keep track of the origin for commit request.
+         //!
+         common::Uuid correlation;
+
          Resource::State state() const;
 
          //!
@@ -358,8 +363,9 @@ namespace casual
       } // transform
 
 
-      struct State
+      class State
       {
+      public:
          State( const std::string& database);
 
 
@@ -416,7 +422,7 @@ namespace casual
 
          std::vector< common::platform::pid_type> processes() const;
 
-         void removeProcess( common::platform::pid_type pid);
+         void process( common::process::lifetime::Exit death);
 
          state::resource::Proxy& get_resource( common::platform::resource::id_type rm);
          state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid);

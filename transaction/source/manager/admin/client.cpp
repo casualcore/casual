@@ -68,6 +68,11 @@ namespace casual
                   std::string operator () ( const vo::Transaction& value) const { return value.trid.branch; }
                };
 
+               struct format_owner
+               {
+                  std::string operator () ( const vo::Transaction& value) const { return std::to_string( value.trid.owner.pid); }
+               };
+
                struct format_state
                {
                   std::string operator () ( const vo::Transaction& value)
@@ -83,10 +88,11 @@ namespace casual
 
                return {
                   { global::porcelain, ! global::no_color, ! global::no_header},
-                  common::terminal::format::column( "gtrid", format_global{}, common::terminal::color::yellow),
+                  common::terminal::format::column( "global", format_global{}, common::terminal::color::yellow),
                   common::terminal::format::column( "branch", format_branch{}, common::terminal::color::grey),
-                  common::terminal::format::column( "state", format_state{}, common::terminal::color::green, common::terminal::format::Align::right),
-                  common::terminal::format::column( "resources", format_resources{}, common::terminal::color::magenta, common::terminal::format::Align::right)
+                  common::terminal::format::column( "owner", format_owner{}, common::terminal::color::white, common::terminal::format::Align::right),
+                  common::terminal::format::column( "state", format_state{}, common::terminal::color::green, common::terminal::format::Align::left),
+                  common::terminal::format::column( "resources", format_resources{}, common::terminal::color::magenta, common::terminal::format::Align::left)
                };
             }
 

@@ -36,16 +36,26 @@ namespace monitor
    {
       Handler( const std::string& value) : m_connection( sql::database::Connection( value))
       {
-         std::ostringstream stream;
-         stream   << "CREATE TABLE IF NOT EXISTS calls ( "
-                  << "service       TEXT, "
-                  << "parentservice TEXT, "
-                  << "callid        TEXT, " // should not be string
-                  << "transactionid BLOB, "
-                  << "start         NUMBER, "
-                  << "end           NUMBER);";
+         m_connection.execute(
+             R"( CREATE TABLE IF NOT EXISTS call
+             (
+               service       TEXT NOT NULL,
+               parent        TEXT,
+               execution     BLOB  NOT NULL,
+               xid           BLOB,
+               start         NUMBER  NOT NULL,
+               end           NUMBER NOT NULL
+               ); 
+             )");
 
-         m_connection.execute( stream.str());
+         m_connection.execute(
+               "CREATE INDEX IF NOT EXISTS i_service ON call ( parent, service);" );
+
+         m_connection.execute(
+               "CREATE INDEX IF NOT EXISTS i_execution ON call ( execution);" );
+
+         m_connection.execute(
+               "CREATE INDEX IF NOT EXISTS i_xid ON call ( xid);" );
       }
 
       void persist_begin( ) override
@@ -55,13 +65,13 @@ namespace monitor
 
       void log( const event_type& event) override
       {
-         m_connection.execute( "INSERT INTO calls VALUES (?,?,?,?,?,?);",
+         m_connection.execute( "INSERT INTO call VALUES (?,?,?,?,?,?);",
             event.service(),
             event.parent(),
-            common::uuid::string( event.execution()), // should not be string
+            event.execution().get(),
             common::transaction::global( event.transaction()),
-            std::chrono::time_point_cast<std::chrono::microseconds>(event.start()).time_since_epoch().count(),
-            std::chrono::time_point_cast<std::chrono::microseconds>(event.end()).time_since_epoch().count());
+            event.start(),
+            event.end());
       }
 
       void persist_commit() override
@@ -89,23 +99,29 @@ namespace monitor
 int main( int argc, char **argv)
 {
 
-
-   // get database from arguments
-   std::string database{"monitor.db"};
+   try
    {
-      casual::common::Arguments parser;
-      parser.add(
-            casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", database)
-      );
+      // get database from arguments
+      std::string database{"monitor.db"};
+      {
+         casual::common::Arguments parser;
+         parser.add(
+               casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", database)
+         );
 
-      parser.parse( argc, argv);
-      casual::common::process::path( parser.processName());
+         parser.parse( argc, argv);
+         casual::common::process::path( parser.processName());
+      }
+
+      casual::traffic::monitor::Handler handler{ database};
+
+      casual::traffic::Receiver receive{ casual::common::Uuid{ "8130b1cd7e8842a49e3da91f8913aff7"}};
+      return receive.start( handler);
    }
-
-   casual::traffic::monitor::Handler handler{ database};
-
-   casual::traffic::Receiver receive;
-   return receive.start( handler);
+   catch( ...)
+   {
+      return casual::common::error::handler();
+   }
 }
 
 

@@ -31,6 +31,7 @@ namespace casual
             std::string alias;
             std::string path;
             std::string instances;
+            std::string restart;
             std::vector< std::string> arguments;
             std::vector< std::string> memberships;
 
@@ -44,6 +45,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( alias);
                archive & CASUAL_MAKE_NVP( path);
                archive & CASUAL_MAKE_NVP( instances);
+               archive & CASUAL_MAKE_NVP( restart);
                archive & CASUAL_MAKE_NVP( arguments);
                archive & CASUAL_MAKE_NVP( memberships);
                archive & CASUAL_MAKE_NVP( environment);

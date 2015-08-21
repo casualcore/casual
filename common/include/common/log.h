@@ -148,6 +148,17 @@ namespace casual
          //!
          extern internal::Stream error;
 
+         namespace stream
+         {
+            //!
+            //! @returns the corresponding stream for the @p category
+            //!
+            internal::Stream& get( category::Type category);
+         } // stream
+
+
+
+
          //!
          //! @return true if the log-category is active.
          //!
@@ -158,13 +169,11 @@ namespace casual
          void deactivate( category::Type category);
 
 
-         //std::ostream& stream( category::Type category);
-
 
          void write( category::Type category, const char* message);
-
          void write( category::Type category, const std::string& message);
 
+         void write( const std::string& category, const std::string& message);
 
 
       } // log

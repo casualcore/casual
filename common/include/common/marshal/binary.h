@@ -301,6 +301,8 @@ namespace casual
             marshal::output::Binary marshal{ complete.payload};
             marshal << message;
 
+            complete.offset = complete.payload.size();
+
             return complete;
          }
 

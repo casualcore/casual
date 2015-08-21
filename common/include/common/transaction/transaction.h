@@ -10,11 +10,15 @@
 
 
 #include "common/transaction/id.h"
+#include "common/timeout.h"
+#include "common/platform.h"
+
 
 #include "tx.h"
 
 #include <iosfwd>
 #include <vector>
+#include <chrono>
 
 namespace casual
 {
@@ -26,8 +30,7 @@ namespace casual
          {
          public:
 
-            typedef TRANSACTION_STATE state_type;
-            enum class State : state_type
+            enum class State : TRANSACTION_STATE
             {
                //suspended = - 1,
                active = TX_ACTIVE,
@@ -42,6 +45,8 @@ namespace casual
 
             ID trid;
 
+            Timeout timout;
+
             //!
             //! associated rm:s to this transaction
             //!
@@ -52,8 +57,8 @@ namespace casual
             //!
             std::vector< platform::descriptor_type> descriptors;
 
+
             State state = State::active;
-            bool suspended = true;
 
 
             explicit operator bool() const;
@@ -68,9 +73,9 @@ namespace casual
             friend bool operator == ( const Transaction& lhs, const XID& rhs);
             friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs);
          };
-      }
-   }
 
+      } // transaction
+   } // common
 } // casual
 
 #endif // TRANSACTION_H_

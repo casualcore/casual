@@ -11,9 +11,11 @@
 
 
 
+#include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
+#include <functional>
 
 
 
@@ -39,6 +41,15 @@ namespace casual
 
             };
 
+            struct TestMember
+            {
+
+               void handle( message::server::ping::Request& message)
+               {
+
+               }
+
+            };
 
          }
 
@@ -56,6 +67,23 @@ namespace casual
          EXPECT_TRUE( types.at( 0) == message::shutdown::Request::message_type);
 
       }
+
+      /*
+       * Does not work. need to work on traits::function...
+      TEST( casual_common_message_dispatch, construct_with_member_function)
+      {
+         local::TestMember holder;
+
+         message::dispatch::Handler handler{ std::bind( &local::TestMember::handle, &holder, std::placeholders::_1)};
+
+         EXPECT_TRUE( handler.size() == 1);
+
+         auto types = handler.types();
+
+         ASSERT_TRUE( types.size() == 1);
+         EXPECT_TRUE( types.at( 0) == message::server::ping::Request::message_type);
+      }
+      */
 
       //
       // We have to be in the same ns as marshal::input so the friend-declaration
