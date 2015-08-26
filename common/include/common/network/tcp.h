@@ -55,11 +55,8 @@ namespace casual
                Session( Session&&) noexcept;
                Session& operator = ( Session&&) noexcept;
 
-
-               //
-               // TODO: Some other interface (perhaps)
-               //
-               void push( platform::binary_type data) const;
+               void push( const platform::binary_type& data) const;
+               void pull( platform::binary_type& data) const;
                platform::binary_type pull() const;
 
             private:

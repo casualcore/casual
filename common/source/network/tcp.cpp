@@ -14,6 +14,13 @@
 
 #include <netdb.h>
 #include <unistd.h>
+
+/*
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+*/
+
 #include <cerrno>
 #include <cstring>
 #include <climits>
@@ -140,7 +147,7 @@ namespace casual
                      }
 
                   } // session
-               } // session
+               } // local
             } //
 
 
@@ -150,27 +157,57 @@ namespace casual
             Session::Session( Session&&) noexcept = default;
             Session& Session::operator = ( Session&&) noexcept = default;
 
-            void Session::push( platform::binary_type data) const
+/*
+            namespace
+            {
+               namespace local
+               {
+                  struct cork
+                  {
+                     const int descriptor;
+                     cork( const int descriptor) : descriptor( descriptor)
+                     {
+                        const int state = 1;
+                        if( setsockopt( descriptor, IPPROTO_TCP, TCP_CORK, &state, sizeof( state)))
+                        {
+                           std::cerr << std::strerror( errno) << std::endl;
+                        }
+                     }
+
+                     ~cork()
+                     {
+                        const int state = 0;
+                        if( setsockopt( descriptor, IPPROTO_TCP, TCP_CORK, &state, sizeof( state)))
+                        {
+                           std::cerr << std::strerror( errno) << std::endl;
+                        }
+                     }
+                  };
+               } // local
+            } //
+*/
+
+            void Session::push( const platform::binary_type& data) const
             {
                const auto encoded = byteorder::encode<platform::binary_size_type>( data.size());
-               //local::session::push( m_socket.descriptor(), &encoded, sizeof( encoded));
-               //local::session::push( m_socket.descriptor(), data.data(), data.size());
+
+               //const local::cork cork( m_socket.descriptor());
 
                //
-               // Insert the (encoded) size
+               // First write number of bytes to write later
                //
-               data.insert( data.begin(), reinterpret_cast<const char*>(&encoded), reinterpret_cast<const char*>(&encoded) + sizeof( encoded));
+               local::session::push( m_socket.descriptor(), &encoded, sizeof( encoded));
 
                //
-               // Send da whole shebang
+               // Write the bytes
                //
                local::session::push( m_socket.descriptor(), data.data(), data.size());
             }
 
-            platform::binary_type Session::pull( ) const
+            void Session::pull( platform::binary_type& data) const
             {
                //
-               // First read how many bytes to read later
+               // First read number of bytes to read later
                //
                byteorder::type<platform::binary_size_type> encoded;
                local::session::pull( m_socket.descriptor(), &encoded, sizeof( encoded));
@@ -178,13 +215,19 @@ namespace casual
                //
                // Allocate a buffer according to the decoded size
                //
-               platform::binary_type result( byteorder::decode<platform::binary_size_type>( encoded));
+               data.resize( byteorder::decode<platform::binary_size_type>( encoded));
 
                //
-               // Read the message
+               // Read the bytes
                //
-               local::session::pull( m_socket.descriptor(), result.data(), result.size());
+               local::session::pull( m_socket.descriptor(), data.data(), data.size());
+            }
 
+
+            platform::binary_type Session::pull() const
+            {
+               platform::binary_type result;
+               pull( result);
                return result;
             }
 
