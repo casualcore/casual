@@ -95,19 +95,18 @@ namespace casual
 
             Service prospect{ service, adress};
 
-
             //
             // validate
             //
-
-
-            if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
+            if( prospect.origin.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
-               prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::warning << "service name '" << service << "' truncated to '" << prospect.name << "'";
+               prospect.origin.resize( XATMI_SERVICE_NAME_LENGTH - 1);
+               log::warning << "service name '" << service << "' truncated to '" << prospect.origin << "'";
             }
 
-            auto found = range::find( m_state.services, prospect.name);
+
+
+            auto found = range::find( m_state.services, prospect.origin);
 
             if( found)
             {
@@ -117,25 +116,35 @@ namespace casual
                //
                if( found->second != prospect)
                {
-                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
+                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.origin);
                }
-
             }
             else
             {
-               // TODO: find the function and get information from it (transaction semantics and such)
-
                message::service::Advertise message;
 
                message.process = process::handle();
                message.serverPath = process::path();
-               message.services.emplace_back( prospect.name);
 
-               // TODO: make it consistence safe...
+               auto found = range::find_if( m_state.physical_services, [&]( const Service& s){
+                  return s == prospect;
+               });
+
+               if( found)
+               {
+                  m_state.services.emplace( prospect.origin, *found);
+                  message.services.emplace_back( prospect.origin, found->type, service::transaction::mode( found->transaction));
+               }
+               else
+               {
+                  message.services.emplace_back( prospect.origin, prospect.type, service::transaction::mode( prospect.transaction));
+
+                  m_state.physical_services.push_back( std::move( prospect));
+                  m_state.services.emplace( prospect.origin, m_state.physical_services.back());
+               }
+
                queue::blocking::Writer writer( ipc::broker::id());
                writer( message);
-
-               m_state.services.emplace( prospect.name, std::move( prospect));
             }
          }
 

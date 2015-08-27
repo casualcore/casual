@@ -38,6 +38,7 @@ namespace casual
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   archive & id;
+                  archive & properties;
                   archive & reply;
                   archive & avalible;
                   archive & type;

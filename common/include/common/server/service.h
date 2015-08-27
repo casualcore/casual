@@ -59,7 +59,7 @@ namespace casual
 
             void call( TPSVCINFO* serviceInformation);
 
-            std::string name;
+            std::string origin;
             function_type function;
 
             std::uint64_t type = Type::cXATMI;

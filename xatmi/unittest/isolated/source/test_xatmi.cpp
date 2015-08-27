@@ -179,6 +179,36 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST( casual_xatmi, tpacall_service_1_TPNOREPLY__no_current_transaction__expect_ok)
+      {
+         //
+         // Set up a "linked-domain" that transforms request to replies - see above
+         //
+         local::Domain domain;
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+
+         tpfree( buffer);
+      }
+
+      TEST( casual_xatmi, tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL)
+      {
+         local::Domain domain;
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == -1) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tperrno == TPEINVAL);
+
+         EXPECT_TRUE( tx_rollback() == TX_OK);
+
+         tpfree( buffer);
+      }
+
 
       TEST( casual_xatmi, tpcall_service_service_1__expect_ok)
       {

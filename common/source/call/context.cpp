@@ -78,12 +78,14 @@ namespace casual
                namespace validate
                {
 
-                  inline void input( const char* buffer, long size, long flags)
+                  inline message::service::lookup::Request::Context input( const char* buffer, long size, long flags)
                   {
-                     if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags))
+                     if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && transaction::Context::instance().current())
                      {
                         throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
                      }
+
+                     return flag< TPNOREPLY>( flags) ? message::service::lookup::Request::Context::no_reply : message::service::lookup::Request::Context::regular;
                   }
 
                } // validate
@@ -180,9 +182,9 @@ namespace casual
 
             log::internal::debug << "input - service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
-            local::validate::input( idata, ilen, flags);
+            auto context = local::validate::input( idata, ilen, flags);
 
-            service::Lookup lookup( service, flags);
+            service::Lookup lookup( service, context);
 
             //
             // We do as much as possible while we wait for the broker reply

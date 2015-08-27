@@ -163,7 +163,7 @@ namespace casual
          {
             using id_type = common::platform::resource::id_type;
 
-            enum class State
+            enum class Stage
             {
                cInvolved,
                cPrepareRequested,
@@ -216,7 +216,7 @@ namespace casual
             Resource& operator = ( Resource&&) noexcept = default;
 
             id_type id;
-            State state = State::cInvolved;
+            Stage stage = Stage::cInvolved;
             Result result = Result::cXA_OK;
 
             static Result convert( int value);
@@ -229,26 +229,26 @@ namespace casual
             {
                struct Update
                {
-                  Update( State state) : m_state( state) {}
+                  Update( Stage state) : m_state( state) {}
 
                   void operator () ( Resource& value) const
                   {
-                     value.state = m_state;
+                     value.stage = m_state;
                   }
                private:
-                  State m_state;
+                  Stage m_state;
                };
 
                struct Filter
                {
-                  Filter( State state) : m_state( state) {}
+                  Filter( Stage state) : m_state( state) {}
 
                   bool operator () ( const Resource& value) const
                   {
-                     return value.state == m_state;
+                     return value.stage == m_state;
                   }
                private:
-                  State m_state;
+                  Stage m_state;
                };
             };
 
@@ -305,7 +305,7 @@ namespace casual
          //!
          common::Uuid correlation;
 
-         Resource::State state() const;
+         Resource::Stage stage() const;
 
          //!
          //! @return the most severe result from the resources

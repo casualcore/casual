@@ -7,6 +7,8 @@
 
 #include "common/server/service.h"
 
+#include "common/algorithm.h"
+
 
 
 #include <map>
@@ -20,7 +22,7 @@ namespace casual
 
 
          Service::Service( std::string name, function_type function, std::uint64_t type, Transaction transaction)
-            : name( std::move( name)), function( function), type( type), transaction( transaction) {}
+            : origin( std::move( name)), function( function), type( type), transaction( transaction) {}
 
          Service::Service( std::string name, function_type function)
             : Service( std::move( name), std::move( function), Type::cXATMI, Transaction::automatic) {}
@@ -44,7 +46,7 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
-            return out << "{name: " << service.name << " type: " << service.type << " transaction: " << static_cast< std::uint64_t>( service.transaction)
+            return out << "{ origin: " << service.origin << " type: " << service.type << " transaction: " << service.transaction
                   << " active: " << service.active << "};";
          }
 

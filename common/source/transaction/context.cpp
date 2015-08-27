@@ -513,6 +513,11 @@ namespace casual
                return TM_RESUME;
             }
 
+            //
+            // Let the resource know the xid (if any)
+            //
+            *xid = transaction.trid.xid;
+
             if( transaction.trid)
             {
                //

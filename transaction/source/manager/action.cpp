@@ -103,7 +103,7 @@ namespace casual
 
                      if( found)
                      {
-                        if( found->state() == Transaction::Resource::State::cInvolved)
+                        if( found->stage() == Transaction::Resource::Stage::cInvolved)
                         {
 
                            handle::Rollback::message_type message;
