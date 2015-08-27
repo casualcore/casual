@@ -155,6 +155,8 @@ namespace casual
 
                auto result = find( handle).release( handle);
 
+               if( m_inbound == handle) m_inbound = nullptr;
+
                log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
@@ -168,6 +170,8 @@ namespace casual
                }
 
                auto result = find( handle).release( handle, size);
+
+               if( m_inbound == handle) m_inbound = nullptr;
 
                log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
