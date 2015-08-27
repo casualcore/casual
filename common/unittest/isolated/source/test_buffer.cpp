@@ -60,6 +60,41 @@ namespace casual
 
          }
 
+         TEST( casual_common_buffer, pool_insert)
+         {
+            auto buffer = pool::Holder::instance().insert( Payload{ buffer::type::binary(), 1024});
+
+            ASSERT_TRUE( buffer != nullptr);
+
+            pool::Holder::instance().clear();
+         }
+
+         TEST( casual_common_buffer, pool_insert__deallocate__expect__inbound_still_valid)
+         {
+            auto inbound = pool::Holder::instance().insert( Payload{ buffer::type::binary(), 1024});
+
+            pool::Holder::instance().deallocate( inbound);
+
+            EXPECT_NO_THROW({
+               auto send = pool::Holder::instance().get( inbound);
+               EXPECT_TRUE( send.reserved == 1024);
+            });
+
+            pool::Holder::instance().clear();
+         }
+
+         TEST( casual_common_buffer, pool_insert__clear__expect__inbound_deallocated)
+         {
+            auto inbound = pool::Holder::instance().insert( Payload{ buffer::type::binary(), 1024});
+
+            pool::Holder::instance().clear();
+
+            EXPECT_THROW({
+               pool::Holder::instance().get( inbound);
+            }, exception::xatmi::invalid::Argument);
+
+         }
+
          TEST( casual_common_buffer, pool_allocate_non_existing__throws)
          {
             EXPECT_THROW({

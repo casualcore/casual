@@ -75,7 +75,9 @@ namespace casual
             State( const State&) = delete;
             State& operator = (const State&) = delete;
 
-            typedef std::unordered_map< std::string, Service> service_mapping_type;
+            std::deque< Service> physical_services;
+
+            typedef std::unordered_map< std::string, std::reference_wrapper< Service>> service_mapping_type;
 
             service_mapping_type services;
             common::platform::long_jump_buffer_type long_jump_buffer;

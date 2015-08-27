@@ -46,6 +46,19 @@ namespace casual
 
             auto result = xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags);
 
+
+            if( result == XAER_DUPID)
+            {
+               //
+               // Transaction is already associated with this thread of control, we try to join instead
+               //
+               log::internal::transaction << "XAER_DUPID - action: try to join instead\n";
+
+               flags |= TMJOIN;
+
+               result = xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags);
+            }
+
             if( result != XA_OK)
             {
                log::error << error::xa::error( result) << " failed to start resource - " << *this << " - trid: " << transaction << '\n';

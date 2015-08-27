@@ -73,20 +73,26 @@ namespace casual
                //!
                struct Request : basic_message< cServiceNameLookupRequest>
                {
+                  enum class Context : char
+                  {
+                     regular,
+                     no_reply,
+                     forward
+                  };
                   Request() = default;
                   Request( Request&&) = default;
                   Request& operator = ( Request&&) = default;
 
                   std::string requested;
                   process::Handle process;
-                  long flags = 0;
+                  Context context = Context::regular;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & requested;
                      archive & process;
-                     archive & flags;
+                     archive & context;
                   })
                };
 
