@@ -167,6 +167,7 @@ namespace casual
                };
 
 
+               platform::raw_buffer_type m_inbound = nullptr;
                std::vector< std::unique_ptr< Base>> m_pools;
 
                template< typename P>
@@ -344,9 +345,6 @@ namespace casual
                   return std::find_if( std::begin( m_pool), std::end( m_pool),
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});
                }
-
-
-
                pool_type m_pool;
             };
 
