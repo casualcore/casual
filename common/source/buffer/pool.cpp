@@ -77,6 +77,11 @@ namespace casual
                         << " from @" << static_cast< const void*>( handle) << " to " << static_cast< const void*>( buffer) << '\n';
                }
 
+               if( handle == m_inbound)
+               {
+                  m_inbound = buffer;
+               }
+
                return buffer;
             }
 
@@ -87,12 +92,14 @@ namespace casual
 
             void Holder::deallocate( platform::const_raw_buffer_type handle)
             {
-               if( handle != nullptr)
+               //
+               // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
+               //
+               if( handle != m_inbound && handle != nullptr)
                {
                   find( handle).deallocate( handle);
 
-                   log::internal::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
-
+                  log::internal::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
                }
             }
 
@@ -103,12 +110,20 @@ namespace casual
 
                if( payload.null())
                {
-                  return nullptr;
+                  m_inbound = nullptr;
+                  return m_inbound;
                }
 
-               auto buffer = find( payload.type).insert( std::move( payload));
+               //
+               // This is the only place where a buffer is consumed by the pool, hence can only happen
+               // during service-invocation.
+               //
+               // Keep track of the inbound buffer given to the user. This is a
+               // 'special' buffer according to the XATMI-spec.
+               //
+               m_inbound = find( payload.type).insert( std::move( payload));
 
-               return buffer;
+               return m_inbound;
             }
 
             payload::Send Holder::get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size)
@@ -140,6 +155,8 @@ namespace casual
 
                auto result = find( handle).release( handle);
 
+               if( m_inbound == handle) m_inbound = nullptr;
+
                log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
@@ -154,13 +171,28 @@ namespace casual
 
                auto result = find( handle).release( handle, size);
 
+               if( m_inbound == handle) m_inbound = nullptr;
+
                log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
             }
 
+
             void Holder::clear()
             {
+               if( m_inbound)
+               {
+                  try
+                  {
+                     find( m_inbound).deallocate( m_inbound);
+                     m_inbound = nullptr;
+                  }
+                  catch( const exception::base& exception)
+                  {
+                     log::error << "failed to deallocate inbound buffer - " << exception << std::endl;
+                  }
+               }
                range::for_each( m_pools, std::mem_fn( &Base::clear));
             }
 

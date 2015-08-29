@@ -187,7 +187,7 @@ namespace casual
 
          auto arguments = broker::admin::services( state);
 
-         EXPECT_TRUE( arguments.services.at( 0).name == ".casual.broker.state");
+         EXPECT_TRUE( arguments.services.at( 0).origin == ".casual.broker.state");
       }
 
 
@@ -391,7 +391,7 @@ namespace casual
       }
 
 
-      TEST( casual_broker, service_lookup_service1_NOREPLY___expect__forward_reply)
+      TEST( casual_broker, service_lookup_service1__forward_context___expect__forward_reply)
       {
          local::domain_4 domain;
          domain.instance1().state = state::Server::Instance::State::busy;
@@ -402,7 +402,7 @@ namespace casual
             common::message::service::lookup::Request request;
             request.process = domain.server2.process();
             request.requested = "service1";
-            request.flags = TPNOREPLY | TPNOTRAN;
+            request.context =  common::message::service::lookup::Request::Context::no_reply;
 
             common::queue::blocking::Send send;
             auto correlation = send( broker.queue.id(), request);

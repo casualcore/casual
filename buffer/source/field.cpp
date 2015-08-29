@@ -1273,6 +1273,10 @@ int CasualFieldChangeValue( char* const buffer, const long id, const long index,
       return CasualFieldAddValue( buffer, id, value, count);
    }
 
+   //
+   // Can be more efficient but remember to add empty occurrences if needed
+   //
+
    const auto result = CasualFieldUpdateValue( buffer, id, index, value, count);
 
    if( result == CASUAL_FIELD_NO_OCCURRENCE)
@@ -1844,6 +1848,7 @@ namespace casual
 
 int CasualFieldPrint( const char* const buffer)
 {
+   // TODO: Perhaps flush STDOUT ?
    return casual::buffer::field::transform::stream( buffer, std::cout);
 }
 
@@ -1868,7 +1873,6 @@ int CasualFieldMatch( const char* const buffer, const char* const expression, in
    }
    catch( ...)
    {
-      //
       // TODO: Log or remove this
       return CASUAL_FIELD_INTERNAL_FAILURE;
    }

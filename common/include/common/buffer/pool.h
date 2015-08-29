@@ -167,6 +167,7 @@ namespace casual
                };
 
 
+               platform::raw_buffer_type m_inbound = nullptr;
                std::vector< std::unique_ptr< Base>> m_pools;
 
                template< typename P>
@@ -321,20 +322,12 @@ namespace casual
 
                void clear()
                {
-
-                  if( ! m_pool.empty())
-                  {
-                     static bool logged = false;
-
-                     if( ! logged)
-                     {
-                        logged = true;
-                        log::warning << "buffer pool should be empty - casual takes care of missed deallocations - to be xatmi conformant use tpfree - will not be logged again\n";
-                     }
-                     log::internal::debug << "pool size: " << m_pool.size() << std::endl;
-                  }
-                  // pool_type empty;
-                  // m_pool.swap( empty);
+                  //
+                  // We don't do any automatic cleanup, since the user could have a
+                  // global handle to some buffer.
+                  //
+                  // To look at the previous implementation see commit: 2655a5b61813e628153535ec05082c3582eb86f1
+                  //
                }
 
             protected:
@@ -344,9 +337,6 @@ namespace casual
                   return std::find_if( std::begin( m_pool), std::end( m_pool),
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});
                }
-
-
-
                pool_type m_pool;
             };
 

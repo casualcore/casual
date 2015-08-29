@@ -184,7 +184,7 @@ namespace casual
                   {
                      using state::Base::Base;
 
-                     void operator () ( Transaction& transaction, Transaction::Resource::State filter, Transaction::Resource::State newState, long flags = TMNOFLAGS)
+                     void operator () ( Transaction& transaction, Transaction::Resource::Stage filter, Transaction::Resource::Stage newState, long flags = TMNOFLAGS)
                      {
                         M message;
                         message.process = common::process::handle();
@@ -483,15 +483,29 @@ namespace casual
 
                   common::log::internal::transaction << "prepare reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
-                  resource.state = Transaction::Resource::State::cPrepareReplied;
-                  resource.result = Transaction::Resource::convert( message.state);
+                  //
+                  // If the resource only did a read only, we 'promote' it to 'not involved'
+                  //
+                  {
+                     resource.result = Transaction::Resource::convert( message.state);
 
-                  auto state = transaction.state();
+                     if( resource.result == Transaction::Resource::Result::cXA_RDONLY)
+                     {
+                        resource.stage = Transaction::Resource::Stage::cNotInvolved;
+                     }
+                     else
+                     {
+                        resource.stage = Transaction::Resource::Stage::cPrepareReplied;
+                     }
+                  }
+
+
+                  auto stage = transaction.stage();
 
                   //
                   // Are we in a prepared state?
                   //
-                  if( state == Transaction::Resource::State::cPrepareReplied)
+                  if( stage == Transaction::Resource::Stage::cPrepareReplied)
                   {
 
                      using reply_type = common::message::transaction::commit::Reply;
@@ -561,7 +575,7 @@ namespace casual
                            //
                            auto filter = common::chain::And::link(
                                  Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK},
-                                 Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied});
+                                 Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cPrepareReplied});
 
                            internal::send::resource::persistent::request<
                               common::message::transaction::resource::commit::Request>( m_state, transaction, filter);
@@ -581,7 +595,7 @@ namespace casual
                               queue::non_blocking::Writer,
                               common::message::transaction::resource::commit::Request> request{ m_state};
 
-                           request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested);
+                           request( transaction, Transaction::Resource::Stage::cPrepareReplied, Transaction::Resource::Stage::cCommitRequested);
 
                            break;
                         }
@@ -600,15 +614,15 @@ namespace casual
 
                   common::log::internal::transaction << "commit reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
-                  resource.state = Transaction::Resource::State::cCommitReplied;
+                  resource.stage = Transaction::Resource::Stage::cCommitReplied;
 
-                  auto state = transaction.state();
+                  auto stage = transaction.stage();
 
 
                   //
                   // Are we in a commited state?
                   //
-                  if( state == Transaction::Resource::State::cCommitReplied)
+                  if( stage == Transaction::Resource::Stage::cCommitReplied)
                   {
 
                      using reply_type = common::message::transaction::commit::Reply;
@@ -679,15 +693,15 @@ namespace casual
 
                   common::log::internal::transaction << "rollback reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
-                  resource.state = Transaction::Resource::State::cRollbackReplied;
+                  resource.stage = Transaction::Resource::Stage::cRollbackReplied;
 
-                  auto state = transaction.state();
+                  auto stage = transaction.stage();
 
 
                   //
                   // Are we in a rolled back state?
                   //
-                  if( state == Transaction::Resource::State::cRollbackReplied)
+                  if( stage == Transaction::Resource::Stage::cRollbackReplied)
                   {
 
                      using reply_type = common::message::transaction::rollback::Reply;
@@ -806,10 +820,10 @@ namespace casual
             {
                auto& transaction = *found;
 
-               switch( transaction.state())
+               switch( transaction.stage())
                {
-                  case Transaction::Resource::State::cInvolved:
-                  case Transaction::Resource::State::cNotInvolved:
+                  case Transaction::Resource::Stage::cInvolved:
+                  case Transaction::Resource::Stage::cNotInvolved:
                   {
                      break;
                   }
@@ -866,7 +880,7 @@ namespace casual
                         queue::non_blocking::Writer,
                         common::message::transaction::resource::commit::Request> request{ m_state};
 
-                     request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cCommitRequested, TMONEPHASE);
+                     request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cCommitRequested, TMONEPHASE);
 
                      break;
                   }
@@ -886,7 +900,7 @@ namespace casual
                         queue::non_blocking::Writer,
                         common::message::transaction::resource::prepare::Request> request{ m_state};
 
-                     request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cPrepareRequested);
+                     request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cPrepareRequested);
 
                      break;
                   }
@@ -945,7 +959,7 @@ namespace casual
                      queue::non_blocking::Writer,
                      common::message::transaction::resource::rollback::Request> request{ m_state};
 
-                  request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cRollbackRequested);
+                  request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cRollbackRequested);
                }
             }
             else
@@ -978,7 +992,7 @@ namespace casual
                      queue::non_blocking::Writer,
                      common::message::transaction::resource::domain::prepare::Request> request{ m_state};
 
-                  request( transaction, Transaction::Resource::State::cInvolved, Transaction::Resource::State::cPrepareRequested, message.flags);
+                  request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cPrepareRequested, message.flags);
 
                }
                else
@@ -1026,7 +1040,7 @@ namespace casual
                      queue::non_blocking::Writer,
                      common::message::transaction::resource::domain::commit::Request> request{ m_state};
 
-                  request( transaction, Transaction::Resource::State::cPrepareReplied, Transaction::Resource::State::cCommitRequested, message.flags);
+                  request( transaction, Transaction::Resource::Stage::cPrepareReplied, Transaction::Resource::Stage::cCommitRequested, message.flags);
 
                }
                else
@@ -1065,8 +1079,8 @@ namespace casual
                      common::message::transaction::resource::domain::commit::Request> request{ m_state};
 
                   request( transaction,
-                        Transaction::Resource::State::cPrepareReplied,
-                        Transaction::Resource::State::cRollbackRequested, message.flags);
+                        Transaction::Resource::Stage::cPrepareReplied,
+                        Transaction::Resource::Stage::cRollbackRequested, message.flags);
                }
                else
                {
@@ -1093,11 +1107,11 @@ namespace casual
                      common::trace::Scope trace{ "transaction::handle::domain::resource::prepare reply", common::log::internal::transaction};
 
                      resource.result = Transaction::Resource::convert( message.state);
-                     resource.state = Transaction::Resource::State::cPrepareReplied;
+                     resource.stage = Transaction::Resource::Stage::cPrepareReplied;
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cPrepareReplied}))
+                           Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cPrepareReplied}))
                      {
 
                         //
@@ -1134,11 +1148,11 @@ namespace casual
                      common::trace::Scope trace{ "transaction::handle::domain::resource::commit reply", common::log::internal::transaction};
 
                      resource.result = Transaction::Resource::convert( message.state);
-                     resource.state = Transaction::Resource::State::cCommitReplied;
+                     resource.stage = Transaction::Resource::Stage::cCommitReplied;
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::state::Filter{ Transaction::Resource::State::cCommitReplied}))
+                           Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cCommitReplied}))
                      {
 
                         //

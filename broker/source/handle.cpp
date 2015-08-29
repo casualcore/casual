@@ -759,10 +759,12 @@ namespace casual
 
                   service.lookedup++;
                }
-               else if( common::flag< TPNOREPLY>( message.flags))
+               else if(
+                  message.context == common::message::service::lookup::Request::Context::no_reply
+                  || message.context == common::message::service::lookup::Request::Context::forward)
                {
                   //
-                  // The intention is "send and forget", we use our forward-cache for this
+                  // The intention is "send and forget", or a plain forward, we use our forward-cache for this
                   //
                   reply.process = m_state.forward;
 

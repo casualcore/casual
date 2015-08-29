@@ -151,7 +151,7 @@ namespace casual
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending transactions");
                   }
 
-                  call::service::Lookup lookup{ jump.forward.service, message.flags};
+                  call::service::Lookup lookup{ jump.forward.service, message::service::lookup::Request::Context::forward};
 
 
                   message::service::call::callee::Request request;
@@ -161,6 +161,7 @@ namespace casual
                   request.trid = message.trid;
                   request.process = message.process;
                   request.flags = message.flags;
+
                   if( jump.buffer.data == nullptr)
                   {
                      request.buffer = buffer::Payload{ nullptr};
@@ -170,15 +171,27 @@ namespace casual
                      request.buffer = buffer::pool::Holder::instance().release( jump.buffer.data, jump.buffer.len);
                   }
 
-                  auto service = lookup();
+                  auto target = lookup();
 
-                  request.service = service.service;
+                  if( target.state == message::service::lookup::Reply::State::absent)
+                  {
+                     throw common::exception::xatmi::service::no::Entry( target.service.name);
+                  }
+                  else if( target.state ==  message::service::lookup::Reply::State::busy)
+                  {
+                     //
+                     // We wait for service to become idle
+                     //
+                     target = lookup();
+                  }
+
+                  request.service = target.service;
 
 
                   log::internal::debug << "policy::Default::forward - request:" << request << std::endl;
 
                   queue::blocking::Send send;
-                  send( service.process.queue, request);
+                  send( target.process.queue, request);
                }
 
             } // policy

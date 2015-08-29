@@ -327,6 +327,8 @@ namespace casual
                   using Entry = basic_xatmi< TPENOENT, log::category::Type::debug>;
                } // no
 
+               //typedef basic_xatmi< TPENOENT, log::category::Type::user> NoEntry;
+               typedef basic_xatmi< TPENOENT, log::category::Type::error> NoEntry;
 
                typedef basic_xatmi< TPEMATCH, log::category::Type::debug> Advertised;
             }
@@ -370,12 +372,11 @@ namespace casual
             template< long code, log::category::Type category>
             using basic_tx = code::basic_code< code, category, base_tag>;
 
-
             using Fail = basic_tx< TX_FAIL, log::category::Type::error>;
 
             using Error = basic_tx< TX_ERROR, log::category::Type::error>;
 
-            using Protocoll = basic_tx< TX_PROTOCOL_ERROR, log::category::Type::error>;
+            using Protocol = basic_tx< TX_PROTOCOL_ERROR, log::category::Type::error>;
 
             using Argument = basic_tx< TX_EINVAL, log::category::Type::error>;
 

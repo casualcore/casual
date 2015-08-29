@@ -33,7 +33,7 @@ namespace casual
 
          namespace xatmi
          {
-            std::string error( int error);
+            const std::string& error( int error);
          } // xatmi
 
          namespace xa

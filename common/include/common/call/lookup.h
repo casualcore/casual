@@ -23,7 +23,8 @@ namespace casual
          {
             struct Lookup
             {
-               Lookup( std::string service, long flags);
+               Lookup( std::string service);
+               Lookup( std::string service, message::service::lookup::Request::Context context);
                ~Lookup();
                message::service::lookup::Reply operator () () const;
             private:

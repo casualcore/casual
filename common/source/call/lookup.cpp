@@ -17,16 +17,18 @@ namespace casual
       {
          namespace service
          {
-            Lookup::Lookup( std::string service, long flags) : m_service( std::move( service))
+            Lookup::Lookup( std::string service, message::service::lookup::Request::Context context) : m_service( std::move( service))
             {
                message::service::lookup::Request request;
                request.requested = m_service;
                request.process = process::handle();
-               request.flags = flags;
+               request.context = context;
 
                queue::blocking::Send send;
                m_correlation = send( ipc::broker::id(), request);
             }
+
+            Lookup::Lookup( std::string service) : Lookup( std::move( service), message::service::lookup::Request::Context::regular) {}
 
             Lookup::~Lookup()
             {

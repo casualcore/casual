@@ -13,8 +13,8 @@
 #include "common/process.h"
 
 
-#include <string.h>
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 
 
 
@@ -102,7 +102,7 @@ namespace casual
             }
             catch( ...)
             {
-               log::error << xatmi::error( TPESYSTEM) << " unexpected exception" << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " - unexpected exception" << std::endl;
                return TPESYSTEM;
             }
 
@@ -116,14 +116,14 @@ namespace casual
             return string( errno);
          }
 
-         std::string string( int code)
+         std::string string( const int code)
          {
-            return std::string( strerror( code)) + " (" + std::to_string( code) + ")";
+            return std::string( std::strerror( code)) + " (" + std::to_string( code) + ")";
          }
 
          namespace xatmi
          {
-            std::string error( int code)
+            const std::string& error( const int code)
             {
                static const std::map< int, std::string> mapping{
                   { TPEBADDESC, "TPEBADDESC"},
@@ -146,7 +146,7 @@ namespace casual
                };
 
 
-               auto findIter = mapping.find( code);
+               const auto findIter = mapping.find( code);
 
                if( findIter != mapping.end())
                {
@@ -163,7 +163,7 @@ namespace casual
 
          namespace xa
          {
-            const char* error( int code)
+            const char* error( const int code)
             {
                static const std::map< int, const char*> mapping{
                   { XA_RBROLLBACK, "XA_RBROLLBACK"},
@@ -198,7 +198,8 @@ namespace casual
 
          namespace tx
          {
-            const char* error( int code)
+
+            const char* error( const int code)
             {
                static const std::map< int, const char*> mapping{
                   { TX_NOT_SUPPORTED, "TX_NOT_SUPPORTED"},
@@ -228,7 +229,7 @@ namespace casual
                {
                   throw;
                }
-               catch( const exception::tx::Protocoll& exception)
+               catch( const exception::tx::Protocol& exception)
                {
                   log::error << "TX_PROTOCOL_ERROR " << exception << std::endl;
                   return TX_PROTOCOL_ERROR;

@@ -145,10 +145,13 @@ namespace casual
 
                   std::vector< message::Service> services;
 
-                  for( auto&& service : arguments.services)
+                  for( auto& service : arguments.services)
                   {
-                     services.emplace_back( service.name, service.type, service::transaction::mode( service.transaction));
-                     state.services.emplace( service.name, std::move( service));
+                     auto name = service.origin;
+                     services.emplace_back( name, service.type, service::transaction::mode( service.transaction));
+
+                     state.physical_services.push_back( std::move( service));
+                     state.services.emplace( name, state.physical_services.back());
                   }
 
 
@@ -290,7 +293,7 @@ namespace casual
 
                   auto& service = found->second;
 
-                  execution::service( service.name);
+                  execution::service( message.service.name);
                   execution::parent::service( message.parent);
 
 
@@ -340,7 +343,7 @@ namespace casual
 
                      try
                      {
-                        service.call( &information);
+                        service.get().call( &information);
                      }
                      catch( ...)
                      {

@@ -217,14 +217,14 @@ namespace casual
       }
 
 
-      Transaction::Resource::State Transaction::state() const
+      Transaction::Resource::Stage Transaction::stage() const
       {
-         Resource::State result = Resource::State::cNotInvolved;
+         Resource::Stage result = Resource::Stage::cNotInvolved;
 
          for( auto& resource : resources)
          {
-            if( result > resource.state)
-               result = resource.state;
+            if( result > resource.stage)
+               result = resource.stage;
          }
          return result;
       }
