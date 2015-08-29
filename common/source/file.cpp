@@ -213,6 +213,11 @@ namespace casual
       namespace directory
       {
 
+         std::string temporary()
+         {
+            return "/tmp";
+         }
+
          std::string current()
          {
             char buffer[ platform::size::max::path];

@@ -189,7 +189,8 @@ namespace casual
 
             {
                common::message::queue::connect::Request request;
-               request.process = common::process::handle();
+               request.process.pid = common::process::handle().pid;
+               request.process.queue = m_state.receive.id();
                queueBroker( request);
             }
 
@@ -214,7 +215,7 @@ namespace casual
 
 
 
-               group::queue::blocking::Reader read( common::ipc::receive::queue(), m_state);
+               group::queue::blocking::Reader read( m_state.receive, m_state);
                common::message::queue::connect::Reply reply;
                read( reply);
 

@@ -125,6 +125,13 @@ namespace casual
                   {
                      found->connected = true;
                   }
+                  else
+                  {
+                     //
+                     // We add the group
+                     //
+                     m_state.groups.emplace_back( "", message.process);
+                  }
 
                }
             } // connect

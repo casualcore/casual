@@ -73,7 +73,7 @@ namespace casual
                         { "--queuebase", group.queuebase, "--name", group.name});
 
 
-                     broker::queue::blocking::Reader read{ common::ipc::receive::queue(), m_state};
+                     broker::queue::blocking::Reader read{ m_state.receive, m_state};
                      common::message::queue::connect::Request request;
                      read( request);
                      queueGroup.process.queue = request.process.queue;
@@ -138,7 +138,7 @@ namespace casual
                   broker::handle::transaction::rollback::Reply{ state},
                   //broker::handle::peek::queue::Request{ m_state},
                   common::server::handle::basic_admin_call< broker::State>{
-                     broker::admin::services( state), state, environment::broker::identification()},
+                     state.receive, broker::admin::services( state), state, environment::broker::identification()},
                   common::message::handle::ping( state),
                };
 

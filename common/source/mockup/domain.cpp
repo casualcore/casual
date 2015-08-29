@@ -328,63 +328,27 @@ namespace casual
                   return local::result_set( request.process, std::move( reply));
                }
 
-               reply::Handler default_handler()
+               namespace transaction
                {
+                  namespace client
+                  {
 
-
-                  return reply::Handler{
-                     []( message::server::connect::Request r)
+                     std::vector< reply::result_t> Connect::operator () ( message::transaction::client::connect::Request r)
                      {
-                        Trace trace{ "mockup server::connect::Request", log::internal::debug};
-                        auto reply = message::reverse::type( r);
-                        reply.directive = decltype( reply)::Directive::start;
+                        Trace trace{ "mockup::broker::transaction::client::Connect", log::internal::debug};
 
-                        return local::result_set( r.process, reply);
-                     },
-                     []( message::transaction::client::connect::Request r)
-                     {
+                        auto reply = m_reply;
+                        reply.correlation = r.correlation;
+                        reply.transaction_manager = mockup::ipc::transaction::manager::id();
 
-                        Trace trace{ "mockup transaction::client::connect::Request", log::internal::debug};
-                        auto reply = message::reverse::type( r);
-                        reply.transaction_manager = ipc::transaction::manager::id();
-                        reply.domain = "mockup-domain";
-                        reply.directive = decltype( reply)::Directive::start;
-
-                        return local::result_set( r.process, reply);
-                     },
-                     []( common::message::transaction::manager::connect::Request r)
-                     {
-                        Trace trace{ "mockup transaction::manager::connect::Request", log::internal::debug};
-
-                        auto reply = message::reverse::type( r);
-                        reply.directive = decltype( reply)::Directive::start;
-
-                        auto result = local::result_set( r.process, reply);
-
-                        common::message::transaction::manager::Configuration conf;
-                        conf.correlation = r.correlation;
-                        conf.domain = "mockup-domain";
-                        result.push_back( local::result( r.process, conf));
-
-                        return result;
-                     },
-                     []( common::message::transaction::manager::Ready r)
-                     {
-                        Trace trace{ "mockup common::message::transaction::manager::Ready", log::internal::debug};
-                        return std::vector< reply::result_t>{};
-                     },
-                     []( common::message::forward::connect::Request r)
-                     {
-                        Trace trace{ "mockup forward::connect::Request", log::internal::debug};
-                        auto reply = message::reverse::type( r);
-                        reply.directive = decltype( reply)::Directive::start;
-
-                        return local::result_set( r.process, reply);
-                     },
-                  };
+                        return local::result_set( r.process, std::move( reply));
+                     }
+                  }
                }
 
             } // broker
+
+
 
             Broker::Broker( reply::Handler handler)
                : m_replier{ std::move( handler)}
@@ -393,16 +357,147 @@ namespace casual
 
             }
 
-            Broker::Broker() : Broker( broker::default_handler())
+            Broker::Broker() : Broker( default_handler())
             {
             }
 
             Broker::~Broker() = default;
 
+            reply::Handler Broker::default_handler()
+            {
+
+
+               return reply::Handler{
+                  [&]( message::server::connect::Request r)
+                  {
+                     Trace trace{ "mockup server::connect::Request", log::internal::debug};
+
+                     std::vector< reply::result_t> result;
+
+                     auto reply = message::reverse::type( r);
+                     reply.directive = decltype( reply)::Directive::start;
+
+                     if( r.identification)
+                     {
+                        auto found = range::find(  m_state.singeltons, r.identification);
+
+                        if( found && found->second != r.process)
+                        {
+                           log::internal::debug << "process: " << r.process << " is a singleton, and one is already running\n";
+                           reply.directive = decltype( reply)::Directive::singleton;
+                           return local::result_set( r.process, reply);
+                        }
+                        else
+                        {
+                           m_state.singeltons[ r.identification] = r.process;
+
+                           auto found = range::find(  m_state.singelton_request, r.identification);
+
+                           if( found)
+                           {
+                              for( auto& target : found->second)
+                              {
+                                 auto reply = message::reverse::type( target);
+                                 reply.process = r.process;
+                                 result.push_back( local::result( target.process, reply));
+                              }
+                              m_state.singelton_request.erase( found.first);
+                           }
+                        }
+                     }
+
+                     for( auto& service : r.services)
+                     {
+                        auto& reply = m_state.services[ service.name];
+                        reply.service = service;
+                        reply.process = r.process;
+
+                        log::internal::debug << "mockup - service added: " << reply << std::endl;
+                     }
+
+                     result.push_back( local::result( r.process, reply));
+
+                     return result;
+                  },
+                  [&]( common::message::lookup::process::Request r)
+                  {
+                     auto found = range::find(  m_state.singeltons, r.identification);
+
+                     if( found)
+                     {
+                        auto reply = message::reverse::type( r);
+                        reply.process = found->second;
+                        return local::result_set( r.process, reply);
+                     }
+                     else
+                     {
+                        m_state.singelton_request[ r.identification].push_back( std::move( r));
+                     }
+                     return std::vector< reply::result_t>{};
+                  },
+                  []( message::transaction::client::connect::Request r)
+                  {
+
+                     Trace trace{ "mockup transaction::client::connect::Request", log::internal::debug};
+                     auto reply = message::reverse::type( r);
+                     reply.transaction_manager = ipc::transaction::manager::id();
+                     reply.domain = "mockup-domain";
+                     reply.directive = decltype( reply)::Directive::start;
+
+                     return local::result_set( r.process, reply);
+                  },
+                  []( common::message::transaction::manager::connect::Request r)
+                  {
+                     Trace trace{ "mockup transaction::manager::connect::Request", log::internal::debug};
+
+                     auto reply = message::reverse::type( r);
+                     reply.directive = decltype( reply)::Directive::start;
+
+                     auto result = local::result_set( r.process, reply);
+
+                     common::message::transaction::manager::Configuration conf;
+                     conf.correlation = r.correlation;
+                     conf.domain = "mockup-domain";
+                     result.push_back( local::result( r.process, conf));
+
+                     return result;
+                  },
+                  [&]( message::service::lookup::Request r)
+                  {
+                     auto found = range::find( m_state.services, r.requested);
+
+                     if( found)
+                     {
+                        auto reply = found->second;
+                        reply.correlation = r.correlation;
+                        return local::result_set( r.process, reply);
+                     }
+
+                     auto reply = message::reverse::type( r);
+                     reply.state = reply.State::absent;
+
+                     return local::result_set( r.process, reply);
+                  },
+                  []( common::message::transaction::manager::Ready r)
+                  {
+                     Trace trace{ "mockup common::message::transaction::manager::Ready", log::internal::debug};
+                     return std::vector< reply::result_t>{};
+                  },
+                  []( common::message::forward::connect::Request r)
+                  {
+                     Trace trace{ "mockup forward::connect::Request", log::internal::debug};
+                     auto reply = message::reverse::type( r);
+                     reply.directive = decltype( reply)::Directive::start;
+
+                     return local::result_set( r.process, reply);
+                  },
+               };
+            }
+
 
             namespace transaction
             {
-               reply::Handler default_handler()
+               reply::Handler Manager::default_handler()
                {
 
                   return reply::Handler{

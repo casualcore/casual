@@ -71,6 +71,9 @@ namespace casual
          namespace reverse
          {
             template<>
+            struct type_traits< server::ping::Request> : detail::type< server::ping::Reply> {};
+
+            template<>
             struct type_traits< server::connect::Request> : detail::type< server::connect::Reply> {};
 
          } // reverse

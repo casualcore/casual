@@ -225,6 +225,8 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
     [
      group_archive,
      broker_archive,
+     queue_api_rm,
+     rm,
      common,
      'casual-mockup',
      'casual-mockup-unittest-environment',

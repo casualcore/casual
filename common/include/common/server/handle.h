@@ -55,7 +55,8 @@ namespace casual
 
                message::server::connect::Request message;
 
-               message.process = common::process::handle();
+               message.process.pid = common::process::handle().pid;
+               message.process.queue = ipc.id();
                message.path = common::process::path();
                message.services = std::move( services);
                message.identification = identification;

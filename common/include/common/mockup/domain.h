@@ -163,6 +163,52 @@ namespace casual
                   std::map< std::string, common::message::service::lookup::Reply> m_services;
                };
 
+
+               namespace transaction
+               {
+                  namespace client
+                  {
+                     struct Connect
+                     {
+                        Connect( message::transaction::client::connect::Reply reply) : m_reply{ std::move( reply)} {}
+
+                        std::vector< reply::result_t> operator () ( message::transaction::client::connect::Request r);
+                     private:
+                        message::transaction::client::connect::Reply m_reply;
+
+                     }; // connect
+
+                  } // client
+
+               } // transaction
+
+
+            } // broker
+
+            struct Broker
+            {
+               Broker();
+
+               template< typename... Args>
+               Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...)) {}
+
+               ~Broker();
+
+            private:
+
+               struct State
+               {
+
+                  std::map< std::string, common::message::service::lookup::Reply> services;
+                  std::map< common::Uuid, common::process::Handle> singeltons;
+                  std::map< common::Uuid, std::vector< common::message::lookup::process::Request>> singelton_request;
+               };
+
+
+
+               Broker( reply::Handler handler);
+
+
                reply::Handler default_handler();
 
                template< typename... Args>
@@ -173,29 +219,24 @@ namespace casual
                   return result;
                }
 
-            } // broker
-
-            struct Broker
-            {
-               Broker();
-
-               template< typename... Args>
-               Broker( Args&& ...args) : Broker( broker::default_handler( std::forward< Args>( args)...)) {}
-
-               ~Broker();
-
-            private:
-
-               Broker( reply::Handler handler);
-
+               State m_state;
                ipc::Replier m_replier;
                ipc::Link m_broker_replier_link;
             };
 
             namespace transaction
             {
-               namespace manager
+
+
+               struct Manager
                {
+                  Manager();
+
+                  template< typename... Args>
+                  Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
+
+               private:
+
                   reply::Handler default_handler();
 
                   template< typename... Args>
@@ -205,16 +246,6 @@ namespace casual
                      result.insert( std::forward< Args>( args)...);
                      return result;
                   }
-
-               } // manager
-
-
-               struct Manager
-               {
-                  Manager();
-
-                  template< typename... Args>
-                  Manager( Args&& ...args) : Manager( broker::default_handler( std::forward< Args>( args)...)) {}
 
                   Manager( reply::Handler handler);
 
