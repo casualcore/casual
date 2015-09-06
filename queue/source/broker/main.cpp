@@ -24,7 +24,8 @@ int main( int argc, char **argv)
          common::Arguments parser;
 
          parser.add(
-               common::argument::directive( {"-c", "--configuration"}, "queue configuration file", settings.configuration)
+               common::argument::directive( {"-c", "--configuration"}, "queue configuration file", settings.configuration),
+               common::argument::directive( {"-g", "--group-executable"}, "", settings.group_executable)
          );
 
          parser.parse( argc, argv);

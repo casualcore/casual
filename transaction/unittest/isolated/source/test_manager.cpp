@@ -308,7 +308,7 @@ namespace casual
                         state::resource::Proxy::Instance instance;
                         instance.id = proxy.id;
                         instance.process = mockup.proxy.process();
-                        instance.state = state::resource::Proxy::Instance::State::started;
+                        instance.state( state::resource::Proxy::Instance::State::started);
 
                         proxy.instances.push_back( std::move( instance));
 
@@ -398,7 +398,7 @@ namespace casual
          {
             for( auto& instance : proxy.instances)
             {
-               EXPECT_TRUE( instance.state == state::resource::Proxy::Instance::State::idle);
+               EXPECT_TRUE( instance.state() == state::resource::Proxy::Instance::State::idle);
             }
          }
       }
@@ -650,61 +650,6 @@ namespace casual
                EXPECT_TRUE( reply.stage == common::message::transaction::rollback::Reply::Stage::rollback);
                EXPECT_TRUE( reply.trid == trid);
                EXPECT_TRUE( reply.state == XA_OK);
-            }
-         }
-
-         auto trans = domain.state.log.select( trid);
-         EXPECT_TRUE( trans.empty());
-      }
-
-
-      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved_10ms_timeout___expect__timeout_rollback_XAER_NOTA)
-      {
-
-         local::domain_1 domain;
-
-         common::transaction::ID trid;
-
-
-         {
-            local::Manager manager{ domain.state};
-
-            common::mockup::ipc::Instance caller{ 500};
-
-            // begin
-            {
-               auto reply = local::mockup::begin( caller, std::chrono::milliseconds{ 10});
-               trid = reply.trid;
-            }
-
-            // involved
-            {
-               common::message::transaction::resource::Involved message;
-               message.trid = trid;
-               message.process = caller.process();
-               message.resources = { domain.state.resources.at( 0).id};
-
-               local::mockup::send::tm( message);
-            }
-
-            // commit
-            {
-
-               common::process::sleep( std::chrono::milliseconds{ 20});
-
-               auto correlation = local::mockup::commit::request( caller, trid);
-
-
-               //
-               // We expect timeout
-               //
-               {
-                  auto reply = local::mockup::commit::reply( caller, correlation);
-
-                  EXPECT_TRUE( reply.stage == common::message::transaction::commit::Reply::Stage::error);
-                  EXPECT_TRUE( reply.trid == trid);
-                  EXPECT_TRUE( reply.state == XAER_NOTA || reply.state == XAER_PROTO);
-               }
             }
          }
 

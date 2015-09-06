@@ -122,6 +122,11 @@ namespace casual
       namespace directory
       {
          //!
+         //! @return the system temporary directory. on linux /tmp
+         //!
+         std::string temporary();
+
+         //!
          //! @return the current directory
          //!
          std::string current();

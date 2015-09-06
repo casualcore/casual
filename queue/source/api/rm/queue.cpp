@@ -151,7 +151,6 @@ namespace casual
                      request.message.properties = message.attributes.properties;
                      request.message.reply = message.attributes.reply;
                      request.message.avalible = message.attributes.available;
-                     //request.message.id = common::Uuid::make();
 
                      auto group = lookup();
 
@@ -159,13 +158,12 @@ namespace casual
                      {
                         throw common::exception::invalid::Argument{ "failed to look up queue: " + queue};
                      }
-
-                     common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
-
-
-                     casual::common::queue::blocking::Send send;
                      request.queue = group.queue;
 
+                     common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
+                     common::log::internal::queue << "enqueues - request: " << request << std::endl;
+
+                     casual::common::queue::blocking::Send send;
                      return send( group.process.queue, request);
                   };
 

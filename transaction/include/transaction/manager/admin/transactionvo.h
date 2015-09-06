@@ -49,13 +49,19 @@ namespace casual
 
                id_type id;
                Process process;
+               std::size_t invoked = 0;
                State state = State::absent;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( id);
                   archive & CASUAL_MAKE_NVP( process);
+                  archive & CASUAL_MAKE_NVP( state);
+                  archive & CASUAL_MAKE_NVP( invoked);
                })
+
+               inline friend bool operator < ( const Instance& lhs,  const Instance& rhs) { return lhs.id < rhs.id;}
+
             };
 
 
@@ -66,6 +72,7 @@ namespace casual
                std::string openinfo;
                std::string closeinfo;
                std::size_t concurency;
+               std::size_t invoked = 0;
 
                std::vector< Instance> instances;
 
@@ -76,8 +83,11 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( openinfo);
                   archive & CASUAL_MAKE_NVP( closeinfo);
                   archive & CASUAL_MAKE_NVP( concurency);
+                  archive & CASUAL_MAKE_NVP( invoked);
                   archive & CASUAL_MAKE_NVP( instances);
                })
+
+               inline friend bool operator < ( const Proxy& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
             };
          } // resource
 
@@ -169,6 +179,25 @@ namespace casual
             })
           };
 
+         namespace update
+         {
+            struct Instances
+            {
+               resource::id_type id;
+               std::size_t instances;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( instances);
+               })
+
+               inline friend bool operator == ( const Instances& lhs, const Instances& rhs) { return lhs.id == rhs.id;}
+               inline friend bool operator < ( const Instances& lhs, const Instances& rhs) { return lhs.id < rhs.id;}
+            };
+
+
+         } // update
 
       } // vo
 

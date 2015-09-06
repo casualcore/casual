@@ -98,41 +98,6 @@ namespace casual
          EXPECT_TRUE( rows.at( 0).state == Log::State::cPrepared);
       }
 
-      TEST( casual_transaction_log, one_begin__0us_timoeut__expect_NO_timeout)
-      {
-         Log log( ":memory:");
-
-         auto begin = local::begin_request();
-         begin.timeout = std::chrono::microseconds{ 0};
-
-         log.begin( begin);
-
-         EXPECT_TRUE( log.deadline() == common::platform::time_point::max());
-
-         auto trans = log.passed( common::platform::clock_type::now() - begin.timeout - std::chrono::seconds{ 1});
-
-         EXPECT_TRUE( trans.empty()) << "size: " << trans.size() << std::endl;
-      }
-
-      TEST( casual_transaction_log, one_begin__10us_timoeut__expect_timeout)
-      {
-         Log log( ":memory:");
-
-         auto begin = local::begin_request();
-         begin.timeout = std::chrono::microseconds{ 10};
-
-         log.begin( begin);
-
-         auto deadline = log.deadline();
-         EXPECT_TRUE( deadline != common::platform::time_point::max());
-
-         auto trans = log.passed( common::platform::clock_type::now());
-
-         ASSERT_TRUE( trans.size() == 1) << "trans.size(): " << trans.size() << std::endl;
-         EXPECT_TRUE( trans.front() == begin.trid) << "trans.front(): " << trans.front() << std::endl;
-
-      }
-
 
    } // transaction
 } // casual

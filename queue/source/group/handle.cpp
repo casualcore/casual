@@ -13,6 +13,10 @@
 #include "common/trace.h"
 #include "common/error.h"
 
+
+// todo: temp
+#include <iostream>
+
 namespace casual
 {
 
@@ -96,6 +100,8 @@ namespace casual
             {
                void Process::operator() ( const common::message::dead::process::Event& message)
                {
+                  common::trace::Scope trace{ "queue::handle::dead::Process", common::log::internal::queue};
+
                   //
                   // We check and do some clean up, if the dead process has any pending replies.
                   //
@@ -112,6 +118,8 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::information::queues::request", common::log::internal::queue};
+
                      common::message::queue::information::queues::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
@@ -127,6 +135,8 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::information::messages::request", common::log::internal::queue};
+
                      common::message::queue::information::messages::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
@@ -144,6 +154,8 @@ namespace casual
             {
                void Request::operator () ( message_type& message)
                {
+                  common::trace::Scope trace{ "queue::handle::enqueue::request", common::log::internal::queue};
+
                   try
                   {
                      auto reply = m_state.queuebase.enqueue( message);
@@ -261,6 +273,8 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::transaction::commit::Request", common::log::internal::queue};
+
                      common::message::transaction::resource::commit::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
@@ -291,6 +305,8 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::transaction::rollback::Request", common::log::internal::queue};
+
                      common::message::transaction::resource::rollback::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();

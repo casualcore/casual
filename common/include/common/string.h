@@ -184,9 +184,9 @@ namespace casual
 		   }
 
 		   template< typename T>
-         std::string name( T&&)
+         std::string name( T&& value)
          {
-            return internal::name( typeid( T));
+            return internal::name( typeid( value));
          }
 
       } // type

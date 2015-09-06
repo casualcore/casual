@@ -5,6 +5,7 @@
 #include "transaction/manager/admin/transform.h"
 #include "transaction/manager/state.h"
 #include "transaction/manager/manager.h"
+#include "transaction/manager/action.h"
 
 //
 // xatmi
@@ -79,6 +80,37 @@ namespace casual
                reply.flags);
          }
 
+         void update_instances( TPSVCINFO *serviceInfo, State& state)
+         {
+            casual::sf::service::reply::State reply;
+
+            try
+            {
+               auto service_io = local::server->createService( serviceInfo);
+
+               std::vector< vo::update::Instances> instances;
+
+               service_io >> CASUAL_MAKE_NVP( instances);
+
+               auto serviceReturn = action::resource::insances( state, std::move( instances));
+
+               service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+               reply = service_io.finalize();
+            }
+            catch( ...)
+            {
+               local::server->handleException( serviceInfo, reply);
+            }
+
+            tpreturn(
+               reply.value,
+               reply.code,
+               reply.data,
+               reply.size,
+               reply.flags);
+         }
+
 
          common::server::Arguments services( State& state)
          {
@@ -89,6 +121,10 @@ namespace casual
 
             result.services.emplace_back( ".casual.transaction.state",
                   std::bind( &transaction_state, std::placeholders::_1, std::ref( state)),
+                  common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+
+            result.services.emplace_back( ".casual.transaction.update.instances",
+                  std::bind( &update_instances, std::placeholders::_1, std::ref( state)),
                   common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
 
             return result;

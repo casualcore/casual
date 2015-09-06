@@ -105,8 +105,8 @@ namespace casual
                trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
 
                common::range::for_each(
-                  common::range::make( m_state.resources),
-                  action::boot::Proxie( m_state));
+                  m_state.resources,
+                  action::resource::Instances( m_state));
 
             }
 
@@ -197,7 +197,7 @@ namespace casual
                common::log::internal::transaction << "start message pump\n";
 
 
-               queue::blocking::Reader queueReader{ ipc, state};
+
 
                while( true)
                {
@@ -211,22 +211,14 @@ namespace casual
                         //
                         // We can only block if our backlog is empty
                         //
+                        queue::blocking::Reader queueReader{ ipc, state};
 
-                        try
-                        {
-                           common::signal::timer::Deadline deadline{ state.log.deadline()};
+                        //
+                        // Removed transaction-timeout from TM, since the semantics are not clear
+                        // see commit 559916d9b84e4f84717cead8f2ee7e3d9fd561cd for previous implementation.
+                        //
+                        handler( queueReader.next());
 
-                           handler( queueReader.next());
-                        }
-                        catch( const exception::signal::Timeout&)
-                        {
-                           //
-                           // We've got a transaction timeout.
-                           // casual doesn't really care, but to play nice with RM's and let them release resources
-                           // and such, we roll-back every transaction that has reached it's deadline.
-                           //
-                           action::timeout( state);
-                        }
                      }
 
 

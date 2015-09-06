@@ -9,6 +9,7 @@
 
 #include "common/marshal/binary.h"
 #include "common/message/service.h"
+#include "common/message/queue.h"
 
 
 #include "common/transaction/id.h"
@@ -207,6 +208,30 @@ namespace casual
                EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
 
             }
+
+         }
+
+         TEST( casual_common_marshal, enqueue_request)
+         {
+            platform::binary_type buffer;
+
+            common::message::queue::enqueue::Request source;
+
+            {
+               source.process = process::handle();
+               source.message.payload = { 0, 2, 3, 4, 2, 45, 45, 2, 3};
+            }
+
+            output::Binary output( buffer);
+            output & source;
+
+            input::Binary input( buffer);
+            common::message::queue::enqueue::Request target;
+
+            input & target;
+
+            EXPECT_TRUE( source.process == target.process);
+            EXPECT_TRUE( source.message.payload == target.message.payload);
 
          }
       }

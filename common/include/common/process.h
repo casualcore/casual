@@ -63,7 +63,12 @@ namespace casual
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
             inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
-            inline friend bool operator < ( const Handle& lhs, const Handle& rhs) { return lhs.pid < rhs.pid;}
+            inline friend bool operator < ( const Handle& lhs, const Handle& rhs)
+            {
+               if( lhs.pid == rhs.pid)
+                  return lhs.queue < rhs.queue;
+               return lhs.pid < rhs.pid;
+            }
 
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
 
@@ -195,10 +200,30 @@ namespace casual
          bool terminate( platform::pid_type pid);
 
          //!
-         //!
+         //! @deprecated only used by broker, and should be moved there...
          //!
          file::scoped::Path singleton( std::string queue_id_file);
 
+         //!
+         //! Asks broker for the handle to a registered 'singleton' server(process)
+         //!
+         //! if wait is true (default) broker will not send a response until the requested server
+         //!  has register.
+         //!
+         //! @return a handle to the requested server if found, or a 'null' handle if @p wait is false
+         //!  and no server was found
+         //!
+         Handle singleton( const Uuid& identification, bool wait = true);
+
+
+         //!
+         //! ping a server that owns the @p queue
+         //!
+         //! @note will block
+         //!
+         //! @return the process handle
+         //!
+         Handle ping( platform::queue_id_type queue);
 
          namespace lifetime
          {
