@@ -52,7 +52,8 @@ namespace casual
 
             void process( common::process::lifetime::Exit death);
 
-
+            std::string group_executable;
+            std::string configuration;
 
             std::vector< Group> groups;
 

@@ -30,6 +30,7 @@ namespace casual
             {
 
                common::platform::queue_id_type id();
+               common::platform::queue_id_type initialize();
 
             } // queue
 

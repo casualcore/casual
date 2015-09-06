@@ -41,6 +41,23 @@ namespace casual
 
                namespace transform
                {
+
+                  State state( const Settings& settings)
+                  {
+                     State result;
+
+                     if( settings.group_executable.empty())
+                     {
+                        result.group_executable = casual::common::environment::directory::casual() + "/bin/casual-queue-group";
+                     }
+                     else
+                     {
+                        result.group_executable = std::move( settings.group_executable);
+                     }
+
+                     return result;
+                  }
+
                   struct Queue
                   {
                      common::message::queue::Queue operator() ( const config::queue::Queue& value) const
@@ -69,7 +86,7 @@ namespace casual
                      queueGroup.queuebase = group.queuebase;
 
                      queueGroup.process.pid = casual::common::process::spawn(
-                        casual::common::environment::directory::casual() + "/bin/casual-queue-group",
+                        m_state.group_executable,
                         { "--queuebase", group.queuebase, "--name", group.name});
 
 
@@ -205,12 +222,14 @@ namespace casual
 
 
 
-      Broker::Broker( broker::Settings settings)
+      Broker::Broker( broker::Settings settings) : m_state{ broker::local::transform::state( settings)}
       {
          //
          // Will throw if another queue-broker is up and running.
          //
          common::server::connect( environment::broker::identification());
+
+
 
          if( ! settings.configuration.empty())
          {

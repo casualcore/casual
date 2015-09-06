@@ -32,29 +32,44 @@ namespace casual
       {
          namespace
          {
+
             struct Broker
             {
 
                Broker( const std::string& configuration)
-                  : m_pid{ 0}, m_filename{ common::file::name::unique( common::directory::temporary() + '/', ".yaml")}
+                  : m_filename{ common::file::name::unique( common::directory::temporary() + '/', ".yaml")}
                {
                   {
                      std::ofstream file{ m_filename};
                      file << configuration;
                   }
 
-                  m_pid = common::process::spawn( "./bin/casual-queue-broker", { "-c", m_filename}, {});
+                  m_process.pid = common::process::spawn( "./bin/casual-queue-broker",
+                        { "-c", m_filename,
+                          "-g", "./bin/casual-queue-group",
+                        }, {});
+
+                  //
+                  // We need to re-initialize the casual-queue ipc-queue, since it's only done ones otherwise
+                  //
+                  m_process.queue = queue::environment::broker::queue::initialize();
+
+
+                  //
+                  // We need to wait until the queue-broker is up and running. We send a ping.
+                  //
+                  EXPECT_TRUE( common::process::ping( m_process.queue) == m_process);
                }
 
                ~Broker()
                {
-                  common::process::lifetime::terminate( { m_pid});
+                  common::process::lifetime::terminate( { m_process.pid});
                }
 
-               common::platform::pid_type pid() const { return m_pid;}
+               const common::process::Handle& process() const { return m_process;}
 
             private:
-               common::platform::pid_type m_pid;
+               common::process::Handle m_process;
                common::file::scoped::Path m_filename;
 
             };
@@ -66,6 +81,7 @@ namespace casual
                 {
                    common::transaction::Resource resource{ "casual-queue-rm", &casual_queue_xa_switch_dynamic};
                    common::transaction::Context::instance().set( { resource});
+
                 }
 
                common::mockup::domain::Broker broker;
@@ -158,24 +174,11 @@ domain:
 
 
 
+
       TEST( casual_queue, broker_startup)
       {
          local::Domain domain{ local::configuration()};
 
-         //
-         // check that the queue-broker has started
-         //
-         auto process = common::process::singleton( queue::environment::broker::identification());
-
-         EXPECT_TRUE( process.pid == domain.queue_broker.pid());
-
-         //
-         // We need to wait until the queue-broker is up and running. We send a ping.
-         //
-         {
-            process = common::process::ping( process.queue);
-            EXPECT_TRUE( process.pid == domain.queue_broker.pid());
-         }
 
          auto state = local::call::state();
 
@@ -187,22 +190,11 @@ domain:
       {
          local::Domain domain{ local::configuration()};
 
-         auto process = common::process::singleton( queue::environment::broker::identification());
-
-
-
-         EXPECT_TRUE( process.pid == domain.queue_broker.pid());
-
-         //
-         // We need to wait until the queue-broker is up and running. We send a ping.
-         //
-         {
-            process = common::process::ping( process.queue);
-            EXPECT_TRUE( process.pid == domain.queue_broker.pid());
-         }
 
          const std::string payload{ "some message"};
          queue::Message message;
+         message.payload.type.type = common::buffer::type::binary().name;
+         message.payload.type.subtype = common::buffer::type::binary().subname;
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::rm::enqueue( "queueA1", message);
@@ -214,20 +206,6 @@ domain:
       TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)
       {
          local::Domain domain{ local::configuration()};
-
-         auto process = common::process::singleton( queue::environment::broker::identification());
-
-
-
-         EXPECT_TRUE( process.pid == domain.queue_broker.pid());
-
-         //
-         // We need to wait until the queue-broker is up and running. We send a ping.
-         //
-         {
-            process = common::process::ping( process.queue);
-            EXPECT_TRUE( process.pid == domain.queue_broker.pid());
-         }
 
          auto count = 5;
          while( count-- > 0)

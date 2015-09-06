@@ -47,15 +47,28 @@ namespace casual
 
                         return reply.process.queue;
                      }
+
+                     common::platform::queue_id_type& id()
+                     {
+                        static auto id = local::initialize_broker_queue_id();
+                        return id;
+                     }
                   }
                }
 
 
                common::platform::queue_id_type id()
                {
-                  static const auto id = local::initialize_broker_queue_id();
-                  return id;
+                  return local::id();
                }
+
+               common::platform::queue_id_type initialize()
+               {
+                  local::id() = local::initialize_broker_queue_id();
+                  return id();
+               }
+
+
 
 
             } // queue
