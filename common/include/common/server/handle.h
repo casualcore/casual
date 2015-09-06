@@ -512,7 +512,10 @@ namespace casual
                         result.cd = message.descriptor;
                         result.flags = message.flags;
 
-                        result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));
+                        //
+                        // This is the only place where we use adopt
+                        //
+                        result.data = buffer::pool::Holder::instance().adopt( std::move( message.buffer));
 
                         return result;
                      }

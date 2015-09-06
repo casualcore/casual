@@ -228,6 +228,13 @@ namespace casual
 
                void deallocate( platform::const_raw_buffer_type handle);
 
+               //!
+               //! Adopts the payload in 'service-invoke' context. So we keep track of
+               //! inbound buffer (which is 'special' in XATMI). Otherwise it's the same semantics
+               //! as insert
+               //!
+               platform::raw_buffer_type adopt( Payload&& payload);
+
                platform::raw_buffer_type insert( Payload&& payload);
 
                payload::Send get( platform::const_raw_buffer_type handle);

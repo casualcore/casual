@@ -103,16 +103,8 @@ namespace casual
                }
             }
 
-            platform::raw_buffer_type Holder::insert( Payload&& payload)
+            platform::raw_buffer_type Holder::adopt( Payload&& payload)
             {
-               log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
-                     << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
-
-               if( payload.null())
-               {
-                  m_inbound = nullptr;
-                  return m_inbound;
-               }
 
                //
                // This is the only place where a buffer is consumed by the pool, hence can only happen
@@ -121,9 +113,22 @@ namespace casual
                // Keep track of the inbound buffer given to the user. This is a
                // 'special' buffer according to the XATMI-spec.
                //
-               m_inbound = find( payload.type).insert( std::move( payload));
+               m_inbound = insert( std::move( payload));
 
                return m_inbound;
+            }
+
+            platform::raw_buffer_type Holder::insert( Payload&& payload)
+            {
+               log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
+                     << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
+
+               if( payload.null())
+               {
+                  return nullptr;
+               }
+
+               return find( payload.type).insert( std::move( payload));
             }
 
             payload::Send Holder::get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size)
