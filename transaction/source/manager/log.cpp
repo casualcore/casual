@@ -108,11 +108,6 @@ namespace casual
 
          m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ? AND bqual = ?; ");
 
-
-         m_statement.deadline.earliest = m_connection.precompile( R"( SELECT MIN( deadline) FROM trans WHERE state = 10; )");
-
-         m_statement.deadline.transactions = m_connection.precompile( R"( SELECT gtrid, bqual, format, pid FROM trans WHERE deadline < :deadline AND state = 10)");
-
       }
 
       void Log::begin( const common::message::transaction::begin::Request& request)
@@ -170,42 +165,6 @@ namespace casual
             common::transaction::branch( trid));
       }
 
-      void Log::timeout( const common::transaction::ID& xid)
-      {
-         state( xid, State::cTimeout);
-      }
-
-      common::platform::time_point Log::deadline()
-      {
-         auto query = m_statement.deadline.earliest.query();
-
-         sql::database::Row row;
-
-         if( query.fetch( row) && ! row.null( 0))
-         {
-            auto dealine = row.get< common::platform::time_point::rep>( 0);
-
-            return common::platform::time_point{ std::chrono::microseconds{ dealine}};
-         }
-         return common::platform::time_point::max();
-      }
-
-      std::vector< common::transaction::ID> Log::passed( const common::platform::time_point& now)
-      {
-         std::vector< common::transaction::ID> result;
-
-         auto query = m_statement.deadline.transactions.query(
-               std::chrono::time_point_cast< std::chrono::microseconds>( now).time_since_epoch().count());
-
-         sql::database::Row row;
-
-         while( query.fetch( row))
-         {
-            result.push_back( local::transform::trid( row));
-         }
-
-         return result;
-      }
 
       std::vector< Log::Row> Log::select( const common::transaction::ID& id)
       {
