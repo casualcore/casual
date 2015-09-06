@@ -7,6 +7,7 @@
 
 #include "transaction/manager/action.h"
 #include "transaction/manager/handle.h"
+#include "transaction/manager/admin/transform.h"
 
 #include "common/ipc.h"
 #include "common/process.h"
@@ -87,38 +88,108 @@ namespace casual
 
 
 
-         namespace boot
+         namespace resource
          {
-            void Proxie::operator () ( state::resource::Proxy& proxy)
+
+            void Instances::operator () ( state::resource::Proxy& proxy)
             {
-               trace::internal::Scope trace( "boot::Proxie::operator()", common::log::internal::transaction);
+               trace::internal::Scope trace( "resource::Instances::operator()", common::log::internal::transaction);
 
-               for( auto index = proxy.concurency; index > 0; --index)
+               common::log::internal::transaction << "update instances for resource: " << proxy << std::endl;
+
+               auto count = static_cast< long>( proxy.concurency - proxy.instances.size());
+
+               if( count > 0)
                {
-                  auto& info = m_state.xaConfig.at( proxy.key);
+                  while( count-- > 0)
+                  {
+                     auto& info = m_state.xaConfig.at( proxy.key);
 
-                  state::resource::Proxy::Instance instance;//( proxy.id);
-                  instance.id = proxy.id;
+                     state::resource::Proxy::Instance instance;//( proxy.id);
+                     instance.id = proxy.id;
 
-                  instance.process.pid = process::spawn(
-                        info.server,
+                     instance.process.pid = process::spawn(
+                           info.server,
+                           {
+                                 "--tm-queue", std::to_string( ipc::receive::id()),
+                                 "--rm-key", info.key,
+                                 "--rm-openinfo", proxy.openinfo,
+                                 "--rm-closeinfo", proxy.closeinfo,
+                                 "--rm-id", std::to_string( proxy.id),
+                                 "--domain", common::environment::domain::name()
+                           }
+                        );
+
+                     instance.state( state::resource::Proxy::Instance::State::started);
+
+                     proxy.instances.push_back( std::move( instance));
+                  }
+               }
+               else
+               {
+                  auto end = std::end( proxy.instances);
+
+                  for( auto& instance : range::make( end + count, end))
+                  {
+                     if( instance.state() != state::resource::Proxy::Instance::State::shutdown)
+                     {
+                        log::internal::transaction << "shutdown instance: " << instance << std::endl;
+
+                        instance.state( state::resource::Proxy::Instance::State::shutdown);
+                        queue::non_blocking::Send send{ m_state};
+
+                        if( ! send( instance.process.queue, message::shutdown::Request{}))
                         {
-                              "--tm-queue", std::to_string( ipc::receive::id()),
-                              "--rm-key", info.key,
-                              "--rm-openinfo", proxy.openinfo,
-                              "--rm-closeinfo", proxy.closeinfo,
-                              "--rm-id", std::to_string( proxy.id),
-                              "--domain", common::environment::domain::name()
+                           //
+                           // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
+                           // hope to send it later...
+                           //
+                           log::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
+
+                           m_state.persistentReplies.emplace_back( instance.process.queue, message::shutdown::Request{});
                         }
-                     );
-
-                  instance.state = state::resource::Proxy::Instance::State::started;
-
-                  proxy.instances.push_back( std::move( instance));
+                     }
+                     else
+                     {
+                        log::internal::transaction << "instance already in shutdown state - " << instance << std::endl;
+                     }
+                  }
                }
             }
 
-         } // boot
+            std::vector< vo::resource::Proxy> insances( State& state, std::vector< vo::update::Instances> instances)
+            {
+               std::vector< vo::resource::Proxy> result;
+
+               //
+               // Make sure we only update a specific RM one time
+               //
+               for( auto& directive : range::unique( range::sort( instances)))
+               {
+                  try
+                  {
+
+                     auto& resource = state.get_resource( directive.id);
+                     resource.concurency = directive.instances;
+
+                     Instances{ state}( resource);
+
+                     result.push_back( transform::resource::Proxy{}( resource));
+
+                  }
+                  catch( const common::exception::invalid::Argument&)
+                  {
+                     //
+                     // User did not use correct resource-id. We propagate this by not including
+                     // the resource in the result
+                     //
+                  }
+
+               }
+
+               return result;
+            }
+         } // resource
 
 
          namespace persistent

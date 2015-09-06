@@ -60,6 +60,26 @@ namespace casual
 
          namespace resource
          {
+            void Proxy::Instance::state( State state)
+            {
+               if( state == State::busy)
+               {
+                  assert( m_state != State::busy);
+
+                  ++invoked;
+               }
+
+               if( m_state != State::shutdown)
+               {
+                  m_state = state;
+               }
+            }
+
+            Proxy::Instance::State Proxy::Instance::state() const
+            {
+               return m_state;
+            }
+
             std::ostream& operator << ( std::ostream& out, const Proxy& value)
             {
                return out << "{ id: " << value.id
@@ -75,7 +95,7 @@ namespace casual
             {
                return out << "{ id: " << value.id
                      << ", process: " << value.process
-                     << ", state: " << value.state
+                     << ", state: " << value.state()
                      << '}';
             }
 
@@ -138,8 +158,8 @@ namespace casual
 
             bool Running::operator () ( const resource::Proxy::Instance& instance) const
             {
-               return instance.state == resource::Proxy::Instance::State::idle
-                     || instance.state == resource::Proxy::Instance::State::busy;
+               return instance.state() == resource::Proxy::Instance::State::idle
+                     || instance.state() == resource::Proxy::Instance::State::busy;
             }
 
          } // filter
@@ -293,7 +313,14 @@ namespace casual
 
             if( found)
             {
+               if( found->state() != state::resource::Proxy::Instance::State::shutdown)
+               {
+                  log::error << "resource proxy instance died - " << *found << std::endl;
+               }
+
+               resource.invoked += found->invoked;
                resource.instances.erase( found.first);
+
                log::internal::transaction << "remove dead process: " << death << std::endl;
                return;
             }

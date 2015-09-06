@@ -105,8 +105,8 @@ namespace casual
                trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
 
                common::range::for_each(
-                  common::range::make( m_state.resources),
-                  action::boot::Proxie( m_state));
+                  m_state.resources,
+                  action::resource::Instances( m_state));
 
             }
 

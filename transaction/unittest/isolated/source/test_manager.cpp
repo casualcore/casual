@@ -308,7 +308,7 @@ namespace casual
                         state::resource::Proxy::Instance instance;
                         instance.id = proxy.id;
                         instance.process = mockup.proxy.process();
-                        instance.state = state::resource::Proxy::Instance::State::started;
+                        instance.state( state::resource::Proxy::Instance::State::started);
 
                         proxy.instances.push_back( std::move( instance));
 
@@ -398,7 +398,7 @@ namespace casual
          {
             for( auto& instance : proxy.instances)
             {
-               EXPECT_TRUE( instance.state == state::resource::Proxy::Instance::State::idle);
+               EXPECT_TRUE( instance.state() == state::resource::Proxy::Instance::State::idle);
             }
          }
       }
