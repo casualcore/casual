@@ -1010,6 +1010,16 @@ namespace casual
             return result;
          }
 
+         template< typename R, typename F>
+         auto min( R&& range, F functor) -> decltype( make( range))
+         {
+            auto result = make( std::forward< R>( range));
+
+            result.first = std::min_element( std::begin( result), std::end( result), functor);
+
+            return result;
+         }
+
          //!
          //! @return true if all elements in @p other is found in @p source
          //!

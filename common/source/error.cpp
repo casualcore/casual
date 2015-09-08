@@ -71,20 +71,6 @@ namespace casual
                log::error << exception.what() << std::endl;
                return TX_FAIL;
             }
-
-            /*
-            catch( const exception::tx::severity::Information& exception)
-            {
-               log::information << transaction::txError( exception.code()) << " - " << exception.what();
-               return exception.code();
-            }
-            catch( const exception::tx::severity::User& exception)
-            {
-               log::debug << transaction::txError( exception.code()) << " - " << exception.what();
-               return exception.code();
-            }
-            */
-
             catch( const exception::code::base& exception)
             {
                log::stream::get( exception.category()) << exception.tag_name() << " - " << exception << std::endl;
@@ -97,7 +83,7 @@ namespace casual
             }
             catch( const std::exception& exception)
             {
-               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << " (" << type::name( exception) << ')' << std::endl;
                return TPESYSTEM;
             }
             catch( ...)

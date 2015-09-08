@@ -51,7 +51,13 @@ namespace casual
 
                   id_type id;
                   common::process::Handle process;
-                  State state = State::absent;
+                  std::size_t invoked = 0;
+
+                  void state( State state);
+                  State state() const;
+
+               private:
+                  State m_state = State::absent;
 
                };
 
@@ -64,6 +70,12 @@ namespace casual
                std::string openinfo;
                std::string closeinfo;
                std::size_t concurency = 0;
+
+               //!
+               //! This 'counterä keep track of number of invocation for removed
+               //! instances, so we can give a better view for the operator.
+               //!
+               std::size_t invoked = 0;
 
                std::vector< Instance> instances;
 
@@ -92,7 +104,7 @@ namespace casual
                {
                   void operator () ( Proxy::Instance& instance) const
                   {
-                     instance.state = state;
+                     instance.state( state);
                   }
                };
             } // update
@@ -147,7 +159,7 @@ namespace casual
                   bool operator () ( const pending::Request& value) const
                   {
                      return common::range::any_of(
-                           common::range::make( value.resources), [=]( id_type id){ return id == m_id;});
+                           value.resources, [=]( id_type id){ return id == m_id;});
                   }
 
                   id_type m_id;
@@ -459,7 +471,7 @@ namespace casual
                //!
                bool operator () ( const resource::Proxy::Instance& instance) const
                {
-                  return instance.state == resource::Proxy::Instance::State::idle;
+                  return instance.state() == resource::Proxy::Instance::State::idle;
                }
             };
 

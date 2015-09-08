@@ -547,6 +547,26 @@ namespace casual
             return result;
          }
 
+
+
+         Handle singleton( const Uuid& identification, bool wait)
+         {
+            message::lookup::process::Request request;
+            request.directive = wait ? message::lookup::process::Request::Directive::wait : message::lookup::process::Request::Directive::direct;
+            request.identification = identification;
+            request.process = process::handle();
+
+            return queue::blocking::call( ipc::broker::id(), request).process;
+         }
+
+         Handle ping( platform::queue_id_type queue)
+         {
+            message::server::ping::Request request;
+            request.process = process::handle();
+
+            return queue::blocking::call( queue, request).process;
+         }
+
          namespace lifetime
          {
             Exit::operator bool () const { return pid != 0;}

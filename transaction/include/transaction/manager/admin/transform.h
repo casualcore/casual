@@ -18,6 +18,20 @@ namespace casual
       namespace transform
       {
 
+         namespace resource
+         {
+            struct Instance
+            {
+               vo::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const;
+            };
+
+            struct Proxy
+            {
+               vo::resource::Proxy operator () ( const state::resource::Proxy& value) const;
+
+            };
+
+         } // resource
 
          vo::State state( const State& state);
 

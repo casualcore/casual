@@ -64,37 +64,32 @@ namespace casual
 
          namespace resource
          {
-            struct Instance
+
+            vo::resource::Instance Instance::operator () ( const state::resource::Proxy::Instance& value) const
             {
-               vo::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const
-               {
-                  vo::resource::Instance result;
+               vo::resource::Instance result;
 
-                  result.id = value.id;
-                  result.process = transform::Process{}( value.process);
-                  result.state = static_cast< vo::resource::Instance::State>( value.state);
+               result.id = value.id;
+               result.process = transform::Process{}( value.process);
+               result.state = static_cast< vo::resource::Instance::State>( value.state());
+               result.invoked = value.invoked;
 
-                  return result;
-               }
-            };
+               return result;
+            }
 
-            struct Proxy
+            vo::resource::Proxy Proxy::operator () ( const state::resource::Proxy& value) const
             {
-               vo::resource::Proxy operator () ( const state::resource::Proxy& value) const
-               {
-                  vo::resource::Proxy result;
+               vo::resource::Proxy result;
 
-                  result.id = value.id;
-                  result.key = value.key;
-                  result.openinfo = value.openinfo;
-                  result.closeinfo = value.closeinfo;
+               result.id = value.id;
+               result.key = value.key;
+               result.openinfo = value.openinfo;
+               result.closeinfo = value.closeinfo;
 
-                  common::range::transform( value.instances, result.instances, Instance{});
+               common::range::transform( value.instances, result.instances, Instance{});
 
-                  return result;
-               }
-
-            };
+               return result;
+            }
 
          } // resource
 

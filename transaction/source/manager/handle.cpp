@@ -172,7 +172,7 @@ namespace casual
 
                      if( queue.send( message))
                      {
-                        instance.state = state::resource::Proxy::Instance::State::busy;
+                        instance.state( state::resource::Proxy::Instance::State::busy);
                         return true;
                      }
                      return false;
@@ -234,7 +234,7 @@ namespace casual
                   try
                   {
                      auto& instance = state.get_instance( message.resource, message.process.pid);
-                     instance.state = newState;
+                     instance.state( newState);
                   }
                   catch( common::exception::invalid::Argument&)
                   {
@@ -436,14 +436,14 @@ namespace casual
 
                      if( message.state == XA_OK)
                      {
-                        instance.state = state::resource::Proxy::Instance::State::idle;
+                        instance.state( state::resource::Proxy::Instance::State::idle);
                         instance.process = std::move( message.process);
 
                      }
                      else
                      {
                         common::log::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
-                        instance.state = state::resource::Proxy::Instance::State::startupError;
+                        instance.state( state::resource::Proxy::Instance::State::startupError);
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
                      }

@@ -40,7 +40,7 @@ int main( int argc, char **argv)
       }
 
       casual::queue::group::Server server( std::move( settings));
-      server.start();
+      return server.start();
 
    }
    catch( ...)

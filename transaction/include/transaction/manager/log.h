@@ -53,18 +53,6 @@ namespace casual
 
          void remove( const common::transaction::ID& xid);
 
-         //!
-         //! Set transaction in timeout-mode
-         //!
-         void timeout( const common::transaction::ID& xid);
-
-         //!
-         //! @returns the earliest deadline there is.
-         //!
-         common::platform::time_point deadline();
-
-         std::vector< common::transaction::ID> passed( const common::platform::time_point& now);
-
 
          std::vector< Row> select( const common::transaction::ID& id);
 

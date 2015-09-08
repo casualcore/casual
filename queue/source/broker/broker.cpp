@@ -22,6 +22,7 @@
 #include "common/exception.h"
 #include "common/internal/log.h"
 
+#include "config/queue.h"
 
 #include <fstream>
 
@@ -40,6 +41,23 @@ namespace casual
 
                namespace transform
                {
+
+                  State state( const Settings& settings)
+                  {
+                     State result;
+
+                     if( settings.group_executable.empty())
+                     {
+                        result.group_executable = casual::common::environment::directory::casual() + "/bin/casual-queue-group";
+                     }
+                     else
+                     {
+                        result.group_executable = std::move( settings.group_executable);
+                     }
+
+                     return result;
+                  }
+
                   struct Queue
                   {
                      common::message::queue::Queue operator() ( const config::queue::Queue& value) const
@@ -68,11 +86,11 @@ namespace casual
                      queueGroup.queuebase = group.queuebase;
 
                      queueGroup.process.pid = casual::common::process::spawn(
-                        casual::common::environment::directory::casual() + "/bin/casual-queue-group",
+                        m_state.group_executable,
                         { "--queuebase", group.queuebase, "--name", group.name});
 
 
-                     broker::queue::blocking::Reader read{ common::ipc::receive::queue(), m_state};
+                     broker::queue::blocking::Reader read{ m_state.receive, m_state};
                      common::message::queue::connect::Request request;
                      read( request);
                      queueGroup.process.queue = request.process.queue;
@@ -102,7 +120,7 @@ namespace casual
                      casual::common::message::dispatch::Handler handler{
                         broker::handle::connect::Request{ state}};
 
-                     broker::queue::blocking::Reader read( casual::common::ipc::receive::queue(), state);
+                     broker::queue::blocking::Reader read( state.receive, state);
 
                      auto filter = handler.types();
 
@@ -118,74 +136,85 @@ namespace casual
          } // local
 
 
-         std::vector< common::platform::pid_type> State::processes() const
-         {
-            std::vector< common::platform::pid_type> result;
 
-            for( auto& group : groups)
+
+         namespace message
+         {
+            void pump( State& state)
             {
-               result.push_back( group.process.pid);
+               common::log::internal::queue << "qeueue broker start" << std::endl;
+
+               casual::common::message::dispatch::Handler handler{
+                  broker::handle::connect::Request{ state},
+                  broker::handle::shutdown::Request{ state},
+                  broker::handle::lookup::Request{ state},
+                  broker::handle::group::Involved{ state},
+                  broker::handle::transaction::commit::Request{ state},
+                  broker::handle::transaction::commit::Reply{ state},
+                  broker::handle::transaction::rollback::Request{ state},
+                  broker::handle::transaction::rollback::Reply{ state},
+                  //broker::handle::peek::queue::Request{ m_state},
+                  common::server::handle::basic_admin_call< broker::State>{
+                     state.receive, broker::admin::services( state), state, environment::broker::identification()},
+                  common::message::handle::ping( state),
+               };
+
+               broker::queue::blocking::Reader blockedRead( state.receive, state);
+
+               common::log::information << "casual-queue-broker is on-line" << std::endl;
+
+
+               while( true)
+               {
+                  handler( blockedRead.next());
+               }
+
+            }
+
+         } // message
+
+         std::vector< common::message::queue::information::queues::Reply> queues( State& state)
+         {
+            common::trace::internal::Scope trace( "broker::queues", common::log::internal::queue);
+
+            std::vector< common::message::queue::information::queues::Reply> replies;
+
+            common::queue::batch(
+                  broker::queue::blocking::Send{ state}, state.groups,
+                  broker::queue::blocking::Reader{ state.receive, state}, replies,
+                     []( const broker::State::Group& group)
+                     {
+                        common::message::queue::information::queues::Request request;
+                        request.process = common::process::handle();
+                        return std::make_tuple( group.process.queue, std::move( request));
+                     });
+
+            return replies;
+         }
+
+         common::message::queue::information::messages::Reply messages( State& state, const std::string& queue)
+         {
+            common::message::queue::information::messages::Reply result;
+
+            auto found = common::range::find( state.queues, queue);
+
+            if( found)
+            {
+               broker::queue::blocking::Send send{ state};
+
+               common::message::queue::information::messages::Request request;
+               request.process = common::process::handle();
+               request.qid = found->second.queue;
+
+               auto id = send( found->second.process.queue, request);
+
+
+               broker::queue::blocking::Reader receive{ state.receive, state};
+               receive( result, id);
             }
 
             return result;
          }
-
-         void State::process( common::process::lifetime::Exit death)
-         {
-            {
-               auto found = common::range::find_if( groups, [=]( const Group& g){
-                  return g.process.pid == death.pid;
-               });
-
-               if( found)
-               {
-                  groups.erase( found.first);
-               }
-               else
-               {
-                  // error?
-               }
-            }
-
-            //
-            // Remove all queues for the group
-            //
-            {
-
-               auto predicate = [=]( decltype( *queues.begin())& value){
-                  return value.second.process.pid == death.pid;
-               };
-
-               auto range = common::range::make( queues);
-
-               while( range)
-               {
-                  range = common::range::find_if( range, predicate);
-
-                  if( range)
-                  {
-                     queues.erase( range.first);
-                     range = common::range::make( queues);
-                  }
-               }
-            }
-            //
-            // Invalidate xa-requests
-            //
-            {
-               for( auto& corr : correlation)
-               {
-                  for( auto& reqeust : corr.second.requests)
-                  {
-                     if( reqeust.group.pid == death.pid && reqeust.state <= Correlation::State::pending)
-                     {
-                        reqeust.state = Correlation::State::error;
-                     }
-                  }
-               }
-            }
-         }
-
 
       } // broker
 
@@ -193,12 +222,14 @@ namespace casual
 
 
 
-      Broker::Broker( broker::Settings settings)
+      Broker::Broker( broker::Settings settings) : m_state{ broker::local::transform::state( settings)}
       {
          //
          // Will throw if another queue-broker is up and running.
          //
          common::server::connect( environment::broker::identification());
+
+
 
          if( ! settings.configuration.empty())
          {
@@ -232,87 +263,12 @@ namespace casual
 
       }
 
-
       void Broker::start()
       {
          common::log::internal::queue << "qeueue broker start" << std::endl;
 
-         casual::common::message::dispatch::Handler handler{
-            broker::handle::connect::Request{ m_state},
-            broker::handle::shutdown::Request{ m_state},
-            broker::handle::lookup::Request{ m_state},
-            broker::handle::group::Involved{ m_state},
-            broker::handle::transaction::commit::Request{ m_state},
-            broker::handle::transaction::commit::Reply{ m_state},
-            broker::handle::transaction::rollback::Request{ m_state},
-            broker::handle::transaction::rollback::Reply{ m_state},
-            //broker::handle::peek::queue::Request{ m_state},
-            common::server::handle::basic_admin_call< broker::State>{
-               broker::admin::Server::services( *this), m_state, environment::broker::identification()},
-            common::message::handle::ping( m_state),
-         };
-
-         broker::queue::blocking::Reader blockedRead( casual::common::ipc::receive::queue(), m_state);
-
-         common::log::information << "casual-queue-broker is on-line" << std::endl;
-
-
-         while( true)
-         {
-            handler( blockedRead.next());
-         }
-
+         broker::message::pump( m_state);
       }
-
-      const broker::State& Broker::state() const
-      {
-         return m_state;
-      }
-
-      std::vector< common::message::queue::information::queues::Reply> Broker::queues()
-      {
-         common::trace::internal::Scope trace( "Broker::queues", common::log::internal::queue);
-
-         std::vector< common::message::queue::information::queues::Reply> replies;
-
-         common::queue::batch(
-               broker::queue::blocking::Send{ m_state}, m_state.groups,
-               broker::queue::blocking::Reader{ casual::common::ipc::receive::queue(), m_state}, replies,
-                  []( const broker::State::Group& group)
-                  {
-                     common::message::queue::information::queues::Request request;
-                     request.process = common::process::handle();
-                     return std::make_tuple( group.process.queue, std::move( request));
-                  });
-
-         return replies;
-      }
-
-      common::message::queue::information::messages::Reply Broker::messages( const std::string& queue)
-      {
-         common::message::queue::information::messages::Reply result;
-
-         auto found = common::range::find( m_state.queues, queue);
-
-         if( found)
-         {
-            broker::queue::blocking::Send send{ m_state};
-
-            common::message::queue::information::messages::Request request;
-            request.process = common::process::handle();
-            request.qid = found->second.queue;
-
-            auto id = send( found->second.process.queue, request);
-
-
-            broker::queue::blocking::Reader receive{ casual::common::ipc::receive::queue(), m_state};
-            receive( result, id);
-         }
-
-         return result;
-      }
-
-
    } // queue
 
 } // casual
