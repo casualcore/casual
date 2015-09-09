@@ -95,9 +95,6 @@ namespace casual
          m_connection.execute(
             "CREATE INDEX IF NOT EXISTS i_xid_trans ON trans ( gtrid, bqual);" );
 
-         m_connection.execute(
-            "CREATE INDEX IF NOT EXISTS i_deadline_trans ON trans ( deadline);" );
-
 
          m_statement.begin = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
 

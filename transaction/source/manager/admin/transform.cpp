@@ -29,6 +29,32 @@ namespace casual
             }
          };
 
+
+         vo::Statistics Statistics::operator () ( const state::Statistics& value) const
+         {
+            vo::Statistics result;
+
+            result.min = value.min;
+            result.max = value.max;
+            result.total = value.total;
+            result.invoked = value.invoked;
+
+            return result;
+         }
+
+
+         vo::Stats Stats::operator () ( const state::Stats& value) const
+         {
+            vo::Stats result;
+
+            result.resource = Statistics{}( value.resource);
+            result.roundtrip = Statistics{}( value.roundtrip);
+
+            return result;
+         }
+
+
+
          struct Transaction
          {
             struct ID
@@ -72,7 +98,7 @@ namespace casual
                result.id = value.id;
                result.process = transform::Process{}( value.process);
                result.state = static_cast< vo::resource::Instance::State>( value.state());
-               result.invoked = value.invoked;
+               result.statistics = transform::Stats{}( value.statistics);
 
                return result;
             }
@@ -85,6 +111,7 @@ namespace casual
                result.key = value.key;
                result.openinfo = value.openinfo;
                result.closeinfo = value.closeinfo;
+               result.statistics = transform::Stats{}( value.statistics);
 
                common::range::transform( value.instances, result.instances, Instance{});
 
@@ -102,6 +129,8 @@ namespace casual
                   vo::pending::Request result;
 
                   result.resources = value.resources;
+                  result.correlation = value.message.correlation;
+                  result.type = value.message.type;
 
                   return result;
                }

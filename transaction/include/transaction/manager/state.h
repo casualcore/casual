@@ -31,6 +31,35 @@ namespace casual
 
       namespace state
       {
+         struct Statistics
+         {
+            Statistics();
+
+            std::chrono::microseconds min;
+            std::chrono::microseconds max;
+            std::chrono::microseconds total;
+            std::size_t invoked;
+
+            void start( common::platform::time_point start);
+            void end( common::platform::time_point end);
+
+            void time( common::platform::time_point start, common::platform::time_point end);
+
+
+            friend Statistics& operator += ( Statistics& lhs, const Statistics& rhs);
+
+         private:
+            common::platform::time_point m_start;
+         };
+
+         struct Stats
+         {
+            Statistics resource;
+            Statistics roundtrip;
+
+            friend Stats& operator += ( Stats& lhs, const Stats& rhs);
+         };
+
          namespace resource
          {
             struct Proxy
@@ -51,7 +80,8 @@ namespace casual
 
                   id_type id;
                   common::process::Handle process;
-                  std::size_t invoked = 0;
+
+                  Stats statistics;
 
                   void state( State state);
                   State state() const;
@@ -72,10 +102,10 @@ namespace casual
                std::size_t concurency = 0;
 
                //!
-               //! This 'counterä keep track of number of invocation for removed
+               //! This 'counterä' keep track of statistics for removed
                //! instances, so we can give a better view for the operator.
                //!
-               std::size_t invoked = 0;
+               Stats statistics;
 
                std::vector< Instance> instances;
 

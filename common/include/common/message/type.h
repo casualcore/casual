@@ -177,6 +177,17 @@ namespace casual
          } // flush
 
 
+         struct Statistics
+         {
+            platform::time_point start;
+            platform::time_point end;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               archive & start;
+               archive & end;
+            })
+         };
 
 
          //!

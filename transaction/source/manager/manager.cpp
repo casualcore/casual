@@ -52,25 +52,17 @@ namespace casual
 
          try
          {
-            std::vector< common::process::Handle> instances;
 
             for( auto& resource : m_state.resources)
             {
-               common::range::transform( resource.instances, instances, std::mem_fn( &state::resource::Proxy::Instance::process));
+               resource.concurency = 0;
             }
 
-            common::server::lifetime::shutdown( m_state, instances, {}, std::chrono::seconds( 1));
+            range::for_each( m_state.resources, action::resource::Instances{ m_state});
 
-            auto pids  = m_state.processes();
+            auto processes = m_state.processes();
 
-            if( pids.size() != 0)
-            {
-               common::log::error << "failed to shutdown resource proxies: " << range::make( pids) << " - action: abort" << std::endl;
-            }
-            else
-            {
-               common::log::information << "casual-transaction-manager off-line\n";
-            }
+            process::lifetime::wait( processes, std::chrono::milliseconds( processes.size() * 100));
 
          }
          catch( ...)

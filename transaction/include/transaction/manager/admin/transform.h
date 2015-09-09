@@ -18,6 +18,16 @@ namespace casual
       namespace transform
       {
 
+         struct Statistics
+         {
+            vo::Statistics operator () ( const state::Statistics& value) const;
+         };
+
+         struct Stats
+         {
+            vo::Stats operator () ( const state::Stats& value) const;
+         };
+
          namespace resource
          {
             struct Instance

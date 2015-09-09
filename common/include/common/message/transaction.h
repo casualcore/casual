@@ -242,11 +242,14 @@ namespace casual
                struct basic_reply : transaction::basic_reply< type>
                {
                   platform::resource::id_type resource = 0;
+                  Statistics statistics;
+
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      transaction::basic_reply< type>::marshal( archive);
                      archive & resource;
+                     archive & statistics;
                   })
                };
 

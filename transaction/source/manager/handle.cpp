@@ -235,6 +235,7 @@ namespace casual
                   {
                      auto& instance = state.get_instance( message.resource, message.process.pid);
                      instance.state( newState);
+                     instance.statistics.resource.time( message.statistics.start, message.statistics.end);
                   }
                   catch( common::exception::invalid::Argument&)
                   {
@@ -249,6 +250,7 @@ namespace casual
                         state.pendingRequests,
                         state::pending::filter::Request{ message.resource});
 
+                  instance::state( state, message, state::resource::Proxy::Instance::State::idle);
 
                   if( request)
                   {
@@ -259,6 +261,8 @@ namespace casual
 
                      if( queue.send( request->message))
                      {
+                        instance::state( state, message, state::resource::Proxy::Instance::State::busy);
+
                         request->resources.erase(
                            std::find(
                               std::begin( request->resources),
@@ -273,13 +277,7 @@ namespace casual
                      else
                      {
                         common::log::warning << "failed to send pending request to resource, although the instance (" << message.process <<  ") reported idle\n";
-
-                        instance::state( state, message, state::resource::Proxy::Instance::State::idle);
                      }
-                  }
-                  else
-                  {
-                     instance::state( state, message, state::resource::Proxy::Instance::State::idle);
                   }
                }
             } // instance
@@ -638,19 +636,24 @@ namespace casual
                         {
                            common::log::internal::transaction << "commit completed - " << transaction << " XA_OK\n";
 
-                           //
-                           // Send reply
-                           // TODO: We can't send reply directly without checking that the prepare-reply
-                           // has been sent (prepare-reply could be pending for persistent write).
-                           // For now, we do a delayed reply, so we're sure that the
-                           // commit-reply arrives after the prepare-reply
-                           //
-                           {
-                              auto reply = internal::transform::message< reply_type>( message);
-                              reply.correlation = transaction.correlation;
-                              reply.stage = reply_type::Stage::commit;
-                              reply.state = XA_OK;
+                           auto reply = internal::transform::message< reply_type>( message);
+                           reply.correlation = transaction.correlation;
+                           reply.stage = reply_type::Stage::commit;
+                           reply.state = XA_OK;
 
+                           if( transaction.resources.size() <= 1)
+                           {
+                              internal::send::reply( m_state, reply, transaction.trid.owner());
+                           }
+                           else
+                           {
+                              //
+                              // Send reply
+                              // TODO: We can't send reply directly without checking that the prepare-reply
+                              // has been sent (prepare-reply could be pending for persistent write).
+                              // For now, we do a delayed reply, so we're sure that the
+                              // commit-reply arrives after the prepare-reply
+                              //
                               internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
 

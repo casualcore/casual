@@ -474,7 +474,7 @@ namespace casual
                      }
 
                      auto reply = message::reverse::type( r);
-                     reply.state = reply.State::absent;
+                     reply.state = decltype( reply)::State::absent;
 
                      return local::result_set( r.process, reply);
                   },

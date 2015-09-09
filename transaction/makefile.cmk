@@ -96,9 +96,11 @@ install_headers.append( 'include/transaction/resource/proxy_server.h')
  
 LinkUnittest( 'bin/test-casual-transaction',
     [
+        Compile( 'unittest/isolated/source/test_admin.cpp'),
         Compile( 'unittest/isolated/source/test_configuration.cpp'),
         Compile( 'unittest/isolated/source/test_log.cpp'),
         Compile( 'unittest/isolated/source/test_manager.cpp'),
+        
     ],
     [ 
      manager_archive, 
