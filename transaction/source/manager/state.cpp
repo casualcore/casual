@@ -64,16 +64,16 @@ namespace casual
 
          }
 
-         void Statistics::start( common::platform::time_point start)
+         void Statistics::start( const common::platform::time_point& start)
          {
             m_start = start;
          }
-         void Statistics::end( common::platform::time_point end)
+         void Statistics::end( const common::platform::time_point& end)
          {
             time( m_start, end);
          }
 
-         void Statistics::time( common::platform::time_point start, common::platform::time_point end)
+         void Statistics::time( const common::platform::time_point& start, const common::platform::time_point& end)
          {
             auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
             total += time;
@@ -107,32 +107,6 @@ namespace casual
          {
             void Proxy::Instance::state( State state)
             {
-               switch( state)
-               {
-                  case State::busy:
-                  {
-                     assert( m_state != State::busy);
-                     if( m_state == State::idle)
-                     {
-                        statistics.roundtrip.start( platform::clock_type::now());
-                     }
-                     break;
-                  }
-                  case State::idle:
-                  {
-                     assert( m_state != State::idle);
-                     if( m_state == State::busy)
-                     {
-                        statistics.roundtrip.end( platform::clock_type::now());
-                     }
-                     break;
-                  }
-                  default:
-                  {
-                     break;
-                  }
-               }
-
                if( m_state != State::shutdown)
                {
                   m_state = state;
@@ -425,13 +399,6 @@ namespace casual
 
          return common::range::find_if( resource.instances, state::filter::Idle{});
       }
-
-      bool operator < ( const State::Deadline& lhs, const State::Deadline& rhs)
-      {
-         return lhs.deadline < rhs.deadline;
-      }
-
-
    } // transaction
 
 } // casual

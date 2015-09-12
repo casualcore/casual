@@ -426,6 +426,7 @@ namespace casual
                   debug << CASUAL_MAKE_NVP( state.pending.requests);
                   debug << CASUAL_MAKE_NVP( state.persistent.requests);
                   debug << CASUAL_MAKE_NVP( state.persistent.replies);
+                  debug << CASUAL_MAKE_NVP( state.log);
 
                }
 

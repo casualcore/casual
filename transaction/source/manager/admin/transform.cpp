@@ -153,6 +153,20 @@ namespace casual
          } // pending
 
 
+         vo::Log log( const transaction::Log::Stats& log)
+         {
+            vo::Log result;
+
+            result.update.begin = log.update.begin;
+            result.update.prepare = log.update.prepare;
+            result.update.remove = log.update.remove;
+            result.writes = log.writes;
+
+            return result;
+         }
+
+
+
          vo::State state( const State& state)
          {
             vo::State result;
@@ -163,6 +177,8 @@ namespace casual
             common::range::transform( state.pendingRequests, result.pending.requests, transform::pending::Reqeust{});
             common::range::transform( state.persistentRequests, result.persistent.requests, transform::pending::Reqeust{});
             common::range::transform( state.persistentReplies, result.persistent.replies, transform::pending::Reply{});
+
+            result.log = transform::log( state.log.stats());
 
             return result;
          }

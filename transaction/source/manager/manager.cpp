@@ -190,13 +190,14 @@ namespace casual
 
 
 
+               persistent::Writer batchWrite( state.log);
 
                while( true)
                {
                   common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
 
                   {
-                     scoped::Writer batchWrite( state.log);
+                     batchWrite.begin();
 
                      if( ! state.pending())
                      {
@@ -228,40 +229,47 @@ namespace casual
                   }
 
                   //
-                  // Send persistent replies to clients
+                  // Check if we have any persistent stuff to handle, if not we don't do persistent commit
                   //
+                  if( ! state.persistentReplies.empty() || ! state.persistentRequests.empty())
                   {
-
-                     common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
-
-                     auto notDone = common::range::partition(
-                           state.persistentReplies,
-                           common::negate( action::persistent::Send{ state}));
-
-                     common::range::trim( state.persistentReplies, std::get< 0>( notDone));
-
-                     common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
-                  }
-
-                  //
-                  // Send persistent resource requests
-                  //
-                  {
-                     common::log::internal::transaction << "manager persistent request: " << state.persistentRequests.size() << "\n";
-
-                     auto notDone = common::range::partition(
-                           state.persistentRequests,
-                           common::negate( action::persistent::Send{ state}));
+                     batchWrite.commit();
 
                      //
-                     // Move the ones that did not find an idle resource to pending requests
+                     // Send persistent replies to clients
                      //
-                     common::range::move( std::get< 0>( notDone), state.pendingRequests);
+                     {
 
-                     state.persistentRequests.clear();
+                        common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
 
+                        auto notDone = common::range::partition(
+                              state.persistentReplies,
+                              common::negate( action::persistent::Send{ state}));
+
+                        common::range::trim( state.persistentReplies, std::get< 0>( notDone));
+
+                        common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
+                     }
+
+                     //
+                     // Send persistent resource requests
+                     //
+                     {
+                        common::log::internal::transaction << "manager persistent request: " << state.persistentRequests.size() << "\n";
+
+                        auto notDone = common::range::partition(
+                              state.persistentRequests,
+                              common::negate( action::persistent::Send{ state}));
+
+                        //
+                        // Move the ones that did not find an idle resource to pending requests
+                        //
+                        common::range::move( std::get< 0>( notDone), state.pendingRequests);
+
+                        state.persistentRequests.clear();
+
+                     }
                   }
-
                   common::log::internal::transaction << "manager transactions: " << state.transactions.size() << "\n";
                }
             }

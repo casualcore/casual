@@ -219,19 +219,23 @@ namespace casual
                {
 
                   rm_proxy( common::platform::resource::id_type rm_id) : proxy{
-                     current_pid++,
+                     current_pid,
                      common::mockup::transform::Handler{
                         // prepare
                         [=]( common::message::transaction::resource::prepare::Request message)
                         {
                            common::log::internal::debug << "rm-proxy prepare::Request\n";
 
+                           auto pid = current_pid;
+
                            common::message::transaction::resource::prepare::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
                            reply.resource = rm_id;
-                           reply.process.pid = current_pid - 1;
+                           reply.process.pid = pid;
                            reply.state = error_state::get( message.trid);
+
+                           common::log::internal::transaction << "rm-id: " << reply.resource << ", pid: " << reply.process.pid << std::endl;
 
                            send::tm( reply);
 
@@ -242,12 +246,16 @@ namespace casual
                         {
                            common::log::internal::debug << "rm-proxy commit::Request\n";
 
+                           auto pid = current_pid;
+
                            common::message::transaction::resource::commit::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
                            reply.resource = rm_id;
-                           reply.process.pid = current_pid - 1;
+                           reply.process.pid = pid;
                            reply.state = error_state::get( message.trid);
+
+                           common::log::internal::transaction << "rm-id: " << reply.resource << ", pid: " << reply.process.pid << std::endl;
 
                            send::tm( reply);
 
@@ -258,12 +266,16 @@ namespace casual
                         {
                            common::log::internal::debug << "rm-proxy rollback::Request\n";
 
+                           auto pid = current_pid;
+
                            common::message::transaction::resource::rollback::Reply reply;
                            reply.correlation = message.correlation;
                            reply.trid = message.trid;
                            reply.resource = rm_id;
-                           reply.process.pid = current_pid - 1;
+                           reply.process.pid = pid;
                            reply.state = error_state::get( message.trid);
+
+                           common::log::internal::transaction << "rm-id: " << reply.resource << ", pid: " << reply.process.pid << std::endl;
 
                            send::tm( reply);
 
@@ -280,7 +292,12 @@ namespace casual
                      connect.state = XA_OK;
                      connect.process = proxy.process();
 
+                     common::log::internal::transaction << "rm-id: " << connect.resource << ", process: " << connect.process << std::endl;
+
                      send::tm( connect);
+
+                     // increment for the next instance...
+                     ++current_pid;
                   }
 
                   common::mockup::ipc::Instance proxy;

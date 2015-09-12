@@ -40,10 +40,10 @@ namespace casual
             std::chrono::microseconds total;
             std::size_t invoked;
 
-            void start( common::platform::time_point start);
-            void end( common::platform::time_point end);
+            void start( const common::platform::time_point& start);
+            void end( const common::platform::time_point& end);
 
-            void time( common::platform::time_point start, common::platform::time_point end);
+            void time( const common::platform::time_point& start, const common::platform::time_point& end);
 
 
             friend Statistics& operator += ( Statistics& lhs, const Statistics& rhs);
@@ -410,16 +410,6 @@ namespace casual
       public:
          State( const std::string& database);
 
-
-         struct Deadline
-         {
-            common::transaction::xid_type xid;
-            common::platform::time_point deadline;
-
-            friend bool operator < ( const Deadline& lhs, const Deadline& rhs);
-         };
-
-         //typedef instances_type;
 
          std::map< std::string, config::xa::Switch> xaConfig;
 
