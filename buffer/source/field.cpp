@@ -45,11 +45,7 @@ namespace casual
           * This implementation contain a C-interface that offers functionality
           * for a replacement to FML32 (non-standard compared to XATMI)
           *
-          * The implementation is quite cumbersome since the user-handle is the
-          * actual underlying buffer which is a std::vector<char>::data() so we
-          * cannot just use append data which might imply reallocation since
-          * this is a "stateless" interface and thus search from start is done
-          * all the time
+          * The implementation is quite cumbersome since "stateless" interface
           *
           * The main idea is to keep the buffer "ready to go" without the need
           * for extra marshalling when transported and thus data is stored in
@@ -67,7 +63,7 @@ namespace casual
           * id exists in the repository-table occurs but just from the type and
           * we're, for simplicity, CASUAL_FIELD_SHORT has base 0x2000000 and
           * for now there's no proper error-handling while handling the table-
-          * repository and that has to improve and many other things can be
+          * repository and that has to be improved and many other things can be
           * improved as well ... Sean Parent would've cry if he saw this
           *
           * The repository-implementation is a bit comme ci comme ca and to
@@ -507,6 +503,9 @@ namespace casual
             };
 
 
+            //
+            // Might be named Pool as well
+            //
             class Allocator : public common::buffer::pool::basic_pool<Buffer>
             {
             public:
@@ -515,7 +514,9 @@ namespace casual
 
                static const types_type& types()
                {
+                  //
                   // The types this pool can manage
+                  //
                   static const types_type result{{ CASUAL_FIELD, "" }};
                   return result;
                }
@@ -524,7 +525,10 @@ namespace casual
                {
                   m_pool.emplace_back( type, 0);
 
-                  // GCC returns null for sad::vector::data with size zero
+                  //
+                  // GCC returns null for sad::vector::data with size zero, so
+                  // we need to ensure that at least some allocation occurs
+                  //
                   m_pool.back().payload.memory.reserve( size ? size : 1);
                   return m_pool.back().payload.memory.data();
                }
@@ -533,9 +537,15 @@ namespace casual
                {
                   const auto result = find( handle);
 
+                  //
                   // Allow user to reduce allocation
+                  //
                   if( size < result->payload.memory.capacity()) result->payload.memory.shrink_to_fit();
-                  // GCC returns null for std::vector::data with size zero
+
+                  //
+                  // GCC returns null for sad::vector::data with size zero, so
+                  // we need to ensure that at least some allocation occurs
+                  //
                   result->payload.memory.reserve( size ? size : 1);
                   return result->payload.memory.data();
                }
@@ -669,6 +679,13 @@ namespace casual
                      return CASUAL_FIELD_SUCCESS;
                   }
 
+
+                  //
+                  // Let's find out if whether update returned false 'cause of
+                  // lack of space or if the field wasn't found and yes ...
+                  // ... this might be unnecessary but the whole idea with this
+                  // is rather stupid
+                  //
                   if( buffer->find( id, index))
                   {
                      return CASUAL_FIELD_NO_SPACE;;
@@ -1005,8 +1022,6 @@ int CasualFieldOccurrencesInBuffer( const char* const buffer, long* const occurr
 
    return CASUAL_FIELD_INVALID_ARGUMENT;
 }
-
-
 
 int CasualFieldAddChar( char* const buffer, const long id, const char value)
 {
