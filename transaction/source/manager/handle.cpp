@@ -165,57 +165,41 @@ namespace casual
 
                   } // persistent
 
-                  bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
-                  {
-                     queue::non_blocking::Send sender{ state};
-
-                     if( sender.send( instance.process.queue, message))
-                     {
-                        instance.state( state::resource::Proxy::Instance::State::busy);
-                        instance.statistics.roundtrip.start( common::platform::clock_type::now());
-                        return true;
-                     }
-                     return false;
-                  }
 
                   template< typename M>
-                  void request( State& state, Transaction& transaction, Transaction::Resource::Stage filter, Transaction::Resource::Stage newState, long flags = TMNOFLAGS)
+                  void request( State& state, Transaction& transaction, Transaction::Resource::Stage filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
                   {
                      M message;
                      message.process = common::process::handle();
                      message.trid = transaction.trid;
                      message.flags = flags;
 
-                     state::pending::Request request{ message};
-
-                     auto resources = common::range::partition(
-                           transaction.resources,
-                           Transaction::Resource::state::Filter{ filter});
-
-                     for( auto& resource : std::get< 0>( resources))
-                     {
-                        auto found = state.idle_instance( resource.id);
-
-                        if( ! found || ! resource::request( state, request.message, *found))
-                        {
-                           //
-                           // We could not find an idle resource
-                           //
-                           request.resources.push_back( resource.id);
-                        }
-                     }
-
-                     if( ! request.resources.empty())
-                     {
-                        state.pendingRequests.push_back( std::move( request));
-                     }
+                     auto resources = std::get< 0>( common::range::partition(
+                        transaction.resources,
+                        Transaction::Resource::filter::Stage{ filter}));
 
                      //
                      // Update state on transaction-resources
                      //
                      common::range::for_each(
-                           std::get< 0>( resources),
-                           Transaction::Resource::state::Update{ newState});
+                        resources,
+                        Transaction::Resource::update::Stage{ newStage});
+
+                     state::pending::Request request{ message};
+
+                     common::range::transform(
+                        resources,
+                        request.resources,
+                        std::mem_fn( &Transaction::Resource::id));
+
+                     if( ! action::resource::request( state, request))
+                     {
+                        //
+                        // Could not send to all RM-proxy-instances. We put the request
+                        // in pending.
+                        //
+                        state.pendingRequests.push_back( std::move( request));
+                     }
                   }
                } // resource
             } // send
@@ -387,7 +371,7 @@ namespace casual
 
                      auto resource = common::range::find_if(
                            common::range::make( transaction.resources),
-                           Transaction::Resource::id::Filter{ message.resource});
+                           Transaction::Resource::filter::ID{ message.resource});
 
                      if( ! resource.empty())
                      {
@@ -569,8 +553,8 @@ namespace casual
                            // (could be that some has read-only)
                            //
                            auto filter = common::chain::And::link(
-                                 Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK},
-                                 Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cPrepareReplied});
+                                 Transaction::Resource::filter::Result{ Transaction::Resource::Result::cXA_OK},
+                                 Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied});
 
                            internal::send::resource::persistent::request<
                               common::message::transaction::resource::commit::Request>( m_state, transaction, filter);
@@ -1116,7 +1100,7 @@ namespace casual
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cPrepareReplied}))
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied}))
                      {
 
                         //
@@ -1157,7 +1141,7 @@ namespace casual
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cCommitReplied}))
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cCommitReplied}))
                      {
 
                         //

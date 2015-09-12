@@ -217,11 +217,14 @@ namespace casual
 
                      //
                      // Consume until the queue is empty or we've got pending replies equal to batch::transaction
+                     // We also do a "busy wait" to try to get more done between each write.
                      //
 
                      queue::non_blocking::Reader nonBlocking( ipc, state);
 
-                     while( handler( nonBlocking.next()) &&
+                     auto count = common::platform::batch::transaction;
+
+                     while( ( handler( nonBlocking.next()) || --count > 0 ) &&
                            state.persistentReplies.size() < common::platform::batch::transaction)
                      {
                         ;

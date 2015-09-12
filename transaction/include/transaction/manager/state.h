@@ -156,6 +156,7 @@ namespace casual
                base_message& operator = ( base_message&&) = default;
 
                common::ipc::message::Complete message;
+               common::platform::time_point created;
             };
 
             struct Reply : base_message
@@ -267,53 +268,50 @@ namespace casual
             void setResult( int value);
 
 
-            struct state
+            struct update
             {
-               struct Update
+               struct Stage
                {
-                  Update( Stage state) : m_state( state) {}
+                  Stage( Resource::Stage stage) : m_stage( stage) {}
 
                   void operator () ( Resource& value) const
                   {
-                     value.stage = m_state;
+                     value.stage = m_stage;
                   }
                private:
-                  Stage m_state;
-               };
-
-               struct Filter
-               {
-                  Filter( Stage state) : m_state( state) {}
-
-                  bool operator () ( const Resource& value) const
-                  {
-                     return value.stage == m_state;
-                  }
-               private:
-                  Stage m_state;
+                  Resource::Stage m_stage;
                };
             };
 
-            struct result
+            struct filter
             {
-               struct Filter
+               struct Stage
                {
-                  Filter( Result result) : m_result( result) {}
+                  Stage( Resource::Stage stage) : m_stage( stage) {}
+
+                  bool operator () ( const Resource& value) const
+                  {
+                     return value.stage == m_stage;
+                  }
+               private:
+                  Resource::Stage m_stage;
+               };
+
+               struct Result
+               {
+                  Result( Resource::Result result) : m_result( result) {}
 
                   bool operator () ( const Resource& value) const
                   {
                      return value.result == m_result;
                   }
                private:
-                  Result m_result;
+                  Resource::Result m_result;
                };
-            };
 
-            struct id
-            {
-               struct Filter
+               struct ID
                {
-                  Filter( id_type id) : m_id( id) {}
+                  ID( id_type id) : m_id( id) {}
 
                   bool operator () ( const Resource& value) const
                   {
@@ -323,7 +321,6 @@ namespace casual
                   id_type m_id;
                };
             };
-
 
             friend bool operator < ( const Resource& lhs, const Resource& rhs) { return lhs.id < rhs.id; }
             friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }

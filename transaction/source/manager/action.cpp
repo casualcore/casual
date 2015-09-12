@@ -189,6 +189,47 @@ namespace casual
 
                return result;
             }
+
+            namespace instance
+            {
+               bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
+               {
+                  Trace trace{ "transaction::action::resource::instance::request", log::internal::transaction};
+
+                  queue::non_blocking::Send sender{ state};
+
+                  if( sender.send( instance.process.queue, message))
+                  {
+                     instance.state( state::resource::Proxy::Instance::State::busy);
+                     instance.statistics.roundtrip.start( common::platform::clock_type::now());
+                     return true;
+                  }
+                  return false;
+
+               }
+            } // instance
+
+            bool request( State& state, state::pending::Request& message)
+            {
+               Trace trace{ "transaction::action::resource::request", log::internal::transaction};
+
+               decltype( message.resources) resources;
+               std::swap( message.resources, resources);
+
+               for( auto&& id : resources)
+               {
+                  auto found = state.idle_instance( id);
+
+                  if( ! found || ! resource::instance::request( state, message.message, *found))
+                  {
+                     common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
+                     message.resources.push_back( id);
+                  }
+               }
+
+               return message.resources.empty();
+            }
+
          } // resource
 
 
@@ -221,31 +262,7 @@ namespace casual
 
             bool Send::operator () ( state::pending::Request& message) const
             {
-               decltype( message.resources) resources;
-               std::swap( message.resources, resources);
-
-               for( auto&& id : resources)
-               {
-
-                  auto found = m_state.idle_instance( id);
-
-                  if( found)
-                  {
-                     queue::non_blocking::Writer write{ found->process.queue, m_state};
-
-                     if( ! write.send( message.message))
-                     {
-                        common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
-                        message.resources.push_back( id);
-                     }
-                  }
-                  else
-                  {
-                     message.resources.push_back( id);
-                  }
-               }
-
-               return message.resources.empty();
+               return resource::request( m_state, message);
             }
 
          } // pending
