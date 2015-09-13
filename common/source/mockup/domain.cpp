@@ -50,7 +50,6 @@ namespace casual
 
                   reply.correlation = message.correlation;
                   reply.domain = "unittest-domain";
-                  reply.transaction_manager = common::mockup::ipc::transaction::manager::id();
 
                   {
                      common::message::transaction::resource::Manager rm;
@@ -101,6 +100,24 @@ namespace casual
                return result;
             }
 
+            namespace lookup
+            {
+               std::vector< common::ipc::message::Complete> Process::operator () ( message_type message)
+               {
+                  Trace trace{ "mockup::broker::lookup::Process", log::internal::debug};
+
+                  static std::map< Uuid, platform::queue_id_type> mapping{
+                     { common::process::instance::transaction::manager::identity(), mockup::ipc::transaction::manager::id()},
+                  };
+
+                  auto reply = message::reverse::type( message);
+                  reply.process.queue = mapping[ message.identification];
+
+                  std::vector< common::ipc::message::Complete> result;
+                  result.emplace_back( marshal::complete( reply));
+                  return result;
+               }
+            }
 
          } // broker
 
@@ -234,7 +251,12 @@ namespace casual
 
             transform::Handler broker( std::vector< message::service::lookup::Reply> replies)
             {
-               return transform::Handler{ broker::Lookup{ std::move( replies)}, broker::server::Connect{}, broker::client::Connect{}};
+               return transform::Handler{
+                  broker::Lookup{ std::move( replies)},
+                  broker::server::Connect{},
+                  broker::client::Connect{},
+                  broker::lookup::Process{},
+               };
             }
 
             transform::Handler broker()
@@ -339,7 +361,6 @@ namespace casual
 
                         auto reply = m_reply;
                         reply.correlation = r.correlation;
-                        reply.transaction_manager = mockup::ipc::transaction::manager::id();
 
                         return local::result_set( r.process, std::move( reply));
                      }
@@ -350,7 +371,7 @@ namespace casual
 
 
 
-            Broker::Broker( reply::Handler handler)
+            Broker::Broker( reply::Handler handler, dummy_t)
                : m_replier{ std::move( handler)}
                , m_broker_replier_link{ mockup::ipc::broker::queue().output().id(), m_replier.input()}
             {
@@ -359,6 +380,11 @@ namespace casual
 
             Broker::Broker() : Broker( default_handler())
             {
+               //
+               // Set up TM identification, so we can use the broker without setting up a mockup-TM.
+               // If a real or mockup TM connects this will be overwritten
+               //
+               m_state.singeltons[ process::instance::transaction::manager::identity()].queue = mockup::ipc::transaction::manager::id();
             }
 
             Broker::~Broker() = default;
@@ -427,6 +453,7 @@ namespace casual
                      {
                         auto reply = message::reverse::type( r);
                         reply.process = found->second;
+                        reply.domain = "mockup-domain";
                         return local::result_set( r.process, reply);
                      }
                      else
@@ -440,7 +467,6 @@ namespace casual
 
                      Trace trace{ "mockup transaction::client::connect::Request", log::internal::debug};
                      auto reply = message::reverse::type( r);
-                     reply.transaction_manager = ipc::transaction::manager::id();
                      reply.domain = "mockup-domain";
                      reply.directive = decltype( reply)::Directive::start;
 

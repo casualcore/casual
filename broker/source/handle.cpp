@@ -488,7 +488,6 @@ namespace casual
 
                      common::message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
-                     reply.transaction_manager = m_state.transaction_manager;
 
                      queue::blocking::Writer write( message.process.queue, m_state);
                      write( reply);
@@ -605,6 +604,7 @@ namespace casual
                common::trace::internal::Scope trace{ "broker::handle::lookup::Process"};
 
                auto reply = common::message::reverse::type( message);
+               reply.domain = common::environment::domain::name();
 
                auto found = range::find( m_state.singeltons, message.identification);
 

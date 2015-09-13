@@ -119,16 +119,6 @@ namespace casual
                   return singleton;
                }
 
-               namespace transaction
-               {
-                  const Uuid& manager()
-                  {
-                     const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
-                     return singleton;
-                  }
-               } // transaction
-
-
                namespace traffic
                {
                   const Uuid& manager()
@@ -138,6 +128,69 @@ namespace casual
                   }
                } // traffic
             } // identity
+
+
+            namespace transaction
+            {
+               namespace manager
+               {
+                  const Uuid& identity()
+                  {
+                     const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
+                     return singleton;
+                  }
+
+                  namespace local
+                  {
+                     namespace
+                     {
+                        Handle& handle()
+                        {
+                           static Handle singleton = fetch::handle( manager::identity(), fetch::Directive::wait);
+                           return singleton;
+                        }
+                     } // <unnamed>
+                  } // local
+
+                  const Handle& handle()
+                  {
+                     return local::handle();
+                  }
+
+                  const Handle& refetch()
+                  {
+                     local::handle() = fetch::handle( manager::identity(), fetch::Directive::wait);
+                     return handle();
+                  }
+
+
+
+               } // manager
+
+            } // transaction
+
+            namespace fetch
+            {
+               Handle handle( const Uuid& identity, Directive directive)
+               {
+                  trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
+
+                  common::message::lookup::process::Request request;
+                  request.directive = static_cast< message::lookup::process::Request::Directive>( directive);
+                  request.identification = identity;
+                  request.process = common::process::handle();
+
+                  auto reply = common::queue::blocking::call( common::ipc::broker::id(), request);
+
+                  if( ! reply.domain.empty())
+                  {
+                     environment::domain::name( reply.domain);
+                  }
+
+                  return reply.process;
+               }
+
+            } // fetch
          } // instance
 
 

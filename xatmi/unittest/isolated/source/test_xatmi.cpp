@@ -14,6 +14,7 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 #include "common/mockup/domain.h"
+#include "common/trace.h"
 
 #include "common/flag.h"
 
@@ -195,6 +196,7 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL)
       {
+         common::Trace trace{ "tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL", common::log::internal::debug };
          local::Domain domain;
 
          EXPECT_TRUE( tx_begin() == TX_OK);

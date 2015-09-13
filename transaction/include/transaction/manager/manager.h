@@ -21,11 +21,26 @@
 
 namespace casual
 {
+
+
    namespace transaction
    {
+      namespace environment
+      {
+         namespace log
+         {
+            std::string file();
+         } // log
+
+      } // environment
+
+
       struct Settings
       {
-         std::string database;
+         Settings();
+
+         std::string log;
+         std::string configuration;
       };
 
 

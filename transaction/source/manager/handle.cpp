@@ -293,6 +293,32 @@ namespace casual
 
          namespace resource
          {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename M>
+                  void involved( State& state, Transaction& transaction, M&& message)
+                  {
+                     for( auto& resource : message.resources)
+                     {
+                        if( common::range::find( state.resources, resource))
+                        {
+                           transaction.resources.push_back( resource);
+                        }
+                        else
+                        {
+                           common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                        }
+                     }
+
+                     common::range::trim( transaction.resources, common::range::unique( common::range::sort( transaction.resources)));
+
+                     common::log::internal::transaction << "involved: " << transaction << '\n';
+
+                  }
+               } // <unnamed>
+            } // local
             void Involved::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
@@ -305,21 +331,7 @@ namespace casual
 
                if( transaction)
                {
-                  for( auto& resource : message.resources)
-                  {
-                     if( common::range::find( m_state.resources, resource))
-                     {
-                        transaction->resources.push_back( resource);
-                     }
-                     else
-                     {
-                        common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
-                     }
-                  }
-
-                  common::range::trim( transaction->resources, common::range::unique( common::range::sort( transaction->resources)));
-
-                  common::log::internal::transaction << "involved: " << *transaction << '\n';
+                  local::involved( m_state, *transaction, message);
 
                }
                else
@@ -333,6 +345,7 @@ namespace casual
                   // Note: We don't keep this transaction persistent.
                   //
                   m_state.transactions.emplace_back( message.trid);
+                  local::involved( m_state, m_state.transactions.back(), message);
 
                   common::log::internal::transaction << "inter-domain involved trid : " << message.trid << " resources: " << common::range::make( message.resources) << " process: " <<  message.process << '\n';
                }
@@ -414,8 +427,10 @@ namespace casual
 
                      if( message.state == XA_OK)
                      {
-                        instance.state( state::resource::Proxy::Instance::State::idle);
                         instance.process = std::move( message.process);
+
+                        queue::non_blocking::Send sender{ m_state};
+                        internal::instance::done( m_state, sender, instance);
 
                      }
                      else
@@ -772,6 +787,11 @@ namespace casual
                   m_state.log.begin( message);
 
                   m_state.transactions.emplace_back( message.trid);
+
+                  if( ! message.resources.empty())
+                  {
+                     resource::local::involved( m_state, m_state.transactions.back(), message);
+                  }
                }
 
                //

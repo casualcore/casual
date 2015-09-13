@@ -22,6 +22,7 @@
 
 
 #include "config/domain.h"
+#include "config/file.h"
 
 
 #include <tx.h>
@@ -39,10 +40,69 @@ namespace casual
 {
    namespace transaction
    {
+      namespace environment
+      {
+         namespace log
+         {
+            std::string file()
+            {
+               return config::file::domain() + "/transaction/log.db";
+            }
+         } // log
+
+      } // environment
+
+      Settings::Settings() :
+         log{ environment::log::file()}, configuration{ common::environment::file::installedConfiguration()}
+      {
+
+      }
 
       Manager::Manager( const Settings& settings) :
-          m_state( settings.database)
+          m_state( settings.log)
       {
+         auto start = common::platform::clock_type::now();
+
+         common::log::internal::transaction << "transaction manager start\n";
+
+
+
+         //
+         // Connect and get configuration from broker
+         //
+         {
+            trace::internal::Scope trace( "configure", common::log::internal::transaction);
+            action::configure( m_state);
+         }
+
+         //
+         // Start resource-proxies
+         //
+         {
+            trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
+
+            common::range::for_each(
+               m_state.resources,
+               action::resource::Instances( m_state));
+
+         }
+
+
+         auto instances = common::range::accumulate(
+               m_state.resources, 0,
+               []( std::size_t count, const state::resource::Proxy& p)
+               {
+                  return count + p.instances.size();
+               }
+               );
+
+         auto end = common::platform::clock_type::now();
+
+
+         common::log::information << "transaction manager is on-line - "
+               << m_state.resources.size() << " resources - "
+               << instances << " instances - boot time: "
+               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
       }
 
@@ -76,55 +136,10 @@ namespace casual
       {
          try
          {
-            auto start = common::platform::clock_type::now();
-
-            common::log::internal::transaction << "transaction manager start\n";
-
-
-
-            //
-            // Connect and get configuration from broker
-            //
-            {
-               trace::internal::Scope trace( "configure", common::log::internal::transaction);
-               action::configure( m_state);
-            }
-
-            //
-            // Start resource-proxies
-            //
-            {
-               trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
-
-               common::range::for_each(
-                  m_state.resources,
-                  action::resource::Instances( m_state));
-
-            }
-
-
-            auto instances = common::range::accumulate(
-                  m_state.resources, 0,
-                  []( std::size_t count, const state::resource::Proxy& p)
-                  {
-                     return count + p.instances.size();
-                  }
-                  );
-
-            auto end = common::platform::clock_type::now();
-
-
-            common::log::information << "transaction manager is on-line - "
-                  << m_state.resources.size() << " resources - "
-                  << instances << " instances - boot time: "
-                  << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
-
-
             //
             // We're ready to start....
             //
             message::pump( m_state);
-
 
          }
          catch( const common::exception::signal::Terminate&)
@@ -176,7 +191,7 @@ namespace casual
                   handle::domain::resource::reply::Commit{ state},
                   handle::domain::resource::reply::Rollback{ state},
                   common::server::handle::basic_admin_call< State>{
-                     ipc, admin::services( state), state, common::process::instance::identity::transaction::manager()},
+                     ipc, admin::services( state), state, common::process::instance::transaction::manager::identity()},
                   common::message::handle::ping( state),
 
                   //

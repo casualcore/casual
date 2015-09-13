@@ -160,6 +160,8 @@ namespace casual
 
             } m_resources;
 
+            std::vector< int> resources() const;
+
 
             std::vector< Transaction> m_transactions;
 
@@ -180,7 +182,7 @@ namespace casual
             {
                static const Manager& instance();
 
-               ipc::send::Queue::id_type queue = 0;
+               ipc::send::Queue::id_type queue() const;
                std::vector< message::transaction::resource::Manager> resources;
             private:
                Manager();

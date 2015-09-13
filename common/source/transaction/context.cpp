@@ -102,7 +102,7 @@ namespace casual
             reader( reply, correlation);
 
 
-            queue = reply.transaction_manager;
+
             common::environment::domain::name( reply.domain);
             std::swap( resources, reply.resources);
 
@@ -115,6 +115,14 @@ namespace casual
          {
             static const Manager singleton = Manager();
             return singleton;
+         }
+
+         ipc::send::Queue::id_type Context::Manager::queue() const
+         {
+            //
+            // Will block until the TM is up.
+            //
+            return process::instance::transaction::manager::handle().queue;
          }
 
 
@@ -238,7 +246,7 @@ namespace casual
 
 
             template< typename QW, typename QR>
-            Transaction startTransaction( QW& writer, QR& reader, const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
+            Transaction startTransaction( QW& writer, QR& reader, std::vector< int> resources, const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
             {
 
                message::transaction::begin::Request request;
@@ -246,8 +254,7 @@ namespace casual
                request.trid = transaction::ID::create();
                request.timeout = std::chrono::seconds{ timeout};
                request.start = start;
-
-               //call::Timeout::instance().current()
+               request.resources = std::move( resources);
 
                writer( request);
 
@@ -268,21 +275,34 @@ namespace casual
 
          } // local
 
+         std::vector< int> Context::resources() const
+         {
+            std::vector< int> result;
+
+            for( auto& resource : m_resources.fixed)
+            {
+               result.push_back( resource.id);
+            }
+            return result;
+         }
+
          void Context::involved( const transaction::ID& trid, std::vector< int> resources)
          {
             common::trace::Scope trace{ "transaction::Context::involved", common::log::internal::transaction};
 
+            if( ! resources.empty())
+            {
+               queue::blocking::Writer writer{ manager().queue()};
 
-            queue::blocking::Writer writer{ manager().queue};
+               message::transaction::resource::Involved message;
+               message.process = process::handle();
+               message.trid = trid;
+               message.resources = std::move( resources);
 
-            message::transaction::resource::Involved message;
-            message.process = process::handle();
-            message.trid = trid;
-            message.resources = std::move( resources);
+               common::log::internal::transaction << "involved message: " << message << '\n';
 
-            common::log::internal::transaction << "involved message: " << message << '\n';
-
-            writer( message);
+               writer( message);
+            }
          }
 
 
@@ -294,6 +314,9 @@ namespace casual
 
             if( trid)
             {
+
+               involved( transaction.trid, resources());
+
                resources_start( transaction, TMNOFLAGS);
             }
 
@@ -304,10 +327,10 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
 
-            queue::blocking::Writer writer( manager().queue);
+            queue::blocking::Writer writer( manager().queue());
             queue::blocking::Reader reader( ipc::receive::queue());
 
-            auto transaction = local::startTransaction( writer, reader, start, m_timeout);
+            auto transaction = local::startTransaction( writer, reader, resources(), start, m_timeout);
 
             resources_start( transaction, TMNOFLAGS);
 
@@ -341,6 +364,20 @@ namespace casual
                transaction.discard( reply.descriptor);
 
                log::internal::transaction << "updated state: " << transaction << std::endl;
+            }
+            else
+            {
+               //
+               // TODO: if call was made in transaction but the service has 'none', the
+               // trid is not replied, but the descriptor is still associated with the transaction.
+               // Don't know what is the best way to solve this, but for now we just go through all
+               // transaction and discard the descriptor, just in case.
+               // TODO: Look this over when we redesign 'call/transaction-context'
+               //
+               for( auto& transaction : m_transactions)
+               {
+                  transaction.discard( reply.descriptor);
+               }
             }
          }
 
@@ -581,11 +618,12 @@ namespace casual
 
 
 
-            queue::blocking::Writer writer( manager().queue);
+            queue::blocking::Writer writer( manager().queue());
             queue::blocking::Reader reader( ipc::receive::queue());
 
 
-            auto trans = local::startTransaction( writer, reader, platform::clock_type::now(), m_timeout);
+
+            auto trans = local::startTransaction( writer, reader, resources(), platform::clock_type::now(), m_timeout);
 
             resources_start( trans, TMNOFLAGS);
 
@@ -679,7 +717,7 @@ namespace casual
 
             queue::blocking::Send send;
 
-            auto correlation = send( manager().queue, request);
+            auto correlation = send( manager().queue(), request);
 
 
             //
@@ -784,7 +822,7 @@ namespace casual
             request.trid = transaction.trid;
             request.process = process;
 
-            queue::blocking::Writer writer( manager().queue);
+            queue::blocking::Writer writer( manager().queue());
             writer( request);
 
             queue::blocking::Reader reader( ipc::receive::queue());
@@ -998,19 +1036,6 @@ namespace casual
                range::for_each( m_resources.fixed, start);
 
                // TODO: throw if some of the rm:s report an error?
-
-
-               //
-               // Notify the TM about the involved RM:s
-               //
-               {
-                  std::vector< int> resources;
-
-                  auto ids = std::mem_fn( &Resource::id);
-                  range::transform( m_resources.fixed, resources, ids);
-
-                  involved( transaction.trid, std::move( resources));
-               }
             }
          }
 

@@ -42,7 +42,7 @@ namespace casual
 
                connect.path = common::process::path();
                connect.process = common::process::handle();
-               connect.identification = common::process::instance::identity::transaction::manager();
+               connect.identification = common::process::instance::transaction::manager::identity();
 
                queue::blocking::Writer broker( common::ipc::broker::id(), state);
                auto correlation = broker( connect);
@@ -131,27 +131,43 @@ namespace casual
 
                   for( auto& instance : range::make( end + count, end))
                   {
-                     if( instance.state() != state::resource::Proxy::Instance::State::shutdown)
+                     switch( instance.state())
                      {
-                        log::internal::transaction << "shutdown instance: " << instance << std::endl;
-
-                        instance.state( state::resource::Proxy::Instance::State::shutdown);
-                        queue::non_blocking::Send send{ m_state};
-
-                        if( ! send( instance.process.queue, message::shutdown::Request{}))
+                        case state::resource::Proxy::Instance::State::absent:
+                        case state::resource::Proxy::Instance::State::started:
                         {
-                           //
-                           // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
-                           // hope to send it later...
-                           //
-                           log::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
 
-                           m_state.persistentReplies.emplace_back( instance.process.queue, message::shutdown::Request{});
+                           log::internal::transaction << "Instance has not register yet. We, kill it...: " << instance << std::endl;
+
+                           process::lifetime::terminate( { instance.process.pid});
+                           instance.state( state::resource::Proxy::Instance::State::shutdown);
+                           break;
                         }
-                     }
-                     else
-                     {
-                        log::internal::transaction << "instance already in shutdown state - " << instance << std::endl;
+                        case state::resource::Proxy::Instance::State::shutdown:
+                        {
+                           log::internal::transaction << "instance already in shutdown state - " << instance << std::endl;
+                           break;
+                        }
+                        default:
+                        {
+                           log::internal::transaction << "shutdown instance: " << instance << std::endl;
+
+
+                           instance.state( state::resource::Proxy::Instance::State::shutdown);
+                           queue::non_blocking::Send send{ m_state};
+
+                           if( ! send( instance.process.queue, message::shutdown::Request{}))
+                           {
+                              //
+                              // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
+                              // hope to send it later...
+                              //
+                              log::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
+
+                              m_state.persistentReplies.emplace_back( instance.process.queue, message::shutdown::Request{});
+                           }
+                           break;
+                        }
                      }
                   }
                }
@@ -220,9 +236,16 @@ namespace casual
                {
                   auto found = state.idle_instance( id);
 
-                  if( ! found || ! resource::instance::request( state, message.message, *found))
+                  if( found )
                   {
-                     common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
+                     if( ! resource::instance::request( state, message.message, *found))
+                     {
+                        common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
+                        message.resources.push_back( id);
+                     }
+                  }
+                  else
+                  {
                      message.resources.push_back( id);
                   }
                }

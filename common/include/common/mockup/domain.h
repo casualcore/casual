@@ -65,6 +65,18 @@ namespace casual
                std::map< std::string, common::message::service::lookup::Reply> m_broker;
             };
 
+            namespace lookup
+            {
+               struct Process
+               {
+                  using message_type = common::message::lookup::process::Request;
+                  std::vector< common::ipc::message::Complete> operator () ( message_type message);
+
+               };
+            } // loockup
+
+
+
          } // broker
 
          namespace service
@@ -190,7 +202,10 @@ namespace casual
                Broker();
 
                template< typename... Args>
-               Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...)) {}
+               Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...), dummy_t{}) {}
+
+
+
 
                ~Broker();
 
@@ -204,9 +219,9 @@ namespace casual
                   std::map< common::Uuid, std::vector< common::message::lookup::process::Request>> singelton_request;
                };
 
+               struct dummy_t {};
 
-
-               Broker( reply::Handler handler);
+               Broker( reply::Handler handler, dummy_t);
 
 
                reply::Handler default_handler();

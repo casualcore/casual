@@ -402,7 +402,16 @@ namespace casual
                   })
                };
 
-               using Reply = server::basic_id< cLookupProcessReply>;
+               struct Reply : server::basic_id< cLookupProcessReply>
+               {
+                  std::string domain;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     server::basic_id< cLookupProcessReply>::marshal( archive);
+                     archive & domain;
+                  })
+               };
 
             } // process
 

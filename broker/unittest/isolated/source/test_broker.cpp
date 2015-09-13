@@ -583,7 +583,7 @@ namespace casual
       {
          local::domain_5 domain;
 
-         auto& tm_uuid = common::process::instance::identity::transaction::manager();
+         auto& tm_uuid = common::process::instance::transaction::manager::identity();
          {
 
             local::Broker broker{ domain.state};
