@@ -120,7 +120,7 @@ namespace casual
 			//
 			constexpr std::size_t message_size = 1024;
 #else
-			constexpr std::size_t message_size = 1024 * 4;
+			constexpr std::size_t message_size = 1024 * 8;
 #endif
 
 			//

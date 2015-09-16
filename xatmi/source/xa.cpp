@@ -10,27 +10,30 @@
 #include "common/error.h"
 
 
-int ax_reg( int rmid, XID* xid, long flags)
+extern "C"
 {
-   try
+   int ax_reg( int rmid, XID* xid, long flags)
    {
-      return casual::common::transaction::Context::instance().resourceRegistration( rmid, xid, flags);
+      try
+      {
+         return casual::common::transaction::Context::instance().resourceRegistration( rmid, xid, flags);
+      }
+      catch( ...)
+      {
+         return casual::common::error::handler();
+      }
    }
-   catch( ...)
-   {
-      return casual::common::error::handler();
-   }
-}
 
-int ax_unreg( int rmid, long flags)
-{
-   try
+   int ax_unreg( int rmid, long flags)
    {
-      return casual::common::transaction::Context::instance().resourceUnregistration( rmid, flags);
-   }
-   catch( ...)
-   {
-      return casual::common::error::handler();
+      try
+      {
+         return casual::common::transaction::Context::instance().resourceUnregistration( rmid, flags);
+      }
+      catch( ...)
+      {
+         return casual::common::error::handler();
+      }
    }
 }
 

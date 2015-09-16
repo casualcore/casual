@@ -263,6 +263,8 @@ namespace casual
 
          state::Group::id_type casual_group_id = 0;
 
+
+
          std::map< common::Uuid, common::process::Handle> singeltons;
 
 

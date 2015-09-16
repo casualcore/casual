@@ -31,6 +31,54 @@ namespace casual
             })
          };
 
+         struct Statistics
+         {
+
+            std::chrono::microseconds min = std::chrono::microseconds::max();
+            std::chrono::microseconds max = std::chrono::microseconds{ 0};
+            std::chrono::microseconds total = std::chrono::microseconds{ 0};
+            std::size_t invoked = 0;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( min);
+               archive & CASUAL_MAKE_NVP( max);
+               archive & CASUAL_MAKE_NVP( total);
+               archive & CASUAL_MAKE_NVP( invoked);
+            })
+
+            inline friend Statistics& operator += ( Statistics& lhs, const Statistics& rhs)
+            {
+               if( lhs.min > rhs.min) lhs.min = rhs.min;
+               if( lhs.max < rhs.max) lhs.max = rhs.max;
+               lhs.total += rhs.total;
+               lhs.invoked += rhs.invoked;
+
+               return lhs;
+            }
+         };
+
+         struct Stats
+         {
+
+            Statistics resource;
+            Statistics roundtrip;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( resource);
+               archive & CASUAL_MAKE_NVP( roundtrip);
+            })
+
+            inline friend Stats& operator += ( Stats& lhs, const Stats& rhs)
+            {
+               lhs.resource += rhs.resource;
+               lhs.roundtrip += rhs.roundtrip;
+
+               return lhs;
+            }
+         };
+
          namespace resource
          {
             using id_type = common::platform::resource::id_type;
@@ -49,7 +97,9 @@ namespace casual
 
                id_type id;
                Process process;
-               std::size_t invoked = 0;
+
+               Stats statistics;
+
                State state = State::absent;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -57,10 +107,15 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( id);
                   archive & CASUAL_MAKE_NVP( process);
                   archive & CASUAL_MAKE_NVP( state);
-                  archive & CASUAL_MAKE_NVP( invoked);
+                  archive & CASUAL_MAKE_NVP( statistics);
                })
 
-               inline friend bool operator < ( const Instance& lhs,  const Instance& rhs) { return lhs.id < rhs.id;}
+               inline friend bool operator < ( const Instance& lhs,  const Instance& rhs)
+               {
+                  if( lhs.id == rhs.id)
+                     return lhs.statistics.roundtrip.invoked > rhs.statistics.roundtrip.invoked;
+                  return lhs.id < rhs.id;
+               }
 
             };
 
@@ -72,7 +127,7 @@ namespace casual
                std::string openinfo;
                std::string closeinfo;
                std::size_t concurency;
-               std::size_t invoked = 0;
+               Stats statistics;
 
                std::vector< Instance> instances;
 
@@ -83,7 +138,7 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( openinfo);
                   archive & CASUAL_MAKE_NVP( closeinfo);
                   archive & CASUAL_MAKE_NVP( concurency);
-                  archive & CASUAL_MAKE_NVP( invoked);
+                  archive & CASUAL_MAKE_NVP( statistics);
                   archive & CASUAL_MAKE_NVP( instances);
                })
 
@@ -97,10 +152,14 @@ namespace casual
             struct Request
             {
                std::vector< resource::id_type> resources;
+               sf::platform::Uuid correlation;
+               long type;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( resources);
+                  archive & CASUAL_MAKE_NVP( correlation);
+                  archive & CASUAL_MAKE_NVP( type);
                })
             };
 
@@ -151,6 +210,31 @@ namespace casual
 
          };
 
+         struct Log
+         {
+            struct update_t
+            {
+               std::size_t begin = 0;
+               std::size_t prepare = 0;
+               std::size_t remove = 0;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( begin);
+                  archive & CASUAL_MAKE_NVP( prepare);
+                  archive & CASUAL_MAKE_NVP( remove);
+               })
+
+            } update;
+
+            std::size_t writes = 0;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               archive & CASUAL_MAKE_NVP( update);
+               archive & CASUAL_MAKE_NVP( writes);
+            })
+         };
 
          struct State
          {
@@ -169,6 +253,8 @@ namespace casual
                std::vector< pending::Request> requests;
             } pending;
 
+            Log log;
+
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive & CASUAL_MAKE_NVP( resources);
@@ -176,6 +262,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( persistent.replies);
                archive & CASUAL_MAKE_NVP( persistent.requests);
                archive & CASUAL_MAKE_NVP( pending.requests);
+               archive & CASUAL_MAKE_NVP( log);
             })
           };
 

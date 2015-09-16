@@ -91,28 +91,6 @@ install_headers.append( 'include/transaction/resource/proxy_server.h')
 
 
 #
-# unittest
-#
- 
-LinkUnittest( 'bin/test-casual-transaction',
-    [
-        Compile( 'unittest/isolated/source/test_configuration.cpp'),
-        Compile( 'unittest/isolated/source/test_log.cpp'),
-        Compile( 'unittest/isolated/source/test_manager.cpp'),
-    ],
-    [ 
-     manager_archive, 
-     'casual-common', 
-     'casual-sf', 
-     'casual-configuration', 
-     'sqlite3', 
-     'casual-mockup',
-     'casual-xatmi',
-     'casual-mockup-unittest-environment'
-     ])
-
-
-#
 # Mockup resource proxy
 #
 target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
@@ -121,6 +99,32 @@ target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
 
 
 install_bin.append( target)
+
+
+#
+# unittest
+#
+ 
+LinkUnittest( 'bin/test-casual-transaction',
+    [
+        Compile( 'unittest/isolated/source/test_admin.cpp'),
+        Compile( 'unittest/isolated/source/test_configuration.cpp'),
+        Compile( 'unittest/isolated/source/test_log.cpp'),
+        Compile( 'unittest/isolated/source/test_manager.cpp'),
+        
+    ],
+    [ 
+     manager_archive, 
+     'casual-common', 
+     'casual-sf', 
+     'casual-configuration', 
+     'sqlite3', 
+     'casual-mockup',
+     'casual-mockup-rm',
+     'casual-xatmi',
+     'casual-mockup-unittest-environment'
+     ])
+
 
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')

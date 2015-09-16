@@ -36,6 +36,12 @@ namespace casual
 
             std::vector< vo::resource::Proxy> insances( State& state, std::vector< vo::update::Instances> instances);
 
+            namespace instance
+            {
+               bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance);
+            } // instance
+
+            bool request( State& state, state::pending::Request& message);
 
          } // resource
 

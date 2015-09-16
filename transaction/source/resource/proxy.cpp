@@ -86,12 +86,16 @@ namespace casual
                {
                   reply_type reply;
 
+                  reply.statistics.start = platform::clock_type::now();
+
+
                   reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
 
                   reply.state = policy_type()( m_state, message);
                   reply.trid = std::move( message.trid);
 
+                  reply.statistics.end = platform::clock_type::now();
 
                   tm_queue_type m_tmQueue{ m_state.tm_queue};
                   m_tmQueue( reply);

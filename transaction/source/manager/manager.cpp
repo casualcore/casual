@@ -22,6 +22,7 @@
 
 
 #include "config/domain.h"
+#include "config/file.h"
 
 
 #include <tx.h>
@@ -39,10 +40,69 @@ namespace casual
 {
    namespace transaction
    {
+      namespace environment
+      {
+         namespace log
+         {
+            std::string file()
+            {
+               return config::file::domain() + "/transaction/log.db";
+            }
+         } // log
+
+      } // environment
+
+      Settings::Settings() :
+         log{ environment::log::file()}, configuration{ common::environment::file::installedConfiguration()}
+      {
+
+      }
 
       Manager::Manager( const Settings& settings) :
-          m_state( settings.database)
+          m_state( settings.log)
       {
+         auto start = common::platform::clock_type::now();
+
+         common::log::internal::transaction << "transaction manager start\n";
+
+
+
+         //
+         // Connect and get configuration from broker
+         //
+         {
+            trace::internal::Scope trace( "configure", common::log::internal::transaction);
+            action::configure( m_state);
+         }
+
+         //
+         // Start resource-proxies
+         //
+         {
+            trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
+
+            common::range::for_each(
+               m_state.resources,
+               action::resource::Instances( m_state));
+
+         }
+
+
+         auto instances = common::range::accumulate(
+               m_state.resources, 0,
+               []( std::size_t count, const state::resource::Proxy& p)
+               {
+                  return count + p.instances.size();
+               }
+               );
+
+         auto end = common::platform::clock_type::now();
+
+
+         common::log::information << "transaction manager is on-line - "
+               << m_state.resources.size() << " resources - "
+               << instances << " instances - boot time: "
+               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
       }
 
@@ -52,25 +112,17 @@ namespace casual
 
          try
          {
-            std::vector< common::process::Handle> instances;
 
             for( auto& resource : m_state.resources)
             {
-               common::range::transform( resource.instances, instances, std::mem_fn( &state::resource::Proxy::Instance::process));
+               resource.concurency = 0;
             }
 
-            common::server::lifetime::shutdown( m_state, instances, {}, std::chrono::seconds( 1));
+            range::for_each( m_state.resources, action::resource::Instances{ m_state});
 
-            auto pids  = m_state.processes();
+            auto processes = m_state.processes();
 
-            if( pids.size() != 0)
-            {
-               common::log::error << "failed to shutdown resource proxies: " << range::make( pids) << " - action: abort" << std::endl;
-            }
-            else
-            {
-               common::log::information << "casual-transaction-manager off-line\n";
-            }
+            process::lifetime::wait( processes, std::chrono::milliseconds( processes.size() * 100));
 
          }
          catch( ...)
@@ -84,55 +136,10 @@ namespace casual
       {
          try
          {
-            auto start = common::platform::clock_type::now();
-
-            common::log::internal::transaction << "transaction manager start\n";
-
-
-
-            //
-            // Connect and get configuration from broker
-            //
-            {
-               trace::internal::Scope trace( "configure", common::log::internal::transaction);
-               action::configure( m_state);
-            }
-
-            //
-            // Start resource-proxies
-            //
-            {
-               trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
-
-               common::range::for_each(
-                  m_state.resources,
-                  action::resource::Instances( m_state));
-
-            }
-
-
-            auto instances = common::range::accumulate(
-                  m_state.resources, 0,
-                  []( std::size_t count, const state::resource::Proxy& p)
-                  {
-                     return count + p.instances.size();
-                  }
-                  );
-
-            auto end = common::platform::clock_type::now();
-
-
-            common::log::information << "transaction manager is on-line - "
-                  << m_state.resources.size() << " resources - "
-                  << instances << " instances - boot time: "
-                  << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
-
-
             //
             // We're ready to start....
             //
             message::pump( m_state);
-
 
          }
          catch( const common::exception::signal::Terminate&)
@@ -184,7 +191,7 @@ namespace casual
                   handle::domain::resource::reply::Commit{ state},
                   handle::domain::resource::reply::Rollback{ state},
                   common::server::handle::basic_admin_call< State>{
-                     ipc, admin::services( state), state, common::process::instance::identity::transaction::manager()},
+                     ipc, admin::services( state), state, common::process::instance::transaction::manager::identity()},
                   common::message::handle::ping( state),
 
                   //
@@ -198,13 +205,14 @@ namespace casual
 
 
 
+               persistent::Writer batchWrite( state.log);
 
                while( true)
                {
                   common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
 
                   {
-                     scoped::Writer batchWrite( state.log);
+                     batchWrite.begin();
 
                      if( ! state.pending())
                      {
@@ -224,11 +232,14 @@ namespace casual
 
                      //
                      // Consume until the queue is empty or we've got pending replies equal to batch::transaction
+                     // We also do a "busy wait" to try to get more done between each write.
                      //
 
                      queue::non_blocking::Reader nonBlocking( ipc, state);
 
-                     while( handler( nonBlocking.next()) &&
+                     auto count = common::platform::batch::transaction;
+
+                     while( ( handler( nonBlocking.next()) || --count > 0 ) &&
                            state.persistentReplies.size() < common::platform::batch::transaction)
                      {
                         ;
@@ -236,40 +247,47 @@ namespace casual
                   }
 
                   //
-                  // Send persistent replies to clients
+                  // Check if we have any persistent stuff to handle, if not we don't do persistent commit
                   //
+                  if( ! state.persistentReplies.empty() || ! state.persistentRequests.empty())
                   {
-
-                     common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
-
-                     auto notDone = common::range::partition(
-                           state.persistentReplies,
-                           common::negate( action::persistent::Send{ state}));
-
-                     common::range::trim( state.persistentReplies, std::get< 0>( notDone));
-
-                     common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
-                  }
-
-                  //
-                  // Send persistent resource requests
-                  //
-                  {
-                     common::log::internal::transaction << "manager persistent request: " << state.persistentRequests.size() << "\n";
-
-                     auto notDone = common::range::partition(
-                           state.persistentRequests,
-                           common::negate( action::persistent::Send{ state}));
+                     batchWrite.commit();
 
                      //
-                     // Move the ones that did not find an idle resource to pending requests
+                     // Send persistent replies to clients
                      //
-                     common::range::move( std::get< 0>( notDone), state.pendingRequests);
+                     {
 
-                     state.persistentRequests.clear();
+                        common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
 
+                        auto notDone = common::range::partition(
+                              state.persistentReplies,
+                              common::negate( action::persistent::Send{ state}));
+
+                        common::range::trim( state.persistentReplies, std::get< 0>( notDone));
+
+                        common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
+                     }
+
+                     //
+                     // Send persistent resource requests
+                     //
+                     {
+                        common::log::internal::transaction << "manager persistent request: " << state.persistentRequests.size() << "\n";
+
+                        auto notDone = common::range::partition(
+                              state.persistentRequests,
+                              common::negate( action::persistent::Send{ state}));
+
+                        //
+                        // Move the ones that did not find an idle resource to pending requests
+                        //
+                        common::range::move( std::get< 0>( notDone), state.pendingRequests);
+
+                        state.persistentRequests.clear();
+
+                     }
                   }
-
                   common::log::internal::transaction << "manager transactions: " << state.transactions.size() << "\n";
                }
             }

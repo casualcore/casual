@@ -58,17 +58,55 @@ namespace casual
             }
          } // local
 
+
+         Statistics::Statistics() :  min{ std::chrono::microseconds::max()}, max{ 0}, total{ 0}, invoked{ 0}
+         {
+
+         }
+
+         void Statistics::start( const common::platform::time_point& start)
+         {
+            m_start = start;
+         }
+         void Statistics::end( const common::platform::time_point& end)
+         {
+            time( m_start, end);
+         }
+
+         void Statistics::time( const common::platform::time_point& start, const common::platform::time_point& end)
+         {
+            auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
+            total += time;
+
+            if( time < min) min = time;
+            if( time > max) max = time;
+
+            ++invoked;
+         }
+
+         Statistics& operator += ( Statistics& lhs, const Statistics& rhs)
+         {
+            if( rhs.min < lhs.min) lhs.min = rhs.min;
+            if( rhs.max > lhs.max) lhs.max = rhs.max;
+            lhs.total += rhs.total;
+            lhs.invoked += rhs.invoked;
+
+            return lhs;
+         }
+
+         Stats& operator += ( Stats& lhs, const Stats& rhs)
+         {
+            lhs.resource += rhs.resource;
+            lhs.roundtrip += rhs.roundtrip;
+
+            return lhs;
+         }
+
+
          namespace resource
          {
             void Proxy::Instance::state( State state)
             {
-               if( state == State::busy)
-               {
-                  assert( m_state != State::busy);
-
-                  ++invoked;
-               }
-
                if( m_state != State::shutdown)
                {
                   m_state = state;
@@ -318,7 +356,7 @@ namespace casual
                   log::error << "resource proxy instance died - " << *found << std::endl;
                }
 
-               resource.invoked += found->invoked;
+               resource.statistics += found->statistics;
                resource.instances.erase( found.first);
 
                log::internal::transaction << "remove dead process: " << death << std::endl;
@@ -361,13 +399,6 @@ namespace casual
 
          return common::range::find_if( resource.instances, state::filter::Idle{});
       }
-
-      bool operator < ( const State::Deadline& lhs, const State::Deadline& rhs)
-      {
-         return lhs.deadline < rhs.deadline;
-      }
-
-
    } // transaction
 
 } // casual

@@ -64,6 +64,20 @@ namespace casual
          void writeCommit();
          void writeRollback();
 
+         struct Stats
+         {
+            struct update_t
+            {
+               std::size_t begin = 0;
+               std::size_t prepare = 0;
+               std::size_t remove = 0;
+            } update;
+
+            std::size_t writes = 0;
+         };
+
+         const Stats& stats() const;
+
       private:
 
          void state( const common::transaction::ID& id, long state);
@@ -99,6 +113,9 @@ namespace casual
 
          } m_statement;
 
+         Stats m_stats;
+
+
       };
 
       namespace scoped
@@ -120,6 +137,48 @@ namespace casual
             Log& m_log;
          };
       } // scoped
+
+      namespace persistent
+      {
+         struct Writer
+         {
+            enum class State
+            {
+               begun,
+               committed,
+            };
+
+            inline Writer( Log& log) : m_log( log), m_state{ State::committed} {}
+
+            inline void begin()
+            {
+               if( m_state == State::committed)
+               {
+                  m_log.writeBegin();
+                  m_state = State::begun;
+               }
+            }
+
+            inline void commit()
+            {
+               if( m_state == State::begun)
+               {
+                  m_log.writeCommit();
+                  m_state = State::committed;
+               }
+            }
+
+            inline ~Writer()
+            {
+               commit();
+            }
+
+         private:
+            Log& m_log;
+            State m_state;
+         };
+
+      } // persistent
 
    } // transaction
 

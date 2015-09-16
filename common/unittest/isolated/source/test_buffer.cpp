@@ -60,18 +60,18 @@ namespace casual
 
          }
 
-         TEST( casual_common_buffer, pool_insert)
+         TEST( casual_common_buffer, pool_adopt)
          {
-            auto buffer = pool::Holder::instance().insert( Payload{ buffer::type::binary(), 1024});
+            auto buffer = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
 
             ASSERT_TRUE( buffer != nullptr);
 
             pool::Holder::instance().clear();
          }
 
-         TEST( casual_common_buffer, pool_insert__deallocate__expect__inbound_still_valid)
+         TEST( casual_common_buffer, pool_adopt__deallocate__expect__inbound_still_valid)
          {
-            auto inbound = pool::Holder::instance().insert( Payload{ buffer::type::binary(), 1024});
+            auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
 
             pool::Holder::instance().deallocate( inbound);
 
@@ -83,9 +83,9 @@ namespace casual
             pool::Holder::instance().clear();
          }
 
-         TEST( casual_common_buffer, pool_insert__clear__expect__inbound_deallocated)
+         TEST( casual_common_buffer, pool_adopt__clear__expect__inbound_deallocated)
          {
-            auto inbound = pool::Holder::instance().insert( Payload{ buffer::type::binary(), 1024});
+            auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
 
             pool::Holder::instance().clear();
 

@@ -31,6 +31,35 @@ namespace casual
 
       namespace state
       {
+         struct Statistics
+         {
+            Statistics();
+
+            std::chrono::microseconds min;
+            std::chrono::microseconds max;
+            std::chrono::microseconds total;
+            std::size_t invoked;
+
+            void start( const common::platform::time_point& start);
+            void end( const common::platform::time_point& end);
+
+            void time( const common::platform::time_point& start, const common::platform::time_point& end);
+
+
+            friend Statistics& operator += ( Statistics& lhs, const Statistics& rhs);
+
+         private:
+            common::platform::time_point m_start;
+         };
+
+         struct Stats
+         {
+            Statistics resource;
+            Statistics roundtrip;
+
+            friend Stats& operator += ( Stats& lhs, const Stats& rhs);
+         };
+
          namespace resource
          {
             struct Proxy
@@ -51,7 +80,8 @@ namespace casual
 
                   id_type id;
                   common::process::Handle process;
-                  std::size_t invoked = 0;
+
+                  Stats statistics;
 
                   void state( State state);
                   State state() const;
@@ -72,10 +102,10 @@ namespace casual
                std::size_t concurency = 0;
 
                //!
-               //! This 'counterä keep track of number of invocation for removed
+               //! This 'counterä' keep track of statistics for removed
                //! instances, so we can give a better view for the operator.
                //!
-               std::size_t invoked = 0;
+               Stats statistics;
 
                std::vector< Instance> instances;
 
@@ -126,6 +156,7 @@ namespace casual
                base_message& operator = ( base_message&&) = default;
 
                common::ipc::message::Complete message;
+               common::platform::time_point created;
             };
 
             struct Reply : base_message
@@ -237,53 +268,50 @@ namespace casual
             void setResult( int value);
 
 
-            struct state
+            struct update
             {
-               struct Update
+               struct Stage
                {
-                  Update( Stage state) : m_state( state) {}
+                  Stage( Resource::Stage stage) : m_stage( stage) {}
 
                   void operator () ( Resource& value) const
                   {
-                     value.stage = m_state;
+                     value.stage = m_stage;
                   }
                private:
-                  Stage m_state;
-               };
-
-               struct Filter
-               {
-                  Filter( Stage state) : m_state( state) {}
-
-                  bool operator () ( const Resource& value) const
-                  {
-                     return value.stage == m_state;
-                  }
-               private:
-                  Stage m_state;
+                  Resource::Stage m_stage;
                };
             };
 
-            struct result
+            struct filter
             {
-               struct Filter
+               struct Stage
                {
-                  Filter( Result result) : m_result( result) {}
+                  Stage( Resource::Stage stage) : m_stage( stage) {}
+
+                  bool operator () ( const Resource& value) const
+                  {
+                     return value.stage == m_stage;
+                  }
+               private:
+                  Resource::Stage m_stage;
+               };
+
+               struct Result
+               {
+                  Result( Resource::Result result) : m_result( result) {}
 
                   bool operator () ( const Resource& value) const
                   {
                      return value.result == m_result;
                   }
                private:
-                  Result m_result;
+                  Resource::Result m_result;
                };
-            };
 
-            struct id
-            {
-               struct Filter
+               struct ID
                {
-                  Filter( id_type id) : m_id( id) {}
+                  ID( id_type id) : m_id( id) {}
 
                   bool operator () ( const Resource& value) const
                   {
@@ -293,7 +321,6 @@ namespace casual
                   id_type m_id;
                };
             };
-
 
             friend bool operator < ( const Resource& lhs, const Resource& rhs) { return lhs.id < rhs.id; }
             friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
@@ -380,16 +407,6 @@ namespace casual
       public:
          State( const std::string& database);
 
-
-         struct Deadline
-         {
-            common::transaction::xid_type xid;
-            common::platform::time_point deadline;
-
-            friend bool operator < ( const Deadline& lhs, const Deadline& rhs);
-         };
-
-         //typedef instances_type;
 
          std::map< std::string, config::xa::Switch> xaConfig;
 

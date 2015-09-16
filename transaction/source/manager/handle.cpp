@@ -165,89 +165,56 @@ namespace casual
 
                   } // persistent
 
-                  template< typename Q>
-                  bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
-                  {
-                     Q queue{ instance.process.queue, state};
 
-                     if( queue.send( message))
+                  template< typename M>
+                  void request( State& state, Transaction& transaction, Transaction::Resource::Stage filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
+                  {
+                     M message;
+                     message.process = common::process::handle();
+                     message.trid = transaction.trid;
+                     message.flags = flags;
+
+                     auto resources = std::get< 0>( common::range::partition(
+                        transaction.resources,
+                        Transaction::Resource::filter::Stage{ filter}));
+
+                     //
+                     // Update state on transaction-resources
+                     //
+                     common::range::for_each(
+                        resources,
+                        Transaction::Resource::update::Stage{ newStage});
+
+                     state::pending::Request request{ message};
+
+                     common::range::transform(
+                        resources,
+                        request.resources,
+                        std::mem_fn( &Transaction::Resource::id));
+
+                     if( ! action::resource::request( state, request))
                      {
-                        instance.state( state::resource::Proxy::Instance::State::busy);
-                        return true;
+                        //
+                        // Could not send to all RM-proxy-instances. We put the request
+                        // in pending.
+                        //
+                        state.pendingRequests.push_back( std::move( request));
                      }
-                     return false;
                   }
-
-
-                  template< typename Q, typename M>
-                  struct Requests : state::Base
-                  {
-                     using state::Base::Base;
-
-                     void operator () ( Transaction& transaction, Transaction::Resource::Stage filter, Transaction::Resource::Stage newState, long flags = TMNOFLAGS)
-                     {
-                        M message;
-                        message.process = common::process::handle();
-                        message.trid = transaction.trid;
-                        message.flags = flags;
-
-                        state::pending::Request request{ message};
-
-                        auto resources = common::range::partition(
-                              transaction.resources,
-                              Transaction::Resource::state::Filter{ filter});
-
-                        for( auto& resource : std::get< 0>( resources))
-                        {
-                           auto found = m_state.idle_instance( resource.id);
-
-                           if( ! found || ! resource::request< Q>( m_state, request.message, *found))
-                           {
-                              //
-                              // We could not find an idle resource
-                              //
-                              request.resources.push_back( resource.id);
-                           }
-                        }
-
-                        if( ! request.resources.empty())
-                        {
-                           m_state.pendingRequests.push_back( std::move( request));
-                        }
-
-                        //
-                        // Update state on transaction-resources
-                        //
-                        common::range::for_each(
-                              std::get< 0>( resources),
-                              Transaction::Resource::state::Update{ newState});
-                     }
-                  };
                } // resource
             } // send
 
             namespace instance
             {
-               template< typename M>
-               void state( State& state, const M& message, state::resource::Proxy::Instance::State newState)
-               {
-                  try
-                  {
-                     auto& instance = state.get_instance( message.resource, message.process.pid);
-                     instance.state( newState);
-                  }
-                  catch( common::exception::invalid::Argument&)
-                  {
 
-                  }
-               }
-
-               template< typename Q, typename M>
-               void done( State& state, M& message)
+               template< typename Q>
+               void done( State& state, Q& sender, state::resource::Proxy::Instance& instance)
                {
                   auto request = common::range::find_if(
                         state.pendingRequests,
-                        state::pending::filter::Request{ message.resource});
+                        state::pending::filter::Request{ instance.id});
+
+                  instance.state( state::resource::Proxy::Instance::State::idle);
 
 
                   if( request)
@@ -255,15 +222,15 @@ namespace casual
                      //
                      // We got a pending request for this resource, let's oblige
                      //
-                     Q queue{ message.process.queue, state};
-
-                     if( queue.send( request->message))
+                     if( sender.send( instance.process.queue, request->message))
                      {
+                        instance.state( state::resource::Proxy::Instance::State::busy);
+
                         request->resources.erase(
                            std::find(
                               std::begin( request->resources),
                               std::end( request->resources),
-                              message.resource));
+                              instance.id));
 
                         if( request.first->resources.empty())
                         {
@@ -272,16 +239,18 @@ namespace casual
                      }
                      else
                      {
-                        common::log::warning << "failed to send pending request to resource, although the instance (" << message.process <<  ") reported idle\n";
-
-                        instance::state( state, message, state::resource::Proxy::Instance::State::idle);
+                        common::log::warning << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
                      }
                   }
-                  else
-                  {
-                     instance::state( state, message, state::resource::Proxy::Instance::State::idle);
-                  }
                }
+
+               template< typename M>
+               void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time_point& now)
+               {
+                  instance.statistics.resource.time( message.statistics.start, message.statistics.end);
+                  instance.statistics.roundtrip.end( now);
+               }
+
             } // instance
 
 
@@ -324,6 +293,32 @@ namespace casual
 
          namespace resource
          {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename M>
+                  void involved( State& state, Transaction& transaction, M&& message)
+                  {
+                     for( auto& resource : message.resources)
+                     {
+                        if( common::range::find( state.resources, resource))
+                        {
+                           transaction.resources.push_back( resource);
+                        }
+                        else
+                        {
+                           common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                        }
+                     }
+
+                     common::range::trim( transaction.resources, common::range::unique( common::range::sort( transaction.resources)));
+
+                     common::log::internal::transaction << "involved: " << transaction << '\n';
+
+                  }
+               } // <unnamed>
+            } // local
             void Involved::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
@@ -336,21 +331,7 @@ namespace casual
 
                if( transaction)
                {
-                  for( auto& resource : message.resources)
-                  {
-                     if( common::range::find( m_state.resources, resource))
-                     {
-                        transaction->resources.push_back( resource);
-                     }
-                     else
-                     {
-                        common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
-                     }
-                  }
-
-                  common::range::trim( transaction->resources, common::range::unique( common::range::sort( transaction->resources)));
-
-                  common::log::internal::transaction << "involved: " << *transaction << '\n';
+                  local::involved( m_state, *transaction, message);
 
                }
                else
@@ -364,6 +345,7 @@ namespace casual
                   // Note: We don't keep this transaction persistent.
                   //
                   m_state.transactions.emplace_back( message.trid);
+                  local::involved( m_state, m_state.transactions.back(), message);
 
                   common::log::internal::transaction << "inter-domain involved trid : " << message.trid << " resources: " << common::range::make( message.resources) << " process: " <<  message.process << '\n';
                }
@@ -376,10 +358,19 @@ namespace casual
                void Wrapper< H>::operator () ( message_type& message)
                {
 
+                  auto now = common::platform::clock_type::now();
                   //
                   // The instance is done and ready for more work
                   //
-                  internal::instance::done< queue::non_blocking::Writer>( this->m_state, message);
+
+                  auto& instance = m_state.get_instance( message.resource, message.process.pid);
+
+                  {
+                     queue::non_blocking::Send sender{ this->m_state};
+
+                     internal::instance::done( this->m_state, sender, instance);
+                     internal::instance::statistics( instance, message, now);
+                  }
 
                   //
                   // Find the transaction
@@ -393,7 +384,7 @@ namespace casual
 
                      auto resource = common::range::find_if(
                            common::range::make( transaction.resources),
-                           Transaction::Resource::id::Filter{ message.resource});
+                           Transaction::Resource::filter::ID{ message.resource});
 
                      if( ! resource.empty())
                      {
@@ -436,8 +427,10 @@ namespace casual
 
                      if( message.state == XA_OK)
                      {
-                        instance.state( state::resource::Proxy::Instance::State::idle);
                         instance.process = std::move( message.process);
+
+                        queue::non_blocking::Send sender{ m_state};
+                        internal::instance::done( m_state, sender, instance);
 
                      }
                      else
@@ -482,6 +475,7 @@ namespace casual
                   common::trace::Scope trace{ "transaction::handle::resource::prepare reply", common::log::internal::transaction};
 
                   common::log::internal::transaction << "prepare reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+
 
                   //
                   // If the resource only did a read only, we 'promote' it to 'not involved'
@@ -574,8 +568,8 @@ namespace casual
                            // (could be that some has read-only)
                            //
                            auto filter = common::chain::And::link(
-                                 Transaction::Resource::result::Filter{ Transaction::Resource::Result::cXA_OK},
-                                 Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cPrepareReplied});
+                                 Transaction::Resource::filter::Result{ Transaction::Resource::Result::cXA_OK},
+                                 Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied});
 
                            internal::send::resource::persistent::request<
                               common::message::transaction::resource::commit::Request>( m_state, transaction, filter);
@@ -590,12 +584,11 @@ namespace casual
                            //
                            common::log::error << "TODO: something has gone wrong - rollback...\n";
 
-
-                           internal::send::resource::Requests<
-                              queue::non_blocking::Writer,
-                              common::message::transaction::resource::commit::Request> request{ m_state};
-
-                           request( transaction, Transaction::Resource::Stage::cPrepareReplied, Transaction::Resource::Stage::cCommitRequested);
+                           internal::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                              m_state,
+                              transaction,
+                              Transaction::Resource::Stage::cPrepareReplied,
+                              Transaction::Resource::Stage::cRollbackRequested);
 
                            break;
                         }
@@ -638,19 +631,24 @@ namespace casual
                         {
                            common::log::internal::transaction << "commit completed - " << transaction << " XA_OK\n";
 
-                           //
-                           // Send reply
-                           // TODO: We can't send reply directly without checking that the prepare-reply
-                           // has been sent (prepare-reply could be pending for persistent write).
-                           // For now, we do a delayed reply, so we're sure that the
-                           // commit-reply arrives after the prepare-reply
-                           //
-                           {
-                              auto reply = internal::transform::message< reply_type>( message);
-                              reply.correlation = transaction.correlation;
-                              reply.stage = reply_type::Stage::commit;
-                              reply.state = XA_OK;
+                           auto reply = internal::transform::message< reply_type>( message);
+                           reply.correlation = transaction.correlation;
+                           reply.stage = reply_type::Stage::commit;
+                           reply.state = XA_OK;
 
+                           if( transaction.resources.size() <= 1)
+                           {
+                              internal::send::reply( m_state, reply, transaction.trid.owner());
+                           }
+                           else
+                           {
+                              //
+                              // Send reply
+                              // TODO: We can't send reply directly without checking that the prepare-reply
+                              // has been sent (prepare-reply could be pending for persistent write).
+                              // For now, we do a delayed reply, so we're sure that the
+                              // commit-reply arrives after the prepare-reply
+                              //
                               internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
 
@@ -789,6 +787,11 @@ namespace casual
                   m_state.log.begin( message);
 
                   m_state.transactions.emplace_back( message.trid);
+
+                  if( ! message.resources.empty())
+                  {
+                     resource::local::involved( m_state, m_state.transactions.back(), message);
+                  }
                }
 
                //
@@ -876,11 +879,13 @@ namespace casual
                      //
                      transaction.correlation = message.correlation;
 
-                     internal::send::resource::Requests<
-                        queue::non_blocking::Writer,
-                        common::message::transaction::resource::commit::Request> request{ m_state};
-
-                     request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cCommitRequested, TMONEPHASE);
+                     internal::send::resource::request< common::message::transaction::resource::commit::Request>(
+                        m_state,
+                        transaction,
+                        Transaction::Resource::Stage::cInvolved,
+                        Transaction::Resource::Stage::cCommitRequested,
+                        TMONEPHASE
+                     );
 
                      break;
                   }
@@ -896,11 +901,12 @@ namespace casual
                      //
                      transaction.correlation = message.correlation;
 
-                     internal::send::resource::Requests<
-                        queue::non_blocking::Writer,
-                        common::message::transaction::resource::prepare::Request> request{ m_state};
-
-                     request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cPrepareRequested);
+                     internal::send::resource::request< common::message::transaction::resource::prepare::Request>(
+                        m_state,
+                        transaction,
+                        Transaction::Resource::Stage::cInvolved,
+                        Transaction::Resource::Stage::cPrepareRequested
+                     );
 
                      break;
                   }
@@ -955,11 +961,12 @@ namespace casual
                   //
                   transaction.correlation = message.correlation;
 
-                  internal::send::resource::Requests<
-                     queue::non_blocking::Writer,
-                     common::message::transaction::resource::rollback::Request> request{ m_state};
-
-                  request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cRollbackRequested);
+                  internal::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::Stage::cInvolved,
+                     Transaction::Resource::Stage::cRollbackRequested
+                  );
                }
             }
             else
@@ -988,12 +995,13 @@ namespace casual
                   auto& transaction = *found;
                   common::log::internal::transaction << "prepare - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  internal::send::resource::Requests<
-                     queue::non_blocking::Writer,
-                     common::message::transaction::resource::domain::prepare::Request> request{ m_state};
-
-                  request( transaction, Transaction::Resource::Stage::cInvolved, Transaction::Resource::Stage::cPrepareRequested, message.flags);
-
+                  internal::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::Stage::cInvolved,
+                     Transaction::Resource::Stage::cPrepareRequested,
+                     message.flags
+                  );
                }
                else
                {
@@ -1036,12 +1044,13 @@ namespace casual
                   auto& transaction = *found;
                   common::log::internal::transaction << "commit - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  internal::send::resource::Requests<
-                     queue::non_blocking::Writer,
-                     common::message::transaction::resource::domain::commit::Request> request{ m_state};
-
-                  request( transaction, Transaction::Resource::Stage::cPrepareReplied, Transaction::Resource::Stage::cCommitRequested, message.flags);
-
+                  internal::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::Stage::cPrepareReplied,
+                     Transaction::Resource::Stage::cCommitRequested,
+                     message.flags
+                  );
                }
                else
                {
@@ -1074,13 +1083,13 @@ namespace casual
                   auto& transaction = *found;
                   common::log::internal::transaction << "rollback - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  internal::send::resource::Requests<
-                     queue::non_blocking::Writer,
-                     common::message::transaction::resource::domain::commit::Request> request{ m_state};
-
-                  request( transaction,
-                        Transaction::Resource::Stage::cPrepareReplied,
-                        Transaction::Resource::Stage::cRollbackRequested, message.flags);
+                  internal::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::Stage::cPrepareReplied,
+                     Transaction::Resource::Stage::cRollbackRequested,
+                     message.flags
+                  );
                }
                else
                {
@@ -1111,7 +1120,7 @@ namespace casual
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cPrepareReplied}))
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied}))
                      {
 
                         //
@@ -1152,7 +1161,7 @@ namespace casual
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::state::Filter{ Transaction::Resource::Stage::cCommitReplied}))
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cCommitReplied}))
                      {
 
                         //

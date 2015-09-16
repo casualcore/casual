@@ -24,6 +24,10 @@ namespace casual
                result_t( platform::queue_id_type queue, M&& message)
                   : queue( queue), complete( marshal::complete( std::forward< M>( message))) {}
 
+               template< typename M>
+               result_t( const process::Handle& process, M&& message)
+                 : result_t( process.queue, std::forward< M>( message)) {}
+
                platform::queue_id_type queue;
                common::ipc::message::Complete complete;
             };
@@ -82,6 +86,14 @@ namespace casual
                repliers_type m_repliers;
 
             public:
+
+               void insert( Handler&& handler)
+               {
+                  for( auto& replier : handler.m_repliers)
+                  {
+                     m_repliers[ replier.first] = std::move( replier.second);
+                  }
+               }
 
                template< typename H>
                void insert( H&& handler)

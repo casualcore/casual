@@ -23,6 +23,13 @@ namespace casual
             {
                struct Manager
                {
+                  Manager() = default;
+
+                  Manager( std::function<void(Manager&)> initializer)
+                  {
+                     initializer( *this);
+                  }
+
                   std::size_t instances = 0;
                   std::size_t id = 0;
                   std::string key;
@@ -53,17 +60,12 @@ namespace casual
                   //!
                   struct Reply : server::connect::basic_reply< cTransactionClientConnectReply>
                   {
-
-                     using queue_id_type = platform::queue_id_type;
-
-                     queue_id_type transaction_manager = 0;
                      std::vector< resource::Manager> resources;
                      std::string domain;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         server::connect::basic_reply< cTransactionClientConnectReply>::marshal( archive);
-                        archive & transaction_manager;
                         archive & resources;
                         archive & domain;
                      })
@@ -158,12 +160,14 @@ namespace casual
                {
                   common::platform::time_point start;
                   std::chrono::microseconds timeout;
+                  std::vector< platform::resource::id_type> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & start;
                      archive & timeout;
+                     archive & resources;
                   })
                };
 
@@ -242,11 +246,14 @@ namespace casual
                struct basic_reply : transaction::basic_reply< type>
                {
                   platform::resource::id_type resource = 0;
+                  Statistics statistics;
+
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      transaction::basic_reply< type>::marshal( archive);
                      archive & resource;
+                     archive & statistics;
                   })
                };
 

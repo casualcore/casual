@@ -197,8 +197,6 @@ namespace casual
             {
                broker::State result;
 
-               //domain.casual_default.service
-
                //
                // Handle groups
                //
@@ -361,7 +359,6 @@ namespace casual
                   common::message::transaction::client::connect::Reply reply;
 
                   reply.domain = common::environment::domain::name();
-                  reply.transaction_manager = state.transaction_manager;
 
                   try
                   {

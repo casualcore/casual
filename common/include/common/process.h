@@ -107,16 +107,44 @@ namespace casual
             {
                const Uuid& broker();
 
-               namespace transaction
-               {
-                  const Uuid& manager();
-               } // transaction
-
                namespace traffic
                {
                   const Uuid& manager();
                } // traffic
             } // identity
+
+            namespace fetch
+            {
+               enum class Directive : char
+               {
+                  wait,
+                  direct
+               };
+
+               Handle handle( const Uuid& identity, Directive directive);
+
+            } // fetch
+
+            namespace transaction
+            {
+               namespace manager
+               {
+                  const Uuid& identity();
+
+                  const Handle& handle();
+
+                  //!
+                  //! 'refetch' transaction managers process::Handle.
+                  //! @note only for unittest purpose?
+                  //!
+                  const Handle& refetch();
+
+               } // manager
+
+            } // transaction
+
+
+
          } // instance
 
 

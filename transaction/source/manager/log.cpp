@@ -95,9 +95,6 @@ namespace casual
          m_connection.execute(
             "CREATE INDEX IF NOT EXISTS i_xid_trans ON trans ( gtrid, bqual);" );
 
-         m_connection.execute(
-            "CREATE INDEX IF NOT EXISTS i_deadline_trans ON trans ( deadline);" );
-
 
          m_statement.begin = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
 
@@ -150,12 +147,15 @@ namespace casual
                   started,
                   deadline);
          }
+         ++m_stats.update.begin;
+
       }
 
 
       void Log::prepare( const common::transaction::ID& id)
       {
          state( id, State::cPrepared);
+         ++m_stats.update.prepare;
       }
 
       void Log::remove( const common::transaction::ID& trid)
@@ -163,6 +163,8 @@ namespace casual
          m_statement.remove.execute(
             common::transaction::global( trid),
             common::transaction::branch( trid));
+
+         ++m_stats.update.remove;
       }
 
 
@@ -207,8 +209,8 @@ namespace casual
 
       void Log::writeCommit()
       {
-         common::trace::internal::Scope trace{ "transaction log write persistence"};
          m_connection.commit();
+         ++m_stats.writes;
       }
 
 
@@ -216,6 +218,11 @@ namespace casual
       void Log::writeRollback()
       {
          m_connection.rollback();
+      }
+
+      const Log::Stats& Log::stats() const
+      {
+         return m_stats;
       }
 
       void Log::state( const common::transaction::ID& id, long state)
