@@ -166,8 +166,8 @@ namespace casual
                   } // persistent
 
 
-                  template< typename M>
-                  void request( State& state, Transaction& transaction, Transaction::Resource::Stage filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
+                  template< typename M, typename F>
+                  void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
                   {
                      M message;
                      message.process = common::process::handle();
@@ -176,7 +176,7 @@ namespace casual
 
                      auto resources = std::get< 0>( common::range::partition(
                         transaction.resources,
-                        Transaction::Resource::filter::Stage{ filter}));
+                        filter));
 
                      //
                      // Update state on transaction-resources
@@ -565,8 +565,8 @@ namespace casual
                                  Transaction::Resource::filter::Result{ Transaction::Resource::Result::cXA_OK},
                                  Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied});
 
-                           internal::send::resource::persistent::request<
-                              common::message::transaction::resource::commit::Request>( m_state, transaction, filter);
+                           internal::send::resource::request<
+                              common::message::transaction::resource::commit::Request>( m_state, transaction, filter, Transaction::Resource::Stage::cPrepareRequested);
 
 
                            break;
@@ -581,7 +581,7 @@ namespace casual
                            internal::send::resource::request< common::message::transaction::resource::rollback::Request>(
                               m_state,
                               transaction,
-                              Transaction::Resource::Stage::cPrepareReplied,
+                              Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
                               Transaction::Resource::Stage::cRollbackRequested);
 
                            break;
@@ -758,16 +758,34 @@ namespace casual
             } // reply
          } // resource
 
-
          void basic_commit::operator () ( message_type& message)
          {
-            common::trace::Scope trace{ "transaction::handle::Commit", common::log::internal::transaction};
+            common::Trace trace{ "transaction::handle::Commit", common::log::internal::transaction};
 
             auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
-            if( found)
+            if( ! found)
+            {
+               //
+               // transaction is not known to TM, hence no resources has been involved
+               // up to this point. We add the transaction and
+               //
+
+               m_state.transactions.emplace_back( message.trid);
+
+               //
+               // We now have the transaction, we call recursive...
+               //
+               (*this)( message);
+            }
+            else
             {
                auto& transaction = *found;
+
+               //
+               // Make sure we add the involved resources from the commit message (if any)
+               //
+               resource::local::involved( m_state, transaction, message);
 
                switch( transaction.stage())
                {
@@ -826,7 +844,7 @@ namespace casual
                      internal::send::resource::request< common::message::transaction::resource::commit::Request>(
                         m_state,
                         transaction,
-                        Transaction::Resource::Stage::cInvolved,
+                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
                         Transaction::Resource::Stage::cCommitRequested,
                         TMONEPHASE
                      );
@@ -848,7 +866,7 @@ namespace casual
                      internal::send::resource::request< common::message::transaction::resource::prepare::Request>(
                         m_state,
                         transaction,
-                        Transaction::Resource::Stage::cInvolved,
+                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
                         Transaction::Resource::Stage::cPrepareRequested
                      );
 
@@ -856,23 +874,6 @@ namespace casual
                   }
                }
 
-            }
-            else
-            {
-               //
-               // transaction is not known to TM, hence no resources has been involved.
-               // We send reply as a 'read-only'
-               //
-
-               common::log::internal::transaction << "transaction not involved with any resources - " << message.trid << " XA_RDONLY\n";
-
-               {
-                  auto reply = internal::transform::reply( message);
-                  reply.state = XA_RDONLY;
-                  reply.stage = reply_type::Stage::commit;
-
-                  internal::send::reply( m_state, std::move( reply), message.process);
-               }
             }
          }
 
@@ -888,9 +889,28 @@ namespace casual
             //
             auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
-            if( found)
+            if( ! found)
+            {
+               //
+               // transaction is not known to TM, hence no resources has been involved
+               // up to this point. We add the transaction.
+               //
+
+               m_state.transactions.emplace_back( message.trid);
+
+               //
+               // We now have the transaction, we call recursive...
+               //
+               (*this)( message);
+            }
+            else
             {
                auto& transaction = *found;
+
+               //
+               // Make sure we add the involved resources from the rollback message (if any)
+               //
+               resource::local::involved( m_state, transaction, message);
 
                if( transaction.resources.empty())
                {
@@ -921,25 +941,9 @@ namespace casual
                   internal::send::resource::request< common::message::transaction::resource::rollback::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::Stage::cInvolved,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
                      Transaction::Resource::Stage::cRollbackRequested
                   );
-               }
-            }
-            else
-            {
-               //
-               // transaction is not known to TM, hence no resources has been involved.
-               // We send reply as a 'read-only'
-               //
-
-               common::log::internal::transaction << "transaction not involved with any resources - " << message.trid << " XA_RDONLY\n";
-
-               {
-                  auto reply = internal::transform::reply( message);
-                  reply.state = XA_RDONLY;
-
-                  internal::send::reply( m_state, std::move( reply), message.process);
                }
             }
          }
@@ -967,7 +971,7 @@ namespace casual
                   internal::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::Stage::cInvolved,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
                      Transaction::Resource::Stage::cPrepareRequested,
                      message.flags
                   );
@@ -1015,7 +1019,7 @@ namespace casual
                   internal::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::Stage::cPrepareReplied,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
                      Transaction::Resource::Stage::cCommitRequested,
                      message.flags
                   );
@@ -1054,7 +1058,7 @@ namespace casual
                   internal::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::Stage::cPrepareReplied,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
                      Transaction::Resource::Stage::cRollbackRequested,
                      message.flags
                   );

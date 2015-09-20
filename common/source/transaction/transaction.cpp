@@ -28,6 +28,7 @@ namespace casual
          void Transaction::associate( platform::descriptor_type descriptor)
          {
             m_descriptors.push_back( descriptor);
+            m_local = false;
          }
 
          void Transaction::discard( platform::descriptor_type descriptor)
@@ -51,6 +52,11 @@ namespace casual
          const std::vector< platform::descriptor_type>& Transaction::descriptors() const
          {
             return m_descriptors;
+         }
+
+         bool Transaction::local() const
+         {
+            return m_local;
          }
 
          bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}

@@ -327,13 +327,14 @@ namespace casual
 
          void shutdown( State& state, const state::Server& server, std::size_t instances)
          {
+            Trace trace{ "broker::handle::shutdown", log::internal::debug};
+
             instances = std::min( server.instances.size(), instances);
 
             auto range = common::range::make( server.instances);
 
             range.first = range.last - instances;
 
-            std::vector< common::process::Handle> servers;
 
             for( auto& pid : range)
             {
@@ -342,15 +343,36 @@ namespace casual
                //
                if( pid != common::process::id())
                {
-                  servers.push_back( state.getInstance( pid).process);
+                  try
+                  {
+                     auto& instance = state.getInstance( pid);
+                     instance.alterState( state::Server::Instance::State::shutdown);
+
+                     queue::non_blocking::Send sender{ state};
+
+                     if( ! sender( instance.process.queue, common::message::shutdown::Request{}))
+                     {
+                        log::error << "could not send shutdown to: " << instance.process << std::endl;
+                        //
+                        // We try to send it later?
+                        //
+                        state.pending.replies.emplace_back( common::message::shutdown::Request{}, instance.process.queue);
+                     }
+                     else
+                     {
+                        log::internal::debug << "sent shutdown message to: " << instance.process << std::endl;
+                     }
+
+                  }
+                  catch( const state::exception::Missing&)
+                  {
+                     // we've already removed the instance
+                  }
+                  catch( const exception::queue::Unavailable&)
+                  {
+                     // we assume the instance is down
+                  }
                }
-            }
-
-            std::vector< common::platform::pid_type> result;
-
-            for( auto& death : common::server::lifetime::soft::shutdown( servers, std::chrono::seconds( 5)))
-            {
-               state.process( death);
             }
          }
 

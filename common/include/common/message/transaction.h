@@ -158,7 +158,16 @@ namespace casual
 
             namespace commit
             {
-               typedef basic_request< cTransactionCommitRequest> Request;
+               struct Request : basic_request< cTransactionCommitRequest>
+               {
+                  std::vector< platform::resource::id_type> resources;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_request< cTransactionCommitRequest>::marshal( archive);
+                     archive & resources;
+                  })
+               };
 
                struct Reply : basic_reply< cTransactionCommitReply>
                {
@@ -183,7 +192,16 @@ namespace casual
 
             namespace rollback
             {
-               typedef basic_request< cTransactionRollbackRequest> Request;
+               struct Request : basic_request< cTransactionRollbackRequest>
+               {
+                  std::vector< platform::resource::id_type> resources;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     basic_request< cTransactionRollbackRequest>::marshal( archive);
+                     archive & resources;
+                  })
+               };
 
                struct Reply : basic_reply< cTransactionRollbackReply>
                {

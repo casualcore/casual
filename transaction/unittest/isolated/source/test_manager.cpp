@@ -122,6 +122,14 @@ namespace casual
                         reply.domain = "mockup-domain";
                         reply.directive = decltype( reply)::Directive::start;
 
+                        reply.resources.emplace_back( []( common::message::transaction::resource::Manager& m)
+                                 {
+                                    m.id = 10;
+                                    m.key = "rm-mockup";
+                                    m.instances = 2;
+                                    m.openinfo = "rm-10";
+                                 });
+
                         result.emplace_back( r.process, std::move( reply));
                         return result;
                      },
@@ -285,7 +293,13 @@ namespace casual
       {
          local::Domain domain{ local::configuration()};
 
-         EXPECT_TRUE( tx_begin() == TX_OK);;
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         //
+         // Make sure we make the transaction distributed
+         //
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
 
          // involved
          {
@@ -300,7 +314,7 @@ namespace casual
          EXPECT_TRUE( tx_commit() == TX_OK);
 
 
-         auto state = local::admin::call::state();
+         state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);
@@ -317,6 +331,12 @@ namespace casual
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
+         //
+         // Make sure we make the transaction distributed
+         //
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
          // involved
          {
             common::message::transaction::resource::Involved message;
@@ -329,7 +349,7 @@ namespace casual
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
 
-         auto state = local::admin::call::state();
+         state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);
@@ -384,6 +404,12 @@ namespace casual
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
+         //
+         // Make sure we make the transaction distributed
+         //
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
          // involved
          {
             common::message::transaction::resource::Involved message;
@@ -396,7 +422,7 @@ namespace casual
 
          EXPECT_TRUE( tx_commit() == TX_OK);
 
-         auto state = local::admin::call::state();
+         state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);

@@ -90,6 +90,11 @@ namespace casual
             //!
             const std::vector< platform::descriptor_type>& descriptors() const;
 
+            //!
+            //! @return true if the transaction never had any associated descriptors
+            //!
+            bool local() const;
+
 
             friend bool operator == ( const Transaction& lhs, const ID& rhs);
             friend bool operator == ( const Transaction& lhs, const XID& rhs);
@@ -99,6 +104,8 @@ namespace casual
 
 
             std::vector< platform::descriptor_type> m_descriptors;
+
+            bool m_local = true;
 
 
          };
