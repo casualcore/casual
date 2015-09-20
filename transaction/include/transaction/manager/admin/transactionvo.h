@@ -214,13 +214,11 @@ namespace casual
          {
             struct update_t
             {
-               std::size_t begin = 0;
                std::size_t prepare = 0;
                std::size_t remove = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( begin);
                   archive & CASUAL_MAKE_NVP( prepare);
                   archive & CASUAL_MAKE_NVP( remove);
                })

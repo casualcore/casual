@@ -101,16 +101,6 @@ namespace casual
          namespace transaction
          {
 
-
-
-            struct Begin
-            {
-               using message_type = common::message::transaction::begin::Request;
-               using reply_type = common::message::transaction::begin::Reply;
-
-               std::vector< common::ipc::message::Complete> operator () ( message_type message);
-            };
-
             struct Commit
             {
                using message_type = common::message::transaction::commit::Request;

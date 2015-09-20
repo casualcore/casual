@@ -167,24 +167,6 @@ namespace casual
          namespace transaction
          {
 
-
-
-            std::vector< common::ipc::message::Complete> Begin::operator () ( message_type message)
-            {
-               Trace trace{ "mockup::transaction::Begin", log::internal::debug};
-
-               reply_type reply;
-
-               reply.correlation = message.correlation;
-               reply.process = common::mockup::ipc::transaction::manager::queue().process();
-               reply.state = XA_OK;
-               reply.trid = message.trid;
-
-               std::vector< common::ipc::message::Complete> result;
-               result.emplace_back( marshal::complete( reply));
-               return result;
-            }
-
             std::vector< common::ipc::message::Complete> Commit::operator () ( message_type message)
             {
                Trace trace{ "mockup::transaction::Commit", log::internal::debug};
@@ -273,7 +255,7 @@ namespace casual
             {
                common::mockup::transform::Handler manager()
                {
-                  return transform::Handler{ mockup::transaction::Begin{}, mockup::transaction::Commit{}, mockup::transaction::Rollback{}};
+                  return transform::Handler{ mockup::transaction::Commit{}, mockup::transaction::Rollback{}};
                }
             } // transaction
 
@@ -527,20 +509,6 @@ namespace casual
                {
 
                   return reply::Handler{
-
-                     []( common::message::transaction::begin::Request message)
-                     {
-                        Trace trace{ "mockup::transaction::Begin", log::internal::debug};
-
-                        common::message::transaction::begin::Reply reply;
-
-                        reply.correlation = message.correlation;
-                        reply.process = common::mockup::ipc::transaction::manager::queue().process();
-                        reply.state = XA_OK;
-                        reply.trid = message.trid;
-
-                        return local::result_set( message.process, reply);
-                     },
                      []( common::message::transaction::commit::Request message)
                      {
                         Trace trace{ "mockup::transaction::Commit", log::internal::debug};

@@ -157,7 +157,6 @@ namespace casual
          {
             vo::Log result;
 
-            result.update.begin = log.update.begin;
             result.update.prepare = log.update.prepare;
             result.update.remove = log.update.remove;
             result.writes = log.writes;

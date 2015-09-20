@@ -147,7 +147,7 @@ namespace casual
          {
             for( auto& transaction : m_transactions)
             {
-               if( transaction.state == Transaction::State::active && range::find( transaction.descriptors, descriptor))
+               if( transaction.state == Transaction::State::active && transaction.associated( descriptor))
                {
                   return true;
                }
@@ -232,47 +232,33 @@ namespace casual
 
          namespace local
          {
-            namespace pop
+            namespace
             {
-               struct Guard
+               namespace pop
                {
-                  Guard( std::vector< Transaction>& transactions) : m_transactions( transactions) {}
-                  ~Guard() { m_transactions.erase( std::end( m_transactions));}
+                  struct Guard
+                  {
+                     Guard( std::vector< Transaction>& transactions) : m_transactions( transactions) {}
+                     ~Guard() { m_transactions.erase( std::end( m_transactions));}
 
-                  std::vector< Transaction>& m_transactions;
-               };
-            } // pop
+                     std::vector< Transaction>& m_transactions;
+                  };
+               } // pop
 
 
 
-            template< typename QW, typename QR>
-            Transaction startTransaction( QW& writer, QR& reader, std::vector< int> resources, const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
-            {
-
-               message::transaction::begin::Request request;
-               request.process = process::handle();
-               request.trid = transaction::ID::create();
-               request.timeout = std::chrono::seconds{ timeout};
-               request.start = start;
-               request.resources = std::move( resources);
-
-               writer( request);
-
-               message::transaction::begin::Reply reply;
-               reader( reply);
-
-               if( reply.state != XA_OK)
+               Transaction startTransaction( const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
                {
-                  // TODO: more explicit exception?
-                  throw exception::tx::Fail{ "failed to start transaction - " + std::string( error::xa::error( reply.state))};
+
+                  Transaction transaction{ transaction::ID::create( process::handle())};
+                  transaction.state = Transaction::State::active;
+                  transaction.timout.start = start;
+                  transaction.timout.timeout = std::chrono::seconds{ timeout};
+
+                  return transaction;
                }
 
-               Transaction transaction{ std::move( reply.trid)};
-               transaction.state = Transaction::State::active;
-
-               return transaction;
-            }
-
+            } // <unnamed>
          } // local
 
          std::vector< int> Context::resources() const
@@ -327,10 +313,7 @@ namespace casual
          {
             common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
 
-            queue::blocking::Writer writer( manager().queue());
-            queue::blocking::Reader reader( ipc::receive::queue());
-
-            auto transaction = local::startTransaction( writer, reader, resources(), start, m_timeout);
+            auto transaction = local::startTransaction( start, m_timeout);
 
             resources_start( transaction, TMNOFLAGS);
 
@@ -397,7 +380,7 @@ namespace casual
 
             auto pending_check = [&]( Transaction& transaction)
             {
-               if( ! transaction.descriptors.empty())
+               if( transaction.associated())
                {
                   if( transaction.trid)
                   {
@@ -411,7 +394,7 @@ namespace casual
                   //
                   // Discard pending
                   //
-                  for( auto& descriptor : transaction.descriptors)
+                  for( auto& descriptor : transaction.descriptors())
                   {
                      call::Context::instance().cancel( descriptor);
                   }
@@ -616,14 +599,7 @@ namespace casual
                throw exception::tx::Outside{ "begin - resources not done with work outside global transaction"}; //, exception::make_nip( "resources", range::make( transaction.resources))};
             }
 
-
-
-            queue::blocking::Writer writer( manager().queue());
-            queue::blocking::Reader reader( ipc::receive::queue());
-
-
-
-            auto trans = local::startTransaction( writer, reader, resources(), platform::clock_type::now(), m_timeout);
+            auto trans = local::startTransaction( platform::clock_type::now(), m_timeout);
 
             resources_start( trans, TMNOFLAGS);
 
@@ -701,7 +677,7 @@ namespace casual
                throw exception::tx::Protocol{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
             }
 
-            if( ! transaction.descriptors.empty())
+            if( transaction.associated())
             {
                throw exception::tx::Protocol{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }
@@ -996,7 +972,6 @@ namespace casual
             if( ! found)
             {
                throw exception::tx::Argument{ "transaction not known"};
-               //common::log::internal::transaction << "TX_EINVAL - transaction not known: " << *xid << std::endl;
             }
 
 
@@ -1035,7 +1010,17 @@ namespace casual
                auto start = std::bind( &Resource::start, std::placeholders::_1, std::ref( transaction), flags);
                range::for_each( m_resources.fixed, start);
 
-               // TODO: throw if some of the rm:s report an error?
+               //
+               // Notify the TM about the involved RM:s
+               //
+               {
+                  std::vector< int> resources;
+
+                  auto ids = std::mem_fn( &Resource::id);
+                  range::transform( m_resources.fixed, resources, ids);
+
+                  involved( transaction.trid, std::move( resources));
+               }
             }
          }
 
@@ -1059,7 +1044,7 @@ namespace casual
 
          int Context::pop_transaction()
          {
-            common::trace::Scope trace{ __func__, common::log::internal::transaction};
+            common::trace::Scope trace{ "transaction::Context::pop_transaction", common::log::internal::transaction};
 
             //
             // Dependent on control we do different stuff

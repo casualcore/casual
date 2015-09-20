@@ -154,41 +154,6 @@ namespace casual
                })
             };
 
-            namespace begin
-            {
-               struct Request : public basic_request< cTransactionBeginRequest>
-               {
-                  common::platform::time_point start;
-                  std::chrono::microseconds timeout;
-                  std::vector< platform::resource::id_type> resources;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & start;
-                     archive & timeout;
-                     archive & resources;
-                  })
-               };
-
-               struct Reply : basic_reply< cTransactionBeginReply>
-               {
-                  enum class Stage : char
-                  {
-                     begin = 0,
-                     error = 2,
-                  };
-
-                  Stage stage = Stage::begin;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     basic_reply< cTransactionBeginReply>::marshal( archive);
-                     archive & stage;
-                  })
-               };
-
-            } // begin
 
 
             namespace commit
@@ -381,8 +346,6 @@ namespace casual
             struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
 
 
-            template<>
-            struct type_traits< transaction::begin::Request> : detail::type< transaction::begin::Reply> {};
             template<>
             struct type_traits< transaction::commit::Request> : detail::type< transaction::commit::Reply> {};
             template<>

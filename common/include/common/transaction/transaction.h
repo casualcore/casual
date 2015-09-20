@@ -52,10 +52,7 @@ namespace casual
             //!
             std::vector< platform::resource::id_type> resources;
 
-            //!
-            //! associated descriptors to this transaction
-            //!
-            std::vector< platform::descriptor_type> descriptors;
+
 
 
             State state = State::active;
@@ -63,15 +60,47 @@ namespace casual
 
             explicit operator bool() const;
 
+
+            //!
+            //! associate a descriptor to this transaction
+            //!
+            void associate( platform::descriptor_type descriptor);
+
+
             //!
             //! discards a descriptor from this transaction
             //!
             void discard( platform::descriptor_type descriptor);
 
 
+            //!
+            //! @return true if this transaction has any pending replies
+            //! associated
+            //!
+            bool associated() const;
+
+            //!
+            //! @return true if this transaction has @p descriptor associated
+            //!
+            bool associated( platform::descriptor_type descriptor) const;
+
+
+            //!
+            //! associated descriptors to this transaction
+            //!
+            const std::vector< platform::descriptor_type>& descriptors() const;
+
+
             friend bool operator == ( const Transaction& lhs, const ID& rhs);
             friend bool operator == ( const Transaction& lhs, const XID& rhs);
             friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs);
+
+         private:
+
+
+            std::vector< platform::descriptor_type> m_descriptors;
+
+
          };
 
       } // transaction

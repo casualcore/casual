@@ -149,7 +149,7 @@ namespace casual
                         if( ! flag< TPNOTRAN>( flags) && transaction)
                         {
                            message.trid = transaction.trid;
-                           transaction.descriptors.push_back( message.descriptor);
+                           transaction.associate( message.descriptor);
 
                            //
                            // We use the transaction deadline if it's earlier

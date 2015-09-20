@@ -249,17 +249,9 @@ namespace casual
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-
          auto state = local::admin::call::state();
-         auto& current = common::transaction::Context::instance().current();
-         auto global = transcode::hex::encode( common::transaction::global( current.trid));
-         auto branch = transcode::hex::encode( common::transaction::branch( current.trid));
 
-
-
-         ASSERT_TRUE( state.transactions.size() == 1);
-         EXPECT_TRUE( state.transactions.at( 0).trid.global == global);
-         EXPECT_TRUE( state.transactions.at( 0).trid.branch == branch);
+         EXPECT_TRUE( state.transactions.empty());
 
          EXPECT_TRUE( tx_commit() == TX_OK);
 

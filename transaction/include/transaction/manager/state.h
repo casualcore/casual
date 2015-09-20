@@ -339,6 +339,10 @@ namespace casual
          common::transaction::ID trid;
          std::vector< Resource> resources;
 
+         common::platform::time_point started;
+         common::platform::time_point deadline;
+
+
          //!
          //! Used to keep track of the origin for commit request.
          //!
