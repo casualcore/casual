@@ -39,9 +39,28 @@ namespace casual
                         return false;
                      }
 
+                     //
+                     // Rollback unless we commit
+                     //
+                     common::scope::Execute rollback{ [](){
+                           tx_rollback();
+                     }};
+
                      task.dispatch( rm::blocking::dequeue( task.queue));
 
-                     tx_commit();
+                     //
+                     // Check what we should do with the transaction
+                     //
+                     {
+                        TXINFO txinfo;
+                        tx_info( &txinfo);
+
+                        if( txinfo.transaction_state == TX_ACTIVE)
+                        {
+                           tx_commit();
+                           rollback.release();
+                        }
+                     }
                   }
                   catch( const common::exception::Shutdown&)
                   {
@@ -50,7 +69,7 @@ namespace casual
                   catch( ...)
                   {
                      common::error::handler();
-                     tx_rollback();
+                     return false;
                   }
 
                   return true;
@@ -73,7 +92,7 @@ namespace casual
 
             common::signal::timer::Scoped timout{ std::chrono::seconds{ 5}};
 
-            common::server::connect( {}, resources);
+            common::server::connect( common::ipc::receive::queue(), {}, resources);
 
          }
 

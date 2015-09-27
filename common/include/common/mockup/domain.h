@@ -10,7 +10,9 @@
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
+#include "common/mockup/reply.h"
 
+#include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 
@@ -53,15 +55,27 @@ namespace casual
 
             struct Lookup
             {
-               Lookup( std::vector< common::message::service::name::lookup::Reply> replies);
+               Lookup( std::vector< common::message::service::lookup::Reply> replies);
 
-               using message_type = common::message::service::name::lookup::Request;
-               using reply_type = common::message::service::name::lookup::Reply;
+               using message_type = common::message::service::lookup::Request;
+               using reply_type = common::message::service::lookup::Reply;
 
                std::vector< common::ipc::message::Complete> operator () ( message_type message);
 
-               std::map< std::string, common::message::service::name::lookup::Reply> m_broker;
+               std::map< std::string, common::message::service::lookup::Reply> m_broker;
             };
+
+            namespace lookup
+            {
+               struct Process
+               {
+                  using message_type = common::message::lookup::process::Request;
+                  std::vector< common::ipc::message::Complete> operator () ( message_type message);
+
+               };
+            } // loockup
+
+
 
          } // broker
 
@@ -87,16 +101,6 @@ namespace casual
          namespace transaction
          {
 
-
-
-            struct Begin
-            {
-               using message_type = common::message::transaction::begin::Request;
-               using reply_type = common::message::transaction::begin::Reply;
-
-               std::vector< common::ipc::message::Complete> operator () ( message_type message);
-            };
-
             struct Commit
             {
                using message_type = common::message::transaction::commit::Request;
@@ -120,14 +124,14 @@ namespace casual
          {
             namespace lookup
             {
-               common::message::service::name::lookup::Reply reply(
+               common::message::service::lookup::Reply reply(
                      const std::string& service,
                      platform::queue_id_type queue,
                      std::chrono::microseconds timeout = std::chrono::microseconds::zero());
 
             } // lookup
 
-            transform::Handler broker( std::vector< message::service::name::lookup::Reply> replies);
+            transform::Handler broker( std::vector< message::service::lookup::Reply> replies);
             transform::Handler broker();
 
 
@@ -139,6 +143,136 @@ namespace casual
             } // transaction
 
          } // create
+
+
+         namespace domain
+         {
+            namespace service
+            {
+               struct Echo
+               {
+                  std::vector< reply::result_t> operator()( message::service::call::callee::Request reqeust);
+               };
+            } // server
+
+            namespace broker
+            {
+               struct Lookup
+               {
+                  Lookup( std::vector< common::message::service::lookup::Reply> replies);
+                  std::vector< reply::result_t> operator()( message::service::lookup::Request reqeust);
+               private:
+                  std::map< std::string, common::message::service::lookup::Reply> m_services;
+               };
+
+
+               namespace transaction
+               {
+                  namespace client
+                  {
+                     struct Connect
+                     {
+                        Connect( message::transaction::client::connect::Reply reply) : m_reply{ std::move( reply)} {}
+
+                        std::vector< reply::result_t> operator () ( message::transaction::client::connect::Request r);
+                     private:
+                        message::transaction::client::connect::Reply m_reply;
+
+                     }; // connect
+
+                  } // client
+
+               } // transaction
+
+
+            } // broker
+
+            struct Broker
+            {
+               Broker();
+
+               template< typename... Args>
+               Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...), dummy_t{}) {}
+
+
+
+
+               ~Broker();
+
+            private:
+
+               struct State
+               {
+
+                  std::map< std::string, common::message::service::lookup::Reply> services;
+                  std::map< common::Uuid, common::process::Handle> singeltons;
+                  std::map< common::Uuid, std::vector< common::message::lookup::process::Request>> singelton_request;
+               };
+
+               struct dummy_t {};
+
+               Broker( reply::Handler handler, dummy_t);
+
+
+               reply::Handler default_handler();
+
+               template< typename... Args>
+               reply::Handler default_handler( Args&& ...args)
+               {
+                  auto result = default_handler();
+                  result.insert( std::forward< Args>( args)...);
+                  return result;
+               }
+
+               State m_state;
+               ipc::Replier m_replier;
+               ipc::Link m_broker_replier_link;
+            };
+
+            namespace transaction
+            {
+
+
+               struct Manager
+               {
+                  Manager();
+
+                  template< typename... Args>
+                  Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
+
+               private:
+
+                  reply::Handler default_handler();
+
+                  template< typename... Args>
+                  reply::Handler default_handler( Args&& ...args)
+                  {
+                     auto result = default_handler();
+                     result.insert( std::forward< Args>( args)...);
+                     return result;
+                  }
+
+                  Manager( reply::Handler handler);
+
+                  ipc::Replier m_replier;
+                  ipc::Link m_tm_replier_link;
+               };
+
+            } // transaction
+
+
+            struct Domain
+            {
+               Domain();
+
+               ipc::Replier server1;
+               Broker m_broker;
+               transaction::Manager m_manager;
+
+            };
+
+
+         } // domain
 
       } // mockup
    } // common

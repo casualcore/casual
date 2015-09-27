@@ -322,6 +322,8 @@ namespace casual
             return nullptr;
          }
 
+         reference front() { return *first;}
+
          reference at( difference_type index)
          {
             if( std::distance( first, last) <= index){ throw std::out_of_range{ "range out of bounds"};}
@@ -444,6 +446,18 @@ namespace casual
             T m_functor;
          };
 
+         template< typename R>
+         struct size_traits
+         {
+            static std::size_t size( const R& range) { return range.size();}
+         };
+
+         template< typename T, std::size_t s>
+         struct size_traits< T[ s]>
+         {
+            constexpr static std::size_t size( const T(&range)[ s]) { return s;}
+         };
+
       } // detail
 
 
@@ -542,8 +556,20 @@ namespace casual
             return result;
          }
 
+         template< typename R>
+         std::size_t size( const R& range)
+         {
+            return detail::size_traits< typename std::remove_reference< R>::type>::size( range);
+         }
 
 
+
+         template< typename R>
+         auto reverse( R&& range) -> decltype( std::forward< R>( range))
+         {
+            std::reverse( std::begin( range), std::end( range));
+            return std::forward< R>( range);
+         }
 
 
          template< typename R, typename C>
@@ -632,6 +658,21 @@ namespace casual
             return make( container);
          }
 
+         template< typename R, typename C, typename P>
+         C& move_if( R&& range, C& container, P predicate)
+         {
+            auto first = std::begin( range);
+            while (first != std::end( range))
+            {
+               if( predicate( *first))
+               {
+                  container.push_back( std::move(*first));
+               }
+              ++first;
+            }
+            return container;
+         }
+
 
          //!
          //! Transform @p range to @p container, using @p transform
@@ -694,20 +735,20 @@ namespace casual
          //! @return range that matches the trimmed @p container
          //!
          template< typename C, typename R>
-         auto trim( C& container, R&& range) -> decltype( make( container))
+         C& trim( C& container, R&& range)
          {
             auto index = range.first - std::begin( container);
             container.erase( range.last, std::end( container));
             container.erase( std::begin( container), std::begin( container) + index);
-            return make( container);
+            return container;
          }
 
 
          template< typename C, typename Iter>
-         auto erase( C& container, Range< Iter> range) -> decltype( make( container))
+         C& erase( C& container, Range< Iter> range)
          {
             container.erase( range.first, range.last);
-            return make( container);
+            return container;
          }
 
          template< typename R, typename P>
@@ -724,7 +765,7 @@ namespace casual
          template< typename R1, typename R2, typename P>
          bool equal( R1&& lhs, R2&& rhs, P predicate)
          {
-            //if( lhs.size() != rhs.size()) { return false;}
+            if( size( lhs) != size( rhs)) { return false;}
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), predicate);
          }
 
@@ -732,13 +773,13 @@ namespace casual
          template< typename R1, typename R2>
          bool equal( R1&& lhs, R2&& rhs)
          {
-            //if( lhs.size() != rhs.size()) { return false;}
+            if( size( lhs) != size( rhs)) { return false;}
             return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs));
          }
 
 
          template< typename R, typename T>
-         auto accumulate( R&& range, T&& value) -> decltype( value + value)
+         auto accumulate( R&& range, T&& value) -> decltype( *std::begin( range) + value)
          {
             return std::accumulate( std::begin( range), std::end( range), std::forward< T>( value));
          }
@@ -971,6 +1012,16 @@ namespace casual
             return result;
          }
 
+         template< typename R, typename F>
+         auto min( R&& range, F functor) -> decltype( make( range))
+         {
+            auto result = make( std::forward< R>( range));
+
+            result.first = std::min_element( std::begin( result), std::end( result), functor);
+
+            return result;
+         }
+
          //!
          //! @return true if all elements in @p other is found in @p source
          //!
@@ -1129,6 +1180,25 @@ namespace casual
 
          } // sorted
       } // range
+
+      template< typename Iter1, typename Iter2>
+      bool operator == ( const Range< Iter1>& lhs, const Range< Iter2>& rhs)
+      {
+         return range::equal( lhs, rhs);
+      }
+
+      template< typename Iter, typename C>
+      bool operator == ( const Range< Iter>& lhs, const C& rhs)
+      {
+         return range::equal( lhs, rhs);
+      }
+
+      template< typename C, typename Iter>
+      bool operator == ( C& lhs, const Range< Iter>& rhs)
+      {
+         return range::equal( lhs, rhs);
+      }
+
 
 
    } // common

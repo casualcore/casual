@@ -38,7 +38,7 @@ manager_archive = LinkArchive( 'bin/manager-archive',
     Compile( 'source/manager/log.cpp'),
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
-    Compile( 'source/manager/admin/vo/transaction.cpp'),
+    Compile( 'source/manager/admin/transform.cpp'),
     ])
  
 
@@ -59,6 +59,21 @@ target = LinkExecutable( 'bin/casual-transaction-manager',
 install_bin.append( target)
 
 
+target = LinkExecutable( 'bin/casual-transaction-admin',
+    [
+     Compile( 'source/manager/admin/client.cpp')
+    ],
+    [ 
+      manager_archive, 
+     'casual-sf', 
+     'casual-common', 
+     #'casual-configuration', 
+     #'casual-xatmi',
+     ])
+
+
+Install( target, '$(CASUAL_HOME)/internal/bin')
+
 #
 # Compile and link resurce-proxy-server lib
 #
@@ -76,28 +91,6 @@ install_headers.append( 'include/transaction/resource/proxy_server.h')
 
 
 #
-# unittest
-#
- 
-LinkUnittest( 'bin/test-casual-transaction',
-    [
-        Compile( 'unittest/isolated/source/test_configuration.cpp'),
-        Compile( 'unittest/isolated/source/test_transactionlog.cpp'),
-        Compile( 'unittest/isolated/source/test_manager.cpp'),
-    ],
-    [ 
-     manager_archive, 
-     'casual-common', 
-     'casual-sf', 
-     'casual-configuration', 
-     'sqlite3', 
-     'casual-mockup',
-     'casual-xatmi',
-     'casual-mockup-unittest-environment'
-     ])
-
-
-#
 # Mockup resource proxy
 #
 target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
@@ -106,6 +99,32 @@ target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
 
 
 install_bin.append( target)
+
+
+#
+# unittest
+#
+ 
+LinkUnittest( 'bin/test-casual-transaction',
+    [
+        Compile( 'unittest/isolated/source/test_admin.cpp'),
+        Compile( 'unittest/isolated/source/test_configuration.cpp'),
+        Compile( 'unittest/isolated/source/test_log.cpp'),
+        Compile( 'unittest/isolated/source/test_manager.cpp'),
+        
+    ],
+    [ 
+     manager_archive, 
+     'casual-common', 
+     'casual-sf', 
+     'casual-configuration', 
+     'sqlite3', 
+     'casual-mockup',
+     'casual-mockup-rm',
+     'casual-xatmi',
+     'casual-mockup-unittest-environment'
+     ])
+
 
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')

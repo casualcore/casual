@@ -7,6 +7,7 @@
 
 #include "broker/state.h"
 #include "broker/filter.h"
+#include "broker/transform.h"
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
@@ -108,6 +109,42 @@ namespace casual
             return false;
          }
 
+         namespace local
+         {
+            namespace
+            {
+               std::ostream& base_print( std::ostream& out, const Executable& value)
+               {
+                  return out << "alias: " << value.alias
+                        << ", id: " << value.id
+                        << ", configured_instances: " << value.configured_instances
+                        << ", instances: " << range::make( value.instances)
+                        << ", memberships" << range::make( value.memberships)
+                        << ", arguments: " << range::make( value.arguments)
+                        << ", restart: " << std::boolalpha << value.restart
+                        << ", path: " << value.path;
+               }
+            } // <unnamed>
+         } // local
+
+         std::ostream& operator << ( std::ostream& out, const Executable& value)
+         {
+            out << "{ ";
+            local::base_print( out, value);
+            out << "}";
+
+            return out;
+         }
+
+         std::ostream& operator << ( std::ostream& out, const Server& value)
+         {
+            out << "{ ";
+            local::base_print( out, value);
+            out << ", restrictions: " << range::make( value.restrictions) << "}";
+
+            return out;
+         }
+
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
             return out << "{ name: " << service.information.name
@@ -189,16 +226,15 @@ namespace casual
                {
                   service.information.timeout = standard.service.information.timeout;
                }
-            }
-            else
-            {
                service.information.type = s.information.type;
                service.information.transaction = s.information.transaction;
             }
 
             service.instances.push_back( instance);
-            range::sort( service.instances);
+            range::trim( service.instances, range::unique( range::sort( service.instances)));;
+
             instance.services.push_back( service);
+            range::trim( instance.services, range::unique( range::sort( instance.services)));;
          }
       }
 
@@ -236,8 +272,29 @@ namespace casual
       }
 
 
-      void State::removeProcess( state::Server::pid_type pid)
+      void State::process( common::process::lifetime::Exit death)
       {
+         //
+         // We try to send a event to our self, if it's not possible (queue is full) we put it in pending
+         //
+
+         message::dead::process::Event event{ death};
+
+         queue::non_blocking::Send send{ *this};
+
+         if( ! send( common::ipc::broker::id(), event))
+         {
+            pending.replies.emplace_back( event, common::ipc::broker::id());
+         }
+      }
+
+      void State::remove_process( state::Server::pid_type pid)
+      {
+         Trace trace{ "broker::State::remove_process", log::internal::debug};
+
+
+         log::internal::debug << "remove process pid: " << pid << std::endl;
+
          auto found = common::range::find( instances, pid);
 
          if( found)
@@ -260,6 +317,9 @@ namespace casual
 
             server.remove( pid);
 
+            server.invoked += instance.invoked;
+
+
             instances.erase( found.first);
          }
          else
@@ -270,6 +330,20 @@ namespace casual
                {
                   return;
                }
+            }
+         }
+
+         //
+         // Erase from singeltons, if any...
+         //
+         {
+            auto found = range::find_if( singeltons, [=]( const decltype( singeltons)::value_type& v){
+               return v.second.pid == pid;
+            });
+
+            if( found)
+            {
+               singeltons.erase( found.first);
             }
          }
       }
@@ -342,6 +416,46 @@ namespace casual
       }
 
 
+      void State::connect_broker( std::vector< common::message::Service> services)
+      {
+         try
+         {
+            getInstance( common::process::id());
+         }
+         catch( const state::exception::Missing&)
+         {
+            {
+               state::Server server;
+               server.alias = "casual-broker";
+               server.configured_instances = 1;
+               server.path = common::process::path();
+               server.instances.push_back( common::process::id());
+
+               {
+                  state::Server::Instance instance;
+                  instance.process = common::process::handle();
+                  instance.server = server.id;
+                  instance.alterState( state::Server::Instance::State::idle);
+
+                  add( std::move( instance));
+               }
+
+               add( std::move( server));
+            }
+
+            //
+            // Add services
+            //
+            {
+               std::vector< state::Service> brokerServices;
+
+               common::range::transform( services, brokerServices, transform::Service{});
+
+               addServices( common::process::id(), std::move( brokerServices));
+            }
+         }
+      }
+
       std::vector< State::Batch> State::bootOrder()
       {
          std::vector< State::Batch> result;
@@ -364,21 +478,31 @@ namespace casual
          auto serverSet = range::make( normalized.servers);
          auto executableSet = range::make( normalized.executables);
 
-         for( auto&& group : groups)
+         //
+         // We need to go through the groups in reverse order so we get a match for an executable
+         // for the group that is booted last (if the executable has several memberships).
+         //
+         // We just reverse groups, and then we reverse the result.
+         //
          {
-
-            auto serverPartition = range::stable_partition( serverSet, filter::group::Id{ group.id});
-            auto executablePartition = range::stable_partition( executableSet, filter::group::Id{ group.id});
-
-            auto serverBatch = std::get< 0>( serverPartition);
-            auto executableBatch = std::get< 0>( executablePartition);
-
-            if( serverBatch || executableBatch)
+            for( auto&& group : range::make_reverse( groups))
             {
-               result.push_back( { group.name, range::to_vector( serverBatch), range::to_vector( executableBatch)});
-               serverSet = std::get< 1>( serverPartition);
-               executableSet = std::get< 1>( executablePartition);
+
+               auto serverPartition = range::stable_partition( serverSet, filter::group::Id{ group.id});
+               auto executablePartition = range::stable_partition( executableSet, filter::group::Id{ group.id});
+
+               auto serverBatch = std::get< 0>( serverPartition);
+               auto executableBatch = std::get< 0>( executablePartition);
+
+               if( serverBatch || executableBatch)
+               {
+                  result.push_back( { group.name, range::to_vector( serverBatch), range::to_vector( executableBatch)});
+                  serverSet = std::get< 1>( serverPartition);
+                  executableSet = std::get< 1>( executablePartition);
+               }
             }
+
+            std::reverse( std::begin( result), std::end( result));
          }
 
          if( serverSet || executableSet)
@@ -408,84 +532,6 @@ namespace casual
          }
          return result;
       }
-
-      std::vector< common::platform::pid_type> State::instance( state::Server& server, std::size_t instances)
-      {
-         if( instances > server.instances.size())
-         {
-            return boot( server, instances - server.instances.size());
-         }
-         else
-         {
-            return shutdown( server, server.instances.size() - instances);
-         }
-      }
-
-      std::vector< common::platform::pid_type> State::instance( state::Server::id_type id, std::size_t instances)
-      {
-         auto found = common::range::find( servers, id);
-
-         if( found)
-         {
-            return instance( found->second, instances);
-         }
-         return {};
-      }
-
-
-      std::vector< common::platform::pid_type> State::boot( state::Server& server, std::size_t instances)
-      {
-         std::vector< common::platform::pid_type> pids( instances);
-
-         for( auto& pid : pids)
-         {
-            pid = common::process::spawn( server.path, server.arguments);
-
-            state::Server::Instance instance;
-            instance.process.pid = pid;
-            instance.server = server.id;
-            instance.alterState( state::Server::Instance::State::booted);
-
-            server.instances.push_back( pid);
-
-            this->instances.emplace( pid, std::move( instance));
-         }
-         return pids;
-
-      }
-
-      std::vector< common::platform::pid_type> State::shutdown( state::Server& server, std::size_t instances)
-      {
-         assert( server.instances.size() >= instances);
-
-         auto range = common::range::make( server.instances);
-
-         range.first = range.last - instances;
-
-         std::vector< common::process::Handle> servers;
-
-         for( auto& pid : range)
-         {
-            //
-            // make sure we don't try to shutdown our self...
-            //
-            if( pid != common::process::id())
-            {
-               servers.push_back( getInstance( pid).process);
-            }
-         }
-
-         auto result = common::server::lifetime::soft::shutdown( servers, std::chrono::milliseconds( 500));
-
-         for( auto& pid : result)
-         {
-            removeProcess( pid);
-         }
-
-         return result;
-      }
-
-
    } // broker
 
 } // casual

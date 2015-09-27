@@ -26,6 +26,7 @@ namespace casual
             struct Message
             {
                using targets_type = std::vector< platform::queue_id_type>;
+               using target_type = platform::queue_id_type;
 
                enum class Targets
                {
@@ -41,7 +42,13 @@ namespace casual
 
                template< typename M>
                Message( M&& message, targets_type targets)
-                  : Message( std::move( message), std::move( targets), Targets::all)
+                  : Message( std::forward< M>( message), std::move( targets), Targets::all)
+               {
+               }
+
+               template< typename M>
+               Message( M&& message, target_type target)
+                  : Message( std::forward< M>( message), { target}, Targets::first)
                {
                }
 
@@ -53,28 +60,63 @@ namespace casual
                   return targets.empty();
                }
 
+               friend std::ostream& operator << ( std::ostream& out, const Message& value)
+               {
+                  return out << "{ targets: " << range::make( value.targets) << ", complete: " << value.complete << "}";
+               }
+
                targets_type targets;
                common::ipc::message::Complete complete;
                Targets task;
             };
 
+            namespace policy
+            {
+               struct consume_unavalibe
+               {
+                  bool operator () () const
+                  {
+                     try
+                     {
+                        throw;
+                     }
+                     catch( const exception::queue::Unavailable&)
+                     {
+                        return true;
+                     }
+                  }
+               };
+
+            } // policy
 
             //!
             //! Tries to send a message to targets.
             //! Depending on the task it will either send to all
             //! or stop when the first is successful.
             //!
-            template< typename Q>
+            template< typename Q, typename EP = policy::consume_unavalibe>
             struct Send
             {
+               using exception_policy_type = EP;
+
                Send( Q& queue) : m_queue( queue) {}
 
+               //!
+               //! @return true if the message has been sent
+               //!
                bool operator () ( Message& message)
                {
-
-                  auto send = [&]( platform::queue_id_type ipc){
-                     return m_queue.send( ipc, message.complete);
-                  };
+                  auto send = [&]( platform::queue_id_type ipc)
+                        {
+                           try
+                           {
+                              return static_cast< bool>( m_queue.send( ipc, message.complete));
+                           }
+                           catch( ...)
+                           {
+                              return exception_policy_type{}();
+                           }
+                        };
 
                   if( message.task == Message::Targets::all)
                   {

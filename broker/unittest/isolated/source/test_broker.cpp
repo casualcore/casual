@@ -12,513 +12,768 @@
 
 #include "broker/broker.h"
 #include "broker/handle.h"
-#include "broker/action.h"
+#include "broker/admin/server.h"
 
 #include "common/mockup/ipc.h"
+#include "common/message/type.h"
 
 
 namespace casual
 {
 
+   using namespace common;
+
 	namespace broker
 	{
-
 	   namespace local
-	   {
+      {
+         namespace
+         {
 
 
-	      static common::mockup::Instance< 10> server10;
-
-	      static common::mockup::Instance< 20> server20;
-
-	      static common::mockup::Instance< 30> server30;
 
 
-	      State initializeState()
-	      {
-	         State state;
 
-	         state.transactionManager = std::make_shared< broker::Server>();
-	         auto transactionManager = std::make_shared< broker::Server::Instance>();
-	         transactionManager->pid = 1;
-	         transactionManager->queue_id = 1;
-	         transactionManager->state = broker::Server::Instance::State::idle;
-	         transactionManager->server = state.transactionManager;
-	         state.transactionManager->instances.push_back( transactionManager);
+            struct Broker
+            {
+               Broker( broker::State& state) : m_thread{
+                  &broker::message::pump, std::ref( state), std::ref( queue)
+               }
+               {
+
+               }
 
 
-	         auto group1 = std::make_shared< broker::Group>();
-	         group1->name ="group1";
-	         group1->resource.emplace_back( 3, "db", "openinfo string", "closeinfo string");
+               ~Broker()
+               {
+                  common::queue::blocking::Send send;
+                  // make sure we quit
+                  send( queue.id(), common::message::shutdown::Request{});
+                  m_thread.join();
+               }
 
-	         auto server1 = std::make_shared< broker::Server>();
-	         server1->memberships.push_back( group1);
-	         state.servers[ "server1"] = server1;
-	         server1->path = "/a/b/c";
+               common::ipc::receive::Queue queue;
 
-	         auto instance1 = std::make_shared< broker::Server::Instance>();
-	         instance1->pid = server10.pid();
-	         instance1->queue_id = server10.queue().id();
-	         instance1->state = broker::Server::Instance::State::idle;
-	         auto instance2 = std::make_shared< broker::Server::Instance>();
-	         instance2->pid = server20.pid();
-	         instance2->queue_id = server20.queue().id();
-	         instance2->state = broker::Server::Instance::State::idle;
+            private:
 
-	         state.instances[ server10.pid()] = instance1;
-	         state.instances[ server20.pid()] = instance2;
+               std::thread m_thread;
 
-	         instance1->server = server1;
-	         instance2->server = server1;
+            };
 
-	         server1->instances.push_back( instance1);
-	         server1->instances.push_back( instance2);
+            struct domain_0
+            {
 
-	         auto service1 = std::make_shared< broker::Service>();
-	         service1->information.name = "service1";
-	         auto service2 = std::make_shared< broker::Service>();
-	         service2->information.name = "service2";
+               void add_instance( const std::string& alias, platform::pid_type pid)
+               {
+                  state::Server server;
+                  server.alias = alias;
+                  server.configured_instances = 1;
+                  server.path = "some/path/" + alias;
+                  server.instances.push_back( pid);
+                  state.add( std::move( server));
 
-	         state.services[ "service1"] = service1;
-	         state.services[ "service2"] = service2;
+                  state::Server::Instance instance;
+                  instance.process.pid = pid;
+                  instance.server = server.id;
 
-	         service1->instances.push_back( instance1);
-	         service1->instances.push_back( instance2);
+                  state.add( std::move( instance));
+               }
 
-	         service2->instances.push_back( instance1);
-	         service2->instances.push_back( instance2);
+               broker::State state;
+            };
 
-	         instance1->services.push_back( service1);
-	         instance1->services.push_back( service2);
+            struct domain_1 : domain_0
+            {
+               domain_1() : server1{ 10}
+               {
+                  add_instance( "server1", server1.process().pid);
+               }
 
-	         instance2->services.push_back( service1);
-	         instance2->services.push_back( service1);
+               mockup::ipc::Instance server1;
 
-	         return state;
-	      }
-	   }
+            };
 
-	   TEST( casual_broker, internal_remove_instance)
-	   {
-	      State state = local::initializeState();
+            struct domain_2 : domain_1
+            {
+               domain_2()
+               {
+                  auto& instance = state.getInstance( server1.process().pid);
+                  instance.process = server1.process();
+               }
+            };
 
-	      action::remove::instance( 10, state);
+            struct domain_3 : domain_2
+            {
+               domain_3() : server2{ 20}
+               {
+                  auto& instance = state.getInstance( server1.process().pid);
+                  instance.state = state::Server::Instance::State::idle;
 
-	      ASSERT_TRUE( state.instances.size() == 1);
-	      EXPECT_TRUE( state.services.at( "service1")->instances.size() == 1);
-	      EXPECT_TRUE( state.services.at( "service1")->instances.at( 0)->pid == 20);
+                  {
+                     auto& service = state.add( state::Service{ "service1"});
+                     service.instances.emplace_back( instance);
+                     instance.services.emplace_back( service);
+                  }
 
-	   }
+                  {
+                     auto& service = state.add( state::Service{ "service2"});
+                     service.instances.emplace_back( instance);
+                     instance.services.emplace_back( service);
+                  }
+               }
+
+               state::Server::Instance& instance1() { return state.getInstance( server1.process().pid);}
+
+               mockup::ipc::Instance server2;
+            };
 
 
-		TEST( casual_broker, server_disconnect)
-		{
-		   State state = local::initializeState();
+            struct domain_4 : domain_3
+            {
+               domain_4() : forward{ 40}
+               {
+                  state.forward = forward.process();
+               }
 
-		   message::server::Disconnect message;
-		   message.server.pid = local::server20.pid();
+               mockup::ipc::Instance forward;
 
-		   handle::Disconnect handler( state);
-		   handler.dispatch( message);
+            };
+
+            struct domain_5 : domain_3
+            {
+               domain_5() : tm{ 50}
+               {
+                  add_instance( "tm", tm.process().pid);
+               }
+
+               mockup::ipc::Instance tm;
+
+            };
 
 
-		   ASSERT_TRUE( state.instances.size() == 1);
-		   auto& instance = state.instances.at( 10);
-		   EXPECT_TRUE( instance->pid == 10);
-		   ASSERT_TRUE( instance->server != nullptr);
-		   EXPECT_TRUE( instance->server->instances.size() == 1);
+            struct domain_6
+            {
+               domain_6() : traffic1{ 10}, traffic2{ 20}
+               {
 
-		   EXPECT_TRUE( state.services.size() == 2);
-		   ASSERT_TRUE( state.services.at( "service1")->instances.size() == 1);
-		   EXPECT_TRUE( state.services.at( "service1")->instances.front()->pid == 10);
-		}
+               }
+
+               mockup::ipc::Instance traffic1;
+               mockup::ipc::Instance traffic2;
+
+               broker::State state;
+
+            };
+
+            struct domain_singleton : domain_0
+            {
+               domain_singleton() : server1{ 1000}, server2{ 2000}
+               {
+                  add_instance( "server1", server1.process().pid);
+                  add_instance( "server2", server2.process().pid);
+               }
+               mockup::ipc::Instance server1;
+               mockup::ipc::Instance server2;
+
+            };
+
+         } // <unnamed>
+      } // local
+
+
+      TEST( casual_broker, admin_services)
+      {
+         broker::State state;
+
+         auto arguments = broker::admin::services( state);
+
+         EXPECT_TRUE( arguments.services.at( 0).origin == ".casual.broker.state");
+      }
+
+
+      TEST( casual_broker, shutdown)
+      {
+         EXPECT_NO_THROW({
+            broker::State state;
+            local::Broker broker{ state};
+         });
+
+      }
+
+      TEST( casual_broker, server_connect)
+      {
+         common::Trace trace{ "casual_broker.casual_broker", common::log::internal::debug};
+
+         local::domain_1 domain;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::server::connect::Request request;
+            request.process = domain.server1.process();
+            request.path = "/server/path";
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), request);
+         }
+
+         {
+            common::message::server::connect::Reply reply;
+            common::queue::blocking::Reader receive{ domain.server1.output()};
+
+            receive( reply);
+
+         }
+
+         auto& instance = domain.state.getInstance( domain.server1.process().pid);
+         EXPECT_TRUE( instance.process.queue == domain.server1.process().queue);
+
+      }
+
+      TEST( casual_broker, server_connect_services)
+      {
+         local::domain_1 domain;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::server::connect::Request request;
+            request.process = domain.server1.process();
+            request.path = "/server/path";
+
+            request.services = { { "service1"}, { "service2"}};
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), request);
+         }
+
+         {
+            common::message::server::connect::Reply reply;
+            common::queue::blocking::Reader receive{ domain.server1.output()};
+
+            receive( reply);
+
+         }
+
+         auto& instance = domain.state.getInstance( domain.server1.process().pid);
+         EXPECT_TRUE( instance.process.queue == domain.server1.process().queue);
+
+         EXPECT_NO_THROW({
+            domain.state.getService( "service1");
+         });
+      }
+
+
 
 		TEST( casual_broker, advertise_new_services_current_server)
       {
-         State state = local::initializeState();
-
-         //
-         // Add two new services to instance "10"
-         //
-         message::service::Advertise message;
-         message.server.pid = 10;
-         message.services.resize( 2);
-         message.services.at( 0).name = "service3";
-         message.services.at( 1).name = "service4";
-
-
-         handle::Advertise handler( state);
-         handler.dispatch( message);
-
-         EXPECT_TRUE( state.instances.size() == 2);
-         EXPECT_TRUE( state.instances.at( 10)->pid == 10);
-         EXPECT_TRUE( state.instances.at( 10)->services.size() == 4);
-
-         EXPECT_TRUE( state.services.size() == 4);
-         ASSERT_TRUE( state.services.at( "service3")->instances.size() == 1);
-         EXPECT_TRUE( state.services.at( "service3")->instances.front()->pid == 10);
-
-         ASSERT_TRUE( state.services.at( "service4")->instances.size() == 1);
-         EXPECT_TRUE( state.services.at( "service4")->instances.front()->pid == 10);
-      }
-
-		TEST( casual_broker, connect_server__gives_reply)
-      {
-
-         State state = local::initializeState();
+         local::domain_2 domain;
 
          {
-            state.transactionManagerQueue = 100;
+            local::Broker broker{ domain.state};
 
-            //
-            // Connect new instance, with two services
-            //
-            message::server::connect::Request message;
-            message.server.pid = local::server20.pid();
-            message.server.queue_id = local::server20.queue().id();
-            message.services.resize( 2);
-            message.services.at( 0).name = "service1";
-            message.services.at( 1).name = "service2";
+            common::message::service::Advertise request;
+            request.process = domain.server1.process();
 
-            handle::Connect handler( state);
-            handler.dispatch( message);
+            request.services = { { "service1"}, { "service2"}};
 
-            EXPECT_TRUE( state.instances.size() == 2);
-            EXPECT_TRUE( state.instances.at( 20)->pid == local::server20.pid());
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), request);
          }
 
-         // Check that the "configuration" has been "sent"
-
-         {
-            auto reader = queue::blocking::reader( local::server20.queue());
-            message::server::connect::Reply message;
-
-            EXPECT_NO_THROW({
-               reader( message);
-            });
-         }
+         EXPECT_NO_THROW({
+            domain.state.getService( "service1");
+            domain.state.getService( "service2");
+         });
       }
 
-
-		TEST( casual_broker, connect_new_server_new_services)
-      {
-         State state = local::initializeState();
-
-         state.transactionManagerQueue = 100;
-
-         //
-         // Connect new server, with two services
-         //
-         message::server::connect::Request message;
-         message.server.pid = local::server30.pid();
-         message.server.queue_id = local::server30.queue().id();
-         message.services.resize( 2);
-         message.services.at( 0).name = "service3";
-         message.services.at( 1).name = "service4";
-
-         //typedef handle::basic_connect< local::writer_queue> connect_handler_type;
-         handle::Connect handler( state);
-         handler.dispatch( message);
-
-         EXPECT_TRUE( state.instances.size() == 3);
-         EXPECT_TRUE( state.instances.at( local::server30.pid())->pid == local::server30.pid());
-
-         EXPECT_TRUE( state.services.size() == 4);
-         ASSERT_TRUE( state.services.at( "service3")->instances.size() == 1);
-         EXPECT_TRUE( state.services.at( "service3")->instances.front()->pid == local::server30.pid());
-
-         ASSERT_TRUE( state.services.at( "service4")->instances.size() == 1);
-         EXPECT_TRUE( state.services.at( "service4")->instances.front()->pid == local::server30.pid());
-
-         // Check that the reply has been "sent"
-         {
-            auto reader = queue::blocking::reader( local::server30.queue());
-            message::server::connect::Reply message;
-
-            EXPECT_NO_THROW({
-               reader( message);
-            });
-         }
-      }
-
-
-		TEST( casual_broker, connect_new_server_current_services)
-      {
-		   //mockup::queue::clearAllQueues();
-
-         State state = local::initializeState();
-
-         state.transactionManagerQueue = 100;
-
-         //
-         // Add two new services to NEW server 30
-         //
-         message::server::connect::Request message;
-         message.server.pid = local::server30.pid();
-         message.server.queue_id = local::server30.queue().id();
-         message.services.resize( 2);
-         message.services.at( 0).name = "service1";
-         message.services.at( 1).name = "service2";
-
-
-         handle::Connect handler( state);
-         handler.dispatch( message);
-
-
-         EXPECT_TRUE( state.instances.size() == 3);
-         EXPECT_TRUE( state.instances.at( local::server30.pid())->pid == local::server30.pid());
-
-         EXPECT_TRUE( state.services.size() == 2);
-         ASSERT_TRUE( state.services.at( "service1")->instances.size() == 3);
-         EXPECT_TRUE( state.services.at( "service1")->instances.at( 2)->pid == local::server30.pid());
-
-         ASSERT_TRUE( state.services.at( "service2")->instances.size() == 3);
-         EXPECT_TRUE( state.services.at( "service2")->instances.at( 2)->pid == local::server30.pid());
-
-         // Check that the reply has been "sent"
-         {
-            auto reader = queue::blocking::reader( local::server30.queue());
-            message::server::connect::Reply message;
-
-            EXPECT_NO_THROW({
-               reader( message);
-            });
-         }
-      }
 
 
 		TEST( casual_broker, unadvertise_service)
       {
-         State state = local::initializeState();
+         local::domain_3 domain;
 
-         //
-         //
-         //
-         message::service::Unadvertise message;
-         message.server.pid = local::server20.pid();
-         message.services.resize( 2);
-         message.services.at( 0).name = "service1";
-         message.services.at( 1).name = "service2";
-
-
-         handle::Unadvertise handler( state);
-         handler.dispatch( message);
-
-         //
-         // Even if all server "20"'s services are unadvertised, we keep the
-         // server.
-         //
-         EXPECT_TRUE( state.instances.size() == 2);
-         EXPECT_TRUE( state.instances.at( local::server20.pid())->pid == local::server20.pid());
-
-         EXPECT_TRUE( state.services.size() == 2);
-         ASSERT_TRUE( state.services.at( "service1")->instances.size() == 1);
-         EXPECT_TRUE( state.services.at( "service1")->instances.at( 0)->pid == 10);
-
-         ASSERT_TRUE( state.services.at( "service2")->instances.size() == 1);
-         EXPECT_TRUE( state.services.at( "service2")->instances.at( 0)->pid == 10);
-      }
-
-
-
-		TEST( casual_broker, service_request)
-      {
-
-         State state = local::initializeState();
-
-
-         message::service::name::lookup::Request message;
-         message.requested = "service1";
-         message.server.pid = local::server30.pid();
-         message.server.queue_id = local::server30.queue().id();
-
-         handle::ServiceLookup handler( state);
-         handler.dispatch( message);
-
-
-         // instance should be busy
-         EXPECT_TRUE( state.instances.at( local::server10.pid())->state == Server::Instance::State::busy);
-         // other instance should still be idle
-         EXPECT_TRUE( state.instances.at( local::server20.pid())->state == Server::Instance::State::idle);
-
+         EXPECT_TRUE( domain.state.getService( "service1").instances.size() == 1);
+         EXPECT_TRUE( domain.state.getService( "service2").instances.size() == 1);
 
          {
-            auto reader = queue::blocking::reader( local::server30.queue());
-            message::service::name::lookup::Reply message;
+            local::Broker broker{ domain.state};
 
-            reader( message);
+            common::message::service::Unadvertise request;
+            request.process = domain.server1.process();
 
-            EXPECT_TRUE( message.service.name == "service1");
-            ASSERT_TRUE( message.server.size() == 1);
-            EXPECT_TRUE( message.server.at( 0).pid == local::server10.pid());
-            EXPECT_TRUE( message.server.at( 0).queue_id == local::server10.queue().id());
+            request.services = { { "service1"}};
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), request);
          }
+
+         EXPECT_TRUE( domain.state.getService( "service1").instances.empty());
+         EXPECT_TRUE( domain.state.getService( "service2").instances.size() == 1);
+
       }
 
-		TEST( casual_broker, service_request_pending)
+      TEST( casual_broker, service_lookup_non_existent__expect_absent_reply)
       {
-
-         State state = local::initializeState();
-
-         // make servers busy
-         state.instances.at( 10)->state = Server::Instance::State::busy;
-         state.instances.at( 20)->state = Server::Instance::State::busy;
-
-         message::service::name::lookup::Request message;
-         message.requested = "service1";
-         message.server.pid = local::server30.pid();
-         message.server.queue_id = local::server30.queue().id();
-
-         handle::ServiceLookup handler( state);
-         handler.dispatch( message);
-
+         local::domain_3 domain;
 
          {
-            auto reader = queue::non_blocking::reader( local::server30.queue());
-            message::service::name::lookup::Reply message;
+            local::Broker broker{ domain.state};
 
-            ASSERT_FALSE( reader( message));
+            common::message::service::lookup::Request request;
+            request.process = domain.server2.process();
+            request.requested = "non_existent";
 
-            // we should have a pending request
-            ASSERT_TRUE( state.pending.size() == 1);
-            EXPECT_TRUE( state.pending.at( 0).requested == "service1");
-            EXPECT_TRUE( state.pending.at( 0).server.pid == local::server30.pid());
-            EXPECT_TRUE( state.pending.at( 0).server.queue_id == local::server30.queue().id());
-         }
-      }
+            common::queue::blocking::Send send;
+            auto correlation = send( broker.queue.id(), request);
 
-		TEST( casual_broker, service_done)
-      {
-         State state = local::initializeState();
+            common::queue::blocking::Reader receive{ domain.server2.output()};
+            common::message::service::lookup::Reply reply;
+            receive( reply);
 
-         // make server busy
-         state.instances.at( local::server10.pid())->state = Server::Instance::State::busy;
-
-         message::service::ACK message;
-         message.service = "service1";
-         message.server.pid = local::server10.pid();
-         message.server.queue_id = local::server10.queue().id();
-
-         handle::ACK handler( state);
-         handler.dispatch( message);
-
-
-         {
-            auto reader = queue::non_blocking::reader( local::server10.queue());
-            message::service::name::lookup::Reply message;
-
-            // no reply should have been sent
-            EXPECT_FALSE( reader( message));
-            // server should be idle
-            EXPECT_TRUE( state.instances.at( local::server10.pid())->state == Server::Instance::State::idle);
-         }
-      }
-
-		TEST( casual_broker, service_done_pending_requests)
-      {
-
-         State state = local::initializeState();
-
-
-         // make servers busy
-         state.instances.at( local::server10.pid())->state = Server::Instance::State::busy;
-         state.instances.at( local::server20.pid())->state = Server::Instance::State::busy;
-
-         // make sure we have a pending request
-         message::service::name::lookup::Request request;
-         request.requested = "service1";
-         request.server.pid = local::server30.pid();
-         request.server.queue_id = local::server30.queue().id();
-
-         state.pending.push_back( std::move( request));
-
-         // server "10" is ready for action...
-         message::service::ACK message;
-         message.service = "service1";
-         message.server.pid = local::server10.pid();
-         message.server.queue_id = local::server20.queue().id();
-
-         // we should get the pending response
-         handle::ACK handler( state);
-         handler.dispatch( message);
-
-         // The server should still be busy
-         EXPECT_TRUE( state.instances.at( 10)->state == Server::Instance::State::busy);
-
-         {
-            auto reader = queue::blocking::reader( local::server30.queue());
-            message::service::name::lookup::Reply message;
-
-            reader( message);
-            EXPECT_TRUE( message.service.name == "service1");
-            ASSERT_TRUE( message.server.size() == 1);
-            EXPECT_TRUE( message.server.at( 0).pid == local::server10.pid());
-            EXPECT_TRUE( message.server.at( 0).queue_id == local::server10.queue().id());
+            EXPECT_TRUE( correlation == reply.correlation);
+            EXPECT_FALSE( static_cast< bool>( reply.process));
+            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::absent);
          }
       }
 
 
-		TEST( casual_broker, monitor_connect)
+		TEST( casual_broker, service_lookup__expect_idle_reply)
       {
-		   State state = local::initializeState();
-		   state.monitorQueue = 0;
+         local::domain_3 domain;
 
-		   //
-         // Connect
-         //
-         message::monitor::Connect message;
-         message.server.pid = 50;
-         message.server.queue_id = 50;
+         {
+            local::Broker broker{ domain.state};
 
-         handle::MonitorConnect handler( state);
-         handler.dispatch( message);
+            common::message::service::lookup::Request request;
+            request.process = domain.server2.process();
+            request.requested = "service1";
 
+            common::queue::blocking::Send send;
+            auto correlation = send( broker.queue.id(), request);
 
-         EXPECT_TRUE( state.monitorQueue == 50);
-      }
+            common::queue::blocking::Reader receive{ domain.server2.output()};
+            common::message::service::lookup::Reply reply;
+            receive( reply);
 
-		TEST( casual_broker, monitor_disconnect)
-      {
-         State state = local::initializeState();
-         state.monitorQueue = 0;
-
-
-         message::monitor::Disconnect message;
-         message.server.pid = 50;
-         message.server.queue_id = 50;
-
-         handle::MonitorDisconnect handler( state);
-         handler.dispatch( message);
-
-
-         EXPECT_TRUE( state.monitorQueue == 0);
+            EXPECT_TRUE( correlation == reply.correlation);
+            EXPECT_TRUE( reply.process == domain.server1.process());
+            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::idle);
+         }
       }
 
 
-		/*
-		TEST( casual_broker, transaction_manager_connect)
+      TEST( casual_broker, service_lookup_service1__expect__busy_reply__pending_reply)
       {
-         State state = local::initializeState();
-         state.transactionManagerQueue = 0;
+         local::domain_3 domain;
+         domain.instance1().state = state::Server::Instance::State::busy;
 
-         //
-         // Connect
-         //
-         message::transaction::Connect message;
-         message.server.pid = 50;
-         message.server.queue_id = 50;
+         {
+            local::Broker broker{ domain.state};
 
-         typedef mockup::queue::blocking::Writer< broker::QueueBlockingWriter, message::transaction::Configuration> tm_queue_type;
+            common::message::service::lookup::Request request;
+            request.process = domain.server2.process();
+            request.requested = "service1";
 
-         handle::transaction::basic_manager_connect< tm_queue_type> handler( state);
-         handler.dispatch( message);
+            common::queue::blocking::Send send;
+            auto correlation = send( broker.queue.id(), request);
 
+            common::queue::blocking::Reader receive{ domain.server2.output()};
+            common::message::service::lookup::Reply reply;
+            receive( reply);
 
-         EXPECT_TRUE( state.transactionManagerQueue == 50);
-         EXPECT_TRUE( tm_queue_type::queue.size() == 1);
+            EXPECT_TRUE( correlation == reply.correlation);
+            EXPECT_FALSE( static_cast< bool>( reply.process)) << "process: " <<  reply.process;
+            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::busy);
+         }
+         ASSERT_TRUE( domain.state.pending.requests.size() == 1);
+         EXPECT_TRUE( domain.state.pending.requests.at( 0).process == domain.server2.process());
       }
-      */
 
 
+      TEST( casual_broker, service_lookup_service1__forward_context___expect__forward_reply)
+      {
+         local::domain_4 domain;
+         domain.instance1().state = state::Server::Instance::State::busy;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::service::lookup::Request request;
+            request.process = domain.server2.process();
+            request.requested = "service1";
+            request.context =  common::message::service::lookup::Request::Context::no_reply;
+
+            common::queue::blocking::Send send;
+            auto correlation = send( broker.queue.id(), request);
+
+            common::queue::blocking::Reader receive{ domain.server2.output()};
+            common::message::service::lookup::Reply reply;
+            receive( reply);
+
+            EXPECT_TRUE( correlation == reply.correlation);
+            EXPECT_TRUE( reply.process == domain.state.forward) << "process: " <<  reply.process;
+            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::idle);
+         }
+         EXPECT_TRUE( domain.state.pending.requests.empty());
+      }
+
+
+      TEST( casual_broker, service_lookup_service1__expect__busy_reply__pending_reply__service_ACK__expect_reply)
+      {
+         auto start_time = platform::clock_type::now();
+
+         local::domain_3 domain;
+         domain.instance1().alterState( state::Server::Instance::State::busy);
+
+         Uuid correlation;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::service::lookup::Request request;
+            request.process = domain.server2.process();
+            request.requested = "service1";
+
+            common::queue::blocking::Send send;
+            correlation = send( broker.queue.id(), request);
+
+            common::queue::blocking::Reader receive{ domain.server2.output()};
+            common::message::service::lookup::Reply reply;
+            receive( reply);
+
+            EXPECT_TRUE( correlation == reply.correlation);
+            EXPECT_FALSE( static_cast< bool>( reply.process)) << "process: " <<  reply.process;
+            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::busy);
+         }
+
+         ASSERT_TRUE( domain.state.pending.requests.size() == 1);
+         EXPECT_TRUE( domain.state.pending.requests.at( 0).process == domain.server2.process());
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::service::call::ACK ack;
+            ack.process = domain.server1.process();
+            ack.service = "service1";
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), ack);
+
+            //
+            // Expect an "idle" lookup-reply
+            //
+            common::queue::blocking::Reader receive{ domain.server2.output()};
+            common::message::service::lookup::Reply reply;
+            receive( reply);
+
+            EXPECT_TRUE( correlation == reply.correlation);
+            EXPECT_TRUE( reply.process == domain.server1.process()) << "process: " <<  reply.process;
+            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::idle);
+         }
+
+         auto end_time = platform::clock_type::now();
+         EXPECT_TRUE( domain.instance1().invoked == 1);
+         EXPECT_TRUE( domain.instance1().last >= start_time);
+         EXPECT_TRUE( domain.instance1().last <= end_time);
+
+      }
+
+      TEST( casual_broker, forward_connect)
+      {
+         local::domain_3 domain;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::forward::connect::Request connect;
+            connect.process = domain.server2.process();
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), connect);
+         }
+         EXPECT_TRUE( domain.state.forward == domain.server2.process());
+      }
+
+
+		TEST( casual_broker, traffic_connect)
+      {
+         local::domain_6 domain;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::traffic::monitor::connect::Request connect;
+            connect.process = domain.traffic1.process();
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), connect);
+         }
+         EXPECT_TRUE( domain.state.traffic.monitors.at( 0) == domain.traffic1.process().queue);
+      }
+
+      TEST( casual_broker, traffic_connect_x2__expect_2_traffic_monitors)
+      {
+         local::domain_6 domain;
+
+         {
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::traffic::monitor::connect::Request connect;
+               connect.process = domain.traffic1.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+            {
+               common::message::traffic::monitor::connect::Request connect;
+               connect.process = domain.traffic2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+
+         }
+         EXPECT_TRUE( domain.state.traffic.monitors.at( 0) == domain.traffic1.process().queue);
+         EXPECT_TRUE( domain.state.traffic.monitors.at( 1) == domain.traffic2.process().queue);
+      }
+
+		TEST( casual_broker, traffic_disconnect)
+      {
+         local::domain_3 domain;
+         domain.state.traffic.monitors.push_back( domain.server2.process().queue);
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::traffic::monitor::Disconnect disconnect;
+            disconnect.process = domain.server2.process();
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), disconnect);
+         }
+         EXPECT_TRUE( domain.state.traffic.monitors.empty());
+      }
+
+
+      TEST( casual_broker, tm_connect_ready)
+      {
+         local::domain_5 domain;
+
+         {
+            local::Broker broker{ domain.state};
+
+            common::message::transaction::manager::connect::Request connect;
+            connect.process = domain.tm.process();
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), connect);
+
+            common::message::transaction::manager::Ready ready;
+            ready.process = domain.tm.process();
+            ready.success = true;
+            send( broker.queue.id(), ready);
+         }
+         EXPECT_TRUE( domain.state.transaction_manager == domain.tm.process().queue);
+         EXPECT_TRUE( domain.state.getInstance( domain.tm.process().pid).state == state::Server::Instance::State::idle);
+      }
+
+      TEST( casual_broker, singelton_connect__expect_stored_uuid)
+      {
+         local::domain_5 domain;
+
+         auto& tm_uuid = common::process::instance::transaction::manager::identity();
+         {
+
+            local::Broker broker{ domain.state};
+
+            common::message::transaction::manager::connect::Request connect;
+            connect.process = domain.tm.process();
+            connect.identification = tm_uuid;
+
+            common::queue::blocking::Send send;
+            send( broker.queue.id(), connect);
+
+         }
+         EXPECT_TRUE( domain.state.singeltons.size() == 1);
+         EXPECT_TRUE( domain.state.singeltons.at( tm_uuid) == domain.tm.process());
+      }
+
+      TEST( casual_broker, singelton_connect_2x__expect__connect_reply_error)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+            common::message::server::connect::Request connect;
+            {
+               connect.process = domain.server1.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+            {
+               connect.process = domain.server2.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+            common::message::server::connect::Reply reply;
+
+            {
+               common::queue::blocking::Reader reader{ domain.server1.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
+
+            }
+            {
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::singleton);
+            }
+         }
+      }
+
+      TEST( casual_broker, singelton_connect__lookup_process__expect_reply)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::server::connect::Request connect;
+               connect.process = domain.server1.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+            }
+
+
+            {
+               common::message::server::connect::Reply reply;
+
+               common::queue::blocking::Reader reader{ domain.server1.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
+            }
+
+            {
+               common::message::lookup::process::Request request;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+
+               common::message::lookup::process::Reply reply;
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.process == domain.server1.process());
+            }
+         }
+      }
+
+      TEST( casual_broker, lookup_process__direct__expect_reply_with_null_process)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::lookup::process::Request request;
+               request.directive = common::message::lookup::process::Request::Directive::direct;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+
+               common::message::lookup::process::Reply reply;
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.process.pid == 0);
+               EXPECT_TRUE( reply.process.queue == 0);
+
+            }
+         }
+      }
+
+      TEST( casual_broker, lookup_process_wait__expect_pending_reply)
+      {
+         local::domain_singleton domain;
+
+         auto some_uuid = common::uuid::make();
+
+         {
+            local::Broker broker{ domain.state};
+
+            {
+               common::message::lookup::process::Request request;
+               request.directive = common::message::lookup::process::Request::Directive::wait;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+            }
+         }
+         ASSERT_TRUE( domain.state.pending.process_lookup.size() == 1);
+         EXPECT_TRUE( domain.state.pending.process_lookup.front().identification == some_uuid);
+         EXPECT_TRUE( domain.state.pending.process_lookup.front().process == domain.server2.process());
+      }
+
+      TEST( casual_broker, lookup_process_wait__singleton_connect__expect_reply)
+      {
+         local::domain_singleton domain;
+
+         {
+            auto some_uuid = common::uuid::make();
+            local::Broker broker{ domain.state};
+
+
+
+            {
+               common::message::lookup::process::Request request;
+               request.identification = some_uuid;
+               request.process = domain.server2.process();
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), request);
+            }
+
+            {
+               common::message::server::connect::Request connect;
+               connect.process = domain.server1.process();
+               connect.identification = some_uuid;
+
+               common::queue::blocking::Send send;
+               send( broker.queue.id(), connect);
+
+               common::message::server::connect::Reply reply;
+
+               common::queue::blocking::Reader reader{ domain.server1.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
+            }
+
+            {
+               common::message::lookup::process::Reply reply;
+               common::queue::blocking::Reader reader{ domain.server2.output()};
+               reader( reply);
+               EXPECT_TRUE( reply.process == domain.server1.process());
+
+            }
+         }
+      }
 	}
 }

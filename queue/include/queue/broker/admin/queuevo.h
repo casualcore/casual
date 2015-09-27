@@ -58,56 +58,10 @@ namespace casual
                std::size_t retries;
                std::size_t error;
 
-               struct message_t
-               {
-                  struct number_t
-                  {
-                     std::size_t commited = 0;
-                     std::size_t enqueued = 0;
-                     std::size_t dequeued = 0;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        archive & CASUAL_MAKE_NVP( commited);
-                        archive & CASUAL_MAKE_NVP( enqueued);
-                        archive & CASUAL_MAKE_NVP( dequeued);
-                     })
-
-                     std::size_t total() const
-                     {
-                        return commited + enqueued + dequeued;
-                     }
-
-                  } number;
-
-                  sf::platform::time_point timestamp;
-
-                  struct size_t
-                  {
-                     std::size_t min = 0;
-                     std::size_t max = 0;
-                     std::size_t average = 0;
-                     std::size_t total = 0;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        archive & CASUAL_MAKE_NVP( min);
-                        archive & CASUAL_MAKE_NVP( max);
-                        archive & CASUAL_MAKE_NVP( average);
-                        archive & CASUAL_MAKE_NVP( total);
-                     })
-                  } size;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     archive & CASUAL_MAKE_NVP( number);
-                     archive & CASUAL_MAKE_NVP( timestamp);
-                     archive & CASUAL_MAKE_NVP( size);
-                  })
-
-               } message;
-
-
+               std::size_t count;
+               std::size_t size;
+               std::size_t uncommitted;
+               common::platform::time_point timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -117,7 +71,10 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( type);
                   archive & CASUAL_MAKE_NVP( retries);
                   archive & CASUAL_MAKE_NVP( error);
-                  archive & CASUAL_MAKE_NVP( message);
+                  archive & CASUAL_MAKE_NVP( count);
+                  archive & CASUAL_MAKE_NVP( size);
+                  archive & CASUAL_MAKE_NVP( uncommitted);
+                  archive & CASUAL_MAKE_NVP( timestamp);
                })
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs)

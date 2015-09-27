@@ -15,6 +15,7 @@
 #include "common/server/context.h"
 #include "common/transaction/context.h"
 #include "common/call/context.h"
+#include "common/execution.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 
@@ -57,23 +58,26 @@ namespace casual
                      return singleton;
                   }
 
-                  void log( const std::string& category, const std::string& message)
+                  void log( const std::string& category, const char* message)
                   {
                      const std::string basename{ file::name::base( process::path())};
 
-                     // We don't need this - thread::Safe proxy
-                     //std::lock_guard< std::mutex> lock( m_streamMutex);
-
                      m_output << chronology::local()
                         << '|' << environment::domain::name()
-                        << '|' << call::Context::instance().execution()
+                        << '|' << execution::id()
                         << '|' << transaction::Context::instance().current().trid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
-                        << "|" << category
-                        << '|' << call::Context::instance().service()
-                        << "|" << message << std::endl;
+                        << '|' << execution::parent::service()
+                        << '|' << execution::service()
+                        << '|' << category
+                        << '|' << message << std::endl;
+                  }
+
+                  void log( const std::string& category, const std::string& message)
+                  {
+                     log( category, message.c_str());
                   }
 
                private:
@@ -270,32 +274,27 @@ namespace casual
          internal::Stream error{ local::getBuffer( log::category::Type::error).factory()};
 
 
-
-
-         namespace local
+         namespace stream
          {
-            namespace
+            internal::Stream& get( category::Type category)
             {
-               std::ostream& stream( category::Type category)
-               {
-                  static std::map< category::Type, std::ostream&> streams{
-                     { category::Type::casual_debug, internal::debug },
-                     { category::Type::casual_trace, internal::trace },
-                     { category::Type::casual_transaction, internal::transaction },
-                     { category::Type::casual_queue, internal::queue },
-                     { category::Type::casual_buffer, internal::buffer },
-                     { category::Type::debug, debug },
-                     { category::Type::trace, trace },
-                     { category::Type::parameter, parameter },
-                     { category::Type::information, information },
-                     { category::Type::warning, warning },
-                     { category::Type::error, error},
-                  };
+               static std::map< category::Type, internal::Stream&> streams{
+                  { category::Type::casual_debug, internal::debug },
+                  { category::Type::casual_trace, internal::trace },
+                  { category::Type::casual_transaction, internal::transaction },
+                  { category::Type::casual_queue, internal::queue },
+                  { category::Type::casual_buffer, internal::buffer },
+                  { category::Type::debug, debug },
+                  { category::Type::trace, trace },
+                  { category::Type::parameter, parameter },
+                  { category::Type::information, information },
+                  { category::Type::warning, warning },
+                  { category::Type::error, error},
+               };
 
-                  return streams.at( category);
-               }
-            } // <unnamed>
-         } // local
+               return streams.at( category);
+            }
+         } // stream
 
 
          bool active( category::Type category)
@@ -306,12 +305,12 @@ namespace casual
 
          void activate( category::Type category)
          {
-            local::stream( category).rdbuf( local::getBuffer( category).factory());
+            stream::get( category).rdbuf( local::getBuffer( category).factory());
          }
 
          void deactivate( category::Type category)
          {
-            local::stream( category).rdbuf( nullptr);
+            stream::get( category).rdbuf( nullptr);
          }
 
 
@@ -319,12 +318,18 @@ namespace casual
 
          void write( category::Type category, const char* message)
          {
-            local::stream( category) << message << std::endl;
+            stream::get( category) << message << std::endl;
          }
 
          void write( category::Type category, const std::string& message)
          {
-            local::stream( category) << message << std::endl;
+            stream::get( category) << message << std::endl;
+         }
+
+         void write( const std::string& category, const std::string& message)
+         {
+            thread::Safe guard{ std::cout};
+            local::File::instance().log( category, message);
          }
       } // log
 

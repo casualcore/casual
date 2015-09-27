@@ -39,6 +39,9 @@ namespace casual
             int open( long flags);
             int close( long flags);
 
+            int commit( const Transaction& transaction, long flags);
+            int rollback( const Transaction& transaction, long flags);
+
             bool dynamic() const;
 
             std::string key;

@@ -120,6 +120,17 @@ namespace casual
             archive.serialtypeEnd( name);
          }
 
+         template< typename T>
+         typename std::enable_if< std::is_enum< T >::value, void>::type
+         serialize( Reader& archive, T& value, const char* name)
+         {
+            typename std::underlying_type< T>::type enum_value;
+
+            serialize( archive, enum_value, name);
+
+            value = static_cast< T>( enum_value);
+         }
+
          namespace detail
          {
             template< std::size_t index>
@@ -167,7 +178,6 @@ namespace casual
          {
             detail::serialize_tuple( archive, value, name);
          }
-
 
 
          template< typename T>
@@ -348,6 +358,16 @@ namespace casual
          void serialize( Writer& archive, const std::pair< K, V>& value, const char* name)
          {
             detail::serialize_tuple( archive, value, name);
+         }
+
+
+         template< typename T>
+         typename std::enable_if< std::is_enum< T >::value, void>::type
+         serialize( Writer& archive, const T& value, const char* name)
+         {
+            auto enum_value = static_cast< typename std::underlying_type< T>::type>( value);
+
+            serialize( archive, enum_value, name);
          }
 
 

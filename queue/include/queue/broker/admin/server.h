@@ -19,31 +19,18 @@ namespace casual
    {
       struct Broker;
 
+
       namespace broker
       {
+         struct State;
+
          namespace admin
          {
+            admin::State list_queues( broker::State& state);
 
-            class Server
-            {
+            std::vector< Message> list_messages( broker::State& state, const std::string& queue);
 
-            public:
-
-               static common::server::Arguments services( Broker& broker);
-
-               Server( int argc, char **argv);
-
-
-
-               admin::State listQueues();
-
-               std::vector< Message> listMessages( const std::string& queue);
-
-
-
-            private:
-               static Broker* m_broker;
-            };
+            common::server::Arguments services( broker::State& state);
 
          } // admin
       } // broker

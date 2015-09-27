@@ -109,33 +109,39 @@ namespace casual
                {
                   struct AX_reg
                   {
-                     AX_reg( common::transaction::ID& trid) : m_id( trid)
+                     AX_reg()
                      {
-                        ax_reg( queue::rm::id(), &m_id.xid, TMNOFLAGS);
+                        ax_reg( queue::rm::id(), &trid.xid, TMNOFLAGS);
                      }
 
                      ~AX_reg()
                      {
-                        if( ! m_id)
+                        if( ! trid)
                         {
                            ax_unreg( queue::rm::id(), TMNOFLAGS);
                         }
-
                      }
+
+                     common::transaction::ID trid;
                   private:
-                     common::transaction::ID& m_id;
+
                   };
                } // scoped
 
 
                sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
                {
+                  //
+                  // Register to TM
+                  //
+                  local::scoped::AX_reg ax_reg;
+
                   auto send_request = [&]()
                   {
                      queue::Lookup lookup( queue);
 
                      common::message::queue::enqueue::Request request;
-                     local::scoped::AX_reg ax_reg( request.trid);
+                     request.trid = ax_reg.trid;
 
                      request.process = common::process::handle();
 
@@ -145,7 +151,6 @@ namespace casual
                      request.message.properties = message.attributes.properties;
                      request.message.reply = message.attributes.reply;
                      request.message.avalible = message.attributes.available;
-                     //request.message.id = common::Uuid::make();
 
                      auto group = lookup();
 
@@ -153,13 +158,12 @@ namespace casual
                      {
                         throw common::exception::invalid::Argument{ "failed to look up queue: " + queue};
                      }
-
-                     common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
-
-
-                     casual::common::queue::blocking::Send send;
                      request.queue = group.queue;
 
+                     common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
+                     common::log::internal::queue << "enqueues - request: " << request << std::endl;
+
+                     casual::common::queue::blocking::Send send;
                      return send( group.process.queue, request);
                   };
 
@@ -174,6 +178,12 @@ namespace casual
 
                std::vector< Message> dequeue( const std::string& queue, const Selector& selector, bool block = false)
                {
+
+                  //
+                  // Register to TM
+                  //
+                  local::scoped::AX_reg ax_reg;
+
                   common::scope::Execute forget_blocking{ [&]()
                   {
                      queue::Lookup lookup( queue);
@@ -197,7 +207,7 @@ namespace casual
                      queue::Lookup lookup( queue);
 
                      common::message::queue::dequeue::Request request;
-                     local::scoped::AX_reg ax_reg( request.trid);
+                     request.trid = ax_reg.trid;
 
                      request.process = common::process::handle();
 

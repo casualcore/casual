@@ -21,11 +21,26 @@
 
 namespace casual
 {
+
+
    namespace transaction
    {
+      namespace environment
+      {
+         namespace log
+         {
+            std::string file();
+         } // log
+
+      } // environment
+
+
       struct Settings
       {
-         std::string database;
+         Settings();
+
+         std::string log;
+         std::string configuration;
       };
 
 
@@ -43,18 +58,22 @@ namespace casual
 
          void start();
 
+
+         const State& state() const;
+
       private:
 
 
          void handlePending();
 
-
-         common::file::scoped::Path m_queueFilePath;
-         common::ipc::receive::Queue& m_receiveQueue;
          State m_state;
-
-
       };
+
+      namespace message
+      {
+         void pump( State& state);
+
+      } // message
 
 
 

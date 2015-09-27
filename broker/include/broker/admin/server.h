@@ -30,42 +30,18 @@ namespace broker
    namespace admin
    {
 
-      class Server
-      {
 
-      public:
+      admin::StateVO broker_state( const broker::State& state);
 
-         static common::server::Arguments services( Broker& broker);
+      void update_instances( broker::State& state, const std::vector< admin::update::InstancesVO>& instances);
 
-         Server( int argc, char **argv);
-
-
-         //!
-         //! @return a list of all servers
-         //!
-         std::vector< admin::ServerVO> listServers();
-
-
-         //!
-         //! @return a list of all services
-         //!
-         std::vector< admin::ServiceVO> listServices();
-
-         admin::StateVO state();
-
-         //!
-         //!
-         //!
-         void updateInstances( const std::vector< admin::update::InstancesVO>& instances);
-
-
-         admin::ShutdownVO shutdown( bool broker);
+      admin::ShutdownVO shutdown( broker::State& state, bool broker);
 
 
 
-      private:
-         static Broker* m_broker;
-      };
+      common::server::Arguments services( broker::State& state);
+
+
 
    } // admin
 

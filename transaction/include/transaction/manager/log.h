@@ -21,6 +21,9 @@ namespace casual
 {
    namespace transaction
    {
+      struct Transaction;
+
+
       class Log
       {
       public:
@@ -28,41 +31,18 @@ namespace casual
          // TOOD: should be at a "higher" level
          enum State
          {
-            cUnknown = 0,
-            cBegin = 10,
-            cPreparedCommit,
-            cPrepareRollback
-
-
-         };
-
-         struct Row
-         {
-            common::transaction::ID trid;
-            common::platform::pid_type pid = 0;
-            common::platform::time_point started;
-            common::platform::time_point updated;
-            State state = cUnknown;
+            cPrepared = 10,
+            cPrepareRollback,
+            cTimeout
          };
 
 
          Log( const std::string& database);
 
-         void begin( const common::message::transaction::begin::Request& request);
 
-         void commit( const common::message::transaction::commit::Request& request);
-
-         void rollback( const common::message::transaction::rollback::Request& request);
+         void prepare( const transaction::Transaction& transaction);
 
          void remove( const common::transaction::ID& xid);
-
-
-         void prepareCommit( const common::transaction::ID& id);
-
-
-         std::vector< Row> select( const common::transaction::ID& id);
-
-         std::vector< Row> select();
 
 
 
@@ -70,54 +50,94 @@ namespace casual
          void writeCommit();
          void writeRollback();
 
+         struct Stats
+         {
+            struct update_t
+            {
+               std::size_t prepare = 0;
+               std::size_t remove = 0;
+            } update;
+
+            std::size_t writes = 0;
+         };
+
+         const Stats& stats() const;
+
+
+         //!
+         //! Only for unittest purpose
+         //! @{
+
+         struct Row
+         {
+            common::transaction::ID trid;
+            common::platform::pid_type pid = 0;
+            common::platform::time_point started;
+            common::platform::time_point updated;
+            State state = cPrepared;
+         };
+
+         std::vector< Row> logged();
+         //! @}
+
+
       private:
+
 
          sql::database::Connection m_connection;
 
          struct statement_t
          {
-            sql::database::Statement begin;
-
-            struct update_t
-            {
-               sql::database::Statement state;
-
-            } update;
-
-            struct select_t
-            {
-               sql::database::Statement all;
-               sql::database::Statement transaction;
-
-            } select;
-
-
+            sql::database::Statement insert;
             sql::database::Statement remove;
-
 
          } m_statement;
 
+         Stats m_stats;
       };
 
-      namespace scoped
+
+      namespace persistent
       {
          struct Writer
          {
-            Writer( Log& log) : m_log( log)
+            enum class State
             {
-               // TODO: error checking?
-               m_log.writeBegin();
+               begun,
+               committed,
+            };
+
+            inline Writer( Log& log) : m_log( log), m_state{ State::committed} {}
+
+            inline void begin()
+            {
+               if( m_state == State::committed)
+               {
+                  m_log.writeBegin();
+                  m_state = State::begun;
+               }
             }
 
-            ~Writer()
+            inline void commit()
             {
-               m_log.writeCommit();
+               if( m_state == State::begun)
+               {
+                  m_log.writeCommit();
+                  m_state = State::committed;
+               }
+            }
+
+            inline ~Writer()
+            {
+               commit();
             }
 
          private:
             Log& m_log;
+            State m_state;
          };
-      } // scoped
+
+      } // persistent
 
    } // transaction
 

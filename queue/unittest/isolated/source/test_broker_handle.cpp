@@ -27,17 +27,17 @@ namespace casual
             State() : group10( 10), group20( 20)
             {
                state.groups = {
-                     { "group10", group10.server()},
-                     { "group20", group20.server()},
+                     { "group10", group10.process()},
+                     { "group20", group20.process()},
                };
 
                state.queues = {
-                     { "queue1", { group10.server(), 1}},
-                     { "queue2", { group10.server(), 2}},
-                     { "queue3", { group10.server(), 3}},
-                     { "queueB1", { group20.server(), 1}},
-                     { "queueB2", { group20.server(), 2}},
-                     { "queueB3", { group20.server(), 3}},
+                     { "queue1", { group10.process(), 1}},
+                     { "queue2", { group10.process(), 2}},
+                     { "queue3", { group10.process(), 3}},
+                     { "queueB1", { group20.process(), 1}},
+                     { "queueB2", { group20.process(), 2}},
+                     { "queueB3", { group20.process(), 3}},
                };
             }
 
@@ -101,24 +101,24 @@ namespace casual
             // Send reqeust
             //
             common::message::queue::lookup::Request request;
-            request.process = requester.server();
+            request.process = requester.process();
             request.name = "queue1";
-            send( broker.id(), request);
+            send( broker.input(), request);
 
 
-            send( broker.id(), common::message::shutdown::Request{});
+            send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          {
-            common::queue::blocking::Reader read( requester.receive());
+            common::queue::blocking::Reader read( requester.output());
             common::message::queue::lookup::Reply reply;
 
             read( reply);
 
             EXPECT_TRUE( reply.queue == 1);
-            EXPECT_TRUE( reply.process == state.group10.server());
+            EXPECT_TRUE( reply.process == state.group10.process());
 
          }
       }
@@ -137,18 +137,18 @@ namespace casual
             // Send reqeust
             //
             common::message::queue::lookup::Request request;
-            request.process = requester.server();
+            request.process = requester.process();
             request.name = "absent_qeueue";
-            send( broker.id(), request);
+            send( broker.input(), request);
 
 
-            send( broker.id(), common::message::shutdown::Request{});
+            send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          {
-            common::queue::blocking::Reader read( requester.receive());
+            common::queue::blocking::Reader read( requester.output());
             common::message::queue::lookup::Reply reply;
 
             read( reply);
@@ -173,18 +173,18 @@ namespace casual
             // Send reqeust
             //
             common::message::queue::group::Involved request;
-            request.process = state.group10.server();
+            request.process = state.group10.process();
             request.trid = trid;
-            send( broker.id(), request);
+            send( broker.input(), request);
 
 
-            send( broker.id(), common::message::shutdown::Request{});
+            send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          ASSERT_TRUE( state.state.involved.at( trid).size() == 1);
-         EXPECT_TRUE( state.state.involved.at( trid).at( 0) == state.group10.server());
+         EXPECT_TRUE( state.state.involved.at( trid).at( 0) == state.group10.process());
       }
 
       TEST( casual_queue_broker, handle_group_involved__xid1_1_group__xid2_2_groups)
@@ -203,30 +203,30 @@ namespace casual
             // Send request
             //
             common::message::queue::group::Involved request;
-            request.process = state.group10.server();
+            request.process = state.group10.process();
             request.trid = trid1;
-            send( broker.id(), request);
+            send( broker.input(), request);
 
-            request.process = state.group20.server();
+            request.process = state.group20.process();
             request.trid = trid2;
-            send( broker.id(), request);
+            send( broker.input(), request);
 
-            request.process = state.group10.server();
+            request.process = state.group10.process();
             request.trid = trid2;
-            send( broker.id(), request);
+            send( broker.input(), request);
 
 
-            send( broker.id(), common::message::shutdown::Request{});
+            send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          ASSERT_TRUE( state.state.involved.at( trid1).size() == 1);
-         EXPECT_TRUE( state.state.involved.at( trid1).at( 0) == state.group10.server());
+         EXPECT_TRUE( state.state.involved.at( trid1).at( 0) == state.group10.process());
 
          ASSERT_TRUE( state.state.involved.at( trid2).size() == 2);
-         EXPECT_TRUE( state.state.involved.at( trid2).at( 0) == state.group20.server());
-         EXPECT_TRUE( state.state.involved.at( trid2).at( 1) == state.group10.server());
+         EXPECT_TRUE( state.state.involved.at( trid2).at( 0) == state.group20.process());
+         EXPECT_TRUE( state.state.involved.at( trid2).at( 1) == state.group10.process());
       }
 
 
@@ -243,7 +243,7 @@ namespace casual
 
          {
             // prep state
-            state.state.involved[ trid].push_back( state.group10.server());
+            state.state.involved[ trid].push_back( state.group10.process());
          }
 
          {
@@ -251,21 +251,21 @@ namespace casual
             // Send reqeust
             //
             common::message::transaction::resource::commit::Request request;
-            request.process = requester.server();
+            request.process = requester.process();
             request.trid = trid;
             request.resource = 42;
             request.flags = 10;
-            send( broker.id(), request);
+            send( broker.input(), request);
 
 
-            send( broker.id(), common::message::shutdown::Request{});
+            send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          {
             // group 10 should get the request, since it's involved with the xid
-            common::queue::blocking::Reader read( state.group10.receive());
+            common::queue::blocking::Reader read( state.group10.output());
             common::message::transaction::resource::commit::Request request;
 
             read( request);
@@ -278,9 +278,9 @@ namespace casual
             // group10 should not be involved
             EXPECT_TRUE( state.state.involved.count( trid) == 0);
             // Should be a waiting correlation for the xid
-            EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.server());
-            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).group == state.group10.server());
-            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).state == broker::State::Correlation::State::pending);
+            EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.process());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).group == state.group10.process());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( 0).stage == broker::State::Correlation::Stage::pending);
          }
       }
 
@@ -297,8 +297,8 @@ namespace casual
 
          {
             // prep state
-            state.state.involved[ trid].push_back( state.group10.server());
-            state.state.involved[ trid].push_back( state.group20.server());
+            state.state.involved[ trid].push_back( state.group10.process());
+            state.state.involved[ trid].push_back( state.group20.process());
          }
 
          {
@@ -306,14 +306,14 @@ namespace casual
             // Send reqeust
             //
             common::message::transaction::resource::commit::Request request;
-            request.process = requester.server();
+            request.process = requester.process();
             request.trid = trid;
             request.resource = 42;
             request.flags = 10;
-            send( broker.id(), request);
+            send( broker.input(), request);
 
 
-            send( broker.id(), common::message::shutdown::Request{});
+            send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -321,7 +321,7 @@ namespace casual
          auto check = [&]( common::mockup::ipc::Instance& group, int index)
          {
             // group 10 should get the request, since it's involved with the xid
-            common::queue::blocking::Reader read( group.receive());
+            common::queue::blocking::Reader read( group.output());
             common::message::transaction::resource::commit::Request request;
 
             read( request);
@@ -334,9 +334,9 @@ namespace casual
             // group should not be involved
             EXPECT_TRUE( state.state.involved.count( trid) == 0);
             // Should be a waiting correlation for the xid
-            EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.server());
-            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).group == group.server());
-            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).state == broker::State::Correlation::State::pending);
+            EXPECT_TRUE( state.state.correlation.at( trid).caller == requester.process());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).group == group.process());
+            EXPECT_TRUE( state.state.correlation.at( trid).requests.at( index).stage == broker::State::Correlation::Stage::pending);
          };
 
          check( state.group10, 0);

@@ -48,13 +48,6 @@ namespace casual
 			void start();
 
 
-			//void addServers( const std::vector< action::server::>)
-
-			void serverInstances( const std::vector< admin::update::InstancesVO>& instances);
-
-
-			admin::ShutdownVO shutdown( bool broker);
-
 
 			const State& state() const
 			{
@@ -74,6 +67,22 @@ namespace casual
 			State m_state;
 
 		};
+
+		namespace update
+      {
+         void instances( State& state, const std::vector< admin::update::InstancesVO>& instances);
+
+      } // update
+
+      admin::ShutdownVO shutdown( State& state, common::ipc::receive::Queue& ipc, bool broker);
+
+
+		namespace message
+      {
+         void pump( State& state, common::ipc::receive::Queue& ipc);
+
+      } // message
+
 	} // broker
 } // casual
 

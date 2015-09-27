@@ -13,8 +13,8 @@
 #include "common/process.h"
 
 
-#include <string.h>
-#include <errno.h>
+#include <cstring>
+#include <cerrno>
 
 
 
@@ -57,24 +57,9 @@ namespace casual
             {
                log::error << exception << std::endl;
             }
-            catch( const exception::xatmi::category::Error& exception)
+            catch( const exception::xatmi::base& exception)
             {
-               log::error << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::Warning& exception)
-            {
-               log::warning << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::Information& exception)
-            {
-               log::information << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
-               return exception.code();
-            }
-            catch( const exception::xatmi::category::User& exception)
-            {
-               log::debug << xatmi::error( exception.code()) << " - " << exception.what() << std::endl;
+               log::stream::get( exception.category()) << "xatmi - " << exception << std::endl;
                return exception.code();
             }
 
@@ -86,32 +71,24 @@ namespace casual
                log::error << exception.what() << std::endl;
                return TX_FAIL;
             }
-
-            /*
-            catch( const exception::tx::severity::Information& exception)
+            catch( const exception::code::base& exception)
             {
-               log::information << transaction::txError( exception.code()) << " - " << exception.what();
+               log::stream::get( exception.category()) << exception.tag_name() << " - " << exception << std::endl;
                return exception.code();
             }
-            catch( const exception::tx::severity::User& exception)
-            {
-               log::debug << transaction::txError( exception.code()) << " - " << exception.what();
-               return exception.code();
-            }
-            */
-            catch( const exception::Base& exception)
+            catch( const exception::base& exception)
             {
                log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
                return TPESYSTEM;
             }
             catch( const std::exception& exception)
             {
-               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << " (" << type::name( exception) << ')' << std::endl;
                return TPESYSTEM;
             }
             catch( ...)
             {
-               log::error << xatmi::error( TPESYSTEM) << " unexpected exception" << std::endl;
+               log::error << xatmi::error( TPESYSTEM) << " - unexpected exception" << std::endl;
                return TPESYSTEM;
             }
 
@@ -125,14 +102,14 @@ namespace casual
             return string( errno);
          }
 
-         std::string string( int code)
+         std::string string( const int code)
          {
-            return std::string( strerror( code)) + " (" + std::to_string( code) + ")";
+            return std::string( std::strerror( code)) + " (" + std::to_string( code) + ")";
          }
 
          namespace xatmi
          {
-            std::string error( int code)
+            const std::string& error( const int code)
             {
                static const std::map< int, std::string> mapping{
                   { TPEBADDESC, "TPEBADDESC"},
@@ -155,7 +132,7 @@ namespace casual
                };
 
 
-               auto findIter = mapping.find( code);
+               const auto findIter = mapping.find( code);
 
                if( findIter != mapping.end())
                {
@@ -172,7 +149,7 @@ namespace casual
 
          namespace xa
          {
-            const char* error( int code)
+            const char* error( const int code)
             {
                static const std::map< int, const char*> mapping{
                   { XA_RBROLLBACK, "XA_RBROLLBACK"},
@@ -207,7 +184,8 @@ namespace casual
 
          namespace tx
          {
-            const char* error( int code)
+
+            const char* error( const int code)
             {
                static const std::map< int, const char*> mapping{
                   { TX_NOT_SUPPORTED, "TX_NOT_SUPPORTED"},
@@ -237,7 +215,7 @@ namespace casual
                {
                   throw;
                }
-               catch( const exception::tx::Protocoll& exception)
+               catch( const exception::tx::Protocol& exception)
                {
                   log::error << "TX_PROTOCOL_ERROR " << exception << std::endl;
                   return TX_PROTOCOL_ERROR;

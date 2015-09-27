@@ -12,6 +12,7 @@
 #include "common/message/server.h"
 #include "common/queue.h"
 #include "common/process.h"
+#include "common/internal/log.h"
 
 namespace casual
 {
@@ -33,7 +34,7 @@ namespace casual
 
                void operator () ( message_type& message)
                {
-                  // no op
+                  log::internal::debug << "discard message: " << message.message_type << '\n';
                }
             };
 
@@ -44,16 +45,16 @@ namespace casual
 
                using queue_type = common::queue::blocking::basic_send< queue_policy>;
 
-               using message_type = server::ping::Request;
-
                template< typename... Args>
                Ping( Args&&... args)
                   :  m_send( std::forward< Args>( args)...) {}
 
-               void operator () ( message_type& message)
+               void operator () ( server::ping::Request& message)
                {
-                  server::ping::Reply reply;
+                  log::internal::debug << "pinged by process: " << message.process << '\n';
 
+                  server::ping::Reply reply;
+                  reply.correlation = message.correlation;
                   reply.process = process::handle();
                   reply.uuid = process::uuid();
 
@@ -83,6 +84,35 @@ namespace casual
                void operator () ( message_type& message);
             };
 
+
+
+            namespace connect
+            {
+               template< typename Q, typename C, typename M>
+               auto reply( Q&& queue, C&& correlation, M&& message) -> decltype( std::forward< M>( message))
+               {
+                  queue( message, correlation);
+
+                  switch( message.directive)
+                  {
+                     case M::Directive::singleton:
+                     {
+                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
+                     }
+                     case M::Directive::shutdown:
+                     {
+                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
+                     }
+                     default:
+                     {
+                        break;
+                     }
+                  }
+                  return std::forward< M>( message);
+               }
+            } // connect
 
          } // handle
 

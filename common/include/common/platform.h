@@ -70,7 +70,7 @@ namespace casual
          //!
          //! The common type used to represent sizes (especially in buffers)
          //!
-		   typedef uint64_t binary_size_type;
+		   using binary_size_type = uint64_t;
 
 
 		   namespace batch
@@ -109,32 +109,32 @@ namespace casual
 			//
 			// ipc
 			//
-			typedef int queue_id_type;
-			typedef long message_type_type;
+			using queue_id_type = int;
+			using message_type_type = long;
 
 
-			// TODO: bigger!
-			// const std::size_t message_size = 2048;
-			 const std::size_t message_size = 1024;
+#ifdef __APPLE__
+
+			//
+			// OSX has very tight limits on IPC
+			//
+			constexpr std::size_t message_size = 1024;
+#else
+			constexpr std::size_t message_size = 1024 * 8;
+#endif
 
 			//
 			// uuid
 			//
-			typedef uuid_t uuid_type;
-			typedef char uuid_string_type[ 37];
+			using uuid_type = uuid_t;
+			using uuid_string_type = char[ 37];
 
-			typedef pid_t pid_type;
+			using pid_type = pid_t;
 
 			//
 			// long jump
 			//
-			typedef jmp_buf long_jump_buffer_type;
-
-			//
-			// time
-			//
-			typedef time_t seconds_type;
-
+			using long_jump_buffer_type = jmp_buf;
 
 			enum ipc_flags
 			{
@@ -142,13 +142,13 @@ namespace casual
 			};
 
 
-			typedef int signal_type;
+			using signal_type = int;
 
 
 
 			namespace resource
          {
-            typedef int id_type;
+			   using id_type = int;
 
          } // resource
 
@@ -167,10 +167,9 @@ namespace casual
 
          // TODO: change to: typedef std::chrono::steady_clock clock_type;
          // When clang has to_time_t for steady_clock
-         typedef std::chrono::system_clock clock_type;
+         using clock_type = std::chrono::system_clock;
 
-
-         typedef clock_type::time_point time_point;
+         using time_point = clock_type::time_point;
 
 
          //!

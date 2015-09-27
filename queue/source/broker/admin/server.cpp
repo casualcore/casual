@@ -17,10 +17,6 @@ namespace local
 {
    namespace
    {
-      typedef casual::queue::broker::admin::Server implementation_type;
-
-      casual::sf::server::implementation::type< implementation_type> implementation;
-
       casual::sf::server::type server;
    }
 }
@@ -36,9 +32,6 @@ namespace casual
             try
             {
                local::server = casual::sf::server::create( argc, argv);
-
-               local::implementation = casual::sf::server::implementation::make< local::implementation_type>( argc, argv);
-
             }
             catch( ...)
             {
@@ -55,7 +48,6 @@ namespace casual
             // delete the implementation an server implementation
             //
             casual::sf::server::sink( local::server);
-            casual::sf::server::sink( local::implementation);
          }
       }
 
@@ -66,112 +58,97 @@ namespace casual
          namespace admin
          {
 
-            extern "C"
+            namespace service
             {
-
-               void list_queues( TPSVCINFO *serviceInfo)
+               extern "C"
                {
-                  casual::sf::service::reply::State reply;
 
-                  try
+                  void list_queues( TPSVCINFO *serviceInfo, broker::State& state)
                   {
-                     auto service_io = local::server->createService( serviceInfo);
+                     casual::sf::service::reply::State reply;
+
+                     try
+                     {
+                        auto service_io = local::server->createService( serviceInfo);
 
 
-                     auto serviceReturn = service_io.call(
-                        *local::implementation,
-                        &Server::listQueues);
+                        auto serviceReturn = admin::list_queues( state);
 
-                     service_io << CASUAL_MAKE_NVP( serviceReturn);
+                        service_io << CASUAL_MAKE_NVP( serviceReturn);
 
-                     reply = service_io.finalize();
+                        reply = service_io.finalize();
+                     }
+                     catch( ...)
+                     {
+                        local::server->handleException( serviceInfo, reply);
+                     }
+
+                     tpreturn(
+                        reply.value,
+                        reply.code,
+                        reply.data,
+                        reply.size,
+                        reply.flags);
                   }
-                  catch( ...)
+
+
+                  void list_messages( TPSVCINFO *serviceInfo, broker::State& state)
                   {
-                     local::server->handleException( serviceInfo, reply);
-                  }
+                     casual::sf::service::reply::State reply;
 
-                  tpreturn(
-                     reply.value,
-                     reply.code,
-                     reply.data,
-                     reply.size,
-                     reply.flags);
+                     try
+                     {
+                        auto service_io = local::server->createService( serviceInfo);
+
+                        std::string queue;
+                        service_io >> CASUAL_MAKE_NVP( queue);
+
+                        auto serviceReturn = admin::list_messages( state, queue);
+
+                        service_io << CASUAL_MAKE_NVP( serviceReturn);
+
+                        reply = service_io.finalize();
+                     }
+                     catch( ...)
+                     {
+                        local::server->handleException( serviceInfo, reply);
+                     }
+
+                     tpreturn(
+                        reply.value,
+                        reply.code,
+                        reply.data,
+                        reply.size,
+                        reply.flags);
+                  }
                }
+            } // service
 
 
-               void list_messages( TPSVCINFO *serviceInfo)
-               {
-                  casual::sf::service::reply::State reply;
-
-                  try
-                  {
-                     auto service_io = local::server->createService( serviceInfo);
-
-                     std::string queue;
-                     service_io >> CASUAL_MAKE_NVP( queue);
-
-
-                     auto serviceReturn = service_io.call(
-                        *local::implementation,
-                        &Server::listMessages,
-                        queue);
-
-                     service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                     reply = service_io.finalize();
-                  }
-                  catch( ...)
-                  {
-                     local::server->handleException( serviceInfo, reply);
-                  }
-
-                  tpreturn(
-                     reply.value,
-                     reply.code,
-                     reply.data,
-                     reply.size,
-                     reply.flags);
-               }
-            }
-
-
-            common::server::Arguments Server::services( Broker& broker)
-            {
-               m_broker = &broker;
-
-               common::server::Arguments result{ { common::process::path()}};
-
-               result.services.emplace_back( ".casual.queue.list.queues", &list_queues, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-               result.services.emplace_back( ".casual.queue.list.messages", &list_messages, common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-
-               return result;
-            }
-
-            Server::Server( int argc, char **argv)
-            {
-
-            }
-
-
-            admin::State Server::listQueues()
+            admin::State list_queues( broker::State& state)
             {
                admin::State result;
 
-               result.queues = transform::queues( m_broker->queues());
-               result.groups = transform::groups( m_broker->state());
+               result.queues = transform::queues( broker::queues( state));
+               result.groups = transform::groups( state);
 
                return result;
             }
 
-            std::vector< Message> Server::listMessages( const std::string& queue)
+            std::vector< Message> list_messages( broker::State& state, const std::string& queue)
             {
-               return transform::messages( m_broker->messages( queue));
+               return transform::messages( broker::messages( state, queue));
             }
 
+            common::server::Arguments services( broker::State& state)
+            {
+               common::server::Arguments result{ { common::process::path()}};
 
-            Broker* Server::m_broker = nullptr;
+               result.services.emplace_back( ".casual.queue.list.queues", std::bind( &service::list_queues, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+               result.services.emplace_back( ".casual.queue.list.messages", std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
 
+               return result;
+            }
          } // admin
       } // broker
    } // queue

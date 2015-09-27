@@ -66,6 +66,7 @@ namespace casual
                   transactions.clear();
                }
             }
+
             return reply;
          }
 
@@ -82,16 +83,17 @@ namespace casual
 
                //
                // Move all request that is interested in committed queues to the end.
+               // We use the second part of the partition directly
                //
-               auto split = common::range::stable_partition( requests, [&]( const request_type& r){
+               auto interested = std::get< 1>( common::range::stable_partition( requests, [&]( const request_type& r){
                   return ! common::range::find( result.enqueued, r.queue);
-               });
+               }));
 
                //
                // move the requests to the result, and erase them in pending
                //
-               common::range::move( std::get< 1>( split), result.requests);
-               requests.erase( std::begin( std::get< 1>( split)), std::end( std::get< 1>( split)));
+               common::range::move( interested, result.requests);
+               requests.erase( std::begin( interested), std::end( interested));
             }
 
             return result;
@@ -101,6 +103,81 @@ namespace casual
          {
             transactions.erase( trid);
          }
+
+         void State::Pending::erase( common::platform::pid_type pid)
+         {
+            auto found = std::get< 1>( common::range::stable_partition( requests, [=]( const request_type& r){
+               return r.process.pid != pid;
+            }));
+
+            requests.erase( std::begin( found), std::end( found));
+         }
+
+
+         namespace message
+         {
+            void pump( group::State& state)
+            {
+               common::message::dispatch::Handler handler{
+                  handle::dead::Process{ state},
+                  handle::enqueue::Request{ state},
+                  handle::dequeue::Request{ state},
+                  handle::dequeue::forget::Request{ state},
+                  handle::transaction::commit::Request{ state},
+                  handle::transaction::rollback::Request{ state},
+                  handle::information::queues::Request{ state},
+                  handle::information::messages::Request{ state},
+                  common::message::handle::Shutdown{},
+               };
+
+
+               group::queue::blocking::Reader blockedRead( state.receive, state);
+
+               while( true)
+               {
+                  {
+                     auto persistent = sql::database::scoped::write( state.queuebase);
+
+
+                     if( state.persistent.empty())
+                     {
+                        //
+                        // We can only block if our back log is empty...
+                        //
+
+                        handler( blockedRead.next());
+                     }
+
+                     //
+                     // Consume until the queue is empty or we've got pending replies equal to transaction_batch
+                     //
+
+                     group::queue::non_blocking::Reader nonBlocking( state.receive, state);
+
+                     while( handler( nonBlocking.next()) &&
+                           state.persistent.size() < common::platform::batch::transaction)
+                     {
+                        ;
+                     }
+                  }
+
+                  //
+                  // queuebase is persistent - send pending persistent replies
+                  //
+                  group::queue::non_blocking::Send send{ state};
+
+                  auto remain = common::range::remove_if(
+                     state.persistent,
+                     common::message::pending::sender( send));
+
+                  state.persistent.erase( remain.last, std::end( state.persistent));
+
+
+               }
+
+            }
+         } // message
+
 
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
@@ -112,8 +189,21 @@ namespace casual
 
             {
                common::message::queue::connect::Request request;
-               request.process = common::process::handle();
+               request.process.pid = common::process::handle().pid;
+               request.process.queue = m_state.receive.id();
                queueBroker( request);
+            }
+
+            //
+            // Make sure we'll get notify when processes dies
+            // TODO: we could wait until we know there's a blocking dequeue
+            //
+            {
+               common::message::dead::process::Registration registration;
+               registration.process = common::process::handle();
+
+               group::queue::blocking::Send send{ m_state};
+               send( common::ipc::broker::id(), registration);
             }
 
             {
@@ -125,7 +215,7 @@ namespace casual
 
 
 
-               group::queue::blocking::Reader read( common::ipc::receive::queue(), m_state);
+               group::queue::blocking::Reader read( m_state.receive, m_state);
                common::message::queue::connect::Reply reply;
                read( reply);
 
@@ -159,59 +249,20 @@ namespace casual
 
                queueBroker( information);
             }
-         } // group
+         }
 
 
-         void Server::start()
+         int Server::start() noexcept
          {
-            common::message::dispatch::Handler handler{
-               handle::enqueue::Request{ m_state},
-               handle::dequeue::Request{ m_state},
-               handle::transaction::commit::Request{ m_state},
-               handle::transaction::rollback::Request{ m_state},
-               handle::information::queues::Request{ m_state},
-               handle::information::messages::Request{ m_state},
-               common::message::handle::Shutdown{},
-            };
-
-
-            group::queue::blocking::Reader blockedRead( common::ipc::receive::queue(), m_state);
-
-            while( true)
+            try
             {
-               {
-                  auto persistent = sql::database::scoped::write( m_state.queuebase);
-
-
-                  handler( blockedRead.next());
-
-                  //
-                  // Consume until the queue is empty or we've got pending replies equal to transaction_batch
-                  //
-
-                  group::queue::non_blocking::Reader nonBlocking( common::ipc::receive::queue(), m_state);
-
-                  while( handler( nonBlocking.next()) &&
-                        m_state.persistent.size() < common::platform::batch::transaction)
-                  {
-                     ;
-                  }
-               }
-
-               //
-               // queuebase is persistent - send pending persistent replies
-               //
-               group::queue::non_blocking::Send send{ m_state};
-
-               auto remain = common::range::remove_if(
-                  m_state.persistent,
-                  common::message::pending::sender( send));
-
-               m_state.persistent.erase( remain.last, std::end( m_state.persistent));
-
-
+               message::pump( m_state);
             }
-
+            catch( ...)
+            {
+               return common::error::handler();
+            }
+            return 0;
          }
       } // server
 

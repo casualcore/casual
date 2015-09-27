@@ -35,9 +35,8 @@ namespace casual
          using namespace common::traits;
 
 
-
          template< typename T>
-         struct is_pod : public std::integral_constant< bool, std::is_pod< T>::value && ! std::is_class< T>::value> {};
+         struct is_pod : public std::integral_constant< bool, std::is_pod< T>::value && ! std::is_class< T>::value && ! std::is_enum< T>::value> {};
 
          template<>
          struct is_pod< std::string> : public std::integral_constant< bool, true> {};
@@ -53,7 +52,7 @@ namespace casual
          //
          template< typename T>
          struct is_serializible : public std::integral_constant< bool,
-            ! is_pod< T>::value && ! is_container< T>::value> {};
+            ! is_pod< T>::value && ! std::is_enum< T>::value && ! is_container< T>::value> {};
 
 
       }

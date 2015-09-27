@@ -66,6 +66,15 @@ namespace casual
 
          namespace handle
          {
+            namespace dead
+            {
+               struct Process : Base
+               {
+                  using Base::Base;
+
+                  void operator() ( const common::message::dead::process::Event& message);
+               };
+            } // dead
 
             namespace information
             {
@@ -116,14 +125,17 @@ namespace casual
 
             namespace dequeue
             {
+
                struct Request : Base
                {
                   using message_type = common::message::queue::dequeue::Request;
 
                   using Base::Base;
 
-                  bool operator () ( message_type& message);
+                  void operator () ( message_type& message);
                };
+
+               bool request( State& state, Request::message_type& message);
 
                namespace forget
                {

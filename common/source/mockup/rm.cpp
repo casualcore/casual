@@ -9,6 +9,7 @@
 #include "common/transaction/id.h"
 #include "common/transaction/transaction.h"
 #include "common/internal/log.h"
+#include "common/flag.h"
 
 #include "xa.h"
 
@@ -23,7 +24,15 @@ namespace casual
          {
             namespace
             {
-               std::map< int, std::vector< transaction::Transaction>> rms;
+
+               struct Transactions
+               {
+                  transaction::ID current;
+                  std::vector< transaction::ID> all;
+
+               };
+
+               std::map< int, Transactions> rms;
 
 
                struct Active
@@ -42,9 +51,9 @@ namespace casual
          {
             auto& transactions = local::rms[ rmid];
 
-            if( ! transactions.empty())
+            if( ! transactions.all.empty())
             {
-               log::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions) << std::endl;
+               log::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
                return XAER_PROTO;
             }
 
@@ -55,9 +64,9 @@ namespace casual
          {
             auto& transactions = local::rms[ rmid];
 
-            if( ! transactions.empty())
+            if( ! transactions.all.empty())
             {
-               log::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions) << std::endl;
+               log::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
                return XAER_PROTO;
             }
             log::internal::transaction << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
@@ -71,25 +80,28 @@ namespace casual
 
             auto& transactions = local::rms[ rmid];
 
-
-            auto active = range::partition( transactions, local::Active{});
-
-            if( std::get< 0>( active))
+            if( transactions.current)
             {
-               log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << *std::get< 0>( active) << std::endl;
+               log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << transactions.current << std::endl;
                return XAER_PROTO;
             }
 
-            auto found = range::find( transactions, trid);
+            auto found = range::find( transactions.all, trid);
 
-            if( found)
+            if( ! found)
             {
-               found->suspended = false;
+               transactions.all.emplace_back( trid);
             }
             else
             {
-               transactions.emplace_back( trid);
+               if( ! common::flag< TMRESUME>( flags))
+               {
+                  log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << transactions.current << std::endl;
+                  return XAER_PROTO;
+               }
             }
+
+            transactions.current = trid;
 
             return XA_OK;
          }
@@ -101,18 +113,23 @@ namespace casual
 
             auto& transactions = local::rms[ rmid];
 
-            auto found = range::find( transactions, trid);
-
-            if( found)
+            if( transactions.current != trid)
             {
-               transactions.erase( found.first);
-            }
-            else
-            {
-               log::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not associated with RM" << std::endl;
+               log::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not current with RM" << std::endl;
                return XAER_INVAL;
             }
 
+            transactions.current = transaction::ID{};
+
+            if( ! common::flag< TMSUSPEND>( flags))
+            {
+               auto found = range::find( transactions.all, trid);
+
+               if( found)
+               {
+                  transactions.all.erase( found.first);
+               }
+            }
             return XA_OK;
          }
 

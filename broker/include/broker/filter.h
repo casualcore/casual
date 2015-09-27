@@ -37,7 +37,7 @@ namespace casual
          {
             Pending( const state::Server::Instance& instance) : m_instance( instance) {}
 
-            bool operator () ( const common::message::service::name::lookup::Request& request)
+            bool operator () ( const common::message::service::lookup::Request& request)
             {
                for( auto& service : m_instance.services)
                {

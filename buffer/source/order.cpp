@@ -15,9 +15,7 @@
 #include "common/internal/trace.h"
 
 #include <cstring>
-
-#include <algorithm>
-
+#include <utility>
 
 namespace casual
 {
@@ -63,49 +61,188 @@ namespace casual
                using common::buffer::Buffer::Buffer;
 
                typedef common::platform::binary_type::size_type size_type;
+               typedef common::platform::binary_type::const_pointer const_data_type;
 
 
-               //
-               // TODO: This should be moved to the Allocator-interface
-               //
-               size_type size( const size_type user_size) const
+               size_type transport( size_type user_size) const
                {
                   //
-                  // Ignore user provided size and return past last insert
+                  // We could ignore user-size all together, but something is
+                  // wrong if user supplies a greater size than allocated
                   //
-                  return m_inserter;
+                  if( user_size > reserved())
+                  {
+                     throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
+                  }
+
+                  return utilized();
                }
 
                size_type reserved() const
                {
-                  return payload.memory.size();
-               }
-
-               void reserved( const size_type size)
-               {
-                  payload.memory.resize( size);
+                  return payload.memory.capacity();
                }
 
                size_type utilized() const
                {
-                  return m_inserter;
+                  return payload.memory.size();
                }
-
-               void utilized( const size_type size)
-               {
-                  m_inserter = size;
-               }
-
 
                size_type consumed() const
                {
                   return m_selector;
                }
 
-               void consumed( const size_type size)
+            public:
+
+               void clear()
                {
-                  m_selector = size;
+                  payload.memory.clear();
+                  m_selector = 0;
                }
+
+               void reset()
+               {
+                  m_selector = 0;
+               }
+
+               template<typename T>
+               bool append( const T value)
+               {
+                  const auto encoded = common::network::byteorder::encode( value);
+                  const constexpr auto count = sizeof( encoded);
+
+                  if( (reserved() - utilized()) < count)
+                  {
+                     return false;
+                  }
+
+                  payload.memory.insert(
+                     payload.memory.end(),
+                     reinterpret_cast<const_data_type>( &encoded),
+                     reinterpret_cast<const_data_type>( &encoded) + count);
+
+                  return true;
+               }
+
+               bool append( const char* const value)
+               {
+                  const auto count = std::strlen( value) + 1;
+
+                  if( (reserved() - utilized()) < count)
+                  {
+                     return false;
+                  }
+
+                  payload.memory.insert( payload.memory.end(), value, value + count);
+
+                  return true;
+               }
+
+
+               bool append( const_data_type data, const long size)
+               {
+                  const auto total = common::network::byteorder::bytes<long>() + size;
+
+                  if( (reserved() - utilized()) < total)
+                  {
+                     return false;
+                  }
+
+                  append( size);
+
+                  payload.memory.insert( payload.memory.end(), data, data + size);
+
+                  return true;
+               }
+
+
+               template<typename T>
+               bool select( T& value)
+               {
+                  const auto where = payload.memory.data() + m_selector;
+
+                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
+
+                  const constexpr auto count = sizeof( encoded);
+
+                  if( (utilized() - consumed()) < count)
+                  {
+                     return false;
+                  }
+
+                  value = common::network::byteorder::decode<T>( encoded);
+
+                  m_selector += count;
+
+                  return true;
+               }
+
+               bool select( const char*& value)
+               {
+                  const auto where = payload.memory.data() + m_selector;
+
+                  const auto count = std::strlen( where) + 1;
+
+                  if( (utilized() - consumed()) < count)
+                  {
+                     return false;
+                  }
+
+                  value = where;
+
+                  m_selector += count;
+
+                  return true;
+               }
+
+               bool select( const_data_type& data, long& size)
+               {
+                  if( select( size))
+                  {
+                     if( (consumed() + size) > utilized())
+                     {
+                        //
+                        // Perhaps unnecessary to reverse
+                        //
+                        m_selector -= common::network::byteorder::bytes<long>();
+
+                        return false;
+                     }
+
+                  }
+                  else
+                  {
+                     return false;
+                  }
+
+                  data = payload.memory.data() + m_selector;
+
+                  m_selector += size;
+
+                  return true;
+
+               }
+
+               static bool copy( Buffer& target, const Buffer& source)
+               {
+                  if( target.reserved() < source.utilized())
+                  {
+                     return false;
+                  }
+
+                  target.payload.memory = source.payload.memory;
+
+                  //
+                  // TODO: What shall the semantics be ?
+                  //
+                  //target.m_selector = source.m_selector;
+                  target.m_selector = 0;
+
+                  return true;
+               }
+
+
 
                typedef common::platform::raw_buffer_type data_type;
 
@@ -117,9 +254,7 @@ namespace casual
 
             private:
 
-               size_type m_inserter = 0;
                size_type m_selector = 0;
-
 
             };
 
@@ -139,36 +274,27 @@ namespace casual
 
                common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
                {
-                  //
-                  // This should not need to be implemented, but 'cause of some
-                  // probably not standard conformant behavior in GCC where
-                  // zero size results in that std::vector::data returns null
-                  //
-
-                  m_pool.emplace_back( type, size ? size : 1);
-                  return m_pool.back().handle();
+                  m_pool.emplace_back( type, 0);
+                  // GCC returns null for std::vector::data with size zero
+                  m_pool.back().payload.memory.reserve( size ? size : 1);
+                  return m_pool.back().payload.memory.data();
                }
 
 
                common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
-
-                  const auto used = result->utilized();
-
-                  //
-                  // User may shrink a buffer, but not smaller than what's used
-                  //
-                  result->reserved( size < used ? used : size);
-
+                  // Allow user to reduce allocation
+                  if( size < result->payload.memory.capacity()) result->payload.memory.shrink_to_fit();
+                  // GCC returns null for std::vector::data with size zero
+                  result->payload.memory.reserve( size ? size : 1);
                   return result->handle();
                }
 
                common::platform::raw_buffer_type insert( common::buffer::Payload payload)
                {
                   m_pool.emplace_back( std::move( payload));
-                  m_pool.back().utilized( m_pool.back().reserved());
-                  return m_pool.back().handle();
+                  return m_pool.back().payload.memory.data();
                }
 
             };
@@ -192,18 +318,16 @@ namespace casual
          namespace
          {
 
-            //struct trace : common::trace::internal::Scope
-            struct trace
+            struct trace : common::trace::internal::Scope
             {
-               //explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
-               explicit trace( std::string information) {}
+               explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
             };
 
 
 
             Buffer* find( const char* const handle)
             {
-               const trace trace( "order::find");
+               //const trace trace( "order::find");
 
 
                try
@@ -226,7 +350,7 @@ namespace casual
 
             int explore( const char* const handle, long* const size, long* const used)
             {
-               const trace trace( "order::explore");
+               //const trace trace( "order::explore");
 
                if( const auto buffer = find( handle))
                {
@@ -244,7 +368,7 @@ namespace casual
 
             int copy( const char* const target_handle, const char* const source_handle)
             {
-               const trace trace( "order::copy");
+               //const trace trace( "order::copy");
 
                const auto target = find( target_handle);
 
@@ -252,237 +376,13 @@ namespace casual
 
                if( target && source)
                {
-                  if( target->reserved() < source->utilized())
+                  if( Buffer::copy( *target, *source))
                   {
-                     //
-                     // Not enough space
-                     //
-                     return CASUAL_ORDER_NO_SPACE;
-                  }
-
-                  target->utilized( source->utilized());
-                  // TODO: This shall perhaps be set to 0 ?
-                  target->consumed( source->consumed());
-
-                  //
-                  // Copy the content
-                  //
-
-                  std::copy(
-                     source->handle(),
-                     source->handle() + source->utilized(),
-                     target->handle());
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-
-            }
-
-            int reset_insert( const char* const handle)
-            {
-               const trace trace( "order::reset_insert");
-
-               if( auto buffer = find( handle))
-               {
-                  buffer->utilized( 0);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-            int reset_select( const char* const handle)
-            {
-               const trace trace( "order::reset_select");
-
-               if( auto buffer = find( handle))
-               {
-                  buffer->consumed( 0);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-
-            }
-
-            //
-            // TODO: Make 'add' and 'get' a lot more generic
-            //
-
-
-            template<typename T>
-            int add( const char* const handle, const T value)
-            {
-               const trace trace( "order::add");
-
-               if( auto buffer = find( handle))
-               {
-                  const auto count = common::network::byteorder::bytes<T>();
-                  const auto total = count + buffer->utilized();
-
-                  if( total > buffer->reserved())
-                  {
-                     return CASUAL_ORDER_NO_SPACE;
-                  }
-
-                  const auto encoded = common::network::byteorder::encode( value);
-                  std::memcpy( buffer->handle() + buffer->utilized(), &encoded, count);
-                  buffer->utilized( total);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-            int add( const char* const handle, const char* const value)
-            {
-               const trace trace( "order::add");
-
-               if( auto buffer = find( handle))
-               {
-                  const auto count = std::strlen( value) + 1;
-                  const auto total = buffer->utilized() + count;
-
-                  if( total > buffer->reserved())
-                  {
-                     return CASUAL_ORDER_NO_SPACE;
-                  }
-
-                  std::memcpy( buffer->handle() + buffer->utilized(), value, count);
-                  buffer->utilized( total);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-            int add( const char* const handle, const char* const data, const long size)
-            {
-               const trace trace( "order::add");
-
-               if( auto buffer = find( handle))
-               {
-                  const auto count = common::network::byteorder::bytes<long>();
-                  const auto total = buffer->utilized() + count + size;
-
-                  if( total > buffer->reserved())
-                  {
-                     return CASUAL_ORDER_NO_SPACE;
-                  }
-
-                  const auto encoded = common::network::byteorder::encode( size);
-                  std::memcpy( buffer->handle() + buffer->utilized(), &encoded, count);
-                  buffer->utilized( buffer->utilized() + count);
-                  std::memcpy( buffer->handle() + buffer->utilized(), data, size);
-                  buffer->utilized( buffer->utilized() + size);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-            template<typename T>
-            int get( const char* const handle, T& value)
-            {
-               const trace trace( "order::get");
-
-               if( auto buffer = find( handle))
-               {
-                  const auto count = common::network::byteorder::bytes<T>();
-                  const auto total = buffer->consumed() + count;
-
-                  if( total > buffer->utilized())
-                  {
-                     return CASUAL_ORDER_NO_PLACE;
-                  }
-
-                  const auto where = buffer->handle() + buffer->consumed();
-
-                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
-                  value = common::network::byteorder::decode<T>( encoded);
-                  buffer->consumed( total);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-
-            int get( const char* const handle, const char*& value)
-            {
-               const trace trace( "order::get");
-
-               if( auto buffer = find( handle))
-               {
-                  const auto where = buffer->handle() + buffer->consumed();
-                  const auto count = std::strlen( where) + 1;
-                  const auto total = buffer->consumed() + count;
-
-                  if( total > buffer->utilized())
-                  {
-                     return CASUAL_ORDER_NO_PLACE;
-                  }
-
-                  value = where;
-                  buffer->consumed( total);
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-            int get( const char* const handle, const char*& data, long& size)
-            {
-               const trace trace( "order::get");
-
-               if( auto buffer = find( handle))
-               {
-                  const auto count = common::network::byteorder::bytes<long>();
-                  const auto total = buffer->consumed() + count;
-                  if( total > buffer->utilized())
-                  {
-                     return CASUAL_ORDER_NO_PLACE;
+                     return CASUAL_ORDER_SUCCESS;
                   }
                   else
                   {
-                     const auto where = buffer->handle() + buffer->consumed();
-                     const auto encoded = *reinterpret_cast< const common::network::byteorder::type<long>*>( where);
-                     const auto decoded = common::network::byteorder::decode<long>( encoded);
-                     const auto total = buffer->consumed() + count + decoded;
-
-                     if( total > buffer->utilized())
-                     {
-                        return CASUAL_ORDER_NO_PLACE;
-                     }
-
-                     size = decoded;
-                     data = where + count;
-                     buffer->consumed( total);
+                     return CASUAL_ORDER_NO_SPACE;
                   }
                }
                else
@@ -490,7 +390,85 @@ namespace casual
                   return CASUAL_ORDER_INVALID_BUFFER;
                }
 
+            }
+
+            int clear( const char* const handle)
+            {
+               //const trace trace( "order::clear");
+
+               if( auto buffer = find( handle))
+               {
+                  buffer->clear();
+               }
+               else
+               {
+                  return CASUAL_ORDER_INVALID_BUFFER;
+               }
+
                return CASUAL_ORDER_SUCCESS;
+            }
+
+            int reset( const char* const handle)
+            {
+               //const trace trace( "order::reset");
+
+               if( auto buffer = find( handle))
+               {
+                  buffer->reset();
+               }
+               else
+               {
+                  return CASUAL_ORDER_INVALID_BUFFER;
+               }
+
+               return CASUAL_ORDER_SUCCESS;
+
+            }
+
+            template<typename... A>
+            int add( const char* const handle, A&&... arguments)
+            {
+               //const trace trace( "order::add");
+
+               if( auto buffer = find( handle))
+               {
+                  if( buffer->append( std::forward<A>( arguments)...))
+                  {
+                     return CASUAL_ORDER_SUCCESS;
+                  }
+                  else
+                  {
+                     return CASUAL_ORDER_NO_SPACE;
+                  }
+               }
+               else
+               {
+                  return CASUAL_ORDER_INVALID_BUFFER;
+               }
+
+            }
+
+            template<typename... A>
+            int get( const char* const handle, A&&... arguments)
+            {
+               //const trace trace( "order::get");
+
+               if( auto buffer = find( handle))
+               {
+                  if( buffer->select( std::forward<A>( arguments)...))
+                  {
+                     return CASUAL_ORDER_SUCCESS;
+                  }
+                  else
+                  {
+                     return CASUAL_ORDER_NO_PLACE;
+                  }
+               }
+               else
+               {
+                  return CASUAL_ORDER_INVALID_BUFFER;
+               }
+
             }
 
 
@@ -535,7 +513,7 @@ int CasualOrderExploreBuffer( const char* buffer, long* size, long* used)
 
 int CasualOrderAddPrepare( char* const buffer)
 {
-   return casual::buffer::order::reset_insert( buffer);
+   return casual::buffer::order::clear( buffer);
 }
 
 int CasualOrderAddBool( char* const buffer, const bool value)
@@ -585,7 +563,7 @@ int CasualOrderAddBinary( char* const buffer, const char* const data, const long
 
 int CasualOrderGetPrepare( char* const buffer)
 {
-   return casual::buffer::order::reset_select( buffer);
+   return casual::buffer::order::reset( buffer);
 }
 
 int CasualOrderGetBool( char* const buffer, bool* const value)

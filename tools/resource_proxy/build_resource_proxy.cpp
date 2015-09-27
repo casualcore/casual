@@ -292,7 +292,7 @@ int main( int argc, char **argv)
 
 
    }
-   catch( const common::exception::invalid::Base& exception)
+   catch( const common::exception::invalid::base& exception)
    {
       std::cerr << "error: " << exception << std::endl;
       return 1;

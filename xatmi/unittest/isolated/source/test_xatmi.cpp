@@ -14,6 +14,7 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 #include "common/mockup/domain.h"
+#include "common/trace.h"
 
 #include "common/flag.h"
 
@@ -44,16 +45,18 @@ namespace casual
                Domain()
                   : server{ ipc::receive::id(), mockup::create::server({
                      createService( "service_1"),
-                     createService( "timeout_2", TPESVCFAIL)
+                     createService( "timeout_2", TPESVCFAIL),
+                     createService( "service_user_code_1", 0, -1)
                   })},
                   broker{ ipc::receive::id(), mockup::create::broker({
-                     mockup::create::lookup::reply( "service_1", server.id()),
-                     mockup::create::lookup::reply( "timeout_2", server.id(), std::chrono::milliseconds{ 2})
+                     mockup::create::lookup::reply( "service_1", server.input()),
+                     mockup::create::lookup::reply( "timeout_2", server.input(), std::chrono::milliseconds{ 2}),
+                     mockup::create::lookup::reply( "service_user_code_1", server.input()),
                   })},
-                  link_broker_reply{ mockup::ipc::broker::queue().receive().id(), broker.id()},
+                  link_broker_reply{ mockup::ipc::broker::queue().output().id(), broker.input()},
                   tm{ ipc::receive::id(), mockup::create::transaction::manager()},
                   // link the global mockup-transaction-manager-queue's output to 'our' tm
-                  link_tm_reply{ mockup::ipc::transaction::manager::queue().receive().id(), tm.id()}
+                  link_tm_reply{ mockup::ipc::transaction::manager::queue().output().id(), tm.input()}
                {
 
                }
@@ -68,10 +71,12 @@ namespace casual
 
                static std::pair< std::string, common::message::service::call::Reply> createService(
                      const std::string& service,
-                     int error = 0)
+                     int error = 0,
+                     long user_code = 0)
                {
                   common::message::service::call::Reply reply;
                   reply.error = error;
+                  reply.code = user_code;
 
                   return std::make_pair( service, std::move( reply));
                }
@@ -97,11 +102,7 @@ namespace casual
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpacall_buffer_null__expect_TPEINVAL)
-      {
-         EXPECT_TRUE( tpacall( "someServer", nullptr, 0, 0) == -1);
-         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
-      }
+
 
       TEST( casual_xatmi, tpacall_TPNOREPLY_without_TPNOTRAN__expect_TPEINVAL)
       {
@@ -152,6 +153,18 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST( casual_xatmi, tpacall_buffer_null__expect_expect_ok)
+      {
+         //
+         // Set up a "linked-domain" that transforms request to replies - see above
+         //
+         local::Domain domain;
+
+         auto descriptor = tpacall( "service_1", nullptr, 0, 0);
+         EXPECT_TRUE( descriptor != -1) << "tperrno: " << tperrno;
+         EXPECT_TRUE( tpcancel( descriptor) != -1);
+      }
+
 
       TEST( casual_xatmi, tpacall_service_service_1_TPNOREPLY_TPNOTRAN__expect_ok)
       {
@@ -163,6 +176,37 @@ namespace casual
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY | TPNOTRAN) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+
+         tpfree( buffer);
+      }
+
+      TEST( casual_xatmi, tpacall_service_1_TPNOREPLY__no_current_transaction__expect_ok)
+      {
+         //
+         // Set up a "linked-domain" that transforms request to replies - see above
+         //
+         local::Domain domain;
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+
+         tpfree( buffer);
+      }
+
+      TEST( casual_xatmi, tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL)
+      {
+         common::Trace trace{ "tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL", common::log::internal::debug };
+         local::Domain domain;
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == -1) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tperrno == TPEINVAL);
+
+         EXPECT_TRUE( tx_rollback() == TX_OK);
 
          tpfree( buffer);
       }
@@ -329,6 +373,23 @@ namespace casual
 
          tpfree( buffer);
       }
+
+
+      TEST( casual_xatmi, tpcall_service_user_code_1__expect_ok__urcode_1)
+      {
+         //
+         // Set up a "linked-domain" that transforms request to replies - see above
+         //
+         local::Domain domain;
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "service_user_code_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpurcode == -1) << "urcode: " << tpurcode;
+         tpfree( buffer);
+      }
+
 
       /*
       TEST( casual_xatmi, tpcall_service_timeout_2__expect_TPETIME)

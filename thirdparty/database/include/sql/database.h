@@ -60,6 +60,10 @@ namespace sql
          const char* data;
       };
 
+      inline bool parameter_bind( sqlite3_stmt* statement, int index, std::nullptr_t)
+      {
+         return sqlite3_bind_null( statement, index) == SQLITE_OK;
+      }
 
       inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::string& value)
       {
@@ -205,6 +209,11 @@ namespace sql
          void get( int column, T& value)
          {
             column_get( m_statement.get(), column, value);
+         }
+
+         bool null( int column) const
+         {
+            return sqlite3_column_type( m_statement.get(), column) == SQLITE_NULL;
          }
 
       private:
@@ -424,6 +433,7 @@ namespace sql
          }
 
          void begin() const { sqlite3_exec( m_handle.get(), "BEGIN", 0, 0, 0); }
+         void exclusive_begin() const { sqlite3_exec( m_handle.get(), "BEGIN EXCLUSIVE", 0, 0, 0); }
          void rollback() const { sqlite3_exec( m_handle.get(), "ROLLBACK", 0, 0, 0); }
          void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
 

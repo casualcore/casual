@@ -1,158 +1,89 @@
-/*
- * casual_monitor.h
- *
- *  Created on: 6 nov 2012
- *      Author: hbergk
- */
+//!
+//! receiver.h
+//!
+//! Created on: May 6, 2015
+//!     Author: Lazan
+//!
 
-#ifndef CASUAL_RECEIVER_H_
-#define CASUAL_RECEIVER_H_
+#ifndef TRAFFIC_RECEIVER_H_
+#define TRAFFIC_RECEIVER_H_
 
-#include <vector>
-#include <string>
 
-#include "common/ipc.h"
-#include "common/message/monitor.h"
-
-#include "common/queue.h"
-#include "common/message/dispatch.h"
-#include "common/message/handle.h"
-#include "common/server/handle.h"
 #include "common/platform.h"
-#include "common/process.h"
-#include "common/error.h"
-#include "common/log.h"
-#include "common/trace.h"
-#include "common/environment.h"
-#include "common/chronology.h"
+#include "common/transaction/id.h"
 
-using namespace casual::common;
 
 namespace casual
 {
-namespace traffic
-{
-   template < class R, class H>
-   class Receiver
+   namespace traffic
    {
-   public:
-
-      typedef R resource_type;
-      typedef H handler_type;
-
-      Receiver( const std::vector< std::string>& arguments, resource_type& resource) :
-         m_receiveQueue( common::ipc::receive::queue()),
-         m_resource( resource)
-      {
-         //
-         // TODO: Use a correct argumentlist handler
-         //
-         const std::string name = ! arguments.empty() ? arguments.front() : std::string("");
-
-         common::process::path( name);
-
-         trace::internal::Scope trace( "Receiver::Receiver");
-
-         //
-         // Connect as a "regular" server
-         //
-         common::server::connect( {});
-
-
-         //
-         // Make the key public for others...
-         //
-         message::traffic::monitor::Connect message;
-
-         message.path = name;
-         message.process = common::process::handle();
-
-         queue::blocking::Writer writer( ipc::broker::id());
-         writer(message);
-
-      }
-      ~Receiver()
-      {
-         trace::internal::Scope trace( "Receiver::~Receiver");
-
-         try
-         {
-
-            message::dispatch::Handler handler{
-               handler_type{ m_resource},
-               common::message::handle::Shutdown{},
-            };
-
-            typename resource_type::transaction_type transaction{ m_resource};
-
-            //
-            // Consume until the queue is empty or we've got pending replies equal to statistics_batch
-            //
-
-            queue::non_blocking::Reader nonBlocking( m_receiveQueue);
-
-            for( auto count = common::platform::batch::statistics;
-               handler( nonBlocking.next()) && count > 0; --count)
-            {
-               ;
-            }
-         }
-         catch( ...)
-         {
-            common::error::handler();
-            return;
-         }
-
-      }
-
 
       //!
-      //! Start the server
+      //! Traffic-event
       //!
-      void start()
+      struct Event
       {
-         trace::internal::Scope trace( "Receiver::start");
+         const std::string& service() const;
 
-         message::dispatch::Handler handler{
-            handler_type{ m_resource},
-            common::message::handle::Shutdown{},
+         //!
+         //! Parent (caller) service, if any.
+         //!
+         const std::string& parent() const;
+
+         common::platform::pid_type pid() const;
+         const common::Uuid& execution() const;
+         const common::transaction::ID& transaction() const;
+         const common::platform::time_point& start() const;
+         const common::platform::time_point& end() const;
+
+      protected:
+         Event();
+
+      private:
+         virtual const std::string& get_service() const = 0;
+         virtual const std::string& get_parent() const = 0;
+         virtual common::platform::pid_type get_pid() const = 0;
+         virtual const common::Uuid& get_execution() const = 0;
+         virtual const common::transaction::ID& get_transaction() const = 0;
+         virtual const common::platform::time_point& get_start() const = 0;
+         virtual const common::platform::time_point& get_end() const = 0;
+      };
+
+
+      namespace handler
+      {
+         struct Base
+         {
+            using event_type = traffic::Event;
+
+            Base() = default;
+            virtual ~Base() = default;
+
+            virtual void persist_begin() = 0;
+            virtual void log( const event_type&) = 0;
+            virtual void persist_commit() = 0;
          };
 
-         queue::blocking::Reader queueReader(m_receiveQueue);
-
-         while( true)
-         {
-
-            typename resource_type::transaction_type transaction{ m_resource};
-
-            //
-            // Blocking
-            //
-
-            handler( queueReader.next());
+      } // handler
 
 
-            //
-            // Consume until the queue is empty or we've got pending replies equal to statistics_batch
-            //
+      struct Receiver
+      {
+      public:
 
-            queue::non_blocking::Reader nonBlocking( m_receiveQueue);
+         Receiver();
+         Receiver( const common::Uuid& application);
+         ~Receiver();
 
-            for( auto count = common::platform::batch::statistics;
-               handler( nonBlocking.next()) && count > 0; --count)
-            {
-               ;
-            }
-         }
-
-      }
-
-   private:
-      common::ipc::receive::Queue& m_receiveQueue;
-      resource_type& m_resource;
-   };
-}
-}
+         Receiver( const Receiver&) = delete;
+         Receiver& operator = ( const Receiver&) = delete;
 
 
-#endif /* CASUAL_RECEIVER_H_ */
+         int start( handler::Base& log);
+      };
+
+   } // traffic
+} // casual
+
+
+#endif // RECEIVER_H_

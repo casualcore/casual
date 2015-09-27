@@ -181,6 +181,7 @@ namespace casual
          */
       }
 
+      /*
       namespace local
       {
          namespace
@@ -200,6 +201,7 @@ namespace casual
             }
          } // <unnamed>
       } // local
+      */
 
       TEST( casual_sf_service_archive, service_json_factory)
       {

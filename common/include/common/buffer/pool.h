@@ -56,7 +56,7 @@ namespace casual
 
                   virtual platform::raw_buffer_type insert( Payload payload) = 0;
 
-                  virtual Payload& get( platform::const_raw_buffer_type handle) = 0;
+                  virtual payload::Send get( platform::const_raw_buffer_type handle) = 0;
                   virtual payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
 
                   virtual Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
@@ -122,16 +122,18 @@ namespace casual
                      return m_pool.insert( std::move( payload));
                   }
 
-                  Payload& get( platform::const_raw_buffer_type handle) override
+                  payload::Send get( platform::const_raw_buffer_type handle) override
                   {
-                     return m_pool.get( handle).payload;
+                     auto& buffer = m_pool.get( handle);
+
+                     return { buffer.payload, buffer.transport( buffer.reserved()), buffer.reserved()};
                   }
 
                   payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
                   {
                      auto& buffer = m_pool.get( handle);
 
-                     payload::Send result{ buffer.payload, buffer.size( user_size)};
+                     payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
 
                      log::internal::buffer << "pool::get - buffer: " << result << std::endl;
 
@@ -147,12 +149,12 @@ namespace casual
                   {
                      auto buffer = m_pool.release( handle);
 
-                     log::internal::buffer << "pool::release - payload: " << buffer.payload << " - buffer.size: " << buffer.size( user_size) << std::endl;
+                     log::internal::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << std::endl;
 
                      //
                      // Adjust the buffer size, with regards to the user size
                      //
-                     buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.size( user_size), std::end( buffer.payload.memory));
+                     buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.transport( user_size), std::end( buffer.payload.memory));
                      return std::move( buffer.payload);
                   }
 
@@ -165,6 +167,7 @@ namespace casual
                };
 
 
+               platform::raw_buffer_type m_inbound = nullptr;
                std::vector< std::unique_ptr< Base>> m_pools;
 
                template< typename P>
@@ -206,6 +209,7 @@ namespace casual
                Base& find( const Type& type);
                Base& find( platform::const_raw_buffer_type handle);
 
+               const Payload& null_payload() const;
 
             public:
 
@@ -215,6 +219,7 @@ namespace casual
                   return singleton;
                }
 
+
                platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size);
 
                platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size);
@@ -223,9 +228,16 @@ namespace casual
 
                void deallocate( platform::const_raw_buffer_type handle);
 
+               //!
+               //! Adopts the payload in 'service-invoke' context. So we keep track of
+               //! inbound buffer (which is 'special' in XATMI). Otherwise it's the same semantics
+               //! as insert
+               //!
+               platform::raw_buffer_type adopt( Payload&& payload);
+
                platform::raw_buffer_type insert( Payload&& payload);
 
-               Payload& get( platform::const_raw_buffer_type handle);
+               payload::Send get( platform::const_raw_buffer_type handle);
 
                payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size);
 
@@ -296,7 +308,7 @@ namespace casual
                   {
                      return *buffer;
                   }
-                  throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
+                  throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
                }
 
 
@@ -311,26 +323,18 @@ namespace casual
 
                      return result;
                   }
-                  throw exception::xatmi::InvalidArguments{ "failed to find buffer"};
+                  throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
                }
 
 
                void clear()
                {
-
-                  if( ! m_pool.empty())
-                  {
-                     static bool logged = false;
-
-                     if( ! logged)
-                     {
-                        logged = true;
-                        log::warning << "buffer pool should be empty - casual takes care of missed deallocations - to be xatmi conformant use tpfree - will not be logged again\n";
-                     }
-                     log::internal::debug << "pool size: " << m_pool.size() << std::endl;
-                  }
-                  // pool_type empty;
-                  // m_pool.swap( empty);
+                  //
+                  // We don't do any automatic cleanup, since the user could have a
+                  // global handle to some buffer.
+                  //
+                  // To look at the previous implementation see commit: 2655a5b61813e628153535ec05082c3582eb86f1
+                  //
                }
 
             protected:
@@ -340,9 +344,6 @@ namespace casual
                   return std::find_if( std::begin( m_pool), std::end( m_pool),
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});
                }
-
-
-
                pool_type m_pool;
             };
 

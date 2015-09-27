@@ -23,18 +23,13 @@ namespace casual
 
             namespace soft
             {
-               std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
                   trace::internal::Scope trace{ "common::server::lifetime::soft::shutdown"};
 
                   log::internal::debug << "servers: " << range::make( servers) << std::endl;
 
-                  std::vector< platform::pid_type> result;
-
-                  for( auto& exit : process::lifetime::ended())
-                  {
-                     result.push_back( exit.pid);
-                  }
+                  auto result = process::lifetime::ended();
 
 
                   std::vector< platform::pid_type> requested;
@@ -44,13 +39,25 @@ namespace casual
                      message::shutdown::Request message;
                      queue::non_blocking::basic_send< queue::policy::Timeout> send;
 
-                     if( send( handle.queue, message))
+                     try
                      {
-                        requested.push_back( handle.pid);
+                        if( send( handle.queue, message))
+                        {
+                           requested.push_back( handle.pid);
+                        }
                      }
+                     catch( exception::queue::Unavailable&)
+                     {
+                        //
+                        // The server's queue is absent...
+                        //
+                     }
+
                   }
 
-                  range::append( std::get< 0>( range::intersection( requested, process::lifetime::wait( requested, timeout))), result);
+                  auto terminated = process::lifetime::wait( requested, timeout);
+
+                  range::append( std::get< 0>( range::intersection( terminated, requested)), result);
 
                   log::internal::debug << "soft off-line: " << range::make( result) << std::endl;
 
@@ -62,7 +69,7 @@ namespace casual
 
             namespace hard
             {
-               std::vector< platform::pid_type> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
                   trace::internal::Scope trace{ "common::server::lifetime::hard::shutdown"};
 

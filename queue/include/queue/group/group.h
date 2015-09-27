@@ -13,6 +13,7 @@
 #include "queue/group/database.h"
 
 #include "common/platform.h"
+#include "common/ipc.h"
 #include "common/message/pending.h"
 
 
@@ -32,9 +33,15 @@ namespace casual
 
          struct State
          {
-            State( std::string filename, std::string name) : queuebase( std::move( filename), std::move( name)) {}
+            State( std::string filename, std::string name, common::ipc::receive::Queue& receive)
+               : queuebase( std::move( filename), std::move( name)), receive( receive) {}
+
+            State( std::string filename, std::string name)
+               : State( std::move( filename), std::move( name), common::ipc::receive::queue()) {}
 
             Database queuebase;
+
+            common::ipc::receive::Queue& receive;
 
 
             template< typename M>
@@ -74,22 +81,29 @@ namespace casual
 
                void rollback( const common::transaction::ID& trid);
 
+
+               void erase( common::platform::pid_type pid);
+
             } pending;
 
          };
 
+         namespace message
+         {
+            void pump( group::State& state);
+         } // message
 
          struct Server
          {
             Server( Settings settings);
 
 
-            void start();
+            int start() noexcept;
 
          private:
             State m_state;
          };
-      } // server
+      } // group
 
    } // queue
 

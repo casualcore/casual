@@ -10,7 +10,7 @@
 
 #include "common/buffer/pool.h"
 
-#include "common/message/server.h"
+#include "common/message/service.h"
 #include "common/marshal/binary.h"
 
 
@@ -60,11 +60,46 @@ namespace casual
 
          }
 
+         TEST( casual_common_buffer, pool_adopt)
+         {
+            auto buffer = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
+
+            ASSERT_TRUE( buffer != nullptr);
+
+            pool::Holder::instance().clear();
+         }
+
+         TEST( casual_common_buffer, pool_adopt__deallocate__expect__inbound_still_valid)
+         {
+            auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
+
+            pool::Holder::instance().deallocate( inbound);
+
+            EXPECT_NO_THROW({
+               auto send = pool::Holder::instance().get( inbound);
+               EXPECT_TRUE( send.reserved == 1024);
+            });
+
+            pool::Holder::instance().clear();
+         }
+
+         TEST( casual_common_buffer, pool_adopt__clear__expect__inbound_deallocated)
+         {
+            auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
+
+            pool::Holder::instance().clear();
+
+            EXPECT_THROW({
+               pool::Holder::instance().get( inbound);
+            }, exception::xatmi::invalid::Argument);
+
+         }
+
          TEST( casual_common_buffer, pool_allocate_non_existing__throws)
          {
             EXPECT_THROW({
                pool::Holder::instance().allocate( { "non-existing", "non-existing"}, 1024);
-            }, exception::xatmi::buffer::TypeNotSupported);
+            }, exception::xatmi::buffer::type::Input);
          }
 
 
@@ -91,7 +126,7 @@ namespace casual
 
             EXPECT_THROW({
                pool::Holder::instance().reallocate( small, 2048);
-            }, exception::xatmi::InvalidArguments);
+            }, exception::xatmi::invalid::Argument);
 
          }
 

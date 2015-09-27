@@ -27,11 +27,9 @@ namespace casual
          namespace
          {
 
-            //struct trace : common::trace::internal::Scope
-            struct trace
+            struct trace : common::trace::internal::Scope
             {
-               //explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
-               explicit trace( std::string information) {}
+               explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
             };
 
             struct Buffer : common::buffer::Buffer
@@ -40,15 +38,20 @@ namespace casual
 
                typedef common::platform::binary_type::size_type size_type;
 
-               //
-               // TODO: This should be moved to the Allocator-interface
-               //
-               size_type size( const size_type user_size) const
+
+               size_type transport( size_type user_size) const
                {
                   //
-                  // Ignore user provided size and return size of string + null
+                  // We could ignore user-size all together, but something is
+                  // wrong if user supplies a greater size than allocated
                   //
+                  if( user_size > payload.memory.size())
+                  {
+                     throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
+                  }
+
                   return std::strlen( payload.memory.data()) + 1;
+
                }
 
             };
@@ -112,7 +115,7 @@ namespace casual
 
             Buffer* find( const char* const handle)
             {
-               const trace trace( "string::find");
+               //const trace trace( "string::find");
 
                try
                {

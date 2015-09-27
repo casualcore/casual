@@ -9,6 +9,7 @@
 
 #include "common/log.h"
 #include "common/internal/log.h"
+#include "common/trace.h"
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/process.h"
@@ -71,9 +72,9 @@ namespace casual
                   std::vector< common::process::Handle> groups;
                   common::range::transform( m_state.groups, groups, std::mem_fn( &broker::State::Group::process));
 
-                  for( auto pid : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
+                  for( auto terminated : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
                   {
-                     m_state.removeProcess( pid);
+                     m_state.process( terminated);
                   }
 
                   throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
@@ -86,6 +87,8 @@ namespace casual
 
                void Request::operator () ( message_type& message)
                {
+                  common::Trace trace{ "handle::lookup::Request", common::log::internal::queue};
+
                   queue::blocking::Writer write{ message.process.queue, m_state};
 
                   auto found =  common::range::find( m_state.queues, message.name);
@@ -122,6 +125,13 @@ namespace casual
                   {
                      found->connected = true;
                   }
+                  else
+                  {
+                     //
+                     // We add the group
+                     //
+                     m_state.groups.emplace_back( "", message.process);
+                  }
 
                }
             } // connect
@@ -153,14 +163,14 @@ namespace casual
                {
                   auto found = common::range::find( state.involved, message.trid);
 
-                  auto sendError = [&](){
-                     common::message::transaction::resource::commit::Reply reply;
-                     reply.state = XAER_RMFAIL;
+                  auto sendError = [&]( int error_state){
+                     auto reply = common::message::reverse::type( message);
+                     reply.state = error_state;
                      reply.trid = message.trid;
                      reply.resource = message.resource;
                      reply.process = common::process::handle();
                      queue::blocking::Writer send{ message.process.queue, state};
-                     send( message);
+                     send( reply);
                   };
 
                   if( found)
@@ -183,7 +193,7 @@ namespace casual
                         state.correlation.emplace(
                               std::piecewise_construct,
                               std::forward_as_tuple( std::move( found->first)),
-                              std::forward_as_tuple( message.process, std::move( found->second)));
+                              std::forward_as_tuple( message.process, message.correlation, std::move( found->second)));
 
                         state.involved.erase( found.first);
 
@@ -191,13 +201,13 @@ namespace casual
                      catch( ...)
                      {
                         common::error::handler();
-                        sendError();
+                        sendError( XAER_RMFAIL);
                      }
                   }
                   else
                   {
-                     common::log::internal::queue << "request - trid: " << message.trid << " could not be found - action: XAER_RMFAIL" << std::endl;
-                     sendError();
+                     common::log::internal::queue << "XAER_NOTA - trid: " << message.trid << " could not be found\n";
+                     sendError( XAER_NOTA);
                   }
 
                }
@@ -215,28 +225,32 @@ namespace casual
 
                   if( message.state == XA_OK)
                   {
-                     found->second.state( message.process, State::Correlation::State::replied);
+                     found->second.stage( message.process, State::Correlation::Stage::replied);
                   }
                   else
                   {
-                     found->second.state( message.process, State::Correlation::State::error);
+                     found->second.stage( message.process, State::Correlation::Stage::error);
                   }
 
-                  auto groupState = found->second.state();
-
-                  if( groupState >= State::Correlation::State::replied )
+                  if( found->second.replied())
                   {
                      //
                      // All groups has responded, reply to RM-proxy
                      //
                      message_type reply( message);
                      reply.process = common::process::handle();
-                     reply.state = groupState == State::Correlation::State::replied ? XA_OK : XAER_RMFAIL;
+                     reply.correlation = found->second.reply_correlation;
+                     reply.state = found->second.stage() == State::Correlation::Stage::replied ? XA_OK : XAER_RMFAIL;
 
                      common::log::internal::queue << "all groups has responded - send reply to RM: " << found->second.caller << std::endl;
 
                      queue::blocking::Writer send{ found->second.caller.queue, state};
                      send( reply);
+
+                     //
+                     // We're done with the correlation.
+                     //
+                     state.correlation.erase( found.first);
                   }
 
                }

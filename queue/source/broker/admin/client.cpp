@@ -13,9 +13,9 @@
 #include "common/message/queue.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
+#include "common/transcode.h"
 
 #include "sf/xatmi_call.h"
-#include "sf/archive/terminal.h"
 #include "sf/log.h"
 
 #include "xatmi.h"
@@ -28,294 +28,20 @@ namespace casual
 
    namespace queue
    {
-      namespace normalized
-      {
-         struct Queue
-         {
-            std::string group;
-            std::size_t id;
-            std::string name;
-            std::size_t type;
-            std::size_t retries;
-            std::string error;
-
-            broker::admin::Queue::message_t message;
-
-            std::string updated;
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( name);
-
-
-               // size and stuff
-               archive & sf::makeNameValuePair( "# total", message.number.total());
-               archive & sf::makeNameValuePair( "(C", message.number.commited);
-               archive & sf::makeNameValuePair( "E", message.number.enqueued);
-               archive & sf::makeNameValuePair( "D)", message.number.dequeued);
-               archive & sf::makeNameValuePair( "size", message.size.total);
-               archive & sf::makeNameValuePair( "(avg", message.size.average);
-               archive & sf::makeNameValuePair( "min", message.size.min);
-               archive & sf::makeNameValuePair( "max)", message.size.max);
-
-               archive & CASUAL_MAKE_NVP( updated);
-
-
-               archive & sf::makeNameValuePair( "r", retries);
-               archive & sf::makeNameValuePair( "error queue", error);
-
-
-               archive & CASUAL_MAKE_NVP( group);
-            })
-
-            friend bool operator < ( const Queue& lhs, const Queue& rhs)
-            {
-               if( lhs.type > rhs.type)
-                  return true;
-               if( lhs.type < rhs.type)
-                  return false;
-
-               return lhs.name < rhs.name;
-            }
-
-            static std::vector< sf::archive::terminal::Directive> directive()
-            {
-               return {
-                  { "name", terminal::color::Solid{ terminal::color::yellow}},
-                  { "# total", sf::archive::terminal::Directive::Align::right},
-                  { "(C", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::green}},
-                  { "E", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::yellow}},
-                  { "D)", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::yellow}},
-                  { "size", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "(avg", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "min", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "max)", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "r", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
-                  { "error queue", sf::archive::terminal::Directive::Align::left, terminal::color::Solid{ common::terminal::color::blue}},
-               };
-            }
-
-         };
-
-
-         struct Group
-         {
-            std::string name;
-
-            broker::admin::Queue::message_t message;
-
-            std::string updated;
-            std::string queuebase;
-
-            platform::queue_id_type ipc;
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( name);
-               archive & sf::makeNameValuePair( "msg #", message.number.total());
-               archive & sf::makeNameValuePair( "total", message.size.total);
-               archive & sf::makeNameValuePair( "avg", message.size.average);
-               archive & sf::makeNameValuePair( "min", message.size.min);
-               archive & sf::makeNameValuePair( "max", message.size.max);
-
-               archive & CASUAL_MAKE_NVP( updated);
-               archive & CASUAL_MAKE_NVP( ipc);
-               archive & CASUAL_MAKE_NVP( queuebase);
-            })
-
-            friend bool operator < ( const Group& lhs, const Group& rhs)
-            {
-               return lhs.name < rhs.name;
-            }
-
-            static std::vector< sf::archive::terminal::Directive> directive()
-            {
-               auto directive = Queue::directive();
-               directive.push_back( { "ipc", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::grey}});
-               return directive;
-            }
-         };
-
-
-         struct Message
-         {
-            sf::platform::Uuid id;
-            std::string state;
-
-            std::size_t size;
-
-            std::string trid;
-            std::size_t rd;
-
-            std::string type;
-            std::string reply;
-
-            std::string timestamp;
-            std::string avalible;
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( id);
-               archive & sf::makeNameValuePair( "s", state);
-
-               archive & CASUAL_MAKE_NVP( size);
-
-               archive & CASUAL_MAKE_NVP( trid);
-               archive & CASUAL_MAKE_NVP( rd);
-               archive & CASUAL_MAKE_NVP( type);
-               archive & CASUAL_MAKE_NVP( reply);
-               archive & CASUAL_MAKE_NVP( timestamp);
-               archive & CASUAL_MAKE_NVP( avalible);
-            })
-
-            static std::vector< sf::archive::terminal::Directive> directive()
-            {
-               return {
-                  { "id", terminal::color::Solid{ terminal::color::yellow}},
-                  { "state", sf::archive::terminal::Directive::Align::right},
-                  { "size", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::cyan}},
-                  { "trid", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
-                  { "rd", sf::archive::terminal::Directive::Align::right},
-                  { "type", sf::archive::terminal::Directive::Align::left},
-                  { "reply", sf::archive::terminal::Directive::Align::left},
-                  { "timestamp", sf::archive::terminal::Directive::Align::right, terminal::color::Solid{ common::terminal::color::blue}},
-                  { "avalible", sf::archive::terminal::Directive::Align::right},
-               };
-            }
-
-         };
-
-      } // normalized
-
       namespace normalize
       {
 
-         std::vector< normalized::Queue> queues( const broker::admin::State& state)
+         std::string timestamp( const platform::time_point& time)
          {
-            std::vector< normalized::Queue> result;
-
-            for( auto& queue : state.queues)
+            if( time != platform::time_point::min())
             {
-               normalized::Queue value;
-
-               value.id = queue.id;
-               value.type = queue.type;
-
-               value.name = queue.name;
-               value.group = common::range::find_if( state.groups, [&]( const broker::admin::Group& g){
-                  return g.id.pid == queue.group;}).at( 0).name;
-
-               value.message = queue.message;
-               if( queue.message.timestamp != sf::platform::time_point::min())
-               {
-                  value.updated = chronology::local( queue.message.timestamp);
-               }
-
-
-               value.retries = queue.retries;
-
-               value.error = common::range::find_if( state.queues, [&]( const broker::admin::Queue& q){
-                  return q.id == queue.error && q.group == queue.group;}).at( 0).name;
-
-               result.push_back( std::move( value));
+               return chronology::local( time);
             }
-
-            return range::sort( result);
+            return {};
          }
 
-         std::vector< normalized::Group> groups( broker::admin::State state)
-         {
-            std::vector< normalized::Group> result;
-
-            auto queues = range::make( state.queues);
-
-            for( auto& group : state.groups)
-            {
-               normalized::Group value;
-
-               value.message.timestamp = platform::time_point::min();
-               value.name = group.name;
-               value.queuebase = group.queuebase;
-               value.ipc = group.id.queue;
-
-               auto split = range::partition( queues, [&]( const broker::admin::Queue& q)
-                     {
-                        return q.group == group.id.pid;
-                     });
-
-               range::for_each( std::get< 0>( split), [&]( const broker::admin::Queue& q)
-                     {
-                        if( value.message.size.min > q.message.size.min ) { value.message.size.min = q.message.size.min;}
-                        if( value.message.size.max < q.message.size.max ) { value.message.size.max = q.message.size.max;}
-                        if( value.message.timestamp < q.message.timestamp ) { value.message.timestamp = q.message.timestamp;}
-                        value.message.number.commited += q.message.number.commited;
-                        value.message.number.dequeued += q.message.number.dequeued;
-                        value.message.number.enqueued += q.message.number.enqueued;
-                        value.message.size.total += q.message.size.total;
-                     });
-
-               if( value.message.number.total() > 0)
-               {
-                  value.message.size.average = value.message.size.total / value.message.number.total();
-               }
-
-               if( value.message.timestamp != sf::platform::time_point::min())
-               {
-                  value.updated = chronology::local( value.message.timestamp);
-               }
-
-               result.push_back( std::move( value));
-
-               queues = std::get< 1>( split);
-            }
-
-            return range::sort( result);
-         }
-
-         struct Message
-         {
-            normalized::Message operator () ( const broker::admin::Message& message)
-            {
-               normalized::Message result;
-
-               result.id = message.id;
-               auto state = []( std::size_t s){
-                  switch( s)
-                  {
-                     case 1: return "E";
-                     case 2: return "C";
-                     case 3: return "D";
-                  }
-                  return "?";
-               };
-
-               result.state = state( message.state);
-               result.size = message.size;
-
-               result.trid = common::transcode::hex::encode( message.trid);
-               result.type = message.type.main + ":" + message.type.sub;
-
-               result.rd = message.redelivered;
-
-               result.timestamp = chronology::local( message.timestamp);
-
-               if( message.avalible != std::chrono::time_point_cast< std::chrono::microseconds>( sf::platform::time_point::min()))
-               {
-                  result.avalible = chronology::local( message.avalible);
-               }
 
 
-               return result;
-            }
-         };
-
-         std::vector< normalized::Message> messages( std::vector< broker::admin::Message> messages)
-         {
-            return common::range::transform( messages, Message{});
-         }
 
       } // normalize
 
@@ -366,60 +92,120 @@ namespace casual
       } // global
 
 
+      namespace format
+      {
+         terminal::format::formatter< broker::admin::Message> messages()
+         {
+            auto format_state = []( const broker::admin::Message& v)
+               {
+                  switch( v.state)
+                  {
+                     case 1: return 'E';
+                     case 2: return 'C';
+                     case 3: return 'D';
+                     default: return '?';
+                  }
+               };
+
+            auto format_trid = []( const broker::admin::Message& v) { return transcode::hex::encode( v.trid);};
+            auto format_type = []( const broker::admin::Message& v) { return v.type.main + ':' + v.type.sub;};
+            auto format_timestamp = []( const broker::admin::Message& v) { return normalize::timestamp( v.timestamp);};
+            auto format_avalible = []( const broker::admin::Message& v) { return normalize::timestamp( v.avalible);};
+
+            return {
+               { global::porcelain, global::color, global::header},
+               terminal::format::column( "id", std::mem_fn( &broker::admin::Message::id), terminal::color::yellow),
+               terminal::format::column( "S", format_state, terminal::color::no_color),
+               terminal::format::column( "size", std::mem_fn( &broker::admin::Message::size), terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "trid", format_trid, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "rd", std::mem_fn( &broker::admin::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::column( "type", format_type, terminal::color::no_color),
+               terminal::format::column( "reply", std::mem_fn( &broker::admin::Message::reply), terminal::color::no_color),
+               terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "avalible", format_avalible, terminal::color::blue, terminal::format::Align::right),
+
+            };
+         }
+
+         terminal::format::formatter< broker::admin::Group> groups()
+         {
+            auto format_pid = []( const broker::admin::Group& g) { return g.id.pid;};
+            auto format_ipc = []( const broker::admin::Group& g) { return g.id.queue;};
+
+            return {
+               { global::porcelain, global::color, global::header},
+               terminal::format::column( "name", std::mem_fn( &broker::admin::Group::name), terminal::color::yellow),
+               terminal::format::column( "pid", format_pid, terminal::color::grey, terminal::format::Align::right),
+               terminal::format::column( "ipc", format_ipc, terminal::color::grey, terminal::format::Align::right),
+               terminal::format::column( "queuebase", std::mem_fn( &broker::admin::Group::queuebase)),
+
+            };
+         }
+
+         terminal::format::formatter< broker::admin::Queue> queues( const broker::admin::State& state)
+         {
+            using q_type = broker::admin::Queue;
+
+
+            auto format_error = [&]( const q_type& q){
+               return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
+            };
+
+            auto format_group = [&]( const q_type& q){
+               return range::find_if( state.groups, [&]( const broker::admin::Group& g){ return q.group == g.id.pid;}).at( 0).name;
+            };
+
+
+            return {
+               { global::porcelain, global::color, global::header},
+               terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
+               terminal::format::column( "count", []( const q_type& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
+               terminal::format::column( "size", []( const q_type& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "avg", []( const q_type& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "uc", []( const q_type& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
+               terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}),
+               terminal::format::column( "r", []( const q_type& q){ return q.retries;}, common::terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "error queue", format_error, common::terminal::color::blue),
+               terminal::format::column( "group", format_group),
+
+            };
+         }
+
+      } // format
+
+
       void listQueues()
       {
-         auto queues = normalize::queues( call::state());
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( queues);
+         auto state = call::state();
 
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Queue::directive(), global::header, global::color};
-            writer << CASUAL_MAKE_NVP( queues);
-         }
+         auto formatter = format::queues( state);
+
+         using q_t = broker::admin::Queue;
+
+         formatter.print( std::cout, range::sort( state.queues, []( const q_t& l, const q_t& r){
+            if( l.type > r.type) return true;
+            if( r.type > l.type) return false;
+            return l.name < r.name;
+         }));
       }
 
       void listGroups()
       {
-         auto groups = normalize::groups( call::state());
+         auto state = call::state();
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( groups);
+         auto formatter = format::groups();
 
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Group::directive(), global::header, global::color};
-            writer << CASUAL_MAKE_NVP( groups);
-         }
+         formatter.print( std::cout, state.groups);
       }
 
       void listMessages( const std::string& queue)
       {
-         auto temp = call::messages( queue);
-         //std::cout << CASUAL_MAKE_NVP( temp);
+         auto messages = call::messages( queue);
 
-         auto messages = normalize::messages( temp);
+         auto formatter = format::messages();
 
-         if( global::porcelain)
-         {
-            sf::archive::terminal::percelain::Writer writer{ std::cout};
-            writer << CASUAL_MAKE_NVP( messages);
-
-         }
-         else
-         {
-            sf::archive::terminal::Writer writer{ std::cout, normalized::Message::directive(), global::header, global::color};
-            writer << CASUAL_MAKE_NVP( messages);
-         }
-
-
+         formatter.print( std::cout, messages);
       }
 
       void enqueue_( const std::string& queue)

@@ -10,7 +10,10 @@
 
 #include "transaction/manager/state.h"
 
+#include "transaction/manager/admin/transactionvo.h"
 
+
+#include <vector>
 
 namespace casual
 {
@@ -22,16 +25,25 @@ namespace casual
          void configure( State& state);
 
 
-
-         namespace boot
+         namespace resource
          {
-            struct Proxie : state::Base
+            struct Instances : state::Base
             {
                using state::Base::Base;
 
                void operator () ( state::resource::Proxy& proxy);
             };
-         } // boot
+
+            std::vector< vo::resource::Proxy> insances( State& state, std::vector< vo::update::Instances> instances);
+
+            namespace instance
+            {
+               bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance);
+            } // instance
+
+            bool request( State& state, state::pending::Request& message);
+
+         } // resource
 
 
 

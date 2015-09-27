@@ -49,6 +49,13 @@ namespace casual
          }
 
 
+         void transaction( const std::vector< std::string>& arguments)
+         {
+            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            execute( "casual-transaction-admin", arguments);
+         }
+
+
 
       } // dispatch
 
@@ -72,12 +79,14 @@ The following categories are supported:
 
             arguments.add(
                common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
-               common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue));
+               common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue),
+               common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction)
+            );
 
             arguments.parse( argc, argv);
 
          }
-         catch( const common::exception::Base& exception)
+         catch( const common::exception::base& exception)
          {
             std::cerr << exception << std::endl;
          }
