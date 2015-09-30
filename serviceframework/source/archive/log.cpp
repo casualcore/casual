@@ -96,7 +96,7 @@ namespace casual
             void Implementation::write( const platform::binary_type& value, const char* name)
             {
                add( name);
-               m_buffer.back().value = common::transcode::base64::encode( value);
+               m_buffer.back().value = "<binary data> size: " + std::to_string( value.size());
             }
 
             void Implementation::add( const char* name)

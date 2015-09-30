@@ -24,16 +24,8 @@ namespace casual
 
    namespace local
    {
-
-
       namespace
       {
-         common::file::scoped::Path transactionLogPath()
-         {
-            return common::file::scoped::Path{ "unittest_transaction_log.db"};
-         }
-
-
          common::message::transaction::manager::Configuration configuration()
          {
             common::message::transaction::manager::Configuration result;

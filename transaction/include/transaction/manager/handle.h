@@ -209,19 +209,6 @@ namespace casual
          };
 
 
-         struct basic_begin : public state::Base
-         {
-
-            typedef common::message::transaction::begin::Request message_type;
-            typedef common::message::transaction::begin::Reply reply_type;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
-
-         using Begin = user_reply_wrapper< basic_begin>;
-
          struct basic_commit : public state::Base
          {
             typedef common::message::transaction::commit::Request message_type;

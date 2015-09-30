@@ -108,6 +108,24 @@ namespace casual
             return result;
          }
 
+         int Resource::commit( const Transaction& transaction, long flags)
+         {
+            log::internal::transaction << "commit resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
+
+            auto result = xa_switch->xa_commit_entry( local::non_const_xid( transaction), id, flags);
+
+            return result;
+         }
+
+         int Resource::rollback( const Transaction& transaction, long flags)
+         {
+            log::internal::transaction << "rollback resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
+
+            auto result = xa_switch->xa_rollback_entry( local::non_const_xid( transaction), id, flags);
+
+            return result;
+         }
+
          bool Resource::dynamic() const
          {
             return common::flag< TMREGISTER>( xa_switch->flags);

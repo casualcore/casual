@@ -165,12 +165,6 @@ namespace casual
 
             std::vector< Transaction> m_transactions;
 
-            //!
-            //! Resources outside any global transaction
-            //! (this could only be dynamic rm:s)
-            //!
-            std::vector< int> m_outside;
-
             transaction::ID m_caller;
 
             TRANSACTION_TIMEOUT m_timeout = 0;
@@ -203,6 +197,7 @@ namespace casual
 
             void resources_start( const Transaction& transaction, long flags);
             void resources_end( const Transaction& transaction, long flags);
+            int resource_commit( platform::resource::id_type rm, const Transaction& transaction, long flags);
 
             int pop_transaction();
 

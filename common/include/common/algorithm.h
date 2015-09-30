@@ -322,6 +322,8 @@ namespace casual
             return nullptr;
          }
 
+         reference front() { return *first;}
+
          reference at( difference_type index)
          {
             if( std::distance( first, last) <= index){ throw std::out_of_range{ "range out of bounds"};}

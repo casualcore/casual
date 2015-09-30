@@ -290,6 +290,11 @@ namespace casual
 
       void State::remove_process( state::Server::pid_type pid)
       {
+         Trace trace{ "broker::State::remove_process", log::internal::debug};
+
+
+         log::internal::debug << "remove process pid: " << pid << std::endl;
+
          auto found = common::range::find( instances, pid);
 
          if( found)

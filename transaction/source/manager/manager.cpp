@@ -176,7 +176,6 @@ namespace casual
                common::message::dispatch::Handler handler{
                   common::message::handle::Shutdown{},
                   handle::dead::Process{ state},
-                  handle::Begin{ state},
                   handle::Commit{ state},
                   handle::Rollback{ state},
                   handle::resource::Involved{ state},
