@@ -134,8 +134,8 @@ namespace casual
 
                void Implementation::read( char& value) const
                {
-                  const auto string = common::transcode::utf8::decode( m_stack.back().text().get());
-                  value = string.empty() ? '\0' : string.front();
+                  // If empty string this should result in '\0'
+                  value = *common::transcode::utf8::decode( m_stack.back().text().get()).c_str();
                }
 
                void Implementation::read( std::string& value) const

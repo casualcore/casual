@@ -88,14 +88,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>json</name>
-			<type>2</type>
-			<location>/Users/hbergk/tools/json-c</location>
-		</link>
-		<link>
 			<name>test-environment</name>
 			<type>2</type>
-			<location>/Users/hbergk/test</location>
+			<location>C:/Users/hbergk/test</location>
 		</link>
 	</linkedResources>
 </projectDescription>
