@@ -35,13 +35,13 @@ namespace casual
 
             enum class Transaction : std::uint64_t
             {
-               //! if there is a transaction join it, if not, start a new one
+               //! join transaction if present else start a new transaction
                automatic = 0,
-               //! if there is a transaction join it, if not, execute outside transaction
+               //! join transaction if present else execute outside transaction
                join = 1,
-               //! Regardless - start a new transaction
+               //! start a new transaction regardless
                atomic = 2,
-               //! Regardless - execute outside transaction
+               //! execute outside transaction regardless
                none = 3
             };
 

@@ -16,6 +16,7 @@ IncludePaths([
     'include',
     '../common/include',
     '../xatmi/include',
+    '../thirdparty/rapidjson/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 	
@@ -46,7 +47,7 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         Compile( 'source/platform.cpp'),
         
     ],
-    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'json-c', 'pugixml'])
+    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'pugixml'])
 
 install_lib.append( lib_sf)
 
@@ -71,7 +72,7 @@ LinkUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/test_vo.cpp'),
         Compile( 'unittest/isolated/source/test_service_archive.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'json-c', 'yaml-cpp', 'pugixml'])
+	[ lib_sf, 'casual-xatmi', 'casual-common', 'yaml-cpp', 'pugixml'])
 
 #
 # Install

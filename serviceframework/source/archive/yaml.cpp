@@ -89,7 +89,7 @@ namespace casual
 
 
                   //
-                  // We stack'em i reverse order
+                  // We stack 'em in reverse order
                   //
 
                   size = node->size();
