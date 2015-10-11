@@ -189,7 +189,7 @@ namespace casual
       {
          for( short idx = 0; idx < 255; ++idx)
          {
-            if( std::iscntrl( static_cast<char>( idx), std::locale( "")))
+            if( std::iscntrl( static_cast<char>( idx), std::locale{}))
             {
                std::cout << idx << std::endl;
             }

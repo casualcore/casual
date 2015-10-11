@@ -26,12 +26,44 @@ namespace casual
 
       namespace marshal
       {
-         namespace output
+         namespace binary
          {
-            struct Binary
+            namespace detail
             {
 
-               Binary( platform::binary_type& buffer)
+               template< typename T>
+               using is_native_marshable = std::integral_constant<bool,
+                     std::is_arithmetic<T>::value ||
+                     ( std::is_array<T>::value && sizeof( typename std::remove_all_extents<T>::type) == 1 ) ||
+                     std::is_enum< T>::value>;
+
+            } // detail
+
+            struct Policy
+            {
+               template< typename T>
+               static constexpr std::size_t size( T&&) { return sizeof( T);}
+
+               template< typename Iter, typename T>
+               static void write( Iter buffer, T&& value)
+               {
+                  memcpy( buffer, &value, sizeof( T));
+               }
+
+               template< typename Iter, typename T>
+               static void read( T& value, Iter buffer)
+               {
+                  memcpy( &value, buffer, sizeof( T));
+               }
+
+            };
+
+            template< typename P>
+            struct basic_output
+            {
+               using policy_type = P;
+
+               basic_output( platform::binary_type& buffer)
                   : m_buffer(  buffer)
                {
                   m_buffer.reserve( 128);
@@ -39,26 +71,17 @@ namespace casual
 
 
                template< typename T>
-               Binary& operator & ( T& value)
+               basic_output& operator & ( T& value)
                {
-                  //return *this << std::forward< T>( value);
                   return *this << value;
                }
 
                template< typename T>
-               Binary& operator << ( const T& value)
+               basic_output& operator << ( const T& value)
                {
                   write( value);
                   return *this;
                }
-
-
-               //
-               // Be friend with free marshal function so we can use more
-               // bare-bone stuff when we do non-intrusive marshal for third-party types
-               //
-               //template< typename M, typename T>
-               //friend void casual_marshal_value( M& marshler, T& value);
 
 
                template< typename Iter>
@@ -82,14 +105,14 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! std::is_pod< T>::value>::type
+               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
                write( T& value)
                {
                   casual_marshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< std::is_pod< T>::value>::type
+               typename std::enable_if< detail::is_native_marshable< T>::value>::type
                write( T& value)
                {
                   writePod( value);
@@ -99,9 +122,9 @@ namespace casual
                template< typename T>
                void writePod( T&& value)
                {
-                  auto offset = expand( sizeof( T));
+                  auto offset = expand( policy_type::size( value));
 
-                  memcpy( &m_buffer[ offset], &value, sizeof( T));
+                  policy_type::write( &m_buffer[ offset], value);
                }
 
                template< typename T>
@@ -144,16 +167,14 @@ namespace casual
                platform::binary_type& m_buffer;
             };
 
+            using Output = basic_output< Policy>;
 
-
-         } // output
-
-         namespace input
-         {
-
-            struct Binary
+            template< typename P>
+            struct basic_input
             {
-               Binary( platform::binary_type& buffer)
+               using policy_type = P;
+
+               basic_input( platform::binary_type& buffer)
                   : m_buffer( buffer), m_offset( 0)
                {
 
@@ -161,24 +182,17 @@ namespace casual
 
 
                template< typename T>
-               Binary& operator & ( T& value)
+               basic_input& operator & ( T& value)
                {
                   return *this >> value;
                }
 
                template< typename T>
-               Binary& operator >> ( T& value)
+               basic_input& operator >> ( T& value)
                {
                   read( value);
                   return *this;
                }
-
-               //
-               // Be friend with free marshal function so we can use more
-               // bare-bone stuff when we do non-intrusive marshal for third-party types
-               //
-               //template< typename M, typename T>
-               //friend void casual_unmarshal_value( M& marshler, T& value);
 
 
                template< typename Iter>
@@ -199,14 +213,14 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! std::is_pod< T>::value>::type
+               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
                read( T& value)
                {
                   casual_unmarshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< std::is_pod< T>::value>::type
+               typename std::enable_if< detail::is_native_marshable< T>::value>::type
                read( T& value)
                {
                   readPod( value);
@@ -250,11 +264,11 @@ namespace casual
                template< typename T>
                void readPod( T& value)
                {
-                  const auto size = sizeof( T);
+                  const auto size = policy_type::size( value);
 
                   assert( m_offset + size <= m_buffer.size());
 
-                  memcpy( &value, &m_buffer[ m_offset], size);
+                  policy_type::read( value,  &m_buffer[ m_offset]);
                   m_offset += size;
                }
 
@@ -262,7 +276,30 @@ namespace casual
                platform::binary_type::size_type m_offset;
             };
 
-         } // input
+            using Input = basic_input< Policy>;
+
+
+            namespace create
+            {
+               struct Output
+               {
+                  binary::Output operator () ( platform::binary_type& buffer) const
+                  {
+                     return binary::Output{ buffer};
+                  }
+               };
+
+               struct Input
+               {
+                  binary::Input operator () ( platform::binary_type& buffer) const
+                  {
+                     return binary::Input{ buffer};
+                  }
+               };
+
+            } // create
+
+         } // binary
       } // marshal
 
       namespace ipc
@@ -276,7 +313,7 @@ namespace casual
 
                message.correlation = complete.correlation;
 
-               marshal::input::Binary marshal{ complete.payload};
+               marshal::binary::Input marshal{ complete.payload};
                marshal >> message;
 
                return complete;
@@ -287,9 +324,8 @@ namespace casual
 
       namespace marshal
       {
-
-         template< typename M>
-         ipc::message::Complete complete( M&& message)
+         template< typename M, typename C = binary::create::Output>
+         ipc::message::Complete complete( M&& message, C creator = binary::create::Output{})
          {
             if( ! message.execution)
             {
@@ -298,7 +334,7 @@ namespace casual
 
             ipc::message::Complete complete( message.message_type, message.correlation ? message.correlation : uuid::make());
 
-            marshal::output::Binary marshal{ complete.payload};
+            auto marshal = creator( complete.payload);
             marshal << message;
 
             complete.offset = complete.payload.size();
@@ -306,8 +342,19 @@ namespace casual
             return complete;
          }
 
+         template< typename M, typename C = binary::create::Input>
+         void complete( ipc::message::Complete& complete, M& message, C creator = binary::create::Input{})
+         {
+            assert( complete.type == message.message_type);
+
+            message.correlation = complete.correlation;
+
+            auto marshal = creator( complete.payload);
+            marshal >> message;
+         }
 
       } // marshal
+
 
    } // common
 

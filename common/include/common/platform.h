@@ -187,10 +187,27 @@ namespace casual
    //! Overload for time_type
    //!
    //! @{
+
+   template< typename R, typename P, typename M>
+   void casual_marshal_value( const std::chrono::duration< R, P>& value, M& marshler)
+   {
+      marshler << std::chrono::duration_cast< std::chrono::microseconds>( value).count();
+   }
+
+   template< typename R, typename P, typename M>
+   void casual_unmarshal_value( std::chrono::duration< R, P>& value, M& unmarshler)
+   {
+      std::chrono::microseconds::rep representation;
+
+      unmarshler >> representation;
+      value = std::chrono::microseconds( representation);
+   }
+
+
    template< typename M>
    void casual_marshal_value( const common::platform::time_point& value, M& marshler)
    {
-      auto time = value.time_since_epoch().count();
+      const auto time = value.time_since_epoch().count();
       marshler << time;
    }
 
