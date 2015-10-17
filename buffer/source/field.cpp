@@ -526,7 +526,7 @@ namespace casual
                   m_pool.emplace_back( type, 0);
 
                   //
-                  // GCC returns null for sad::vector::data with size zero, so
+                  // GCC returns null for std::vector::data with size zero, so
                   // we need to ensure that at least some allocation occurs
                   //
                   m_pool.back().payload.memory.reserve( size ? size : 1);
@@ -543,7 +543,7 @@ namespace casual
                   if( size < result->payload.memory.capacity()) result->payload.memory.shrink_to_fit();
 
                   //
-                  // GCC returns null for sad::vector::data with size zero, so
+                  // GCC returns null for std::vector::data with size zero, so
                   // we need to ensure that at least some allocation occurs
                   //
                   result->payload.memory.reserve( size ? size : 1);
@@ -1054,7 +1054,7 @@ int CasualFieldAddString( char* const buffer, const long id, const char* const v
 
 int CasualFieldAddBinary( char* const buffer, const long id, const char* const value, const long count)
 {
-   if( count < 0 )
+   if( count < 0)
    {
       return CASUAL_FIELD_INVALID_ARGUMENT;
    }

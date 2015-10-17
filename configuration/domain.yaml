@@ -16,7 +16,7 @@ domain:
        
     service:
       timeout: 90
-      transaction: auto
+
    
 
   groups: 
