@@ -86,7 +86,6 @@ Install( target,'$(CASUAL_HOME)/internal/bin')
 LinkUnittest( 'bin/test-casual-broker-isolated',
     [
       Compile( 'unittest/isolated/source/test_broker.cpp'),
-      Compile( 'unittest/isolated/source/test_broker_confguration.cpp'),
       Compile( 'unittest/isolated/source/test_forward_cache.cpp'),
     ] + forward_objs,
     [
