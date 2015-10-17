@@ -8,10 +8,10 @@
         "default":{
             "path":"/Users/Lazan/git/casual",
             "server":{
-                "instances":2
+                "instances":"2"
             },
             "service":{
-                "timeout":90,
+                "timeout":"90",
                 "transaction":"auto"
             }
             
@@ -27,7 +27,7 @@
                 "resources":[
                  {   
                     "key":"db2",
-                    "instances":3,
+                    "instances":"3",
                     "openinfo":"db=test,uid=db2,pwd=db2"
                 }]
             },
@@ -37,12 +37,12 @@
                 "resources":[
                 {
                     "key":"db2",
-                    "instances":3,
+                    "instances":"3",
                     "openinfo":"db=test2,uid=db2,pwd=db2"
                 },
                 {
                     "key":"casual-queue-rm",
-                    "instances":3,
+                    "instances":"3"
                 }
                 ]
             },
@@ -66,7 +66,7 @@
         "servers":[
             {
                 "path":"/Users/Lazan/git/casual/transaction/bin/casual-transaction-manager",
-                "instances":1,
+                "instances":"1",
                 "note":"The Transaction manager",
                 "memberships":[
                     "casual"
@@ -75,7 +75,7 @@
             },
             {
                 "path":"/Users/Lazan/git/casual/monitor/bin/casual_monitor",
-                "instances":1,
+                "instances":"1",
                 "note":"The monitor",
                 "memberships":[
                     "casual"
@@ -85,7 +85,7 @@
                 "alias":"someServer",
                 "note":"Some testserver",
                 "path":"/Users/Lazan/git/casual/test/bin/test",
-                "instances":1,
+                "instances":"1",
                 "memberships":[
                     "group1"
                 ]
@@ -94,7 +94,7 @@
                 "alias":"test",
                 "note":"Some testserver...",
                 "path":"/Users/Lazan/git/casual/test/bin/test",
-                "instances":10,
+                "instances":"10",
                 "memberships":[
                     "group1",
                     "group2"
@@ -111,8 +111,8 @@
                 "note":"echo, echo...",
                 "path":"/bin/echo",
                 "arguments":["poop"],
-                "instances":10
-            },
+                "instances":"10"
+            }
             
         ],
         "services":[
