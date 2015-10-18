@@ -1,16 +1,6 @@
 from casual.make.directive import *
 
 
-#sys.stderr.write( 'platform: ' + sys.platform);
-
-# lib_paths = [
-#    '../common/bin',
-#     '../xatmi/bin',
-#     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'
-# ];
-
-#if sys.platform.startswith( 'linux'):
-    
 
 IncludePaths([
     'include',
@@ -25,6 +15,7 @@ LibraryPaths([
     '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
+
 
 install_lib = []
 
@@ -60,6 +51,7 @@ LinkUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
         Compile( 'unittest/isolated/source/test_archive.cpp'),
         Compile( 'unittest/isolated/source/test_archive_write_read.cpp'),
+        Compile( 'unittest/isolated/source/test_relaxed_archive_write_read.cpp'),
         Compile( 'unittest/isolated/source/test_traits.cpp'),
         Compile( 'unittest/isolated/source/test_yaml_archive.cpp'),
         Compile( 'unittest/isolated/source/test_json_archive.cpp'),

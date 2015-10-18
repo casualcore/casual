@@ -11,12 +11,8 @@
                 "instances":"2"
             },
             "service":{
-<<<<<<< HEAD:configuration/domain.json
-                "timeout":90,
-=======
                 "timeout":"90",
                 "transaction":"auto"
->>>>>>> feature/sf:configuration/unittest/isolated/domain.json
             }
             
         },

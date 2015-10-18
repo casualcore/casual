@@ -98,7 +98,7 @@ namespace casual
                         else
                         {
                            //
-                           // TODO: Perhaps validate type (to avoid possible exceptions) ?
+                           // TODO: Perhaps validate type (to avoid possible asserts/exceptions) ?
                            //
 
                            read( value);
