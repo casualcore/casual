@@ -115,20 +115,26 @@ namespace casual
                {
                   if( name)
                   {
-                     const auto result = m_stack.back()->FindMember( name);
-
-                     if( result != m_stack.back()->MemberEnd())
+                     //
+                     // TODO: Remove this check whenever archive is fixed
+                     //
+                     if( m_stack.back())
                      {
-                        m_stack.push_back( &result->value);
+                        const auto result = m_stack.back()->FindMember( name);
+
+                        if( result != m_stack.back()->MemberEnd())
+                        {
+                           m_stack.push_back( &result->value);
+                        }
+                        else
+                        {
+                           m_stack.push_back( nullptr);
+                        }
                      }
                      else
                      {
                         m_stack.push_back( nullptr);
                      }
-                  }
-                  else
-                  {
-                     return true;
                   }
 
                   return m_stack.back() != nullptr;

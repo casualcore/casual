@@ -11,6 +11,7 @@
 #include "config/queue.h"
 
 #include "common/exception.h"
+#include "common/file.h"
 
 
 #include "sf/log.h"
@@ -20,10 +21,20 @@ namespace casual
 {
    namespace config
    {
+      namespace local
+      {
+         namespace
+         {
+            std::string get_testfile_path( const std::string& name)
+            {
+               return common::directory::name::base( __FILE__) + "/../" + name;
+            }
+         } // <unnamed>
+      } // local
 
       TEST( casual_configuration_queue, expect_two_groups)
       {
-         auto queues = config::queue::get( "queue.yaml");
+         auto queues = config::queue::get( local::get_testfile_path( "queue.yaml"));
 
          EXPECT_TRUE( queues.groups.size() == 2) << CASUAL_MAKE_NVP( queues);
 
@@ -32,7 +43,7 @@ namespace casual
 
       TEST( casual_configuration_queue, expect_4_queues_in_group_one)
       {
-         auto queues = config::queue::get( "queue.yaml");
+         auto queues = config::queue::get( local::get_testfile_path( "queue.yaml"));
 
          EXPECT_TRUE( queues.groups.at( 0).name == "someGroup");
          EXPECT_TRUE( queues.groups.at( 0).queuebase == "some-group.qb") <<  queues.groups.at( 0).queuebase;

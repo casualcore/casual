@@ -129,7 +129,7 @@ namespace casual
 
          Domain get()
          {
-            const std::string configuration = config::file::domain();
+            auto configuration = config::file::domain();
 
             if( ! configuration.empty())
             {
