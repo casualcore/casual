@@ -46,11 +46,11 @@ def truncateUUID( uuid):
         return '             ';
 
 def truncateXID( xid):
-    # 590b07bd-0903-40ec-9faa-2156b90a2756:1c04d1e1-886f-4820-bc9f-fb66ababf7d2
+    # 590b07bd090340ec9faa2156b90a2756:1c04d1e1886f4820bc9ffb66ababf7d2
     # -> 2156b90a2756:1c04d1e1
     
     if xid:
-        return xid[24: 24 + 21];
+        return xid[20: 20 + 21];
     else:
         return '' #'                     ';
 
@@ -101,9 +101,9 @@ def format( input, output):
     
     while( line):
         
-        rows = line.split( '|', 9);
+        rows = line.split( '|', 10);
         
-        if( len( rows) == 10):
+        if( len( rows) == 11):
             
             pid = rows[ 4];
             thread = truncateThread( pid, rows[ 5]);
@@ -123,15 +123,17 @@ def format( input, output):
             #output.write( color.white( rows[ 6]));
             output.write( rows[ 6]);
             output.write( '|');
-            output.write( category( rows[ 7]));
+            output.write( color.grey( rows[ 7]));
             output.write( '|');
             output.write( color.yellow( rows[ 8]));
             output.write( '|');
+            output.write( category( rows[ 9]));
+            output.write( '|');
 
             if rows[ 7] in [ "information", 'error']:
-                output.write( color.white( rows[ 9]));
+                output.write( color.white( rows[ 10]));
             else:
-                output.write( rows[ 9])
+                output.write( rows[ 10])
             #sys.stdout.write( '\n');
         else:
             output.write( line)
