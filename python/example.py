@@ -3,8 +3,8 @@ import casual.exception as exception
 import casual.buffer as buffer
 
 try:
-    #buf = buffer.JsonBuffer("{}")
-    buf = buffer.XmlBuffer("<root></root>")
+    buf = buffer.JsonBuffer("{}")
+    #buf = buffer.XmlBuffer("<root></root>")
     reply = casual.call( ".casual.broker.state", buf)
 except exception.BufferError as bufferError:
     """
