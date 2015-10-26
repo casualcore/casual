@@ -1,6 +1,7 @@
 import os
 
 from casual.make.platform.platform import Platform
+from casual.make.output import Output
 
 
 class CommonUNIX( Platform):
@@ -14,8 +15,14 @@ class CommonUNIX( Platform):
     def link_directive(self, libs):            
         if not libs:
             return ''
+        result = ''
+        for lib in libs:
+            if isinstance(lib, Output):
+                result += ' -l ' + lib.name
+            else:
+                result += ' -l ' + lib
             
-        return ' -l' + ' -l'.join( libs);
+        return result
     
     def include_paths(self, paths):
         if not paths:
@@ -38,10 +45,17 @@ class CommonUNIX( Platform):
     
     
     def library_name(self, baseFilename):
-        return 'lib' + baseFilename + '.so'
+        if isinstance(baseFilename, basestring):
+            return 'lib' + baseFilename + '.so'
+        elif isinstance(baseFilename, Output):
+            return 'lib' + baseFilename.name + '.so'
+            
         
     def archive_name(self, baseFilename):
-        return 'lib' + baseFilename + '.a'
+        if isinstance(baseFilename, basestring):
+            return 'lib' + baseFilename + '.a'
+        elif isinstance(baseFilename, Output):
+            return 'lib' + baseFilename.name + '.a'
     
     def executable_name(self, baseFilename):
         return baseFilename

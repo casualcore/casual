@@ -23,4 +23,7 @@ class Output(object):
             self.version = Version( major, minor, age)
         else:
             self.version = None
+            
+    #def __str__(self):
+    #    return self.name
 
