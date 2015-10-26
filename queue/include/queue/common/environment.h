@@ -10,6 +10,7 @@
 
 
 #include "common/platform.h"
+#include "common/uuid.h"
 
 #include <string>
 
@@ -23,11 +24,13 @@ namespace casual
       {
          namespace broker
          {
+            const common::Uuid& identification();
+
             namespace queue
             {
-               std::string path();
 
                common::platform::queue_id_type id();
+               common::platform::queue_id_type initialize();
 
             } // queue
 

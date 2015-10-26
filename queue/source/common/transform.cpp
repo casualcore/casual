@@ -65,13 +65,10 @@ namespace casual
             result.type = queue.type;
             result.error = queue.error;
 
-            result.message.number.commited = queue.message.counts;
-            result.message.timestamp = queue.message.timestamp;
-            result.message.size.min = queue.message.size.min;
-            result.message.size.max = queue.message.size.max;
-            result.message.size.average = queue.message.size.average;
-            result.message.size.total = queue.message.size.total;
-
+            result.count = queue.count;
+            result.size = queue.size;
+            result.uncommitted = queue.uncommitted;
+            result.timestamp = queue.timestamp;
 
             return result;
          }

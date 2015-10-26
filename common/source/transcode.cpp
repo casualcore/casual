@@ -177,6 +177,7 @@ namespace casual
                   std::string modifier;
                };
 
+/*
                locale parse( const std::string& name)
                {
                   std::istringstream stream( name);
@@ -191,11 +192,14 @@ namespace casual
                   return result;
                }
 
+
                locale info()
                {
                   //return parse( std::locale( "").name());
                   return parse( std::setlocale( LC_CTYPE, ""));
                }
+*/
+
             }
 
          }

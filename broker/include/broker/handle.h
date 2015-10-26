@@ -12,6 +12,7 @@
 #include "broker/state.h"
 #include "broker/broker.h"
 
+#include "common/message/dispatch.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 
@@ -38,24 +39,32 @@ namespace casual
          //!
          //! Shutdown
          //!
-         void shutdown( State& state);
+         void shutdown( State& state, common::ipc::receive::Queue& ipc);
 
          void send_shutdown( State& state);
 
+         std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances);
+
+         void boot( State& state, const state::Executable& executable, std::size_t instances);
+
+         void shutdown( State& state, const state::Server& server, std::size_t instances);
+
+         namespace update
+         {
+            void instances( State& state, const state::Server& server);
+         } // update
 
 
-         namespace monitor
+         namespace traffic
          {
             //!
-            //! Monitor Connect
+            //! Traffic Connect
             //!
             struct Connect: public Base
             {
-               typedef common::message::traffic::monitor::Connect message_type;
-
                using Base::Base;
 
-               void operator () ( message_type& message);
+               void operator () ( common::message::traffic::monitor::connect::Request& message);
             };
 
             struct Disconnect: public Base
@@ -82,11 +91,9 @@ namespace casual
                //!
                struct Connect : public Base
                {
-                  using message_type = common::message::transaction::manager::Connect;
-
                   using Base::Base;
 
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::transaction::manager::connect::Request& message);
                };
 
                //!
@@ -121,6 +128,50 @@ namespace casual
             } // client
          } // transaction
 
+         namespace forward
+         {
+            struct Connect : Base
+            {
+               using Base::Base;
+
+               void operator () ( const common::message::forward::connect::Request& message);
+            };
+
+         } // forward
+
+
+         namespace dead
+         {
+            namespace process
+            {
+               struct Registration : Base
+               {
+                  using Base::Base;
+
+                  void operator () ( const common::message::dead::process::Registration& message);
+               };
+
+               struct Event : Base
+               {
+                  using Base::Base;
+
+                  void operator() ( const common::message::dead::process::Event& message);
+               };
+
+            } // process
+
+         } // dead
+
+         namespace lookup
+         {
+            struct Process : Base
+            {
+               using Base::Base;
+
+               void operator () ( const common::message::lookup::process::Request& message);
+            };
+
+         } // lookup
 
 
          //!
@@ -165,7 +216,7 @@ namespace casual
          //!
          struct ServiceLookup : public Base
          {
-            typedef common::message::service::name::lookup::Request message_type;
+            typedef common::message::service::lookup::Request message_type;
 
             using Base::Base;
 
@@ -207,7 +258,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
+            void connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::queue_id_type id, common::message::service::call::Reply& message);
 
@@ -217,7 +268,9 @@ namespace casual
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 
-            void statistics( common::platform::queue_id_type id, common::message::traffic::monitor::Notify& message);
+            void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
+
+            void statistics( common::platform::queue_id_type id, common::message::traffic::Event& event);
 
          private:
 
@@ -229,6 +282,10 @@ namespace casual
 
 
 		} // handle
+
+      common::message::dispatch::Handler handler( State& state);
+
+      common::message::dispatch::Handler handler_no_services( State& state);
 
 	} // broker
 } // casual

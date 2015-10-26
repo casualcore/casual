@@ -76,6 +76,27 @@ namespace casual
             bool receive( id_type id, Transport& transport, long flags);
 
 
+            namespace ignore
+            {
+               namespace signal
+               {
+                  //!
+                  //! Send a @p transport message to ipc-queue with @p id
+                  //!
+                  //! ignores signals
+                  //!
+                  bool send( id_type id, const Transport& transport, long flags);
+
+                  //!
+                  //! Send a @p transport message to ipc-queue with @p id
+                  //!
+                  //! ignores signals
+                  //!
+                  bool receive( id_type id, Transport& transport, long flags);
+
+               } // signal
+            } // ignore
+
             struct Transport
             {
                typedef platform::message_type_type message_type_type;
@@ -160,6 +181,9 @@ namespace casual
 
                friend bool send( id_type id, const Transport& transport, long flags);
                friend bool receive( id_type id, Transport& transport, long flags);
+               friend bool ignore::signal::send( id_type id, const Transport& transport, long flags);
+               friend bool ignore::signal::receive( id_type id, Transport& transport, long flags);
+
 
             private:
 
@@ -350,6 +374,10 @@ namespace casual
                //!
                std::vector< message::Complete> operator () ( const Uuid& correlation, const long flags);
 
+               //!
+               //! flushes the messages on the ipc-queue into cache. (ie, make the ipc-queue writable if it was full)
+               //!
+               void flush();
 
                //!
                //! Discards any message that correlates.
@@ -365,6 +393,11 @@ namespace casual
 
                typedef std::vector< message::Complete> cache_type;
                using range_type = decltype( range::make( cache_type::iterator(), cache_type::iterator()));
+
+
+               template< typename IPC, typename P>
+               range_type find( IPC ipc, P predicate, const long flags);
+
 
                template< typename P>
                range_type find( P predicate, const long flags);

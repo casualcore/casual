@@ -35,29 +35,31 @@ namespace casual
 
             enum class Transaction : std::uint64_t
             {
-               //! if there is a transaction join it, if not, start a new one
+               //! join transaction if present else start a new transaction
                automatic = 0,
-               //! if there is a transaction join it, if not, execute outside transaction
+               //! join transaction if present else execute outside transaction
                join = 1,
-               //! Regardless - start a new transaction
+               //! start a new transaction regardless
                atomic = 2,
-               //! Regardless - execute outside transaction
+               //! execute outside transaction regardless
                none = 3
             };
 
 
-            using function_type = std::function< void( TPSVCINFO *)>;
-            using adress_type = void(*)( TPSVCINFO *);
+
+            using function_type = std::function< void( TPSVCINFO*)>;
+
 
             Service( std::string name, function_type function, std::uint64_t type, Transaction transaction);
             Service( std::string name, function_type function);
 
             Service( Service&&);
+            Service& operator = ( Service&&);
 
 
             void call( TPSVCINFO* serviceInformation);
 
-            std::string name;
+            std::string origin;
             function_type function;
 
             std::uint64_t type = Type::cXATMI;
@@ -69,8 +71,12 @@ namespace casual
             friend bool operator == ( const Service& lhs, const Service& rhs);
             friend bool operator != ( const Service& lhs, const Service& rhs);
 
+
          private:
-            adress_type m_adress;
+            typedef void(*const* target_type)(TPSVCINFO*);
+            target_type adress() const;
+
+
          };
 
          namespace service

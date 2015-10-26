@@ -42,6 +42,7 @@ namespace casual
                      void operator ()( domain::Server& server) const
                      {
                         assign_if_empty( server.instances, m_casual_default.server.instances);
+                        assign_if_empty( server.restart, m_casual_default.server.restart);
                         assign_if_empty( server.alias, nextAlias( server.path));
                      }
 
@@ -128,7 +129,7 @@ namespace casual
 
          Domain get()
          {
-            const std::string configuration = config::file::domain();
+            auto configuration = config::file::domain();
 
             if( ! configuration.empty())
             {

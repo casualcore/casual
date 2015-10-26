@@ -60,15 +60,19 @@ namespace casual
                      {
                         if( data[idx] == '\\')
                         {
+                           // TODO: handle all control-characters (and back-slash)
+
                            switch( data[++idx])
                            {
                            case '\\': stream.put( '\\'); break;
                            case '0': stream.put( '\0');  break;
                            case 'a': stream.put( '\a');  break;
                            case 'b': stream.put( '\b');  break;
+                           case 'f': stream.put( '\f');  break;
                            case 'n': stream.put( '\n');  break;
                            case 'r': stream.put( '\r');  break;
                            case 't': stream.put( '\t');  break;
+                           case 'v': stream.put( '\v');  break;
                            default: throw exception::archive::invalid::Document{ "Invalid content"};
                            }
                         }
@@ -437,15 +441,20 @@ namespace casual
                      std::ostringstream stream;
                      for( const auto sign : data)
                      {
+                        // TODO: handle all control-characters (and back-slash)
+                        //if( std::iscntrl( sign, std::locale::classic())){ ... }
+
                         switch( sign)
                         {
                         case '\\': stream << "\\\\";  break;
                         case '\0': stream << "\\0";   break;
                         case '\a': stream << "\\a";   break;
                         case '\b': stream << "\\b";   break;
+                        case '\f': stream << "\\f";   break;
                         case '\n': stream << "\\n";   break;
                         case '\r': stream << "\\r";   break;
                         case '\t': stream << "\\t";   break;
+                        case '\v': stream << "\\v";   break;
                         default: stream.put( sign);   break;
                         }
                      }

@@ -62,9 +62,10 @@ namespace casual
                   {
                      result.alias = value.alias;
                      result.arguments = value.arguments;
-                     result.configuredInstances = std::stoul( value.instances);
+                     result.configured_instances = std::stoul( value.instances);
                      result.note = value.note;
                      result.path = value.path;
+                     result.restart = value.restart == "true";
 
                      result.environment.variables = local::environment( value.environment);
 
@@ -196,8 +197,6 @@ namespace casual
             {
                broker::State result;
 
-               //domain.casual_default.service
-
                //
                // Handle groups
                //
@@ -209,6 +208,20 @@ namespace casual
                   result.casual_group_id = casual_group.id;
 
                   result.groups = local::groups( domain.groups, std::move( casual_group));
+               }
+
+               //
+               // Make sure we "configure" the forward-cache
+               //
+               {
+                  state::Server forward;
+                  forward.alias = "casual-forward-cache";
+                  forward.path = "casual-forward-cache";
+                  forward.configured_instances = 1;
+                  forward.memberships.push_back( result.casual_group_id);
+                  forward.note = "TODO...";
+
+                  result.add( std::move( forward));
                }
 
                //
@@ -262,7 +275,7 @@ namespace casual
 
                   result.alias = "casual-transaction-manager";
                   result.path = manager.path;
-                  result.configuredInstances = 1;
+                  result.configured_instances = 1;
                   result.arguments = { "--database", manager.database};
                   result.note = "the one and only transaction manager in this domain";
 
@@ -346,7 +359,6 @@ namespace casual
                   common::message::transaction::client::connect::Reply reply;
 
                   reply.domain = common::environment::domain::name();
-                  reply.transaction_manager = state.transaction_manager;
 
                   try
                   {

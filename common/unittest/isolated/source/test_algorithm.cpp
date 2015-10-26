@@ -214,6 +214,19 @@ namespace casual
 
       }
 
+
+      TEST( casual_common_algorithm, sort_unique_trim_container)
+      {
+         std::vector< int> set{ 3, 1, 3, 2, 1, 3, 1, 2, 3};
+
+         range::trim( set, range::unique( range::sort( set)));
+
+         ASSERT_TRUE( set.size() == 3);
+         EXPECT_TRUE( set.at( 0) == 1);
+         EXPECT_TRUE( set.at( 1) == 2);
+         EXPECT_TRUE( set.at( 2) == 3);
+      }
+
       enum class Enum
       {
          zero,
@@ -485,6 +498,18 @@ namespace casual
          auto result = range::make( origin) - range1;
 
          ASSERT_TRUE( result.size() == 0) << result;
+      }
+
+
+      TEST( casual_common_algorithm, intersection)
+      {
+         std::vector< int> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
+         std::vector< int> lookup{ 4, 1, 3, 5, 2};
+
+         auto split = range::intersection( range, lookup);
+
+         EXPECT_TRUE( range::sort( std::get< 0>( split)) == range::sort( lookup)) << std::get< 0>( split);
+         EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
       }
 
 

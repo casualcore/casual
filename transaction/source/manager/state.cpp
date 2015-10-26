@@ -58,6 +58,105 @@ namespace casual
             }
          } // local
 
+
+         Statistics::Statistics() :  min{ std::chrono::microseconds::max()}, max{ 0}, total{ 0}, invoked{ 0}
+         {
+
+         }
+
+         void Statistics::start( const common::platform::time_point& start)
+         {
+            m_start = start;
+         }
+         void Statistics::end( const common::platform::time_point& end)
+         {
+            time( m_start, end);
+         }
+
+         void Statistics::time( const common::platform::time_point& start, const common::platform::time_point& end)
+         {
+            auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
+            total += time;
+
+            if( time < min) min = time;
+            if( time > max) max = time;
+
+            ++invoked;
+         }
+
+         Statistics& operator += ( Statistics& lhs, const Statistics& rhs)
+         {
+            if( rhs.min < lhs.min) lhs.min = rhs.min;
+            if( rhs.max > lhs.max) lhs.max = rhs.max;
+            lhs.total += rhs.total;
+            lhs.invoked += rhs.invoked;
+
+            return lhs;
+         }
+
+         Stats& operator += ( Stats& lhs, const Stats& rhs)
+         {
+            lhs.resource += rhs.resource;
+            lhs.roundtrip += rhs.roundtrip;
+
+            return lhs;
+         }
+
+
+         namespace resource
+         {
+            void Proxy::Instance::state( State state)
+            {
+               if( m_state != State::shutdown)
+               {
+                  m_state = state;
+               }
+            }
+
+            Proxy::Instance::State Proxy::Instance::state() const
+            {
+               return m_state;
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Proxy& value)
+            {
+               return out << "{ id: " << value.id
+                     << ", concurency: " << value.concurency
+                     << ", key: " << value.key
+                     << ", openinfo: \"" << value.openinfo
+                     << "\", closeinfo: \"" << value.closeinfo
+                     << "\", instances: " << common::range::make( value.instances)
+                     << '}';
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value)
+            {
+               return out << "{ id: " << value.id
+                     << ", process: " << value.process
+                     << ", state: " << value.state()
+                     << '}';
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value)
+            {
+               auto state_switch = [&]()
+                  {
+                     switch( value)
+                     {
+                        case Proxy::Instance::State::busy: return "busy";
+                        case Proxy::Instance::State::absent: return "absent";
+                        case Proxy::Instance::State::idle: return "idle";
+                        case Proxy::Instance::State::shutdown: return "shutdown";
+                        case Proxy::Instance::State::started: return "started";
+                        case Proxy::Instance::State::startupError: return "startupError";
+                     }
+                     return "<unknown>";
+                  };
+
+               return out << state_switch();
+            }
+         } // resource
+
          void configure( State& state, const common::message::transaction::manager::Configuration& configuration)
          {
 
@@ -97,8 +196,8 @@ namespace casual
 
             bool Running::operator () ( const resource::Proxy::Instance& instance) const
             {
-               return instance.state == resource::Proxy::Instance::State::idle
-                     || instance.state == resource::Proxy::Instance::State::busy;
+               return instance.state() == resource::Proxy::Instance::State::idle
+                     || instance.state() == resource::Proxy::Instance::State::busy;
             }
 
          } // filter
@@ -175,6 +274,19 @@ namespace casual
          result = convert( value);
       }
 
+
+      Transaction::Resource::Stage Transaction::stage() const
+      {
+         Resource::Stage result = Resource::Stage::cNotInvolved;
+
+         for( auto& resource : resources)
+         {
+            if( result > resource.stage)
+               result = resource.stage;
+         }
+         return result;
+      }
+
       Transaction::Resource::Result Transaction::results() const
       {
          auto result = Resource::Result::cXA_RDONLY;
@@ -187,6 +299,20 @@ namespace casual
             }
          }
          return result;
+      }
+
+
+      std::ostream& operator << ( std::ostream& out, const Transaction& value)
+      {
+         return out << "{trid: " << value.trid << ", resources: " << common::range::make( value.resources) << "}";
+      }
+
+      State::State( const std::string& database) : log( database) {}
+
+
+      bool State::pending() const
+      {
+         return ! persistentReplies.empty();
       }
 
       std::size_t State::instances() const
@@ -214,28 +340,65 @@ namespace casual
          return result;
       }
 
-      void State::removeProcess( common::platform::pid_type pid)
+      void State::process( common::process::lifetime::Exit death)
       {
 
          for( auto& resource : resources)
          {
             auto found = common::range::find_if(
                resource.instances,
-               state::filter::Instance{ pid});
+               state::filter::Instance{ death.pid});
 
             if( found)
             {
+               if( found->state() != state::resource::Proxy::Instance::State::shutdown)
+               {
+                  log::error << "resource proxy instance died - " << *found << std::endl;
+               }
+
+               resource.statistics += found->statistics;
                resource.instances.erase( found.first);
-               log::internal::transaction << "remove instance: " << pid << std::endl;
+
+               log::internal::transaction << "remove dead process: " << death << std::endl;
                return;
             }
          }
 
-         log::warning << "failed to find and remove instance - pid: " << pid << std::endl;
+         log::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
+      state::resource::Proxy& State::get_resource( common::platform::resource::id_type rm)
+      {
+         auto found = common::range::find( resources, rm);
 
+         if( ! found)
+         {
+            throw common::exception::invalid::Argument{ "failed to find resource"};
+         }
+         return *found;
+      }
 
+      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid)
+      {
+         auto& resource = get_resource( rm);
+
+         auto found = common::range::find_if( resource.instances, [=]( const state::resource::Proxy::Instance& instance){
+               return instance.process.pid == pid;
+            });
+
+         if( ! found)
+         {
+            throw common::exception::invalid::Argument{ "failed to find instance"};
+         }
+         return *found;
+      }
+
+      State::instance_range State::idle_instance( common::platform::resource::id_type rm)
+      {
+         auto& resource = get_resource( rm);
+
+         return common::range::find_if( resource.instances, state::filter::Idle{});
+      }
    } // transaction
 
 } // casual

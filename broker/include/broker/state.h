@@ -12,6 +12,8 @@
 #include "common/queue.h"
 
 #include "common/message/server.h"
+#include "common/message/service.h"
+#include "common/message/pending.h"
 
 #include "common/exception.h"
 
@@ -54,9 +56,9 @@ namespace casual
 
          namespace exception
          {
-            struct Missing : public common::exception::Base
+            struct Missing : public common::exception::base
             {
-               using common::exception::Base::Base;
+               using common::exception::base::base;
             };
 
          }
@@ -130,10 +132,19 @@ namespace casual
             } environment;
 
 
-            std::size_t configuredInstances = 0;
+            std::size_t configured_instances = 0;
+
             bool restart = false;
 
+            //!
+            //! Number of instances that has died in some way.
+            //!
+            std::size_t deaths = 0;
+
+
             bool remove( pid_type instance);
+
+            friend std::ostream& operator << ( std::ostream& out, const Executable& value);
 
          };
 
@@ -164,7 +175,7 @@ namespace casual
 
                common::process::Handle process;
                std::size_t invoked = 0;
-               common::platform::time_point last;
+               common::platform::time_point last = common::platform::time_point::min();
                Server::id_type server = 0;
                std::vector< std::reference_wrapper< Service>> services;
 
@@ -184,6 +195,16 @@ namespace casual
             //! if not empty, only these services are allowed to be publish
             //!
             std::vector< std::string> restrictions;
+
+            //!
+            //! If an instance terminates, it's invoke-count is added to this variable. So
+            //! we can give an accurate invoke-figure to users.
+            //! Hence, the total number of invocation for a server is the sum of all instances
+            //! invoke-count + this variable
+            //!
+            std::size_t invoked = 0;
+
+            friend std::ostream& operator << ( std::ostream& out, const Server& value);
          };
 
 
@@ -200,6 +221,7 @@ namespace casual
             void remove( const Server::Instance& instance);
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
+            friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.information.name < rhs.information.name;}
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
          };
@@ -211,6 +233,13 @@ namespace casual
 
       struct State
       {
+         enum class Mode
+         {
+            boot,
+            running,
+            shutdown
+         };
+
          State() = default;
 
          State( State&&) = default;
@@ -223,7 +252,7 @@ namespace casual
          typedef std::unordered_map< state::Executable::id_type, state::Executable> executable_mapping_type;
          typedef std::unordered_map< state::Server::pid_type, state::Server::Instance> instance_mapping_type;
          typedef std::unordered_map< std::string, state::Service> service_mapping_type;
-         typedef std::deque< common::message::service::name::lookup::Request> pending_requests_type;
+         typedef std::deque< common::message::service::lookup::Request> pending_requests_type;
 
 
          server_mapping_type servers;
@@ -232,12 +261,22 @@ namespace casual
          executable_mapping_type executables;
          std::vector< state::Group> groups;
 
-         state::Group::id_type  casual_group_id = 0;
+         state::Group::id_type casual_group_id = 0;
 
 
-         pending_requests_type pending;
 
-         struct Standard
+         std::map< common::Uuid, common::process::Handle> singeltons;
+
+
+         struct pending_t
+         {
+            pending_requests_type requests;
+            std::vector< common::message::pending::Message> replies;
+            std::vector< common::message::lookup::process::Request> process_lookup;
+         } pending;
+
+
+         struct standard_t
          {
             state::Service service;
 
@@ -254,6 +293,19 @@ namespace casual
 
          common::platform::queue_id_type transaction_manager = 0;
 
+         common::process::Handle forward;
+
+         struct dead_t
+         {
+            struct process_t
+            {
+               std::vector< common::process::Handle> listeners;
+            } process;
+         } dead;
+
+         Mode mode = Mode::boot;
+
+
 
          state::Group& getGroup( state::Group::id_type id);
 
@@ -265,7 +317,8 @@ namespace casual
          const state::Server::Instance& getInstance( state::Server::pid_type pid) const;
 
 
-         void removeProcess( state::Server::pid_type pid);
+         void process( common::process::lifetime::Exit death);
+         void remove_process( state::Server::pid_type pid);
 
 
          void addInstances( state::Executable::id_type id, const std::vector< state::Server::pid_type>& pids);
@@ -278,6 +331,9 @@ namespace casual
          state::Server& getServer( state::Server::id_type id);
 
          state::Executable& getExecutable( state::Executable::id_type id);
+
+
+         void connect_broker( std::vector< common::message::Service> services);
 
          struct Batch
          {
@@ -292,14 +348,6 @@ namespace casual
          std::size_t size() const;
 
          std::vector< common::platform::pid_type> processes() const;
-
-         std::vector< common::platform::pid_type> instance( state::Server::id_type id, std::size_t instance);
-         std::vector< common::platform::pid_type> instance( state::Server& server, std::size_t instance);
-
-      private:
-         std::vector< common::platform::pid_type> boot( state::Server& server, std::size_t instances);
-         std::vector< common::platform::pid_type> shutdown( state::Server& server, std::size_t instances);
-
       };
 
 
@@ -322,6 +370,7 @@ namespace casual
          {
             using Reader = common::queue::blocking::remove::basic_reader< State>;
             using Writer = common::queue::blocking::remove::basic_writer< State>;
+            using Send = common::queue::blocking::remove::basic_send< State>;
 
          } // blocking
 

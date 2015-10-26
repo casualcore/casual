@@ -31,9 +31,9 @@ namespace casual
             container_end( name);
          }
 
-         void Base::serialtypeStart( const char* name)
+         bool Base::serialtypeStart( const char* name)
          {
-            serialtype_start( name);
+            return serialtype_start( name);
          }
 
          void Base::serialtypeEnd( const char* name)

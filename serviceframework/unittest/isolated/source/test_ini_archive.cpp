@@ -11,6 +11,7 @@
 #include "sf/archive/ini.h"
 
 #include <sstream>
+#include <locale>
 
 #include "../include/test_vo.h"
 
@@ -183,6 +184,22 @@ namespace casual
          EXPECT_TRUE( source.others.at( 1).other_inner.huge == target.others.at( 1).other_inner.huge);
       }
 
+
+      TEST( casual_sf_ini_archive, test_control_characters)
+      {
+         std::vector< char> result;
+         for( short idx = 0; idx < 255; ++idx)
+         {
+            if( std::iscntrl( static_cast<char>( idx), std::locale{}))
+            {
+               result.push_back( idx);
+            }
+         }
+
+         auto expected = std::vector< char>{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,127};
+
+         EXPECT_TRUE( result == expected);
+      }
    }
 
 /*

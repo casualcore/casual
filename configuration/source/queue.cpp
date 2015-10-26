@@ -44,7 +44,7 @@ namespace casual
 
          bool operator == ( const Group& lhs, const Group& rhs)
          {
-            return lhs.name == rhs.name || lhs.queuebase == rhs.queuebase;
+            return lhs.name == rhs.name || ( lhs.queuebase != ":memory:" && lhs.queuebase == rhs.queuebase);
          }
 
          namespace local

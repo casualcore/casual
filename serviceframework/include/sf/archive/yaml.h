@@ -119,6 +119,10 @@ namespace casual
                      binary.swap( container);
                   }
 
+                  //
+                  // TODO: Decode strings (from UTF-8 ?) to local code-page ?
+                  //
+
 
                   template< typename T>
                   void readValue( const YAML::Node& node, T& value)
@@ -203,6 +207,10 @@ namespace casual
 
                private:
 
+                  //
+                  // TODO: Make sure strings are UTF-8-encoded ?
+                  //
+
                   template< typename T>
                   void writeValue( const T& value)
                   {
@@ -211,7 +219,7 @@ namespace casual
 
                   void writeValue( const platform::binary_type& value)
                   {
-                     // TODO: can we cast an be conformant?
+                     // TODO: Is this conformant ?
                      const unsigned char* data = reinterpret_cast< const unsigned char*>( value.data());
                      YAML::Binary binary( data, value.size());
                      m_output << binary;

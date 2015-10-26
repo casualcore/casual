@@ -1,0 +1,32 @@
+
+
+
+resources:
+
+    # key has to be unique between resources.
+    # this is the name that shall be used to refer to a specific resource (for example with buildserver)
+  - key: db2   
+    # User links this her self. Can be any name. Provide full path, unless it's in the default path
+    server: rm-proxy-db2-static
+    # Name of the xa switch struct 
+    xa_struct_name: db2xa_switch_static_std
+    
+    # needed libraries, user can link this her self
+    libraries:
+      - db2
+      
+    paths:
+      library: [ "${DB2DIR}/lib64"]
+      
+   
+  - key: rm-mockup   
+    server: rm-proxy-casual-mockup
+    xa_struct_name: casual_mockup_xa_switch_static
+    libraries:
+      - casual-mockup-rm
+
+  - key: casual-queue-rm
+    server: casual-queue-resource-proxy
+    xa_struct_name: casual_queue_xa_switch_dynamic
+    libraries:
+      - casual-queue-rm

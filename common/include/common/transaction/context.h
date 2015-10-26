@@ -17,7 +17,7 @@
 
 #include "common/ipc.h"
 #include "common/message/transaction.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 
 #include <stack>
@@ -52,7 +52,7 @@ namespace casual
             int setCommitReturn( COMMIT_RETURN value);
             COMMIT_RETURN get_commit_return();
             int setTransactionControl(TRANSACTION_CONTROL control);
-            void setTransactionTimeout(TRANSACTION_TIMEOUT timeout);
+            void setTransactionTimeout( TRANSACTION_TIMEOUT timeout);
             bool info( TXINFO* info);
             //! @}
 
@@ -86,7 +86,7 @@ namespace casual
             //!
             //! Start a new transaction
             //!
-            void start();
+            void start( const platform::time_point& start);
 
             //!
             //! trid server is invoked with
@@ -119,9 +119,15 @@ namespace casual
             void set( const std::vector< Resource>& resources);
 
 
+            //!
+            //! @return true if there are pending transactions that is owned by this
+            //! process
+            //!
+            bool pending() const;
+
          private:
 
-            typedef TRANSACTION_CONTROL control_type;
+            using control_type = TRANSACTION_CONTROL;
             enum class Control : control_type
             {
                unchained = TX_UNCHAINED,
@@ -130,6 +136,18 @@ namespace casual
             };
 
             Control m_control = Control::unchained;
+
+            using commit_return_type = COMMIT_RETURN;
+
+            // TODO: change name
+            enum class Commit_Return : commit_return_type
+            {
+               completed = TX_COMMIT_COMPLETED,
+               logged = TX_COMMIT_DECISION_LOGGED
+            };
+
+            Commit_Return m_commit_return = Commit_Return::completed;
+
 
 
             struct resources_type
@@ -142,16 +160,14 @@ namespace casual
 
             } m_resources;
 
+            std::vector< int> resources() const;
+
 
             std::vector< Transaction> m_transactions;
 
-            //!
-            //! Resources outside any global transaction
-            //! (this could only be dynamic rm:s)
-            //!
-            std::vector< int> m_outside;
-
             transaction::ID m_caller;
+
+            TRANSACTION_TIMEOUT m_timeout = 0;
 
             //!
             //! Attributes that is initialized from "manager"
@@ -160,7 +176,7 @@ namespace casual
             {
                static const Manager& instance();
 
-               ipc::send::Queue::id_type queue = 0;
+               ipc::send::Queue::id_type queue() const;
                std::vector< message::transaction::resource::Manager> resources;
             private:
                Manager();
@@ -181,6 +197,7 @@ namespace casual
 
             void resources_start( const Transaction& transaction, long flags);
             void resources_end( const Transaction& transaction, long flags);
+            int resource_commit( platform::resource::id_type rm, const Transaction& transaction, long flags);
 
             int pop_transaction();
 

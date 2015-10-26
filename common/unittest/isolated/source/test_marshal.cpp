@@ -8,10 +8,15 @@
 #include <gtest/gtest.h>
 
 #include "common/marshal/binary.h"
-#include "common/message/server.h"
+#include "common/marshal/network.h"
+
+#include "common/message/service.h"
+#include "common/message/queue.h"
 
 
 #include "common/transaction/id.h"
+
+#include "common/platform.h"
 
 namespace casual
 {
@@ -20,15 +25,39 @@ namespace casual
       namespace marshal
       {
 
-
-
-         TEST( casual_common_marshal, basic_io)
+         template <typename T>
+         struct casual_common_marshal : public ::testing::Test
          {
+            using input_type = typename T::input_type;
+            using output_type = typename T::output_type;
+         };
+
+         template< typename I, typename O>
+         struct IO
+         {
+            using input_type = I;
+            using output_type = O;
+         };
+
+
+         using marshal_types = ::testing::Types<
+               IO< binary::create::Input, binary::create::Output>,
+               IO< binary::network::create::Input, binary::network::create::Output>
+         >;
+
+         TYPED_TEST_CASE(casual_common_marshal, marshal_types);
+
+
+         TYPED_TEST( casual_common_marshal, basic_io)
+         {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
+
             long someLong = 3;
             std::string someString = "banan";
 
             platform::binary_type buffer;
-            output::Binary output{ buffer};
+            auto output = output_type{}( buffer);
 
             output << someLong;
 
@@ -36,7 +65,7 @@ namespace casual
 
             output << someString;
 
-            input::Binary input( buffer);
+            auto input = input_type{}( buffer);
 
             long resultLong;
             input >> resultLong;
@@ -47,8 +76,13 @@ namespace casual
             EXPECT_TRUE( resultString == someString) << resultString;
          }
 
-         TEST( casual_common_marshal, binary)
+
+
+         TYPED_TEST( casual_common_marshal, binary)
          {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
+
             std::vector< char> binaryInput;
 
             for( int index = 0; index < 3000; ++index)
@@ -58,12 +92,12 @@ namespace casual
             }
 
             platform::binary_type buffer;
-            output::Binary output( buffer);
+            auto output = output_type{}( buffer);
             output << binaryInput;
 
             EXPECT_TRUE( buffer.size() == binaryInput.size() + sizeof( binaryInput.size())) <<  buffer.size();
 
-            input::Binary input( buffer);
+            auto input = input_type{}( buffer);
 
             std::vector< char> binaryOutput;
             input >> binaryOutput;
@@ -71,8 +105,10 @@ namespace casual
             EXPECT_TRUE( binaryInput == binaryOutput);
          }
 
-         TEST( casual_common_marshal, io)
+         TYPED_TEST( casual_common_marshal, io)
          {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
 
             message::service::Advertise serverConnect;
 
@@ -91,11 +127,11 @@ namespace casual
             serverConnect.services.push_back( service);
 
 
-            ipc::message::Complete complete = marshal::complete( serverConnect);
+            ipc::message::Complete complete = marshal::complete( serverConnect, output_type{});
 
             message::service::Advertise result;
 
-            complete >> result;
+            marshal::complete( complete, result, input_type{});
 
             EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
@@ -104,8 +140,10 @@ namespace casual
          }
 
 
-         TEST( casual_common_marshal, io_big_size)
+         TYPED_TEST( casual_common_marshal, io_big_size)
          {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
 
             message::service::Advertise serverConnect;
 
@@ -117,11 +155,11 @@ namespace casual
             service.name = "service1";
             serverConnect.services.resize( 10000, service);
 
-            ipc::message::Complete complete = marshal::complete( serverConnect);
+            ipc::message::Complete complete = marshal::complete( serverConnect, output_type{});
 
             message::service::Advertise result;
 
-            complete >> result;
+            marshal::complete( complete, result, input_type{});
 
             EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
             EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
@@ -129,17 +167,19 @@ namespace casual
 
          }
 
-         TEST( casual_common_marshal, transaction_id_null)
+         TYPED_TEST( casual_common_marshal, transaction_id_null)
          {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
 
             transaction::ID xid_source;
 
             platform::binary_type buffer;
-            output::Binary output( buffer);
+            auto output = output_type{}( buffer);
 
             output << xid_source;
 
-            input::Binary input( buffer);
+            auto input = input_type{}( buffer);
 
             transaction::ID xid_target;
 
@@ -148,17 +188,19 @@ namespace casual
             EXPECT_TRUE( xid_target.null());
          }
 
-         TEST( casual_common_marshal, transaction_id)
+         TYPED_TEST( casual_common_marshal, transaction_id)
          {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
 
             transaction::ID xid_source = transaction::ID::create();
 
             platform::binary_type buffer;
-            output::Binary output( buffer);
+            auto output = output_type{}( buffer);
 
             output & xid_source;
 
-            input::Binary input( buffer);
+            auto input = input_type{}( buffer);
 
             transaction::ID xid_target;
 
@@ -170,8 +212,10 @@ namespace casual
          }
 
 
-         TEST( casual_common_marshal, message_call)
+         TYPED_TEST( casual_common_marshal, message_call)
          {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
 
             platform::binary_type buffer;
 
@@ -187,9 +231,9 @@ namespace casual
                EXPECT_TRUE( payload.memory.size() == 128) << " payload.memory.size(): " <<  payload.memory.size();
                EXPECT_TRUE( payload.memory.data() == info) << "payload.memory.data(): " <<  payload.memory.data();
 
-               message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100}};
+               message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
 
-               output::Binary output( buffer);
+               auto output = output_type{}( buffer);
                output << message;
 
             }
@@ -199,7 +243,7 @@ namespace casual
 
                message::service::call::callee::Request message;
 
-               input::Binary input( buffer);
+               auto input = input_type{}( buffer);
                input >> message;
 
                EXPECT_TRUE( message.buffer.type == type);
@@ -207,6 +251,33 @@ namespace casual
                EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
 
             }
+
+         }
+
+         TYPED_TEST( casual_common_marshal, enqueue_request)
+         {
+            using input_type = typename TestFixture::input_type;
+            using output_type = typename TestFixture::output_type;
+
+            platform::binary_type buffer;
+
+            common::message::queue::enqueue::Request source;
+
+            {
+               source.process = process::handle();
+               source.message.payload = { 0, 2, 3, 4, 2, 45, 45, 2, 3};
+            }
+
+            auto output = output_type{}( buffer);
+            output & source;
+
+            auto input = input_type{}( buffer);
+            common::message::queue::enqueue::Request target;
+
+            input & target;
+
+            EXPECT_TRUE( source.process == target.process);
+            EXPECT_TRUE( source.message.payload == target.message.payload);
 
          }
       }

@@ -12,7 +12,7 @@
 
 #include "common/signal.h"
 #include "common/exception.h"
-#include "common/message/server.h"
+#include "common/message/service.h"
 
 #include "common/marshal/binary.h"
 
@@ -31,9 +31,9 @@ namespace casual
          {
             namespace
             {
-               common::message::service::name::lookup::Request message()
+               common::message::service::lookup::Request message()
                {
-                  common::message::service::name::lookup::Request message;
+                  common::message::service::lookup::Request message;
                   message.process = process::handle();
                   message.requested = "service1";
 

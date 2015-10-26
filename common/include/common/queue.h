@@ -14,8 +14,6 @@
 #include "common/process.h"
 
 
-#include <list>
-
 namespace casual
 {
    namespace common
@@ -31,34 +29,17 @@ namespace casual
          {
             struct Ignore
             {
-               inline void apply() {}
+               void apply();
             };
 
             struct Timeout
             {
-               inline void apply()
-               {
-                  try
-                  {
-
-                  }
-                  catch( const exception::signal::Timeout&)
-                  {
-                     throw;
-                  }
-                  catch( ...)
-                  {
-
-                  }
-               }
+               void apply();
             };
 
             struct NoAction
             {
-               inline void apply()
-               {
-                  throw;
-               }
+               void apply();
             };
 
             //!
@@ -83,17 +64,7 @@ namespace casual
                      auto terminated = process::lifetime::ended();
                      for( auto& death : terminated)
                      {
-                        switch( death.reason)
-                        {
-                           case process::lifetime::Exit::Reason::core:
-                              log::error << death << std::endl;
-                              break;
-                           default:
-                              log::internal::debug << death << std::endl;
-                              break;
-                        }
-
-                        m_state.removeProcess( death.pid);
+                        m_state.process( death);
                      }
                   }
                }
@@ -453,6 +424,17 @@ namespace casual
                using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
             }
 
+            template< typename M>
+            auto call( platform::queue_id_type destination, M&& message) -> decltype( message::reverse::type( std::forward< M>( message)))
+            {
+               auto correlation = Send{}( destination, message);
+
+               auto reply = message::reverse::type( std::forward< M>( message));
+               blocking::Reader receive{ ipc::receive::queue()};
+               receive( reply, correlation);
+
+               return reply;
+            }
 
 
          } // blocking
@@ -472,6 +454,7 @@ namespace casual
 
             typedef basic_reader< policy::NoAction> Reader;
 
+            using Send = basic_send< policy::NoAction>;
 
             inline Reader reader( ipc::receive::Queue& ipc)
             {
@@ -490,6 +473,21 @@ namespace casual
                using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
             }
 
+            namespace force
+            {
+               template< typename IPC, typename S, typename M>
+               void send( IPC& ipc, S&& send, M&& message)
+               {
+                  while( ! send( ipc.id(), message))
+                  {
+                     //
+                     // Queue is full, flush it and try again...
+                     //
+                     ipc.flush();
+                  }
+               }
+
+            } // force
 
          } // non_blocking
 

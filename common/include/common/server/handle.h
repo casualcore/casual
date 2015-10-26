@@ -22,6 +22,10 @@
 #include "common/buffer/pool.h"
 #include "common/buffer/transport.h"
 
+#include "common/message/service.h"
+#include "common/message/server.h"
+#include "common/message/handle.h"
+
 #include "common/flag.h"
 
 namespace casual
@@ -31,9 +35,11 @@ namespace casual
       namespace server
       {
 
-         message::server::connect::Reply connect( std::vector< message::Service> services);
+         message::server::connect::Reply connect( const Uuid& identification);
 
-         message::server::connect::Reply connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services);
+
+         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
 
          template< typename P>
@@ -42,28 +48,39 @@ namespace casual
             using policy_type = P;
 
             template< typename... Args>
-            message::server::connect::Reply operator () ( std::vector< message::Service> services, Args&& ...args)
+            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, const Uuid& identification, std::vector< message::Service> services, Args&& ...args)
             {
                using queue_writer = common::queue::blocking::basic_writer< policy_type>;
                using queue_reader = common::queue::blocking::basic_reader< policy_type>;
 
                message::server::connect::Request message;
 
-               message.process = common::process::handle();
+               message.process.pid = common::process::handle().pid;
+               message.process.queue = ipc.id();
                message.path = common::process::path();
                message.services = std::move( services);
+               message.identification = identification;
 
                queue_writer broker( ipc::broker::id(), args...);
-               broker( message);
+               auto correlation = broker( message);
+
+
+
+               queue_reader reader( ipc, args...);
 
                //
-               // Wait for configuration reply
+               // Wait for the connect reply
                //
-               queue_reader reader( ipc::receive::queue(), args...);
-               message::server::connect::Reply reply;
-               reader( reply);
+               return common::message::handle::connect::reply(
+                     reader,
+                     correlation,
+                     message::server::connect::Reply{});
+            }
 
-               return reply;
+            template< typename... Args>
+            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, std::vector< message::Service> services, Args&& ...args)
+            {
+               return operator()( ipc, uuid::empty(), std::move( services), std::forward< Args>( args)...);
             }
          };
 
@@ -102,8 +119,8 @@ namespace casual
 
                typedef message::service::call::callee::Request message_type;
 
-               basic_call( basic_call&&) = default;
-               basic_call& operator = ( basic_call&&) = default;
+               basic_call( basic_call&&) noexcept = default;
+               basic_call& operator = ( basic_call&&) noexcept = default;
 
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
@@ -117,7 +134,7 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( server::Arguments arguments, Args&&... args) : m_policy( std::forward< Args>( args)...)
+               basic_call( ipc::receive::Queue& ipc, server::Arguments arguments, Args&&... args) : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
@@ -128,17 +145,20 @@ namespace casual
 
                   std::vector< message::Service> services;
 
-                  for( auto&& service : arguments.services)
+                  for( auto& service : arguments.services)
                   {
-                     services.emplace_back( service.name, service.type, service::transaction::mode( service.transaction));
-                     state.services.emplace( service.name, std::move( service));
+                     auto name = service.origin;
+                     services.emplace_back( name, service.type, service::transaction::mode( service.transaction));
+
+                     state.physical_services.push_back( std::move( service));
+                     state.services.emplace( name, state.physical_services.back());
                   }
 
 
                   //
                   // Connect to casual
                   //
-                  m_policy.connect( std::move( services), arguments.resources);
+                  m_policy.connect( m_ipc, std::move( services), arguments.resources);
 
                   //
                   // Call tpsrvinit
@@ -147,6 +167,13 @@ namespace casual
                   {
                      throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
+
+               }
+
+               template< typename... Args>
+               basic_call( server::Arguments arguments, Args&&... args)
+                  : basic_call( ipc::receive::queue(), std::move( arguments), std::forward< Args>( args)...)
+               {
 
                }
 
@@ -180,7 +207,7 @@ namespace casual
                   //
                   // Set the call-chain-id for this "chain"
                   //
-                  call::Context::instance().execution( message.execution);
+                  //call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
 
@@ -234,9 +261,15 @@ namespace casual
                         //
                         // Send reply to caller.
                         //
-                        m_policy.reply( message.reply.queue, reply);
+                        m_policy.reply( message.process.queue, reply);
                      } } };
 
+
+                  //
+                  // If something goes wrong, make sure to rollback before reply with error.
+                  // this will execute before execute_reply
+                  //
+                  scope::Execute execute_error_reply{ [&](){ m_policy.transaction( reply, TPESVCERR); } };
 
 
                   auto& state = server::Context::instance().state();
@@ -244,23 +277,26 @@ namespace casual
                   //
                   // Set start time.
                   //
-                  state.monitor.start = platform::clock_type::now();
+                  state.traffic.start = platform::clock_type::now();
 
 
                   //
                   // set the call-correlation
                   //
 
-                  auto found = state.services.find( message.service.name);
+                  auto found = range::find( state.services, message.service.name);
 
-                  if( found == state.services.end())
+                  if( ! found)
                   {
-                     throw common::exception::xatmi::SystemError( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
+                     throw common::exception::xatmi::System( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
                   }
 
                   auto& service = found->second;
 
-                  call::Context::instance().service( service.name);
+                  execution::service( message.service.name);
+                  execution::parent::service( message.parent);
+
+
 
 
                   //
@@ -269,7 +305,7 @@ namespace casual
                   // - notify TM about potentially resources involved.
                   // - set 'global' deadline/timeout
                   //
-                  m_policy.transaction( message, service, state.monitor.start);
+                  m_policy.transaction( message, service, state.traffic.start);
 
 
                   //
@@ -291,13 +327,14 @@ namespace casual
                   //
                   // Prepare for tpreturn.
                   //
-                  // ATTENTION: no types with destructor should be instantiated
-                  // within the if( ! jumped) clause
-                  //
-                  auto jumped = setjmp( state.long_jump_buffer) != 0;
+                  auto from = setjmp( state.long_jump_buffer);
 
-                  if( ! jumped)
+                  if( from == State::jump_t::From::c_no_jump)
                   {
+                     //
+                     // ATTENTION: no types with destructor should be instantiated
+                     // within this scope
+                     //
 
                      //
                      // No longjmp has been called, this is the first time in this "service call"
@@ -306,7 +343,7 @@ namespace casual
 
                      try
                      {
-                        service.call( &information);
+                        service.get().call( &information);
                      }
                      catch( ...)
                      {
@@ -317,14 +354,45 @@ namespace casual
                      //
                      // User service returned, not by tpreturn.
                      //
-                     m_policy.transaction( reply, TPESVCERR);
-
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
+                  }
+                  else if( from == State::jump_t::From::c_forward)
+                  {
+                     //
+                     // user has called casual_service_forward
+                     //
+
+                     if( call::Context::instance().pending())
+                     {
+                        //
+                        // We can't do a forward, user has pending stuff in flight
+                        //
+                        throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending actions");
+                     }
+
+                     //
+                     // Check if service is present at this instance
+                     //
+                     if( range::find( state.services, state.jump.forward.service))
+                     {
+                        throw common::exception::xatmi::service::Error( "not implemented to forward to a service in the same instance");
+                     }
+
+                     m_policy.forward( message, state.jump);
+
+                     //
+                     // Forward went ok, make sure we don't do error stuff
+                     //
+                     execute_reply.release();
+                     execute_error_reply.release();
+
+                     return;
                   }
 
                   //
                   // User has called tpreturn
                   //
+
 
 
                   // TODO: What are the semantics of 'order' of failure?
@@ -336,16 +404,15 @@ namespace casual
                   // Apply post service buffer manipulation
                   //
                   buffer::transport::Context::instance().dispatch(
-                        state.jump.state.data,
-                        state.jump.state.len,
+                        state.jump.buffer.data,
+                        state.jump.buffer.len,
                         message.service.name,
                         buffer::transport::Lifecycle::post_service);
-
 
                   //
                   // Modify reply
                   //
-                  transform::reply( reply, state.jump.state);
+                  transform::reply( reply, state.jump);
 
 
 
@@ -355,6 +422,11 @@ namespace casual
                   //
                   scope::Execute execute_transaction{ [&](){ m_policy.transaction( reply, state.jump.state.value); } };
 
+                  //
+                  // Nothing did go wrong
+                  //
+                  execute_error_reply.release();
+
 
                   //
                   // Take end time
@@ -362,18 +434,20 @@ namespace casual
                   scope::Execute execute_monitor{ [&](){
                      if( ! message.service.traffic_monitors.empty())
                      {
-                        state.monitor.end = platform::clock_type::now();
-                        state.monitor.callId = message.execution;
-                        state.monitor.service = message.service.name;
-                        state.monitor.parentService = message.caller;
-                        state.monitor.pid = process::handle().pid;
+                        state.traffic.end = platform::clock_type::now();
+                        state.traffic.execution = message.execution;
+                        state.traffic.service = message.service.name;
+                        state.traffic.parent = message.parent;
+                        state.traffic.process = process::handle();
 
                         for( auto& queue : message.service.traffic_monitors)
                         {
-                           m_policy.statistics( queue, state.monitor);
+                           m_policy.statistics( queue, state.traffic);
                         }
                      }
                   }};
+
+
 
                   execute_ack();
                   execute_transaction();
@@ -401,16 +475,16 @@ namespace casual
                      return result;
                   }
 
-                  static void reply( message::service::call::Reply& reply, const server::State::jump_t::state_t& state)
+                  static void reply( message::service::call::Reply& reply, const server::State::jump_t& jump)
                   {
-                     reply.code = state.code;
+                     reply.code = jump.state.code;
                      reply.error = 0;
 
-                     if( state.data != nullptr)
+                     if( jump.buffer.data != nullptr)
                      {
                         try
                         {
-                           reply.buffer = buffer::pool::Holder::instance().release( state.data, state.len);
+                           reply.buffer = buffer::pool::Holder::instance().release( jump.buffer.data, jump.buffer.len);
                         }
                         catch( ...)
                         {
@@ -439,13 +513,18 @@ namespace casual
                         result.cd = message.descriptor;
                         result.flags = message.flags;
 
-                        result.data = buffer::pool::Holder::instance().insert( std::move( message.buffer));
+                        //
+                        // This is the only place where we use adopt
+                        //
+                        result.data = buffer::pool::Holder::instance().adopt( std::move( message.buffer));
 
                         return result;
                      }
                   };
 
                };
+
+               ipc::receive::Queue& m_ipc;
                policy_type m_policy;
                move::Moved m_moved;
             };
@@ -467,16 +546,18 @@ namespace casual
                   };
 
 
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message);
 
                   void ack( const message::service::call::callee::Request& message);
 
-                  void statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message);
+                  void statistics( platform::queue_id_type id, message::traffic::Event& event);
 
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
+
+                  void forward( const message::service::call::callee::Request& message, const State::jump_t& jump);
 
                private:
                   typedef queue::blocking::Writer reply_writer;
@@ -497,14 +578,15 @@ namespace casual
                   using queue_reader = common::queue::blocking::basic_reader< policy_type>;
 
 
-                  Admin( state_type& state) : m_state( state) {}
+                  Admin( state_type& state, const Uuid& identification) : m_state( state), m_identification{ identification} {}
+                  Admin( state_type& state) : Admin( state, uuid::empty()) {}
 
 
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+                  void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                   {
                      Connect< policy_type> connect;
 
-                     connect( std::move( services), m_state);
+                     connect( ipc, m_identification, std::move( services), m_state);
                   }
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message)
@@ -524,7 +606,7 @@ namespace casual
                   }
 
 
-                  void statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
+                  void statistics( platform::queue_id_type id, message::traffic::Event&)
                   {
                      // no-op
                   }
@@ -538,8 +620,14 @@ namespace casual
                      // no-op
                   }
 
+                  void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+                  {
+                     throw common::exception::xatmi::System{ "can't forward within an administration server"};
+                  }
+
 
                   state_type& m_state;
+                  Uuid m_identification;
                };
 
 

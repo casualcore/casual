@@ -67,6 +67,8 @@ namespace casual
 
                   void clear()
                   {
+                     signal_count = 0;
+
                      alarm_count = 0;
                      child_terminate_count = 0;
                      terminate_count = 0;
@@ -226,6 +228,11 @@ namespace casual
 
                   std::chrono::microseconds convert( const itimerval& value)
                   {
+                     if( value.it_value.tv_sec == 0 && value.it_value.tv_usec == 0)
+                     {
+                        return std::chrono::microseconds::min();
+                     }
+
                      return std::chrono::seconds( value.it_value.tv_sec) + std::chrono::microseconds( value.it_value.tv_usec);
                   }
 
@@ -251,7 +258,7 @@ namespace casual
 
                      log::internal::debug << "timer set: "
                            << value.it_value.tv_sec << "." << std::setw( 6) << std::setfill( '0') << value.it_value.tv_usec << "s - was: "
-                           << old.it_value.tv_sec << "." <<  std::setw( 6) << std::setfill( '0') << old.it_value.tv_usec << "\n";
+                           << old.it_value.tv_sec << "." <<  std::setw( 6) << std::setfill( '0') << old.it_value.tv_usec << "s\n";
 
                      return convert( old);
                   }
@@ -264,6 +271,14 @@ namespace casual
             {
                if( offset <= std::chrono::microseconds::zero())
                {
+                  if( offset == std::chrono::microseconds::min())
+                  {
+                     //
+                     // Special case == 'unset'
+                     //
+                     return unset();
+                  }
+
                   //
                   // We send the signal directly
                   //
@@ -294,7 +309,6 @@ namespace casual
                memset( &value, 0, sizeof( itimerval));
 
                return local::set( value);
-
             }
 
 
@@ -303,7 +317,7 @@ namespace casual
             {
                auto old = timer::set( timeout);
 
-               if( old != std::chrono::microseconds::zero())
+               if( old != std::chrono::microseconds::min())
                {
                   m_old = now + old;
                   log::internal::debug << "old timepoint: " << chronology::local( m_old) << std::endl;
@@ -321,15 +335,53 @@ namespace casual
 
             Scoped::~Scoped()
             {
-               if( m_old == platform::time_point::min())
+               if( ! m_moved)
                {
-                  timer::unset();
+                  if( m_old == platform::time_point::min())
+                  {
+                     timer::unset();
+                  }
+                  else
+                  {
+                     timer::set( m_old - platform::clock_type::now());
+                  }
+               }
+            }
+
+
+            Deadline::Deadline( const platform::time_point& deadline, const platform::time_point& now)
+            {
+               if( deadline != platform::time_point::max())
+               {
+                  timer::set( deadline - now);
                }
                else
                {
-                  timer::set( m_old - platform::clock_type::now());
+                  timer::unset();
                }
             }
+
+            Deadline::Deadline( const platform::time_point& deadline)
+             : Deadline( deadline, platform::clock_type::now()) {}
+
+
+            Deadline::Deadline( std::chrono::microseconds timeout, const platform::time_point& now)
+             : Deadline( now + timeout, now) {}
+
+            Deadline::Deadline( std::chrono::microseconds timeout)
+             : Deadline( timeout, platform::clock_type::now()) {}
+
+
+            Deadline::~Deadline()
+            {
+               if( ! m_moved)
+               {
+                  timer::unset();
+               }
+            }
+
+            Deadline::Deadline( Deadline&&) = default;
+            Deadline& Deadline::operator = ( Deadline&&) = default;
 
          } // timer
 
@@ -377,6 +429,13 @@ namespace casual
                sigset_t set;
                sigfillset(&set);
                sigset_t result;
+               pthread_sigmask( SIG_BLOCK, &set, &result);
+               return result;
+            }
+
+            set_type mask( set_type set)
+            {
+               set_type result;
                pthread_sigmask(SIG_SETMASK, &set, &result);
                return result;
             }
@@ -391,7 +450,7 @@ namespace casual
                }
                Block::~Block()
                {
-                  pthread_sigmask(SIG_SETMASK, &m_set, NULL);
+                  pthread_sigmask(SIG_SETMASK, &m_set, nullptr);
                }
 
             } // scope

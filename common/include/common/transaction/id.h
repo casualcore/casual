@@ -41,7 +41,10 @@ namespace casual
    {
       namespace transaction
       {
-         using xid_range_type = decltype( range::make( std::declval< const XID&>().data));
+         using xid_type = XID;
+
+         using xid_range_type = decltype( range::make( std::declval< const xid_type&>().data));
+
 
 
          class ID
@@ -68,7 +71,7 @@ namespace casual
             ID( process::Handle owner);
             //! @}
 
-            explicit ID( const XID& xid);
+            explicit ID( const xid_type& xid);
 
 
             //!
@@ -124,7 +127,7 @@ namespace casual
 
             friend bool operator < ( const ID& lhs, const ID& rhs);
             friend bool operator == ( const ID& lhs, const ID& rhs);
-            friend bool operator == ( const ID& lhs, const XID& rhs);
+            friend bool operator == ( const ID& lhs, const xid_type& rhs);
             inline friend bool operator != ( const ID& lhs, const ID& rhs)
             {
                return ! ( lhs == rhs);
@@ -143,7 +146,7 @@ namespace casual
             //! We need to have access to the xid to communicate via xa and such,
             //! no reason to keep it private and have getters..
             //!
-            XID xid;
+            xid_type xid;
 
 
             friend std::ostream& operator << ( std::ostream& out, const ID& id);
@@ -160,7 +163,7 @@ namespace casual
          //!
          //! @{
          xid_range_type global( const ID& id);
-         xid_range_type global( const XID& id);
+         xid_range_type global( const xid_type& id);
          //! @}
 
          //!
@@ -168,7 +171,7 @@ namespace casual
          //!
          //! @{
          xid_range_type branch( const ID& id);
-         xid_range_type branch( const XID& id);
+         xid_range_type branch( const xid_type& id);
          //! @}
 
          //!
@@ -176,7 +179,7 @@ namespace casual
          //!
          //! @{
          bool null( const ID& id);
-         bool null( const XID& id);
+         bool null( const xid_type& id);
          //! @}
 
 

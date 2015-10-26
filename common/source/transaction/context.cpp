@@ -94,15 +94,15 @@ namespace casual
 
             log::internal::transaction << "send client connect request" << std::endl;
             queue::blocking::Writer writer( ipc::broker::id());
-            writer( request);
+            auto correlation = writer( request);
 
 
             queue::blocking::Reader reader( ipc::receive::queue());
             message::transaction::client::connect::Reply reply;
-            reader( reply);
+            reader( reply, correlation);
 
 
-            queue = reply.transaction_manager;
+
             common::environment::domain::name( reply.domain);
             std::swap( resources, reply.resources);
 
@@ -115,6 +115,14 @@ namespace casual
          {
             static const Manager singleton = Manager();
             return singleton;
+         }
+
+         ipc::send::Queue::id_type Context::Manager::queue() const
+         {
+            //
+            // Will block until the TM is up.
+            //
+            return process::instance::transaction::manager::handle().queue;
          }
 
 
@@ -139,7 +147,7 @@ namespace casual
          {
             for( auto& transaction : m_transactions)
             {
-               if( transaction.state == Transaction::State::active && range::find( transaction.descriptors, descriptor))
+               if( transaction.state == Transaction::State::active && transaction.associated( descriptor))
                {
                   return true;
                }
@@ -212,60 +220,75 @@ namespace casual
 
          }
 
+
+         bool Context::pending() const
+         {
+            const auto process = process::handle();
+
+            return ! range::find_if( m_transactions, [&]( const Transaction& transaction){
+               return ! transaction.trid.null() && transaction.trid.owner() != process;
+            }).empty();
+         }
+
          namespace local
          {
-            namespace pop
+            namespace
             {
-               struct Guard
+               namespace pop
                {
-                  Guard( std::vector< Transaction>& transactions) : m_transactions( transactions) {}
-                  ~Guard() { m_transactions.erase( std::end( m_transactions));}
+                  struct Guard
+                  {
+                     Guard( std::vector< Transaction>& transactions) : m_transactions( transactions) {}
+                     ~Guard() { m_transactions.erase( std::end( m_transactions));}
 
-                  std::vector< Transaction>& m_transactions;
-               };
-            } // pop
+                     std::vector< Transaction>& m_transactions;
+                  };
+               } // pop
 
 
 
-            template< typename QW, typename QR>
-            Transaction startTransaction( QW& writer, QR& reader)
-            {
-
-               message::transaction::begin::Request request;
-               request.process = process::handle();
-               request.trid = transaction::ID::create();
-               writer( request);
-
-               message::transaction::begin::Reply reply;
-               reader( reply);
-
-               if( reply.state != XA_OK)
+               Transaction startTransaction( const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
                {
-                  // TODO: more explicit exception?
-                  throw exception::tx::Fail{ "failed to start transaction - " + std::string( error::xa::error( reply.state))};
+
+                  Transaction transaction{ transaction::ID::create( process::handle())};
+                  transaction.state = Transaction::State::active;
+                  transaction.timout.start = start;
+                  transaction.timout.timeout = std::chrono::seconds{ timeout};
+
+                  return transaction;
                }
 
-               Transaction transaction{ std::move( reply.trid)};
-               transaction.state = Transaction::State::active;
-
-               return transaction;
-            }
-
+            } // <unnamed>
          } // local
 
-         void Context::involved( const transaction::ID& id, std::vector< int> resources)
+         std::vector< int> Context::resources() const
+         {
+            std::vector< int> result;
+
+            for( auto& resource : m_resources.fixed)
+            {
+               result.push_back( resource.id);
+            }
+            return result;
+         }
+
+         void Context::involved( const transaction::ID& trid, std::vector< int> resources)
          {
             common::trace::Scope trace{ "transaction::Context::involved", common::log::internal::transaction};
 
-            common::log::internal::transaction << "resources involved: " << common::range::make( resources) << std::endl;
+            if( ! resources.empty())
+            {
+               queue::blocking::Writer writer{ manager().queue()};
 
-            queue::blocking::Writer writer{ manager().queue};
+               message::transaction::resource::Involved message;
+               message.process = process::handle();
+               message.trid = trid;
+               message.resources = std::move( resources);
 
-            message::transaction::resource::Involved message;
-            message.trid = id;
-            message.resources = std::move( resources);
+               common::log::internal::transaction << "involved message: " << message << '\n';
 
-            writer( message);
+               writer( message);
+            }
          }
 
 
@@ -283,14 +306,11 @@ namespace casual
             m_transactions.push_back( std::move( transaction));
          }
 
-         void Context::start()
+         void Context::start( const platform::time_point& start)
          {
             common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
 
-            queue::blocking::Writer writer( manager().queue);
-            queue::blocking::Reader reader( ipc::receive::queue());
-
-            auto transaction = local::startTransaction( writer, reader);
+            auto transaction = local::startTransaction( start, m_timeout);
 
             resources_start( transaction, TMNOFLAGS);
 
@@ -306,7 +326,7 @@ namespace casual
 
                if( ! found)
                {
-                  throw exception::xatmi::SystemError{ "failed to find transaction", __FILE__, __LINE__};
+                  throw exception::xatmi::System{ "failed to find transaction", __FILE__, __LINE__};
                }
 
                auto& transaction = *found;
@@ -324,6 +344,20 @@ namespace casual
                transaction.discard( reply.descriptor);
 
                log::internal::transaction << "updated state: " << transaction << std::endl;
+            }
+            else
+            {
+               //
+               // TODO: if call was made in transaction but the service has 'none', the
+               // trid is not replied, but the descriptor is still associated with the transaction.
+               // Don't know what is the best way to solve this, but for now we just go through all
+               // transaction and discard the descriptor, just in case.
+               // TODO: Look this over when we redesign 'call/transaction-context'
+               //
+               for( auto& transaction : m_transactions)
+               {
+                  transaction.discard( reply.descriptor);
+               }
             }
          }
 
@@ -343,7 +377,7 @@ namespace casual
 
             auto pending_check = [&]( Transaction& transaction)
             {
-               if( ! transaction.descriptors.empty())
+               if( transaction.associated())
                {
                   if( transaction.trid)
                   {
@@ -357,7 +391,7 @@ namespace casual
                   //
                   // Discard pending
                   //
-                  for( auto& descriptor : transaction.descriptors)
+                  for( auto& descriptor : transaction.descriptors())
                   {
                      call::Context::instance().cancel( descriptor);
                   }
@@ -394,9 +428,11 @@ namespace casual
                }
             };
 
-            if( return_state != TPSUCCESS)
+            switch( return_state)
             {
-               message.error = TPESVCFAIL;
+               case TPESVCERR: break;
+               case TPSUCCESS: break;
+               default: message.error = TPESVCFAIL; break;
             }
 
 
@@ -455,15 +491,27 @@ namespace casual
                      message.transaction.state = static_cast< decltype( message.transaction.state)>( Transaction::State::rollback);
                   }
                   
+
+                  //
+                  // Notify TM about resources involved in this transaction
+                  //
+                  {
+                     auto& transaction = found.front();
+                     auto involved = resources();
+                     range::append( transaction.resources, involved);
+
+                     if( transaction && ! involved.empty())
+                     {
+                        Context::involved( transaction.trid, std::move( involved));
+                     }
+                  }
+
                   //
                   // end resource
                   //
                   resources_end( *found, TMSUCCESS);
-
                }
                message.transaction.trid = std::move( caller);
-
-
             }
          }
 
@@ -486,30 +534,23 @@ namespace casual
             //
             // XA-spec - RM can't reg when it's already regged... Why?
             //
+            // We'll interpret this as the transaction has been suspended, and
+            // then resumed.
+            //
             if( common::range::find( transaction.resources, rmid))
-            {
-               return TMER_PROTO;
-            }
-
-            if( transaction.trid)
-            {
-               //
-               // Notify TM that this RM is involved
-               //
-               involved( transaction.trid, { rmid});
-            }
-
-            transaction.resources.push_back( rmid);
-
-            *xid = transaction.trid.xid;
-
-            if( transaction.suspended)
             {
                return TM_RESUME;
             }
 
-            return TM_OK;
+            //
+            // Let the resource know the xid (if any)
+            //
+            *xid = transaction.trid.xid;
 
+
+            transaction.resources.push_back( rmid);
+
+            return TM_OK;
          }
 
          int Context::resourceUnregistration( int rmid, long flags)
@@ -546,7 +587,7 @@ namespace casual
             {
                if( m_control != Control::stacked)
                {
-                  throw exception::tx::Protocoll{ "begin - already in transaction mode", CASUAL_NIP( transaction)};
+                  throw exception::tx::Protocol{ "begin - already in transaction mode", CASUAL_NIP( transaction)};
                }
 
                //
@@ -560,13 +601,7 @@ namespace casual
                throw exception::tx::Outside{ "begin - resources not done with work outside global transaction"}; //, exception::make_nip( "resources", range::make( transaction.resources))};
             }
 
-
-
-            queue::blocking::Writer writer( manager().queue);
-            queue::blocking::Reader reader( ipc::receive::queue());
-
-
-            auto trans = local::startTransaction( writer, reader);
+            auto trans = local::startTransaction( platform::clock_type::now(), m_timeout);
 
             resources_start( trans, TMNOFLAGS);
 
@@ -636,82 +671,124 @@ namespace casual
 
             if( transaction.trid.owner() != process)
             {
-               throw exception::tx::Protocoll{ "commit - not owner of transaction", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ "commit - not owner of transaction", CASUAL_NIP( transaction)};
             }
 
             if( transaction.state != Transaction::State::active)
             {
-               throw exception::tx::Protocoll{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
             }
 
-            if( ! transaction.descriptors.empty())
+            if( transaction.associated())
             {
-               throw exception::tx::Protocoll{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }
+
 
             //
             // end resources
             //
             resources_end( transaction, TMSUCCESS);
 
-            message::transaction::commit::Request request;
-            request.trid = transaction.trid;
-            request.process = process;
 
-            queue::blocking::Writer writer( manager().queue);
-            writer( request);
-
-
-            queue::blocking::Reader reader( ipc::receive::queue());
-
-            //
-            // We could get commit-reply directly in an one-phase-commit
-            //
-
-            auto reply = reader.next( {
-               message::transaction::prepare::Reply::message_type,
-               message::transaction::commit::Reply::message_type});
-
-            //
-            // Did we get commit reply directly?
-            //
-            if( reply.type == message::transaction::commit::Reply::message_type)
+            if( transaction.local() && transaction.resources.size() + m_resources.fixed.size() <= 1)
             {
-               message::transaction::commit::Reply commitReply;
-               reply >> commitReply;
+               Trace trace{ "transaction::Context::commit - local", common::log::internal::transaction};
 
-               log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
+               //
+               // transaction is local, and at most one resource is involved.
+               // We do the commit directly against the resource (if any).
+               //
+               // TODO: we could do a two-phase-commit local if the transaction is 'local'
+               //
 
-               return xaTotx( commitReply.state);
+               if( ! transaction.resources.empty())
+               {
+                  return resource_commit( transaction.resources.front(), transaction, TMONEPHASE);
+               }
+
+               if( ! m_resources.fixed.empty())
+               {
+                  return resource_commit( m_resources.fixed.front().id, transaction, TMONEPHASE);
+               }
+
+               //
+               // No resources associated to this transaction, hence the commit is successful.
+               //
+               return TX_OK;
             }
             else
             {
+               Trace trace{ "transaction::Context::commit - distributed", common::log::internal::transaction};
 
-               message::transaction::prepare::Reply prepareReply;
-               reply >> prepareReply;
+               message::transaction::commit::Request request;
+               request.trid = transaction.trid;
+               request.process = process;
+               request.resources = resources();
+               range::append( transaction.resources, request.resources);
 
-               log::internal::transaction << "prepare reply: " << error::xa::error( prepareReply.state) << std::endl;
+               queue::blocking::Send send;
+
+               auto correlation = send( manager().queue(), request);
 
 
-               if( prepareReply.state == XA_OK)
+               //
+               // Get reply
+               //
                {
-                  //
-                  // Now we wait for the commit
-                  //
-                  message::transaction::commit::Reply commitReply;
-                  reader( commitReply);
+                  queue::blocking::Reader reader( ipc::receive::queue());
 
-                  log::internal::transaction << "commit reply xa: " << error::xa::error( commitReply.state) << " tx: " << error::tx::error( xaTotx( commitReply.state)) << std::endl;
+                  message::transaction::commit::Reply reply;
+                  reader( reply, correlation);
 
-                  return xaTotx( commitReply.state);
+                  //
+                  // We could get commit-reply directly in an one-phase-commit
+                  //
+
+                  switch( reply.stage)
+                  {
+                     case message::transaction::commit::Reply::Stage::prepare:
+                     {
+                        log::internal::transaction << "prepare reply: " << error::xa::error( reply.state) << '\n';
+
+                        if( m_commit_return == Commit_Return::logged)
+                        {
+                           log::internal::transaction << "decision logged directive\n";
+
+                           //
+                           // Discard the coming commit-message
+                           //
+                           ipc::receive::queue().discard( correlation);
+                        }
+                        else
+                        {
+                           //
+                           // Wait for the commit
+                           //
+                           reader( reply, correlation);
+
+                           log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+                        }
+
+                        break;
+                     }
+                     case message::transaction::commit::Reply::Stage::commit:
+                     {
+                        log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+
+                        break;
+                     }
+                     case message::transaction::commit::Reply::Stage::error:
+                     {
+                        log::error << "commit error: " << error::xa::error( reply.state) << std::endl;
+
+                        break;
+                     }
+                  }
+
+                  return xaTotx( reply.state);
                }
-               return xaTotx( prepareReply.state);
-
             }
-
-
-
-            return TX_OK;
          }
 
          int Context::commit()
@@ -739,14 +816,14 @@ namespace casual
 
             if( ! transaction)
             {
-               throw exception::tx::Protocoll{ "no ongoing transaction"};
+               throw exception::tx::Protocol{ "no ongoing transaction"};
             }
 
             const auto process = process::handle();
 
             if( transaction.trid.owner() != process)
             {
-               throw exception::tx::Protocoll{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
+               throw exception::tx::Protocol{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
             }
 
             //
@@ -757,8 +834,10 @@ namespace casual
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
             request.process = process;
+            request.resources = resources();
+            range::append( transaction.resources, request.resources);
 
-            queue::blocking::Writer writer( manager().queue);
+            queue::blocking::Writer writer( manager().queue());
             writer( request);
 
             queue::blocking::Reader reader( ipc::receive::queue());
@@ -791,17 +870,25 @@ namespace casual
 
          int Context::setCommitReturn( COMMIT_RETURN value)
          {
-            if( value == TX_COMMIT_COMPLETED)
+            switch( value)
             {
-               return TX_OK;
+               case TX_COMMIT_COMPLETED:
+               case TX_COMMIT_DECISION_LOGGED:
+               {
+                  m_commit_return = static_cast< Commit_Return>( value);
+                  break;
+               }
+               default:
+               {
+                  return TX_EINVAL;
+               }
             }
-
-            return TX_NOT_SUPPORTED;
+            return TX_OK;
          }
 
          COMMIT_RETURN Context::get_commit_return()
          {
-            return TX_COMMIT_COMPLETED;
+            return static_cast< COMMIT_RETURN>( m_commit_return);
          }
 
          int Context::setTransactionControl(TRANSACTION_CONTROL control)
@@ -831,10 +918,13 @@ namespace casual
             return TX_OK;
          }
 
-         void Context::setTransactionTimeout(TRANSACTION_TIMEOUT timeout)
+         void Context::setTransactionTimeout( TRANSACTION_TIMEOUT timeout)
          {
-            throw exception::tx::no::Support{ "set transaction timeout is not supported"};
-
+            if( timeout < 0)
+            {
+               throw exception::tx::Argument{ "timeout value has to be 0 or greater", CASUAL_NIP( timeout)};
+            }
+            m_timeout = timeout;
          }
 
          bool Context::info( TXINFO* info)
@@ -845,6 +935,8 @@ namespace casual
             {
                info->xid = transaction.trid.xid;
                info->transaction_state = static_cast< decltype( info->transaction_state)>( transaction.state);
+               info->transaction_timeout = m_timeout;
+               info->transaction_control = static_cast< control_type>( m_control);
             }
             return static_cast< bool>( transaction);
          }
@@ -863,7 +955,7 @@ namespace casual
 
             if( transaction::null( ongoing.trid))
             {
-               throw exception::tx::Protocoll{ "attempt to suspend a null xid"};
+               throw exception::tx::Protocol{ "attempt to suspend a null xid"};
             }
 
             //
@@ -903,7 +995,7 @@ namespace casual
 
             if( ongoing.trid)
             {
-               throw exception::tx::Protocoll{ "active transaction"};
+               throw exception::tx::Protocol{ "active transaction"};
             }
 
             if( ! ongoing.resources.empty())
@@ -919,7 +1011,6 @@ namespace casual
             if( ! found)
             {
                throw exception::tx::Argument{ "transaction not known"};
-               //common::log::internal::transaction << "TX_EINVAL - transaction not known: " << *xid << std::endl;
             }
 
 
@@ -947,7 +1038,7 @@ namespace casual
 
          void Context::resources_start( const Transaction& transaction, long flags)
          {
-            common::trace::Scope trace{ "transaction::Context::resources_start", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resources_start", common::log::internal::transaction};
 
             if( transaction && m_resources.fixed)
             {
@@ -958,26 +1049,12 @@ namespace casual
                auto start = std::bind( &Resource::start, std::placeholders::_1, std::ref( transaction), flags);
                range::for_each( m_resources.fixed, start);
 
-               // TODO: throw if some of the rm:s report an error?
-
-
-               //
-               // Notify the TM about the involved RM:s
-               //
-               {
-                  std::vector< int> resources;
-
-                  auto ids = std::mem_fn( &Resource::id);
-                  range::transform( m_resources.fixed, resources, ids);
-
-                  involved( transaction.trid, std::move( resources));
-               }
             }
          }
 
          void Context::resources_end( const Transaction& transaction, long flags)
          {
-            common::trace::Scope trace{ "transaction::Context::resources_end", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resources_end", common::log::internal::transaction};
 
             if( transaction && ! m_resources.all.empty())
             {
@@ -993,9 +1070,26 @@ namespace casual
             }
          }
 
+         int Context::resource_commit( platform::resource::id_type rm, const Transaction& transaction, long flags)
+         {
+            Trace trace{ "transaction::Context::resources_commit", common::log::internal::transaction};
+
+            auto commit = std::bind( &Resource::commit, std::placeholders::_1, std::ref( transaction), flags);
+
+            for( auto& resource : m_resources.all)
+            {
+               if( resource.id == rm)
+               {
+                  return xaTotx( commit( resource));
+               }
+            }
+            throw exception::tx::Error{ "resource id not known", CASUAL_NIP( rm), CASUAL_NIP( transaction)};
+
+         }
+
          int Context::pop_transaction()
          {
-            common::trace::Scope trace{ __func__, common::log::internal::transaction};
+            Trace trace{ "transaction::Context::pop_transaction", common::log::internal::transaction};
 
             //
             // Dependent on control we do different stuff

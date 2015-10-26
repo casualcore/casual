@@ -110,6 +110,20 @@ namespace casual
 
 			bool integer( const std::string& value);
 
+
+			template< typename T>
+			typename std::enable_if< std::is_integral< T>::value, std::size_t>::type
+			digits( T value)
+			{
+			   std::size_t result{ 1};
+
+			   while( value /= 10)
+			   {
+			      ++result;
+			   }
+			   return result;
+			}
+
 		} // string
 
 		namespace internal
@@ -170,9 +184,9 @@ namespace casual
 		   }
 
 		   template< typename T>
-         std::string name( T&&)
+         std::string name( T&& value)
          {
-            return internal::name( typeid( T));
+            return internal::name( typeid( value));
          }
 
       } // type

@@ -43,7 +43,7 @@ namespace casual
             std::size_t containerStart( std::size_t size, const char* name);
             void containerEnd( const char* name);
 
-            void serialtypeStart( const char* name);
+            bool serialtypeStart( const char* name);
             void serialtypeEnd( const char* name);
 
          private:
@@ -51,7 +51,7 @@ namespace casual
             virtual std::size_t container_start( std::size_t size, const char* name) = 0;
             virtual void container_end( const char* name) = 0;
 
-            virtual void serialtype_start( const char* name) = 0;
+            virtual bool serialtype_start( const char* name) = 0;
             virtual void serialtype_end( const char* name) = 0;
 
          };
@@ -113,11 +113,22 @@ namespace casual
          typename std::enable_if< traits::is_serializible< T>::value, void>::type
          serialize( Reader& archive, T& value, const char* name)
          {
-            archive.serialtypeStart( name);
-
-            value.serialize( archive);
-
+            if( archive.serialtypeStart( name))
+            {
+               value.serialize( archive);
+            }
             archive.serialtypeEnd( name);
+         }
+
+         template< typename T>
+         typename std::enable_if< std::is_enum< T >::value, void>::type
+         serialize( Reader& archive, T& value, const char* name)
+         {
+            typename std::underlying_type< T>::type enum_value;
+
+            serialize( archive, enum_value, name);
+
+            value = static_cast< T>( enum_value);
          }
 
          namespace detail
@@ -167,7 +178,6 @@ namespace casual
          {
             detail::serialize_tuple( archive, value, name);
          }
-
 
 
          template< typename T>
@@ -348,6 +358,16 @@ namespace casual
          void serialize( Writer& archive, const std::pair< K, V>& value, const char* name)
          {
             detail::serialize_tuple( archive, value, name);
+         }
+
+
+         template< typename T>
+         typename std::enable_if< std::is_enum< T >::value, void>::type
+         serialize( Writer& archive, const T& value, const char* name)
+         {
+            auto enum_value = static_cast< typename std::underlying_type< T>::type>( value);
+
+            serialize( archive, enum_value, name);
          }
 
 

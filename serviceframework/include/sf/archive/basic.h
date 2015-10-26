@@ -25,19 +25,20 @@ namespace casual
             struct Strict
             {
                inline static constexpr bool check() { return true;}
-               inline static void apply( bool exist, const char* role)
+               inline static bool apply( bool exist, const char* role)
                {
                   if( ! exist)
                   {
                      throw exception::archive::invalid::Node{ "archive - failed to find role '" + std::string{ role} + "' in document"};
                   }
+                  return exist;
                }
             };
 
             struct Relaxed
             {
                inline static constexpr bool check() { return false;}
-               inline static void apply( bool exist, const char* role) {}
+               inline static constexpr bool apply( bool exist, const char* role) { return true;}
             };
 
          } // policy
@@ -71,25 +72,25 @@ namespace casual
          private:
 
 
-            std::size_t container_start( std::size_t size, const char* name)
+            std::size_t container_start( std::size_t size, const char* name) override
             {
                auto result = m_implementation.container_start( size, name);
                policy_type::apply( std::get< 1>( result), name);
                return std::get< 0>( result);
             }
 
-            void container_end( const char* name)
+            void container_end( const char* name) override
             {
                m_implementation.container_end( name);
             }
 
-            void serialtype_start( const char* name)
+            bool serialtype_start( const char* name) override
             {
-               policy_type::apply( m_implementation.serialtype_start( name), name);
+               return policy_type::apply( m_implementation.serialtype_start( name), name);
             }
 
 
-            void serialtype_end( const char* name)
+            void serialtype_end( const char* name) override
             {
                m_implementation.serialtype_end( name);
             }
@@ -102,15 +103,15 @@ namespace casual
                policy_type::apply( m_implementation.read( value, name), name);
             }
 
-            void pod( bool& value, const char* name) { handle_pod( value, name);}
-            void pod( char& value, const char* name) { handle_pod( value, name);}
-            void pod( short& value, const char* name) { handle_pod( value, name);}
-            void pod( long& value, const char* name) { handle_pod( value, name);}
-            void pod( long long& value, const char* name) { handle_pod( value, name);}
-            void pod( float& value, const char* name) { handle_pod( value, name);}
-            void pod( double& value, const char* name) { handle_pod( value, name);}
-            void pod( std::string& value, const char* name) { handle_pod( value, name);}
-            void pod( platform::binary_type& value, const char* name) { handle_pod( value, name);}
+            void pod( bool& value, const char* name) override { handle_pod( value, name);}
+            void pod( char& value, const char* name) override { handle_pod( value, name);}
+            void pod( short& value, const char* name) override { handle_pod( value, name);}
+            void pod( long& value, const char* name) override { handle_pod( value, name);}
+            void pod( long long& value, const char* name) override { handle_pod( value, name);}
+            void pod( float& value, const char* name) override { handle_pod( value, name);}
+            void pod( double& value, const char* name) override { handle_pod( value, name);}
+            void pod( std::string& value, const char* name) override { handle_pod( value, name);}
+            void pod( platform::binary_type& value, const char* name) override { handle_pod( value, name);}
 
             implementation_type m_implementation;
          };
@@ -140,22 +141,23 @@ namespace casual
 
          private:
 
-            std::size_t container_start( std::size_t size, const char* name)
+            std::size_t container_start( std::size_t size, const char* name) override
             {
                return m_implementation.container_start( size, name);
             }
 
-            void container_end( const char* name)
+            void container_end( const char* name) override
             {
                m_implementation.container_end( name);
             }
 
-            void serialtype_start( const char* name)
+            bool serialtype_start( const char* name) override
             {
                m_implementation.serialtype_start( name);
+               return true;
             }
 
-            void serialtype_end( const char* name)
+            void serialtype_end( const char* name) override
             {
                m_implementation.serialtype_end( name);
             }
@@ -167,15 +169,15 @@ namespace casual
                m_implementation.write( value, name);
             }
 
-            void pod( const bool value, const char* name) { handle_pod( value, name);}
-            void pod( const char value, const char* name) { handle_pod( value, name);}
-            void pod( const short value, const char* name) { handle_pod( value, name);}
-            void pod( const long value, const char* name) { handle_pod( value, name);}
-            void pod( const long long value, const char* name) { handle_pod( value, name);}
-            void pod( const float value, const char* name) { handle_pod( value, name);}
-            void pod( const double value, const char* name) { handle_pod( value, name);}
-            void pod( const std::string& value, const char* name) { handle_pod( value, name);}
-            void pod( const platform::binary_type& value, const char* name) { handle_pod( value, name);}
+            void pod( const bool value, const char* name) override { handle_pod( value, name);}
+            void pod( const char value, const char* name) override { handle_pod( value, name);}
+            void pod( const short value, const char* name) override { handle_pod( value, name);}
+            void pod( const long value, const char* name) override { handle_pod( value, name);}
+            void pod( const long long value, const char* name) override { handle_pod( value, name);}
+            void pod( const float value, const char* name) override { handle_pod( value, name);}
+            void pod( const double value, const char* name) override { handle_pod( value, name);}
+            void pod( const std::string& value, const char* name) override { handle_pod( value, name);}
+            void pod( const platform::binary_type& value, const char* name) override { handle_pod( value, name);}
 
             implementation_type m_implementation;
 

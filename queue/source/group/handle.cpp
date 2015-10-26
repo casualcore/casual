@@ -10,7 +10,12 @@
 #include "queue/common/environment.h"
 
 #include "common/internal/log.h"
+#include "common/trace.h"
 #include "common/error.h"
+
+
+// todo: temp
+#include <iostream>
 
 namespace casual
 {
@@ -50,6 +55,8 @@ namespace casual
                   {
                      void replies( State& state, const common::transaction::ID& trid)
                      {
+                        common::trace::Scope trace{ "queue::handle::pending", common::log::internal::queue};
+
 
                         auto pending = state.pending.commit( trid);
 
@@ -61,7 +68,7 @@ namespace casual
 
                               if( remaining > 0)
                               {
-                                 if( dequeue::Request{ state}( request))
+                                 if( dequeue::request( state, request))
                                  {
                                     --remaining;
                                  }
@@ -89,6 +96,20 @@ namespace casual
                } // <unnamed>
             } // local
 
+            namespace dead
+            {
+               void Process::operator() ( const common::message::dead::process::Event& message)
+               {
+                  common::trace::Scope trace{ "queue::handle::dead::Process", common::log::internal::queue};
+
+                  //
+                  // We check and do some clean up, if the dead process has any pending replies.
+                  //
+                  m_state.pending.erase( message.death.pid);
+               }
+
+            } // dead
+
             namespace information
             {
 
@@ -97,6 +118,8 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::information::queues::request", common::log::internal::queue};
+
                      common::message::queue::information::queues::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
@@ -112,6 +135,8 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::information::messages::request", common::log::internal::queue};
+
                      common::message::queue::information::messages::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
@@ -129,6 +154,8 @@ namespace casual
             {
                void Request::operator () ( message_type& message)
                {
+                  common::trace::Scope trace{ "queue::handle::enqueue::request", common::log::internal::queue};
+
                   try
                   {
                      auto reply = m_state.queuebase.enqueue( message);
@@ -171,15 +198,18 @@ namespace casual
 
             namespace dequeue
             {
-               bool Request::operator () ( message_type& message)
+
+               bool request( State& state, Request::message_type& message)
                {
+                  common::trace::Scope trace{ "queue::handle::dequeue::request", common::log::internal::queue};
+
                   try
                   {
-                     auto reply = m_state.queuebase.dequeue( message);
+                     auto reply = state.queuebase.dequeue( message);
 
                      if( message.block && reply.message.empty())
                      {
-                        m_state.pending.dequeue( message);
+                        state.pending.dequeue( message);
                      }
                      else
                      {
@@ -191,10 +221,10 @@ namespace casual
                         //
                         if( ! reply.message.empty() && message.trid)
                         {
-                           local::involved( m_state, message);
+                           local::involved( state, message);
                         }
 
-                        queue::blocking::Send send{ m_state};
+                        queue::blocking::Send send{ state};
                         send( message.process.queue, reply);
 
                         return true;
@@ -207,12 +237,21 @@ namespace casual
                   return false;
                }
 
+
+               void Request::operator () ( message_type& message)
+               {
+                  request( m_state, message);
+               }
+
                namespace forget
                {
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::dequeue::forget::Request", common::log::internal::queue};
+
                      try
                      {
+
                         auto reply = m_state.pending.forget( message);
 
                         queue::blocking::Send send{ m_state};
@@ -234,6 +273,8 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::transaction::commit::Request", common::log::internal::queue};
+
                      common::message::transaction::resource::commit::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();
@@ -264,6 +305,8 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
+                     common::trace::Scope trace{ "queue::handle::transaction::rollback::Request", common::log::internal::queue};
+
                      common::message::transaction::resource::rollback::Reply reply;
                      reply.correlation = message.correlation;
                      reply.process = common::process::handle();

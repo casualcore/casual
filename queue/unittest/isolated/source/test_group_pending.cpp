@@ -22,10 +22,11 @@ namespace casual
       {
          namespace
          {
-            common::message::queue::dequeue::Request create_request( std::size_t queue, bool block = true)
+            common::message::queue::dequeue::Request create_request( std::size_t queue, bool block = true, const common::process::Handle& process = common::process::handle())
             {
                common::message::queue::dequeue::Request result;
 
+               result.process = process;
                result.queue = queue;
                result.block = block;
 
@@ -180,6 +181,32 @@ namespace casual
          ASSERT_TRUE( result.enqueued.size() == 2);
          EXPECT_TRUE( result.enqueued.at( 10) == 1);
          EXPECT_TRUE( result.enqueued.at( 20) == 1);
+      }
+
+      TEST( casual_queue_group_pending, block_dequeue_q10_pid_42__enqueue_3x_q10__erase_pid_42__expect_0_pending)
+      {
+         auto trid = common::transaction::ID::create();
+
+         group::State::Pending pending;
+
+         pending.dequeue( local::create_request( 10, true, { 42, 666}));
+         pending.enqueue( trid, 10);
+         pending.enqueue( trid, 10);
+         pending.enqueue( trid, 10);
+
+         pending.erase( 42);
+
+         EXPECT_TRUE( pending.requests.empty());
+
+         {
+            auto result = pending.commit( trid);
+
+            EXPECT_TRUE( result.requests.empty());
+            ASSERT_TRUE( result.enqueued.size() == 1);
+            EXPECT_TRUE( result.enqueued.at( 10) == 3);
+         }
+
+         EXPECT_TRUE( pending.transactions.empty());
       }
 
    } // queue

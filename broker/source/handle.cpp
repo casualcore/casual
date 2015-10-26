@@ -8,6 +8,7 @@
 #include "broker/handle.h"
 #include "broker/transform.h"
 #include "broker/filter.h"
+#include "broker/admin/server.h"
 
 #include "common/server/lifetime.h"
 #include "common/queue.h"
@@ -45,28 +46,13 @@ namespace casual
 
                   void operator () ( const state::Executable& executable)
                   {
-                     if( executable.configuredInstances > executable.instances.size())
+                     try
                      {
-                        decltype( executable.instances) pids;
-
-                        auto count = executable.configuredInstances - executable.instances.size();
-
-                        //
-                        // Prepare environment. We use the default first and add
-                        // specific for the executable
-                        //
-                        auto environment = m_state.standard.environment;
-                        environment.insert(
-                           std::end( environment),
-                           std::begin( executable.environment.variables),
-                           std::end( executable.environment.variables));
-
-                        while( count-- > 0)
-                        {
-                           pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
-                        }
-
-                        m_state.addInstances( executable.id, std::move( pids));
+                        handle::boot( m_state, executable, executable.configured_instances);
+                     }
+                     catch( const exception::invalid::Argument& exception)
+                     {
+                        log::error << "failed to boot executable: " << executable << " - why: " << exception << std::endl;
                      }
                   }
 
@@ -86,20 +72,7 @@ namespace casual
 
                      queue::blocking::Reader queueReader{ common::ipc::receive::queue(), m_state};
 
-                     common::message::dispatch::Handler handler{
-                        handle::transaction::manager::Connect{ m_state},
-                        handle::transaction::manager::Ready{ m_state},
-                        handle::Connect{ m_state},
-                        handle::transaction::client::Connect{ m_state},
-                        handle::Advertise{ m_state},
-                        handle::Unadvertise{ m_state},
-                        handle::monitor::Connect{ m_state},
-                        handle::monitor::Disconnect{ m_state},
-                        //handle::ServiceLookup{ m_state},
-                        //handle::ACK{ m_state},
-                        common::message::handle::ping( m_state),
-                        common::message::handle::Shutdown{}
-                     };
+                     auto handler = broker::handler( m_state);
 
                      //
                      // Use a filter so we don't consume any incoming messages that
@@ -133,22 +106,30 @@ namespace casual
 
                struct Shutdown : state::Base
                {
-                  using state::Base::Base;
+                  Shutdown( State& state, common::ipc::receive::Queue& ipc) : Base( state), m_ipc( ipc) {}
 
 
                   void operator () ( State::Batch& batch)
                   {
                      common::log::information << "shutdown group '" << batch.group << "'\n";
 
+
+                     auto handler = broker::handler_no_services( m_state);
+
+                     auto filter = handler.types();
+
+                     queue::non_blocking::Reader non_blocking{ m_ipc, m_state};
+
                      //
                      // Take care of executables
                      //
 
-                     std::vector< platform::pid_type> executables;
-
                      for( auto& executable : batch.executables)
                      {
-                        range::append( executable.get().instances, executables);
+                        server::lifetime::shutdown( m_state, {}, { executable.get().instances}, std::chrono::seconds( 2));
+
+                        while( handler( non_blocking.next( filter)))
+                           ;
                      }
 
 
@@ -156,23 +137,29 @@ namespace casual
                      // Take care of xatmi-servers
                      //
 
-                     std::vector< process::Handle> servers;
-
                      for( auto& server : batch.servers)
                      {
-                        for( auto& pid : server.get().instances)
+                        auto pids = server.get().instances;
+
+                        log::internal::debug << "shutdown pids: " << range::make( pids) << '\n';
+
+                        for( auto pid : pids)
                         {
                            //
                            // Make sure we don't add our self
                            //
                            if( pid != process::id())
                            {
-                              servers.push_back( m_state.getInstance( pid).process);
+                              server::lifetime::shutdown( m_state, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
+
+                              while( handler( non_blocking.next()))
+                                 ;
                            }
                         }
                      }
-                     server::lifetime::shutdown( m_state, servers, executables, std::chrono::seconds( 2));
                   }
+               private:
+                  common::ipc::receive::Queue& m_ipc;
                };
 
 
@@ -190,6 +177,68 @@ namespace casual
                      }
                   }
 
+
+                  template< typename M, typename R>
+                  bool connect( State& state, M&& message, R&& reply)
+                  {
+                     queue::blocking::Send send{ state};
+                     reply.correlation = message.correlation;
+
+                     if( state.mode == State::Mode::shutdown)
+                     {
+                        log::error << "application connect while in 'shutdown-mode' - instance: " << message.process << " - action: reply with 'shutdown-error'\n";
+
+                        //
+                        // We're in a shtudown mode, we don't allow any connections
+                        //
+                        reply.directive = R::Directive::shutdown;
+                        send( message.process.queue, reply);
+
+                        return false;
+                     }
+                     else if( message.identification)
+                     {
+                        //
+                        // Make sure we only start one instance of a singleton
+                        //
+
+                        auto found = common::range::find( state.singeltons, message.identification);
+
+                        if( found)
+                        {
+                           if( found->second != message.process)
+                           {
+                              log::error << "only one instance of application with id " << message.identification << " is allowed - instance: " << message.process << "- action: reply with 'singleton-error'\n";
+
+                              reply.directive = R::Directive::singleton;
+
+                              queue::blocking::Send send{ state};
+                              send( message.process.queue, reply);
+
+                              auto& server = state.getServer( state.getInstance( message.process.pid).server);
+                              server.configured_instances = 1;
+
+                              return false;
+                           }
+                        }
+                        else
+                        {
+                           state.singeltons[ message.identification] = message.process;
+
+                           decltype( state.pending.process_lookup) pending;
+                           std::swap( pending, state.pending.process_lookup);
+
+                           range::for_each( pending, broker::handle::lookup::Process{ state});
+                        }
+                     }
+
+                     common::log::internal::debug << "connect reply: " << message.process << std::endl;
+
+                     send( message.process.queue, reply);
+
+                     return true;
+                  }
+
                } // handle
 
             } // <unnamed>
@@ -197,22 +246,33 @@ namespace casual
 
          void boot( State& state)
          {
-            auto bootOrder = state.bootOrder();
 
-            range::for_each( bootOrder, local::Boot{ state});
+            auto boot_order = state.bootOrder();
+
+            range::for_each( boot_order, local::Boot{ state});
+
+            if( log::internal::debug)
+            {
+               std::vector< std::reference_wrapper< state::Server>> servers;
+
+               for( auto& s : state.servers)
+               {
+                  servers.emplace_back( s.second);
+               }
+               log::internal::debug << "booted servers: " << range::make( servers) << '\n';
+            }
          }
 
 
-         void shutdown( State& state)
+         void shutdown( State& state, common::ipc::receive::Queue& ipc)
          {
-            auto shutdownOrder = state.bootOrder();
-            std::reverse( std::begin( shutdownOrder), std::end( shutdownOrder));
+            auto shutdown_order = range::reverse( state.bootOrder());
 
             try
             {
                signal::timer::Scoped alarm( std::chrono::seconds( 10));
 
-               range::for_each( shutdownOrder, local::Shutdown{ state});
+               range::for_each( shutdown_order, local::Shutdown{ state, ipc});
             }
             catch( const exception::signal::Timeout&)
             {
@@ -223,31 +283,130 @@ namespace casual
          void send_shutdown( State& state)
          {
             queue::non_blocking::Send send{ state};
-            common::message::shutdown::Request message;
 
-            while( ! send( common::ipc::receive::queue().id(), message))
+            common::queue::non_blocking::force::send(
+               common::ipc::receive::queue(),
+               send,
+               common::message::shutdown::Request{});
+         }
+
+
+         std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances)
+         {
+            std::vector< common::platform::pid_type> pids;
+
+            //
+            // Prepare environment. We use the default first and add
+            // specific for the executable
+            //
+            auto environment = state.standard.environment;
+            environment.insert(
+               std::end( environment),
+               std::begin( executable.environment.variables),
+               std::end( executable.environment.variables));
+
+            while( instances-- > 0)
             {
-               //
-               // Queue is full, try to read non-existent message to flush the queue
-               //
-               common::message::flush::IPC flush;
-               queue::non_blocking::Reader{ common::ipc::receive::queue(), state}( flush);
+               pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
+            }
+
+            return pids;
+         }
+
+         void boot( State& state, const state::Executable& executable, std::size_t instances)
+         {
+            instances = std::max( executable.configured_instances, instances);
+
+            auto count = instances - executable.instances.size();
+
+            if( count > 0)
+            {
+               state.addInstances( executable.id, spawn( state, executable, count));
             }
          }
 
-         namespace monitor
+         void shutdown( State& state, const state::Server& server, std::size_t instances)
          {
-            void Connect::operator () ( message_type& message)
-            {
-               trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
+            Trace trace{ "broker::handle::shutdown", log::internal::debug};
 
-               if( ! range::find( m_state.traffic.monitors, message.process.queue))
+            instances = std::min( server.instances.size(), instances);
+
+            auto range = common::range::make( server.instances);
+
+            range.first = range.last - instances;
+
+
+            for( auto& pid : range)
+            {
+               //
+               // make sure we don't try to shutdown our self...
+               //
+               if( pid != common::process::id())
                {
-                  m_state.traffic.monitors.push_back( message.process.queue);
+                  try
+                  {
+                     auto& instance = state.getInstance( pid);
+                     instance.alterState( state::Server::Instance::State::shutdown);
+
+                     queue::non_blocking::Send sender{ state};
+
+                     if( ! sender( instance.process.queue, common::message::shutdown::Request{}))
+                     {
+                        log::error << "could not send shutdown to: " << instance.process << std::endl;
+                        //
+                        // We try to send it later?
+                        //
+                        state.pending.replies.emplace_back( common::message::shutdown::Request{}, instance.process.queue);
+                     }
+                     else
+                     {
+                        log::internal::debug << "sent shutdown message to: " << instance.process << std::endl;
+                     }
+
+                  }
+                  catch( const state::exception::Missing&)
+                  {
+                     // we've already removed the instance
+                  }
+                  catch( const exception::queue::Unavailable&)
+                  {
+                     // we assume the instance is down
+                  }
+               }
+            }
+         }
+
+         namespace update
+         {
+            void instances( State& state, const state::Server& server)
+            {
+               if( server.configured_instances > server.instances.size())
+               {
+                  return boot( state, server, server.configured_instances - server.instances.size());
                }
                else
                {
-                  log::error << "traffic monitor already connected - action: ignore" << std::endl;
+                  return shutdown( state, server, server.instances.size() - server.configured_instances);
+               }
+            }
+         } // update
+
+         namespace traffic
+         {
+            void Connect::operator () ( common::message::traffic::monitor::connect::Request& message)
+            {
+               trace::internal::Scope trace{ "broker::handle::monitor::Connect::dispatch"};
+
+               if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
+               {
+                  if( ! range::find( m_state.traffic.monitors, message.process.queue))
+                  {
+                     m_state.traffic.monitors.push_back( message.process.queue);
+                  }
+                  else
+                  {
+                     log::error << "traffic monitor already connected - action: ignore" << std::endl;
+                  }
                }
 
             }
@@ -280,22 +439,27 @@ namespace casual
             namespace manager
             {
 
-               void Connect::operator () ( message_type& message)
+               void Connect::operator () ( common::message::transaction::manager::connect::Request& message)
                {
                   common::trace::internal::Scope trace{ "broker::handle::transaction::manager::Connect::dispatch"};
 
                   common::log::internal::debug << "connect request: " << message.process << std::endl;
 
-                  m_state.transaction_manager = message.process.queue;
 
-                  //
-                  // Send configuration to TM
-                  //
-                  auto configuration = transform::transaction::configuration( m_state);
+                  if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
+                  {
 
-                  queue::blocking::Writer tmQueue{ message.process.queue, m_state};
-                  tmQueue( configuration);
+                     m_state.transaction_manager = message.process.queue;
 
+                     //
+                     // Send configuration to TM
+                     //
+                     auto configuration = transform::transaction::configuration( m_state);
+                     configuration.correlation = message.correlation;
+
+                     queue::blocking::Writer tmQueue{ message.process.queue, m_state};
+                     tmQueue( configuration);
+                  }
                }
 
                void Ready::operator () ( message_type& message)
@@ -321,6 +485,8 @@ namespace casual
             }
 
 
+
+
             namespace client
             {
 
@@ -334,25 +500,16 @@ namespace casual
                   {
                      auto& instance = m_state.getInstance( message.process.pid);
 
+                     local::handle::connect( m_state, message, transform::transaction::client::reply( m_state, instance));
 
-                     //
-                     // Instance is started for the first time.
-                     // Send some configuration
-                     //
-                     message::transaction::client::connect::Reply reply =
-                           transform::transaction::client::reply( m_state, instance);
-
-                     queue::blocking::Writer write( message.process.queue, m_state);
-                     write( reply);
                   }
                   catch( const state::exception::Missing& exception)
                   {
                      // What to do? Add the instance?
                      ///log::error << "could not find instance - " << exception.what() << std::endl;
 
-                     message::transaction::client::connect::Reply reply;
+                     common::message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
-                     reply.transaction_manager = m_state.transaction_manager;
 
                      queue::blocking::Writer write( message.process.queue, m_state);
                      write( reply);
@@ -362,6 +519,140 @@ namespace casual
             } // client
          } // transaction
 
+
+         namespace forward
+         {
+
+            void Connect::operator () ( const common::message::forward::connect::Request& message)
+            {
+               common::trace::internal::Scope trace{ "broker::handle::forward::Connect"};
+
+               if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
+               {
+                  m_state.forward = message.process;
+               }
+            }
+
+         } // forward
+
+         namespace dead
+         {
+            namespace process
+            {
+               void Registration::operator () ( const common::message::dead::process::Registration& message)
+               {
+                  common::trace::internal::Scope trace{ "broker::handle::dead::process::Registration"};
+
+                  m_state.dead.process.listeners.push_back( message.process);
+
+                  m_state.dead.process.listeners = range::to_vector( range::unique( range::sort( m_state.dead.process.listeners)));
+
+                  common::log::internal::debug << "dead process listeners: " << common::range::make( m_state.dead.process.listeners) << '\n';
+
+               }
+
+
+               void Event::operator() ( const common::message::dead::process::Event& event)
+               {
+                  common::trace::internal::Scope trace{ "broker::handle::dead::process::Event"};
+
+                  if( event.death.deceased())
+                  {
+                     if( event.death.reason == common::process::lifetime::Exit::Reason::exited)
+                     {
+                        log::information << "process exited: " << event.death << '\n';
+                     }
+                     else
+                     {
+                        log::error << "process terminated: " << event.death << '\n';
+                     }
+
+                     //
+                     // We remove from listeners if one of them has died.
+                     //
+                     m_state.dead.process.listeners.erase(
+                           range::find_if(
+                                 m_state.dead.process.listeners, common::process::Handle::equal::pid{ event.death.pid}).first,
+                            std::end( m_state.dead.process.listeners));
+
+                     if( ! m_state.dead.process.listeners.empty())
+                     {
+                        auto get_queues = [&](){
+                           std::vector< platform::queue_id_type> result;
+                           for( auto& listener : m_state.dead.process.listeners)
+                           {
+                              result.push_back( listener.queue);
+                           }
+                           return result;
+                        };
+
+                        common::message::pending::Message message{ event, get_queues()};
+
+                        queue::non_blocking::Send send{ m_state};
+                        auto sender = common::message::pending::sender( send);
+
+                        if( ! sender( message))
+                        {
+                           m_state.pending.replies.push_back( std::move( message));
+                        }
+                     }
+
+                     auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
+
+                     ++server.deaths;
+
+                     m_state.remove_process( event.death.pid);
+
+                     if( server.restart)
+                     {
+                        update::instances( m_state, server);
+                     }
+                  }
+                  else
+                  {
+                     //
+                     // TODO: should we warn about this? Don't even know if it's possible for this to happen
+                     //
+                     log::warning << "process is not in a proper state - " << event.death << '\n';
+                  }
+               }
+            } // process
+         } // dead
+
+         namespace lookup
+         {
+            void Process::operator () ( const common::message::lookup::process::Request& message)
+            {
+               common::trace::internal::Scope trace{ "broker::handle::lookup::Process"};
+
+               auto reply = common::message::reverse::type( message);
+               reply.domain = common::environment::domain::name();
+
+               auto found = range::find( m_state.singeltons, message.identification);
+
+               auto send_reply = [&](){
+                  queue::non_blocking::Send send{ m_state};
+                  if( ! send( message.process.queue, reply))
+                  {
+                     m_state.pending.replies.emplace_back( reply, message.process.queue);
+                  }
+               };
+
+               if( found)
+               {
+                  reply.process = found->second;
+                  send_reply();
+               }
+               else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+               {
+                  send_reply();
+               }
+               else
+               {
+                  m_state.pending.process_lookup.push_back( message);
+               }
+            }
+         }
 
          void Advertise::operator () ( message_type& message)
          {
@@ -412,32 +703,24 @@ namespace casual
                auto& instance = m_state.getInstance( message.process.pid);
                instance.process.queue = message.process.queue;
 
-
-               //
-               // Add services
-               //
+               if( local::handle::connect( m_state, message, common::message::reverse::type( message)))
                {
-                  std::vector< state::Service> services;
+                  //
+                  // Add services
+                  //
+                  {
+                     std::vector< state::Service> services;
 
-                  common::range::transform( message.services, services, transform::Service{});
+                     common::range::transform( message.services, services, transform::Service{});
 
-                  m_state.addServices( message.process.pid, std::move( services));
+                     m_state.addServices( message.process.pid, std::move( services));
+                  }
+
+                  //
+                  // Set the instance to idle state
+                  //
+                  instance.alterState( state::Server::Instance::State::idle);
                }
-
-               //
-               // Set the instance to idle state
-               //
-               instance.alterState( state::Server::Instance::State::idle);
-
-               //
-               // Send some configuration
-               //
-               message::server::connect::Reply reply;
-
-               common::log::internal::debug << "connect reply: " << message.process << std::endl;
-
-               queue::blocking::Writer writer( message.process.queue, m_state);
-               writer( reply);
 
             }
             catch( const state::exception::Missing& exception)
@@ -470,6 +753,18 @@ namespace casual
                      service.instances,
                      filter::instance::Idle{});
 
+               //
+               // Prepare the message
+               //
+
+               auto reply = common::message::reverse::type( message);
+
+               {
+                  reply.service = service.information;
+                  reply.service.traffic_monitors = m_state.traffic.monitors;
+
+               }
+
 
                if( idle)
                {
@@ -478,9 +773,7 @@ namespace casual
                   //
                   idle->get().alterState( state::Server::Instance::State::busy);
 
-                  message::service::name::lookup::Reply reply;
-                  reply.service = service.information;
-                  reply.service.traffic_monitors = m_state.traffic.monitors;
+                  reply.state = decltype( reply.state)::idle;
                   reply.process = transform::Instance()( *idle);
 
                   queue::blocking::Writer writer( message.process.queue, m_state);
@@ -488,25 +781,54 @@ namespace casual
 
                   service.lookedup++;
                }
+               else if(
+                  message.context == common::message::service::lookup::Request::Context::no_reply
+                  || message.context == common::message::service::lookup::Request::Context::forward)
+               {
+                  //
+                  // The intention is "send and forget", or a plain forward, we use our forward-cache for this
+                  //
+                  reply.process = m_state.forward;
+
+                  //
+                  // Caller will think that service is idle, that's the whole point
+                  // with our forward.
+                  //
+                  reply.state = decltype( reply.state)::idle;
+
+                  queue::blocking::Writer writer( message.process.queue, m_state);
+                  writer( reply);
+
+               }
                else
                {
                   //
-                  // All servers are busy, we stack the request
+                  // All instances are busy, we stack the request
                   //
-                  m_state.pending.push_back( std::move( message));
+                  m_state.pending.requests.push_back( std::move( message));
+
+                  //
+                  // ...and send busy-message to caller, to set timeouts and stuff
+                  //
+                  reply.state = decltype( reply.state)::busy;
+
+                  queue::blocking::Writer writer( message.process.queue, m_state);
+                  writer( reply);
+
                }
 
             }
             catch( state::exception::Missing& exception)
             {
                //
-               // TODO: We will send the request to the gateway.
+               // TODO: We will send the request to the gateway. (only if we want auto discovery)
                //
                // Server (queue) that hosts the requested service is not found.
                // We propagate this by having 0 occurrence of server in the response
                //
-               message::service::name::lookup::Reply reply;
+               auto reply = common::message::reverse::type( message);
                reply.service.name = message.requested;
+               reply.state = decltype( reply.state)::absent;
 
                queue::blocking::Writer writer( message.process.queue, m_state);
                writer( reply);
@@ -529,7 +851,7 @@ namespace casual
                //
                {
                   auto pending = common::range::find_if(
-                     common::range::make( m_state.pending),
+                     m_state.pending.requests,
                      filter::Pending( instance));
 
                   if( pending)
@@ -546,7 +868,7 @@ namespace casual
                      //
                      // Remove pending
                      //
-                     m_state.pending.erase( pending.first);
+                     m_state.pending.requests.erase( pending.first);
                   }
 
                }
@@ -558,53 +880,21 @@ namespace casual
          }
 
 
-         void Policy::connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
+         void Policy::connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
-
-            //
-            // We add the server
-            // TODO:
-            auto& server = [&]() -> state::Server& {
-               state::Server server;
-               server.alias = "casual-broker";
-               server.configuredInstances = 1;
-               server.path = common::process::path();
-               server.instances.push_back( common::process::id());
-               return m_state.add( std::move( server));
-            }();
-
-
-            {
-               state::Server::Instance instance;
-               instance.process = common::process::handle();
-               instance.server = server.id;
-               instance.alterState( state::Server::Instance::State::idle);
-
-               m_state.add( std::move( instance));
-            }
-
-            //
-            // Add services
-            //
-            {
-               std::vector< state::Service> brokerServices;
-
-               common::range::transform( services, brokerServices, transform::Service{});
-
-               m_state.addServices( common::process::id(), std::move( brokerServices));
-            }
+            m_state.connect_broker( std::move( services));
          }
 
 
-         void Policy::reply( platform::queue_id_type id, message::service::call::Reply& message)
+         void Policy::reply( platform::queue_id_type id, common::message::service::call::Reply& message)
          {
             queue::blocking::Writer writer( id, m_state);
             writer( message);
          }
 
-         void Policy::ack( const message::service::call::callee::Request& message)
+         void Policy::ack( const common::message::service::call::callee::Request& message)
          {
-            message::service::call::ACK ack;
+            common::message::service::call::ACK ack;
 
             ack.process = common::process::handle();
             ack.service = message.service.name;
@@ -613,25 +903,74 @@ namespace casual
             sendACK( ack);
          }
 
-         void Policy::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
+         void Policy::transaction( const common::message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
          {
             // broker doesn't bother with transactions...
          }
 
-         void Policy::transaction( const message::service::call::Reply& message, int return_state)
+         void Policy::transaction( const common::message::service::call::Reply& message, int return_state)
          {
             // broker doesn't bother with transactions...
          }
 
-         void Policy::statistics( platform::queue_id_type id, message::traffic::monitor::Notify& message)
+         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+         {
+            throw common::exception::xatmi::System{ "can't forward within broker"};
+         }
+
+         void Policy::statistics( platform::queue_id_type id,common::message::traffic::Event&)
          {
             //
             // We don't collect statistics for the broker
             //
          }
 
-
-
       } // handle
+
+      common::message::dispatch::Handler handler( State& state)
+      {
+         return {
+            handle::transaction::manager::Connect{ state},
+            handle::transaction::manager::Ready{ state},
+            handle::forward::Connect{ state},
+            handle::dead::process::Registration{ state},
+            handle::dead::process::Event{ state},
+            handle::lookup::Process{ state},
+            handle::Connect{ state},
+            handle::Advertise{ state},
+            handle::Unadvertise{ state},
+            handle::ServiceLookup{ state},
+            handle::ACK{ state},
+            handle::traffic::Connect{ state},
+            handle::traffic::Disconnect{ state},
+            handle::transaction::client::Connect{ state},
+            handle::Call{ ipc::receive::queue(), admin::services( state), state},
+            common::message::handle::ping( state),
+            common::message::handle::Shutdown{},
+         };
+      }
+
+      common::message::dispatch::Handler handler_no_services( State& state)
+      {
+         return {
+            handle::transaction::manager::Connect{ state},
+            handle::transaction::manager::Ready{ state},
+            handle::forward::Connect{ state},
+            handle::dead::process::Registration{ state},
+            handle::dead::process::Event{ state},
+            handle::lookup::Process{ state},
+            handle::Connect{ state},
+            handle::Advertise{ state},
+            handle::Unadvertise{ state},
+            handle::ServiceLookup{ state},
+            handle::ACK{ state},
+            handle::traffic::Connect{ state},
+            handle::traffic::Disconnect{ state},
+            handle::transaction::client::Connect{ state},
+            //handle::Call{ ipc::receive::queue(), admin::services( state), state},
+            common::message::handle::ping( state),
+            common::message::handle::Shutdown{},
+         };
+      }
    } // broker
 } // casual

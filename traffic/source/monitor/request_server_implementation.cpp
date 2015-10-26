@@ -4,9 +4,10 @@
 
 #include "traffic/monitor/request_server_implementation.h"
 
-#include "traffic/monitor/database.h"
+#include "sql/database.h"
 
-
+#include "common/trace.h"
+#include "common/environment.h"
 
 //## includes protected section end   [.10]
 
@@ -19,13 +20,54 @@ namespace monitor
 
 
 //## declarations protected section begin [.20]
+namespace local
+{
+namespace database
+{
+namespace
+{
+   std::vector< ServiceEntryVO> select( )
+   {
+      static const std::string cMethodname("Database::select");
+      common::Trace trace(cMethodname);
+
+      auto connection = sql::database::Connection( common::environment::directory::domain() + "/monitor.db");
+      std::ostringstream stream;
+      stream << "SELECT service, parentservice, callid, transactionid, start, end FROM calls;";
+      sql::database::Statement::Query query = connection.query( stream.str());
+
+      sql::database::Row row;
+      std::vector< ServiceEntryVO> result;
+
+      while( query.fetch( row))
+      {
+         ServiceEntryVO vo;
+         vo.setService( row.get< std::string>(0));
+         vo.setParentService( row.get< std::string>( 1));
+         sf::platform::Uuid callId( row.get< std::string>( 2));
+         vo.setCallId( callId);
+         //vo.setTransactionId( local::getValue( *row, "transactionid"));
+
+         std::chrono::microseconds start{ row.get< long long>( 4)};
+         vo.setStart( common::platform::time_point{ start});
+         std::chrono::microseconds end{ row.get< long long>( 5)};
+         vo.setEnd( common::platform::time_point{ end});
+         result.push_back( vo);
+      }
+
+      return result;
+
+   }
+}
+}
+}
 //## declarations protected section end   [.20]
 
 RequestServerImplementation::RequestServerImplementation( int argc, char **argv)
 {
    //## constructor protected section begin [ctor.20]
    //## constructor protected section end   [ctor.20]
- }
+}
 
 
 
@@ -45,10 +87,9 @@ bool RequestServerImplementation::getMonitorStatistics( std::vector< ServiceEntr
 {
    //## service implementation protected section begin [2000]
 
-   static traffic::monitor::Database database;
 
    std::vector< ServiceEntryVO> result;
-   result = database.select();
+   result = local::database::select();
 
    std::copy( result.begin(), result.end(), std::back_inserter( outputValues));
 

@@ -13,12 +13,14 @@
 #include "sf/archive/basic.h"
 #include "sf/platform.h"
 
-#include "json-c/json.h"
+// TODO: Move this to makefile
+#define RAPIDJSON_HAS_STDSTRING 1
+
+#include <rapidjson/document.h>
 
 
 #include <iosfwd>
 #include <string>
-#include <memory>
 
 namespace casual
 {
@@ -34,21 +36,21 @@ namespace casual
 
             public:
 
-               typedef json_object* source_type;
+               typedef rapidjson::Document source_type;
 
                Load();
                ~Load();
 
-               json_object* serialize( std::istream& stream);
-               json_object* serialize( const std::string& json);
+               const rapidjson::Document& serialize( std::istream& stream);
+               const rapidjson::Document& serialize( const std::string& json);
                // TODO: make this a binary::Stream instead
-               json_object* serialize( const char* json);
+               const rapidjson::Document& serialize( const char* json);
 
-               json_object* source() const;
+               const rapidjson::Document& source() const;
 
 
                template<typename T>
-               json_object* operator() ( T&& json)
+               const rapidjson::Document& operator() ( T&& json)
                {
                   return serialize( std::forward<T>( json));
                }
@@ -56,11 +58,7 @@ namespace casual
 
             private:
 
-               //
-               // TODO: Do we need to keep the string-buffer somehow ?
-               //
-
-               std::unique_ptr<json_object,std::function<int(json_object*)>> m_object;
+               rapidjson::Document m_document;
 
             };
 
@@ -72,62 +70,64 @@ namespace casual
                {
                public:
 
-                  explicit Implementation( json_object* object);
+                  explicit Implementation( const rapidjson::Value& object);
                   ~Implementation();
 
                   std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
-                  void container_end( const char*);
+                  void container_end( const char* name);
 
                   bool serialtype_start( const char* name);
-                  void serialtype_end( const char*);
+                  void serialtype_end( const char* name);
 
 
                   template< typename T>
                   bool read( T& value, const char* name)
                   {
-                     auto node = m_stack.back();
+                     const bool result = start( name);
 
-                     if( node)
+                     if( result)
                      {
-                        if( name)
+                        if( m_stack.back()->IsNull())
                         {
-                           node = json_object_object_get( node, name);
+                           //
+                           // Act (somehow) relaxed
+                           //
+
+                           value = T();
                         }
                         else
                         {
                            //
-                           // "unnamed", indicate we're in a container
-                           // we pop
+                           // TODO: Perhaps validate type (to avoid possible asserts/exceptions) ?
                            //
-                           m_stack.pop_back();
+
+                           read( value);
                         }
                      }
 
-                     if( ! node)
-                     {
-                        return false;
-                     }
+                     end( name);
 
-                     set( node, value);
-                     return true;
+                     return result;
                   }
 
+               private:
+
+                  bool start( const char* name);
+                  void end( const char* name);
+
+                  void read( bool& value);
+                  void read( short& value);
+                  void read( long& value);
+                  void read( long long& value);
+                  void read( float& value);
+                  void read( double& value);
+                  void read( std::string& value);
+                  void read( char& value);
+                  void read( platform::binary_type& value);
 
                private:
 
-                  void set( json_object* object, bool& value);
-                  void set( json_object* object, short& value);
-                  void set( json_object* object, long& value);
-                  void set( json_object* object, long long& value);
-                  void set( json_object* object, float& value);
-                  void set( json_object* object, double& value);
-                  void set( json_object* object, std::string& value);
-                  void set( json_object* object, char& value);
-                  void set( json_object* object, platform::binary_type& value);
-
-               private:
-
-                  std::vector< json_object*> m_stack;
+                  std::vector<const rapidjson::Value*> m_stack;
                };
             } // reader
 
@@ -136,7 +136,7 @@ namespace casual
 
             public:
 
-               typedef json_object* target_type;
+               typedef rapidjson::Document target_type;
 
                Save();
                ~Save();
@@ -145,9 +145,9 @@ namespace casual
                void serialize( std::string& json) const;
                // TODO: make a binary::Stream overload
 
-               json_object* target() const;
+               rapidjson::Document& target();
 
-               json_object* operator() () const
+               rapidjson::Document& operator() ()
                {
                   return target();
                }
@@ -155,7 +155,7 @@ namespace casual
 
             private:
 
-               std::unique_ptr<json_object,std::function<int(json_object*)>> m_object;
+               rapidjson::Document m_document;
 
             };
 
@@ -166,41 +166,45 @@ namespace casual
                {
                public:
 
-                  Implementation( json_object* root);
+                  explicit Implementation( rapidjson::Document& document);
+                  Implementation( rapidjson::Value& object, rapidjson::Document::AllocatorType& allocator);
                   ~Implementation();
 
                   std::size_t container_start( std::size_t size, const char* name);
-                  void container_end( const char*);
+                  void container_end( const char* name);
 
                   void serialtype_start( const char* name);
-                  void serialtype_end( const char*);
+                  void serialtype_end( const char* name);
 
                   template< typename T>
-                  void write( T&& value, const char* name)
+                  void write( const T& value, const char* name)
                   {
-                     writeValue( value, name);
+                     start( name);
+                     write( value);
+                     end( name);
                   }
 
 
                private:
 
-                  template< typename F, typename T>
-                  void createAndAdd( F function, T&& value, const char* name);
+                  void start( const char* name);
+                  void end( const char* name);
 
-                  void writeValue( const bool value, const char* name);
-                  void writeValue( const char value, const char* name);
-                  void writeValue( const short value, const char* name);
-                  void writeValue( const long value, const char* name);
-                  void writeValue( const long long value, const char* name);
-                  void writeValue( const float value, const char* name);
-                  void writeValue( const double value, const char* name);
-                  void writeValue( const std::string& value, const char* name);
-                  void writeValue( const platform::binary_type& value, const char* name);
+                  void write( const bool value);
+                  void write( const char value);
+                  void write( const short value);
+                  void write( const long value);
+                  void write( const long long value);
+                  void write( const float value);
+                  void write( const double value);
+                  void write( const std::string& value);
+                  void write( const platform::binary_type& value);
 
 
                private:
 
-                  std::vector< json_object*> m_stack;
+                  rapidjson::Document::AllocatorType& m_allocator;
+                  std::vector< rapidjson::Value*> m_stack;
                };
 
             } // writer
