@@ -1,0 +1,4 @@
+#/bin/bash
+
+casual-log-format "$@" | less -R
+
