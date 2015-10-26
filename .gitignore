@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #
 # eclipse project
 #
@@ -6,9 +5,6 @@
 .pydevproject
 .cproject
 .project
-
-=======
->>>>>>> tools/allinone
 
 #
 # Build directories
@@ -21,21 +17,3 @@ bin/
 # Build files
 #
 *.mk
-<<<<<<< HEAD
-
-.unittest_domain_home/
-
-/casual.env
-/casual_build_environment
-/debug.log
-/casual.log
-/Debug/
-=======
-*.a
-*.pyc
-
-
-.pydevproject
-
-
->>>>>>> tools/allinone
