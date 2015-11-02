@@ -27,8 +27,8 @@ def call( service, input, flags=0):
         inputbuffer = input
         outputbuffer = buffer.create( input)
         
-    print type(inputbuffer)
-    print type(outputbuffer)
+    #print type(inputbuffer)
+    #sprint type(outputbuffer)
 
     result = xatmi.tpcall( service, inputbuffer.raw(), inputbuffer.size, ctypes.byref(outputbuffer.holder), ctypes.byref(outputbuffer.size), flags)
     if result == -1:
