@@ -1,8 +1,8 @@
 import ctypes
 import os
 from test.test_multiprocessing import c_int
-import xatmi
-import exception
+import casual.xatmi.xatmi as xatmi
+import casual.server.exception as exception
 
 def x_octet():
      return xatmi.X_OCTET, 0

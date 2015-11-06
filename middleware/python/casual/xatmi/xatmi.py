@@ -43,7 +43,7 @@ CASUAL_BUFFER_XML_SUBTYPE = ""
 #
 # ctypes definitions
 #
-_file = '../../xatmi/bin/libcasual-xatmi.so'
+_file = '../../../xatmi/bin/libcasual-xatmi.so'
 _path = os.path.join(*(os.path.split(__file__)[:-1] + (_file,)))
 _mod = ctypes.cdll.LoadLibrary(_path)
 
@@ -90,4 +90,41 @@ tpgetrply.restype = ctypes.c_int
 tpcancel = _mod.tpcancel
 tpcancel.argtypes = (ctypes.c_int,)
 tpcancel.restype = ctypes.c_int
+
+tpreturn = _mod.tpreturn
+tpreturn.argtypes = (ctypes.c_int,ctypes.c_long, ctypes.c_char_p, ctypes.c_long, ctypes.c_long)
+tpreturn.restype = None
+
+class TPSVCINFO(ctypes.Structure):
+    _fields_ = [("name", (ctypes.c_char * 128)),
+               ("data", ctypes.c_char_p),
+               ("len", ctypes.c_long),
+               ("flags", ctypes.c_long),
+               ("cd", ctypes.c_int)]
+
+tpservice = ctypes.CFUNCTYPE(None, ctypes.POINTER(TPSVCINFO))
+
+class casual_service_name_mapping(ctypes.Structure):
+    _fields_ = [("functionPointer", tpservice),
+               ("name", ctypes.c_char_p),
+               ("type", ctypes.c_uint64),
+               ("transaction", ctypes.c_uint64)]
+
+class casual_xa_switch_mapping( ctypes.Structure):
+    _fields_ = [("key", ctypes.c_char_p),
+               ("xaSwitch", ctypes.c_void_p)]
+
+tpsvrinit_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.POINTER( ctypes.c_char_p))
+
+class casual_server_argument( ctypes.Structure):
+    _fields_ = [("services", ctypes.POINTER(casual_service_name_mapping)),
+               ("serviceInit", tpsvrinit_type),
+               ("serviceDone", ctypes.c_void_p),
+               ("argc", ctypes.c_int),
+               ("argv", ctypes.POINTER(ctypes.c_char_p)),
+               ("xaSwitches", ctypes.POINTER(casual_xa_switch_mapping))]
+
+casual_start_server = _mod.casual_start_server
+casual_start_server.argtypes = [ ctypes.POINTER(casual_server_argument),]
+casual_start_server.restype = ctypes.c_int
 

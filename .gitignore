@@ -17,3 +17,6 @@ bin/
 # Build files
 #
 *.mk
+*.pyc
+
+*.log

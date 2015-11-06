@@ -1,6 +1,6 @@
-import casual.porcelain as casual
-import casual.exception as exception
-import casual.buffer as buffer
+import casual.server.api as casual
+import casual.server.exception as exception
+import casual.server.buffer as buffer
 
 try:
     buf = buffer.JsonBuffer("{}")
@@ -35,3 +35,8 @@ print casual.receive( id)
 #
 id = casual.send( "casual_test1", "async echo async echo async echo")
 casual.cancel( id)
+
+#
+# Another call
+#
+print casual.call( "py_service_echo", "pyecho pyecho pyecho")
