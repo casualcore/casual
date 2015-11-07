@@ -5,6 +5,7 @@ import casual.server.exception as exeption
 
 import ctypes
 from test.test_multiprocessing import c_int
+import os
 
 
 #
@@ -85,8 +86,6 @@ def init( argc, argv):
 
 def start_server( services, init):
     
-    path = "/Users/hbergk/git/casual/middleware/python"
-    
     maxsize = len(services) + 1
     
     MappingType = xatmi.casual_service_name_mapping * maxsize
@@ -109,6 +108,7 @@ def start_server( services, init):
     mapping[maxsize - 1].functionPointer = xatmi.tpservice()
 
     ArgvType = ctypes.c_char_p * 1
+    path = os.path.dirname(os.path.abspath(__file__))
     arg = ArgvType(ctypes.c_char_p(path))
     
     argument = xatmi.casual_server_argument()
