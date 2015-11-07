@@ -12,7 +12,7 @@ def py_service_test( buffer):
 
 def py_service_echo( buffer):
 
-    reply = JsonBuffer(buffer.contents.data)
+    reply = JsonBuffer(buffer.contents.data[0:buffer.contents.len])
     
     casual_return( 0, reply)
 
