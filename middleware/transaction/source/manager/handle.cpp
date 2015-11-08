@@ -18,243 +18,269 @@ namespace casual
    namespace transaction
    {
 
-
-
       namespace handle
       {
-         namespace internal
+         namespace local
          {
-
-            namespace transform
+            namespace
             {
 
-               template< typename R, typename M>
-               R message( M&& message)
-               {
-                  R result;
-
-                  result.process = message.process;
-                  result.trid = message.trid;
-
-                  return result;
-               }
-
-
-               template< typename M>
-               auto reply( M&& message) -> decltype( common::message::reverse::type( message))
-               {
-                  auto result = common::message::reverse::type( message);
-
-                  result.process = common::process::handle();
-                  result.trid = message.trid;
-
-                  return result;
-               }
-
-            } // transform
-
-            namespace send
-            {
-               namespace persistent
+               namespace transform
                {
 
                   template< typename R, typename M>
-                  void reply( State& state, const M& request, int code, const common::process::Handle& target)
+                  R message( M&& message)
                   {
-                     R message;
-                     message.correlation = request.correlation;
-                     message.process = common::process::handle();
-                     message.trid = request.trid;
-                     message.state = code;
+                     R result;
 
-                     state.persistentReplies.emplace_back( target.queue, std::move( message));
+                     result.process = message.process;
+                     result.trid = message.trid;
+
+                     return result;
                   }
 
-                  template< typename R, typename M>
-                  void reply( State& state, const M& request, int code)
-                  {
-                     reply< R>( state, request, code, request.process);
-                  }
 
                   template< typename M>
-                  void reply( State& state, M&& message, const common::process::Handle& target)
+                  auto reply( M&& message) -> decltype( common::message::reverse::type( message))
                   {
-                     state.persistentReplies.emplace_back( target.queue, std::move( message));
+                     auto result = common::message::reverse::type( message);
+
+                     result.process = common::process::handle();
+                     result.trid = message.trid;
+
+                     return result;
                   }
 
-               } // persistent
+               } // transform
 
-               template< typename M>
-               struct Reply : state::Base
+               namespace send
                {
-                  using state::Base::Base;
-
-                  template< typename T>
-                  void operator () ( const T& request, int code, const common::process::Handle& target)
+                  namespace persistent
                   {
-                     M message;
-                     message.correlation = request.correlation;
-                     message.process = common::process::handle();
-                     message.trid = request.trid;
-                     message.state = code;
 
+                     template< typename R, typename M>
+                     void reply( State& state, const M& request, int code, const common::process::Handle& target)
+                     {
+                        R message;
+                        message.correlation = request.correlation;
+                        message.process = common::process::handle();
+                        message.trid = request.trid;
+                        message.state = code;
+
+                        state.persistentReplies.emplace_back( target.queue, std::move( message));
+                     }
+
+                     template< typename R, typename M>
+                     void reply( State& state, const M& request, int code)
+                     {
+                        reply< R>( state, request, code, request.process);
+                     }
+
+                     template< typename M>
+                     void reply( State& state, M&& message, const common::process::Handle& target)
+                     {
+                        state.persistentReplies.emplace_back( target.queue, std::move( message));
+                     }
+
+                  } // persistent
+
+                  template< typename M>
+                  struct Reply : state::Base
+                  {
+                     using state::Base::Base;
+
+                     template< typename T>
+                     void operator () ( const T& request, int code, const common::process::Handle& target)
+                     {
+                        M message;
+                        message.correlation = request.correlation;
+                        message.process = common::process::handle();
+                        message.trid = request.trid;
+                        message.state = code;
+
+                        state::pending::Reply reply{ target.queue, message};
+
+                        action::persistent::Send send{ m_state};
+
+                        if( ! send( reply))
+                        {
+                           common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
+                           m_state.persistentReplies.push_back( std::move( reply));
+                        }
+
+                     }
+
+                     template< typename T>
+                     void operator () ( const T& request, int code)
+                     {
+                        operator()( request, code, request.process);
+                     }
+
+                  };
+
+
+                  template< typename R>
+                  void reply( State& state, R&& message, const common::process::Handle& target)
+                  {
                      state::pending::Reply reply{ target.queue, message};
 
-                     action::persistent::Send send{ m_state};
+                     action::persistent::Send send{ state};
 
                      if( ! send( reply))
                      {
                         common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
-                        m_state.persistentReplies.push_back( std::move( reply));
+                        state.persistentReplies.push_back( std::move( reply));
                      }
-
                   }
 
-                  template< typename T>
-                  void operator () ( const T& request, int code)
+
+                  namespace resource
                   {
-                     operator()( request, code, request.process);
-                  }
 
-               };
+                     namespace persistent
+                     {
+                        template< typename M, typename F>
+                        void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
+                        {
+                           M message;
+                           message.process = common::process::handle();
+                           message.trid = transaction.trid;
+                           message.flags = flags;
+
+                           state::pending::Request request{ message};
+
+                           auto resources = common::range::partition(
+                              transaction.resources,
+                              filter);
+
+                           typedef Transaction::Resource resource_type;
+
+                           common::range::transform(
+                              std::get< 0>( resources), request.resources,
+                              std::mem_fn( &resource_type::id));
 
 
-               template< typename R>
-               void reply( State& state, R&& message, const common::process::Handle& target)
-               {
-                  state::pending::Reply reply{ target.queue, message};
+                           state.persistentRequests.push_back( std::move( request));
+                        }
 
-                  action::persistent::Send send{ state};
-
-                  if( ! send( reply))
-                  {
-                     common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
-                     state.persistentReplies.push_back( std::move( reply));
-                  }
-               }
+                     } // persistent
 
 
-               namespace resource
-               {
-
-                  namespace persistent
-                  {
                      template< typename M, typename F>
-                     void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
+                     void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
                      {
                         M message;
                         message.process = common::process::handle();
                         message.trid = transaction.trid;
                         message.flags = flags;
 
+                        auto resources = std::get< 0>( common::range::partition(
+                           transaction.resources,
+                           filter));
+
+                        //
+                        // Update state on transaction-resources
+                        //
+                        common::range::for_each(
+                           resources,
+                           Transaction::Resource::update::Stage{ newStage});
+
                         state::pending::Request request{ message};
 
-                        auto resources = common::range::partition(
-                           transaction.resources,
-                           filter);
-
-                        typedef Transaction::Resource resource_type;
-
                         common::range::transform(
-                           std::get< 0>( resources), request.resources,
-                           std::mem_fn( &resource_type::id));
+                           resources,
+                           request.resources,
+                           std::mem_fn( &Transaction::Resource::id));
 
-
-                        state.persistentRequests.push_back( std::move( request));
-                     }
-
-                  } // persistent
-
-
-                  template< typename M, typename F>
-                  void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
-                  {
-                     M message;
-                     message.process = common::process::handle();
-                     message.trid = transaction.trid;
-                     message.flags = flags;
-
-                     auto resources = std::get< 0>( common::range::partition(
-                        transaction.resources,
-                        filter));
-
-                     //
-                     // Update state on transaction-resources
-                     //
-                     common::range::for_each(
-                        resources,
-                        Transaction::Resource::update::Stage{ newStage});
-
-                     state::pending::Request request{ message};
-
-                     common::range::transform(
-                        resources,
-                        request.resources,
-                        std::mem_fn( &Transaction::Resource::id));
-
-                     if( ! action::resource::request( state, request))
-                     {
-                        //
-                        // Could not send to all RM-proxy-instances. We put the request
-                        // in pending.
-                        //
-                        state.pendingRequests.push_back( std::move( request));
-                     }
-                  }
-               } // resource
-            } // send
-
-            namespace instance
-            {
-
-               template< typename Q>
-               void done( State& state, Q& sender, state::resource::Proxy::Instance& instance)
-               {
-                  auto request = common::range::find_if(
-                        state.pendingRequests,
-                        state::pending::filter::Request{ instance.id});
-
-                  instance.state( state::resource::Proxy::Instance::State::idle);
-
-
-                  if( request)
-                  {
-                     //
-                     // We got a pending request for this resource, let's oblige
-                     //
-                     if( sender.send( instance.process.queue, request->message))
-                     {
-                        instance.state( state::resource::Proxy::Instance::State::busy);
-
-                        request->resources.erase(
-                           std::find(
-                              std::begin( request->resources),
-                              std::end( request->resources),
-                              instance.id));
-
-                        if( request.first->resources.empty())
+                        if( ! action::resource::request( state, request))
                         {
-                           state.pendingRequests.erase( request.first);
+                           //
+                           // Could not send to all RM-proxy-instances. We put the request
+                           // in pending.
+                           //
+                           state.pendingRequests.push_back( std::move( request));
                         }
                      }
-                     else
+                  } // resource
+               } // send
+
+               namespace instance
+               {
+
+                  template< typename Q>
+                  void done( State& state, Q& sender, state::resource::Proxy::Instance& instance)
+                  {
+                     auto request = common::range::find_if(
+                           state.pendingRequests,
+                           state::pending::filter::Request{ instance.id});
+
+                     instance.state( state::resource::Proxy::Instance::State::idle);
+
+
+                     if( request)
                      {
-                        common::log::warning << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
+                        //
+                        // We got a pending request for this resource, let's oblige
+                        //
+                        if( sender.send( instance.process.queue, request->message))
+                        {
+                           instance.state( state::resource::Proxy::Instance::State::busy);
+
+                           request->resources.erase(
+                              std::find(
+                                 std::begin( request->resources),
+                                 std::end( request->resources),
+                                 instance.id));
+
+                           if( request.first->resources.empty())
+                           {
+                              state.pendingRequests.erase( request.first);
+                           }
+                        }
+                        else
+                        {
+                           common::log::warning << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
+                        }
                      }
                   }
-               }
 
-               template< typename M>
-               void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time_point& now)
+                  template< typename M>
+                  void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time_point& now)
+                  {
+                     instance.statistics.resource.time( message.statistics.start, message.statistics.end);
+                     instance.statistics.roundtrip.end( now);
+                  }
+
+               } // instance
+
+               namespace resource
                {
-                  instance.statistics.resource.time( message.statistics.start, message.statistics.end);
-                  instance.statistics.roundtrip.end( now);
-               }
 
-            } // instance
+                  template< typename M>
+                  void involved( State& state, Transaction& transaction, M&& message)
+                  {
+                     for( auto& resource : message.resources)
+                     {
+                        if( common::range::find( state.resources, resource))
+                        {
+                           transaction.resources.push_back( resource);
+                        }
+                        else
+                        {
+                           common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                        }
+                     }
 
+                     common::range::trim( transaction.resources, common::range::unique( common::range::sort( transaction.resources)));
 
-         } // internal
+                     common::log::internal::transaction << "involved: " << transaction << '\n';
+
+                  }
+
+               } // resource
+
+            } // <unnamed>
+         } // local
 
          namespace dead
          {
@@ -293,32 +319,7 @@ namespace casual
 
          namespace resource
          {
-            namespace local
-            {
-               namespace
-               {
-                  template< typename M>
-                  void involved( State& state, Transaction& transaction, M&& message)
-                  {
-                     for( auto& resource : message.resources)
-                     {
-                        if( common::range::find( state.resources, resource))
-                        {
-                           transaction.resources.push_back( resource);
-                        }
-                        else
-                        {
-                           common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
-                        }
-                     }
 
-                     common::range::trim( transaction.resources, common::range::unique( common::range::sort( transaction.resources)));
-
-                     common::log::internal::transaction << "involved: " << transaction << '\n';
-
-                  }
-               } // <unnamed>
-            } // local
             void Involved::operator () ( message_type& message)
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
@@ -331,7 +332,7 @@ namespace casual
 
                if( transaction)
                {
-                  local::involved( m_state, *transaction, message);
+                  local::resource::involved( m_state, *transaction, message);
 
                }
                else
@@ -341,7 +342,7 @@ namespace casual
                   // add it...
                   //
                   m_state.transactions.emplace_back( message.trid);
-                  local::involved( m_state, m_state.transactions.back(), message);
+                  local::resource::involved( m_state, m_state.transactions.back(), message);
                }
             }
 
@@ -362,8 +363,8 @@ namespace casual
                   {
                      queue::non_blocking::Send sender{ this->m_state};
 
-                     internal::instance::done( this->m_state, sender, instance);
-                     internal::instance::statistics( instance, message, now);
+                     local::instance::done( this->m_state, sender, instance);
+                     local::instance::statistics( instance, message, now);
                   }
 
                   //
@@ -424,7 +425,7 @@ namespace casual
                         instance.process = std::move( message.process);
 
                         queue::non_blocking::Send sender{ m_state};
-                        internal::instance::done( m_state, sender, instance);
+                        local::instance::done( m_state, sender, instance);
 
                      }
                      else
@@ -519,12 +520,12 @@ namespace casual
                            // Send reply
                            //
                            {
-                              auto reply = internal::transform::message< reply_type>( message);
+                              auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.stage = reply_type::Stage::commit;
                               reply.state = XA_RDONLY;
 
-                              internal::send::reply( m_state, std::move( reply), transaction.trid.owner());
+                              local::send::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
 
                            //
@@ -545,12 +546,12 @@ namespace casual
                            // prepare send reply. Will be sent after persistent write to file
                            //
                            {
-                              auto reply = internal::transform::message< reply_type>( message);
+                              auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.stage = reply_type::Stage::prepare;
                               reply.state = XA_OK;
 
-                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                              local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
 
                            //
@@ -565,7 +566,7 @@ namespace casual
                                  Transaction::Resource::filter::Result{ Transaction::Resource::Result::cXA_OK},
                                  Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied});
 
-                           internal::send::resource::request<
+                           local::send::resource::request<
                               common::message::transaction::resource::commit::Request>( m_state, transaction, filter, Transaction::Resource::Stage::cPrepareRequested);
 
 
@@ -578,7 +579,7 @@ namespace casual
                            //
                            common::log::error << "TODO: something has gone wrong - rollback...\n";
 
-                           internal::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                           local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                               m_state,
                               transaction,
                               Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
@@ -625,14 +626,14 @@ namespace casual
                         {
                            common::log::internal::transaction << "commit completed - " << transaction << " XA_OK\n";
 
-                           auto reply = internal::transform::message< reply_type>( message);
+                           auto reply = local::transform::message< reply_type>( message);
                            reply.correlation = transaction.correlation;
                            reply.stage = reply_type::Stage::commit;
                            reply.state = XA_OK;
 
                            if( transaction.resources.size() <= 1)
                            {
-                              internal::send::reply( m_state, reply, transaction.trid.owner());
+                              local::send::reply( m_state, reply, transaction.trid.owner());
                            }
                            else
                            {
@@ -643,7 +644,7 @@ namespace casual
                               // For now, we do a delayed reply, so we're sure that the
                               // commit-reply arrives after the prepare-reply
                               //
-                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                              local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
 
                            //
@@ -665,12 +666,12 @@ namespace casual
                            // TOOD: we do have to save the state of the transaction?
                            //
                            {
-                              auto reply = internal::transform::message< reply_type>( message);
+                              auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.stage = reply_type::Stage::commit;
                               reply.state = Transaction::Resource::convert( result);
 
-                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                              local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
                            break;
                         }
@@ -715,11 +716,11 @@ namespace casual
                            // Send reply
                            //
                            {
-                              auto reply = internal::transform::message< reply_type>( message);
+                              auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.state = XA_OK;
 
-                              internal::send::reply( m_state, std::move( reply), transaction.trid.owner());
+                              local::send::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
 
                            //
@@ -742,11 +743,11 @@ namespace casual
                            // TOOD: we do have to save the state of the transaction?
                            //
                            {
-                              auto reply = internal::transform::message< reply_type>( message);
+                              auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.state = Transaction::Resource::convert( result);
 
-                              internal::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
+                              local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
                            }
                            break;
                         }
@@ -757,6 +758,39 @@ namespace casual
                }
             } // reply
          } // resource
+
+
+         template< typename Handler>
+         void user_reply_wrapper< Handler>::operator () ( typename Handler::message_type& message)
+         {
+            try
+            {
+               Handler::operator() ( message);
+            }
+            catch( const user::error& exception)
+            {
+               common::log::stream::get( exception.category()) << common::error::xa::error( exception.code()) << " - " << exception << '\n';
+
+               auto reply = local::transform::reply( message);
+               reply.stage = decltype( reply)::Stage::error;
+               reply.state = exception.code();
+
+               local::send::reply( Handler::m_state, std::move( reply), message.process);
+            }
+            catch( ...)
+            {
+               common::log::error << "unexpected error - action: send reply XAER_RMERR\n";
+
+               common::error::handler();
+
+               auto reply = local::transform::reply( message);
+               reply.stage = decltype( reply)::Stage::error;
+               reply.state = XAER_RMERR;
+
+               local::send::reply( Handler::m_state, std::move( reply), message.process);
+            }
+         }
+
 
          void basic_commit::operator () ( message_type& message)
          {
@@ -785,7 +819,7 @@ namespace casual
                //
                // Make sure we add the involved resources from the commit message (if any)
                //
-               resource::local::involved( m_state, transaction, message);
+               local::resource::involved( m_state, transaction, message);
 
                switch( transaction.stage())
                {
@@ -820,11 +854,11 @@ namespace casual
                      // Send reply
                      //
                      {
-                        auto reply = internal::transform::reply( message);
+                        auto reply = local::transform::reply( message);
                         reply.state = XA_RDONLY;
                         reply.stage = reply_type::Stage::commit;
 
-                        internal::send::reply( m_state, std::move( reply), message.process);
+                        local::send::reply( m_state, std::move( reply), message.process);
                      }
 
                      break;
@@ -841,7 +875,7 @@ namespace casual
                      //
                      transaction.correlation = message.correlation;
 
-                     internal::send::resource::request< common::message::transaction::resource::commit::Request>(
+                     local::send::resource::request< common::message::transaction::resource::commit::Request>(
                         m_state,
                         transaction,
                         Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
@@ -863,7 +897,7 @@ namespace casual
                      //
                      transaction.correlation = message.correlation;
 
-                     internal::send::resource::request< common::message::transaction::resource::prepare::Request>(
+                     local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                         m_state,
                         transaction,
                         Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
@@ -910,7 +944,7 @@ namespace casual
                //
                // Make sure we add the involved resources from the rollback message (if any)
                //
-               resource::local::involved( m_state, transaction, message);
+               local::resource::involved( m_state, transaction, message);
 
                if( transaction.resources.empty())
                {
@@ -925,10 +959,10 @@ namespace casual
                   // Send reply
                   //
                   {
-                     auto reply = internal::transform::reply( message);
+                     auto reply = local::transform::reply( message);
                      reply.state = XA_OK;
 
-                     internal::send::reply( m_state, std::move( reply), message.process);
+                     local::send::reply( m_state, std::move( reply), message.process);
                   }
                }
                else
@@ -938,7 +972,7 @@ namespace casual
                   //
                   transaction.correlation = message.correlation;
 
-                  internal::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                  local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                      m_state,
                      transaction,
                      Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
@@ -968,7 +1002,7 @@ namespace casual
                   auto& transaction = *found;
                   common::log::internal::transaction << "prepare - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  internal::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
+                  local::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
                      m_state,
                      transaction,
                      Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
@@ -993,10 +1027,10 @@ namespace casual
                   // Send reply
                   //
                   {
-                     auto reply = internal::transform::reply( message);
+                     auto reply = local::transform::reply( message);
                      reply.state = XA_RDONLY;
 
-                     internal::send::reply( m_state, std::move( reply), message.process);
+                     local::send::reply( m_state, std::move( reply), message.process);
                   }
 
                }
@@ -1016,7 +1050,7 @@ namespace casual
                   auto& transaction = *found;
                   common::log::internal::transaction << "commit - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  internal::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
+                  local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
                      transaction,
                      Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
@@ -1033,10 +1067,10 @@ namespace casual
                   // Send reply
                   //
                   {
-                     auto reply = internal::transform::reply( message);
+                     auto reply = local::transform::reply( message);
                      reply.state = XAER_NOTA;
 
-                     internal::send::reply( m_state, std::move( reply), message.process);
+                     local::send::reply( m_state, std::move( reply), message.process);
                   }
                }
             }
@@ -1055,7 +1089,7 @@ namespace casual
                   auto& transaction = *found;
                   common::log::internal::transaction << "rollback - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  internal::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
+                  local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
                      transaction,
                      Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
@@ -1071,10 +1105,10 @@ namespace casual
                   // Send reply
                   //
                   {
-                     auto reply = internal::transform::reply( message);
+                     auto reply = local::transform::reply( message);
                      reply.state = XAER_NOTA;
 
-                     internal::send::reply( m_state, std::move( reply), message.process);
+                     local::send::reply( m_state, std::move( reply), message.process);
                   }
                }
             }
@@ -1111,10 +1145,10 @@ namespace casual
                         // Send reply
                         //
                         {
-                           auto reply = internal::transform::message< reply_type>( message);
+                           auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( result);
 
-                           internal::send::reply( m_state, std::move( reply), message.process);
+                           local::send::reply( m_state, std::move( reply), message.process);
                         }
                      }
 
@@ -1154,10 +1188,10 @@ namespace casual
                         // Send reply
                         //
                         {
-                           auto reply = internal::transform::message< reply_type>( message);
+                           auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( result);
 
-                           internal::send::reply( m_state, std::move( reply), message.process);
+                           local::send::reply( m_state, std::move( reply), message.process);
                         }
 
                         //
