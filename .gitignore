@@ -7,6 +7,8 @@
 .project
 
 
+casual.env
+
 #
 # Build directories
 #
@@ -18,11 +20,6 @@ bin/
 # Build files
 #
 *.mk
+*.pyc
 
-.unittest_domain_home/
-
-/casual.env
-/casual_build_environment
-/debug.log
-/casual.log
-/Debug/
+*.log

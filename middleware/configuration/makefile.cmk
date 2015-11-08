@@ -1,0 +1,56 @@
+from casual.middleware.make.dsl import *
+
+IncludePaths([
+   'include',
+   '../common/include',
+   '../xatmi/include',
+   '../serviceframework/include',
+   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+   ])
+
+
+LibraryPaths([
+    'bin',
+    '../common/bin',
+    '../xatmi/bin',
+    '../serviceframework/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+    ])
+
+intall_libs = []
+
+
+lib_configuration = LinkLibrary( 'bin/casual-configuration',
+    [
+        Compile( 'source/file.cpp'),
+        Compile( 'source/environment.cpp'),
+        Compile( 'source/domain.cpp'),
+        Compile( 'source/xa_switch.cpp'),
+        Compile( 'source/serverdefinition.cpp'),
+        Compile( 'source/queue.cpp')
+    ],
+    ['casual-common',
+    'casual-sf'])
+
+
+intall_libs.append( lib_configuration)
+
+#
+# Unittest
+#
+
+LinkUnittest( 'bin/test-casual-configuration',
+   [
+        Compile( 'unittest/isolated/source/test_domain.cpp'),
+        Compile( 'unittest/isolated/source/test_xa_switch.cpp'),
+        Compile( 'unittest/isolated/source/test_queue.cpp'),
+   ],
+   [ lib_configuration, 'casual-sf', 'casual-common'])  
+   
+#
+# Install
+#
+Install( intall_libs, '$(CASUAL_HOME)/lib')
+Install( 'resources.yaml', '$(CASUAL_HOME)/configuration/example')
+
+

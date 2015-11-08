@@ -1,0 +1,195 @@
+import sys
+from casual.middleware.make.dsl import *
+
+if sys.platform.startswith('darwin'):
+    platform_specific_libs = [ 'c', 'iconv', 'resolv']
+    platform_specific_lib_paths = [ '/opt/local/lib' ]
+    platform_specific_include_paths = [ '/opt/local/include' ]
+else:
+    platform_specific_libs = ['uuid', 'resolv']
+    platform_specific_lib_paths = []
+    platform_specific_include_paths = []
+
+
+IncludePaths( [ 
+    'include',
+    '../xatmi/include',
+    '../buffers/include',
+    '../transaction/include',
+    '../serviceframework/include',
+    '../buffers/include',
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)'
+    ]
+    + platform_specific_include_paths)
+
+LibraryPaths( platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
+
+
+install_libs = []
+
+
+casual_common_objectfiles = [
+    Compile( 'source/server/context.cpp'),
+    Compile( 'source/server/lifetime.cpp'),
+    Compile( 'source/server/handle.cpp'),
+    Compile( 'source/server/service.cpp'),
+    
+    Compile( 'source/call/context.cpp'),
+    Compile( 'source/call/state.cpp'),
+    Compile( 'source/call/lookup.cpp'),
+    
+    Compile( 'source/buffer/x_octet.cpp'),
+    Compile( 'source/buffer/pool.cpp'),
+    Compile( 'source/buffer/transport.cpp'),
+    Compile( 'source/buffer/type.cpp'),
+    
+    Compile( 'source/transaction/context.cpp'),
+    Compile( 'source/transaction/id.cpp'),
+    Compile( 'source/transaction/resource.cpp'),
+    Compile( 'source/transaction/transaction.cpp'),
+    
+    Compile( 'source/ipc.cpp'),
+    Compile( 'source/queue.cpp'),
+    
+    Compile( 'source/message/type.cpp'),
+    Compile( 'source/message/handle.cpp'),
+    Compile( 'source/message/dispatch.cpp'),
+    Compile( 'source/message/service.cpp'),
+    Compile( 'source/message/traffic.cpp'),
+    Compile( 'source/message/queue.cpp'),
+    Compile( 'source/message/transaction.cpp'),
+    
+    Compile( 'source/exception.cpp'),
+    Compile( 'source/uuid.cpp'),
+    Compile( 'source/environment.cpp'),
+    Compile( 'source/file.cpp'),
+    Compile( 'source/string.cpp'),
+    Compile( 'source/signal.cpp'),
+    Compile( 'source/log.cpp'),
+    Compile( 'source/trace.cpp'),
+    Compile( 'source/error.cpp'),
+    Compile( 'source/chronology.cpp'),
+    Compile( 'source/process.cpp'),
+    Compile( 'source/execution.cpp'),
+    Compile( 'source/network/byteorder.cpp'),
+    Compile( 'source/network/tcp.cpp'),
+    Compile( 'source/transcode.cpp'),
+    Compile( 'source/timeout.cpp'),
+    
+    Compile( 'source/terminal.cpp'),
+]
+
+
+common = LinkLibrary( 'bin/casual-common', 
+	casual_common_objectfiles,
+	platform_specific_libs)
+
+install_libs.append( common)
+
+# lib_terminal = LinkLibrary( 
+#    'bin/casual-common-terminal', 
+#    [ Compile( 'source/terminal.cpp'),], 
+#    [ common])
+# 
+# install_libs.append( lib_terminal)
+
+#
+# Mockup stuff, only for unittest
+#
+mockup = LinkLibrary( 'bin/casual-mockup', 
+     [
+       Compile( 'source/mockup/ipc.cpp'),
+       Compile( 'source/mockup/domain.cpp'),
+     ],
+     [ common])
+
+install_libs.append( mockup)
+
+#
+# The mockup-rm, only for testing
+#
+target = LinkLibrary( 'bin/casual-mockup-rm', 
+     [
+       Compile( 'source/mockup/rm.cpp')
+     ],
+     [ common])
+
+install_libs.append( target)
+
+mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
+    [ 
+      Compile( 'source/mockup/unittest_envrionment.cpp'),  
+    ],
+    [ common, mockup, 'gtest'])
+
+install_libs.append( mockup_unittest)
+
+
+target_simple_process = LinkExecutable( 'bin/simple_process',
+    [
+     Compile( 'unittest/isolated/source/simple_process.cpp')
+    ], 
+    [ common]
+    )	
+	
+   
+#
+# unittest
+#
+unittest_objectfiles = [
+   Compile( 'unittest/isolated/source/test_conformance.cpp'),                     
+                        
+   Compile( 'unittest/isolated/source/test_buffer.cpp'),
+   Compile( 'unittest/isolated/source/test_marshal.cpp'),
+   Compile( 'unittest/isolated/source/test_ipc.cpp'),
+   Compile( 'unittest/isolated/source/test_queue.cpp'),
+   Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
+   Compile( 'unittest/isolated/source/test_server_context.cpp'),
+   Compile( 'unittest/isolated/source/test_service.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_uuid.cpp'),
+   Compile( 'unittest/isolated/source/test_arguments.cpp'),
+   Compile( 'unittest/isolated/source/test_file.cpp'),
+   Compile( 'unittest/isolated/source/test_process.cpp'),
+   Compile( 'unittest/isolated/source/test_string.cpp'),
+   Compile( 'unittest/isolated/source/test_environment.cpp'),
+   Compile( 'unittest/isolated/source/test_error.cpp'),
+   Compile( 'unittest/isolated/source/test_network_byteorder.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_signal.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_transaction_id.cpp'),
+   Compile( 'unittest/isolated/source/test_transaction.cpp'),
+   Compile( 'unittest/isolated/source/test_algorithm.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_mockup.cpp'),
+   Compile( 'unittest/isolated/source/test_traits.cpp'),
+   Compile( 'unittest/isolated/source/test_chronology.cpp'),
+   Compile( 'unittest/isolated/source/test_transcode.cpp'),
+]
+
+
+
+target_test_common = LinkUnittest( 'bin/test-casual-common-isolated', 
+	unittest_objectfiles,
+	[
+     common,
+     mockup,
+     mockup_unittest,
+    ])		
+
+#
+# We execute 'simple_process' from test-casual-common-isolated, so
+# we need to meke sure simple_process is built before
+#
+Dependencies( target_test_common, [ target_simple_process ]);
+
+#
+# Install 
+#
+Install( install_libs, '$(CASUAL_HOME)/lib')
+
+
+
+
+

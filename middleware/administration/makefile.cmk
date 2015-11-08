@@ -1,0 +1,28 @@
+from casual.middleware.make.dsl import *
+
+
+IncludePaths( [
+       '../common/include',
+       '../xatmi/include',
+       '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+    ])
+
+LibraryPaths( 
+    [
+      '../common/bin',
+      '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+    ])
+
+
+admin = LinkExecutable( 'bin/casual-admin', 
+    [ 
+        Compile( 'source/main.cpp'),
+    ], 
+    [ 'casual-common'])
+
+
+Install( admin, '$(CASUAL_HOME)/bin')
+
+
+
+

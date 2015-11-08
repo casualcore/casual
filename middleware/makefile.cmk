@@ -1,0 +1,31 @@
+from casual.middleware.make.dsl import *
+
+Parallel( False)
+
+Build( 'common/makefile.cmk')
+Build( 'xatmi/makefile.cmk')
+Build( 'serviceframework/makefile.cmk')
+Build( 'buffer/makefile.cmk')
+Build( 'configuration/makefile.cmk')
+Build( 'tools/makefile.cmk')
+
+with Scope():
+    Parallel( True)
+        
+    Build( 'broker/makefile.cmk')
+    Build( 'traffic/makefile.cmk')
+    Build( 'administration/makefile.cmk')
+    Build( 'gateway/makefile.cmk')
+    
+    with Scope():
+        Parallel( False)
+        
+        Build( 'transaction/makefile.cmk')
+        # queue depends on libcasual-resource-proxy-server.so in transaction
+        Build( 'queue/makefile.cmk')
+
+#
+# Temporary until moved to different repo
+#
+Build( 'test/makefile.cmk')
+
