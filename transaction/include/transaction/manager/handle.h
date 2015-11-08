@@ -57,25 +57,6 @@ namespace casual
 
       namespace handle
       {
-
-         namespace internal
-         {
-            namespace transform
-            {
-
-               template< typename M>
-               auto reply( M&& message) -> decltype( common::message::reverse::type( message));
-
-            } // transform
-
-            namespace send
-            {
-               template< typename R>
-               void reply( State& state, R&& message, const common::process::Handle& target);
-
-            } // send
-         } // internal
-
          namespace dead
          {
             struct Process : state::Base
@@ -177,35 +158,7 @@ namespace casual
          {
             using Handler::Handler;
 
-            void operator () ( typename Handler::message_type& message)
-            {
-               try
-               {
-                  Handler::operator() ( message);
-               }
-               catch( const user::error& exception)
-               {
-                  common::log::stream::get( exception.category()) << common::error::xa::error( exception.code()) << " - " << exception << '\n';
-
-                  auto reply = internal::transform::reply( message);
-                  reply.stage = decltype( reply)::Stage::error;
-                  reply.state = exception.code();
-
-                  internal::send::reply( Handler::m_state, std::move( reply), message.process);
-               }
-               catch( ...)
-               {
-                  common::log::error << "unexpected error - action: send reply XAER_RMERR\n";
-
-                  common::error::handler();
-
-                  auto reply = internal::transform::reply( message);
-                  reply.stage = decltype( reply)::Stage::error;
-                  reply.state = XAER_RMERR;
-
-                  internal::send::reply( Handler::m_state, std::move( reply), message.process);
-               }
-            }
+            void operator () ( typename Handler::message_type& message);
          };
 
 
