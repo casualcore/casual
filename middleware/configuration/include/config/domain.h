@@ -38,9 +38,8 @@ namespace casual
             Environment environment;
 
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( alias);
                archive & CASUAL_MAKE_NVP( path);
@@ -49,7 +48,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( arguments);
                archive & CASUAL_MAKE_NVP( memberships);
                archive & CASUAL_MAKE_NVP( environment);
-            }
+            )
          };
 
          namespace transaction
@@ -59,12 +58,11 @@ namespace casual
                std::string path;
                std::string database = "transaction-manager.db";
 
-               template< typename A>
-               void serialize( A& archive)
-               {
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
                   archive & CASUAL_MAKE_NVP( path);
                   archive & CASUAL_MAKE_NVP( database);
-               }
+               )
             };
 
          } // transaction
@@ -74,12 +72,11 @@ namespace casual
          {
             std::vector< std::string> restriction;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                Executable::serialize( archive);
                archive & CASUAL_MAKE_NVP( restriction);
-            }
+            )
          };
 
 
@@ -90,14 +87,13 @@ namespace casual
             std::string note;
             std::string transaction;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( timeout);
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( transaction);
-            }
+            )
          };
 
          struct Resource
@@ -108,14 +104,13 @@ namespace casual
             std::string openinfo;
             std::string closeinfo;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( key);
                archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( openinfo);
                archive & CASUAL_MAKE_NVP( closeinfo);
-            }
+            )
 
          };
 
@@ -127,14 +122,13 @@ namespace casual
             std::vector< Resource> resources;
             std::vector< std::string> dependencies;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( resources);
                archive & CASUAL_MAKE_NVP( dependencies);
-            }
+            )
          };
 
 
@@ -152,14 +146,13 @@ namespace casual
             Service service;
 
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( environment);
                archive & CASUAL_MAKE_NVP( server);
                archive & CASUAL_MAKE_NVP( executable);
                archive & CASUAL_MAKE_NVP( service);
-            }
+            )
          };
 
          struct Domain
@@ -173,9 +166,8 @@ namespace casual
             std::vector< Executable> executables;
             std::vector< Service> services;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( name);
                archive & sf::makeNameValuePair( "default", casual_default);
                archive & CASUAL_MAKE_NVP( transactionmanager);
@@ -183,7 +175,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( executables);
                archive & CASUAL_MAKE_NVP( services);
-            }
+            )
          };
 
          Domain get( const std::string& file);

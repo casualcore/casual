@@ -34,6 +34,11 @@ namespace casual
             //!
             extern internal::Stream transaction;
 
+            //!
+            //! Log with category 'casual.gateway'
+            //!
+            extern internal::Stream gateway;
+
 
             //!
             //! Log with category 'casual.ipc'

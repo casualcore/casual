@@ -33,6 +33,7 @@ namespace casual
                casual_debug,
                casual_trace,
                casual_transaction,
+               casual_gateway,
                casual_ipc,
                casual_queue,
                casual_buffer,
@@ -47,7 +48,7 @@ namespace casual
                error,
             };
 
-            const char* name( Type type);
+            const std::string& name( Type type);
 
          } // category
 

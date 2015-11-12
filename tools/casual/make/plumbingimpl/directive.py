@@ -5,7 +5,7 @@ Created on 13 maj 2012
 '''
 
 import logging
-logging.basicConfig(filename='cmk.log',level=logging.DEBUG)
+logging.basicConfig( filename='.casual/cmk.log',level=logging.DEBUG)
 
 
 import os

@@ -166,48 +166,43 @@ namespace casual
                   std::function< logger_buffer*()> factory;
                };
 
-
-               const buffer_holder& getBuffer( log::category::Type category)
+               namespace buffer
                {
-                  static const std::map< log::category::Type, buffer_holder> buffers{
-                     { log::category::Type::casual_debug, { bufferFactory< log::category::Type::casual_debug>}},
-                     { log::category::Type::casual_trace, { bufferFactory< log::category::Type::casual_trace>}},
-                     { log::category::Type::casual_transaction, { bufferFactory< log::category::Type::casual_transaction>}},
-                     { log::category::Type::casual_ipc, { bufferFactory< log::category::Type::casual_ipc>}},
-                     { log::category::Type::casual_queue, { bufferFactory< log::category::Type::casual_queue>}},
-                     { log::category::Type::casual_buffer, { bufferFactory< log::category::Type::casual_buffer>}},
-
-                     { log::category::Type::debug, { bufferFactory< log::category::Type::debug>}},
-                     { log::category::Type::trace, { bufferFactory< log::category::Type::trace>}},
-                     { log::category::Type::parameter, { bufferFactory< log::category::Type::parameter>}},
-                     { log::category::Type::information, { bufferFactory< log::category::Type::information>}},
-                     { log::category::Type::warning, { bufferFactory< log::category::Type::warning>}},
-                     { log::category::Type::error, { bufferFactory< log::category::Type::error>}},
-                  };
-
-                  return buffers.at( category);
-               }
-
-
-               logger_buffer* getActiveBuffer( log::category::Type category)
-               {
-                  std::vector< std::string> environment;
-
-                  range::transform(
-                        common::string::split( common::environment::variable::get( "CASUAL_LOG", ""), ','),
-                        environment,
-                        string::trim);
-
-
-                  auto found = range::find( environment, log::category::name( category));
-
-                  if( ! found.empty() || ! range::find( environment, "%").empty())
+                  std::map< log::category::Type, buffer_holder>& mapping()
                   {
-                     return getBuffer( category).factory();
+                     static std::map< log::category::Type, buffer_holder> buffers;
+                     return buffers;
                   }
 
-                  return nullptr;
-               }
+
+                  const buffer_holder& get( log::category::Type category)
+                  {
+                     return mapping().at( category);
+                  }
+
+                  namespace active
+                  {
+                     logger_buffer* get( log::category::Type category)
+                     {
+                        std::vector< std::string> environment;
+
+                        range::transform(
+                              common::string::split( common::environment::variable::get( "CASUAL_LOG", ""), ','),
+                              environment,
+                              string::trim);
+
+
+                        auto found = range::find( environment, log::category::name( category));
+
+                        if( ! found.empty() || ! range::find( environment, "%").empty())
+                        {
+                           return buffer::get( category).factory();
+                        }
+
+                        return nullptr;
+                     }
+                  } // active
+               } // buffer
 
             } // unnamed
 
@@ -217,95 +212,118 @@ namespace casual
          namespace category
          {
 
-            const char* name( Type type)
+            namespace
             {
-               switch( type)
-               {
-                  case Type::casual_debug: return "casual.debug"; break;
-                  case Type::casual_trace: return "casual.trace"; break;
-                  case Type::casual_transaction: return "casual.transaction"; break;
-                  case Type::casual_ipc: return "casual.ipc"; break;
-                  case Type::casual_queue: return "casual.queue"; break;
-                  case Type::casual_buffer: return "casual.buffer"; break;
 
-                  case Type::debug: return "debug"; break;
-                  case Type::trace: return "trace"; break;
-                  case Type::parameter: return "parameter"; break;
-                  case Type::information: return "information"; break;
-                  case Type::warning: return "warning"; break;
-                  case Type::error: return "error"; break;
+               std::map< Type, std::string>& mapping()
+               {
+                  static std::map< Type, std::string> singleton;
+                  return singleton;
                }
-               return "";
+
+            } // <unnamed>
+
+            const std::string& name( Type type)
+            {
+               return mapping().at( type);
             }
 
          } // category
 
-         namespace internal
-         {
-
-            internal::Stream debug{ local::getActiveBuffer( category::Type::casual_debug)};
-
-            internal::Stream trace{ local::getActiveBuffer( category::Type::casual_trace)};
-
-            internal::Stream transaction{ local::getActiveBuffer( category::Type::casual_transaction)};
-
-            internal::Stream ipc{ local::getActiveBuffer( category::Type::casual_ipc)};
-
-            internal::Stream queue{ local::getActiveBuffer( category::Type::casual_queue)};
-
-            internal::Stream buffer{ local::getActiveBuffer( category::Type::casual_buffer)};
-
-
-         } // internal
-
-         internal::Stream debug{ local::getActiveBuffer( category::Type::debug)};
-
-         internal::Stream trace{ local::getActiveBuffer( category::Type::trace)};
-
-         internal::Stream parameter{ local::getActiveBuffer( category::Type::parameter)};
-
-         internal::Stream information{ local::getActiveBuffer( category::Type::information)};
-
-         internal::Stream warning{ local::getActiveBuffer( category::Type::warning)};
-
-         //
-         // Always on
-         //
-         internal::Stream error{ local::getBuffer( log::category::Type::error).factory()};
-
-
          namespace stream
          {
+            namespace
+            {
+               std::map< category::Type, internal::Stream*>& mapping()
+               {
+                  static std::map< category::Type, internal::Stream*> singleton;
+                  return singleton;
+               }
+            } // unnamed
+
             internal::Stream& get( category::Type category)
             {
-               static std::map< category::Type, internal::Stream&> streams{
-                  { category::Type::casual_debug, internal::debug },
-                  { category::Type::casual_trace, internal::trace },
-                  { category::Type::casual_transaction, internal::transaction },
-                  { category::Type::casual_queue, internal::queue },
-                  { category::Type::casual_buffer, internal::buffer },
-                  { category::Type::debug, debug },
-                  { category::Type::trace, trace },
-                  { category::Type::parameter, parameter },
-                  { category::Type::information, information },
-                  { category::Type::warning, warning },
-                  { category::Type::error, error},
-               };
-
-               return streams.at( category);
+               return *mapping().at( category);
             }
          } // stream
 
 
+         namespace registration
+         {
+            namespace
+            {
+               template< category::Type type>
+               category::Type logger( std::string name, internal::Stream& stream)
+               {
+                  category::mapping()[ type] = std::move( name);
+
+                  local::buffer::mapping()[ type] = { local::bufferFactory< type>};
+
+                  stream::mapping()[ type] = &stream;
+
+                  return type;
+               }
+
+               template< category::Type type>
+               local::logger_buffer* active( std::string name, internal::Stream& stream)
+               {
+                  return local::buffer::active::get( registration::logger< type>( std::move( name), stream));
+               }
+
+            } // <unnamed>
+
+         } // register
+
+
+
+         namespace internal
+         {
+
+            internal::Stream debug{ registration::active< category::Type::casual_debug>( "casual.debug", debug)};
+
+            internal::Stream trace{ registration::active< category::Type::casual_trace>( "casual.trace", trace)};
+
+            internal::Stream transaction{ registration::active< category::Type::casual_transaction>( "casual.transaction", transaction)};
+
+            internal::Stream gateway{ registration::active< category::Type::casual_gateway>( "casual.gateway", gateway)};
+
+            internal::Stream ipc{ registration::active< category::Type::casual_ipc>( "casual.ipc", ipc)};
+
+            internal::Stream queue{ registration::active< category::Type::casual_queue>( "casual.queue", queue)};
+
+            internal::Stream buffer{ registration::active< category::Type::casual_buffer>( "casual.buffer", buffer)};
+
+
+         } // internal
+
+         internal::Stream debug{ registration::active< category::Type::debug>( "debug", debug)};
+
+         internal::Stream trace{ registration::active< category::Type::trace>( "trace", trace)};
+
+         internal::Stream parameter{ registration::active< category::Type::parameter>( "parameter", parameter)};
+
+         internal::Stream information{ registration::active< category::Type::information>( "information", information)};
+
+         internal::Stream warning{ registration::active< category::Type::warning>( "warning", warning)};
+
+         //
+         // Always on
+         //
+         internal::Stream error{ local::buffer::get( registration::logger< category::Type::error>( "error", error)).factory()};
+
+
+
+
+
          bool active( category::Type category)
          {
-            return local::getActiveBuffer( category) != nullptr;
+            return local::buffer::active::get( category) != nullptr;
          }
 
 
          void activate( category::Type category)
          {
-            stream::get( category).rdbuf( local::getBuffer( category).factory());
+            stream::get( category).rdbuf( local::buffer::get( category).factory());
          }
 
          void deactivate( category::Type category)

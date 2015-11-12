@@ -52,8 +52,8 @@ ifdef DEBUG
    
 else
    COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -std=c++11 -pthread
-   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC -Wall -pedantic -std=c++11 -pthread
-   LINK_DIRECTIVES_EXE =  -O3 -fPIC -Wall -pedantic -std=c++11 -pthread
+   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC -Wall -pedantic -std=c++11
+   LINK_DIRECTIVES_EXE =  -O3 -fPIC -Wall -pedantic -std=c++11
    LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC -Wall -pedantic -std=c++11 -pthread
 endif
 
