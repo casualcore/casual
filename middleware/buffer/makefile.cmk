@@ -20,7 +20,7 @@ install_lib = []
 install_include = []
 
 
-lib_buffer = LinkLibrary( Output('bin/casual-buffer', 1,1,0),
+lib_buffer = LinkLibrary( 'bin/casual-buffer',
     [
      Compile( 'source/string.cpp'),
      Compile( 'source/octet.cpp'),
