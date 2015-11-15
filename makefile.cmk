@@ -2,5 +2,5 @@ from casual.make.porcelain import *
 
 Parallel( False)
 
-Build('tools/makefile.cmk')
+Build('thirdparty/makefile.cmk')
 Build('middleware/makefile.cmk')

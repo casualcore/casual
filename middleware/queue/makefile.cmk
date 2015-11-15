@@ -6,9 +6,9 @@ IncludePaths( [
     '../common/include',
     '../configuration/include',
     '../serviceframework/include', 
-    '../thirdparty/database/include',
     '../xatmi/include',
     '../transaction/include',
+    '../../thirdparty/database/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ]);
 
