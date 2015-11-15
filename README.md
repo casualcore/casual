@@ -62,9 +62,10 @@ TODO: this documentation should be separated from this repo? At least conceptual
 * COBOL bindings
 * some redesign of internal parts (for maintainability)
 
-We've done some field tests 
+We've done some field tests
+
 * 1 XATMI domain (no inter-domain communications)
-* 2 types of resources: IBM db2 and casual-queue
+* 2 types of resources - IBM db2 and casual-queue
 * Performance is good
 * Scalability is really good, hence we feel confident that the basic design is good.
 
