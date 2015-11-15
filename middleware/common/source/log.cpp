@@ -86,23 +86,29 @@ namespace casual
                      open();
                   }
 
-                  bool open()
+                  bool open( const std::string& file)
                   {
-                     static const std::string logfileName = common::environment::directory::domain() + "/casual.log";
-
-                     m_output.open( logfileName, std::ios::app | std::ios::out);
+                     m_output.open( file, std::ios::app | std::ios::out);
 
                      if( m_output.fail())
                      {
                         //
                         // We don't want to throw... Or do we?
                         //
-                        std::cerr << process::path() << " - Could not open log-file: " << logfileName << std::endl;
-                        //throw exception::xatmi::SystemError( "Could not open the log-file: " + logfileName);
+                        std::cerr << process::path() << " - could not open log-file: " << file << std::endl;
                         return false;
                      }
                      return true;
 
+                  }
+
+                  void open()
+                  {
+                     if( ! open( common::environment::directory::domain() + "/casual.log"))
+                     {
+                        std::cerr << "using current directory - ./casual.log" << std::endl;
+                        open( "./casual.log");
+                     }
                   }
 
                   std::ofstream m_output;
