@@ -23,8 +23,9 @@ The main product in the casual suite.
 * The semantics are simple and easy to reason about.
 * Services (servers) can be distributed to fit any deployment needs.
 * Asynchronous pattern gives massive concurrency without the hassle of threads
-* Using single threaded servers gives linear scalability and execution encapsulation *(ie Chrome uses processes instead of threads to achieve higher security and stability)* 
+* Using single threaded servers gives linear scalability and execution encapsulation 
 * Services can be exposed as REST services (JSONP, SOAP…), non intrusive out of the box\*
+* Built on specifications that is proven to work for large scale applications with high performance demand
 
 \*) If the service is implemented via the C++ abstraction layer.
 
