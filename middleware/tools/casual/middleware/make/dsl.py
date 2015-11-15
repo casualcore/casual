@@ -22,9 +22,9 @@ _porcelain = casual.make.porcelain.porcelain(version = 1.0)
 #
 # New functions adding functionality
 #
-def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
+def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None, configuration=None):
     """
- Links a XATMI-server
+ Links an XATMI-server
  
  param: name        name of the server with out prefix or suffix.
      
@@ -38,6 +38,9 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
                      
  param: resources  optional - a list of XA resources. I e ["db2-rm"] - the names shall 
                 correspond to those defined in $CASUAL_HOME/configuration/resources.(yaml|json|...)
+                
+  param: configuration optional - path to the resource configuration file
+                 this should only be used when building casual it self.
     """
  
     path = _plumbing.executable_name_path(name)
@@ -47,6 +50,9 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None):
  
     if resources:
         directive += " -r " + ' '.join( resources)
+        
+    if configuration:
+        directive += " -xa " + configuration
      
     if isinstance( serverdefinition, basestring):
         # We assume it is a path to a server-definition-file
