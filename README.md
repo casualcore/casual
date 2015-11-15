@@ -51,10 +51,25 @@ Edit file, set correct paths and source file
 **some unittest does not work on linux, we'll fix this in a few days** 
      
 
-### run casual-middleware
-TODO: this documentation should be separeated from this repo? At least conceptually
+### use casual-middleware
+TODO: this documentation should be separated from this repo? At least conceptually
 
+### Status
 
+#### Whats left to do?
+* gateway 
+* JCA implementation
+* COBOL bindings
+* some redesign of internal parts (for maintainability)
+
+We've done some field tests 
+* 1 XATMI domain (no inter-domain communications)
+* 2 types of resources: IBM db2 and casual-queue
+* Performance is good
+* Scalability is really good, hence we feel confident that the basic design is good.
+
+*We'll publish the result of the tests as soon as we can*
+ 
 ### Contribution guidelines ###
 
 * We have to get this whole project documented and organized before we define these guidelines.
