@@ -9,7 +9,7 @@ casual has a few 'products' that could be split into separated repos in the futu
 we keep them all in this repository. 
 
 ### middleware
-casual main purpose is [casual-middelware](/middleware/readme.md), which is a XATMI implementation
+casual main purpose is [casual-middelware](/middleware/readme.md), which is an XATMI implementation
 
 ### make
 [casual-make](/tools/casual/make/readme.md) is a 'build system' that is easy to use.
@@ -18,7 +18,7 @@ Users declare their intent (in pure python) and casual-make take care of the res
 
 Easy to implement DSL stuff to fit most needs. 
 
-
+Can of course be used stand alone without the rest of casual.
 
 ### How do I get set up? ###
 
@@ -43,7 +43,13 @@ Edit file, set correct paths and source file
 
 #### Build casual
      cd $CASUAL_BUILD_HOME
-     casual-make compile && casual-make install && casual-make link && casual-make test
+     casual-make compile && casual-make install && casual-make link
+
+#### Test casual
+     casual-make test
+
+**some unittest does not work on linux, we'll fix this in a few days** 
+     
 
 ### run casual-middleware
 TODO: this documentation should be separeated from this repo? At least conceptually
