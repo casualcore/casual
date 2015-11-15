@@ -29,8 +29,8 @@ The following needs to be installed using rpm or yum packages.
 * gcc-c++
 * puppet
 
-#### Install dependencies with puppet
-    cd casual
+#### Install dependencies with puppet (at this point only supporting ubuntu)
+    cd middleware
     sudo puppet apply casual.pp
     
 #### Set up the environment
