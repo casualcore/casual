@@ -4,7 +4,7 @@ The main product in the casual suite.
 
 ## What is casual-middleware?
 
-* In short: A better version of Tuxedo
+* In short: 
     * SOA platform and Distributed transaction manager
 * Implementation of (hence conformant to):
     * [XATMI specification](http://pubs.opengroup.org/onlinepubs/9694999399/toc.pdf)
@@ -13,7 +13,6 @@ The main product in the casual suite.
 
 
 ## Objectives
-* Be on par with Tuxedo regarding stability.
 * As little configuration as possible, since we believe that enterprises are in desperate need of reduced complexity.
 * Performance should be good enough, hence make casual a viable choice when migrating from other XATMI implementations.
 * Keep the cold cold, and the hot hot. To enable over provisioning, hence let the OS take care of scheduling.

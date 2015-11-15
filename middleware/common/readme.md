@@ -28,7 +28,8 @@ Hence, very few parts are thread safe.
 
 
 ### Redesign
-The following parts needs a redesign:
+The following parts needs a redesign
+
 * call
 * transaction
 * server
