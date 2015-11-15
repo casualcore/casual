@@ -5,7 +5,7 @@ experience how this stuff works*
 
 ## products
 
-casual has a few 'products' that could be splittet into separated repos in the future, but for now
+casual has a few 'products' that could be split into separated repos in the future, but for now
 we keep them all in this repository. 
 
 ### middleware
@@ -14,7 +14,7 @@ casual main purpose is [casual-middelware](/middleware/readme.md), which is a XA
 ### make
 [casual-make](/tools/make/readme.md) is a 'build system' that is easy to use.
 
-Users deklare their intent (in pure python) and casual-make take care of the rest. 
+Users declare their intent (in pure python) and casual-make take care of the rest. 
 
 Easy to implement DSL stuff to fit most needs. 
 
@@ -60,10 +60,7 @@ TODO: this documentation should be separeated from this repo? At least conceptua
 
 
 ### license
-Our intention is that every thing in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT), 
+Our intention is that everything in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT), 
 with the exception of stuff under [thirdparty](/thirdparty/readme.md), which has their own licenses.
 
 We (think we) show this by the file [licence.md](/license.md). If this is not enough legally, please enlighten us!
-
-
-
