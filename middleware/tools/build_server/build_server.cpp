@@ -141,7 +141,7 @@ struct Settings
       {
          auto insert_point = std::lower_bound( std::begin( resources), std::end( resources), resource);
 
-         if( insert_point == std::end( resources) || *( insert_point + 1) != resource)
+         if( insert_point == std::end( resources) || *insert_point != resource)
          {
             resources.insert( insert_point, std::move( resource));
          }
