@@ -12,7 +12,7 @@ we keep them all in this repository.
 casual main purpose is [casual-middelware](/middleware/readme.md), which is a XATMI implementation
 
 ### make
-[casual-make](/tools/make/readme.md) is a 'build system' that is easy to use.
+[casual-make](/tools/casual/make/readme.md) is a 'build system' that is easy to use.
 
 Users declare their intent (in pure python) and casual-make take care of the rest. 
 
