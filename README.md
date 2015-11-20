@@ -39,6 +39,7 @@ Use templatefile to setup environment
     cp middleware/example/env/casual.env casual.env
 
 Edit file, set correct paths and source file
+    
     source casual.env
 
 #### Build casual
@@ -46,7 +47,8 @@ Edit file, set correct paths and source file
      casual-make compile && casual-make install && casual-make link
 
 #### Test casual
-     casual-make test
+     
+casual-make test
 
 **some unittest does not work on linux, we'll fix this in a few days** 
      
