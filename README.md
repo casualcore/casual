@@ -39,7 +39,7 @@ Use templatefile to setup environment
     cp middleware/example/env/casual.env casual.env
 
 Edit file, set correct paths and source file
-    . casual.env
+    source casual.env
 
 #### Build casual
      cd $CASUAL_BUILD_HOME
