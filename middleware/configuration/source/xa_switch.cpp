@@ -52,14 +52,13 @@ namespace casual
 
                if( ! configFile.empty())
                {
-
                   return get( configFile);
                }
                else
                {
                   throw common::exception::invalid::File( "could not find resource configuration file",
                         common::exception::make_nip( "path", common::environment::directory::casual() + "/configuration"),
-                        common::exception::make_nip( "name", "configuration.(yaml|json|xml|..."));
+                        common::exception::make_nip( "name", "resources.(yaml|json|xml|..."));
                }
             }
          } // switches

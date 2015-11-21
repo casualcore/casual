@@ -71,6 +71,7 @@ target = LinkServer('bin/casual-traffic-monitor-request-server',
     'sqlite3'],
     ['getMonitorStatistics'])
 
+
 install_bin.append( target)
 	
 		

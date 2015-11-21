@@ -137,10 +137,8 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
        Compile( 'source/api/queue.cpp')
    ],
    [ 
-    #common,
     'casual-sf', 
     'casual-common', 
-    #'casual-xatmi'
     ])
 
 install_lib.append( queue_api);
@@ -160,7 +158,8 @@ server = LinkServer( 'bin/casual-queue-server',
      'casual-sf',
      ],
     'source/server/server.yaml',
-    [ 'casual-queue-rm' ] );
+    [ 'casual-queue-rm' ],
+    '../configuration/resources.yaml' );
 
 install_bin.append( server);
 
