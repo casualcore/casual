@@ -38,7 +38,8 @@ target = LinkServer( 'bin/test',
 		'casual-queue-api-rm'
 	],
 	'source/template_server.yaml',
-	['rm-mockup', 'casual-queue-rm'])
+	['rm-mockup', 'casual-queue-rm'],
+	'../configuration/resources.yaml')
 
 install_bin.append( target)
 

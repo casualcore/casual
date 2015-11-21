@@ -39,15 +39,6 @@ using namespace casual;
 
 struct Settings
 {
-   Settings()
-   {
-      auto switches = config::xa::switches::get();
-
-      for( auto& xa : switches)
-      {
-         xa_mapping.emplace( xa.key, std::move( xa));
-      }
-   }
 
    struct Service
    {
@@ -61,14 +52,12 @@ struct Settings
    };
 
    std::string output;
-   std::string resourceKeys;
 
    std::vector< Service> services;
 
-   std::vector< std::string> resources;
    std::vector< std::string> compileLinkDirective;
 
-   void setServerDefinitionPath( const std::string& file)
+   void set_server_definition_path( const std::string& file)
    {
       auto server = config::build::server::get( file);
 
@@ -92,8 +81,8 @@ struct Settings
                Service result;
                result.function = service.function;
                result.name = service.name;
-               result.type = type[ service.type];
-               result.transaction = transaction[ service.transaction];
+               result.type = type.at( service.type);
+               result.transaction = transaction.at( service.transaction);
 
                return result;
             });
@@ -105,30 +94,62 @@ struct Settings
    bool keep = false;
 
 
-   std::vector< config::xa::Switch> xa_switches;
+   std::string xa_resource_file;
+   std::vector< std::string> resources;
 
-   void setResources( const std::vector< std::string>& value)
+
+
+   const std::vector< config::xa::Switch>& get_xa_swiches() const
+   {
+      auto initialize = [&](){
+         std::vector< config::xa::Switch> result;
+
+         if( ! resources.empty())
+         {
+            auto switches = xa_resource_file.empty() ?
+                  config::xa::switches::get() : config::xa::switches::get( xa_resource_file);
+
+            for( auto& resource : resources)
+            {
+               auto found = common::range::find_if( switches, [&]( const config::xa::Switch& s){
+                  return s.key == resource;
+               });
+
+               if( found)
+               {
+                  result.push_back( std::move( *found));
+               }
+               else
+               {
+                  throw common::exception::invalid::Argument{ "invalid resource key - " + resource };
+               }
+            }
+         }
+         return result;
+      };
+
+      static auto xa_switches = initialize();
+      return xa_switches;
+   }
+
+
+   void set_resources( const std::vector< std::string>& value)
    {
       auto splitted = split( value);
 
       for( auto& resource : splitted)
       {
-         auto findIter = xa_mapping.find( resource);
-         if( findIter != std::end( xa_mapping))
-         {
-            xa_switches.push_back( std::move( findIter->second));
-            xa_mapping.erase( findIter);
-         }
-         else
-         {
-            throw common::exception::invalid::Argument{ "invalid resource key - " + resource };
-         }
+         auto insert_point = std::lower_bound( std::begin( resources), std::end( resources), resource);
 
+         if( insert_point == std::end( resources) || *insert_point != resource)
+         {
+            resources.insert( insert_point, std::move( resource));
+         }
       }
    }
 
 
-   void setServices( const std::vector< std::string>& value)
+   void set_services( const std::vector< std::string>& value)
    {
       auto splittet = split( value, ',');
 
@@ -138,7 +159,7 @@ struct Settings
    }
 
 
-   void setCompileLinkDirective( const std::vector< std::string>& value)
+   void set_compile_link_directive( const std::vector< std::string>& value)
    {
       // std::clog << "setCompileLinkDirective" << std::endl;
       append( compileLinkDirective, split( value));
@@ -158,8 +179,6 @@ struct Settings
 
    }
 private:
-
-   std::map< std::string, config::xa::Switch> xa_mapping;
 
    void append( std::vector< std::string>& target, const std::vector< std::string>& source)
    {
@@ -214,7 +233,7 @@ extern "C" {
    //
    // Declare the xa_struts
    //
-   for( auto& xa : settings.xa_switches)
+   for( auto& xa : settings.get_xa_swiches())
    {
       out << "extern struct xa_switch_t " << xa.xa_struct_name << ";" << std::endl;
    }
@@ -242,7 +261,7 @@ int main( int argc, char** argv)
 
    struct casual_xa_switch_mapping xa_mapping[] = {)";
 
-   for( auto& xa : settings.xa_switches)
+   for( auto& xa : settings.get_xa_swiches())
    {
       out << R"(
       { ")" << xa.key << R"(", &)" << xa.xa_struct_name << "},";
@@ -324,7 +343,7 @@ int build( const std::string& c_file, const Settings& settings)
 
    std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
-   for( auto& xa : settings.xa_switches)
+   for( auto& xa : settings.get_xa_swiches())
    {
       for( auto& lib : xa.libraries)
       {
@@ -377,13 +396,15 @@ int main( int argc, char **argv)
 
          handler.add(
             argument::directive( {"-o", "--output"}, "name of server to be built", settings.output),
-            argument::directive( {"-s", "--service"}, "service names", settings, &Settings::setServices),
-            argument::directive( {"-p", "--path"}, "service names", settings, &Settings::setServerDefinitionPath),
-            argument::directive( {"-r", "--resource-keys"}, "key of the resource", settings, &Settings::setResources),
+            argument::directive( {"-s", "--service"}, "service names", settings, &Settings::set_services),
+            argument::directive( {"-p", "--path"}, "service names", settings, &Settings::set_server_definition_path),
+            argument::directive( {"-r", "--resource-keys"}, "key of the resource", settings, &Settings::set_resources),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
-            argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", settings, &Settings::setCompileLinkDirective),
+            argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", settings, &Settings::set_compile_link_directive),
+            argument::directive( {"-xa", "--xa-resource-file"}, "path to resource definition file", settings.xa_resource_file),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
             argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep));
+
 
          if( ! handler.parse( argc, argv))
          {
@@ -417,9 +438,9 @@ int main( int argc, char **argv)
       return build( path, settings);
 
    }
-   catch( const casual::common::exception::base& exception)
+   catch( const std::exception& exception)
    {
-      std::cerr << "error: " << exception << std::endl;
+      std::cerr << "error: " << exception.what() << std::endl;
       return common::error::handler();
    }
    catch( ...)
