@@ -88,9 +88,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>json</name>
+			<name>test-environment</name>
 			<type>2</type>
-			<location>/Users/hbergk/tools/json-c</location>
+			<location>/Applications/Eclipse.app/Contents/MacOS/C::/Users/hbergk/test</location>
 		</link>
 	</linkedResources>
 </projectDescription>

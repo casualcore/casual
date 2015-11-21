@@ -9,7 +9,7 @@ casual has a few 'products' that could be split into separated repos in the futu
 we keep them all in this repository. 
 
 ### middleware
-casual main purpose is [casual-middelware](/middleware/readme.md), which is a XATMI implementation
+casual main purpose is [casual-middelware](/middleware/readme.md), which is an XATMI implementation
 
 ### make
 [casual-make](/tools/casual/make/readme.md) is a 'build system' that is easy to use.
@@ -18,7 +18,7 @@ Users declare their intent (in pure python) and casual-make take care of the res
 
 Easy to implement DSL stuff to fit most needs. 
 
-
+Can of course be used stand alone without the rest of casual.
 
 ### How do I get set up? ###
 
@@ -39,16 +39,40 @@ Use templatefile to setup environment
     cp middleware/example/env/casual.env casual.env
 
 Edit file, set correct paths and source file
-    . casual.env
+    
+    source casual.env
 
 #### Build casual
      cd $CASUAL_BUILD_HOME
-     casual-make compile && casual-make install && casual-make link && casual-make test
+     casual-make compile && casual-make install && casual-make link
 
-### run casual-middleware
-TODO: this documentation should be separeated from this repo? At least conceptually
+#### Test casual
+     
+casual-make test
 
+**some unittest does not work on linux, we'll fix this in a few days** 
+     
 
+### use casual-middleware
+TODO: this documentation should be separated from this repo? At least conceptually
+
+### Status
+
+#### Whats left to do?
+* gateway 
+* JCA implementation
+* COBOL bindings
+* some redesign of internal parts (for maintainability)
+
+We've done some field tests
+
+* 1 XATMI domain (no inter-domain communications)
+* 2 types of resources - IBM db2 and casual-queue
+* Performance is good
+* Scalability is really good, hence we feel confident that the basic design is good.
+
+*We'll publish the result of the tests as soon as we can*
+ 
 ### Contribution guidelines ###
 
 * We have to get this whole project documented and organized before we define these guidelines.
