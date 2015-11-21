@@ -28,13 +28,9 @@ include=list()
 
 def NoDefaultLibs():
     """
+    NoDefaultLibs()
 
- 
- NoDefaultLibs()
-
- Makes sure nothing is linked default
-
-
+    Makes sure nothing is linked default
     """
 
     print "DEFAULT_LIBS :=";
@@ -66,7 +62,7 @@ def DefaultLibraryPaths( value = True):
 
 def Parallel( value = True):
     """
- Controls whether this casual-make file will be processed in parallel or not 
+    Controls whether this casual-make file will be processed in parallel or not 
 
     """
     plumbing.set_parallel_make( value)
@@ -119,12 +115,12 @@ def Environment( name, value = '', export = True):
 
 def Compile( sourcefile, objectfile = None, directive = ''):
     """
- Compiles a source file to an object file, with excplicit directives
+    Compiles a source file to an object file, with excplicit directives
 
- :param sourcefile:    name of the sourcefile (src/myfile.cpp)
- :param objectfile:  optional name of the output object file (obj/myfile.o)
- :param directive:   optional compile directive for this TU, default ''
- :return: the target (which contains the name of the objectfile) 
+    :param sourcefile:    name of the sourcefile (src/myfile.cpp)
+    :param objectfile:  optional name of the output object file (obj/myfile.o)
+    :param directive:   optional compile directive for this TU, default ''
+    :return: the target (which contains the name of the objectfile) 
     """
 
     if not objectfile:
@@ -166,8 +162,8 @@ def Compile( sourcefile, objectfile = None, directive = ''):
 
 
 def LinkLibrary(output,objectfiles,libs = []):
-    """LinkLibrary(name,objectfiles,libs)
- Links a shared library
+    """
+    Links a shared library
  
     :param name        name of the binary with out prefix or suffix.
     :param objectfiles    object files that is linked
@@ -187,11 +183,11 @@ def LinkLibrary(output,objectfiles,libs = []):
 
 def LinkArchive(name,objectfiles):
     """
- Links an archive
+    Links an archive
 
- :param: name        name of the binary with out prefix or suffix.  
- :param: objectfiles    object files that is linked
- :return: target name
+    :param: name        name of the binary with out prefix or suffix.  
+    :param: objectfiles    object files that is linked
+    :return: target name
     """
     
     target = plumbing.target( plumbing.archive_name_path( name), name)
@@ -200,15 +196,15 @@ def LinkArchive(name,objectfiles):
 
 def LinkExecutable( name, objectfiles, libraries = []):
     """
-  Links an executable
+    Links an executable
 
- :param name        name of the binary with out prefix or suffix.
+    :param name        name of the binary with out prefix or suffix.
     
- :param objectfiles    object files that is linked
+    :param objectfiles    object files that is linked
 
- :param libs        dependent libraries
+    :param libs        dependent libraries
  
- :return: target name
+    :return: target name
     """
     
     target = plumbing.target( plumbing.executable_name_path( name), name)
@@ -256,9 +252,9 @@ def Dependencies( target, dependencies):
 
 def Build(casualMakefile):
     """
- "builds" another casual-make-file: jumps to the specific file and execute make
+    "builds" another casual-make-file: jumps to the specific file and execute make
 
- :param casualMakefile    The file to build
+    :param casualMakefile    The file to build
     """
     
     #
@@ -270,15 +266,14 @@ def Build(casualMakefile):
     
     
 
-def LinkUnittest(name,objectfiles,libraries = [], test_target = True):
-    
+def LinkUnittest(name,objectfiles,libraries = [], test_target = True):    
     """
- LinkIsolatedUnittest(name,objectfiles,libs)
+    LinkIsolatedUnittest(name,objectfiles,libs)
     
- :param: name        name of the unittest executable
- :param: objectfiles    object files that is linked
- :param: libraries        dependent libraries (optional)
- :param: tets_target   if true, a test target is generated. (True is the default)
+    :param: name        name of the unittest executable
+    :param: objectfiles    object files that is linked
+    :param: libraries        dependent libraries (optional)
+    :param: tets_target   if true, a test target is generated. (True is the default)
     """
     target = plumbing.target( plumbing.executable_name_path( name))
     #

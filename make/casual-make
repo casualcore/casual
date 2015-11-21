@@ -19,7 +19,7 @@ import re
 
 from internal import path
 
-from casual.common.color import color
+from casual.make.color import color
 
 #
 # Globals to use

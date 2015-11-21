@@ -15,7 +15,7 @@ import signal
 
 from functools import partial
 
-from casual.common.color import color
+from casual.middleware.tools.log.color import color
 
 
 
