@@ -55,7 +55,7 @@ namespace casual
          }
 
          Outcome::Outcome( std::string information, std::ostream& ok, std::ostream& fail)
-          : internal::basic( std::move( information), ok), m_fail( ok) {}
+          : internal::basic( std::move( information), ok), m_fail( fail) {}
 
          Outcome::~Outcome()
          {
