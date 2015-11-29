@@ -14,66 +14,63 @@ namespace casual
    {
       namespace trace
       {
-         namespace internal
+         namespace basic
          {
-
-            basic::basic( std::string information, std::ostream& log)
-              : m_information( std::move( information)), m_log( log) {}
-
-         } // internal
-
-
-         Scope::Scope( std::string information, std::ostream& log)
-         : internal::basic( std::move( information), log)
-         {
-            if( m_log)
-            {
-               if( std::uncaught_exception())
-               {
-                  log::thread::Safe{ m_log} << m_information << " - in*\n";
-               }
-               else
-               {
-                  log::thread::Safe{ m_log} << m_information << " - in\n";
-               }
-            }
-         }
-
-         Scope::~Scope()
-         {
-            if( m_log)
-            {
-               if( std::uncaught_exception())
-               {
-                  log::thread::Safe{ m_log} << m_information << " - out*\n";
-               }
-               else
-               {
-                  log::thread::Safe{ m_log} << m_information << " - out\n";
-               }
-            }
-         }
-
-         Outcome::Outcome( std::string information, std::ostream& ok, std::ostream& fail)
-          : internal::basic( std::move( information), ok), m_fail( fail) {}
-
-         Outcome::~Outcome()
-         {
-            if( std::uncaught_exception())
-            {
-               if( m_fail)
-               {
-                  log::thread::Safe{ m_fail} << m_information << " - fail\n";
-               }
-            }
-            else
+            Scope::Scope( const char* information, std::ostream& log)
+               : m_information( information), m_log( log)
             {
                if( m_log)
                {
-                  log::thread::Safe{ m_log} << m_information << " - ok\n";
+                  if( std::uncaught_exception())
+                  {
+                     log::thread::Safe{ m_log} << m_information << " - in*\n";
+                  }
+                  else
+                  {
+                     log::thread::Safe{ m_log} << m_information << " - in\n";
+                  }
                }
             }
-         }
+
+            Scope::~Scope()
+            {
+               if( m_log)
+               {
+                  if( std::uncaught_exception())
+                  {
+                     log::thread::Safe{ m_log} << m_information << " - out*\n";
+                  }
+                  else
+                  {
+                     log::thread::Safe{ m_log} << m_information << " - out\n";
+                  }
+               }
+            }
+
+            Outcome::Outcome( const char* information, std::ostream& ok, std::ostream& fail)
+               : m_information( information), m_ok( ok), m_fail( fail) {}
+
+            Outcome::~Outcome()
+            {
+               if( std::uncaught_exception())
+               {
+                  if( m_fail)
+                  {
+                     log::thread::Safe{ m_fail} << m_information << " - fail\n";
+                  }
+               }
+               else
+               {
+                  if( m_ok)
+                  {
+                     log::thread::Safe{ m_ok} << m_information << " - ok\n";
+                  }
+               }
+
+            }
+
+         } // basic
+
       } // trace
    } // common
 } // casual

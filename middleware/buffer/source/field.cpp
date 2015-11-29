@@ -579,9 +579,10 @@ namespace casual
          namespace
          {
 
-            struct trace : common::trace::internal::Scope
+            struct trace : common::trace::basic::Scope
             {
-               explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
+               template<decltype(sizeof("")) size>
+               explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
             };
 
 
@@ -688,7 +689,7 @@ namespace casual
                   //
                   if( buffer->find( id, index))
                   {
-                     return CASUAL_FIELD_NO_SPACE;;
+                     return CASUAL_FIELD_NO_SPACE;
                   }
 
                   return CASUAL_FIELD_NO_OCCURRENCE;

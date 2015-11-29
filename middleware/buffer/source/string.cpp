@@ -27,10 +27,12 @@ namespace casual
          namespace
          {
 
-            struct trace : common::trace::internal::Scope
+            struct trace : common::trace::basic::Scope
             {
-               explicit trace( std::string information) : Scope( std::move( information), common::log::internal::buffer) {}
+               template<decltype(sizeof("")) size>
+               explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
             };
+
 
             struct Buffer : common::buffer::Buffer
             {
