@@ -15,51 +15,15 @@ namespace casual
    namespace common
    {
 
-      TEST( casual_common_algorithm, equal_to__member_function)
-      {
-
-         std::string test{ "0123456789"};
-
-
-         auto pred = std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 10);
-
-         EXPECT_TRUE( pred( test));
-         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 11)( test));
-         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &std::string::size, std::placeholders::_1), 9)( test));
-
-      }
 
       namespace local
       {
-
-         struct TestType
+         namespace
          {
-            std::string someString;
-            std::size_t someSize;
-         };
+            std::vector< int> unsorted() { return { 5,6,3,4,1,8,9,4,3,2};}
 
-      } // local
-
-
-      TEST( casual_common_algorithm, equal_to__member_attribute)
-      {
-
-         local::TestType test{ "bla bla bla", 42};
-
-
-         auto pred = std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 42);
-
-         EXPECT_TRUE( pred( test));
-         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 41)( test));
-         EXPECT_FALSE( std::bind( equal_to{}, std::bind( &local::TestType::someSize, std::placeholders::_1), 43)( test));
-      }
-
-
-      namespace local
-      {
-         std::vector< int> unsorted() { return { 5,6,3,4,1,8,9,4,3,2};}
-
-         std::vector< int> sorted() {   return { 1,2,3,3,4,4,5,6,8,9};}
+            std::vector< int> sorted() {   return { 1,2,3,3,4,4,5,6,8,9};}
+         }
 
       } // local
 

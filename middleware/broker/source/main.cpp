@@ -30,10 +30,7 @@ int main( int argc, char** argv)
 	      parser.add(
 	            common::argument::directive( {"-c", "--configuration-file"}, "domain configuration file", settings.configurationfile)
 	      );
-
 	      parser.parse( argc, argv);
-
-	      common::process::path( parser.processName());
 	   }
 
 		casual::broker::Broker broker( settings);

@@ -405,11 +405,7 @@ int main( int argc, char **argv)
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
             argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep));
 
-
-         if( ! handler.parse( argc, argv))
-         {
-            return 1;
-         }
+         handler.parse( argc, argv);
       }
 
       if( settings.verbose) std::cout << "";

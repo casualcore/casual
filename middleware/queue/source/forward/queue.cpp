@@ -95,8 +95,6 @@ namespace casual
                   );
 
                   parser.parse( argc, argv);
-
-                  common::process::path( parser.processName());
                }
 
                start( std::move( settings));

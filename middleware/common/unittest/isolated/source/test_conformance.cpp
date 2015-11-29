@@ -46,21 +46,6 @@ namespace casual
       }
 
 
-
-      TEST( casual_common_conformance, bind_equal_to)
-      {
-         struct POD
-         {
-            int test = 42;
-         };
-
-         auto bind = std::bind( equal_to{}, std::bind( &POD::test, std::placeholders::_1), std::placeholders::_2);
-
-         POD pod;
-
-         EXPECT_TRUE( bind( pod, 42) == true);
-      }
-
       TEST( casual_common_conformance, is_floating_point__is_signed)
       {
 
@@ -71,8 +56,6 @@ namespace casual
          EXPECT_TRUE( std::is_floating_point< double>::value);
 
       }
-
-
 
 
 

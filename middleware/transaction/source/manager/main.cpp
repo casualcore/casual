@@ -33,7 +33,6 @@ int main( int argc, char** argv)
          );
 
          parser.parse( argc, argv);
-         casual::common::process::path( parser.processName());
       }
 
       casual::transaction::Manager manager( settings);

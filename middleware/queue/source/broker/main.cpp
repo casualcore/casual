@@ -29,8 +29,6 @@ int main( int argc, char **argv)
          );
 
          parser.parse( argc, argv);
-
-         common::process::path( parser.processName());
       }
 
       queue::Broker broker( settings);

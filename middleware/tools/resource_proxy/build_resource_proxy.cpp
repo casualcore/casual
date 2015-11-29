@@ -241,11 +241,7 @@ int main( int argc, char **argv)
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
             argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keepSource));
 
-         if( ! handler.parse( argc, argv))
-         {
-            return 1;
-         }
-
+         handler.parse( argc, argv);
 
          if( settings.verbose)
          {

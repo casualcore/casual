@@ -14,11 +14,10 @@ using namespace casual::common;
 
 int main( int argc, char** argv)
 {
-   Arguments args;
 
    int returnValue = 0;
+   Arguments args{ { argument::directive( {"-r"}, "bla", returnValue)}};
 
-   args.add( argument::directive( {"-r"}, "bla", returnValue));
 
    args.parse( argc, argv);
 

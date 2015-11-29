@@ -235,16 +235,6 @@ namespace casual
       } // compare
 
 
-      struct equal_to
-      {
-         template< typename T1, typename T2>
-         constexpr auto operator()( const T1& lhs, const T2& rhs ) const -> decltype( lhs == rhs)
-         {
-            return lhs == rhs;
-         }
-      };
-
-
       template< typename Enum>
       auto as_integer( Enum value) -> typename std::underlying_type< Enum>::type
       {
@@ -266,7 +256,7 @@ namespace casual
 
          std::size_t size() const
          {
-            return std::abs( last - first);
+            return std::distance( first, last);
          }
 
          bool empty() const
@@ -274,10 +264,13 @@ namespace casual
             return first == last;
          }
 
-         explicit operator bool () const
+         operator bool () const
          {
             return ! empty();
          }
+
+         template<typename T>
+         operator T() const = delete;
 
 
          auto operator * () -> decltype( *std::declval< iterator>()) { return *first;}

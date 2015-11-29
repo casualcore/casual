@@ -76,6 +76,7 @@ casual_common_objectfiles = [
     Compile( 'source/transcode.cpp'),
     Compile( 'source/timeout.cpp'),
     
+    Compile( 'source/arguments.cpp'),
     Compile( 'source/terminal.cpp'),
 ]
 
