@@ -150,9 +150,7 @@ int main( int argc, char** argv)
 
    Settings settings;
 
-   casual::common::Arguments parser;
-
-   parser.add(
+   casual::common::Arguments parser{{
          casual::common::argument::directive( { "-s", "--service"}, "service to call", settings.service),
          casual::common::argument::directive( { "-n", "--number"}, "number of async calls to service", settings.calls),
          casual::common::argument::directive( { "-a", "--argument"}, "argument to the service", settings.argument),
@@ -160,7 +158,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( { "-r", "--rollback"}, "call within a transaction", settings.rollback),
          casual::common::argument::directive( { "-i", "--iterations"}, "number of iterations of batch-calls", settings.iterations),
          casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
-   );
+   }};
 
 
    parser.parse( argc, argv);

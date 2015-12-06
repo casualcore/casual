@@ -26,10 +26,10 @@ namespace casual
             {
                Settings settings;
                {
-                  casual::common::Arguments parser;
+                  casual::common::Arguments parser{{
 
+                  }};
                   parser.parse( argc, argv);
-                  casual::common::process::path( parser.processName());
                }
 
                Manager manager{ std::move( settings)};

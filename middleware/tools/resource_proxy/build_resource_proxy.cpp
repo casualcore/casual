@@ -231,21 +231,16 @@ int main( int argc, char **argv)
       {
          using namespace casual::common;
 
-         Arguments handler;
-
-         handler.add(
+         Arguments handler{ {
             argument::directive( {"-o", "--output"}, "name of the resulting proxy", settings.output),
             argument::directive( {"-r", "--resource-key"}, "key of the resource", settings.resourceKey),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
             argument::directive( {"-l", "--link-directives"}, "additional link directives", settings.linkDirectives),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
-            argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keepSource));
+            argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keepSource)
+         }};
 
-         if( ! handler.parse( argc, argv))
-         {
-            return 1;
-         }
-
+         handler.parse( argc, argv);
 
          if( settings.verbose)
          {

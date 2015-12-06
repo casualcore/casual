@@ -392,9 +392,7 @@ int main( int argc, char **argv)
 
          using namespace casual::common;
 
-         Arguments handler;
-
-         handler.add(
+         Arguments handler{{
             argument::directive( {"-o", "--output"}, "name of server to be built", settings.output),
             argument::directive( {"-s", "--service"}, "service names", settings, &Settings::set_services),
             argument::directive( {"-p", "--path"}, "service names", settings, &Settings::set_server_definition_path),
@@ -403,13 +401,10 @@ int main( int argc, char **argv)
             argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", settings, &Settings::set_compile_link_directive),
             argument::directive( {"-xa", "--xa-resource-file"}, "path to resource definition file", settings.xa_resource_file),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
-            argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep));
+            argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep)
+         }};
 
-
-         if( ! handler.parse( argc, argv))
-         {
-            return 1;
-         }
+         handler.parse( argc, argv);
       }
 
       if( settings.verbose) std::cout << "";

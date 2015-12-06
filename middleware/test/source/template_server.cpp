@@ -87,11 +87,9 @@ void casual_test2( TPSVCINFO *serviceContext)
 
       } task;
 
-      casual::common::Arguments parser;
-
-      parser.add(
+      casual::common::Arguments parser{ {
             casual::common::argument::directive( { "-ms", "--ms-sleep"}, "sleep time", task.sleep)
-      );
+      }};
 
       parser.parse( casual::common::process::path(), casual::common::string::split( argumentString));
 
@@ -135,14 +133,12 @@ void casual_test3( TPSVCINFO *serviceContext)
 
       } task;
 
-      casual::common::Arguments parser;
-
-      parser.add(
+      casual::common::Arguments parser{ {
             casual::common::argument::directive( { "-m"}, "message", task.message),
             casual::common::argument::directive( { "-e", "--enqueue"}, "queue", task.enqueue),
             casual::common::argument::directive( { "-d", "--dequeue"}, "queue", task.dequeue),
             casual::common::argument::directive( { "-rb", "--rollback"}, "queue", task.rollback)
-      );
+      }};
 
       parser.parse( casual::common::process::path(), casual::common::string::split( argumentString));
 

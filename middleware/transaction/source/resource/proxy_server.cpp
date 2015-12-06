@@ -34,20 +34,16 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
       state.xaSwitches = serverArguments->xaSwitches;
 
       {
-         casual::common::Arguments arguments;
-
-         arguments.add(
+         casual::common::Arguments arguments{ {
             casual::common::argument::directive( {"-q", "--tm-queue"}, "tm queue", state.tm_queue),
             casual::common::argument::directive( {"-k", "--rm-key"}, "resource key", state.rm_key),
             casual::common::argument::directive( {"-o", "--rm-openinfo"}, "open info", state.rm_openinfo),
             casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "close info", state.rm_closeinfo),
             casual::common::argument::directive( {"-i", "--rm-id"}, "resource id", state.rm_id),
             casual::common::argument::directive( {"-d", "--domain"}, "domain name", state.domain)
-         );
+         }};
 
          arguments.parse( serverArguments->argc, serverArguments->argv);
-
-         casual::common::process::path( arguments.processName());
          casual::common::environment::domain::name( state.domain);
       }
 

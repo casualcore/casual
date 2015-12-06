@@ -72,13 +72,11 @@ int main( int argc, char **argv)
    // get log-file from arguments
    std::string file{"statistics.log"};
    {
-      casual::common::Arguments parser;
-      parser.add(
-            casual::common::argument::directive( { "-f", "--file"}, "path to log-file", file)
-      );
+      casual::common::Arguments parser{
+         { casual::common::argument::directive( { "-f", "--file"}, "path to log-file", file)}
+      };
 
       parser.parse( argc, argv);
-      casual::common::process::path( parser.processName());
    }
 
    casual::traffic::log::Handler handler{ file};

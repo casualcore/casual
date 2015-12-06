@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef ARGUMENTS_H_
-#define ARGUMENTS_H_
+#ifndef CASUAL_COMMON_ARGUMENTS_H_
+#define CASUAL_COMMON_ARGUMENTS_H_
 
 
 #include <vector>
@@ -32,6 +32,9 @@ namespace casual
    {
       namespace argument
       {
+
+         class Group;
+
          namespace internal
          {
             template< std::size_t min, std::size_t max>
@@ -55,6 +58,9 @@ namespace casual
             };
 
          }
+
+
+
 
          namespace cardinality
          {
@@ -80,6 +86,11 @@ namespace casual
 
          }
 
+         namespace visitor
+         {
+            struct Base;
+
+         } // visitor
 
          namespace option
          {
@@ -87,63 +98,56 @@ namespace casual
             {
 
                template< typename T>
-               Holder( T&& option) : m_option( std::make_shared< holder_type< T>>( std::forward< T>( option)))
+               Holder( T option) : m_option( std::make_shared< holder_type< T>>( std::move( option)))
                {
 
                }
 
-               bool option( const std::string& option) const
-               {
-                  return m_option->option( option);
-               }
-               void assign( const std::string& option, std::vector< std::string>&& values) const
-               {
-                  m_option->assign( option, std::move( values));
-               }
-               bool consumed() const
-               {
-                  return m_option->consumed();
-               }
-               void dispatch() const
-               {
-                  m_option->dispatch();
-               }
+               bool option( const std::string& option) const;
+               void assign( const std::string& option, std::vector< std::string>&& values) const;
+               bool consumed() const;
+               void dispatch() const;
+               bool valid() const;
 
-               bool valid() const
-               {
-                  return m_option->valid();
-               }
+               const std::vector< std::string>& options() const;
+               const std::string& description() const;
+               internal::value_cardinality cardinality() const;
 
-               void information( std::ostream& out) const
-               {
-                  m_option->information( out);
-               }
+               void visit( visitor::Base& visitor) const;
 
             private:
+
+
+
                class base_type
                {
                public:
-                  virtual ~base_type() {}
+                  virtual ~base_type() = default;
                   virtual bool option( const std::string& option) const = 0;
-                  virtual void assign( const std::string& option, std::vector< std::string>&& values) = 0;
+                  virtual void assign( const std::string& option, std::vector< std::string>&& values) const = 0;
                   virtual bool consumed() const = 0;
                   virtual void dispatch() const = 0;
                   virtual bool valid() const = 0;
-                  virtual void information( std::ostream& out) const = 0;
+
+                  virtual const std::vector< std::string>& options() const = 0;
+                  virtual const std::string& description() const = 0;
+                  virtual internal::value_cardinality cardinality() const = 0;
+
+                  virtual void visit( visitor::Base& visitor) const = 0;
                };
+
 
                template< typename T>
                struct holder_type : public base_type
                {
-                  template< typename O>
-                  holder_type( O&& option) : m_option_type{ std::forward< T>( option)} {}
+                  holder_type( T option) : m_option_type{ std::move( option)} {}
 
                private:
                   bool option( const std::string& option) const override
                   {
                      return m_option_type.option( option);
                   }
-                  void assign( const std::string& option, std::vector< std::string>&& values) override
+                  void assign( const std::string& option, std::vector< std::string>&& values) const override
                   {
                      m_option_type.assign( option, std::move( values));
                   }
@@ -159,163 +163,132 @@ namespace casual
                   {
                      return m_option_type.valid();
                   }
-
-                  void information( std::ostream& out) const override
+                  const std::vector< std::string>& options() const override
                   {
-                     m_option_type.information( out);
+                     return m_option_type.options();
+                  }
+                  const std::string& description() const override
+                  {
+                     return m_option_type.description();
+                  }
+                  internal::value_cardinality cardinality() const override
+                  {
+                     return m_option_type.cardinality();
+                  }
+                  void visit( visitor::Base& visitor) const override
+                  {
+                     m_option_type.visit( visitor);
                   }
 
-                  T m_option_type;
+                  mutable T m_option_type;
                };
 
-               std::shared_ptr< base_type> m_option;
+               using pimpl_type = std::shared_ptr< const base_type>;
 
+               pimpl_type m_option;
             };
-
          } // option
 
 
          namespace internal
          {
 
-            template< typename T>
             struct from_string
             {
-               T operator () ( const std::string& value) const
+               using values_type = const std::vector< std::string>&;
+
+               from_string( values_type values) : m_values{ values} {}
+
+               template< typename T>
+               operator T() const
                {
-                  std::istringstream converter( value);
-                  T result{};
-                  converter >> result;
+                  assert( ! m_values.empty());
+                  return convert< T>{}( m_values.at( 0));
+               }
+
+               template< typename T>
+               operator std::vector< T>() const
+               {
+                  std::vector< T> result;
+
+                  std::transform(
+                     std::begin( m_values),
+                     std::end( m_values),
+                     std::back_inserter( result),
+                     convert< T>{});
+
                   return result;
                }
-            };
 
-            template<>
-            struct from_string< std::string>
-            {
-               const std::string& operator () ( const std::string& value) const
+               operator const std::string&() const
                {
-                  return value;
+                  assert( ! m_values.empty());
+                  return m_values.at( 0);
                }
+
+               operator values_type() const
+               {
+                  return m_values;
+               }
+
+            private:
+
+               template< typename T>
+               struct convert
+               {
+                  T operator () ( const std::string& value) const
+                  {
+                     std::istringstream converter( value);
+                     T result{};
+                     converter >> result;
+                     return result;
+                  }
+               };
+
+               values_type m_values;
             };
 
-            struct base_dispatch
-            {
-               virtual ~base_dispatch() = default;
-               virtual internal::value_cardinality cardinality() const = 0;
-               virtual void operator () ( const std::vector< std::string>& values) const = 0;
 
-            };
-
-            template< typename T, typename F>
+            template< typename F>
             void call( F& caller, const std::vector< std::string>& values, cardinality::Zero)
             {
                caller();
             }
 
-            template< typename T, typename F>
-            void call( F& caller, const std::vector< std::string>& values, cardinality::One)
-            {
-               caller( from_string< T>()( values.at( 0)));
-            }
-
-            template< typename T, typename F, typename C>
+            template< typename F, typename C>
             void call( F& caller, const std::vector< std::string>& values, C)
             {
-
-               std::vector< T> converted;
-
-               std::transform(
-                  std::begin( values),
-                  std::end( values),
-                  std::back_inserter( converted),
-                  from_string< T>());
-
-               caller( converted);
+               caller( from_string{ values});
             }
-
-
-            template< typename C, typename F, typename T>
-            struct dispatch : public base_dispatch
-            {
-               typedef C cardinality_type;
-               typedef T argument_type;
-
-               dispatch( F caller) : m_caller( caller) {}
-
-               void operator () ( const std::vector< std::string>& values) const
-               {
-                  call< argument_type>( m_caller, values, cardinality_type());
-               }
-
-               internal::value_cardinality cardinality() const
-               {
-                  return { cardinality_type::min_value, cardinality_type::max_value};
-               }
-
-            private:
-               F m_caller;
-            };
-
-            namespace value
-            {
-               template< typename V>
-               struct Holder
-               {
-                  Holder( V& value) : m_value( &value) {}
-
-                  template< typename T>
-                  void operator () ( T&& value) const
-                  {
-                     (*m_value) = std::forward< T>( value);
-                  }
-
-                  V* m_value;
-               };
-
-               template<>
-               struct Holder< bool>
-               {
-                  Holder( bool& value) : m_value( &value) {}
-
-                  void operator () () const
-                  {
-                     (*m_value) = true;
-                  }
-
-                  bool* m_value;
-               };
-            } // value
-
 
             namespace deduce
             {
                template< typename T>
                struct helper
                {
-                  typedef cardinality::One cardinality;
-                  typedef typename std::decay< T>::type type;
+                  using cardinality = argument::cardinality::One;
+                  using type = typename std::decay< T>::type;
                };
 
                template< typename T>
                struct helper< std::vector< T>>
                {
-                  typedef cardinality::OneMany cardinality;
-                  typedef typename std::decay< T>::type type;
+                  using cardinality = argument::cardinality::OneMany;
+                  using type = typename std::decay< T>::type;
                };
 
                template<>
                struct helper< void>
                {
-                  typedef cardinality::Zero cardinality;
-                  typedef void type;
+                  using cardinality = argument::cardinality::Zero;
+                  using type = void;
                };
 
                template<>
                struct helper< bool>
                {
-                  typedef cardinality::Zero cardinality;
-                  typedef bool type;
+                  using cardinality = argument::cardinality::Zero;
+                  using type = bool;
                };
 
 
@@ -323,6 +296,10 @@ namespace casual
                cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
 
                cardinality::Zero cardinality( void (*)(void)) { return cardinality::Zero();}
+
+               cardinality::Zero cardinality( std::function<void()>) { return cardinality::Zero();}
+
+
 
                template< typename O, typename T>
                auto cardinality( O&, void (O::*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
@@ -344,30 +321,50 @@ namespace casual
             } // deduce
 
 
+            namespace value
+            {
+               template< typename V, typename T>
+               void assign( V& variable, T&& value)
+               {
+                  variable = std::forward< T>( value);
+               }
+
+               template< typename V, typename T>
+               void assign( std::vector< V>& variable, T&& value)
+               {
+                  range::copy( value, std::back_inserter( variable));
+               }
+            } // value
+
+
             using namespace std::placeholders;
 
             template< typename C>
             struct maker
             {
+
                template< typename O, typename T>
-               auto static make( O& object, void (O::*member)( T)) -> dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce::helper< typename std::decay< T>::type >::type>
+               auto static make( O& object, void (O::*member)( T)) -> std::function<void( T)>
                {
-                  typedef dispatch< C, decltype( std::bind( member, &object, _1)), typename deduce::helper< typename std::decay< T>::type>::type> result_type;
-                  return result_type( std::bind( member, &object, _1));
+                  return std::bind( member, &object, _1);
                }
 
                template< typename T>
-               auto static make( void (*function)( T)) -> dispatch< C, std::function<void( T)>, typename deduce::helper< typename std::decay< T>::type >::type>
+               auto static make( void (*function)( T)) -> std::function<void( T)>
                {
-                  typedef dispatch< C, std::function<void( T)>, typename deduce::helper< typename std::decay< T>::type >::type> result_type;
-                  return result_type( function);
+                  return std::function<void( T)>{ function};
                }
 
+               //
+               // For variables
+               //
                template< typename T>
-               auto static make( T& value) -> dispatch< C, value::Holder< T>, T>
+               auto static make( T& variable) -> std::function<void( T)>
                {
-                  typedef dispatch< C, value::Holder< T>, T> result_type;
-                  return result_type( value);
+                  //
+                  // We bind directly to the variable
+                  //
+                  return [&]( const T& values){ value::assign( variable, values);};
                }
             };
 
@@ -375,26 +372,31 @@ namespace casual
             template<>
             struct maker< cardinality::Zero>
             {
+               using zero_result_type = std::function<void()>;
 
                template< typename O>
-               auto static make( O& object, void (O::*member)(void)) -> dispatch< cardinality::Zero, decltype( std::bind( member, &object)), void>
+               static zero_result_type make( O& object, void (O::*member)(void))
                {
-                  typedef dispatch< cardinality::Zero, decltype( std::bind( member, &object)), void> result_type;
-                  return result_type( std::bind( member, &object));
+                  return zero_result_type( std::bind( member, &object));
                }
 
-               auto static make( void (*function)(void)) -> dispatch< cardinality::Zero, std::function<void()>, void>
+               static zero_result_type make( void (*function)(void))
                {
-                  typedef dispatch< cardinality::Zero, std::function<void()>, void> result_type;
-                  return result_type( function);
+                  return zero_result_type( function);
                }
 
-               auto static make( bool& value) -> dispatch< cardinality::Zero, value::Holder< bool>, bool>
+               static zero_result_type make( std::function<void()> function)
                {
-                  typedef dispatch< cardinality::Zero, value::Holder< bool>, bool> result_type;
-                  return result_type( value);
+                  return zero_result_type( std::move( function));
                }
 
+               //
+               // For variable bool
+               //
+               static zero_result_type make( bool& value)
+               {
+                  return zero_result_type( [&](){ value = true;});
+               }
             };
 
 
@@ -406,332 +408,143 @@ namespace casual
             }
 
 
-
-            struct Option
+            struct base_directive
             {
-               Option( const std::string& option) : option( option) {}
 
-               template< typename T>
-               bool operator () ( T&& value) const
-               {
-                  return value.option( option);
-               }
+               base_directive( std::vector< std::string> options, std::string description);
+
+               const std::vector< std::string>& options() const;
+               const std::string& description() const;
+
+               bool option( const std::string& option) const;
+
+               void visit( visitor::Base& visitor) const;
+
+               virtual internal::value_cardinality cardinality() const = 0;
+
             private:
-               const std::string& option;
+
+               std::vector< std::string> m_options;
+               std::string m_description;
             };
 
-
-            struct HasOption
+            template< typename dispatch_type, typename cardinality_type>
+            class basic_directive : public internal::base_directive
             {
-               bool operator() ( const std::string& option, const option::Holder& holder) const
+            public:
+
+               basic_directive( std::vector< std::string> options, std::string description, dispatch_type dispatch)
+                  : internal::base_directive( std::move( options), std::move( description)),
+                    m_dispatch{ std::move( dispatch)}
+                     {}
+
+
+               internal::value_cardinality cardinality() const override { return { cardinality_type::min_value, cardinality_type::max_value};}
+
+            private:
+
+               friend struct option::Holder;
+
+
+               void assign( const std::string& option, std::vector< std::string>&& values)
                {
-                  return holder.option( option);
+                  std::move( std::begin( values), std::end( values), std::back_inserter( m_values));
+                  m_assigned = true;
                }
+
+               bool consumed() const { return false;}
+               void dispatch() const
+               {
+                  if( m_assigned)
+                     internal::call( m_dispatch, m_values, cardinality_type{});
+               }
+               bool valid() const
+               {
+                  return m_values.size() >= cardinality_type::min_value &&
+                        m_values.size() <= cardinality_type::max_value;
+               }
+
+               std::vector< std::string> m_values;
+               bool m_assigned = false;
+
+               dispatch_type m_dispatch;
+
             };
-
-
-            namespace format
-            {
-               std::ostream& cardinality( std::ostream& out, internal::value_cardinality cardinality)
-               {
-                  if( cardinality.min == cardinality.max)
-                  {
-                     if( cardinality.min == 1)
-                     {
-                        out << " <value>";
-                     }
-                     else if( cardinality.min > 1 && cardinality.min <= 3)
-                     {
-                        for( auto count = cardinality.min; count > 0; --count)
-                        {
-                           out << " <value>";
-                        }
-                     }
-                     else if( cardinality.min > 3)
-                     {
-                        out << " <value>..{ " << cardinality.min << "}";
-                     }
-                  }
-                  else
-                  {
-                     out << " <value> " << cardinality.min << "..";
-                     if( cardinality.max == std::numeric_limits< std::size_t>::max())
-                     {
-                        out << '*';
-                     }
-                     else
-                     {
-                        out << cardinality.max;
-                     }
-                  }
-                  return out;
-               }
-
-
-               std::ostream& description( std::ostream& out, const std::string& description, int indent = 6)
-               {
-                  for( auto& row : string::split( description, '\n'))
-                  {
-                     out << std::string( indent, ' ') << row << "\n";
-                  }
-                  return out;
-               }
-
-               template< typename T>
-               void help( std::ostream& out, const T& directive)
-               {
-
-                  auto option_string = string::join( directive.options(), ", ");
-
-                  if( option_string.empty())
-                  {
-                     option_string = "<empty>";
-                  }
-
-                  out << "   " << terminal::color::white << option_string;
-                  format::cardinality( out, directive.cardinality()) << std::endl;
-
-                  format::description( out, directive.description()) << std::endl;
-               }
-
-            } // format
-
 
          } // internal
 
-
-         class Directive
+         namespace visitor
          {
-         public:
-
-            template< typename C, typename... Args>
-            Directive( C cardinality, const std::vector< std::string>& options, const std::string& description, Args&&... args)
-               : m_options( options),
-                 m_description( description),
-                 m_dispatch( new decltype( internal::make( cardinality, std::forward< Args>( args)...))( internal::make( cardinality, std::forward< Args>( args)...)))
-                  {}
-
-
-            Directive( Directive&&) = default;
-
-
-            bool option( const std::string& option) const
+            struct Base
             {
-               return ! range::find( range::make( m_options), option).empty();
-            }
+               virtual ~Base();
 
-            void assign( const std::string& option, std::vector< std::string>&& values)
-            {
-               std::move( std::begin( values), std::end( values), std::back_inserter( m_values));
-               //m_values = std::move( values);
-               m_assigned = true;
-            }
+               void visit( const internal::base_directive& option);
+               void visit( const Group& group);
 
-            bool consumed() const
-            {
-               return false; //m_assigned;
-            }
+            private:
+               virtual void do_visit( const internal::base_directive&) = 0;
+               virtual void do_visit( const Group&) = 0;
+            };
 
-            void dispatch() const
-            {
-               if( m_assigned)
-               {
-                  (*m_dispatch)( m_values);
-               }
-            }
-
-            bool valid() const
-            {
-               return m_values.size() >= m_dispatch->cardinality().min &&
-                     m_values.size() <= m_dispatch->cardinality().max;
-            }
+         } // visitor
 
 
-            void information( std::ostream& out) const
-            {
-               internal::format::help( out, *this);
-            }
-
-
-            const std::vector< std::string> options() const { return m_options;}
-            const std::string& description() const { return m_description;}
-            internal::value_cardinality cardinality() const { return m_dispatch->cardinality();}
-
-         private:
-            const std::vector< std::string> m_options;
-            const std::string m_description;
-            std::vector< std::string> m_values;
-            bool m_assigned = false;
-
-            std::unique_ptr< internal::base_dispatch> m_dispatch;
-
-         };
-
-         template< typename C, typename... Args>
-         Directive directive( C cardinality, const std::vector< std::string>& options, const std::string& description, Args&&... args)
-         {
-            return Directive{ cardinality, options, description, std::forward< Args>( args)...};
-         }
-
-         template< typename... Args>
-         Directive directive( const std::vector< std::string>& options, const std::string& description, Args&&... args)
-         {
-            return Directive{ internal::deduce::cardinality( std::forward< Args>( args)...), options, description, std::forward< Args>( args)...};
-         }
-
-
-         //template< typename C>
          class Group
          {
          public:
 
-            //typedef C correlation_type;
-            typedef std::vector< option::Holder> groups_type;
+            using options_type = std::vector< argument::option::Holder>;
+
+            Group( options_type options);
 
 
-            template< typename T, typename... Args>
-            void add( T&& directive, Args&&... args)
-            {
-               m_groups.emplace_back( std::forward< T>( directive));
-               add( std::forward< Args>(args)...);
-            }
+            void visit( visitor::Base& visitor) const;
 
-
-            void information( std::ostream& out) const
-            {
-               range::for_each( m_groups, std::bind( &option::Holder::information, std::placeholders::_1, std::ref( out)));
-            }
+            void operator() () { dispatch();}
 
          protected:
 
             friend struct option::Holder;
 
-            bool option( const std::string& option) const
-            {
-               return range::any_of( m_groups, internal::Option{ option});
-            }
+            bool option( const std::string& option) const;
+            void assign( const std::string& option, std::vector< std::string>&& values);
+            bool consumed() const;
+            void dispatch() const;
+            bool valid() const;
 
-            void assign( const std::string& option, std::vector< std::string>&& values)
-            {
-               auto found = range::find_if( range::make( m_groups), internal::Option{ option});
-
-               if( found)
-               {
-                  found.first->assign( option, std::move( values));
-               }
-            }
-
-            bool consumed() const
-            {
-               return range::all_of( m_groups, std::mem_fn( &option::Holder::consumed));
-            }
-
-            void dispatch() const
-            {
-               range::for_each( m_groups, std::mem_fn( &option::Holder::dispatch));
-            }
-
-
-            bool valid() const
-            {
-               return range::all_of( m_groups, std::mem_fn( &option::Holder::valid));
-            }
-
-
-
-            void add() {}
-
-            groups_type m_groups;
+            options_type m_options;
          };
 
 
-
-         class Help
+         template< typename C, typename... Args>
+         option::Holder directive( C cardinality, std::vector< std::string> options, std::string description, Args&&... args)
          {
-         public:
+            auto caller = internal::make( cardinality, std::forward< Args>( args)...);
+            return internal::basic_directive< decltype( caller), C>{ std::move( options), std::move( description), std::move( caller)};
+         }
 
-            Help( const Group* group, std::string description, std::vector< std::string> options, std::ostream& out = std::cout)
-               : m_group( group), m_description( std::move( description)),
-                 m_options{ std::move( options)}, m_out( out)
-            {
+         template< typename... Args>
+         option::Holder directive( std::vector< std::string> options, std::string description, Args&&... args)
+         {
+            auto cardinality = internal::deduce::cardinality( std::forward< Args>( args)...);
+            return directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...);
+         }
 
-            }
+         /*
+         template< typename... Args>
+         option::Holder directive( std::vector< std::string> options, std::string description, Group group, Args&&... args)
+         {
+            return directive( cardinality::Zero{}, std::move( options), std::move( description), std::forward< Args>( args)...);
+         }
+         */
 
-            Help( const Group* group, std::string description) : Help( group, std::move( description), { "--help"})
-            {
-
-            }
-
-            Help( const Group* group) : Help( group, "")
-            {
-
-            }
-
-            bool option( const std::string& option) const
-            {
-               return ! range::find( range::make( m_options), option).empty();
-            }
-
-            void assign( const std::string& option, std::vector< std::string>&& values)
-            {
-               m_invoked = true;
-            }
-
-            bool consumed() const
-            {
-               return false; //m_assigned;
-            }
-
-            void dispatch() const
-            {
-               if( m_invoked)
-               {
-                  m_out << "NAME\n   ";
-                  m_out << terminal::color::white << file::name::base( process::path());
-
-                  m_out << "\n\nDESCRIPTION\n";
-
-                  internal::format::description( m_out, m_description, 3) << "\nOPTIONS\n";
-
-                  if( m_group)
-                  {
-                     m_group->information( m_out);
-                  }
-
-                  internal::format::help( m_out, *this);
-               }
-            }
-
-            bool valid() const
-            {
-               return true;
-            }
-
-
-            void information( std::ostream& out) const
-            {
-               // no-op
-            }
-
-            const std::vector< std::string> options() const { return m_options;}
-            std::string description() const { return "shows this help information";}
-            internal::value_cardinality cardinality() const { return {0, 0};}
-
-         private:
-
-            const Group* m_group = nullptr;
-            std::string m_description;
-            std::vector< std::string> m_options;
-            std::ostream& m_out;
-            bool m_invoked = false;
-
-         };
 
          namespace no
          {
             struct Help
             {
-
+               void operator () () {};
             };
 
             Help help() { return Help{};}
@@ -743,112 +556,34 @@ namespace casual
       {
       public:
 
+         using options_type = std::vector< argument::option::Holder>;
 
+         Arguments( options_type&& options);
+         Arguments( std::string description, options_type options);
+         Arguments( std::string description, std::vector< std::string> help_option, options_type options);
+         Arguments( argument::no::Help, options_type options);
 
-         Arguments()
-         {
-            argument::Group::add( argument::Help{ this});
-         }
-
-         Arguments( const std::string& description)
-         {
-            argument::Group::add( argument::Help{ this, description});
-         }
-
-         Arguments( const std::string& description, std::vector< std::string> help_option)
-         {
-            argument::Group::add( argument::Help{ this, description, std::move( help_option)});
-         }
-
-
-         Arguments( argument::no::Help)
-         {
-         }
-
-
-         template< typename... Args>
-         void add( Args&&... args)
-         {
-            argument::Group::add( std::forward< Args>( args)...);
-         }
 
 
          //!
          //! @attention assumes first argument is process name.
          //!
-         bool parse( int argc, char** argv)
-         {
-            if( argc > 0)
-            {
-               std::vector< std::string> arguments{ argv + 1, argv + argc};
-               return parse( argv[ 0], arguments);
-            }
-            return false;
-         }
+         void parse( int argc, char** argv);
 
-         bool parse( const std::vector< std::string>& arguments)
-         {
-            return parse( process::path(), arguments);
-         }
+         void parse( const std::vector< std::string>& arguments);
 
 
-         bool parse( const std::string& process, const std::vector< std::string>& arguments)
-         {
-            process::path( process);
+         void parse( const std::string& process, const std::vector< std::string>& arguments);
+
+         //!
+         //! @return process name
+         //!
+         const std::string& process() const;
 
 
-            //
-            // start divide and conquer the arguments and try to find handlers for'em
-            //
-
-            auto argumentRange = range::make( arguments);
-
-            while( argumentRange)
-            {
-
-               //
-               // Try to find a handler for this argument
-               //
-               auto found = range::find_if( m_groups, argument::internal::Option{ *argumentRange});
-
-               if( ! found)
-               {
-                  throw exception::invalid::Argument{ "invalid argument: " + *argumentRange};
-               }
-
-               //
-               // pin the current found argument, and consume it so we can continue to
-               // search
-               //
-               auto argument = *argumentRange;
-               ++argumentRange;
-
-               //
-               // Find the end of values associated with this option
-               //
-               auto slice = range::divide_first( argumentRange, m_groups, argument::internal::HasOption());
-
-               found->assign( argument, range::to_vector( std::get< 0>( slice)));
-
-               if( ! found->valid())
-               {
-                  throw exception::invalid::Argument{ "invalid values for: " + argument};
-               }
-
-               argumentRange = std::get< 1>( slice);
-            }
-
-            dispatch();
-
-            return true;
-         }
-
-         const std::string& processName() { return process::path();}
       };
 
-
-
-   } // utility
+   } // common
 } // casual
 
 

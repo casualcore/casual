@@ -88,15 +88,11 @@ namespace casual
                Settings settings;
 
                {
-                  common::Arguments parser;
-
-                  parser.add(
+                  common::Arguments parser{ {
                         common::argument::directive( {"-f", "--forward"}, "--forward  <from-queue> <to-queue>", settings, &Settings::setForward)
-                  );
+                  }};
 
                   parser.parse( argc, argv);
-
-                  common::process::path( parser.processName());
                }
 
                start( std::move( settings));

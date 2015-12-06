@@ -259,8 +259,7 @@ namespace casual
 
    common::Arguments parser()
    {
-      common::Arguments parser;
-      parser.add(
+      common::Arguments parser{ {
             common::argument::directive( {"--no-header"}, "do not print headers", &queue::global::no_header),
             common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
             common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
@@ -269,8 +268,7 @@ namespace casual
             common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::listMessages),
             common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual-admin queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
             common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_)
-
-      );
+      }};
 
       return parser;
    }
