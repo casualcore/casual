@@ -23,3 +23,4 @@ bin/
 *.pyc
 
 *.log
+/Debug/

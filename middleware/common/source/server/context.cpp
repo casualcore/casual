@@ -91,7 +91,8 @@ namespace casual
 
          void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))
          {
-            trace::internal::Scope trace{ "server::Context advertise service: " + service};
+            //trace::internal::Scope trace{ "server::Context advertise service: " + service};
+            trace::internal::Scope trace{ "server::Context::advertise"};
 
             Service prospect{ service, adress};
 
@@ -150,7 +151,8 @@ namespace casual
 
          void Context::unadvertise( const std::string& service)
          {
-            trace::internal::Scope log{ "server::Context unadvertise service: " + service};
+            //trace::internal::Scope log{ "server::Context unadvertise service: " + service};
+            trace::internal::Scope log{ "server::Context::unadvertise"};
 
             if( m_state.services.erase( service) != 1)
             {

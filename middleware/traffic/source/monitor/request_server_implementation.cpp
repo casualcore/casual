@@ -28,8 +28,7 @@ namespace
 {
    std::vector< ServiceEntryVO> select( )
    {
-      static const std::string cMethodname("Database::select");
-      common::Trace trace(cMethodname);
+      const common::Trace trace( "Database::select");
 
       auto connection = sql::database::Connection( common::environment::directory::domain() + "/monitor.db");
       std::ostringstream stream;
