@@ -520,9 +520,8 @@ namespace casual
                common::Arguments arguments{ R"(
    usage: 
      
-   )"};
-
-               arguments.add(
+   )",
+               {
                   common::argument::directive( {"--no-header"}, "do not print headers", global::no_header),
                   common::argument::directive( {"--no-color"}, "do not use color", global::no_color),
                   common::argument::directive( {"--porcelain"}, "Easy to parse format", global::porcelain),
@@ -531,7 +530,7 @@ namespace casual
                   common::argument::directive( { "-li", "--list-instances" }, "list current transactions", &dispatch::list_instances),
                   common::argument::directive( { "-ui", "--update-instances" }, "update instances - -ui [<rm-id> <# instances>]+", &dispatch::update_instances),
                   common::argument::directive( { "-lp", "--list-pending" }, "list pending tasks", &dispatch::list_pending)
-                  );
+               }};
 
 
                try

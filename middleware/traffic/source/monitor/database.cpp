@@ -104,10 +104,8 @@ int main( int argc, char **argv)
       // get database from arguments
       std::string database{"monitor.db"};
       {
-         casual::common::Arguments parser;
-         parser.add(
-               casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", database)
-         );
+         casual::common::Arguments parser{
+            { casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", database)}};
 
          parser.parse( argc, argv);
       }

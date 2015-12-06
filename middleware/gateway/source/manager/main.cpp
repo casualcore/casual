@@ -26,7 +26,9 @@ namespace casual
             {
                Settings settings;
                {
-                  casual::common::Arguments parser;
+                  casual::common::Arguments parser{{
+
+                  }};
                   parser.parse( argc, argv);
                }
 

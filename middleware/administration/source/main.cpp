@@ -75,13 +75,12 @@ To get help for a specific category use:
 
 The following categories are supported:   
   
-)", { "help"}};
-
-            arguments.add(
+)", { "help"},
+            {
                common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
                common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue),
                common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction)
-            );
+            }};
 
             arguments.parse( argc, argv);
 

@@ -768,9 +768,7 @@ namespace casual
 int main( int argc, char** argv)
 {
 
-   casual::common::Arguments parser;
-   parser.add(
-
+   casual::common::Arguments parser{ {
          casual::common::argument::directive( {"--porcelain"}, "easy to parse format", casual::broker::global::porcelain),
          casual::common::argument::directive( {"--no-color"}, "no color will be used", casual::broker::global::no_colors),
          casual::common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", casual::broker::global::no_header),
@@ -779,8 +777,8 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"-li", "--list-instances"}, "list all instances", &casual::broker::action::listInstances),
          casual::common::argument::directive( {"-ui", "--update-instances"}, "<alias> <#> update server instances", &casual::broker::action::updateInstances),
          casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &casual::broker::action::shutdown),
-         casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::action::boot)
-   );
+         casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::action::boot)}
+   };
 
 
 

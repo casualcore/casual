@@ -40,7 +40,7 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   casual::common::Arguments parser;
+   casual::common::Arguments parser{ {}};
 
    try
    {
