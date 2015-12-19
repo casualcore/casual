@@ -91,7 +91,7 @@ namespace casual
 
       transaction::State state( ":memory:");
 
-      transaction::action::configure( state);
+      transaction::action::configure( state, "../example/resources/resources.yaml");
 
       ASSERT_TRUE( state.xaConfig.size() >= 2) << "state.xaConfig.size(): " << state.xaConfig.size();
       EXPECT_TRUE( state.xaConfig.at( "db2").xa_struct_name == "db2xa_switch_static_std");
@@ -106,7 +106,7 @@ namespace casual
 
       transaction::State state( ":memory:");
 
-      transaction::action::configure( state);
+      transaction::action::configure( state, "../example/resources/resources.yaml");
 
       ASSERT_TRUE( state.resources.size() == 2);
       EXPECT_TRUE( state.resources.at( 0).id == 1);

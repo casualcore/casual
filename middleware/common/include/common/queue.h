@@ -42,36 +42,28 @@ namespace casual
                void apply();
             };
 
-            //!
-            //! A common policy that removes pids from state when
-            //! process terminates
-            //!
-            template< typename S>
-            struct RemoveOnTerminate
+            namespace callback
             {
-               using state_type = S;
-
-               RemoveOnTerminate( state_type& state) : m_state( state) {}
-
-               void apply()
+               namespace on
                {
-                  try
+                  //!
+                  //! A common policy that does a callback when a
+                  //! process terminates
+                  //!
+                  struct Terminate
                   {
-                     throw;
-                  }
-                  catch( const exception::signal::child::Terminate& exception)
-                  {
-                     auto terminated = process::lifetime::ended();
-                     for( auto& death : terminated)
-                     {
-                        m_state.process( death);
-                     }
-                  }
-               }
+                     using callback_type = std::function<void(const process::lifetime::Exit&)>;
 
-            protected:
-               state_type& m_state;
-            };
+                     Terminate( callback_type callback);
+
+                     void apply();
+
+                  protected:
+                     std::function<void(const process::lifetime::Exit&)> m_callback;
+                  };
+
+               } // on
+            } // callback
 
 
             struct Blocking
@@ -376,7 +368,7 @@ namespace casual
 
             private:
 
-               ipc::receive::Queue& m_ipc;
+               std::reference_wrapper< ipc::receive::Queue> m_ipc;
                policy_type m_policy;
             };
 
@@ -411,18 +403,15 @@ namespace casual
                return Reader( ipc);
             }
 
-            namespace remove
+            namespace callback
             {
-               template< typename S>
-               using basic_send = basic_send< policy::RemoveOnTerminate< S>>;
+               using basic_send = basic_send< policy::callback::on::Terminate>;
 
                //! @deprecated
-               template< typename S>
-               using basic_writer = basic_writer< policy::RemoveOnTerminate< S>>;
+               using basic_writer = basic_writer< policy::callback::on::Terminate>;
 
-               template< typename S>
-               using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
-            }
+               using basic_reader = basic_reader< policy::callback::on::Terminate>;
+            } // callback
 
             template< typename M>
             auto call( platform::queue_id_type destination, M&& message) -> decltype( message::reverse::type( std::forward< M>( message)))
@@ -461,17 +450,15 @@ namespace casual
                return Reader( ipc);
             }
 
-            namespace remove
+            namespace callback
             {
-               template< typename S>
-               using basic_send = basic_send< policy::RemoveOnTerminate< S>>;
+               using basic_send = basic_send< policy::callback::on::Terminate>;
 
-               template< typename S>
-               using basic_writer = basic_writer< policy::RemoveOnTerminate< S>>;
+               using basic_writer = basic_writer< policy::callback::on::Terminate>;
 
-               template< typename S>
-               using basic_reader = basic_reader< policy::RemoveOnTerminate< S>>;
-            }
+               using basic_reader = basic_reader< policy::callback::on::Terminate>;
+
+            } // callback
 
             namespace force
             {

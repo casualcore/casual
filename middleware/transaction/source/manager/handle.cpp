@@ -361,7 +361,7 @@ namespace casual
                   auto& instance = m_state.get_instance( message.resource, message.process.pid);
 
                   {
-                     queue::non_blocking::Send sender{ this->m_state};
+                     queue::non_blocking::Send sender{ std::ref( this->m_state)};
 
                      local::instance::done( this->m_state, sender, instance);
                      local::instance::statistics( instance, message, now);
@@ -424,7 +424,7 @@ namespace casual
                      {
                         instance.process = std::move( message.process);
 
-                        queue::non_blocking::Send sender{ m_state};
+                        queue::non_blocking::Send sender{ std::ref( m_state)};
                         local::instance::done( m_state, sender, instance);
 
                      }
@@ -454,11 +454,11 @@ namespace casual
 
                      common::log::internal::transaction << "enough resources are connected - send connect to broker\n";
 
-                     queue::blocking::Writer brokerQueue{ common::ipc::broker::id(), m_state};
+                     queue::blocking::Send send{ std::ref( m_state)};
 
                      common::message::transaction::manager::Ready running;
                      running.process = common::process::handle();
-                     brokerQueue( running);
+                     send(  common::ipc::broker::id(), running);
 
                      m_connected = true;
                   }
@@ -776,6 +776,10 @@ namespace casual
                reply.state = exception.code();
 
                local::send::reply( Handler::m_state, std::move( reply), message.process);
+            }
+            catch( const common::exception::signal::Terminate&)
+            {
+               throw;
             }
             catch( ...)
             {

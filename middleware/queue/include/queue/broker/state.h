@@ -50,7 +50,7 @@ namespace casual
 
             std::vector< common::platform::pid_type> processes() const;
 
-            void process( common::process::lifetime::Exit death);
+            void operator() ( common::process::lifetime::Exit death);
 
             std::string group_executable;
             std::string configuration;
@@ -104,6 +104,8 @@ namespace casual
             };
 
             std::map< common::transaction::ID, Correlation> correlation;
+
+            common::ipc::receive::Queue& ipc() { return receive;}
 
             common::ipc::receive::Queue& receive;
          };

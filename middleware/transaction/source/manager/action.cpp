@@ -30,8 +30,10 @@ namespace casual
    {
       namespace action
       {
-         void configure( State& state)
+         void configure( State& state, const std::string& resource_file)
          {
+            queue::blocking::Send broker( std::ref( state));
+
             {
                common::Trace trace( "connect to broker", log::internal::transaction);
 
@@ -44,12 +46,11 @@ namespace casual
                connect.process = common::process::handle();
                connect.identification = common::process::instance::transaction::manager::identity();
 
-               queue::blocking::Writer broker( common::ipc::broker::id(), state);
-               auto correlation = broker( connect);
+               auto correlation = broker( common::ipc::broker::id(), connect);
 
                {
                   common::message::handle::connect::reply(
-                        queue::blocking::Reader{common::ipc::receive::queue(), state},
+                        queue::blocking::Reader{common::ipc::receive::queue(), std::ref( state)},
                         correlation,
                         common::message::transaction::manager::connect::Reply{});
                }
@@ -64,13 +65,13 @@ namespace casual
                //
                common::message::transaction::manager::Configuration configuration;
 
-               queue::blocking::Reader read( common::ipc::receive::queue(), state);
+               queue::blocking::Reader read( common::ipc::receive::queue(), std::ref( state));
                read( configuration);
 
                //
                // configure state
                //
-               state::configure( state, configuration);
+               state::configure( state, configuration, resource_file);
             }
 
             {
@@ -79,9 +80,7 @@ namespace casual
                common::message::dead::process::Registration message;
                message.process = common::process::handle();
 
-               queue::blocking::Writer broker( common::ipc::broker::id(), state);
-               broker( message);
-
+               broker( common::ipc::broker::id(), message);
             }
 
          }
@@ -154,7 +153,7 @@ namespace casual
 
 
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
-                           queue::non_blocking::Send send{ m_state};
+                           queue::non_blocking::Send send{ std::ref( m_state)};
 
                            if( ! send( instance.process.queue, message::shutdown::Request{}))
                            {
@@ -212,7 +211,7 @@ namespace casual
                {
                   Trace trace{ "transaction::action::resource::instance::request", log::internal::transaction};
 
-                  queue::non_blocking::Send sender{ state};
+                  queue::non_blocking::Send sender{ std::ref( state)};
 
                   if( sender.send( instance.process.queue, message))
                   {
@@ -263,9 +262,9 @@ namespace casual
             {
                try
                {
-                  queue::non_blocking::Writer write{ message.target, m_state};
+                  queue::non_blocking::Send send{ std::ref( m_state)};
 
-                  if( ! write.send( message.message))
+                  if( ! send.send( message.target, message.message))
                   {
                      common::log::internal::transaction << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
                      return false;

@@ -43,16 +43,34 @@ namespace casual
                return resources;
             }
 
+            namespace local
+            {
+               namespace
+               {
+                  std::string file()
+                  {
+                     auto file = common::environment::variable::get( "CASUAL_RESOURCE_CONFIGURATION_FILE", "");
+
+                     if( file.empty())
+                     {
+                        return common::environment::file::installedConfiguration();
+                     }
+
+                     return file;
+                  }
+               } // <unnamed>
+            } // local
+
             std::vector< Switch> get()
             {
                //
                // Try to find configuration file
                //
-               const std::string configFile = common::environment::file::installedConfiguration();
+               const auto file = local::file();
 
-               if( ! configFile.empty())
+               if( ! file.empty())
                {
-                  return get( configFile);
+                  return get( file);
                }
                else
                {

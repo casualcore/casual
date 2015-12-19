@@ -74,7 +74,7 @@ namespace casual
 
                   for( auto terminated : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
                   {
-                     m_state.process( terminated);
+                     m_state( terminated);
                   }
 
                   throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
@@ -89,18 +89,18 @@ namespace casual
                {
                   common::Trace trace{ "handle::lookup::Request", common::log::internal::queue};
 
-                  queue::blocking::Writer write{ message.process.queue, m_state};
+                  queue::blocking::Send send{ std::ref( m_state)};
 
                   auto found =  common::range::find( m_state.queues, message.name);
 
                   if( found)
                   {
-                     write( found->second);
+                     send( message.process.queue, found->second);
                   }
                   else
                   {
                      static common::message::queue::lookup::Reply reply;
-                     write( reply);
+                     send( message.process.queue, reply);
                   }
                }
 
@@ -169,8 +169,8 @@ namespace casual
                      reply.trid = message.trid;
                      reply.resource = message.resource;
                      reply.process = common::process::handle();
-                     queue::blocking::Writer send{ message.process.queue, state};
-                     send( reply);
+                     queue::blocking::Send send{ std::ref( state)};
+                     send( message.process.queue, reply);
                   };
 
                   if( found)
@@ -244,8 +244,8 @@ namespace casual
 
                      common::log::internal::queue << "all groups has responded - send reply to RM: " << found->second.caller << std::endl;
 
-                     queue::blocking::Writer send{ found->second.caller.queue, state};
-                     send( reply);
+                     queue::blocking::Send send{ std::ref( state)};
+                     send( found->second.caller.queue, reply);
 
                      //
                      // We're done with the correlation.

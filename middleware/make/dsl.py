@@ -9,6 +9,8 @@
 #
 # Imports
 #
+import os
+
 import casual.make.plumbing
 import casual.make.porcelain
 from casual.make.output import Output
@@ -86,6 +88,51 @@ def LinkClient( name, objectfiles, libraries, resources=None):
          
     _plumbing.link( _plumbing.platform().link_client, target, objectfiles, libraries, directive)
 
+
+
+def LinkResourceProxy( name, resource, libraries = [], directive = ''):
+    """
+ Links a resource proxy
+ 
+ param: name        name of the result
+ param: resource    key of the resource one wants to link
+ param: directive   extra directives
+    """
+    
+    target = _plumbing.target( _plumbing.executable_name_path( name), name)
+    
+    dependent_targets = _plumbing.library_targets( libraries)
+    
+    #
+    # Convert library targets to names/files, 
+    #
+    libraries = _plumbing.target_base( libraries)
+    
+    destination_path = os.path.dirname( target.file)
+    
+    build_resource_proxy = _plumbing.platform().executable_name( 'casual-build-resource-proxy')
+    
+    directive += ' --link-directives "' + _plumbing.platform().link_directive( libraries) + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
+    
+    
+    print
+    print "link: " + target.name
+    print 
+    print target.name + ': ' + target.file
+    print
+    print '   #'
+    print '   # possible dependencies to other targets (in this makefile)'
+    print '   depenency_' + target.name + ' = ' + _plumbing.multiline( dependent_targets)
+    print
+    print target.file + ': $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
+    print '\t' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' ' + directive
+    
+    _plumbing.register_file_for_clean( target.file)
+    _plumbing.register_path_for_create( destination_path)
+
+    return target
+
+
 #
 # Dispatched to porcelain functions in casual make
 # If one don't want to add import statement you have to reimplement functions
@@ -110,8 +157,6 @@ def LinkArchive(name,objectfiles):
     return _porcelain.LinkArchive(name,objectfiles)
 def LinkExecutable( name, objectfiles, libraries = []): 
     return _porcelain.LinkExecutable( name, objectfiles, libraries)
-def LinkResourceProxy( name, resource, libraries = [], directive = ''): 
-    return _porcelain.LinkResourceProxy( name, resource, libraries, directive)
 def Dependencies( target, dependencies): 
     return _porcelain.Dependencies( target, dependencies)
 def Build(casualMakefile): 

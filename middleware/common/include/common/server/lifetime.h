@@ -43,17 +43,17 @@ namespace casual
             //! @param state the state object
             //! @param pids to terminate
             //!
-            template< typename S>
-            void shutdown( S& state, const std::vector< process::Handle>& servers, std::vector< platform::pid_type> executables, std::chrono::microseconds timeout)
+            template< typename C>
+            void shutdown( C&& callback, const std::vector< process::Handle>& servers, std::vector< platform::pid_type> executables, std::chrono::microseconds timeout)
             {
                for( auto& death : process::lifetime::terminate( std::move( executables), timeout))
                {
-                  state.process( death);
+                  callback( death);
                }
 
                for( auto& death : hard::shutdown( servers, timeout))
                {
-                  state.process( death);
+                  callback( death);
                }
             }
 

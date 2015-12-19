@@ -184,7 +184,7 @@ namespace casual
             //
             // Terminate children
             //
-            common::process::children::terminate( m_state);
+            common::process::children::terminate( broker::handle::dead::Process{ m_state.ipc()}, m_state.processes());
 
 
             common::log::information << "domain '" << domain << "' is off-line\n";
@@ -225,7 +225,7 @@ namespace casual
                   << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
 
-            message::pump( m_state, m_receiveQueue);
+            message::pump( m_state);
 
 
          }
@@ -244,7 +244,7 @@ namespace casual
 
       namespace message
       {
-         void pump( State& state, common::ipc::receive::Queue& ipc)
+         void pump( State& state)
          {
             try
             {
@@ -263,7 +263,7 @@ namespace casual
                {
                   if( state.pending.replies.empty())
                   {
-                     queue::blocking::Reader blockingReader( ipc, state);
+                     queue::blocking::Reader blockingReader( state.ipc(), handle::dead::Process{ state.ipc()});
 
                      handler( blockingReader.next());
                   }
@@ -280,7 +280,7 @@ namespace casual
                         decltype( state.pending.replies) replies;
                         std::swap( replies, state.pending.replies);
 
-                        queue::non_blocking::Send send{ state};
+                        queue::non_blocking::Send send{ handle::dead::Process{ state.ipc()}};
 
                         auto remain = std::get< 1>( common::range::partition(
                               replies,
@@ -293,7 +293,7 @@ namespace casual
                      // Take care of broker dispatch
                      //
                      {
-                        queue::non_blocking::Reader non_block( ipc, state);
+                        queue::non_blocking::Reader non_block{ state.ipc(), handle::dead::Process{ state.ipc()}};
 
                         //
                         // If we've got pending that is 'never' sent, we still want to

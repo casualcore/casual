@@ -72,7 +72,7 @@ namespace casual
          //
          {
             trace::internal::Scope trace( "configure", common::log::internal::transaction);
-            action::configure( m_state);
+            action::configure( m_state, settings.configuration);
          }
 
          //
@@ -84,6 +84,22 @@ namespace casual
             common::range::for_each(
                m_state.resources,
                action::resource::Instances( m_state));
+
+            //
+            // Make sure we wait for the resources to get ready
+            //
+            common::message::dispatch::Handler handler{
+               common::message::handle::Shutdown{},
+               handle::resource::reply::Connect{ m_state}};
+
+
+
+            while( ! m_state.ready())
+            {
+               queue::blocking::Reader receive{ common::ipc::receive::queue(), std::ref( m_state)};
+
+               handler( receive.next( handler.types()));
+            }
 
          }
 
@@ -189,9 +205,9 @@ namespace casual
                   handle::domain::resource::reply::Prepare{ state},
                   handle::domain::resource::reply::Commit{ state},
                   handle::domain::resource::reply::Rollback{ state},
-                  common::server::handle::basic_admin_call< State>{
-                     ipc, admin::services( state), state, common::process::instance::transaction::manager::identity()},
-                  common::message::handle::ping( state),
+                  common::server::handle::basic_admin_call<>{
+                     ipc, admin::services( state), common::process::instance::transaction::manager::identity(), ipc, std::ref( state)},
+                  common::message::handle::ping( std::ref( state)),
 
                   //
                   // We discard the connect reply message
@@ -218,7 +234,7 @@ namespace casual
                         //
                         // We can only block if our backlog is empty
                         //
-                        queue::blocking::Reader queueReader{ ipc, state};
+                        queue::blocking::Reader queueReader{ ipc, std::ref( state)};
 
                         //
                         // Removed transaction-timeout from TM, since the semantics are not clear
@@ -234,7 +250,7 @@ namespace casual
                      // We also do a "busy wait" to try to get more done between each write.
                      //
 
-                     queue::non_blocking::Reader nonBlocking( ipc, state);
+                     queue::non_blocking::Reader nonBlocking( ipc, std::ref( state));
 
                      auto count = common::platform::batch::transaction;
 

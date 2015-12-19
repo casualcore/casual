@@ -240,7 +240,8 @@ namespace casual
             shutdown
          };
 
-         State() = default;
+         State() : m_ipc( common::ipc::receive::queue()) {}
+         State( common::ipc::receive::Queue& ipc) : m_ipc( ipc) {}
 
          State( State&&) = default;
          State& operator = (State&&) = default;
@@ -255,6 +256,7 @@ namespace casual
          typedef std::deque< common::message::service::lookup::Request> pending_requests_type;
 
 
+
          server_mapping_type servers;
          instance_mapping_type instances;
          service_mapping_type services;
@@ -262,8 +264,6 @@ namespace casual
          std::vector< state::Group> groups;
 
          state::Group::id_type casual_group_id = 0;
-
-
 
          std::map< common::Uuid, common::process::Handle> singeltons;
 
@@ -317,7 +317,6 @@ namespace casual
          const state::Server::Instance& getInstance( state::Server::pid_type pid) const;
 
 
-         void process( common::process::lifetime::Exit death);
          void remove_process( state::Server::pid_type pid);
 
 
@@ -348,11 +347,19 @@ namespace casual
          std::size_t size() const;
 
          std::vector< common::platform::pid_type> processes() const;
+
+
+         common::ipc::receive::Queue& ipc() { return m_ipc.get();}
+
+      private:
+         std::reference_wrapper< common::ipc::receive::Queue> m_ipc;
       };
 
 
       namespace state
       {
+
+
          struct Base
          {
             Base( State& state) : m_state( state) {};
@@ -368,17 +375,17 @@ namespace casual
       {
          namespace blocking
          {
-            using Reader = common::queue::blocking::remove::basic_reader< State>;
-            using Writer = common::queue::blocking::remove::basic_writer< State>;
-            using Send = common::queue::blocking::remove::basic_send< State>;
+            using Reader = common::queue::blocking::callback::basic_reader;
+            using Writer = common::queue::blocking::callback::basic_writer;
+            using Send = common::queue::blocking::callback::basic_send;
 
          } // blocking
 
          namespace non_blocking
          {
-            using Reader = common::queue::non_blocking::remove::basic_reader< State>;
-            using Writer = common::queue::non_blocking::remove::basic_writer< State>;
-            using Send = common::queue::non_blocking::remove::basic_send< State>;
+            using Reader = common::queue::non_blocking::callback::basic_reader;
+            using Writer = common::queue::non_blocking::callback::basic_writer;
+            using Send = common::queue::non_blocking::callback::basic_send;
 
          } // non_blocking
 

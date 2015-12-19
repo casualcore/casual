@@ -497,6 +497,11 @@ def build( casual_make_file):
     
     state().make_files_to_build.append( [ False, casual_make_file, path.makefile( casual_make_file)])
     
+def multiline( values):
+    return internal.multiline( values)
+    
+def target_base( values):
+    return internal.target_base( values)
 
 def library_targets( libs):
 
@@ -604,40 +609,6 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
     return target
 
 
-
-def link_resource_proxy( target, resource, libraries, directive):
-    
-    internal.validate_list( libraries);
-    
-    dependent_targets = library_targets( libraries)
-    
-    #
-    # Convert library targets to names/files, 
-    #
-    libraries = internal.target_base( libraries)
-    
-    destination_path = os.path.dirname( target.file)
-    
-    build_resource_proxy = platform().executable_name( 'casual-build-resource-proxy')
-    
-    directive += ' ' + platform().link_directive( libraries)
-    
-    print
-    print "link: " + target.name
-    print 
-    print target.name + ': ' + target.file
-    print
-    print '   #'
-    print '   # possible dependencies to other targets (in this makefile)'
-    print '   depenency_' + target.name + ' = ' + internal.multiline( dependent_targets)
-    print
-    print target.file + ': $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' --link-directives "' + directive + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
-    
-    register_file_for_clean( target.file)
-    register_path_for_create( destination_path)
-
-    return target
 
 
 def install(target, destination):

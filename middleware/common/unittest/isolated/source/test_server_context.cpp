@@ -112,28 +112,6 @@ namespace casual
             }
 
 
-
-            namespace broker
-            {
-               void prepare( platform::queue_id_type id)
-               {
-                  common::queue::blocking::Writer send( id);
-                  // server connect
-                  {
-                     message::server::connect::Reply reply;
-                     send( reply);
-                  }
-
-                  // transaction client connect
-                  {
-                     message::transaction::client::connect::Reply reply;
-                     reply.domain = "unittest-domain";
-                     send( reply);
-                  }
-
-               }
-            } // broker
-
          } // <unnamed>
       } // local
 

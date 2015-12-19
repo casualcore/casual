@@ -321,34 +321,18 @@ namespace casual
 
             //!
             //! Terminate all children that @p pids dictates.
-            //! When a child is terminated state is updated
+            //! When a child is terminated callback is called
             //!
-            //! @param state the state object
+            //! @param callback the callback object
             //! @param pids to terminate
             //!
-            template< typename S>
-            void terminate( S& state, std::vector< platform::pid_type> pids)
+            template< typename C>
+            void terminate( C&& callback, std::vector< platform::pid_type> pids)
             {
                for( auto& death : lifetime::terminate( std::move( pids)))
                {
-                  state.process( death);
+                  callback( death);
                }
-            }
-
-            //!
-            //! Terminate all children that @p state dictates.
-            //! When a child is terminated state is updated
-            //!
-            //! @param state the state object
-            //!
-            template< typename S>
-            void terminate( S& state)
-            {
-               //
-               // Terminate all processes
-               //
-
-               terminate( state, state.processes());
             }
 
 

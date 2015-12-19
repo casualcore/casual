@@ -272,21 +272,6 @@ namespace casual
       }
 
 
-      void State::process( common::process::lifetime::Exit death)
-      {
-         //
-         // We try to send a event to our self, if it's not possible (queue is full) we put it in pending
-         //
-
-         message::dead::process::Event event{ death};
-
-         queue::non_blocking::Send send{ *this};
-
-         if( ! send( common::ipc::broker::id(), event))
-         {
-            pending.replies.emplace_back( event, common::ipc::broker::id());
-         }
-      }
 
       void State::remove_process( state::Server::pid_type pid)
       {
@@ -532,6 +517,8 @@ namespace casual
          }
          return result;
       }
+
+
    } // broker
 
 } // casual

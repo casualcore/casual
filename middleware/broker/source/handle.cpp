@@ -70,7 +70,7 @@ namespace casual
                      common::range::for_each( batch.executables, *this);
 
 
-                     queue::blocking::Reader queueReader{ common::ipc::receive::queue(), m_state};
+                     queue::blocking::Reader queueReader{ common::ipc::receive::queue(), broker::handle::dead::Process{ m_state.ipc()}};
 
                      auto handler = broker::handler( m_state);
 
@@ -118,7 +118,7 @@ namespace casual
 
                      auto filter = handler.types();
 
-                     queue::non_blocking::Reader non_blocking{ m_ipc, m_state};
+                     queue::non_blocking::Reader non_blocking{ m_ipc, broker::handle::dead::Process{ m_ipc}};
 
                      //
                      // Take care of executables
@@ -126,7 +126,7 @@ namespace casual
 
                      for( auto& executable : batch.executables)
                      {
-                        server::lifetime::shutdown( m_state, {}, { executable.get().instances}, std::chrono::seconds( 2));
+                        server::lifetime::shutdown( broker::handle::dead::Process{ m_ipc}, {}, { executable.get().instances}, std::chrono::seconds( 2));
 
                         while( handler( non_blocking.next( filter)))
                            ;
@@ -150,7 +150,7 @@ namespace casual
                            //
                            if( pid != process::id())
                            {
-                              server::lifetime::shutdown( m_state, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
+                              server::lifetime::shutdown( broker::handle::dead::Process{ m_ipc}, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
 
                               while( handler( non_blocking.next()))
                                  ;
@@ -181,7 +181,8 @@ namespace casual
                   template< typename M, typename R>
                   bool connect( State& state, M&& message, R&& reply)
                   {
-                     queue::blocking::Send send{ state};
+                     queue::blocking::Send send{ broker::handle::dead::Process{ state.ipc()}};
+
                      reply.correlation = message.correlation;
 
                      if( state.mode == State::Mode::shutdown)
@@ -212,7 +213,7 @@ namespace casual
 
                               reply.directive = R::Directive::singleton;
 
-                              queue::blocking::Send send{ state};
+                              queue::blocking::Send send{ broker::handle::dead::Process{ state.ipc()}};
                               send( message.process.queue, reply);
 
                               auto& server = state.getServer( state.getInstance( message.process.pid).server);
@@ -282,7 +283,7 @@ namespace casual
 
          void send_shutdown( State& state)
          {
-            queue::non_blocking::Send send{ state};
+            queue::non_blocking::Send send{ broker::handle::dead::Process{ state.ipc()}};
 
             common::queue::non_blocking::force::send(
                common::ipc::receive::queue(),
@@ -348,7 +349,7 @@ namespace casual
                      auto& instance = state.getInstance( pid);
                      instance.alterState( state::Server::Instance::State::shutdown);
 
-                     queue::non_blocking::Send sender{ state};
+                     queue::non_blocking::Send sender{ handle::dead::Process{ state.ipc()}};
 
                      if( ! sender( instance.process.queue, common::message::shutdown::Request{}))
                      {
@@ -457,8 +458,8 @@ namespace casual
                      auto configuration = transform::transaction::configuration( m_state);
                      configuration.correlation = message.correlation;
 
-                     queue::blocking::Writer tmQueue{ message.process.queue, m_state};
-                     tmQueue( configuration);
+                     queue::blocking::Send tmQueue{ broker::handle::dead::Process{ m_state.ipc()}};
+                     tmQueue( message.process.queue, configuration);
                   }
                }
 
@@ -511,8 +512,8 @@ namespace casual
                      common::message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
 
-                     queue::blocking::Writer write( message.process.queue, m_state);
-                     write( reply);
+                     queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
+                     send( message.process.queue, reply);
 
                   }
                }
@@ -588,7 +589,7 @@ namespace casual
 
                         common::message::pending::Message message{ event, get_queues()};
 
-                        queue::non_blocking::Send send{ m_state};
+                        queue::non_blocking::Send send{ broker::handle::dead::Process{ m_state.ipc()}};
                         auto sender = common::message::pending::sender( send);
 
                         if( ! sender( message))
@@ -617,6 +618,23 @@ namespace casual
                   }
                }
             } // process
+
+            Process::Process( common::ipc::receive::Queue& ipc) : m_ipc( ipc) {}
+
+            void Process::operator() ( const common::process::lifetime::Exit& exit)
+            {
+               //
+               // We try to send a event to our self, if it's not possible (queue is full) we put it in pending
+               //
+
+               common::message::dead::process::Event event{ exit};
+
+               queue::non_blocking::Send send{ *this};
+
+               common::queue::non_blocking::force::send( m_ipc, send, event);
+            }
+
+
          } // dead
 
          namespace lookup
@@ -627,11 +645,12 @@ namespace casual
 
                auto reply = common::message::reverse::type( message);
                reply.domain = common::environment::domain::name();
+               reply.identification = message.identification;
 
                auto found = range::find( m_state.singeltons, message.identification);
 
                auto send_reply = [&](){
-                  queue::non_blocking::Send send{ m_state};
+                  queue::non_blocking::Send send{ broker::handle::dead::Process{ m_state.ipc()}};
                   if( ! send( message.process.queue, reply))
                   {
                      m_state.pending.replies.emplace_back( reply, message.process.queue);
@@ -776,8 +795,8 @@ namespace casual
                   reply.state = decltype( reply.state)::idle;
                   reply.process = transform::Instance()( *idle);
 
-                  queue::blocking::Writer writer( message.process.queue, m_state);
-                  writer( reply);
+                  queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
+                  send( message.process.queue, reply);
 
                   service.lookedup++;
                }
@@ -796,8 +815,8 @@ namespace casual
                   //
                   reply.state = decltype( reply.state)::idle;
 
-                  queue::blocking::Writer writer( message.process.queue, m_state);
-                  writer( reply);
+                  queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
+                  send( message.process.queue, reply);
 
                }
                else
@@ -812,8 +831,8 @@ namespace casual
                   //
                   reply.state = decltype( reply.state)::busy;
 
-                  queue::blocking::Writer writer( message.process.queue, m_state);
-                  writer( reply);
+                  queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
+                  send( message.process.queue, reply);
 
                }
 
@@ -830,8 +849,8 @@ namespace casual
                reply.service.name = message.requested;
                reply.state = decltype( reply.state)::absent;
 
-               queue::blocking::Writer writer( message.process.queue, m_state);
-               writer( reply);
+               queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
+               send( message.process.queue, reply);
             }
          }
 
@@ -888,8 +907,8 @@ namespace casual
 
          void Policy::reply( platform::queue_id_type id, common::message::service::call::Reply& message)
          {
-            queue::blocking::Writer writer( id, m_state);
-            writer( message);
+            queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
+            send( id, message);
          }
 
          void Policy::ack( const common::message::service::call::callee::Request& message)
@@ -945,7 +964,7 @@ namespace casual
             handle::traffic::Disconnect{ state},
             handle::transaction::client::Connect{ state},
             handle::Call{ ipc::receive::queue(), admin::services( state), state},
-            common::message::handle::ping( state),
+            common::message::handle::ping( broker::handle::dead::Process{ state.ipc()}),
             common::message::handle::Shutdown{},
          };
       }
@@ -968,7 +987,7 @@ namespace casual
             handle::traffic::Disconnect{ state},
             handle::transaction::client::Connect{ state},
             //handle::Call{ ipc::receive::queue(), admin::services( state), state},
-            common::message::handle::ping( state),
+            common::message::handle::ping( broker::handle::dead::Process{ state.ipc()}),
             common::message::handle::Shutdown{},
          };
       }

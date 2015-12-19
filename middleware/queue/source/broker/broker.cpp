@@ -101,8 +101,8 @@ namespace casual
                      common::range::transform( group.queues, reply.queues, transform::Queue{});
 
 
-                     broker::queue::blocking::Writer write{ request.process.queue, m_state};
-                     write( reply);
+                     broker::queue::blocking::Send send{ std::ref( m_state)};
+                     send( request.process.queue, reply);
 
                      return queueGroup;
                   }
@@ -154,8 +154,8 @@ namespace casual
                   broker::handle::transaction::rollback::Request{ state},
                   broker::handle::transaction::rollback::Reply{ state},
                   //broker::handle::peek::queue::Request{ m_state},
-                  common::server::handle::basic_admin_call< broker::State>{
-                     state.receive, broker::admin::services( state), state, environment::broker::identification()},
+                  common::server::handle::basic_admin_call<>{
+                     state.ipc(), broker::admin::services( state), environment::broker::identification(), state.ipc(), std::ref( state)},
                   common::message::handle::ping( state),
                };
 
@@ -246,7 +246,7 @@ namespace casual
       {
          try
          {
-            common::process::children::terminate( m_state);
+            common::process::children::terminate( std::ref( m_state), m_state.processes());
 
             common::log::information << "casual-queue-broker is off-line" << std::endl;
 

@@ -54,13 +54,13 @@ namespace casual
          {
             namespace
             {
-               template< typename ReqMsg, typename RplMsg>
+               template< typename request_message, typename reply_message>
                struct Call
                {
                   int operator() ( const common::transaction::ID& transaction, int rmid, long flags) const
                   {
                      {
-                        ReqMsg request;
+                        request_message request;
                         request.trid = transaction;
                         request.resource = rmid;
                         request.process = common::process::handle();
@@ -70,7 +70,7 @@ namespace casual
                         send( request);
                      }
 
-                     RplMsg reply;
+                     reply_message reply;
 
                      common::queue::blocking::Reader recieve{ common::ipc::receive::queue()};
                      recieve( reply);
@@ -88,8 +88,10 @@ namespace casual
          {
             common::log::internal::transaction << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
 
-            common::log::internal::queue << "casual-queue ipc: " << environment::broker::queue::id() << std::endl;
-
+            //!
+            //! @attention We can't reference environment::broker::queue::id(), since it's blocking and the queue-broker-ipc-queue
+            //! is probably not advertised yet.
+            //!
             rm::id( rmid);
 
             return XA_OK;

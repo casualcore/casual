@@ -118,6 +118,11 @@ namespace casual
                return m_state;
             }
 
+            bool Proxy::ready() const
+            {
+               return common::range::all_of( instances, []( const Instance& i){ return i.state() == Instance::State::idle;});
+            }
+
             std::ostream& operator << ( std::ostream& out, const Proxy& value)
             {
                return out << "{ id: " << value.id
@@ -157,7 +162,7 @@ namespace casual
             }
          } // resource
 
-         void configure( State& state, const common::message::transaction::manager::Configuration& configuration)
+         void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file)
          {
 
             common::environment::domain::name( configuration.domain);
@@ -165,7 +170,7 @@ namespace casual
             {
                trace::internal::Scope trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
-               auto resources = config::xa::switches::get();
+               auto resources = config::xa::switches::get( resource_file);
 
                for( auto& resource : resources)
                {
@@ -315,6 +320,11 @@ namespace casual
          return ! persistentReplies.empty();
       }
 
+      bool State::ready() const
+      {
+         return range::all_of( resources, []( const state::resource::Proxy& p){ return p.ready();});
+      }
+
       std::size_t State::instances() const
       {
          std::size_t result = 0;
@@ -340,7 +350,7 @@ namespace casual
          return result;
       }
 
-      void State::process( common::process::lifetime::Exit death)
+      void State::operator () ( const common::process::lifetime::Exit& death)
       {
 
          for( auto& resource : resources)

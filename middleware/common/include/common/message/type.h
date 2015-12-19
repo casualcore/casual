@@ -404,11 +404,13 @@ namespace casual
 
                struct Reply : server::basic_id< cLookupProcessReply>
                {
+                  Uuid identification;
                   std::string domain;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      server::basic_id< cLookupProcessReply>::marshal( archive);
+                     archive & identification;
                      archive & domain;
                   })
                };

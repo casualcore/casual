@@ -158,7 +158,17 @@ namespace casual
                   void operator() ( const common::message::dead::process::Event& message);
                };
 
+
             } // process
+
+            struct Process
+            {
+               Process( common::ipc::receive::Queue& ipc);
+
+               void operator() ( const common::process::lifetime::Exit& exit);
+            private:
+               common::ipc::receive::Queue& m_ipc;
+            };
 
          } // dead
 

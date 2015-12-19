@@ -111,6 +111,8 @@ struct Settings
    bool verbose = false;
    bool keepSource = false;
 
+   std::string xa_resource_file;
+
 
    template< typename A>
    void serialize( A& archive)
@@ -121,6 +123,7 @@ struct Settings
       archive & CASUAL_MAKE_NVP( compiler);
       archive & CASUAL_MAKE_NVP( verbose);
       archive & CASUAL_MAKE_NVP( keepSource);
+      archive & CASUAL_MAKE_NVP( xa_resource_file);
 
    }
 };
@@ -208,7 +211,7 @@ config::xa::Switch configuration( const Settings& settings)
 {
    trace::Exit log( "read xa-switch configuration", settings.verbose);
 
-   auto swithces = config::xa::switches::get();
+   auto swithces = settings.xa_resource_file.empty() ? config::xa::switches::get() : config::xa::switches::get( settings.xa_resource_file);
 
    auto found = common::range::find_if( swithces,
       [&]( const config::xa::Switch& value){ return value.key == settings.resourceKey;});
@@ -236,6 +239,7 @@ int main( int argc, char **argv)
             argument::directive( {"-r", "--resource-key"}, "key of the resource", settings.resourceKey),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
             argument::directive( {"-l", "--link-directives"}, "additional link directives", settings.linkDirectives),
+            argument::directive( {"-xa", "--xa-resource-file"}, "path to resource definition file", settings.xa_resource_file),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
             argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keepSource)
          }};

@@ -36,8 +36,8 @@ namespace casual
 
             struct Broker
             {
-               Broker( broker::State& state) : m_thread{
-                  &broker::message::pump, std::ref( state), std::ref( queue)
+               Broker( broker::State& state) : queue_id{ state.ipc().id()}, m_thread{
+                  &broker::message::pump, std::ref( state)
                }
                {
 
@@ -48,11 +48,11 @@ namespace casual
                {
                   common::queue::blocking::Send send;
                   // make sure we quit
-                  send( queue.id(), common::message::shutdown::Request{});
+                  send( queue_id, common::message::shutdown::Request{});
                   m_thread.join();
                }
 
-               common::ipc::receive::Queue queue;
+               common::platform::queue_id_type queue_id;
 
             private:
 
@@ -60,9 +60,17 @@ namespace casual
 
             };
 
-            struct domain_0
+            struct domain_base
             {
+               domain_base() : state{ receive} {}
 
+
+               common::ipc::receive::Queue receive;
+               broker::State state;
+            };
+
+            struct domain_0 : domain_base
+            {
                void add_instance( const std::string& alias, platform::pid_type pid)
                {
                   state::Server server;
@@ -78,8 +86,6 @@ namespace casual
 
                   state.add( std::move( instance));
                }
-
-               broker::State state;
             };
 
             struct domain_1 : domain_0
@@ -151,7 +157,7 @@ namespace casual
             };
 
 
-            struct domain_6
+            struct domain_6 : domain_base
             {
                domain_6() : traffic1{ 10}, traffic2{ 20}
                {
@@ -160,9 +166,6 @@ namespace casual
 
                mockup::ipc::Instance traffic1;
                mockup::ipc::Instance traffic2;
-
-               broker::State state;
-
             };
 
             struct domain_singleton : domain_0
@@ -214,7 +217,7 @@ namespace casual
             request.path = "/server/path";
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), request);
+            send( domain.receive.id(), request);
          }
 
          {
@@ -244,7 +247,7 @@ namespace casual
             request.services = { { "service1"}, { "service2"}};
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), request);
+            send( domain.receive.id(), request);
          }
 
          {
@@ -278,7 +281,7 @@ namespace casual
             request.services = { { "service1"}, { "service2"}};
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), request);
+            send( domain.receive.id(), request);
          }
 
          EXPECT_NO_THROW({
@@ -305,7 +308,7 @@ namespace casual
             request.services = { { "service1"}};
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), request);
+            send( domain.receive.id(), request);
          }
 
          EXPECT_TRUE( domain.state.getService( "service1").instances.empty());
@@ -325,7 +328,7 @@ namespace casual
             request.requested = "non_existent";
 
             common::queue::blocking::Send send;
-            auto correlation = send( broker.queue.id(), request);
+            auto correlation = send( domain.receive.id(), request);
 
             common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
@@ -350,7 +353,7 @@ namespace casual
             request.requested = "service1";
 
             common::queue::blocking::Send send;
-            auto correlation = send( broker.queue.id(), request);
+            auto correlation = send( domain.receive.id(), request);
 
             common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
@@ -376,7 +379,7 @@ namespace casual
             request.requested = "service1";
 
             common::queue::blocking::Send send;
-            auto correlation = send( broker.queue.id(), request);
+            auto correlation = send( domain.receive.id(), request);
 
             common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
@@ -405,7 +408,7 @@ namespace casual
             request.context =  common::message::service::lookup::Request::Context::no_reply;
 
             common::queue::blocking::Send send;
-            auto correlation = send( broker.queue.id(), request);
+            auto correlation = send( domain.receive.id(), request);
 
             common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
@@ -436,7 +439,7 @@ namespace casual
             request.requested = "service1";
 
             common::queue::blocking::Send send;
-            correlation = send( broker.queue.id(), request);
+            correlation = send( domain.receive.id(), request);
 
             common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
@@ -458,7 +461,7 @@ namespace casual
             ack.service = "service1";
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), ack);
+            send( domain.receive.id(), ack);
 
             //
             // Expect an "idle" lookup-reply
@@ -490,7 +493,7 @@ namespace casual
             connect.process = domain.server2.process();
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), connect);
+            send( domain.receive.id(), connect);
          }
          EXPECT_TRUE( domain.state.forward == domain.server2.process());
       }
@@ -507,7 +510,7 @@ namespace casual
             connect.process = domain.traffic1.process();
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), connect);
+            send( domain.receive.id(), connect);
          }
          EXPECT_TRUE( domain.state.traffic.monitors.at( 0) == domain.traffic1.process().queue);
       }
@@ -524,14 +527,14 @@ namespace casual
                connect.process = domain.traffic1.process();
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), connect);
+               send( domain.receive.id(), connect);
             }
             {
                common::message::traffic::monitor::connect::Request connect;
                connect.process = domain.traffic2.process();
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), connect);
+               send( domain.receive.id(), connect);
             }
 
          }
@@ -551,7 +554,7 @@ namespace casual
             disconnect.process = domain.server2.process();
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), disconnect);
+            send( domain.receive.id(), disconnect);
          }
          EXPECT_TRUE( domain.state.traffic.monitors.empty());
       }
@@ -568,12 +571,12 @@ namespace casual
             connect.process = domain.tm.process();
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), connect);
+            send( domain.receive.id(), connect);
 
             common::message::transaction::manager::Ready ready;
             ready.process = domain.tm.process();
             ready.success = true;
-            send( broker.queue.id(), ready);
+            send( domain.receive.id(), ready);
          }
          EXPECT_TRUE( domain.state.transaction_manager == domain.tm.process().queue);
          EXPECT_TRUE( domain.state.getInstance( domain.tm.process().pid).state == state::Server::Instance::State::idle);
@@ -593,7 +596,7 @@ namespace casual
             connect.identification = tm_uuid;
 
             common::queue::blocking::Send send;
-            send( broker.queue.id(), connect);
+            send( domain.receive.id(), connect);
 
          }
          EXPECT_TRUE( domain.state.singeltons.size() == 1);
@@ -614,14 +617,14 @@ namespace casual
                connect.identification = some_uuid;
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), connect);
+               send( domain.receive.id(), connect);
             }
             {
                connect.process = domain.server2.process();
                connect.identification = some_uuid;
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), connect);
+               send( domain.receive.id(), connect);
             }
             common::message::server::connect::Reply reply;
 
@@ -653,7 +656,7 @@ namespace casual
                connect.identification = some_uuid;
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), connect);
+               send( domain.receive.id(), connect);
             }
 
 
@@ -671,7 +674,7 @@ namespace casual
                request.process = domain.server2.process();
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), request);
+               send( domain.receive.id(), request);
 
                common::message::lookup::process::Reply reply;
                common::queue::blocking::Reader reader{ domain.server2.output()};
@@ -696,7 +699,7 @@ namespace casual
                request.process = domain.server2.process();
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), request);
+               send( domain.receive.id(), request);
 
                common::message::lookup::process::Reply reply;
                common::queue::blocking::Reader reader{ domain.server2.output()};
@@ -724,7 +727,7 @@ namespace casual
                request.process = domain.server2.process();
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), request);
+               send( domain.receive.id(), request);
             }
          }
          ASSERT_TRUE( domain.state.pending.process_lookup.size() == 1);
@@ -748,7 +751,7 @@ namespace casual
                request.process = domain.server2.process();
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), request);
+               send( domain.receive.id(), request);
             }
 
             {
@@ -757,7 +760,7 @@ namespace casual
                connect.identification = some_uuid;
 
                common::queue::blocking::Send send;
-               send( broker.queue.id(), connect);
+               send( domain.receive.id(), connect);
 
                common::message::server::connect::Reply reply;
 

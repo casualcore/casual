@@ -42,6 +42,30 @@ namespace casual
          message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
 
+         template< typename S, typename R>
+         message::server::connect::Reply connect( S& send, R& receive, const Uuid& identification, std::vector< message::Service> services)
+         {
+            message::server::connect::Request message;
+
+            message.process.pid = common::process::handle().pid;
+            message.process.queue = receive.ipc().id();
+            message.path = common::process::path();
+            message.services = std::move( services);
+            message.identification = identification;
+
+            auto correlation = send( ipc::broker::id(), message);
+
+            //
+            // Wait for the connect reply
+            //
+            return common::message::handle::connect::reply(
+                  receive,
+                  correlation,
+                  message::server::connect::Reply{});
+
+         }
+
+
          template< typename P>
          struct Connect
          {
@@ -50,31 +74,13 @@ namespace casual
             template< typename... Args>
             message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, const Uuid& identification, std::vector< message::Service> services, Args&& ...args)
             {
-               using queue_writer = common::queue::blocking::basic_writer< policy_type>;
-               using queue_reader = common::queue::blocking::basic_reader< policy_type>;
+               using queue_send = common::queue::blocking::basic_send< policy_type>;
+               using queue_receive = common::queue::blocking::basic_reader< policy_type>;
 
-               message::server::connect::Request message;
+               queue_send send{ args...};
+               queue_receive receive( ipc, args...);
 
-               message.process.pid = common::process::handle().pid;
-               message.process.queue = ipc.id();
-               message.path = common::process::path();
-               message.services = std::move( services);
-               message.identification = identification;
-
-               queue_writer broker( ipc::broker::id(), args...);
-               auto correlation = broker( message);
-
-
-
-               queue_reader reader( ipc, args...);
-
-               //
-               // Wait for the connect reply
-               //
-               return common::message::handle::connect::reply(
-                     reader,
-                     correlation,
-                     message::server::connect::Reply{});
+               return connect( send, receive, identification, std::move( services));
             }
 
             template< typename... Args>
@@ -567,33 +573,35 @@ namespace casual
                };
 
 
-               template< typename S, typename P = common::queue::policy::RemoveOnTerminate< S> >
+               template< typename P = common::queue::policy::callback::on::Terminate>
                struct Admin
                {
-                  using state_type = S;
                   using policy_type = P;
 
+                  using queue_send = common::queue::blocking::basic_send< policy_type>;
+                  using queue_receive = common::queue::blocking::basic_reader< policy_type>;
 
-                  using queue_writer = common::queue::blocking::basic_writer< policy_type>;
-                  using queue_reader = common::queue::blocking::basic_reader< policy_type>;
+
+                  template< typename... Args>
+                  Admin( const Uuid& identification, ipc::receive::Queue& ipc, Args&&... args)
+                     : m_identification{ identification},
+                       m_send{ args...},
+                       m_receive{ ipc, std::forward< Args>( args)...}
+                  {}
 
 
-                  Admin( state_type& state, const Uuid& identification) : m_state( state), m_identification{ identification} {}
-                  Admin( state_type& state) : Admin( state, uuid::empty()) {}
+                  template< typename... Args>
+                  Admin( Args&&... args) : Admin( uuid::empty(), std::forward< Args>( args)...) {}
 
 
                   void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                   {
-                     Connect< policy_type> connect;
-
-                     connect( ipc, m_identification, std::move( services), m_state);
+                     server::connect( m_send, m_receive, m_identification, std::move( services));
                   }
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message)
                   {
-                     queue_writer writer{ id, m_state};
-                     writer( message);
-
+                     m_send( id, message);
                   }
 
                   void ack( const message::service::call::callee::Request& message)
@@ -601,8 +609,7 @@ namespace casual
                      message::service::call::ACK ack;
                      ack.process = common::process::handle();
                      ack.service = message.service.name;
-                     queue_writer brokerWriter( ipc::broker::id(), m_state);
-                     brokerWriter( ack);
+                     m_send( ipc::broker::id(), ack);
                   }
 
 
@@ -625,9 +632,11 @@ namespace casual
                      throw common::exception::xatmi::System{ "can't forward within an administration server"};
                   }
 
-
-                  state_type& m_state;
+               private:
                   Uuid m_identification;
+                  queue_send m_send;
+                  queue_receive m_receive;
+
                };
 
 
@@ -639,8 +648,8 @@ namespace casual
             //!
             typedef basic_call< policy::Default> Call;
 
-            template< typename S>
-            using basic_admin_call = basic_call< policy::Admin< S>>;
+            template< typename P = common::queue::policy::callback::on::Terminate>
+            using basic_admin_call = basic_call< policy::Admin< P>>;
 
 
          } // handle

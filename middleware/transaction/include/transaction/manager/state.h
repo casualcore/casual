@@ -102,12 +102,17 @@ namespace casual
                std::size_t concurency = 0;
 
                //!
-               //! This 'counterä' keep track of statistics for removed
+               //! This 'counter' keep track of statistics for removed
                //! instances, so we can give a better view for the operator.
                //!
                Stats statistics;
 
                std::vector< Instance> instances;
+
+               //!
+               //! @return true if all instances is idle
+               //!
+               bool ready() const;
 
 
                friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
@@ -411,6 +416,9 @@ namespace casual
       public:
          State( const std::string& database);
 
+         State( const State&) = delete;
+         State& operator = ( const State&) = delete;
+
 
          std::map< std::string, config::xa::Switch> xaConfig;
 
@@ -449,13 +457,19 @@ namespace casual
 
 
          //!
+         //! @return true if all resource proxies is booted and ready do work
+         //!
+         bool ready() const;
+
+
+         //!
          //! @return number of total instances
          //!
          std::size_t instances() const;
 
          std::vector< common::platform::pid_type> processes() const;
 
-         void process( common::process::lifetime::Exit death);
+         void operator () ( const common::process::lifetime::Exit& death);
 
          state::resource::Proxy& get_resource( common::platform::resource::id_type rm);
          state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid);
@@ -531,7 +545,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::transaction::manager::Configuration& configuration);
+         void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file);
 
 
 

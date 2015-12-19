@@ -200,10 +200,13 @@ queue_client = LinkExecutable( 'bin/casual-queue-admin',
 Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 
 
-# needs to be installed... We need to figure out some other way...
-#Environment( 'CASUAL_LOG', '')
-#resource_proxy = LinkResourceProxy( 'bin/casual-queue-resource-proxy', 'casual-queue-rm', [ rm])
-#install_bin.append( resource_proxy);
+
+resource_proxy = LinkResourceProxy( 'bin/casual-queue-resource-proxy', 
+    'casual-queue-rm', 
+    [ rm], 
+    directive = '--xa-resource-file ../configuration/resources.yaml')
+
+install_bin.append( resource_proxy);
 
 
 

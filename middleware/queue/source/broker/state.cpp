@@ -39,7 +39,7 @@ namespace casual
             return result;
          }
 
-         void State::process( common::process::lifetime::Exit death)
+         void State::operator() ( common::process::lifetime::Exit death)
          {
             {
                auto found = common::range::find_if( groups, [=]( const Group& g){

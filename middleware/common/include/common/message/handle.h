@@ -65,10 +65,10 @@ namespace casual
                queue_type m_send;
             };
 
-            template< typename S>
-            auto ping( S& state) -> Ping< common::queue::policy::RemoveOnTerminate< S>>
+            inline auto ping( common::queue::policy::callback::on::Terminate::callback_type callback)
+               -> Ping< common::queue::policy::callback::on::Terminate>
             {
-               return Ping< common::queue::policy::RemoveOnTerminate< S>>{ state};
+               return Ping< common::queue::policy::callback::on::Terminate>{ std::move( callback)};
             }
 
             inline auto ping() -> Ping< common::queue::policy::NoAction>

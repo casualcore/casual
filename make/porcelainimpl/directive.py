@@ -217,13 +217,6 @@ def LinkExecutable( name, objectfiles, libraries = []):
     return target;
 
 
-def LinkResourceProxy( name, resource, libraries = [], directive = ''):
-    
-    target = plumbing.target( plumbing.executable_name_path( name), name)
-    
-    return plumbing.link_resource_proxy( target, resource, libraries, directive)
-    
-
 
 def Dependencies( target, dependencies):
     """

@@ -140,7 +140,7 @@ def LinkExecutable( name, objectfiles, libraries = []):
     """
     return porcelain().LinkExecutable( name, objectfiles, libraries)
 
-def LinkResourceProxy( name, resource, libraries = [], directive = ''): return porcelain().LinkResourceProxy( name, resource, libraries, directive)
+
 def Dependencies( target, dependencies): 
     """
     Set dependencies to arbitary targets. This is not needed in the

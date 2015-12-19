@@ -53,6 +53,31 @@ namespace casual
                throw;
             }
 
+
+            namespace callback
+            {
+               namespace on
+               {
+                  Terminate::Terminate( callback_type callback) : m_callback( std::move( callback)) {}
+
+                  void Terminate::apply()
+                  {
+                     try
+                     {
+                        throw;
+                     }
+                     catch( const exception::signal::child::Terminate& exception)
+                     {
+                        auto terminated = process::lifetime::ended();
+                        for( auto& death : terminated)
+                        {
+                           m_callback( death);
+                        }
+                     }
+                  }
+               } // on
+            } // callback
+
          } // policy
       } // queue
    } // common
