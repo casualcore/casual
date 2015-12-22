@@ -252,6 +252,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction)
       {
+         common::Trace trace{ "casual_transaction_manager, begin_transaction"};
          local::Domain domain{ local::configuration()};
 
 
@@ -268,6 +269,7 @@ namespace casual
 
       TEST( casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips)
       {
+         common::Trace trace{ "casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips"};
          local::Domain domain{ local::configuration()};
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -291,6 +293,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
+         common::Trace trace{ "casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization"};
          local::Domain domain{ local::configuration()};
 
          EXPECT_TRUE( tx_begin() == TX_OK);

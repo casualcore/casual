@@ -98,7 +98,7 @@ namespace casual
             {
 
                template< typename T>
-               Holder( T option) : m_option( std::make_shared< holder_type< T>>( std::move( option)))
+               explicit Holder( T option) : m_option( std::make_shared< holder_type< T>>( std::move( option)))
                {
 
                }
@@ -197,7 +197,7 @@ namespace casual
             {
                using values_type = const std::vector< std::string>&;
 
-               from_string( values_type values) : m_values{ values} {}
+               from_string( values_type values) : m_values( values) {}
 
                template< typename T>
                operator T() const
@@ -521,14 +521,14 @@ namespace casual
          option::Holder directive( C cardinality, std::vector< std::string> options, std::string description, Args&&... args)
          {
             auto caller = internal::make( cardinality, std::forward< Args>( args)...);
-            return internal::basic_directive< decltype( caller), C>{ std::move( options), std::move( description), std::move( caller)};
+            return option::Holder{ internal::basic_directive< decltype( caller), C>{ std::move( options), std::move( description), std::move( caller)}};
          }
 
          template< typename... Args>
          option::Holder directive( std::vector< std::string> options, std::string description, Args&&... args)
          {
             auto cardinality = internal::deduce::cardinality( std::forward< Args>( args)...);
-            return directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...);
+            return option::Holder{ directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...)};
          }
 
          /*

@@ -125,8 +125,8 @@ namespace casual
 
                typedef message::service::call::callee::Request message_type;
 
-               basic_call( basic_call&&) noexcept = default;
-               basic_call& operator = ( basic_call&&) noexcept = default;
+               basic_call( basic_call&&) = default;
+               basic_call& operator = ( basic_call&&) = default;
 
                basic_call() = delete;
                basic_call( const basic_call&) = delete;
