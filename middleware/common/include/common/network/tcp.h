@@ -28,8 +28,8 @@ namespace casual
             {
             public:
 
-               explicit Socket( int descriptor);
-               ~Socket();
+               explicit Socket( int descriptor) noexcept;
+               ~Socket() noexcept;
 
                Socket( Socket&&) noexcept;
                Socket& operator = ( Socket&&) noexcept;
@@ -49,8 +49,8 @@ namespace casual
             {
             public:
 
-               explicit Session( int descriptor);
-               ~Session();
+               explicit Session( int descriptor) noexcept;
+               ~Session() noexcept;
 
                Session( Session&&) noexcept;
                Session& operator = ( Session&&) noexcept;
