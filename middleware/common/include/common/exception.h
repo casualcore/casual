@@ -79,7 +79,7 @@ namespace casual
                return construct( std::move( nips), std::forward< Args>( args)...);
             }
 
-            std::string m_description;
+            const std::string m_description;
          };
 
          //!
@@ -147,7 +147,8 @@ namespace casual
             {
                using base::base;
             };
-         }
+
+         } // invalid
 
          namespace limit
          {
@@ -160,12 +161,24 @@ namespace casual
 
          namespace queue
          {
+
             struct Unavailable : base
             {
                using base::base;
             };
 
          } // queue
+
+
+         namespace network
+         {
+
+            struct Unavailable : base
+            {
+               using base::base;
+            };
+
+         } // network
 
 
          namespace signal
@@ -389,7 +402,6 @@ namespace casual
                using Support = basic_tx< TX_NOT_SUPPORTED, log::category::Type::debug>;
             } // no
          }
-
 
 		} // exception
 	} // common
