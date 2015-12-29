@@ -83,7 +83,7 @@ namespace casual
                   case EFAULT:
                   default:
                   {
-                     throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
+                     throw exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
                   }
                }
             }
