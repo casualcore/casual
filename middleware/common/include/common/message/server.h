@@ -24,20 +24,18 @@ namespace casual
             namespace ping
             {
 
-               struct Request : basic_id< cServerPingRequest>
+               struct Request : basic_id< Type::server_ping_request>
                {
 
                };
 
-               struct Reply : basic_id< cServerPingReply>
+               struct Reply : basic_id< Type::server_ping_reply>
                {
-                  using base_type = basic_id< cServerPingReply>;
-
                   Uuid uuid;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     base_type::marshal( archive);
+                     basic_id< Type::server_ping_reply>::marshal( archive);
                      archive & uuid;
                   })
 
@@ -47,13 +45,13 @@ namespace casual
 
             namespace connect
             {
-               struct Request : public connect::basic_request< cServerConnectRequest>
+               struct Request : public connect::basic_request< Type::server_connect_request>
                {
                   std::vector< Service> services;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     connect::basic_request< cServerConnectRequest>::marshal( archive);
+                     connect::basic_request< Type::server_connect_request>::marshal( archive);
                      archive & services;
                   })
                };
@@ -62,7 +60,7 @@ namespace casual
                //!
                //! Sent from the broker with "start-up-information" for a server
                //!
-               using Reply = connect::basic_reply< cServerConnectReply>;
+               using Reply = connect::basic_reply< Type::server_connect_reply>;
 
 
             } // connect

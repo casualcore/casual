@@ -12,6 +12,7 @@
 
 #include "common/ipc.h"
 #include "common/algorithm.h"
+#include "common/memory.h"
 #include "common/marshal/marshal.h"
 #include "common/execution.h"
 
@@ -41,19 +42,17 @@ namespace casual
 
             struct Policy
             {
-               template< typename T>
-               static constexpr std::size_t size( T&&) { return sizeof( T);}
 
-               template< typename Iter, typename T>
-               static void write( Iter buffer, T&& value)
+               template< typename T>
+               static void write( const T& value, platform::binary_type& buffer)
                {
-                  memcpy( buffer, &value, sizeof( T));
+                  memory::append( value, buffer);
                }
 
-               template< typename Iter, typename T>
-               static void read( T& value, Iter buffer)
+               template< typename T>
+               static std::size_t read( const platform::binary_type& buffer, std::size_t offset, T& value)
                {
-                  memcpy( &value, buffer, sizeof( T));
+                  return memory::copy( buffer, offset, value);
                }
 
             };
@@ -87,19 +86,16 @@ namespace casual
                template< typename Iter>
                void append( Iter first, Iter last)
                {
-                  auto offset = expand( last - first);
-
-                  std::copy(
-                     first,
-                     last,
-                     std::begin( m_buffer) + offset);
+                  m_buffer.insert(
+                        std::end( m_buffer),
+                        first,
+                        last);
                }
 
                template< typename C>
                void append( C&& range)
                {
-                  auto offset = expand( range.size());
-                  range::copy( std::forward< C>( range), std::begin( m_buffer) + offset);
+                  append( std::begin( range), std::end( range));
                }
 
             private:
@@ -115,22 +111,20 @@ namespace casual
                typename std::enable_if< detail::is_native_marshable< T>::value>::type
                write( T& value)
                {
-                  writePod( value);
+                  write_pod( value);
                }
 
 
                template< typename T>
-               void writePod( T&& value)
+               void write_pod( T&& value)
                {
-                  auto offset = expand( policy_type::size( value));
-
-                  policy_type::write( &m_buffer[ offset], value);
+                  policy_type::write( value, m_buffer);
                }
 
                template< typename T>
                void write( const std::vector< T>& value)
                {
-                  writePod( value.size());
+                  write_pod( value.size());
 
                   for( auto& current : value)
                   {
@@ -140,7 +134,7 @@ namespace casual
 
                void write( const std::string& value)
                {
-                  writePod( value.size());
+                  write_pod( value.size());
 
                   append(
                      std::begin( value),
@@ -149,23 +143,16 @@ namespace casual
 
                void write( const platform::binary_type& value)
                {
-                  writePod( value.size());
+                  write_pod( value.size());
 
                   append(
                      std::begin( value),
                      std::end( value));
                }
 
-               std::size_t expand( std::size_t size)
-               {
-                  auto offset = m_buffer.size();
-
-                  m_buffer.resize( m_buffer.size() + size);
-
-                  return offset;
-               }
                platform::binary_type& m_buffer;
             };
+
 
             using Output = basic_output< Policy>;
 
@@ -223,7 +210,7 @@ namespace casual
                typename std::enable_if< detail::is_native_marshable< T>::value>::type
                read( T& value)
                {
-                  readPod( value);
+                  read_pod( value);
                }
 
 
@@ -262,14 +249,9 @@ namespace casual
                }
 
                template< typename T>
-               void readPod( T& value)
+               void read_pod( T& value)
                {
-                  const auto size = policy_type::size( value);
-
-                  assert( m_offset + size <= m_buffer.size());
-
-                  policy_type::read( value,  &m_buffer[ m_offset]);
-                  m_offset += size;
+                  m_offset = policy_type::read( m_buffer, m_offset, value);
                }
 
                platform::binary_type& m_buffer;
@@ -309,7 +291,7 @@ namespace casual
             template< typename M>
             ipc::message::Complete& operator >> ( ipc::message::Complete& complete, M& message)
             {
-               assert( complete.type == message.message_type);
+               assert( complete.type == message.type());
 
                message.correlation = complete.correlation;
 
@@ -332,7 +314,7 @@ namespace casual
                message.execution = execution::id();
             }
 
-            ipc::message::Complete complete( message.message_type, message.correlation ? message.correlation : uuid::make());
+            ipc::message::Complete complete( message.type(), message.correlation ? message.correlation : uuid::make());
 
             auto marshal = creator( complete.payload);
             marshal << message;
@@ -345,7 +327,7 @@ namespace casual
          template< typename M, typename C = binary::create::Input>
          void complete( ipc::message::Complete& complete, M& message, C creator = binary::create::Input{})
          {
-            assert( complete.type == message.message_type);
+            assert( complete.type == message.type());
 
             message.correlation = complete.correlation;
 

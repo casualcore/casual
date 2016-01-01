@@ -5,12 +5,13 @@
 //!     Author: Lazan
 //!
 
-#ifndef ALGORITHM_H_
-#define ALGORITHM_H_
+#ifndef CASUAL_COMMON_ALGORITHM_H_
+#define CASUAL_COMMON_ALGORITHM_H_
 
 
 #include "common/traits.h"
 #include "common/error.h"
+#include "common/platform.h"
 
 #include <algorithm>
 #include <numeric>
@@ -30,11 +31,8 @@ namespace casual
    namespace common
    {
 
-      template< typename T>
-      void initialize( T&& value)
-      {
-         std::memset( &value, 0, sizeof( T));
-      }
+
+
 
       namespace scope
       {
@@ -448,7 +446,7 @@ namespace casual
          template< typename T, std::size_t s>
          struct size_traits< T[ s]>
          {
-            constexpr static std::size_t size( const T(&range)[ s]) { return s;}
+            constexpr static std::size_t size( const T(&)[ s]) { return s;}
          };
 
       } // detail
@@ -473,6 +471,12 @@ namespace casual
          Range< Iter> make( Iter first, Iter last)
          {
             return Range< Iter>( first, last);
+         }
+
+         template< typename Iter>
+         Range< Iter> make( Iter first, std::size_t count)
+         {
+            return Range< Iter>( first, first + count);
          }
 
          template< typename C, class = typename std::enable_if<std::is_lvalue_reference< C>::value>::type >
@@ -505,6 +509,15 @@ namespace casual
          {
             using type = decltype( make( C().begin(), C().end()));
          };
+
+
+         template< typename R>
+         typename std::enable_if< std::is_array< typename std::remove_reference< R>::type>::value, std::size_t>::type
+         size( R&& range) { return sizeof( R);}
+
+         template< typename R>
+         typename std::enable_if< ! std::is_array< typename std::remove_reference< R>::type>::value, std::size_t>::type
+         size( R&& range) { return range.size();}
 
 
 
@@ -610,24 +623,52 @@ namespace casual
 
 
          template< typename R, typename OutIter>
-         OutIter copy( R&& range, OutIter output)
+         typename std::enable_if< common::traits::iterator::is_output< OutIter>::value, OutIter>::type
+         copy( R&& range, OutIter output)
          {
             return std::copy( std::begin( range), std::end( range), output);
          }
 
          template< typename R, typename OutIter, typename P>
-         OutIter copy_if( R&& range, OutIter output, P predicate)
+         typename std::enable_if< common::traits::iterator::is_output< OutIter>::value, OutIter>::type
+         copy_if( R&& range, OutIter output, P predicate)
          {
             return std::copy_if( std::begin( range), std::end( range), output, predicate);
          }
 
-         template< typename R, typename O>
-         O& append( R&& range, O& output)
+         template< typename Range, typename Container>
+         Container& append( Range&& source, Container& destination)
          {
-            output.insert( std::end( output), std::begin( range), std::end( range));
-            return output;
+            destination.insert( std::end( destination), std::begin( source), std::end( source));
+            return destination;
          }
 
+
+
+
+         //!
+         //! Copies from @p source to @p destination
+         //!   size of destination dictates the maximum that will be
+         //!   copied
+         //!
+         //! @param source
+         //! @param destination sets the maximum what will be copied
+         //!
+         template< typename Range1, typename Range2>
+         void copy_max( Range1&& source, Range2 destination)
+         {
+            auto max = range::size( destination);
+            auto wanted = range::size( source);
+
+            if( wanted <= max)
+            {
+               copy( source, destination);
+            }
+            else
+            {
+               std::copy_n( std::begin( source), max, std::begin( destination));
+            }
+         }
 
          template< typename R, typename Size, typename Iter>
          void copy_max( R&& range, Size size, Iter output)
@@ -820,8 +861,11 @@ namespace casual
          //!
          //! associate container specialization
          //!
-         template< typename R, typename T, typename std::enable_if< common::traits::is_associative_container< typename std::decay<R>::type>::value>::type* = nullptr>
-         auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
+         template< typename R, typename T>
+         auto find( R&& range, T&& value)
+            -> typename std::enable_if<
+               common::traits::container::is_associative< typename std::decay<R>::type>::value,
+               decltype( make( std::forward< R>( range)))>::type
          {
             auto resultRange = make( range);
             resultRange.first = range.find( value);
@@ -831,8 +875,11 @@ namespace casual
          //!
          //! non associate container specialization
          //!
-         template< typename R, typename T, typename std::enable_if< ! common::traits::is_associative_container< typename std::decay< R>::type>::value>::type* = nullptr>
-         auto find( R&& range, T&& value) -> decltype( make( std::forward< R>( range)))
+         template< typename R, typename T>
+         auto find( R&& range, T&& value)
+            -> typename std::enable_if<
+               ! common::traits::container::is_associative< typename std::decay<R>::type>::value,
+               decltype( make( std::forward< R>( range)))>::type
          {
             auto resultRange = make( std::forward< R>( range));
             resultRange.first = std::find( std::begin( resultRange), std::end( resultRange), std::forward< T>( value));
@@ -1193,10 +1240,7 @@ namespace casual
       }
 
 
-
    } // common
-
-
 } // casual
 
 namespace std
@@ -1213,4 +1257,4 @@ namespace std
 
 
 
-#endif // ALGORITHM_H_
+#endif // CASUAL_COMMON_ALGORITHM_H_

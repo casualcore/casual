@@ -319,6 +319,15 @@ namespace casual
 
          namespace resource
          {
+            namespace id
+            {
+               void Allocation::operator () ( message_type& message)
+               {
+                  common::trace::Scope trace{ "transaction::handle::resource::id::Allocation", common::log::internal::transaction};
+
+               }
+
+            } // id
 
             void Involved::operator () ( message_type& message)
             {
@@ -991,6 +1000,13 @@ namespace casual
 
          namespace domain
          {
+            void Involved::operator () ( message_type& message)
+            {
+               common::trace::Scope trace{ "transaction::handle::domain::Involved", common::log::internal::transaction};
+
+               common::log::internal::transaction << "involved message: " << message << '\n';
+
+            }
 
             void Prepare::operator () ( message_type& message)
             {

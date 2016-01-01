@@ -17,6 +17,7 @@
 #include "common/platform.h"
 #include "common/algorithm.h"
 #include "common/process.h"
+#include "common/message/type.h"
 
 
 
@@ -155,6 +156,18 @@ namespace casual
 
                Transport();
 
+               //!
+               //! @return the message type
+               //!
+               common::message::Type type() const { return static_cast< common::message::Type>( message.type);}
+
+               //!
+               //! Sets the message type
+               //!
+               //! @param type type to set
+               //!
+               void type( common::message::Type type) { message.type = static_cast< decltype( message.type)>( type);}
+
 
                //!
                //! @return payload size
@@ -193,7 +206,7 @@ namespace casual
 
             struct Complete
             {
-               using message_type_type = platform::message_type_type;
+               using message_type_type = common::message::Type;
                using payload_type = platform::binary_type;
 
                Complete( message_type_type type, const Uuid& correlation);

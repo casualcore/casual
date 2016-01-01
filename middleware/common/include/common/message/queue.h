@@ -50,7 +50,7 @@ namespace casual
 
             namespace lookup
             {
-               struct Request : basic_message< Type::cQueueLookupRequest>
+               struct Request : basic_message< Type::queue_lookup_request>
                {
                   process::Handle process;
                   std::string name;
@@ -77,7 +77,7 @@ namespace casual
                   })
                };
 
-               using Reply = message::type_wrapper< base_reply, Type::cQueueLookupReply>;
+               using Reply = message::type_wrapper< base_reply, Type::queue_lookup_reply>;
 
             } // lookup
 
@@ -85,7 +85,7 @@ namespace casual
 
             namespace enqueue
             {
-               struct Request : basic_message< Type::cQueueEnqueueRequest>
+               struct Request : basic_message< Type::queue_enqueue_request>
                {
                   using Message = base_message;
 
@@ -107,7 +107,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
 
-               struct Reply : basic_message< Type::cQueueEnqueueReply>
+               struct Reply : basic_message< Type::queue_enqueue_reply>
                {
                   common::Uuid id;
 
@@ -135,7 +135,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Selector& value);
                };
 
-               struct Request : basic_message< Type::cQueueDequeueRequest>
+               struct Request : basic_message< Type::queue_dequeue_request>
                {
                   process::Handle process;
                   common::transaction::ID trid;
@@ -156,7 +156,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
 
-               struct Reply : basic_message< Type::cQueueDequeueReply>
+               struct Reply : basic_message< Type::queue_dequeue_reply>
                {
                   struct Message : base_message
                   {
@@ -183,7 +183,7 @@ namespace casual
 
                namespace forget
                {
-                  struct Request : basic_message< Type::cQueueDequeueForgetRequest>
+                  struct Request : basic_message< Type::queue_dequeue_forget_request>
                   {
                      process::Handle process;
                      std::size_t queue;
@@ -198,7 +198,7 @@ namespace casual
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
 
-                  struct Reply : basic_message< Type::cQueueDequeueForgetReply>
+                  struct Reply : basic_message< Type::queue_dequeue_forget_reply>
                   {
                      bool found = false;
 
@@ -331,17 +331,17 @@ namespace casual
                namespace queues
                {
 
-                  using Request = server::basic_id< Type::cQueueQueuesInformationRequest>;
+                  using Request = server::basic_id< Type::queue_queues_information_request>;
 
-                  using Reply = basic_information< Type::cQueueQueuesInformationReply>;
+                  using Reply = basic_information< Type::queue_queues_information_reply>;
 
                } // queues
 
                namespace messages
                {
-                  struct Request : server::basic_id< Type::cQueueQueueInformationRequest>
+                  struct Request : server::basic_id< Type::queue_queue_information_request>
                   {
-                     using base_type = server::basic_id< Type::cQueueQueueInformationRequest>;
+                     using base_type = server::basic_id< Type::queue_queue_information_request>;
 
                      Queue::id_type qid = 0;
 
@@ -353,9 +353,9 @@ namespace casual
 
                   };
 
-                  struct Reply : common::message::server::basic_id< Type::cQueueQueueInformationReply>
+                  struct Reply : common::message::server::basic_id< Type::queue_queue_information_reply>
                   {
-                     using base_type = common::message::server::basic_id< Type::cQueueQueueInformationReply>;
+                     using base_type = common::message::server::basic_id< Type::queue_queue_information_reply>;
 
                      std::vector< Message> messages;
 
@@ -371,14 +371,14 @@ namespace casual
 
             } // information
 
-            using Information = information::basic_information< Type::cQueueInformation>;
+            using Information = information::basic_information< Type::queue_information>;
 
 
 
 
             namespace connect
             {
-               struct Request : basic_message< Type::cQueueConnectRequest>
+               struct Request : basic_message< Type::queue_connect_request>
                {
                   process::Handle process;
 
@@ -389,7 +389,7 @@ namespace casual
                   })
                };
 
-               struct Reply : basic_message< Type::cQueueConnectReply>
+               struct Reply : basic_message< Type::queue_connect_reply>
                {
                   std::string name;
                   std::vector< Queue> queues;
@@ -405,7 +405,7 @@ namespace casual
 
             namespace group
             {
-               struct Involved : basic_message< Type::cQueueGroupInvolved>
+               struct Involved : basic_message< Type::queue_group_involved>
                {
                   process::Handle process;
                   common::transaction::ID trid;

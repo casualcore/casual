@@ -64,7 +64,7 @@ namespace casual
          auto types = handler.types();
 
          ASSERT_TRUE( types.size() == 1);
-         EXPECT_TRUE( types.at( 0) == message::shutdown::Request::message_type);
+         EXPECT_TRUE( types.at( 0) == message::shutdown::Request::type());
 
       }
 

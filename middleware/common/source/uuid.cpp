@@ -8,6 +8,7 @@
 
 #include "common/uuid.h"
 #include "common/transcode.h"
+#include "common/memory.h"
 
 #include <cassert>
 #include <ostream>
@@ -49,7 +50,7 @@ namespace casual
 
 		Uuid::Uuid()
 		{
-		   memset( &m_uuid, 0, sizeof( m_uuid));
+		   memory::set( m_uuid);
 		}
 
 		Uuid::Uuid(uuid_type& uuid)

@@ -201,32 +201,6 @@ namespace casual
             }
 
 
-            void Stream::consume( void* value, size_type count)
-            {
-               //common::log::internal::debug << "consume - range: " << range.size() << " buffer: " << *this << std::endl;
-
-               if( m_read_offset + count > size())
-               {
-                  throw exception::NotReallySureWhatToCallThisExcepion( "Attempt to read out of bounds  ro: " + std::to_string( m_read_offset) + " size: " + std::to_string( size()));
-               }
-
-               memcpy( value, begin() + m_read_offset, count);
-               m_read_offset += count;
-            }
-
-            void Stream::append( const void* value, size_type count)
-            {
-               //common::log::internal::debug << "append - range: " << range.size()  << " buffer: " << *this << std::endl;
-
-               while( m_write_offset + count > size())
-               {
-                  resize( size() * 2);
-               }
-
-               memcpy(  begin() + m_write_offset, value, count);
-               m_write_offset += count;
-            }
-
          } // binary
 
 
@@ -236,13 +210,14 @@ namespace casual
             return std::string{ std::begin( *this), std::end( *this)};
          }
 
-         void Binary::str( const std::string& new_string)
+         void Binary::str( const std::string& value)
          {
-            if( new_string.size() > size())
+            if( value.size() > size())
             {
-               resize( new_string.size() + 1);
+               resize( value.size() + 1);
             }
-            memcpy( data(), new_string.c_str(), new_string.size());
+
+            common::memory::copy( common::range::make( value), common::range::make( data(), size()));
          }
 
 

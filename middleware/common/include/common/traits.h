@@ -89,85 +89,127 @@ namespace casual
 
 
 
-         template< typename T>
-         struct is_sequence_container : public std::integral_constant< bool, false> {};
-
-         template< typename T>
-         struct is_sequence_container< std::vector< T>> : public std::integral_constant< bool, true> {};
-
-         template< typename T>
-         struct is_sequence_container< std::deque< T>> : public std::integral_constant< bool, true> {};
-
-         template< typename T>
-         struct is_sequence_container< std::list< T>> : public std::integral_constant< bool, true> {};
 
 
-         //!
-         //! std::vector< char> is the "pod" for binary information
-         //!
-         template<>
-         struct is_sequence_container< std::vector< char>> : public std::integral_constant< bool, false> {};
+         namespace container
+         {
+            namespace category
+            {
+               struct container {};
+               struct traversable : container {};
+
+               struct associative : traversable {};
+               struct unordered : associative {};
+
+               struct sequence : traversable {};
+               struct continuous : sequence {};
+
+               struct adaptor : container{};
+            } // category
+
+            namespace detail
+            {
+               template< typename Category>
+               struct category_traits
+               {
+                  using category = Category;
+               };
+
+               template< typename Container, typename Category>
+               struct traits : category_traits< Category>
+               {
+                  using iterator = decltype( std::begin( std::declval< Container>()));
+                  using tag = typename std::iterator_traits< iterator>::iterator_category;
+               };
+
+            } // detail
+
+            template< typename T>
+            struct traits { using category = void; using iterator = void; using tag = void;};
+
+            template< typename T, std::size_t size>
+            struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::continuous>{};
+            template< typename T>
+            struct traits< std::vector< T>> : detail::traits< std::vector< T>, container::category::continuous>{};
+            template< typename T>
+            struct traits< std::deque< T>> : detail::traits< std::deque< T>, container::category::sequence>{};
+            template< typename T>
+            struct traits< std::list< T>> : detail::traits< std::list< T>, container::category::sequence>{};
+
+            //template< typename T>
+            //struct traits< std::forward_list< T>> : detail::traits< std::forward_list< T>, container::category::sequence>{};
 
 
+            template< typename T>
+            struct traits< std::set< T>> : detail::traits< std::set< T>, container::category::associative>{};
+            template<  typename K, typename V>
+            struct traits< std::map< K, V>> : detail::traits< std::map< K, V>, container::category::associative>{};
+            template< typename T>
+            struct traits< std::multiset< T>> : detail::traits< std::multiset< T>, container::category::associative>{};
+            template<  typename K, typename V>
+            struct traits< std::multimap< K, V>> : detail::traits< std::multimap< K, V>, container::category::associative>{};
+
+            template< typename T>
+            struct traits< std::unordered_set< T>> : detail::traits< std::unordered_set< T>, container::category::unordered>{};
+            template<  typename K, typename V>
+            struct traits< std::unordered_map< K, V>> : detail::traits< std::unordered_map< K, V>, container::category::unordered>{};
+            template< typename T>
+            struct traits< std::unordered_multiset< T>> : detail::traits< std::unordered_multiset< T>, container::category::unordered>{};
+            template<  typename K, typename V>
+            struct traits< std::unordered_multimap< K, V>> : detail::traits< std::unordered_multimap< K, V>, container::category::unordered>{};
 
 
+            template< typename T, typename Container>
+            struct traits< std::stack< T, Container>> : detail::category_traits< container::category::adaptor>{};
+            template< typename T, typename Container>
+            struct traits< std::queue< T, Container>> : detail::category_traits< container::category::adaptor>{};
+            template< typename T, typename Container>
+            struct traits< std::priority_queue< T, Container>> : detail::category_traits< container::category::adaptor>{};
 
 
-         template< typename T>
-         struct is_associative_set_container : public std::integral_constant< bool, false> {};
+            template< typename Container, typename Category>
+            struct is_category : std::integral_constant< bool,
+               std::is_base_of< Category, typename traits< Container>::category>::value> {};
 
-         template< typename T>
-         struct is_associative_set_container< std::set< T>> : public std::integral_constant< bool, true> {};
+            template< typename Container>
+            struct is_container : is_category< Container, category::container> {};
 
-         template< typename T>
-         struct is_associative_set_container< std::multiset< T>> : public std::integral_constant< bool, true> {};
+            template< typename Container>
+            struct is_associative : is_category< Container, category::associative> {};
 
-         template< typename T>
-         struct is_associative_set_container< std::unordered_set< T>> : public std::integral_constant< bool, true> {};
+            template< typename Container>
+            struct is_unordered : is_category< Container, category::unordered> {};
 
-         template< typename T>
-         struct is_associative_set_container< std::unordered_multiset< T>> : public std::integral_constant< bool, true> {};
+            template< typename Container>
+            struct is_sequence : is_category< Container, category::sequence> {};
 
+            template< typename Container>
+            struct is_adaptor : is_category< Container, category::adaptor> {};
 
-         template< typename T>
-         struct is_associative_map_container : public std::integral_constant< bool, false> {};
-
-         template< typename K, typename V>
-         struct is_associative_map_container< std::map< K, V>> : public std::integral_constant< bool, true> {};
-
-         template< typename K, typename V>
-         struct is_associative_map_container< std::multimap< K, V>> : public std::integral_constant< bool, true> {};
-
-         template< typename K, typename V>
-         struct is_associative_map_container< std::unordered_map< K, V>> : public std::integral_constant< bool, true> {};
-
-         template< typename K, typename V>
-         struct is_associative_map_container< std::unordered_multimap< K, V>> : public std::integral_constant< bool, true> {};
+         } // container
 
 
-         template< typename T>
-         struct is_associative_container : public std::integral_constant< bool,
-            is_associative_set_container< T>::value || is_associative_map_container< T>::value> {};
+         namespace iterator
+         {
+
+            template< typename Iter, typename Tag>
+            struct is_tag : std::integral_constant< bool,
+               std::is_base_of< Tag, typename std::iterator_traits< Iter>::iterator_category>::value> {};
 
 
+            template< typename Iter>
+            struct is_random_access : is_tag< Iter, std::random_access_iterator_tag> {};
 
-         template< typename T>
-         struct is_container_adaptor : public std::integral_constant< bool, false> {};
+            template< typename Iter>
+            struct is_output : std::integral_constant< bool,
+               is_tag< Iter, std::output_iterator_tag>::value
+               || (
+                     is_tag< Iter, std::forward_iterator_tag>::value
+                     && ! std::is_const< typename std::iterator_traits< Iter>::reference>::value
+                  )
+               > {};
 
-         template< typename T>
-         struct is_container_adaptor< std::stack< T>> : public std::integral_constant< bool, true> {};
-
-         template< typename T>
-         struct is_container_adaptor< std::queue< T>> : public std::integral_constant< bool, true> {};
-
-         template< typename T>
-         struct is_container_adaptor< std::priority_queue< T>> : public std::integral_constant< bool, true> {};
-
-
-         template< typename T>
-         struct is_container : public std::integral_constant< bool,
-            is_sequence_container< T>::value || is_associative_container< T>::value || is_container_adaptor< T>::value > {};
-
+         } // iterator
 
       } // traits
    } // common

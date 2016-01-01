@@ -21,24 +21,24 @@ namespace casual
          }
 
 
-         std::size_t Base::containerStart( std::size_t size, const char* name)
+         std::size_t Base::container_start( std::size_t size, const char* name)
          {
-            return container_start( size, name);
+            return dispatch_container_start( size, name);
          }
 
-         void Base::containerEnd( const char* name)
+         void Base::container_end( const char* name)
          {
-            container_end( name);
+            dispatch_container_end( name);
          }
 
-         bool Base::serialtypeStart( const char* name)
+         bool Base::serialtype_start( const char* name)
          {
-            return serialtype_start( name);
+            return dispatch_serialtype_start( name);
          }
 
-         void Base::serialtypeEnd( const char* name)
+         void Base::serialtype_end( const char* name)
          {
-            serialtype_end( name);
+            dispatch_serialtype_end( name);
          }
 
 

@@ -72,25 +72,25 @@ namespace casual
          private:
 
 
-            std::size_t container_start( std::size_t size, const char* name) override
+            std::size_t dispatch_container_start( std::size_t size, const char* name) override
             {
                auto result = m_implementation.container_start( size, name);
                policy_type::apply( std::get< 1>( result), name);
                return std::get< 0>( result);
             }
 
-            void container_end( const char* name) override
+            void dispatch_container_end( const char* name) override
             {
                m_implementation.container_end( name);
             }
 
-            bool serialtype_start( const char* name) override
+            bool dispatch_serialtype_start( const char* name) override
             {
                return policy_type::apply( m_implementation.serialtype_start( name), name);
             }
 
 
-            void serialtype_end( const char* name) override
+            void dispatch_serialtype_end( const char* name) override
             {
                m_implementation.serialtype_end( name);
             }
@@ -141,23 +141,23 @@ namespace casual
 
          private:
 
-            std::size_t container_start( std::size_t size, const char* name) override
+            std::size_t dispatch_container_start( std::size_t size, const char* name) override
             {
                return m_implementation.container_start( size, name);
             }
 
-            void container_end( const char* name) override
+            void dispatch_container_end( const char* name) override
             {
                m_implementation.container_end( name);
             }
 
-            bool serialtype_start( const char* name) override
+            bool dispatch_serialtype_start( const char* name) override
             {
                m_implementation.serialtype_start( name);
                return true;
             }
 
-            void serialtype_end( const char* name) override
+            void dispatch_serialtype_end( const char* name) override
             {
                m_implementation.serialtype_end( name);
             }

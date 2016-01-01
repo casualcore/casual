@@ -135,7 +135,7 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete complete( 2, uuid::make());
+            message::Complete complete( common::message::Type::service_name_lookup_request, uuid::make());
             complete.payload.assign( message::Transport::payload_max_size, 'A');
 
             EXPECT_TRUE( static_cast< bool>( complete.correlation));
@@ -159,7 +159,7 @@ namespace casual
 
             send::Queue send( receive.id());
 
-            message::Complete complete{ 2, uuid::make()};
+            message::Complete complete{ common::message::Type::service_name_lookup_request, uuid::make()};
             complete.payload.assign( message::Transport::payload_max_size * 1.5, 'A');
 
             ASSERT_TRUE( static_cast< bool>( send( complete, send::Queue::cNoBlocking)));

@@ -81,7 +81,7 @@ namespace casual
                };
 
 
-               using repliers_type = std::map< platform::message_type_type, std::unique_ptr< base_reply>>;
+               using repliers_type = std::map< common::ipc::message::Complete::message_type_type, std::unique_ptr< base_reply>>;
 
                repliers_type m_repliers;
 
@@ -102,7 +102,7 @@ namespace casual
 
                   std::unique_ptr< base_reply> replier{ new basic_reply< typename std::decay< H>::type>{ std::forward< H>( handler)}};
 
-                  m_repliers[ message_type::message_type] = std::move( replier);
+                  m_repliers[ message_type::type()] = std::move( replier);
                }
 
                template< typename H, typename... Hs>

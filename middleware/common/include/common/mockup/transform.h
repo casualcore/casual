@@ -62,7 +62,7 @@ namespace casual
 
 
 
-               using transformers_type = std::map< platform::message_type_type,ipc::transform_type>;
+               using transformers_type = std::map< common::ipc::message::Complete::message_type_type, ipc::transform_type>;
 
                transformers_type m_transformers;
 
@@ -73,7 +73,7 @@ namespace casual
                   using message_type = typename std::decay< typename traits::function< H>::template argument< 0>::type>::type;
 
                   m_transformers.emplace(
-                        message_type::message_type,
+                        message_type::type(),
                         basic_transform< typename std::decay< H>::type>{ std::forward< H>( handler)});
                }
 

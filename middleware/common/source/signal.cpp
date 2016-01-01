@@ -13,6 +13,7 @@
 #include "common/internal/trace.h"
 #include "common/process.h"
 #include "common/chronology.h"
+#include "common/memory.h"
 
 
 
@@ -143,7 +144,7 @@ namespace casual
                   {
                      struct sigaction sa;
 
-                     memset(&sa, 0, sizeof(sa));
+                     memory::set( sa);
                      sa.sa_handler = function;
                      sa.sa_flags = flags; // | SA_RESTART;
 
@@ -306,7 +307,7 @@ namespace casual
             std::chrono::microseconds unset()
             {
                itimerval value;
-               memset( &value, 0, sizeof( itimerval));
+               memory::set( value);
 
                return local::set( value);
             }

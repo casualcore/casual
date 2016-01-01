@@ -15,6 +15,7 @@
 #include "common/uuid.h"
 #include "common/internal/log.h"
 #include "common/algorithm.h"
+#include "common/memory.h"
 #include "common/message/type.h"
 
 
@@ -238,10 +239,8 @@ namespace casual
 
             Transport::Transport()
             {
-               memset( &message, 0, sizeof( message_t));
+               memory::set( message);
             }
-
-            //void* Transport::raw() { return &payload;}
 
             std::size_t Transport::size() const
             {
@@ -270,7 +269,7 @@ namespace casual
             }
 
             Complete::Complete( Transport& transport)
-               : type( transport.message.type), correlation( transport.message.header.correlation),
+               : type( common::message::Type( transport.message.type)), correlation( transport.message.header.correlation),
                  payload( transport.message.header.complete.size), offset( transport.size())
             {
                std::copy(
@@ -348,7 +347,7 @@ namespace casual
 
                ipc::message::Transport transport;
 
-               transport.message.type = message.type;
+               transport.type( message.type);
                message.correlation.copy( transport.message.header.correlation);
                transport.message.header.complete.size = message.payload.size();
 
@@ -610,7 +609,7 @@ namespace casual
                find(
                      &message::ignore::signal::receive,
                      chain::And::link(
-                           local::find::Type( common::message::Type::cFlushIPC),
+                           local::find::Type( common::message::Type::flush_ipc),
                            local::find::Complete()), cNoBlocking);
             }
 

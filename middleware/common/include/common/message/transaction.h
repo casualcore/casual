@@ -53,19 +53,19 @@ namespace casual
                namespace connect
                {
 
-                  using Request = server::connect::basic_request< cTransactionClientConnectRequest>;
+                  using Request = server::connect::basic_request< Type::transaction_client_connect_request>;
 
                   //!
                   //! Sent from the broker with "transaction-information" for a server/client
                   //!
-                  struct Reply : server::connect::basic_reply< cTransactionClientConnectReply>
+                  struct Reply : server::connect::basic_reply< Type::transaction_client_connect_reply>
                   {
                      std::vector< resource::Manager> resources;
                      std::string domain;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        server::connect::basic_reply< cTransactionClientConnectReply>::marshal( archive);
+                        server::connect::basic_reply< Type::transaction_client_connect_reply>::marshal( archive);
                         archive & resources;
                         archive & domain;
                      })
@@ -81,14 +81,14 @@ namespace casual
                //!
                namespace connect
                {
-                  using Request = server::connect::basic_request< cTransactionManagerConnectRequest>;
-                  using Reply = server::connect::basic_reply< cTransactionManagerConnectReply>;
+                  using Request = server::connect::basic_request< Type::transaction_manager_connect_request>;
+                  using Reply = server::connect::basic_reply< Type::transaction_manager_connect_reply>;
 
                } // connect
 
 
 
-               struct Configuration : message::basic_message< cTransactionManagerConfiguration>
+               struct Configuration : message::basic_message< Type::transaction_manager_configuration>
                {
                   std::string domain;
                   std::vector< resource::Manager> resources;
@@ -102,7 +102,7 @@ namespace casual
                };
 
 
-               struct Ready : message::basic_message< cTransactionManagerReady>
+               struct Ready : message::basic_message< Type::transaction_manager_ready>
                {
                   process::Handle process;
                   bool success = true;
@@ -158,18 +158,18 @@ namespace casual
 
             namespace commit
             {
-               struct Request : basic_request< cTransactionCommitRequest>
+               struct Request : basic_request< Type::transaction_commit_request>
                {
                   std::vector< platform::resource::id_type> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_request< cTransactionCommitRequest>::marshal( archive);
+                     basic_request< Type::transaction_commit_request>::marshal( archive);
                      archive & resources;
                   })
                };
 
-               struct Reply : basic_reply< cTransactionCommitReply>
+               struct Reply : basic_reply< Type::transaction_commit_reply>
                {
                   enum class Stage : char
                   {
@@ -182,7 +182,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_reply< cTransactionCommitReply>::marshal( archive);
+                     basic_reply< Type::transaction_commit_reply>::marshal( archive);
                      archive & stage;
                   })
 
@@ -192,18 +192,18 @@ namespace casual
 
             namespace rollback
             {
-               struct Request : basic_request< cTransactionRollbackRequest>
+               struct Request : basic_request< Type::transaction_Rollback_request>
                {
                   std::vector< platform::resource::id_type> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_request< cTransactionRollbackRequest>::marshal( archive);
+                     basic_request< Type::transaction_Rollback_request>::marshal( archive);
                      archive & resources;
                   })
                };
 
-               struct Reply : basic_reply< cTransactionRollbackReply>
+               struct Reply : basic_reply< Type::transaction_rollback_reply>
                {
                   enum class Stage : char
                   {
@@ -215,7 +215,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_reply< cTransactionRollbackReply>::marshal( archive);
+                     basic_reply< Type::transaction_rollback_reply>::marshal( archive);
                      archive & stage;
                   })
                };
@@ -224,6 +224,37 @@ namespace casual
 
             namespace resource
             {
+               namespace id
+               {
+                  struct Request : basic_message< Type::transaction_resource_id_request>
+                  {
+                     process::Handle process;
+                     Uuid identifier;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        basic_message< Type::transaction_resource_id_request>::marshal( archive);
+                        archive & process;
+                        archive & identifier;
+                     })
+
+                  };
+
+                  struct Reply : basic_message< Type::transaction_resource_id_reply>
+                  {
+                     platform::resource::id_type resource = 0;
+                     Uuid identifier;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        basic_message< Type::transaction_resource_id_reply>::marshal( archive);
+                        archive & resource;
+                        archive & identifier;
+                     })
+                  };
+
+
+               } // id
 
                template< message::Type type>
                struct basic_reply : transaction::basic_reply< type>
@@ -240,7 +271,7 @@ namespace casual
                   })
                };
 
-               struct Involved : basic_transaction< cTransactionResourceInvolved>
+               struct Involved : basic_transaction< Type::transaction_resource_involved>
                {
                   std::vector< platform::resource::id_type> resources;
 
@@ -276,7 +307,7 @@ namespace casual
                   //!
                   //! Used to notify the TM that a resource proxy is up and running, or not...
                   //!
-                  struct Reply : basic_message< cTransactionResurceConnectReply>
+                  struct Reply : basic_message< Type::transaction_resurce_connect_reply>
                   {
                      process::Handle process;
                      platform::resource::id_type resource = 0;
@@ -296,22 +327,22 @@ namespace casual
 
                namespace prepare
                {
-                  typedef basic_request< cTransactionResourcePrepareRequest> Request;
-                  typedef basic_reply< cTransactionResourcePrepareReply> Reply;
+                  typedef basic_request< Type::transaction_resource_prepare_request> Request;
+                  typedef basic_reply< Type::transaction_resource_prepare_reply> Reply;
 
                } // prepare
 
                namespace commit
                {
-                  typedef basic_request< cTransactionResourceCommitRequest> Request;
-                  typedef basic_reply< cTransactionResourceCommitReply> Reply;
+                  typedef basic_request< Type::transaction_resource_commit_request> Request;
+                  typedef basic_reply< Type::transaction_resource_commit_reply> Reply;
 
                } // commit
 
                namespace rollback
                {
-                  typedef basic_request< cTransactionResourceRollbackRequest> Request;
-                  typedef basic_reply< cTransactionResourceRollbackReply> Reply;
+                  typedef basic_request< Type::transaction_resource_rollback_request> Request;
+                  typedef basic_reply< Type::transaction_resource_rollback_reply> Reply;
 
                } // rollback
 
@@ -326,24 +357,39 @@ namespace casual
                //!
                namespace domain
                {
+
+                  struct Involved : basic_transaction< Type::transaction_domain_resource_involved>
+                  {
+                     Uuid domain;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & domain;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Involved& value);
+
+                  };
+
                   namespace prepare
                   {
-                     typedef basic_request< cTransactionDomainResourcePrepareRequest> Request;
-                     typedef basic_reply< cTransactionDomainResourcePrepareReply> Reply;
+                     typedef basic_request< Type::transaction_domain_resource_prepare_request> Request;
+                     typedef basic_reply< Type::transaction_domain_resource_prepare_reply> Reply;
 
                   } // prepare
 
                   namespace commit
                   {
-                     typedef basic_request< cTransactionDomainResourceCommitRequest> Request;
-                     typedef basic_reply< cTransactionDomainResourceCommitReply> Reply;
+                     typedef basic_request< Type::transaction_domain_resource_commit_request> Request;
+                     typedef basic_reply< Type::transaction_domain_resource_commit_reply> Reply;
 
                   } // commit
 
                   namespace rollback
                   {
-                     typedef basic_request< cTransactionDomainResourceRollbackRequest> Request;
-                     typedef basic_reply< cTransactionDomainResourceRollbackReply> Reply;
+                     typedef basic_request< Type::transaction_domain_resource_rollback_request> Request;
+                     typedef basic_reply< Type::transaction_domain_resource_rollback_reply> Reply;
 
                   } // rollback
                } // domain

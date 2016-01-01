@@ -409,6 +409,7 @@ namespace casual
 
          return common::range::find_if( resource.instances, state::filter::Idle{});
       }
+
    } // transaction
 
 } // casual

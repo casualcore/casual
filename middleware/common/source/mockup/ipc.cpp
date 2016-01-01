@@ -74,46 +74,10 @@ namespace casual
             {
                namespace
                {
-
                   namespace message
                   {
-                     enum Type
-                     {
-
-                        cMockupDisconnect  = 100000, // avoid conflict with real messages
-                        cMockupClear,
-
-                     };
-
-                     template< message::Type type>
-                     struct basic_message
-                     {
-                        enum
-                        {
-                           message_type = type
-                        };
-
-                        Uuid correlation;
-
-                        //!
-                        //! The execution-id
-                        //!
-                        Uuid execution;
-
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-
-                           //
-                           // correlation is part of ipc::message::Complete, and is
-                           // handled by the ipc-abstraction (marshaled 'on the side')
-                           //
-
-                           archive & execution;
-                        })
-                     };
-
-                     using Disconnect =  basic_message< cMockupDisconnect>;
-                     using Clear =  basic_message< cMockupClear>;
+                     using Disconnect =  common::message::basic_message< common::message::Type::mockup_disconnect>;
+                     using Clear =  common::message::basic_message< common::message::Type::mockup_clear>;
                   }
                }
             }
@@ -245,11 +209,11 @@ namespace casual
                   {
                      switch( message.type)
                      {
-                        case local::message::Disconnect::message_type:
+                        case local::message::Disconnect::type():
                         {
                            throw Disconnect( "disconnect", __FILE__, __LINE__);
                         }
-                        case local::message::Clear::message_type:
+                        case local::message::Clear::type():
                         {
                            decltype( state.cache) empty;
                            std::swap( state.cache, empty);
@@ -262,8 +226,8 @@ namespace casual
 
                            return false;
                         }
+                        default: return true;
                      }
-                     return true;
                   }
                };
 
@@ -274,7 +238,7 @@ namespace casual
                   try
                   {
                      common::ipc::message::Transport transport;
-                     transport.message.type = local::message::Disconnect::message_type;
+                     transport.type( local::message::Disconnect::type());
 
                      bool resend = true;
 
@@ -352,11 +316,11 @@ namespace casual
                               {
                                  switch( message.type)
                                  {
-                                    case local::message::Disconnect::message_type:
+                                    case local::message::Disconnect::type():
                                     {
                                        throw Disconnect( "disconnect", __FILE__, __LINE__);
                                     }
-                                    case local::message::Clear::message_type:
+                                    case local::message::Clear::type():
                                     {
                                        m_pending.clear();
 
@@ -366,6 +330,11 @@ namespace casual
                                           process::sleep( std::chrono::microseconds{ 10});
                                        }
                                        while( ! reader.next().empty());
+                                       break;
+                                    }
+                                    default:
+                                    {
+                                       // no -op
                                        break;
                                     }
                                  }
@@ -527,7 +496,7 @@ namespace casual
                            common::process::sleep( std::chrono::microseconds{ 10});
                         }
 
-                        if( transport.message.type == local::message::Disconnect::message_type)
+                        if( transport.type() == local::message::Disconnect::type())
                         {
                            common::ipc::message::ignore::signal::send( output, transport, common::ipc::message::Flags::cNoBlocking);
                            return;

@@ -26,8 +26,8 @@ namespace casual
                   //!
                   //! Used to advertise the monitorserver
                   //!
-                  using Request = server::connect::basic_request< cTrafficMonitorConnectRequest>;
-                  using Reply = server::connect::basic_reply< cTrafficMonitorConnectReply>;
+                  using Request = server::connect::basic_request< Type::traffic_monitor_connect_request>;
+                  using Reply = server::connect::basic_reply< Type::traffic_monitor_connect_reply>;
 
                } // connect
 
@@ -35,7 +35,7 @@ namespace casual
                //!
                //! Used to unadvertise the monitorserver
                //!
-               typedef server::basic_disconnect< cTrafficMonitorDisconnect> Disconnect;
+               typedef server::basic_disconnect< Type::traffic_monitor_disconnect> Disconnect;
 
 
             } // monitor
@@ -43,7 +43,7 @@ namespace casual
             //!
             //! Notify traffic-monitor with statistic-event
             //!
-            struct Event : basic_message< cTrafficEvent>
+            struct Event : basic_message< Type::traffic_event>
             {
                std::string service;
                std::string parent;

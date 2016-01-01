@@ -446,7 +446,12 @@ namespace casual
          std::vector< state::pending::Request> persistentRequests;
 
 
+         //!
+         //! the persistent transaction log
+         //!
          transaction::Log log;
+
+
 
 
          //!
@@ -476,6 +481,11 @@ namespace casual
 
          using instance_range = decltype( common::range::make( std::declval< state::resource::Proxy>().instances.begin(), std::declval< state::resource::Proxy>().instances.end()));
          instance_range idle_instance( common::platform::resource::id_type rm);
+
+
+      private:
+
+
 
       };
 

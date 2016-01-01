@@ -11,6 +11,7 @@
 #include "common/buffer/type.h"
 
 #include "common/log.h"
+#include "common/memory.h"
 
 #include "common/internal/trace.h"
 
@@ -210,7 +211,9 @@ int CasualStringWriteString( char* const handle, const char* const value)
          }
          else
          {
-            std::memcpy( buffer->payload.memory.data(), value, count);
+            casual::common::memory::copy(
+                  casual::common::range::make( value, count),
+                  casual::common::range::make( buffer->payload.memory));
          }
 
       }

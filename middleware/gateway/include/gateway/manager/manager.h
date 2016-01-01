@@ -9,6 +9,8 @@
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_MANAGER_H_
 
 
+#include "gateway/manager/state.h"
+
 namespace casual
 {
    namespace gateway
@@ -36,6 +38,7 @@ namespace casual
 
       private:
 
+         manager::State m_state;
       };
 
    } // gateway

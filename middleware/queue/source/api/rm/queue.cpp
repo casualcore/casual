@@ -236,10 +236,10 @@ namespace casual
                   // (which we now also do) but it isn't really coherent with how casual otherwise works
                   //
                   auto complete = receive.next( {
-                     common::message::queue::dequeue::Reply::message_type,
-                     common::message::shutdown::Request::message_type});
+                     common::message::queue::dequeue::Reply::type(),
+                     common::message::shutdown::Request::type()});
 
-                  if( complete.type == common::message::queue::dequeue::Reply::message_type)
+                  if( complete.type == common::message::queue::dequeue::Reply::type())
                   {
                      common::message::queue::dequeue::Reply reply;
                      complete >> reply;

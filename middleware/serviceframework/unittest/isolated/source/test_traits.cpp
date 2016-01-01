@@ -25,8 +25,8 @@ namespace casual
 
    TEST( casual_sf_traits, is_container)
    {
-      EXPECT_TRUE( sf::traits::is_container< std::vector< int>>::value);
-      EXPECT_FALSE( sf::traits::is_container< Test>::value);
+      EXPECT_TRUE( sf::traits::container::is_container< std::vector< int>>::value);
+      EXPECT_FALSE( sf::traits::container::is_container< Test>::value);
    }
 }
 

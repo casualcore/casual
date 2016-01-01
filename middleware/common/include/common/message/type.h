@@ -14,113 +14,149 @@
 #include "common/marshal/marshal.h"
 
 
+#include <type_traits>
+
 namespace casual
 {
    namespace common
    {
       namespace message
       {
-         enum Type
+         enum class Type : platform::message_type_type
          {
+            // message type can't be 0!
+            MESSAGE_TYPE_INVALID = 0,
 
             UTILITY_BASE = 500,
-            cFlushIPC, // dummy message used to flush queue (into cache)
-            cPoke,
-            cShutdowndRequest,
-            cShutdowndReply,
-            cForwardConnectRequest,
-            cForwardConnectReply,
-            cProcessDeathRegistration,
-            cProcessDeathEvent,
-            cLookupProcessRequest,
-            cLookupProcessReply,
+            flush_ipc, // dummy message used to flush queue (into cache)
+            poke,
+            shutdownd_request,
+            shutdownd_reply,
+            forward_connect_request,
+            forward_connect_reply,
+            process_death_registration,
+            process_death_event,
+            lookup_process_request,
+            lookup_process_reply,
 
             // Server
-            SERVER_BASE = 1000, // message type can't be 0!
-            cServerConnectRequest,
-            cServerConnectReply,
-            cServerDisconnect,
-            cServerPingRequest,
-            cServerPingReply,
+            SERVER_BASE = 1000,
+            server_connect_request,
+            server_connect_reply,
+            server_disconnect,
+            server_ping_request,
+            server_ping_reply,
 
             // Service
             SERVICE_BASE = 2000,
-            cServiceAdvertise,
-            cServiceUnadvertise,
-            cServiceNameLookupRequest,
-            cServiceNameLookupReply,
-            cServiceCall,
-            cServiceReply,
-            cServiceAcknowledge,
+            service_advertise,
+            service_unadvertise,
+            service_name_lookup_request,
+            service_name_lookup_reply,
+            service_call,
+            service_reply,
+            service_acknowledge,
 
             // Monitor
             TRAFFICMONITOR_BASE = 3000,
-            cTrafficMonitorConnectRequest,
-            cTrafficMonitorConnectReply,
-            cTrafficMonitorDisconnect,
-            cTrafficEvent,
+            traffic_monitor_connect_request,
+            traffic_monitor_connect_reply,
+            traffic_monitor_disconnect,
+            traffic_event,
 
             // Transaction
             TRANSACTION_BASE = 4000,
-            cTransactionClientConnectRequest,
-            cTransactionClientConnectReply,
-            cTransactionManagerConnectRequest,
-            cTransactionManagerConnectReply,
-            cTransactionManagerConfiguration,
-            cTransactionManagerReady,
-            cTransactionBeginRequest = 4100,
-            cTransactionBeginReply,
-            cTransactionCommitRequest,
-            cTransactionCommitReply,
-            cTransactionRollbackRequest,
-            cTransactionRollbackReply,
-            cTransactionGenericReply,
+            transaction_client_connect_request,
+            transaction_client_connect_reply,
+            transaction_manager_connect_request,
+            transaction_manager_connect_reply,
+            transaction_manager_configuration,
+            transaction_manager_ready,
+            transaction_begin_request = TRANSACTION_BASE + 100,
+            transaction_begin_reply,
+            transaction_commit_request,
+            transaction_commit_reply,
+            transaction_Rollback_request,
+            transaction_rollback_reply,
+            transaction_generic_reply,
 
-            cTransactionResurceConnectReply = 4200,
-            cTransactionResourcePrepareRequest,
-            cTransactionResourcePrepareReply,
-            cTransactionResourceCommitRequest,
-            cTransactionResourceCommitReply,
-            cTransactionResourceRollbackRequest,
-            cTransactionResourceRollbackReply,
-            cTransactionDomainResourcePrepareRequest = 4300,
-            cTransactionDomainResourcePrepareReply,
-            cTransactionDomainResourceCommitRequest,
-            cTransactionDomainResourceCommitReply,
-            cTransactionDomainResourceRollbackRequest,
-            cTransactionDomainResourceRollbackReply,
-            cTransactionResourceInvolved = 4400,
+            transaction_resurce_connect_reply = TRANSACTION_BASE + 200,
+            transaction_resource_prepare_request,
+            transaction_resource_prepare_reply,
+            transaction_resource_commit_request,
+            transaction_resource_commit_reply,
+            transaction_resource_rollback_request,
+            transaction_resource_rollback_reply,
+            transaction_domain_resource_prepare_request = TRANSACTION_BASE + 300,
+            transaction_domain_resource_prepare_reply,
+            transaction_domain_resource_commit_request,
+            transaction_domain_resource_commit_reply,
+            transaction_domain_resource_rollback_request,
+            transaction_domain_resource_rollback_reply,
+
+            transaction_resource_involved = TRANSACTION_BASE + 400,
+            transaction_domain_resource_involved,
+
+            transaction_resource_id_request = TRANSACTION_BASE + 500,
+            transaction_resource_id_reply,
 
             // casual queue
             QUEUE_BASE = 5000,
-            cQueueConnectRequest,
-            cQueueConnectReply,
-            cQueueEnqueueRequest = 5100,
-            cQueueEnqueueReply,
-            cQueueDequeueRequest = 5200,
-            cQueueDequeueReply,
-            cQueueDequeueForgetRequest,
-            cQueueDequeueForgetReply,
-            cQueueInformation = 5300,
-            cQueueQueuesInformationRequest,
-            cQueueQueuesInformationReply,
-            cQueueQueueInformationRequest,
-            cQueueQueueInformationReply,
-            cQueueLookupRequest = 5400,
-            cQueueLookupReply,
-            cQueueGroupInvolved = 5500,
+            queue_connect_request,
+            queue_connect_reply,
+            queue_enqueue_request = QUEUE_BASE + 100,
+            queue_enqueue_reply,
+            queue_dequeue_request = QUEUE_BASE + 200,
+            queue_dequeue_reply,
+            queue_dequeue_forget_request,
+            queue_dequeue_forget_reply,
+            queue_information = QUEUE_BASE + 300,
+            queue_queues_information_request,
+            queue_queues_information_reply,
+            queue_queue_information_request,
+            queue_queue_information_reply,
+            queue_lookup_request = QUEUE_BASE + 400,
+            queue_lookup_reply,
+            queue_group_involved = QUEUE_BASE + 500,
+
+
+            GATEWAY_BASE = 6000,
+
+
+
+
+            MOCKUP_BASE = 1000000, // avoid conflict with real messages
+            mockup_disconnect,
+            mockup_clear,
          };
 
-         template< message::Type type>
+         //!
+         //! Deduce witch type of message it is.
+         //!
+         template< typename M>
+         constexpr Type type( const M& message)
+         {
+            return message.type();
+         }
+
+         namespace convert
+         {
+            using underlying_type = typename std::underlying_type< Type>::type;
+
+            constexpr Type type( underlying_type type) { return static_cast< Type>( type);}
+            constexpr underlying_type type( Type type) { return static_cast< underlying_type>( type);}
+
+         } // convert
+
+
+         template< message::Type message_type>
          struct basic_message
          {
 
-            using base_type = basic_message< type>;
+            using base_type = basic_message< message_type>;
 
-            enum
-            {
-               message_type = type
-            };
+
+            constexpr static Type type() { return message_type;}
 
             Uuid correlation;
 
@@ -141,15 +177,12 @@ namespace casual
             })
          };
 
-         template< typename M, message::Type type>
+         template< typename M, message::Type message_type>
          struct type_wrapper : public M
          {
             using M::M;
 
-            enum
-            {
-               message_type = type
-            };
+            constexpr static Type type() { return message_type;}
 
             Uuid correlation;
 
@@ -172,7 +205,7 @@ namespace casual
 
          namespace flush
          {
-            using IPC = basic_message< cFlushIPC>;
+            using IPC = basic_message< Type::flush_ipc>;
 
          } // flush
 
@@ -190,14 +223,8 @@ namespace casual
          };
 
 
-         //!
-         //! Deduce witch type of message it is.
-         //!
-         template< typename M>
-         constexpr platform::message_type_type type( const M&)
-         {
-            return M::message_type;
-         }
+
+
 
          template< typename M>
          auto correlation( M& message) -> decltype( message.correlation)
@@ -212,7 +239,7 @@ namespace casual
          //!
          namespace shutdown
          {
-            struct Request : basic_message< cShutdowndRequest>
+            struct Request : basic_message< Type::shutdownd_request>
             {
                process::Handle process;
                bool reply = false;
@@ -224,7 +251,7 @@ namespace casual
                })
             };
 
-            struct Reply : basic_message< cShutdowndReply>
+            struct Reply : basic_message< Type::shutdownd_reply>
             {
                template< typename ID>
                struct holder_t
@@ -360,9 +387,9 @@ namespace casual
          {
             namespace process
             {
-               using Registration = server::basic_id< cProcessDeathRegistration>;
+               using Registration = server::basic_id< Type::process_death_registration>;
 
-               struct Event : basic_message< cProcessDeathEvent>
+               struct Event : basic_message< Type::process_death_event>
                {
                   Event() = default;
                   Event( common::process::lifetime::Exit death) : death{ std::move( death)} {}
@@ -371,7 +398,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_message< cProcessDeathEvent>::marshal( archive);
+                     basic_message< Type::process_death_event>::marshal( archive);
                      archive & death;
                   })
                };
@@ -383,7 +410,7 @@ namespace casual
          {
             namespace process
             {
-               struct Request : server::basic_id< cLookupProcessRequest>
+               struct Request : server::basic_id< Type::lookup_process_request>
                {
                   enum class Directive : char
                   {
@@ -396,20 +423,20 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     server::basic_id< cLookupProcessRequest>::marshal( archive);
+                     server::basic_id< Type::lookup_process_request>::marshal( archive);
                      archive & identification;
                      archive & directive;
                   })
                };
 
-               struct Reply : server::basic_id< cLookupProcessReply>
+               struct Reply : server::basic_id< Type::lookup_process_reply>
                {
                   Uuid identification;
                   std::string domain;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     server::basic_id< cLookupProcessReply>::marshal( archive);
+                     server::basic_id< Type::lookup_process_reply>::marshal( archive);
                      archive & identification;
                      archive & domain;
                   })
@@ -423,8 +450,8 @@ namespace casual
          {
             namespace connect
             {
-               using Request = server::connect::basic_request< cForwardConnectRequest>;
-               using Reply = server::connect::basic_reply< cForwardConnectReply>;
+               using Request = server::connect::basic_request< Type::forward_connect_request>;
+               using Reply = server::connect::basic_reply< Type::forward_connect_reply>;
             } // connect
 
          } // forward

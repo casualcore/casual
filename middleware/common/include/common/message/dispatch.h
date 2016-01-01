@@ -30,7 +30,7 @@ namespace casual
             {
             public:
 
-               using message_type = platform::message_type_type;
+               using message_type = message::Type;
 
                Handler()  = default;
 
@@ -111,7 +111,7 @@ namespace casual
                };
 
 
-               typedef std::map< platform::message_type_type, std::unique_ptr< base_handler> > handlers_type;
+               typedef std::map< message_type, std::unique_ptr< base_handler> > handlers_type;
 
 
                static void assign( handlers_type& result)
@@ -123,12 +123,12 @@ namespace casual
                {
                   using handle_type = handle_holder< typename std::decay< H>::type>;
 
-                  assert( result.count( handle_type::message_type::message_type) == 0);
+                  assert( result.count( handle_type::message_type::type()) == 0);
 
                   std::unique_ptr< base_handler> holder{ new handle_type( std::forward< H>( handler))};
 
                   result.emplace(
-                        handle_type::message_type::message_type,
+                        handle_type::message_type::type(),
                         std::move( holder));
 
                   assign( result, std::forward< Args>( handlers)...);

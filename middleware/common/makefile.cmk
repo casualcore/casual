@@ -138,7 +138,10 @@ target_simple_process = LinkExecutable( 'bin/simple_process',
 # unittest
 #
 unittest_objectfiles = [
-   Compile( 'unittest/isolated/source/test_conformance.cpp'),                     
+   Compile( 'unittest/isolated/source/test_conformance.cpp'),  
+   
+   Compile( 'unittest/isolated/source/test_algorithm.cpp'),      
+   Compile( 'unittest/isolated/source/test_memory.cpp'),             
                         
    Compile( 'unittest/isolated/source/test_buffer.cpp'),
    Compile( 'unittest/isolated/source/test_marshal.cpp'),
@@ -161,7 +164,7 @@ unittest_objectfiles = [
    
    Compile( 'unittest/isolated/source/test_transaction_id.cpp'),
    Compile( 'unittest/isolated/source/test_transaction.cpp'),
-   Compile( 'unittest/isolated/source/test_algorithm.cpp'),
+
    
    Compile( 'unittest/isolated/source/test_mockup.cpp'),
    Compile( 'unittest/isolated/source/test_traits.cpp'),

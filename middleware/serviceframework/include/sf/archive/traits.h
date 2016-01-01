@@ -1,7 +1,7 @@
 
 
-#ifndef CASUAL_ARCHIVE_TRAITS_H_
-#define CASUAL_ARCHIVE_TRAITS_H_
+#ifndef CASUAL_SERVICEFRAMEWORK_ARCHIVE_TRAITS_H_
+#define CASUAL_SERVICEFRAMEWORK_ARCHIVE_TRAITS_H_
 
 
 #include "common/traits.h"
@@ -48,24 +48,22 @@ namespace casual
          struct is_pod< std::vector< char> > : public std::integral_constant< bool, true> {};
 
 
-         // TODO: We want to only say T is serializible if T has member function void serialize( Archive& a) (const)
-         //
-         template< typename T>
-         struct is_serializible : public std::integral_constant< bool,
-            ! is_pod< T>::value && ! std::is_enum< T>::value && ! is_container< T>::value> {};
+         template< typename T, typename... Args>
+         struct has_serialize
+         {
+         private:
+            using one = char;
+            struct two { char m[ 2];};
+
+            template< typename C, typename... A> static auto test( C&& c, A&&... a) -> decltype( (void)( c.serialize( a...)), one());
+            static two test(...);
+         public:
+            enum { value = sizeof( test( std::declval< T>(), std::declval< Args>()...)) == sizeof(one) };
+         };
 
 
-      }
+      } // traits
+   } // sf
+} // casual
 
-
-   }
-
-
-}
-
-
-
-
-
-
-#endif
+#endif //CASUAL_SERVICEFRAMEWORK_ARCHIVE_TRAITS_H_

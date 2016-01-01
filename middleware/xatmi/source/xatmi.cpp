@@ -12,6 +12,7 @@
 #include "common/server/context.h"
 #include "common/platform.h"
 #include "common/log.h"
+#include "common/memory.h"
 
 #include "common/string.h"
 #include "common/error.h"
@@ -110,9 +111,9 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       //
       if( type)
       {
-         const std::size_t size{ 8 };
-         memset( type, '\0', size);
-         casual::common::range::copy_max( buffer.payload.type.name, size, type);
+         auto destination = casual::common::range::make( type, 8);
+         casual::common::memory::set( destination, '\0');
+         casual::common::memory::copy( casual::common::range::make( buffer.payload.type.name), destination);
       }
 
       //
@@ -120,9 +121,9 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       //
       if( subtype)
       {
-         const std::size_t size{ 16 };
-         memset( subtype, '\0', size);
-         casual::common::range::copy_max( buffer.payload.type.subname, size, subtype);
+         auto destination = casual::common::range::make( subtype, 16);
+         casual::common::memory::set( destination, '\0');
+         casual::common::memory::copy( casual::common::range::make( buffer.payload.type.subname), destination);
       }
 
       return buffer.reserved;

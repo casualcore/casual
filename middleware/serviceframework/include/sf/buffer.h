@@ -17,6 +17,7 @@
 #include "common/string.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/type.h"
+#include "common/memory.h"
 
 //
 // std
@@ -206,15 +207,37 @@ namespace casual
 
             private:
 
-               void consume( void* value, size_type count);
+               template< typename Range>
+               void consume( Range destination)
+               {
+                  if( m_read_offset + destination.size() > size())
+                  {
+                     throw exception::Validation( "Attempt to read out of bounds  ro: " + std::to_string( m_read_offset) + " size: " + std::to_string( size()));
+                  }
 
-               void append( const void* value, size_type count);
+                  auto source = common::range::make( begin() + m_read_offset, destination.size());
+
+                  m_read_offset += common::memory::copy( source, destination);
+               }
+
+               template< typename Range>
+               void append( Range source)
+               {
+                  while( m_write_offset + source.size() > size())
+                  {
+                     resize( size() * 2);
+                  }
+
+                  auto destination = common::range::make( begin() + m_write_offset, source.size());
+
+                  m_write_offset += common::memory::copy( source, destination);
+               }
 
                template< typename T>
                void write( const T& value)
                {
                   const auto encoded = common::network::byteorder::encode( value);
-                  append( &encoded, sizeof( encoded));
+                  append( common::memory::range::make( encoded));
                }
 
                void write( const platform::binary_type& value)
@@ -223,7 +246,7 @@ namespace casual
                   // TODO: Write the size as some-common_size_type
                   //
                   write( value.size());
-                  append( value.data(), value.size());
+                  append( common::range::make( value));
                }
 
                void write( const std::string& value)
@@ -236,16 +259,15 @@ namespace casual
                   // append( value.c_str(), value.size() + 1)
                   //
                   write( value.size());
-                  append( value.data(), value.size());
+                  append( common::range::make( value));
                }
 
 
                template< typename T>
                void read( T& value)
                {
-                  //consume( &value, sizeof( T));
                   common::network::byteorder::type<T> encoded;
-                  consume( &encoded, sizeof( encoded));
+                  consume( common::memory::range::make( encoded));
                   value = common::network::byteorder::decode< T>( encoded);
                }
 
@@ -264,7 +286,7 @@ namespace casual
                   auto size = value.size();
                   read( size);
                   value.resize( size);
-                  consume( &value[ 0], size);
+                  consume( common::range::make( value));
                }
 
                void read( platform::binary_type& value)
@@ -275,7 +297,7 @@ namespace casual
                   auto size = value.size();
                   read( size);
                   value.resize( size);
-                  consume( value.data(), size);
+                  consume( common::range::make( value));
                }
 
                size_type m_write_offset = 0;
@@ -301,7 +323,7 @@ namespace casual
             using binary::Stream::Stream;
 
             std::string str() const;
-            void str( const std::string& new_string);
+            void str( const std::string& value);
 
          private:
             void doClear() {}

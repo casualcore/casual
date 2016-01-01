@@ -51,7 +51,7 @@ namespace casual
 
                auto marshal = reader.next();
 
-               EXPECT_TRUE( marshal.type == message::service::Advertise::message_type);
+               EXPECT_TRUE( marshal.type == message::service::Advertise::type());
 
                message::service::Advertise message;
                marshal >> message;
@@ -140,7 +140,7 @@ namespace casual
 
             non_blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cTrafficMonitorConnectRequest, message::Type::cTrafficEvent});
+            auto result = reader.next( { message::Type::traffic_monitor_connect_request, message::Type::traffic_event});
 
             EXPECT_TRUE( result.empty());
          }
@@ -175,8 +175,8 @@ namespace casual
 
             blocking::Reader reader( ipc::receive::queue());
 
-            auto result = reader.next( { message::Type::cTrafficMonitorConnectRequest, message::service::Advertise::message_type});
-            EXPECT_TRUE( result.type == message::service::Advertise::message_type);
+            auto result = reader.next( { message::Type::traffic_monitor_connect_request, message::service::Advertise::type()});
+            EXPECT_TRUE( result.type == message::service::Advertise::type());
          }
 
 

@@ -36,7 +36,7 @@ namespace casual
             };
 
 
-            struct Advertise : basic_message< cServiceAdvertise>
+            struct Advertise : basic_message< Type::service_advertise>
             {
 
                std::string serverPath;
@@ -52,7 +52,7 @@ namespace casual
                })
             };
 
-            struct Unadvertise : basic_message< cServiceUnadvertise>
+            struct Unadvertise : basic_message< Type::service_unadvertise>
             {
                process::Handle process;
                std::vector< Service> services;
@@ -71,7 +71,7 @@ namespace casual
                //!
                //! Represent "service-name-lookup" request.
                //!
-               struct Request : basic_message< cServiceNameLookupRequest>
+               struct Request : basic_message< Type::service_name_lookup_request>
                {
                   enum class Context : char
                   {
@@ -99,7 +99,7 @@ namespace casual
                //!
                //! Represent "service-name-lookup" response.
                //!
-               struct Reply : basic_message< cServiceNameLookupReply>
+               struct Reply : basic_message< Type::service_name_lookup_reply>
                {
                   Service service;
                   process::Handle process;
@@ -131,7 +131,7 @@ namespace casual
             namespace call
             {
 
-               struct base_call : basic_message< cServiceCall>
+               struct base_call : basic_message< Type::service_call>
                {
 
                   base_call() = default;
@@ -235,7 +235,7 @@ namespace casual
                //! Represent service reply.
                //! @todo: change to service::call::Reply
                //!
-               struct Reply :  basic_message< cServiceReply>
+               struct Reply :  basic_message< Type::service_reply>
                {
 
                   Reply() = default;
@@ -266,7 +266,7 @@ namespace casual
                //! Represent the reply to the broker when a server is done handling
                //! a service-call and is ready for new calls
                //!
-               struct ACK : basic_message< cServiceAcknowledge>
+               struct ACK : basic_message< Type::service_acknowledge>
                {
 
                   std::string service;

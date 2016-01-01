@@ -8,17 +8,45 @@
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_HANDLE_H_
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_HANDLE_H_
 
+#include "gateway/manager/state.h"
 
 namespace casual
 {
    namespace gateway
    {
-      namespace handle
+      namespace manager
       {
+         namespace handle
+         {
+
+            struct Base
+            {
+               Base( State& state) : m_state( &state) {}
+
+            protected:
+               State& state() { return *m_state;}
+            private:
+               State* m_state;
+            };
+
+
+            namespace inbound
+            {
+               struct Connect : Base
+               {
+                  using Base::Base;
+
+
+               };
+
+            } // inbound
 
 
 
-      } // handle
+         } // handle
+
+      } // manager
+
    } // gateway
 
 

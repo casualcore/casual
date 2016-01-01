@@ -40,8 +40,8 @@ endif
 #
 ifdef DEBUG
    COMPILE_DIRECTIVES = -ggdb -c -fPIC -Wall -pedantic -std=c++11
-   LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib -fPIC 
-   LINK_DIRECTIVES_EXE =  -ggdb -fPIC 
+   LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib -fPIC
+   LINK_DIRECTIVES_EXE =  -ggdb -fPIC
    LINK_DIRECTIVES_ARCHIVE =  -ggdb -fPIC
    
    ifdef ANALYZE
@@ -51,7 +51,7 @@ ifdef DEBUG
    endif
    
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -std=c++11 -pthread
+   COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -Wno-unused-parameter -std=c++11 -pthread
    LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC -Wall -pedantic -std=c++11
    LINK_DIRECTIVES_EXE =  -O3 -fPIC -Wall -pedantic -std=c++11
    LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC -Wall -pedantic -std=c++11 -pthread

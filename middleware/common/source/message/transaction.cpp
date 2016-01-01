@@ -27,6 +27,17 @@ namespace casual
                         << '}';
                }
 
+               namespace domain
+               {
+                  std::ostream& operator << ( std::ostream& out, const Involved& value)
+                  {
+                     return out << "{ process: " << value.process
+                           << ", domain: " << value.domain
+                           << ", trid: " << value.trid
+                           << '}';
+                  }
+
+               } // domain
 
 
                namespace connect

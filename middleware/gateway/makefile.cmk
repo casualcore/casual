@@ -44,6 +44,22 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
 
 install_bin.append( target)
 
+#
+# The outbound ipc connector
+#
+target = LinkExecutable( 'bin/casual-gateway-outbound-ipc',
+    [
+     Compile( 'source/outbound/ipc/main.cpp'),
+     Compile( 'source/outbound/ipc/connector.cpp'),
+    ],
+    [ 
+     'casual-sf', 
+     'casual-common', 
+     'casual-configuration', 
+     'casual-xatmi',
+     ])
+
+install_bin.append( target)
 
 
 #

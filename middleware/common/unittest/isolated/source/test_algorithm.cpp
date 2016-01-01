@@ -15,7 +15,6 @@ namespace casual
    namespace common
    {
 
-
       namespace local
       {
          namespace

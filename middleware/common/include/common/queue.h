@@ -94,7 +94,7 @@ namespace casual
                      auto complete = ipc( std::forward< Args>( args)..., flags);
 
                      assert( ! complete.empty());
-                     assert( complete.front().type == message.message_type);
+                     assert( complete.front().type == message.type());
                      complete.front() >> message;
 
                   }
@@ -128,7 +128,7 @@ namespace casual
 
                      if( ! complete.empty())
                      {
-                        assert( complete.front().type == message.message_type);
+                        assert( complete.front().type == message.type());
                         complete.front() >> message;
                         return true;
                      }
@@ -274,7 +274,7 @@ namespace casual
                using next_type = typename block_policy::Next;
                using fetch_type = typename block_policy::Fetch;
                typedef P policy_type;
-               using type_type = platform::message_type_type;
+               using type_type = message::Type;
 
                template< typename... Args>
                basic_reader( ipc::receive::Queue& ipc, Args&&... args)
@@ -351,7 +351,7 @@ namespace casual
                template< typename M>
                auto operator () ( M& message) -> decltype( std::declval< basic_reader>().fetch( message))
                {
-                  return fetch( message, message.message_type);
+                  return fetch( message, message.type());
                }
 
                template< typename M>

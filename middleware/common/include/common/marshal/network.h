@@ -25,55 +25,52 @@ namespace casual
                namespace detail
                {
 
+                  //
+                  // Helper to make sure we only transport byte-arrays
+                  //
                   template< typename T>
                   using is_network_array = std::integral_constant< bool,
-                        std::is_array< T>::value >; //&&
-                        //std::is_array< typename std::decay< T>::type>::value >; //&&
-                        //sizeof( typename std::remove_all_extents<  typename std::decay< T>::type>::type) == 1>;
+                        std::is_array< typename std::remove_reference< T>::type>::value
+                        && sizeof( typename std::remove_all_extents< typename std::remove_reference< T>::type>::type) == 1>;
 
                } // detail
 
                struct Policy
                {
-                  template< typename T>
-                  static constexpr typename std::enable_if< ! detail::is_network_array< T>::value, std::size_t>::type size( T&)
-                  {
-                     return sizeof( common::network::byteorder::type< typename std::decay< T>::type>);
-                  }
 
                   template< typename T>
-                  static constexpr typename std::enable_if< detail::is_network_array< T>::value, std::size_t>::type size( T&)
-                  {
-                     return sizeof( T);
-                  }
-
-                  template< typename Iter, typename T>
-                  static typename std::enable_if< ! detail::is_network_array< T>::value>::type write( Iter buffer, T& value)
+                  static typename std::enable_if< ! detail::is_network_array< T>::value>::type
+                  write( const T& value, platform::binary_type& buffer)
                   {
                      auto net_value = common::network::byteorder::encode( value);
-                     memcpy( buffer, &net_value, size( value));
+                     memory::append( net_value, buffer);
                   }
 
-                  template< typename Iter, typename T>
-                  static typename std::enable_if< detail::is_network_array< T>::value>::type write( Iter buffer, T& value)
+                  template< typename T>
+                  static typename std::enable_if< detail::is_network_array< T>::value>::type
+                  write( const T& value, platform::binary_type& buffer)
                   {
-                     memcpy( buffer, &value, size( value));
+                     memory::append( value, buffer);
                   }
 
-                  template< typename Iter, typename T>
-                  static typename std::enable_if< ! detail::is_network_array< T>::value>::type read( T& value, Iter buffer)
+
+                  template< typename T>
+                  static typename std::enable_if< ! detail::is_network_array< T>::value, std::size_t>::type
+                  read( const platform::binary_type& buffer, std::size_t offset, T& value)
                   {
                      common::network::byteorder::type< T> net_value;
-                     memcpy( &net_value, buffer, size( value));
+                     offset = memory::copy( buffer, offset, net_value);
                      value = common::network::byteorder::decode< T>( net_value);
+
+                     return offset;
                   }
 
-                  template< typename Iter, typename T>
-                  static typename std::enable_if< detail::is_network_array< T>::value>::type read( T& value, Iter buffer)
+                  template< typename T>
+                  static typename std::enable_if< detail::is_network_array< T>::value, std::size_t>::type
+                  read( const platform::binary_type& buffer, std::size_t offset, T& value)
                   {
-                     memcpy( &value, buffer, size( value));
+                     return memory::copy( buffer, offset, value);
                   }
-
                };
 
                using Input = basic_input< Policy>;

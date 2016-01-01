@@ -130,7 +130,7 @@ namespace casual
 
                   result.resources = value.resources;
                   result.correlation = value.message.correlation;
-                  result.type = value.message.type;
+                  result.type = common::message::convert::type( value.message.type);
 
                   return result;
                }
@@ -143,7 +143,7 @@ namespace casual
                   vo::pending::Reply result;
 
                   result.queue = value.target;
-                  result.type = value.message.type;
+                  result.type = common::message::convert::type( value.message.type);
                   result.correlation = value.message.correlation;
 
                   return result;

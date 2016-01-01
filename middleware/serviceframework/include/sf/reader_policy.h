@@ -28,7 +28,7 @@ namespace casual
                }
 
                template< typename T>
-               inline void value( const char* role, T& value) const
+               inline void value( const char* role, T&) const
                {
                   validationError( role);
                }
@@ -64,17 +64,17 @@ namespace casual
                }
 
                template< typename T>
-               inline void value( const char* role, T& value) const
+               inline void value( const char*, T&) const
                {
                   //value = T();
                }
 
-               inline void serialtype( const char* role) const
+               inline void serialtype( const char*) const
                {
                   // no op
                }
 
-               inline std::size_t container( const char* role) const
+               inline std::size_t container( const char*) const
                {
                   return 0;
                }

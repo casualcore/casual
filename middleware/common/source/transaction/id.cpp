@@ -9,15 +9,13 @@
 #include "common/uuid.h"
 #include "common/process.h"
 #include "common/transcode.h"
+#include "common/memory.h"
 
 
 
 #include <ios>
 #include <sstream>
 #include <iomanip>
-
-#include <cstring>
-
 
 
 
@@ -62,21 +60,22 @@ namespace casual
 
          namespace local
          {
-
-            void casualXid( XID& xid, const Uuid& gtrid, const Uuid& bqual)
+            namespace
             {
-               xid.formatID = ID::Format::cCasual;
 
-               auto size = sizeof( Uuid::uuid_type);
+               void casual_xid( const Uuid& gtrid, const Uuid& bqual, XID& xid )
+               {
+                  xid.formatID = ID::Format::cCasual;
 
-               memcpy( xid.data, gtrid.get(), size);
-               memcpy( xid.data + size, bqual.get(), size);
+                  xid.gtrid_length = memory::size( bqual.get());
+                  xid.bqual_length = xid.gtrid_length;
 
-               xid.gtrid_length = size;
-               xid.bqual_length = size;
-            }
+                  memory::copy( gtrid.get(), range::make( xid.data, xid.data + xid.gtrid_length));
+                  memory::copy( bqual.get(), range::make( xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length));
+               }
 
 
+            } // <unnamed>
          } // local
 
 
@@ -86,19 +85,18 @@ namespace casual
 
          ID::ID( process::Handle owner) : m_owner( std::move( owner))
          {
-            std::memset( &xid, 0, sizeof( xid_type));
+            memory::set( xid);
             xid.formatID = Format::cNull;
          }
 
-         ID::ID( const xid_type& xid)
+         ID::ID( const xid_type& xid) : xid{ xid}
          {
-            memcpy( &this->xid, &xid, sizeof( xid_type));
          }
 
 
          ID::ID( const Uuid& gtrid, const Uuid& bqual, process::Handle owner) : m_owner( std::move( owner))
          {
-            local::casualXid( xid, gtrid, bqual);
+            local::casual_xid( gtrid, bqual, xid);
          }
 
 
@@ -120,13 +118,13 @@ namespace casual
 
          ID::ID( const ID& rhs)
          {
-            memcpy( &xid, &rhs.xid, sizeof( XID));
+            xid = rhs.xid;
             m_owner = rhs.m_owner;
          }
 
          ID& ID::operator = ( const ID& rhs)
          {
-            memcpy( &xid, &rhs.xid, sizeof( XID));
+            xid = rhs.xid;
             m_owner = rhs.m_owner;
             return *this;
          }
@@ -150,14 +148,12 @@ namespace casual
 
             if( result)
             {
-               auto bqual = uuid::make();
+               auto branch = range::make(
+                     result.xid.data + result.xid.gtrid_length,
+                     result.xid.data + result.xid.gtrid_length + result.xid.bqual_length);
 
-               auto size = sizeof( Uuid::uuid_type);
-
-               memcpy( result.xid.data + result.xid.gtrid_length, bqual.get(), size);
-
+               memory::copy( uuid::make(), branch);
             }
-
             return result;
          }
 
