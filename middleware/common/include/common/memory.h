@@ -37,7 +37,7 @@ namespace casual
             template< typename Iter>
             struct is_suitable_iterator : std::integral_constant<bool,
                   traits::iterator::is_random_access< Iter>::value
-                  && std::is_trivially_copyable< typename std::iterator_traits< Iter>::value_type>::value
+                  && traits::is_trivially_copyable< typename std::iterator_traits< Iter>::value_type>::value
                   >{};
 
 
@@ -45,7 +45,7 @@ namespace casual
 
 
          template< typename T>
-         constexpr auto size( T&&) -> typename std::enable_if< std::is_trivially_copyable< typename std::remove_reference<T>::type>::value, size_type>::type
+         constexpr auto size( T&&) -> typename std::enable_if< traits::is_trivially_copyable< typename std::remove_reference<T>::type>::value, size_type>::type
          {
             return detail::size< typename std::remove_reference<T>::type>();
          }
@@ -69,7 +69,7 @@ namespace casual
             template< typename T>
             typename std::enable_if<
                   ! std::is_pointer< typename std::remove_reference< T>::type>::value
-                  && std::is_trivially_copyable< typename std::remove_reference< T>::type>::value
+                  && traits::is_trivially_copyable< typename std::remove_reference< T>::type>::value
                   ,
                typename detail::traits< T>::range>::type
             make( T& value)
@@ -87,7 +87,7 @@ namespace casual
          }
 
          template< typename T>
-         typename std::enable_if< std::is_trivially_copyable< T>::value>::type
+         typename std::enable_if< traits::is_trivially_copyable< T>::value>::type
          set( T& value, int c = 0)
          {
             set( range::make( value), c);

@@ -211,6 +211,23 @@ namespace casual
 
          } // iterator
 
+
+
+#if __GNUC__ > 4 || __clang_major__ > 4
+
+         template< typename T>
+         using is_trivially_copyable = std::is_trivially_copyable< T>;
+#else
+         //!
+         //!  std::is_trivially_copyable is not implemented with gcc 4.8.3
+         //!
+         template< typename T>
+         struct is_trivially_copyable : std::integral_constant< bool, true> {};
+
+
+#endif
+
+
       } // traits
    } // common
 } // casual
