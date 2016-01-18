@@ -10,7 +10,6 @@
 
 
 #include "common/message/server.h"
-#include "common/queue.h"
 #include "common/process.h"
 #include "common/internal/log.h"
 
@@ -38,42 +37,15 @@ namespace casual
                }
             };
 
-            template< typename P>
             struct Ping
             {
-               using queue_policy = P;
-
-               using queue_type = common::queue::blocking::basic_send< queue_policy>;
-
-               template< typename... Args>
-               Ping( Args&&... args)
-                  :  m_send( std::forward< Args>( args)...) {}
-
-               void operator () ( server::ping::Request& message)
-               {
-                  log::internal::debug << "pinged by process: " << message.process << '\n';
-
-                  server::ping::Reply reply;
-                  reply.correlation = message.correlation;
-                  reply.process = process::handle();
-                  reply.uuid = process::uuid();
-
-                  m_send( message.process.queue, reply);
-               }
-
-            private:
-               queue_type m_send;
+               void operator () ( server::ping::Request& message);
             };
 
-            inline auto ping( common::queue::policy::callback::on::Terminate::callback_type callback)
-               -> Ping< common::queue::policy::callback::on::Terminate>
-            {
-               return Ping< common::queue::policy::callback::on::Terminate>{ std::move( callback)};
-            }
 
-            inline auto ping() -> Ping< common::queue::policy::NoAction>
+            inline auto ping() -> Ping
             {
-               return Ping< common::queue::policy::NoAction>{};
+               return Ping{};
             }
 
 
@@ -88,8 +60,9 @@ namespace casual
 
             namespace connect
             {
-               template< typename Q, typename C, typename M>
-               auto reply( Q&& queue, C&& correlation, M&& message) -> decltype( std::forward< M>( message))
+               /*
+               template< typename D, typename C, typename M>
+               auto reply( D&& device, C&& correlation, M&& message) -> decltype( std::forward< M>( message))
                {
                   queue( message, correlation);
 
@@ -101,6 +74,32 @@ namespace casual
                         throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
                      }
                      case M::Directive::shutdown:
+                     {
+                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
+                     }
+                     default:
+                     {
+                        break;
+                     }
+                  }
+                  return std::forward< M>( message);
+               }
+               */
+
+               template< typename M>
+               auto reply( M&& message) -> decltype( std::forward< M>( message))
+               {
+                  using message_type = typename std::decay< M>::type;
+
+                  switch( message.directive)
+                  {
+                     case message_type::Directive::singleton:
+                     {
+                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
+                     }
+                     case message_type::Directive::shutdown:
                      {
                         log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
                         throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};

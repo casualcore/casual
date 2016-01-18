@@ -10,7 +10,7 @@
 
 
 
-#include "common/ipc.h"
+#include "common/communication/message.h"
 #include "common/algorithm.h"
 #include "common/memory.h"
 #include "common/marshal/marshal.h"
@@ -279,17 +279,40 @@ namespace casual
                   }
                };
 
+
+
             } // create
 
          } // binary
+
+         namespace create
+         {
+            template< typename T>
+            struct reverse;
+
+            template<>
+            struct reverse< binary::create::Output> { using type = binary::create::Input;};
+
+            template<>
+            struct reverse< binary::create::Input> { using type = binary::create::Output;};
+
+
+
+            template< typename T>
+            using reverse_t = typename reverse< T>::type;
+
+         } // create
+
+
+
       } // marshal
 
-      namespace ipc
+      namespace communication
       {
          namespace message
          {
             template< typename M>
-            ipc::message::Complete& operator >> ( ipc::message::Complete& complete, M& message)
+            communication::message::Complete& operator >> ( communication::message::Complete& complete, M& message)
             {
                assert( complete.type == message.type());
 
@@ -302,30 +325,30 @@ namespace casual
             }
 
          } // message
-      } // ipc
+      } // communication
 
       namespace marshal
       {
          template< typename M, typename C = binary::create::Output>
-         ipc::message::Complete complete( M&& message, C creator = binary::create::Output{})
+         communication::message::Complete complete( M&& message, C creator = binary::create::Output{})
          {
             if( ! message.execution)
             {
                message.execution = execution::id();
             }
 
-            ipc::message::Complete complete( message.type(), message.correlation ? message.correlation : uuid::make());
+            communication::message::Complete complete( message.type(), message.correlation ? message.correlation : uuid::make());
 
             auto marshal = creator( complete.payload);
             marshal << message;
 
-            complete.offset = complete.payload.size();
+            //complete.offset = complete.payload.size();
 
             return complete;
          }
 
          template< typename M, typename C = binary::create::Input>
-         void complete( ipc::message::Complete& complete, M& message, C creator = binary::create::Input{})
+         void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Input{})
          {
             assert( complete.type == message.type());
 

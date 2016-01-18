@@ -16,8 +16,8 @@
 #include "common/log.h"
 #include "common/exception.h"
 #include "common/process.h"
-#include "common/queue.h"
 #include "common/algorithm.h"
+#include "common/communication/ipc.h"
 
 // For handle call
 #include "common/transaction/context.h"
@@ -29,6 +29,13 @@ namespace casual
    namespace transaction
    {
 
+      namespace ipc
+      {
+
+         const common::communication::ipc::Helper& device();
+
+      } // ipc
+
       namespace user
       {
 
@@ -36,23 +43,6 @@ namespace casual
 
       } // transaction
 
-      namespace queue
-      {
-
-         namespace blocking
-         {
-            using Reader = common::queue::blocking::callback::basic_reader;
-            using Send = common::queue::blocking::callback::basic_send;
-
-         } // blocking
-
-         namespace non_blocking
-         {
-            using Reader = common::queue::non_blocking::callback::basic_reader;
-            using Send = common::queue::non_blocking::callback::basic_send;
-
-         } // non_blocking
-      } // queue
 
       namespace handle
       {

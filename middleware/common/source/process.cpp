@@ -17,7 +17,7 @@
 #include "common/uuid.h"
 
 #include "common/message/server.h"
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/flag.h"
 
 //
@@ -104,7 +104,7 @@ namespace casual
 
          Handle handle()
          {
-            Handle result{ id(), ipc::receive::id()};
+            Handle result{ id(), communication::ipc::inbound::id()};
 
             return result;
          }
@@ -180,7 +180,7 @@ namespace casual
                   request.identification = identity;
                   request.process = common::process::handle();
 
-                  auto reply = common::queue::blocking::call( common::ipc::broker::id(), request);
+                  auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
 
                   if( ! reply.domain.empty())
                   {
@@ -539,24 +539,17 @@ namespace casual
 
                   common::signal::timer::Scoped alarm{ std::chrono::seconds( 5)};
 
-                  decltype( common::ipc::receive::id()) id;
+                  decltype( communication::ipc::inbound::id()) id;
                   std::string uuid;
                   file >> id;
                   file >> uuid;
 
                   {
-                     common::queue::blocking::Writer send( id);
+
                      common::message::server::ping::Request request;
                      request.process = handle();
-                     send( request);
-                  }
 
-
-                  {
-                     common::message::server::ping::Reply reply;
-
-                     common::queue::blocking::Reader receive( common::ipc::receive::queue());
-                     receive( reply);
+                     auto reply = communication::ipc::call( id, request, communication::ipc::policy::Blocking{});
 
                      if( reply.uuid == Uuid( uuid))
                      {
@@ -589,7 +582,7 @@ namespace casual
 
             if( output)
             {
-               output << common::ipc::receive::id() << std::endl;
+               output << communication::ipc::inbound::id() << std::endl;
                output << uuid() << std::endl;
             }
             else
@@ -609,7 +602,7 @@ namespace casual
             request.identification = identification;
             request.process = process::handle();
 
-            return queue::blocking::call( ipc::broker::id(), request).process;
+            return communication::ipc::call( communication::ipc::broker::id(), request).process;
          }
 
          Handle ping( platform::queue_id_type queue)
@@ -617,7 +610,7 @@ namespace casual
             message::server::ping::Request request;
             request.process = process::handle();
 
-            return queue::blocking::call( queue, request).process;
+            return communication::ipc::call( queue, request).process;
          }
 
          namespace lifetime

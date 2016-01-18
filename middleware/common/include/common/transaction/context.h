@@ -15,7 +15,6 @@
 #include "common/transaction/resource.h"
 #include "common/transaction/transaction.h"
 
-#include "common/ipc.h"
 #include "common/message/transaction.h"
 #include "common/message/service.h"
 
@@ -176,7 +175,7 @@ namespace casual
             {
                static const Manager& instance();
 
-               ipc::send::Queue::id_type queue() const;
+               platform::queue_id_type queue() const;
                std::vector< message::transaction::resource::Manager> resources;
             private:
                Manager();

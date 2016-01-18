@@ -17,6 +17,16 @@ namespace casual
 
    namespace transaction
    {
+      namespace ipc
+      {
+
+         const common::communication::ipc::Helper& device()
+         {
+            static common::communication::ipc::Helper singleton{};
+            return singleton;
+         }
+
+      } // ipc
 
       namespace handle
       {
@@ -207,8 +217,7 @@ namespace casual
                namespace instance
                {
 
-                  template< typename Q>
-                  void done( State& state, Q& sender, state::resource::Proxy::Instance& instance)
+                  void done( State& state, state::resource::Proxy::Instance& instance)
                   {
                      auto request = common::range::find_if(
                            state.pendingRequests,
@@ -222,7 +231,7 @@ namespace casual
                         //
                         // We got a pending request for this resource, let's oblige
                         //
-                        if( sender.send( instance.process.queue, request->message))
+                        if( ipc::device().non_blocking_push( instance.process.queue, request->message))
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
 
@@ -232,14 +241,14 @@ namespace casual
                                  std::end( request->resources),
                                  instance.id));
 
-                           if( request.first->resources.empty())
+                           if( std::begin( request)->resources.empty())
                            {
-                              state.pendingRequests.erase( request.first);
+                              state.pendingRequests.erase( std::begin( request));
                            }
                         }
                         else
                         {
-                           common::log::warning << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
+                           common::log::error << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
                         }
                      }
                   }
@@ -370,9 +379,7 @@ namespace casual
                   auto& instance = m_state.get_instance( message.resource, message.process.pid);
 
                   {
-                     queue::non_blocking::Send sender{ std::ref( this->m_state)};
-
-                     local::instance::done( this->m_state, sender, instance);
+                     local::instance::done( this->m_state, instance);
                      local::instance::statistics( instance, message, now);
                   }
 
@@ -382,25 +389,25 @@ namespace casual
                   auto found = common::range::find_if(
                         common::range::make( m_state.transactions), find::Transaction{ message.trid});
 
-                  if( ! found.empty())
+                  if( found)
                   {
-                     auto& transaction = *found.first;
+                     auto& transaction = *found;
 
                      auto resource = common::range::find_if(
                            common::range::make( transaction.resources),
                            Transaction::Resource::filter::ID{ message.resource});
 
-                     if( ! resource.empty())
+                     if( resource)
                      {
                         //
                         // We found all the stuff, let the real handler handle the message
                         //
-                        if( m_handler( message, transaction, *resource.first))
+                        if( m_handler( message, transaction, *resource))
                         {
                            //
                            // We remove the transaction from our state
                            //
-                           m_state.transactions.erase( found.first);
+                           m_state.transactions.erase( std::begin( found));
                         }
                      }
                      else
@@ -433,8 +440,7 @@ namespace casual
                      {
                         instance.process = std::move( message.process);
 
-                        queue::non_blocking::Send sender{ std::ref( m_state)};
-                        local::instance::done( m_state, sender, instance);
+                        local::instance::done( m_state, instance);
 
                      }
                      else
@@ -463,11 +469,9 @@ namespace casual
 
                      common::log::internal::transaction << "enough resources are connected - send connect to broker\n";
 
-                     queue::blocking::Send send{ std::ref( m_state)};
-
                      common::message::transaction::manager::Ready running;
                      running.process = common::process::handle();
-                     send(  common::ipc::broker::id(), running);
+                     ipc::device().blocking_send( common::communication::ipc::broker::id(), running);
 
                      m_connected = true;
                   }
@@ -861,7 +865,7 @@ namespace casual
                      //
                      // We can remove this transaction
                      //
-                     m_state.transactions.erase( found.first);
+                     m_state.transactions.erase( std::begin( found));
 
                      //
                      // Send reply
@@ -966,7 +970,7 @@ namespace casual
                   //
                   // We can remove this transaction.
                   //
-                  m_state.transactions.erase( found.first);
+                  m_state.transactions.erase( std::begin( found));
 
                   //
                   // Send reply

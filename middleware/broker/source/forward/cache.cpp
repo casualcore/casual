@@ -14,7 +14,6 @@
 
 #include "common/flag.h"
 
-#include "common/queue.h"
 
 namespace casual
 {
@@ -41,7 +40,7 @@ namespace casual
                {
                   namespace error
                   {
-                     void reply( State& state, common::message::service::call::callee::Request&& message)
+                     void reply( State& state, common::message::service::call::callee::Request& message)
                      {
                         if( ! common::flag< TPNOREPLY>( message.flags))
                         {
@@ -55,8 +54,7 @@ namespace casual
 
                            try
                            {
-                              common::queue::non_blocking::Send send;
-                              if( ! send( message.process.queue, reply))
+                              if( ! communication::ipc::non::blocking::send( message.process.queue, reply))
                               {
                                  //
                                  // We failed to send reply for some reason (ipc-queue full?)
@@ -64,7 +62,7 @@ namespace casual
                                  //
                                  state.pending.emplace_back( std::move( reply), message.process.queue);
 
-                                 log::debug << "could not send error reply to process: " << message.process << " - will try later\n";
+                                 log::internal::debug << "could not send error reply to process: " << message.process << " - will try later\n";
                               }
                            }
                            catch( const exception::queue::Unavailable&)
@@ -72,6 +70,7 @@ namespace casual
                               //
                               // No-op, we just drop the message
                               //
+                              log::internal::debug << "could not send error reply to process: " << message.process << " - queue unavailable - action: ignore\n";
                            }
                         }
                      }
@@ -98,11 +97,13 @@ namespace casual
 
                      void handle( const message::service::lookup::Reply& message)
                      {
-                        log::debug << "service lookup reply received - message: " << message << '\n';
+                        Trace trace{ "broker::forward::handle::service::name::Lookup::handle", log::internal::debug};
+
+                        log::internal::debug << "service lookup reply received - message: " << message << '\n';
 
                         if( message.state == message::service::lookup::Reply::State::busy)
                         {
-                           log::debug << "service is busy - action: wait for idle\n";
+                           log::internal::debug << "service is busy - action: wait for idle\n";
                            return;
                         }
 
@@ -113,6 +114,8 @@ namespace casual
                            log::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
                            return;
                         }
+
+
 
                         //
                         // We consume the request regardless
@@ -125,7 +128,7 @@ namespace casual
                         // If something goes wrong, we try to send error reply to caller
                         //
                         scope::Execute error_reply{ [&](){
-                           send::error::reply( m_state, std::move( request));
+                           send::error::reply( m_state, request);
                         }};
 
 
@@ -135,8 +138,9 @@ namespace casual
                            return;
                         }
 
-                        common::queue::non_blocking::Send send;
-                        if( ! send( message.process.queue, request))
+                        log::internal::debug << "send request - to: " << message.process.queue << " - request: " << request << std::endl;
+
+                        if( ! communication::ipc::non::blocking::send( message.process.queue, request))
                         {
                            //
                            // We could not send the call. We put in pending and hope to send it
@@ -144,7 +148,7 @@ namespace casual
                            //
                            m_state.pending.emplace_back( request, message.process.queue);
 
-                           log::debug << "could not forward call to process: " << message.process << " - will try later\n";
+                           log::internal::debug << "could not forward call to process: " << message.process << " - will try later\n";
 
                         }
                         error_reply.release();
@@ -159,7 +163,9 @@ namespace casual
 
                   void operator () ( common::message::service::call::callee::Request& message)
                   {
-                     log::debug << "call request received for service: " << message.service << " from: " << message.process << '\n';
+                     Trace trace{ "broker::forward::handle::service::Call::operator()", log::internal::debug};
+
+                     log::internal::debug << "call request received for service: " << message.service << " from: " << message.process << '\n';
 
                      //
                      // lookup service
@@ -169,8 +175,7 @@ namespace casual
                         request.requested = message.service.name;
                         request.process = process::handle();
 
-                        common::queue::blocking::Send send;
-                        send( ipc::broker::id(), request);
+                        communication::ipc::blocking::send( communication::ipc::broker::id(), request);
                      }
 
                      m_state.reqested[ message.service.name].push_back( std::move( message));
@@ -187,26 +192,23 @@ namespace casual
             //
             // Connect to broker
             //
-            server::connect( ipc::receive::queue(), {});
+            server::connect( communication::ipc::inbound::device(), {});
 
             {
                message::forward::connect::Request connect;
                connect.process = process::handle();
                connect.identification = common::Uuid{ "f17d010925644f728d432fa4a6cf5257"};
 
-               common::queue::blocking::Send send;
-               auto correlation = send( ipc::broker::id(), connect);
+               auto reply = communication::ipc::call(
+                     communication::ipc::broker::id(),
+                     connect,
+                     communication::ipc::policy::Blocking{});
 
+               if( reply.directive != decltype( reply)::Directive::start)
                {
-                  common::queue::blocking::Reader reader{ ipc::receive::queue()};
-                  auto reply = message::reverse::type( connect);
-                  reader( reply, correlation);
-
-                  if( reply.directive != decltype( reply)::Directive::start)
-                  {
-                     throw exception::Shutdown{ "broker denied startup"};
-                  }
+                  throw exception::Shutdown{ "broker denied startup"};
                }
+
             }
          }
 
@@ -233,24 +235,20 @@ namespace casual
 
                   if( m_state.pending.empty())
                   {
-                     common::queue::blocking::Reader reader{ ipc::receive::queue()};
-                     handler( reader.next());
-
+                     handler( communication::ipc::inbound::device().next( communication::ipc::policy::Blocking{}));
                   }
                   else
                   {
-                     common::queue::non_blocking::Send send;
-                     auto sender = message::pending::sender( send);
+                     auto sender = message::pending::sender( communication::ipc::policy::ignore::signal::non::Blocking{});
 
                      auto remain = common::range::remove_if(
                         m_state.pending,
                         sender);
 
-                     m_state.pending.erase( remain.last, std::end( m_state.pending));
+                     m_state.pending.erase( std::end( remain), std::end( m_state.pending));
 
-
-                     common::queue::non_blocking::Reader reader{ ipc::receive::queue()};
-                     while( handler( reader.next()) && m_state.pending.size() < platform::batch::transaction)
+                     while( handler( communication::ipc::inbound::device().next( communication::ipc::policy::non::Blocking{}))
+                           && m_state.pending.size() < platform::batch::transaction)
                      {
                         ;
                      }

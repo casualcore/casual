@@ -16,7 +16,6 @@
 
 
 #include "common/transaction/context.h"
-#include "common/queue.h"
 
 #include "common/call/context.h"
 #include "common/buffer/pool.h"
@@ -25,6 +24,8 @@
 #include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/handle.h"
+
+#include "common/communication/ipc.h"
 
 #include "common/flag.h"
 
@@ -37,58 +38,48 @@ namespace casual
 
          message::server::connect::Reply connect( const Uuid& identification);
 
-         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services);
+         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services);
 
-         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
 
-         template< typename S, typename R>
-         message::server::connect::Reply connect( S& send, R& receive, const Uuid& identification, std::vector< message::Service> services)
+         template< typename Policy = communication::ipc::policy::Blocking>
+         message::server::connect::Reply connect(
+               communication::ipc::inbound::Device& receive,
+               const Uuid& identification,
+               std::vector< message::Service> services,
+               const communication::error::type& handler = nullptr,
+               Policy&& policy = communication::ipc::policy::Blocking{})
          {
+            Trace trace{ "server::connect", log::internal::ipc};
+
             message::server::connect::Request message;
 
             message.process.pid = common::process::handle().pid;
-            message.process.queue = receive.ipc().id();
+            message.process.queue = receive.connector().id();
             message.path = common::process::path();
             message.services = std::move( services);
             message.identification = identification;
 
-            auto correlation = send( ipc::broker::id(), message);
+            log::internal::ipc << "connect::Request: " << message << '\n';
 
             //
             // Wait for the connect reply
             //
             return common::message::handle::connect::reply(
-                  receive,
-                  correlation,
-                  message::server::connect::Reply{});
+                  communication::ipc::call( communication::ipc::broker::id(), message, policy, handler, receive));
 
          }
 
-
-         template< typename P>
-         struct Connect
+         template< typename Policy = communication::ipc::policy::Blocking>
+         message::server::connect::Reply connect(
+               communication::ipc::inbound::Device& receive,
+               std::vector< message::Service> services,
+               const communication::error::type& handler = nullptr,
+               Policy&& policy = communication::ipc::policy::Blocking{})
          {
-            using policy_type = P;
-
-            template< typename... Args>
-            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, const Uuid& identification, std::vector< message::Service> services, Args&& ...args)
-            {
-               using queue_send = common::queue::blocking::basic_send< policy_type>;
-               using queue_receive = common::queue::blocking::basic_reader< policy_type>;
-
-               queue_send send{ args...};
-               queue_receive receive( ipc, args...);
-
-               return connect( send, receive, identification, std::move( services));
-            }
-
-            template< typename... Args>
-            message::server::connect::Reply operator () ( ipc::receive::Queue& ipc, std::vector< message::Service> services, Args&& ...args)
-            {
-               return operator()( ipc, uuid::empty(), std::move( services), std::forward< Args>( args)...);
-            }
-         };
+            return connect( receive, uuid::empty(), std::move( services), handler, std::forward< Policy>( policy));
+         }
 
 
 
@@ -140,7 +131,7 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( ipc::receive::Queue& ipc, server::Arguments arguments, Args&&... args) : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
+               basic_call( communication::ipc::inbound::Device& ipc, server::Arguments arguments, Args&&... args) : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
@@ -178,7 +169,7 @@ namespace casual
 
                template< typename... Args>
                basic_call( server::Arguments arguments, Args&&... args)
-                  : basic_call( ipc::receive::queue(), std::move( arguments), std::forward< Args>( args)...)
+                  : basic_call( communication::ipc::inbound::device(), std::move( arguments), std::forward< Args>( args)...)
                {
 
                }
@@ -530,7 +521,7 @@ namespace casual
 
                };
 
-               ipc::receive::Queue& m_ipc;
+               communication::ipc::inbound::Device& m_ipc;
                policy_type m_policy;
                move::Moved m_moved;
             };
@@ -545,14 +536,7 @@ namespace casual
                //!
                struct Default
                {
-                  template< typename W>
-                  struct broker_writer : public W
-                  {
-                     broker_writer() : W( ipc::broker::id()) {}
-                  };
-
-
-                  void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::queue_id_type id, message::service::call::Reply& message);
 
@@ -564,78 +548,36 @@ namespace casual
                   void transaction( message::service::call::Reply& message, int return_state);
 
                   void forward( const message::service::call::callee::Request& message, const State::jump_t& jump);
-
-               private:
-                  typedef queue::blocking::Writer reply_writer;
-                  typedef broker_writer< queue::blocking::Writer> blocking_broker_writer;
-                  typedef broker_writer< queue::non_blocking::Writer> non_blocking_broker_writer;
-
                };
 
 
-               template< typename P = common::queue::policy::callback::on::Terminate>
                struct Admin
                {
-                  using policy_type = P;
+                  Admin( const Uuid& identification, communication::error::type handler, communication::ipc::inbound::Device& ipc);
 
-                  using queue_send = common::queue::blocking::basic_send< policy_type>;
-                  using queue_receive = common::queue::blocking::basic_reader< policy_type>;
-
-
-                  template< typename... Args>
-                  Admin( const Uuid& identification, ipc::receive::Queue& ipc, Args&&... args)
-                     : m_identification{ identification},
-                       m_send{ args...},
-                       m_receive{ ipc, std::forward< Args>( args)...}
-                  {}
+                  Admin( const Uuid& identification, communication::error::type handler);
+                  Admin( communication::error::type handler);
 
 
-                  template< typename... Args>
-                  Admin( Args&&... args) : Admin( uuid::empty(), std::forward< Args>( args)...) {}
+                  void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+
+                  void reply( platform::queue_id_type id, message::service::call::Reply& message);
+
+                  void ack( const message::service::call::callee::Request& message);
 
 
-                  void connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
-                  {
-                     server::connect( m_send, m_receive, m_identification, std::move( services));
-                  }
+                  void statistics( platform::queue_id_type id, message::traffic::Event&);
 
-                  void reply( platform::queue_id_type id, message::service::call::Reply& message)
-                  {
-                     m_send( id, message);
-                  }
+                  void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&);
 
-                  void ack( const message::service::call::callee::Request& message)
-                  {
-                     message::service::call::ACK ack;
-                     ack.process = common::process::handle();
-                     ack.service = message.service.name;
-                     m_send( ipc::broker::id(), ack);
-                  }
+                  void transaction( message::service::call::Reply& message, int return_state);
 
-
-                  void statistics( platform::queue_id_type id, message::traffic::Event&)
-                  {
-                     // no-op
-                  }
-
-                  void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
-                  {
-                     // no-op
-                  }
-                  void transaction( message::service::call::Reply& message, int return_state)
-                  {
-                     // no-op
-                  }
-
-                  void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
-                  {
-                     throw common::exception::xatmi::System{ "can't forward within an administration server"};
-                  }
+                  void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
 
                private:
                   Uuid m_identification;
-                  queue_send m_send;
-                  queue_receive m_receive;
+                  communication::error::type m_error_handler;
+                  communication::ipc::inbound::Device& m_inbound;
 
                };
 
@@ -648,8 +590,7 @@ namespace casual
             //!
             typedef basic_call< policy::Default> Call;
 
-            template< typename P = common::queue::policy::callback::on::Terminate>
-            using basic_admin_call = basic_call< policy::Admin< P>>;
+            using basic_admin_call = basic_call< policy::Admin>;
 
 
          } // handle

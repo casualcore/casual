@@ -11,7 +11,8 @@
 #include "broker/forward/cache.h"
 
 #include "common/mockup/domain.h"
-#include "common/queue.h"
+#include "common/communication/ipc.h"
+#include "common/trace.h"
 
 
 namespace casual
@@ -48,10 +49,6 @@ namespace casual
             request.flags = TPNOREPLY | TPNOTRAN;
          }
 
-
-         common::queue::blocking::Send send;
-
-
          //
          // Start the cache, witch will receive the request, and forward it to server
          //
@@ -64,13 +61,12 @@ namespace casual
          //
          // Send it to our forward
          //
-         auto correlation = send( common::ipc::receive::id(), request);
+         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::id(), request);
 
          {
-            common::queue::blocking::Reader receive{ caller.output()};
-
             message::service::call::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( caller.output(), reply);
+
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
@@ -78,7 +74,7 @@ namespace casual
          }
 
          // make sure we quit
-         send( common::ipc::receive::id(), message::shutdown::Request{});
+         communication::ipc::blocking::send( communication::ipc::inbound::id(), message::shutdown::Request{});
 
          cache_thread.join();
 
@@ -87,6 +83,8 @@ namespace casual
 
       TEST( casual_broker_forward_cache, forward_call__missing_ipc_queue__expect_error_reply)
       {
+         Trace trace{ "TEST casual_broker_forward_cache.forward_call__missing_ipc_queue__expect_error_reply", log::internal::debug};
+
          mockup::domain::Domain domain;
 
          mockup::ipc::Instance caller;
@@ -108,21 +106,18 @@ namespace casual
             cache.start();
          }};
 
-         common::queue::blocking::Send send;
-
          //
          // Send it to our forward (that will rout it to the ipc-queue that the forward is listening to)
          //
-         auto correlation = send( common::ipc::receive::id(), request);
+         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::id(), request);
 
          {
             //
             // Expect error reply to caller
             //
-            common::queue::blocking::Reader receive{ caller.output()};
 
             message::service::call::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( caller.output(), reply);
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
@@ -131,7 +126,7 @@ namespace casual
          }
 
          // make sure we quit
-         send( common::ipc::receive::id(), message::shutdown::Request{});
+         communication::ipc::blocking::send( communication::ipc::inbound::id() , message::shutdown::Request{});
 
          cache_thread.join();
 

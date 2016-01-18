@@ -53,7 +53,7 @@ namespace casual
 		   memory::set( m_uuid);
 		}
 
-		Uuid::Uuid(uuid_type& uuid)
+		Uuid::Uuid( const uuid_type& uuid)
 		{
 			uuid_copy( m_uuid, uuid);
 		}

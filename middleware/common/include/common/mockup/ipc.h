@@ -8,7 +8,9 @@
 #ifndef COMMON_MOCKUP_IPC_H_
 #define COMMON_MOCKUP_IPC_H_
 
-#include "common/ipc.h"
+//#include "common/ipc.h"
+#include "common/communication/message.h"
+#include "common/communication/ipc.h"
 #include "common/move.h"
 #include "common/platform.h"
 #include "common/message/type.h"
@@ -28,7 +30,7 @@ namespace casual
          {
             using id_type = platform::queue_id_type;
 
-            using transform_type = std::function< std::vector< common::ipc::message::Complete>( common::ipc::message::Complete&)>;
+            using transform_type = std::function< std::vector< communication::message::Complete>( communication::message::Complete&)>;
 
 
 
@@ -160,7 +162,7 @@ namespace casual
 
 
                id_type input() const;
-               common::ipc::receive::Queue& output();
+               communication::ipc::inbound::Device& output();
 
 
                //!

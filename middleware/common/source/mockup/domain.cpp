@@ -23,14 +23,14 @@ namespace casual
 
             namespace server
             {
-               std::vector< common::ipc::message::Complete> Connect::operator () ( message_type message)
+               std::vector< communication::message::Complete> Connect::operator () ( message_type message)
                {
                   Trace trace{ "mockup::broker::server::Connect", log::internal::debug};
 
                   reply_type reply;
                   reply.correlation = message.correlation;
 
-                  std::vector< common::ipc::message::Complete> result;
+                  std::vector< communication::message::Complete> result;
                   result.emplace_back( marshal::complete( reply));
 
                   log::internal::debug << "connect reply - message: " << range::make( result) << '\n';
@@ -42,7 +42,7 @@ namespace casual
 
             namespace client
             {
-               std::vector< common::ipc::message::Complete> Connect::operator () ( message_type message)
+               std::vector< communication::message::Complete> Connect::operator () ( message_type message)
                {
                   Trace trace{ "mockup::broker::client::Connect", log::internal::debug};
 
@@ -57,7 +57,7 @@ namespace casual
                      reply.resources.push_back( std::move( rm));
                   }
 
-                  std::vector< common::ipc::message::Complete> result;
+                  std::vector< communication::message::Complete> result;
                   result.emplace_back( marshal::complete( reply));
                   return result;
                }
@@ -75,7 +75,7 @@ namespace casual
                }
             }
 
-            std::vector< common::ipc::message::Complete> Lookup::operator () ( message_type message)
+            std::vector< communication::message::Complete> Lookup::operator () ( message_type message)
             {
                Trace trace{ "mockup::broker::Lookup", log::internal::debug};
 
@@ -95,14 +95,14 @@ namespace casual
 
                reply.correlation = message.correlation;
 
-               std::vector< common::ipc::message::Complete> result;
+               std::vector< communication::message::Complete> result;
                result.emplace_back( marshal::complete( reply));
                return result;
             }
 
             namespace lookup
             {
-               std::vector< common::ipc::message::Complete> Process::operator () ( message_type message)
+               std::vector< communication::message::Complete> Process::operator () ( message_type message)
                {
                   Trace trace{ "mockup::broker::lookup::Process", log::internal::debug};
 
@@ -113,7 +113,7 @@ namespace casual
                   auto reply = message::reverse::type( message);
                   reply.process.queue = mapping[ message.identification];
 
-                  std::vector< common::ipc::message::Complete> result;
+                  std::vector< communication::message::Complete> result;
                   result.emplace_back( marshal::complete( reply));
                   return result;
                }
@@ -132,7 +132,7 @@ namespace casual
                }
             }
 
-            std::vector< common::ipc::message::Complete> Call::operator () ( message_type message)
+            std::vector< communication::message::Complete> Call::operator () ( message_type message)
             {
                Trace trace{ "mockup::service::Call", log::internal::debug};
 
@@ -157,7 +157,7 @@ namespace casual
                reply.descriptor = message.descriptor;
 
 
-               std::vector< common::ipc::message::Complete> result;
+               std::vector< communication::message::Complete> result;
                result.emplace_back( marshal::complete( reply));
                return result;
             }
@@ -167,11 +167,11 @@ namespace casual
          namespace transaction
          {
 
-            std::vector< common::ipc::message::Complete> Commit::operator () ( message_type message)
+            std::vector< communication::message::Complete> Commit::operator () ( message_type message)
             {
                Trace trace{ "mockup::transaction::Commit", log::internal::debug};
 
-               std::vector< common::ipc::message::Complete> result;
+               std::vector< communication::message::Complete> result;
 
                {
                   common::message::transaction::commit::Reply reply;
@@ -190,7 +190,7 @@ namespace casual
                return result;
             }
 
-            std::vector< common::ipc::message::Complete> Rollback::operator () ( message_type message)
+            std::vector< communication::message::Complete> Rollback::operator () ( message_type message)
             {
                Trace trace{ "mockup::transaction::Rollback", log::internal::debug};
 
@@ -201,7 +201,7 @@ namespace casual
                reply.state = XA_OK;
                reply.trid = message.trid;
 
-               std::vector< common::ipc::message::Complete> result;
+               std::vector< communication::message::Complete> result;
                result.emplace_back( marshal::complete( reply));
                return result;
             }
@@ -355,7 +355,7 @@ namespace casual
 
             Broker::Broker( reply::Handler handler, dummy_t)
                : m_replier{ std::move( handler)}
-               , m_broker_replier_link{ mockup::ipc::broker::queue().output().id(), m_replier.input()}
+               , m_broker_replier_link{ mockup::ipc::broker::queue().output().connector().id(), m_replier.input()}
             {
 
             }
@@ -409,7 +409,7 @@ namespace casual
                                  reply.process = r.process;
                                  result.push_back( local::result( target.process, reply));
                               }
-                              m_state.singelton_request.erase( found.first);
+                              m_state.singelton_request.erase( found.begin());
                            }
                         }
                      }
@@ -549,7 +549,7 @@ namespace casual
 
                Manager::Manager( reply::Handler handler)
                   : m_replier{ std::move( handler)}
-                  , m_tm_replier_link{ mockup::ipc::transaction::manager::queue().output().id(), m_replier.input()}
+                  , m_tm_replier_link{ mockup::ipc::transaction::manager::queue().output().connector().id(), m_replier.input()}
                {
 
                }

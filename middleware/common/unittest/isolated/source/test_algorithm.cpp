@@ -26,6 +26,89 @@ namespace casual
 
       } // local
 
+      TEST( casual_common_algorithm_range, default_constructor__expoect_empty)
+      {
+         using range_type = range::type_t< std::vector< int>>;
+         range_type empty;
+
+         EXPECT_TRUE( empty.empty());
+         EXPECT_TRUE( empty.size() == 0);
+      }
+
+      TEST( casual_common_algorithm_position, overlap)
+      {
+         std::vector< int> container( 100);
+
+         EXPECT_TRUE( range::position::overlap( container, container));
+         EXPECT_TRUE( range::position::overlap( range::make( std::begin( container), 60), container));
+         EXPECT_TRUE( range::position::overlap( container, range::make( std::begin( container) + 40, 60)));
+         EXPECT_TRUE( range::position::overlap( range::make( std::begin( container), 60), range::make( std::begin( container) + 40, 60)));
+
+         EXPECT_FALSE( range::position::overlap( range::make( std::begin( container), 40), range::make( std::begin( container) + 60, 30)));
+      }
+
+      TEST( casual_common_algorithm_position, subtract_two_equal_ranges__expect_empty_result)
+      {
+         std::vector< int> container( 100);
+
+         auto result = range::position::subtract( container, container);
+
+         EXPECT_TRUE( std::get< 0>( result).empty());
+         EXPECT_TRUE( std::get< 1>( result).empty());
+      }
+
+      TEST( casual_common_algorithm_position, subtract_bigger_from_smaller__expect_empty_result)
+      {
+         std::vector< int> container( 100);
+
+         auto result = range::position::subtract( range::make( std::begin( container) + 10, 40), container);
+
+         EXPECT_TRUE( std::get< 0>( result).empty());
+         EXPECT_TRUE( std::get< 1>( result).empty());
+      }
+
+      TEST( casual_common_algorithm_position, subtract_right_overlapping__expect_first)
+      {
+         std::vector< int> container( 100);
+
+         auto result = range::position::subtract( container, range::make( std::begin( container) + 40, std::end( container)));
+
+         ASSERT_TRUE( ! std::get< 0>( result).empty());
+         ASSERT_TRUE( std::get< 0>( result).size() == 40);
+         ASSERT_TRUE( std::get< 0>( result).end() == std::begin( container) + 40);
+         EXPECT_TRUE( std::get< 1>( result).empty());
+      }
+
+      TEST( casual_common_algorithm_position, subtract_left_overlapping__expect_first)
+      {
+         std::vector< int> container( 100);
+
+         auto result = range::position::subtract( container, range::make( std::begin( container), 40));
+
+         ASSERT_TRUE( ! std::get< 0>( result).empty());
+         ASSERT_TRUE( std::get< 0>( result).size() == 60) << "std::get< 0>( result).size(): " << std::get< 0>( result).size();
+         ASSERT_TRUE( std::get< 0>( result).begin() == std::begin( container) + 40);
+         EXPECT_TRUE( std::get< 1>( result).empty());
+      }
+
+      TEST( casual_common_algorithm_position, subtract_smaller_from_larger_overlapping__expect_splitted_into_two_ranges)
+      {
+         std::vector< int> container( 100);
+
+         auto result = range::position::subtract( container, range::make( std::begin( container) + 20, 40));
+
+         ASSERT_TRUE( ! std::get< 0>( result).empty());
+         EXPECT_TRUE( std::get< 0>( result).size() == 20);
+         EXPECT_TRUE( std::get< 0>( result).begin() == std::begin( container));
+         EXPECT_TRUE( std::get< 0>( result).end() == std::begin( container) + 20);
+
+         ASSERT_TRUE( ! std::get< 1>( result).empty());
+         EXPECT_TRUE( std::get< 1>( result).size() == 40) << "std::get< 1>( result).size(): " << std::get< 1>( result).size();
+         EXPECT_TRUE( std::get< 1>( result).begin() == std::begin( container) + 60) << "std::distance( std::get< 1>( result).first, std::begin( container) + 60): " << std::distance( std::get< 1>( result).begin(), std::begin( container) + 60);
+         EXPECT_TRUE( std::get< 1>( result).end() == std::end( container)) << "std::distance( std::get< 1>( result).last, std::end( container)): " << std::distance( std::get< 1>( result).end(), std::end( container));
+      }
+
+
 
 
       TEST( casual_common_algorithm, sort)
@@ -387,80 +470,6 @@ namespace casual
 
          EXPECT_TRUE( target == "1234") << target;
 
-      }
-
-      TEST( casual_common_algorithm, range__add)
-      {
-         std::vector< int> origin{ 1, 2};
-
-         auto range1 = range::make( std::begin( origin), std::begin( origin) + 1);
-         auto range2 = range::make( std::begin( origin) + 1, std::begin( origin) + 2);
-
-         auto result = range1 + range2;
-
-         ASSERT_TRUE( result.size() == 2);
-         EXPECT_TRUE( *result.first == 1) << result;
-         EXPECT_TRUE( *result.first + 1 == 2) << result;
-      }
-
-
-      TEST( casual_common_algorithm, range__substract_upper_size_1_from_size_2)
-      {
-         std::vector< int> origin{ 1, 2};
-
-         auto range1 = range::make( std::begin( origin) + 1, std::begin( origin) + 2);
-
-         auto result = range::make( origin) - range1;
-
-         ASSERT_TRUE( result.size() == 1) << result;
-         EXPECT_TRUE( *result.first == 1) << result;
-      }
-
-      TEST( casual_common_algorithm, range__substract_lower_size_1_from_size_2)
-      {
-         std::vector< int> origin{ 1, 2};
-
-         auto range1 = range::make( std::begin( origin), std::begin( origin) + 1);
-
-         auto result = range::make( origin) - range1;
-
-         ASSERT_TRUE( result.size() == 1) << result;
-         EXPECT_TRUE( *result.first == 2) << result;
-      }
-
-      TEST( casual_common_algorithm, range__substract_upper_size_0_from_size_2)
-      {
-         std::vector< int> origin{ 1, 2};
-
-         auto range1 = range::make( std::end( origin), std::end( origin));
-
-         auto result = range::make( origin) - range1;
-
-         ASSERT_TRUE( result.size() == 2) << result;
-         EXPECT_TRUE( *result.first == 1) << result;
-      }
-
-      TEST( casual_common_algorithm, range__substract_lower_size_0_from_size_2)
-      {
-         std::vector< int> origin{ 1, 2};
-
-         auto range1 = range::make( std::begin( origin), std::begin( origin));
-
-         auto result = range::make( origin) - range1;
-
-         ASSERT_TRUE( result.size() == 2) << result;
-         EXPECT_TRUE( *result.first == 1) << result;
-      }
-
-      TEST( casual_common_algorithm, range__substract_size_1_from_size_1)
-      {
-         std::vector< int> origin{ 1};
-
-         auto range1 = range::make( std::begin( origin), std::begin( origin) + 1);
-
-         auto result = range::make( origin) - range1;
-
-         ASSERT_TRUE( result.size() == 0) << result;
       }
 
 

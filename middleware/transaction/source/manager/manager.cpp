@@ -14,7 +14,6 @@
 #include "common/server/handle.h"
 #include "common/server/lifetime.h"
 #include "common/trace.h"
-#include "common/queue.h"
 #include "common/environment.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -96,9 +95,7 @@ namespace casual
 
             while( ! m_state.ready())
             {
-               queue::blocking::Reader receive{ common::ipc::receive::queue(), std::ref( m_state)};
-
-               handler( receive.next( handler.types()));
+               handler( ipc::device().blocking_next( handler.types()));
             }
 
          }
@@ -178,10 +175,9 @@ namespace casual
       {
          void pump( State& state)
          {
-            auto& ipc = common::ipc::receive::queue();
-
             try
             {
+
 
                common::log::internal::transaction << "prepare message dispatch handlers\n";
 
@@ -205,9 +201,10 @@ namespace casual
                   handle::domain::resource::reply::Prepare{ state},
                   handle::domain::resource::reply::Commit{ state},
                   handle::domain::resource::reply::Rollback{ state},
-                  common::server::handle::basic_admin_call<>{
-                     ipc, admin::services( state), common::process::instance::transaction::manager::identity(), ipc, std::ref( state)},
-                  common::message::handle::ping( std::ref( state)),
+                  common::server::handle::basic_admin_call{
+                     ipc::device().device(), admin::services( state), common::process::instance::transaction::manager::identity(),
+                           ipc::device().error_handler()},
+                  common::message::handle::ping(),
 
                   //
                   // We discard the connect reply message
@@ -234,13 +231,12 @@ namespace casual
                         //
                         // We can only block if our backlog is empty
                         //
-                        queue::blocking::Reader queueReader{ ipc, std::ref( state)};
 
                         //
                         // Removed transaction-timeout from TM, since the semantics are not clear
                         // see commit 559916d9b84e4f84717cead8f2ee7e3d9fd561cd for previous implementation.
                         //
-                        handler( queueReader.next());
+                        handler( ipc::device().blocking_next());
 
                      }
 
@@ -250,11 +246,9 @@ namespace casual
                      // We also do a "busy wait" to try to get more done between each write.
                      //
 
-                     queue::non_blocking::Reader nonBlocking( ipc, std::ref( state));
-
                      auto count = common::platform::batch::transaction;
 
-                     while( ( handler( nonBlocking.next()) || --count > 0 ) &&
+                     while( ( handler( ipc::device().non_blocking_next()) || --count > 0 ) &&
                            state.persistentReplies.size() < common::platform::batch::transaction)
                      {
                         ;

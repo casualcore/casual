@@ -36,7 +36,7 @@ namespace casual
 
             struct Broker
             {
-               Broker( broker::State& state) : queue_id{ state.ipc().id()}, m_thread{
+               Broker( broker::State& state) : queue_id{ communication::ipc::inbound::id()}, m_thread{
                   &broker::message::pump, std::ref( state)
                }
                {
@@ -46,9 +46,8 @@ namespace casual
 
                ~Broker()
                {
-                  common::queue::blocking::Send send;
                   // make sure we quit
-                  send( queue_id, common::message::shutdown::Request{});
+                  communication::ipc::blocking::send( queue_id, common::message::shutdown::Request{});
                   m_thread.join();
                }
 
@@ -62,10 +61,6 @@ namespace casual
 
             struct domain_base
             {
-               domain_base() : state{ receive} {}
-
-
-               common::ipc::receive::Queue receive;
                broker::State state;
             };
 
@@ -216,16 +211,12 @@ namespace casual
             request.process = domain.server1.process();
             request.path = "/server/path";
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), request);
+            communication::ipc::blocking::send( broker.queue_id, request);
          }
 
          {
             common::message::server::connect::Reply reply;
-            common::queue::blocking::Reader receive{ domain.server1.output()};
-
-            receive( reply);
-
+            communication::ipc::blocking::receive( domain.server1.output(), reply);
          }
 
          auto& instance = domain.state.getInstance( domain.server1.process().pid);
@@ -246,16 +237,12 @@ namespace casual
 
             request.services = { { "service1"}, { "service2"}};
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), request);
+            communication::ipc::blocking::send( broker.queue_id, request);
          }
 
          {
             common::message::server::connect::Reply reply;
-            common::queue::blocking::Reader receive{ domain.server1.output()};
-
-            receive( reply);
-
+            communication::ipc::blocking::receive( domain.server1.output(), reply);
          }
 
          auto& instance = domain.state.getInstance( domain.server1.process().pid);
@@ -280,8 +267,7 @@ namespace casual
 
             request.services = { { "service1"}, { "service2"}};
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), request);
+            communication::ipc::blocking::send( broker.queue_id, request);
          }
 
          EXPECT_NO_THROW({
@@ -307,8 +293,7 @@ namespace casual
 
             request.services = { { "service1"}};
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), request);
+            communication::ipc::blocking::send( broker.queue_id, request);
          }
 
          EXPECT_TRUE( domain.state.getService( "service1").instances.empty());
@@ -327,12 +312,10 @@ namespace casual
             request.process = domain.server2.process();
             request.requested = "non_existent";
 
-            common::queue::blocking::Send send;
-            auto correlation = send( domain.receive.id(), request);
+            auto correlation = communication::ipc::blocking::send( broker.queue_id, request);
 
-            common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( domain.server2.output(), reply);
 
             EXPECT_TRUE( correlation == reply.correlation);
             EXPECT_FALSE( static_cast< bool>( reply.process));
@@ -352,12 +335,10 @@ namespace casual
             request.process = domain.server2.process();
             request.requested = "service1";
 
-            common::queue::blocking::Send send;
-            auto correlation = send( domain.receive.id(), request);
+            auto correlation = communication::ipc::blocking::send( broker.queue_id, request);
 
-            common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( domain.server2.output(), reply);
 
             EXPECT_TRUE( correlation == reply.correlation);
             EXPECT_TRUE( reply.process == domain.server1.process());
@@ -378,12 +359,10 @@ namespace casual
             request.process = domain.server2.process();
             request.requested = "service1";
 
-            common::queue::blocking::Send send;
-            auto correlation = send( domain.receive.id(), request);
+            auto correlation = communication::ipc::blocking::send( broker.queue_id, request);
 
-            common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( domain.server2.output(), reply);
 
             EXPECT_TRUE( correlation == reply.correlation);
             EXPECT_FALSE( static_cast< bool>( reply.process)) << "process: " <<  reply.process;
@@ -407,12 +386,11 @@ namespace casual
             request.requested = "service1";
             request.context =  common::message::service::lookup::Request::Context::no_reply;
 
-            common::queue::blocking::Send send;
-            auto correlation = send( domain.receive.id(), request);
+            auto correlation = communication::ipc::blocking::send( broker.queue_id, request);
 
-            common::queue::blocking::Reader receive{ domain.server2.output()};
+
             common::message::service::lookup::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( domain.server2.output(), reply);
 
             EXPECT_TRUE( correlation == reply.correlation);
             EXPECT_TRUE( reply.process == domain.state.forward) << "process: " <<  reply.process;
@@ -438,12 +416,10 @@ namespace casual
             request.process = domain.server2.process();
             request.requested = "service1";
 
-            common::queue::blocking::Send send;
-            correlation = send( domain.receive.id(), request);
+            correlation = communication::ipc::blocking::send( broker.queue_id, request);
 
-            common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( domain.server2.output(), reply);
 
             EXPECT_TRUE( correlation == reply.correlation);
             EXPECT_FALSE( static_cast< bool>( reply.process)) << "process: " <<  reply.process;
@@ -460,15 +436,13 @@ namespace casual
             ack.process = domain.server1.process();
             ack.service = "service1";
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), ack);
+            communication::ipc::blocking::send( broker.queue_id, ack);
 
             //
             // Expect an "idle" lookup-reply
             //
-            common::queue::blocking::Reader receive{ domain.server2.output()};
             common::message::service::lookup::Reply reply;
-            receive( reply);
+            communication::ipc::blocking::receive( domain.server2.output(), reply);
 
             EXPECT_TRUE( correlation == reply.correlation);
             EXPECT_TRUE( reply.process == domain.server1.process()) << "process: " <<  reply.process;
@@ -492,8 +466,7 @@ namespace casual
             common::message::forward::connect::Request connect;
             connect.process = domain.server2.process();
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), connect);
+            communication::ipc::blocking::send( broker.queue_id, connect);
          }
          EXPECT_TRUE( domain.state.forward == domain.server2.process());
       }
@@ -509,8 +482,7 @@ namespace casual
             common::message::traffic::monitor::connect::Request connect;
             connect.process = domain.traffic1.process();
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), connect);
+            communication::ipc::blocking::send( broker.queue_id, connect);
          }
          EXPECT_TRUE( domain.state.traffic.monitors.at( 0) == domain.traffic1.process().queue);
       }
@@ -526,15 +498,13 @@ namespace casual
                common::message::traffic::monitor::connect::Request connect;
                connect.process = domain.traffic1.process();
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), connect);
+               communication::ipc::blocking::send( broker.queue_id, connect);
             }
             {
                common::message::traffic::monitor::connect::Request connect;
                connect.process = domain.traffic2.process();
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), connect);
+               communication::ipc::blocking::send( broker.queue_id, connect);
             }
 
          }
@@ -553,8 +523,7 @@ namespace casual
             common::message::traffic::monitor::Disconnect disconnect;
             disconnect.process = domain.server2.process();
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), disconnect);
+            communication::ipc::blocking::send( broker.queue_id, disconnect);
          }
          EXPECT_TRUE( domain.state.traffic.monitors.empty());
       }
@@ -570,13 +539,12 @@ namespace casual
             common::message::transaction::manager::connect::Request connect;
             connect.process = domain.tm.process();
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), connect);
+            communication::ipc::blocking::send( broker.queue_id, connect);
 
             common::message::transaction::manager::Ready ready;
             ready.process = domain.tm.process();
             ready.success = true;
-            send( domain.receive.id(), ready);
+            communication::ipc::blocking::send( broker.queue_id, ready);
          }
          EXPECT_TRUE( domain.state.transaction_manager == domain.tm.process().queue);
          EXPECT_TRUE( domain.state.getInstance( domain.tm.process().pid).state == state::Server::Instance::State::idle);
@@ -595,8 +563,7 @@ namespace casual
             connect.process = domain.tm.process();
             connect.identification = tm_uuid;
 
-            common::queue::blocking::Send send;
-            send( domain.receive.id(), connect);
+            communication::ipc::blocking::send( broker.queue_id, connect);
 
          }
          EXPECT_TRUE( domain.state.singeltons.size() == 1);
@@ -616,27 +583,23 @@ namespace casual
                connect.process = domain.server1.process();
                connect.identification = some_uuid;
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), connect);
+               communication::ipc::blocking::send( broker.queue_id, connect);
             }
             {
                connect.process = domain.server2.process();
                connect.identification = some_uuid;
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), connect);
+               communication::ipc::blocking::send( broker.queue_id, connect);
             }
             common::message::server::connect::Reply reply;
 
             {
-               common::queue::blocking::Reader reader{ domain.server1.output()};
-               reader( reply);
+               communication::ipc::blocking::receive( domain.server1.output(), reply);
                EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
 
             }
             {
-               common::queue::blocking::Reader reader{ domain.server2.output()};
-               reader( reply);
+               communication::ipc::blocking::receive( domain.server2.output(), reply);
                EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::singleton);
             }
          }
@@ -655,16 +618,14 @@ namespace casual
                connect.process = domain.server1.process();
                connect.identification = some_uuid;
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), connect);
+               communication::ipc::blocking::send( broker.queue_id, connect);
             }
 
 
             {
                common::message::server::connect::Reply reply;
+               communication::ipc::blocking::receive( domain.server1.output(), reply);
 
-               common::queue::blocking::Reader reader{ domain.server1.output()};
-               reader( reply);
                EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
             }
 
@@ -673,12 +634,11 @@ namespace casual
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), request);
+               communication::ipc::blocking::send( broker.queue_id, request);
 
                common::message::lookup::process::Reply reply;
-               common::queue::blocking::Reader reader{ domain.server2.output()};
-               reader( reply);
+               communication::ipc::blocking::receive( domain.server2.output(), reply);
+
                EXPECT_TRUE( reply.process == domain.server1.process());
             }
          }
@@ -698,12 +658,11 @@ namespace casual
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), request);
+               communication::ipc::blocking::send( broker.queue_id, request);
 
                common::message::lookup::process::Reply reply;
-               common::queue::blocking::Reader reader{ domain.server2.output()};
-               reader( reply);
+               communication::ipc::blocking::receive( domain.server2.output(), reply);
+
                EXPECT_TRUE( reply.process.pid == 0);
                EXPECT_TRUE( reply.process.queue == 0);
 
@@ -726,8 +685,7 @@ namespace casual
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), request);
+               communication::ipc::blocking::send( broker.queue_id, request);
             }
          }
          ASSERT_TRUE( domain.state.pending.process_lookup.size() == 1);
@@ -750,8 +708,7 @@ namespace casual
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), request);
+               communication::ipc::blocking::send( broker.queue_id, request);
             }
 
             {
@@ -759,20 +716,18 @@ namespace casual
                connect.process = domain.server1.process();
                connect.identification = some_uuid;
 
-               common::queue::blocking::Send send;
-               send( domain.receive.id(), connect);
+               communication::ipc::blocking::send( broker.queue_id, connect);
 
                common::message::server::connect::Reply reply;
+               communication::ipc::blocking::receive( domain.server1.output(), reply);
 
-               common::queue::blocking::Reader reader{ domain.server1.output()};
-               reader( reply);
                EXPECT_TRUE( reply.directive == common::message::server::connect::Reply::Directive::start);
             }
 
             {
                common::message::lookup::process::Reply reply;
-               common::queue::blocking::Reader reader{ domain.server2.output()};
-               reader( reply);
+               communication::ipc::blocking::receive( domain.server2.output(), reply);
+
                EXPECT_TRUE( reply.process == domain.server1.process());
 
             }

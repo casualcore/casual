@@ -7,6 +7,7 @@
 
 #include "common/message/handle.h"
 #include "common/exception.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -22,6 +23,22 @@ namespace casual
                throw exception::Shutdown{ "shutdown " + process::path()};
             }
 
+            void Ping::operator () ( server::ping::Request& message)
+            {
+               log::internal::debug << "pinged by process: " << message.process << '\n';
+
+               server::ping::Reply reply;
+               reply.correlation = message.correlation;
+               reply.process = process::handle();
+               reply.uuid = process::uuid();
+
+               communication::ipc::outbound::Device ipc{ message.process.queue};
+
+               //
+               // We ignore signals
+               //
+               ipc.send( reply, communication::ipc::policy::ignore::signal::Blocking{});
+            }
 
          } // handle
       } // message

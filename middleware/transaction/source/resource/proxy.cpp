@@ -9,12 +9,12 @@
 
 #include "common/message/transaction.h"
 #include "common/exception.h"
-#include "common/queue.h"
 #include "common/process.h"
 #include "common/trace.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/internal/trace.h"
+#include "common/communication/ipc.h"
 
 #include "sf/log.h"
 
@@ -40,10 +40,8 @@ namespace casual
             };
 
 
-            template< typename TQ>
             struct basic_open : public Base
             {
-               using tm_queue_type = TQ;
                using reply_type = message::transaction::resource::connect::Reply;
 
                using Base::Base;
@@ -62,8 +60,7 @@ namespace casual
 
                   common::trace::Outcome logConnect{ "resource connect to transaction monitor", common::log::internal::transaction};
 
-                  tm_queue_type m_tmQueue{ m_state.tm_queue};
-                  m_tmQueue( reply);
+                  communication::ipc::blocking::send( m_state.tm_queue, reply);
 
                   if( reply.state != XA_OK)
                   {
@@ -72,10 +69,9 @@ namespace casual
                }
             };
 
-            template< typename M, typename R, typename P, typename TQ>
+            template< typename M, typename R, typename P>
             struct basic_handler : public Base
             {
-               using tm_queue_type = TQ;
                using message_type = M;
                using reply_type = R;
                using policy_type = P;
@@ -97,8 +93,7 @@ namespace casual
 
                   reply.statistics.end = platform::clock_type::now();
 
-                  tm_queue_type m_tmQueue{ m_state.tm_queue};
-                  m_tmQueue( reply);
+                  communication::ipc::blocking::send( m_state.tm_queue, reply);
 
                }
             };
@@ -158,26 +153,23 @@ namespace casual
 
             } // policy
 
-            using Open = basic_open< queue::blocking::Writer>;
+            using Open = basic_open;
 
             using Prepare = basic_handler<
                   message::transaction::resource::prepare::Request,
                   message::transaction::resource::prepare::Reply,
-                  policy::Prepare,
-                  queue::blocking::Writer>;
+                  policy::Prepare>;
 
 
             using Commit = basic_handler<
                   message::transaction::resource::commit::Request,
                   message::transaction::resource::commit::Reply,
-                  policy::Commit,
-                  queue::blocking::Writer>;
+                  policy::Commit>;
 
             using Rollback = basic_handler<
                   message::transaction::resource::rollback::Request,
                   message::transaction::resource::rollback::Reply,
-                  policy::Rollback,
-                  queue::blocking::Writer>;
+                  policy::Rollback>;
 
 
             namespace domain
@@ -185,21 +177,18 @@ namespace casual
                using Prepare = basic_handler<
                      message::transaction::resource::domain::prepare::Request,
                      message::transaction::resource::domain::prepare::Reply,
-                     policy::Prepare,
-                     queue::blocking::Writer>;
+                     policy::Prepare>;
 
 
                using Commit = basic_handler<
                      message::transaction::resource::domain::commit::Request,
                      message::transaction::resource::domain::commit::Reply,
-                     policy::Commit,
-                     queue::blocking::Writer>;
+                     policy::Commit>;
 
                using Rollback = basic_handler<
                      message::transaction::resource::domain::rollback::Request,
                      message::transaction::resource::domain::rollback::Reply,
-                     policy::Rollback,
-                     queue::blocking::Writer>;
+                     policy::Rollback>;
             } // domain
 
 
@@ -265,8 +254,10 @@ namespace casual
 
             common::log::internal::transaction << "start message pump\n";
 
-            common::queue::blocking::Reader receiveQueue( common::ipc::receive::queue());
-            message::dispatch::pump( handler, receiveQueue);
+            while( handler( communication::ipc::inbound::device().next( communication::ipc::policy::Blocking{})))
+            {
+               ;
+            }
 
          }
       } // resource

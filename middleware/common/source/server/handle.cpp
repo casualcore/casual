@@ -17,19 +17,15 @@ namespace casual
       {
          message::server::connect::Reply connect( const Uuid& identification)
          {
-            Connect< queue::policy::NoAction> connect;
-
-            return connect( ipc::receive::queue(), identification, {});
+            return connect( communication::ipc::inbound::device(), identification, {});
          }
 
-         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services)
+         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services)
          {
-            Connect< queue::policy::NoAction> connect;
-
-            return connect( ipc, std::move( services));
+            return connect( ipc, uuid::empty(), std::move( services), nullptr);
          }
 
-         message::server::connect::Reply connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
          {
             auto reply = connect( ipc, std::move( services));
 
@@ -43,7 +39,7 @@ namespace casual
 
             namespace policy
             {
-               void Default::connect( ipc::receive::Queue& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Default::connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                {
 
                   //
@@ -55,8 +51,7 @@ namespace casual
 
                void Default::reply( platform::queue_id_type id, message::service::call::Reply& message)
                {
-                  reply_writer writer{ id };
-                  writer( message);
+                  communication::ipc::blocking::send( id, message);
                }
 
                void Default::ack( const message::service::call::callee::Request& message)
@@ -64,8 +59,8 @@ namespace casual
                   message::service::call::ACK ack;
                   ack.process = process::handle();
                   ack.service = message.service.name;
-                  blocking_broker_writer brokerWriter;
-                  brokerWriter( ack);
+
+                  communication::ipc::blocking::send( communication::ipc::broker::id(), ack);
                }
 
 
@@ -75,9 +70,7 @@ namespace casual
 
                   try
                   {
-                     queue::blocking::Send send;
-
-                     send( id, event);
+                     communication::ipc::blocking::send( id, event);
                   }
                   catch( ...)
                   {
@@ -190,8 +183,57 @@ namespace casual
 
                   log::internal::debug << "policy::Default::forward - request:" << request << std::endl;
 
-                  queue::blocking::Send send;
-                  send( target.process.queue, request);
+                  communication::ipc::blocking::send( target.process.queue, request);
+               }
+
+               Admin::Admin( const Uuid& identification, communication::error::type handler, communication::ipc::inbound::Device& ipc)
+                  : m_identification{ identification},
+                    m_error_handler{ std::move( handler)},
+                    m_inbound( ipc)
+               {}
+
+              Admin::Admin( const Uuid& identification, communication::error::type handler) : Admin( identification, std::move( handler), communication::ipc::inbound::device()) {}
+
+              Admin:: Admin( communication::error::type handler) : Admin( uuid::empty(), std::move( handler)) {}
+
+
+               void Admin::connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               {
+                  server::connect( m_inbound, m_identification, std::move( services), m_error_handler);
+               }
+
+               void Admin::reply( platform::queue_id_type id, message::service::call::Reply& message)
+               {
+                  communication::ipc::blocking::send( id, message, m_error_handler);
+               }
+
+               void Admin::ack( const message::service::call::callee::Request& message)
+               {
+                  message::service::call::ACK ack;
+                  ack.process = common::process::handle();
+                  ack.service = message.service.name;
+
+                  communication::ipc::blocking::send( communication::ipc::broker::id(), ack, m_error_handler);
+               }
+
+
+               void Admin::statistics( platform::queue_id_type id, message::traffic::Event&)
+               {
+                  // no-op
+               }
+
+               void Admin::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
+               {
+                  // no-op
+               }
+               void Admin::transaction( message::service::call::Reply& message, int return_state)
+               {
+                  // no-op
+               }
+
+               void Admin::forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+               {
+                  throw common::exception::xatmi::System{ "can't forward within an administration server"};
                }
 
             } // policy

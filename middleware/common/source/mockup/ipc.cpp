@@ -8,7 +8,10 @@
 #include "common/mockup/ipc.h"
 
 
-#include "common/queue.h"
+//#include "common/queue.h"
+
+#include "common/communication/ipc.h"
+
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/file.h"
@@ -37,7 +40,7 @@ namespace casual
    namespace common
    {
 
-      namespace ipc
+      namespace communication
       {
          namespace message
          {
@@ -50,7 +53,6 @@ namespace casual
               marshler << value.correlation;
               marshler << value.payload;
               marshler << value.type;
-              marshler << value.offset;
 
             }
 
@@ -60,10 +62,10 @@ namespace casual
               unmarshler >> value.correlation;
               unmarshler >> value.payload;
               unmarshler >> value.type;
-              unmarshler >> value.offset;
             }
          } // message
-      } // ipc
+      } // communication
+
 
 
       namespace mockup
@@ -93,29 +95,31 @@ namespace casual
                struct Worker
                {
 
-                  using cache_type = std::deque< common::ipc::message::Complete>;
+                  using cache_type = std::deque< communication::message::Complete>;
 
                   using transform_type = ipc::transform_type;
 
                   struct State
                   {
 
-                     State( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination, transform_type transform)
+                     State( communication::ipc::inbound::Device&& source, common::platform::queue_id_type destination, transform_type transform)
                         : source( std::move( source)), destination( destination), transform( std::move( transform)) {}
 
-                     common::ipc::receive::Queue source;
-                     common::ipc::send::Queue destination;
+                     communication::ipc::inbound::Device source;
+                     //common::ipc::receive::Queue source;
+                     communication::ipc::outbound::Device destination;
+                     //common::ipc::send::Queue destination;
                      transform_type transform;
 
                      cache_type cache;
                   };
 
-                  void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination)
+                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::queue_id_type destination)
                   {
                      (*this)( std::move( source), destination, nullptr);
                   }
 
-                  void operator () ( common::ipc::receive::Queue&& source, common::platform::queue_id_type destination, transform_type transform)
+                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::queue_id_type destination, transform_type transform)
                   {
                      //!
                      //! Block all signals
@@ -126,6 +130,7 @@ namespace casual
 
                      try
                      {
+                        Trace trace{ "implemenation::Worker::operator()", log::internal::ipc};
 
                         while( true)
                         {
@@ -138,7 +143,7 @@ namespace casual
                      catch( const Disconnect&)
                      {
                         log::internal::ipc << "thread " << std::this_thread::get_id() << " disconnects - source: "
-                              <<  state.source.id() << " destination: " << state.destination.id() << std::endl;
+                              <<  state.source.connector() << " destination: " << state.destination.connector() << std::endl;
                      }
                      catch( ...)
                      {
@@ -154,30 +159,36 @@ namespace casual
                   {
 
                      // We block if the queue is empty
-                     const long flags = state.cache.empty() ? 0 : common::ipc::receive::Queue::cNoBlocking;
+                     auto next = [&](){
+                        if( state.cache.empty())
+                        {
+                           return state.source.next( communication::ipc::policy::ignore::signal::Blocking{});
+                        }
+                        return  state.source.next( communication::ipc::policy::ignore::signal::non::Blocking{});
+                     };
 
 
+                     auto message = next();
 
-                     auto message = state.source( flags);
-
-                     log::internal::ipc << "read from source: " <<  state.source.id() << " - flags: " << flags << " - message: " << range::make( message) << std::endl;
-
-                     if( message.empty())
+                     if( ! message)
                         return;
 
-                     if( check( state, message.front()))
+                     log::internal::ipc << "read from source: " <<  state.source.connector() << " - message: " << message << std::endl;
+
+
+                     if( check( state, message))
                      {
                         if( state.transform)
                         {
-                           auto transformed = state.transform( message.front());
+                           auto transformed = state.transform( message);
 
                            if( transformed.empty())
                            {
-                              state.cache.push_back( std::move( message.front()));
+                              state.cache.push_back( std::move( message));
                            }
                            else
                            {
-                              for( auto& complete : state.transform( message.front()))
+                              for( auto& complete : state.transform( message))
                               {
                                  state.cache.push_back( std::move( complete));
                               }
@@ -186,7 +197,7 @@ namespace casual
                         }
                         else
                         {
-                           state.cache.push_back( std::move( message.front()));
+                           state.cache.push_back( std::move( message));
                         }
                      }
 
@@ -196,16 +207,16 @@ namespace casual
                   {
                      if( ! state.cache.empty())
                      {
-                        log::internal::ipc << "write to destination: " <<  state.destination.id() << " - message: " << state.cache.front() << std::endl;
+                        log::internal::ipc << "write to destination: " <<  state.destination.connector() << " - message: " << state.cache.front() << std::endl;
 
-                        if( state.destination( state.cache.front(), common::ipc::send::Queue::cNoBlocking))
+                        if( state.destination.put( state.cache.front(), communication::ipc::policy::ignore::signal::non::Blocking{}))
                         {
                            state.cache.pop_front();
                         }
                      }
                   }
 
-                  bool check( State& state, const common::ipc::message::Complete& message)
+                  bool check( State& state, const communication::message::Complete& message)
                   {
                      switch( message.type)
                      {
@@ -215,6 +226,8 @@ namespace casual
                         }
                         case local::message::Clear::type():
                         {
+                           Trace trace{ "Worker::check clear queue", log::internal::ipc};
+
                            decltype( state.cache) empty;
                            std::swap( state.cache, empty);
 
@@ -222,7 +235,7 @@ namespace casual
                            {
                               process::sleep( std::chrono::microseconds( 10));
                            }
-                           while( ! state.source( common::ipc::receive::Queue::cNoBlocking).empty());
+                           while( state.source.next( communication::ipc::policy::ignore::signal::non::Blocking{}));
 
                            return false;
                         }
@@ -235,22 +248,16 @@ namespace casual
 
                void shutdown_thread( std::thread& thread, id_type input)
                {
+                  Trace trace{ "shutdown_thread", log::internal::ipc};
+
+                  log::internal::ipc << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
+
                   try
                   {
-                     common::ipc::message::Transport transport;
-                     transport.type( local::message::Disconnect::type());
+                     Trace trace{ "send disconnect message", log::internal::ipc};
+                     local::message::Disconnect message;
 
-                     bool resend = true;
-
-                     while( resend)
-                     {
-                        try
-                        {
-                           common::ipc::message::ignore::signal::send( input, transport, 0);
-                           resend = false;
-                        }
-                        catch( const exception::signal::base&) {}
-                     }
+                     communication::ipc::blocking::send( input, message);
                   }
                   catch( const std::exception& exception)
                   {
@@ -263,6 +270,7 @@ namespace casual
 
                   try
                   {
+                     Trace trace{ "thread join", log::internal::ipc};
                      thread.join();
                   }
                   catch( const std::exception& exception)
@@ -282,8 +290,8 @@ namespace casual
                      //
                      // We use an ipc-queue that does not check signals
                      //
-                     common::ipc::receive::Queue ipc;
-                     input = ipc.id();
+                     communication::ipc::inbound::Device ipc;
+                     input = ipc.connector().id();
 
                      m_thread = std::thread{ implementation::Worker{}, std::move( ipc), output, std::move( transform)};
                   }
@@ -295,6 +303,8 @@ namespace casual
 
                   ~Router()
                   {
+                     Trace trace{ "~Router()", log::internal::ipc};
+
                      shutdown_thread( m_thread, input);
                   }
 
@@ -306,13 +316,19 @@ namespace casual
                struct Replier
                {
 
-                  void operator () ( common::ipc::receive::Queue&& input, reply::Handler replier)
+                  void operator () ( communication::ipc::inbound::Device&& input, reply::Handler replier)
                   {
+                     //
+                     // we need to block all signals
+                     //
+                     signal::thread::scope::Block block;
+
+
                      try
                      {
                         while( true)
                         {
-                           auto check_message = [&]( common::ipc::message::Complete& message)
+                           auto check_message = [&]( communication::message::Complete& message)
                               {
                                  switch( message.type)
                                  {
@@ -324,12 +340,11 @@ namespace casual
                                     {
                                        m_pending.clear();
 
-                                       common::queue::non_blocking::Reader reader{ input};
                                        do
                                        {
                                           process::sleep( std::chrono::microseconds{ 10});
                                        }
-                                       while( ! reader.next().empty());
+                                       while( ! input.next( communication::ipc::policy::ignore::signal::non::Blocking{}));
                                        break;
                                     }
                                     default:
@@ -342,11 +357,10 @@ namespace casual
 
                            auto send_messages = [&]( std::vector< reply::result_t> messages)
                               {
-                                 common::queue::non_blocking::Send send;
-
                                  for( auto& message : messages)
                                  {
-                                    if( ! send.send( message.queue, message.complete))
+                                    communication::ipc::outbound::Device send{ message.queue};
+                                    if( ! send.put( message.complete, communication::ipc::policy::ignore::signal::non::Blocking{}))
                                     {
                                        m_pending.push_back( std::move( message));
                                     }
@@ -355,8 +369,7 @@ namespace casual
 
                            if( m_pending.empty())
                            {
-                              common::queue::blocking::Reader reader{ input};
-                              auto message = reader.next();
+                              auto message = input.next( communication::ipc::policy::ignore::signal::Blocking{});
 
                               check_message( message);
 
@@ -365,14 +378,13 @@ namespace casual
                            else
                            {
 
-                              common::queue::non_blocking::Reader reader{ input};
-                              auto message = reader.next();
+                              auto message = input.next( communication::ipc::policy::ignore::signal::non::Blocking{});
 
-                              if( ! message.empty())
+                              if( message)
                               {
-                                 check_message( message.front());
+                                 check_message( message);
 
-                                 send_messages( replier( message.front()));
+                                 send_messages( replier( message));
                               }
                               process::sleep( std::chrono::microseconds{ 10});
 
@@ -431,14 +443,16 @@ namespace casual
             {
                Implementation( reply::Handler replier)
                {
-                  common::ipc::receive::Queue ipc;
-                  input = ipc.id();
+                  communication::ipc::inbound::Device ipc;
+                  input = ipc.connector().id();
 
                   m_thread = std::thread{ implementation::Replier{}, std::move( ipc), std::move( replier)};
                }
 
                ~Implementation()
                {
+                  Trace trace{ "Replier::~Implementation()", log::internal::ipc};
+
                   implementation::shutdown_thread( m_thread, input);
                }
 
@@ -473,45 +487,70 @@ namespace casual
 
                   m_thread = std::thread{ []( id_type input, id_type output)
                   {
-                     std::deque< common::ipc::message::Transport> cache;
-
-                     common::ipc::message::Transport transport;
-
-                     while( true)
+                     try
                      {
-                        if( cache.empty())
-                        {
-                           //
-                           // We block
-                           //
-                           common::ipc::message::ignore::signal::receive( input, transport, 0);
-                           cache.push_back( transport);
-                        }
-                        else if( common::ipc::message::ignore::signal::receive( input, transport, common::ipc::message::Flags::cNoBlocking))
-                        {
-                           cache.push_back( transport);
-                        }
-                        else
-                        {
-                           common::process::sleep( std::chrono::microseconds{ 10});
-                        }
+                        Trace trace{ "Link::Implementation thread function", log::internal::ipc};
 
-                        if( transport.type() == local::message::Disconnect::type())
+                        signal::thread::scope::Block block_signals;
+
+
+                        if( ! ( communication::ipc::exists( input) && communication::ipc::exists( output)))
                         {
-                           common::ipc::message::ignore::signal::send( output, transport, common::ipc::message::Flags::cNoBlocking);
+                           log::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << std::endl;
                            return;
                         }
+                        log::internal::ipc << "mockup link between [" << input << "] --> [" << output << "] established" << std::endl;
 
-                        if( ! cache.empty() && common::ipc::message::ignore::signal::send( output, cache.front(), common::ipc::message::Flags::cNoBlocking))
+                        using message_type = communication::ipc::message::Transport;
+                        std::deque< message_type> cache;
+
+                        message_type transport;
+
+                        while( true)
                         {
-                           cache.pop_front();
+                           if( cache.empty())
+                           {
+                              //
+                              // We block
+                              //
+                              communication::ipc::native::receive( input, transport, 0);
+                              cache.push_back( transport);
+                           }
+                           else if( communication::ipc::native::receive( input, transport, communication::ipc::native::c_non_blocking))
+                           {
+                              cache.push_back( transport);
+                           }
+                           else
+                           {
+                              common::process::sleep( std::chrono::microseconds{ 10});
+                           }
+
+                           if( transport.type() == local::message::Disconnect::type())
+                           {
+                              //communication::ipc::native::send( output, transport, communication::ipc::native::c_non_blocking);
+
+                              //log::internal::ipc << "mockup link got disconnect messsage - send it forward to [" << output << "] and return from thread\n";
+                              log::internal::ipc << "mockup link got disconnect message - action: shutdown thread\n";
+                              return;
+                           }
+
+                           if( ! cache.empty() && communication::ipc::native::send( output, cache.front(), communication::ipc::native::c_non_blocking))
+                           {
+                              cache.pop_front();
+                           }
                         }
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
                      }
                   }, input, output};
                }
 
                ~Implementation()
                {
+                  Trace trace{ "Link::~Implementation()", log::internal::ipc};
+
                   implementation::shutdown_thread( m_thread, input);
                }
 
@@ -542,11 +581,11 @@ namespace casual
             struct Instance::Implementation
             {
                Implementation( platform::pid_type pid, transform_type transform)
-                   : router( output.id(), std::move( transform)), process{ pid, router.input()}
+                   : router( output.connector().id(), std::move( transform)), process{ pid, router.input()}
                {
                }
 
-               common::ipc::receive::Queue output;
+               communication::ipc::inbound::Device output;
                Router router;
                common::process::Handle process;
             };
@@ -574,16 +613,18 @@ namespace casual
                return m_implementation->router.input();
             }
 
-            common::ipc::receive::Queue& Instance::output()
+            communication::ipc::inbound::Device& Instance::output()
             {
                return m_implementation->output;
             }
 
             void Instance::clear()
             {
-               common::queue::blocking::Writer send{ input()};
+               Trace trace{ "mockup::Instance::clear", log::internal::ipc };
+
+               communication::ipc::outbound::Device ipc{ input()};
                local::message::Clear message;
-               send( message);
+               ipc.send( message, communication::ipc::policy::ignore::signal::Blocking{});
 
                std::size_t count = 0;
 
@@ -592,7 +633,7 @@ namespace casual
                   ++count;
                   process::sleep( std::chrono::milliseconds( 10));
                }
-               while( ! m_implementation->output( common::ipc::receive::Queue::cNoBlocking).empty());
+               while( m_implementation->output.next( communication::ipc::policy::ignore::signal::non::Blocking{}));
 
 
                log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;

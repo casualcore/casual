@@ -6,7 +6,7 @@
 //!
 
 #include "common/server/lifetime.h"
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 
 #include "common/trace.h"
 #include "common/internal/log.h"
@@ -37,11 +37,10 @@ namespace casual
                   for( auto& handle : servers)
                   {
                      message::shutdown::Request message;
-                     queue::non_blocking::basic_send< queue::policy::Timeout> send;
 
                      try
                      {
-                        if( send( handle.queue, message))
+                        if( communication::ipc::non::blocking::send( handle.queue, message))
                         {
                            requested.push_back( handle.pid);
                         }

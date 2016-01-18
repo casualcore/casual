@@ -89,9 +89,17 @@ namespace casual
 			namespace file
          {
 
+            namespace broker
+            {
+               std::string device()
+               {
+                  return domain::singleton::path() + "/.casual-broker-queue";
+               }
+            } // broker
+
             std::string brokerQueue()
             {
-               return domain::singleton::path() + "/.casual-broker-queue";
+               return broker::device();
             }
 
             std::string configuration()
@@ -249,7 +257,7 @@ namespace casual
                      //
                      // We got a split. Make sure we consume 'first-token'
                      //
-                     token.first += range::make( first).size();
+                     token.advance( range::make( first).size());
 
 
                      splitted = range::divide_first( token, last);
@@ -267,7 +275,7 @@ namespace casual
                      result.emplace_back( std::get< 0>( splitted), Type::token);
 
                      auto next = std::get< 1>( splitted);
-                     next.first += range::make( last).size();
+                     next.advance( range::make( last).size());
 
                      for( auto& value : split( next, first, last))
                      {
@@ -294,12 +302,12 @@ namespace casual
                {
                   case local::Type::text:
                   {
-                     result.append( token.value.first, token.value.last);
+                     result.append( std::begin( token.value), std::end( token.value));
                      break;
                   }
                   case local::Type::token:
                   {
-                     result += variable::get( std::string{ token.value.first, token.value.last});
+                     result += variable::get( std::string{ std::begin( token.value), std::end( token.value)});
                      break;
                   }
                }

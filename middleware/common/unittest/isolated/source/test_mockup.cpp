@@ -11,7 +11,7 @@
 
 #include "common/message/service.h"
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/log.h"
 #include "common/trace.h"
 #include "common/internal/log.h"
@@ -49,18 +49,15 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( instance.input());
-
-            write( request);
+            communication::ipc::blocking::send( instance.input(), request);
          }
 
          {
-            queue::blocking::Reader read( instance.output());
             message::service::lookup::Request request;
-            read( request);
+            communication::ipc::blocking::receive( instance.output(), request);
 
             EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.process.queue == ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
 
          }
       }
@@ -79,25 +76,22 @@ namespace casual
          //
          // Link "output" of source to "input" of destination
          //
-         mockup::ipc::Link link{ source.output().id(), destination.input()};
+         mockup::ipc::Link link{ source.output().connector().id(), destination.input()};
 
          {
             message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( source.input());
-
-            write( request);
+            communication::ipc::blocking::send( source.input(), request);
          }
 
          {
-            queue::blocking::Reader read( destination.output());
             message::service::lookup::Request request;
-            read( request);
+            communication::ipc::blocking::receive( destination.output(), request);
 
             EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.process.queue == ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
 
          }
       }
@@ -119,21 +113,18 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( instance.input());
-
             const std::string temp = "service_";
 
             for( int count = 0; count < 200; ++count)
             {
                request.requested = temp + std::to_string( count);
-               write( request);
+               communication::ipc::blocking::send( instance.input(), request);
             }
          }
 
          {
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
-            queue::blocking::Reader read( instance.output());
             message::service::lookup::Request request;
 
             const std::string temp = "service_";
@@ -142,10 +133,10 @@ namespace casual
             {
                const auto service = temp + std::to_string( count);
 
-               read( request);
+               communication::ipc::blocking::receive( instance.output(), request);
 
                EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
-               EXPECT_TRUE( request.process.queue == ipc::receive::id());
+               EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
             }
          }
       }
@@ -162,7 +153,7 @@ namespace casual
          //
          // Link "output" of source to "input" of destination
          //
-         mockup::ipc::Link link{ source.output().id(), destination.input()};
+         mockup::ipc::Link link{ source.output().connector().id(), destination.input()};
 
 
          {
@@ -170,21 +161,18 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( source.input());
-
             const std::string temp = "service_";
 
             for( int count = 0; count < 200; ++count)
             {
                request.requested = temp + std::to_string( count);
-               write( request);
+               communication::ipc::blocking::send( source.input(), request);
             }
          }
 
          {
             trace::Scope trace( "read( ipc::receive::queue())  200");
 
-            queue::blocking::Reader read( destination.output());
             message::service::lookup::Request request;
 
             const std::string temp = "service_";
@@ -193,13 +181,14 @@ namespace casual
             {
                const auto service = temp + std::to_string( count);
 
-               read( request);
+               communication::ipc::blocking::receive( destination.output(), request);
 
                EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
-               EXPECT_TRUE( request.process.queue == ipc::receive::id());
+               EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
             }
          }
       }
+
 
       TEST( casual_common_mockup, ipc_router_one_messages)
       {
@@ -208,27 +197,23 @@ namespace casual
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
-         mockup::ipc::Router router{ ipc::receive::id()};
-
-         //ipc::receive::queue().clear();
+         mockup::ipc::Router router{ communication::ipc::inbound::id()};
 
          {
             message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( router.input());
-            write( request);
+            communication::ipc::blocking::send( router.input(), request);
          }
 
          {
 
-            queue::blocking::Reader read( ipc::receive::queue());
             message::service::lookup::Request request;
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
 
-            read( request);
             EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.process.queue == ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
 
          }
       }
@@ -241,7 +226,7 @@ namespace casual
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
-         mockup::ipc::Router router{ ipc::receive::id()};
+         mockup::ipc::Router router{ communication::ipc::inbound::id()};
 
          //ipc::receive::queue().clear();
 
@@ -250,11 +235,9 @@ namespace casual
             request.requested = "someService";
             request.process = process::handle();
 
-            queue::blocking::Writer write( router.input());
-
             for( auto count = 0; count < 200; ++count)
             {
-               write( request);
+               communication::ipc::blocking::send( router.input(), request);
             }
 
 
@@ -262,17 +245,14 @@ namespace casual
          }
 
          {
-            auto read = queue::blocking::reader( ipc::receive::queue());
-            message::service::lookup::Request request;
-
-
             for( auto count = 0; count < 200; ++count)
             {
+               message::service::lookup::Request request;
+               communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
 
-               read( request);
                //EXPECT_TRUE( read( request)) << "count: " << count;
                EXPECT_TRUE( request.requested == "someService");
-               EXPECT_TRUE( request.process.queue == ipc::receive::id());
+               EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
             }
             common::log::debug << "environment::directory::domain(): " << environment::directory::domain() << std::endl;
 

@@ -249,17 +249,19 @@ namespace casual
          using reference = typename std::iterator_traits< iterator>::reference;
          using difference_type = typename std::iterator_traits< iterator>::difference_type;
 
-         Range() : last( first) {}
-         Range( Iter first, Iter last) : first( first), last( last) {}
+         Range() : m_size{ 0} {}
+         Range( iterator first, std::size_t size) : m_first( first), m_size( size) {}
+         Range( iterator first, iterator last) : Range( first, std::distance( first, last)) {}
+
 
          std::size_t size() const
          {
-            return std::distance( first, last);
+            return m_size;
          }
 
          bool empty() const
          {
-            return first == last;
+            return m_size == 0;
          }
 
          operator bool () const
@@ -271,35 +273,42 @@ namespace casual
          operator T() const = delete;
 
 
-         auto operator * () -> decltype( *std::declval< iterator>()) { return *first;}
-         auto operator * () const -> decltype( *std::declval< iterator>()) { return *first;}
+         reference operator * () { return *m_first;}
+         const reference operator * () const { return *m_first;}
 
 
-         iterator operator -> () { return first;}
-         //const value_type* operator -> () const { return &(*first);}
+         iterator operator -> () { return m_first;}
+
 
          Range operator ++ ()
          {
             Range other{ *this};
-            ++first;
+            advance( 1);
             return other;
          }
 
          Range& operator ++ ( int)
          {
-            ++first;
+            advance( 1);
             return *this;
          }
 
-         iterator begin() const { return first;}
-         iterator end() const { return last;}
+         iterator begin() const { return m_first;}
+         iterator end() const { return m_first + m_size;}
+
+         void advance( std::size_t size)
+         {
+            //assert( size <= m_size);
+            m_first += size;
+            m_size -= size;
+         }
 
 
          pointer data()
          {
             if( ! empty())
             {
-               return &( *first);
+               return &( *m_first);
             }
             return nullptr;
          }
@@ -308,80 +317,25 @@ namespace casual
          {
             if( ! empty())
             {
-               return &( *first);
+               return &( *m_first);
             }
             return nullptr;
          }
 
-         reference front() { return *first;}
+         reference front() { return *m_first;}
 
          reference at( difference_type index)
          {
-            if( std::distance( first, last) <= index){ throw std::out_of_range{ "range out of bounds"};}
+            if( m_size <= index){ throw std::out_of_range{ "range out of bounds"};}
 
-            return *( first + index);
+            return *( m_first + index);
          }
 
          const reference at( difference_type index) const
          {
-            if( std::distance( first, last) <= index){ throw std::out_of_range{ "range out of bounds"};}
+            if( m_size <= index){ throw std::out_of_range{ "range out of bounds"};}
 
-            return *( first + index);
-         }
-
-         iterator first;
-         iterator last;
-
-
-         //template< typename Iter>
-         friend Range< Iter> operator + ( const Range& lhs, const Range& rhs)
-         {
-            Range result( lhs);
-            if( rhs.first < result.first) result.first = rhs.first;
-            if( rhs.last > result.last) result.last = rhs.last;
-            return result;
-         }
-
-         /*
-         friend Range< Iter>& operator -= ( Range& lhs, const Range& rhs)
-         {
-
-
-         }
-         */
-
-
-         //template< typename Iter>
-         friend Range< Iter> operator - ( const Range& lhs, const Range& rhs)
-         {
-            Range result{ lhs};
-
-            //
-            // TODO: make this better...
-
-            if( rhs)
-            {
-               if( result.last > rhs.last)
-               {
-                  result.first = rhs.last;
-               }
-               if( result.first <= rhs.first)
-               {
-                  result.last = rhs.first;
-               }
-            }
-
-            //
-            // Make sure the ranges overlap
-            //
-            /*
-            if( result.last > rhs.first && result.first < rhs.last)
-            {
-               if( result.last > rhs.first) result.last = rhs.first;
-               else if( rhs.last > result.first) result.first = rhs.last;
-            }
-            */
-            return result;
+            return *( m_first + index);
          }
 
 
@@ -390,18 +344,21 @@ namespace casual
          {
             if( out)
             {
-               auto current = range.first;
+               auto current = std::begin( range);
                out << "[";
-               while( current != range.last)
+               while( current != std::end( range))
                {
                   out << *current++;
-                  if( current != range.last)
+                  if( current != std::end( range))
                      out << ",";
                }
                out << "]";
             }
             return out;
          }
+      private:
+         iterator m_first;
+         std::size_t m_size;
       };
 
 
@@ -467,6 +424,7 @@ namespace casual
       //!
       namespace range
       {
+
          template< typename Iter>
          Range< Iter> make( Iter first, Iter last)
          {
@@ -493,9 +451,9 @@ namespace casual
          }
 
          template< typename Iter>
-         auto make_reverse( Range< Iter> range) -> decltype( make( std::reverse_iterator< Iter>( range.last), std::reverse_iterator< Iter>( range.first)))
+         auto make_reverse( Range< Iter> range) -> decltype( make( std::reverse_iterator< Iter>( range.end()), std::reverse_iterator< Iter>( range.begin())))
          {
-            return make( std::reverse_iterator< Iter>( range.last), std::reverse_iterator< Iter>( range.first));
+            return make( std::reverse_iterator< Iter>( range.end()), std::reverse_iterator< Iter>( range.begin()));
          }
 
          template< typename Iter>
@@ -510,6 +468,15 @@ namespace casual
             using type = decltype( make( C().begin(), C().end()));
          };
 
+         template< typename C>
+         struct type_traits
+         {
+            using type = decltype( make( std::begin( std::declval< C>()), 0));
+         };
+
+
+         template< typename C>
+         using type_t = typename type_traits< C>::type;
 
          template< typename R>
          typename std::enable_if< std::is_array< typename std::remove_reference< R>::type>::value, std::size_t>::type
@@ -518,6 +485,89 @@ namespace casual
          template< typename R>
          typename std::enable_if< ! std::is_array< typename std::remove_reference< R>::type>::value, std::size_t>::type
          size( R&& range) { return range.size();}
+
+
+         namespace position
+         {
+            //!
+            //! @return returns true if @lhs overlaps @rhs in some way.
+            //!
+            template< typename R1, typename R2>
+            bool overlap( R1&& lhs, R2&& rhs)
+            {
+               return std::end( lhs) >= std::begin( rhs) && std::begin( lhs) <= std::end( rhs);
+            }
+
+
+            //!
+            //! @return true if @lhs is adjacent to @rhs or @rhs is adjacent to @lhs
+            //!
+            template< typename R1, typename R2>
+            bool adjacent( R1&& lhs, R2&& rhs)
+            {
+               return std::end( lhs) + 1 == std::begin( rhs) || std::end( lhs) + 1 == std::begin( rhs);
+            }
+
+            //!
+            //! @return true if @rhs is a sub-range to @lhs
+            //!
+            template< typename R1, typename R2>
+            bool includes( R1&& lhs, R2&& rhs)
+            {
+               return std::begin( lhs) <= std::begin( rhs) && std::end( lhs) >= std::end( rhs);
+            }
+
+            template< typename R>
+            auto intersection( R&& lhs, R&& rhs) -> decltype( range::make( std::forward< R>( lhs)))
+            {
+               if( overlap( lhs, rhs))
+               {
+                  auto result = range::make( lhs);
+
+                  if( std::begin( lhs) < std::begin( rhs)) result.first = std::begin( rhs);
+                  if( std::end( lhs) > std::end( rhs)) result.last = std::end( rhs);
+
+                  return result;
+               }
+               return {};
+            }
+
+            template< typename R1, typename R2>
+            auto subtract( R1&& lhs, R2&& rhs)
+               -> std::tuple< decltype( range::make( std::forward< R1>( lhs))), decltype( range::make( std::forward< R1>( lhs)))>
+            {
+               using range_type = range::type_t< R1>;
+
+               if( overlap( lhs, rhs))
+               {
+                  if( std::begin( lhs) < std::begin( rhs) && std::end( lhs) > std::end( rhs))
+                  {
+                     return std::make_tuple(
+                           range::make( std::begin( lhs), std::begin( rhs)),
+                           range::make( std::end( rhs), std::end( lhs)));
+                  }
+                  else if( std::begin( lhs) < std::begin( rhs))
+                  {
+                     return std::make_tuple(
+                           range::make( std::begin( lhs), std::begin( rhs)),
+                           range_type{});
+                  }
+                  else if( std::end( lhs) > std::end( rhs))
+                  {
+                     return std::make_tuple(
+                           range::make( std::end( rhs), std::end( lhs)),
+                           range_type{});
+                  }
+
+                  return std::make_tuple(
+                        range_type{},
+                        range_type{});
+
+               }
+               return std::make_tuple( range::make( lhs), range_type{});
+            }
+
+         } // position
 
 
 
@@ -749,7 +799,6 @@ namespace casual
                output, transform);
          }
 
-
          //!
          //! Applies std::unique on [std::begin( range), std::end( range) )
          //!
@@ -758,9 +807,7 @@ namespace casual
          template< typename R>
          auto unique( R&& range) -> decltype( make( range))
          {
-            auto resultRange = make( range);
-            resultRange.last = std::unique( resultRange.first, resultRange.last);
-            return resultRange;
+            return make( std::begin( range), std::unique( std::begin( range), std::end( range)));
          }
 
          //!
@@ -771,8 +818,8 @@ namespace casual
          template< typename C, typename R>
          C& trim( C& container, R&& range)
          {
-            auto index = range.first - std::begin( container);
-            container.erase( range.last, std::end( container));
+            auto index = std::begin( range) - std::begin( container);
+            container.erase( std::end( range), std::end( container));
             container.erase( std::begin( container), std::begin( container) + index);
             return container;
          }
@@ -781,18 +828,14 @@ namespace casual
          template< typename C, typename Iter>
          C& erase( C& container, Range< Iter> range)
          {
-            container.erase( range.first, range.last);
+            container.erase( std::begin( range), std::end( range));
             return container;
          }
 
          template< typename R, typename P>
          auto remove_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
-            auto result = make( std::forward< R>( range));
-
-            result.last = std::remove_if( std::begin( result), std::end( result), predicate);
-
-            return result;
+            return make( std::begin( range), std::remove_if( std::begin( range), std::end( range), predicate));
          }
 
 
@@ -850,11 +893,10 @@ namespace casual
 
 
          template< typename R, typename F>
-         auto for_each( R&& range, F functor) -> decltype( make( std::forward< R>( range)))
+         auto for_each( R&& range, F functor) -> decltype( std::forward< R>( range))
          {
-            auto resultRange = make( std::forward< R>( range));
-            std::for_each( std::begin( resultRange), std::end( resultRange), functor);
-            return resultRange;
+            std::for_each( std::begin( range), std::end( range), functor);
+            return range;
          }
 
 
@@ -867,9 +909,7 @@ namespace casual
                common::traits::container::is_associative< typename std::decay<R>::type>::value,
                decltype( make( std::forward< R>( range)))>::type
          {
-            auto resultRange = make( range);
-            resultRange.first = range.find( value);
-            return resultRange;
+            return make( range.find( value), std::end( range));
          }
 
          //!
@@ -881,9 +921,7 @@ namespace casual
                ! common::traits::container::is_associative< typename std::decay<R>::type>::value,
                decltype( make( std::forward< R>( range)))>::type
          {
-            auto resultRange = make( std::forward< R>( range));
-            resultRange.first = std::find( std::begin( resultRange), std::end( resultRange), std::forward< T>( value));
-            return resultRange;
+            return make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));
          }
 
 
@@ -891,9 +929,7 @@ namespace casual
          template< typename R, typename P>
          auto find_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
-            auto resultRange = make( std::forward< R>( range));
-            resultRange.first = std::find_if( std::begin( resultRange), std::end( resultRange), predicate);
-            return resultRange;
+            return make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
          }
 
 
@@ -1120,6 +1156,15 @@ namespace casual
                  && includes( std::forward< R2>( range2), std::forward< R1>( range1), compare::inverse( comp));
          }
 
+         namespace numeric
+         {
+            template< typename R, typename T>
+            void iota( R&& range, T value)
+            {
+               std::iota( std::begin( range), std::end( range), value);
+            }
+
+         } // numeric
 
 
          namespace sorted
@@ -1181,11 +1226,10 @@ namespace casual
             template< typename R, typename T, typename C>
             auto bound( R&& range, const T& value, C compare) -> decltype( make( std::forward< R>( range)))
             {
-               auto resultRange = make( std::forward< R>( range));
-               resultRange.first = std::lower_bound( resultRange.first, resultRange.last, value, compare);
-               resultRange.last = std::upper_bound( resultRange.first, resultRange.last, value, compare);
+               auto first = std::lower_bound( std::begin( range), std::end( range), value, compare);
+               auto last = std::upper_bound( first, std::end( range), value, compare);
 
-               return resultRange;
+               return make( first, last);
             }
 
 
@@ -1199,14 +1243,14 @@ namespace casual
             template< typename R, typename C>
             auto group( R&& range, C compare) -> std::vector< decltype( make( std::forward< R>( range)))>
             {
-               auto localRange = make( range);
+               std::vector< range::type_t< R>> result;
 
-               std::vector< decltype( make( std::forward< R>( range)))> result;
+               auto current = std::begin( range);
 
-               while( ! localRange.empty())
+               while( current != std::end( range))
                {
-                  result.push_back( bound( localRange, *localRange, compare));
-                  localRange.first = result.back().last;
+                  result.push_back( bound( make( current, std::end( range)), *current, compare));
+                  current = std::end( result.back());
                }
 
                return result;

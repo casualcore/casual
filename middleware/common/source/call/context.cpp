@@ -8,7 +8,8 @@
 #include "common/call/context.h"
 #include "common/call/lookup.h"
 
-#include "common/queue.h"
+
+#include "common/communication/ipc.h"
 #include "common/internal/log.h"
 #include "common/internal/trace.h"
 
@@ -61,14 +62,14 @@ namespace casual
 
                   namespace blocking
                   {
-                     using Send = common::queue::blocking::basic_send< Policy>;
-                     using Receive = common::queue::blocking::basic_reader< Policy>;
+                     //using Send = common::queue::blocking::basic_send< Policy>;
+                     //using Receive = common::queue::blocking::basic_reader< Policy>;
 
                   } // blocking
 
                   namespace non_blocking
                   {
-                     using Receive = common::queue::non_blocking::basic_reader< Policy>;
+                     //using Receive = common::queue::non_blocking::basic_reader< Policy>;
 
                   } // non_blocking
 
@@ -229,8 +230,7 @@ namespace casual
                   message::service::call::ACK ack;
                   ack.process = target.process;
                   ack.service = target.service.name;
-                  local::queue::blocking::Send send;
-                  send( common::ipc::broker::id(), ack);
+                  communication::ipc::blocking::send( communication::ipc::broker::id(), ack);
                }};
 
 
@@ -255,8 +255,8 @@ namespace casual
 
             log::internal::debug << "async - message: " << message << std::endl;
 
-            local::queue::blocking::Send send;
-            send( target.process.queue, message);
+
+            communication::ipc::blocking::send( target.process.queue, message);
 
             unreserve.release();
             send_ack.release();
@@ -414,13 +414,11 @@ namespace casual
                {
                   if( common::flag< TPNOBLOCK>( flags))
                   {
-                     local::queue::non_blocking::Receive receive{ ipc::receive::queue()};
-                     return receive( reply, args...);
+                     return communication::ipc::non::blocking::receive( communication::ipc::inbound::device(), reply, args...);
                   }
                   else
                   {
-                     local::queue::blocking::Receive receive{ ipc::receive::queue()};
-                     receive( reply, args...);
+                     communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, args...);
                   }
                   return true;
                }

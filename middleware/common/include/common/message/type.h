@@ -24,8 +24,10 @@ namespace casual
       {
          enum class Type : platform::message_type_type
          {
+            //
             // message type can't be 0!
-            MESSAGE_TYPE_INVALID = 0,
+            // We use 0 to indicate absent message
+            absent_message = 0,
 
             UTILITY_BASE = 500,
             flush_ipc, // dummy message used to flush queue (into cache)
@@ -341,7 +343,6 @@ namespace casual
                template< message::Type type>
                struct basic_request : basic_id< type>
                {
-
                   std::string path;
                   Uuid identification;
 

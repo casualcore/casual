@@ -8,7 +8,7 @@
 #include "common/transaction/context.h"
 #include "common/call/context.h"
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/environment.h"
 #include "common/process.h"
 #include "common/internal/log.h"
@@ -93,15 +93,8 @@ namespace casual
             request.path = process::path();
 
             log::internal::transaction << "send client connect request" << std::endl;
-            queue::blocking::Writer writer( ipc::broker::id());
-            auto correlation = writer( request);
 
-
-            queue::blocking::Reader reader( ipc::receive::queue());
-            message::transaction::client::connect::Reply reply;
-            reader( reply, correlation);
-
-
+            auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
 
             common::environment::domain::name( reply.domain);
             std::swap( resources, reply.resources);
@@ -117,7 +110,7 @@ namespace casual
             return singleton;
          }
 
-         ipc::send::Queue::id_type Context::Manager::queue() const
+         platform::queue_id_type Context::Manager::queue() const
          {
             //
             // Will block until the TM is up.
@@ -278,8 +271,6 @@ namespace casual
 
             if( ! resources.empty())
             {
-               queue::blocking::Writer writer{ manager().queue()};
-
                message::transaction::resource::Involved message;
                message.process = process::handle();
                message.trid = trid;
@@ -287,7 +278,7 @@ namespace casual
 
                common::log::internal::transaction << "involved message: " << message << '\n';
 
-               writer( message);
+               communication::ipc::blocking::send( manager().queue(), message);
             }
          }
 
@@ -727,19 +718,11 @@ namespace casual
                request.resources = resources();
                range::append( transaction.resources, request.resources);
 
-               queue::blocking::Send send;
-
-               auto correlation = send( manager().queue(), request);
-
-
                //
                // Get reply
                //
                {
-                  queue::blocking::Reader reader( ipc::receive::queue());
-
-                  message::transaction::commit::Reply reply;
-                  reader( reply, correlation);
+                  auto reply = communication::ipc::call( manager().queue(), request);
 
                   //
                   // We could get commit-reply directly in an one-phase-commit
@@ -758,14 +741,14 @@ namespace casual
                            //
                            // Discard the coming commit-message
                            //
-                           ipc::receive::queue().discard( correlation);
+                           communication::ipc::inbound::device().discard( reply.correlation);
                         }
                         else
                         {
                            //
                            // Wait for the commit
                            //
-                           reader( reply, correlation);
+                           communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
 
                            log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
                         }
@@ -837,13 +820,7 @@ namespace casual
             request.resources = resources();
             range::append( transaction.resources, request.resources);
 
-            queue::blocking::Writer writer( manager().queue());
-            writer( request);
-
-            queue::blocking::Reader reader( ipc::receive::queue());
-
-            message::transaction::rollback::Reply reply;
-            reader( reply);
+            auto reply = communication::ipc::call( manager().queue(), request);
 
             log::internal::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
 
@@ -1031,7 +1008,7 @@ namespace casual
                //
                // We rotate the wanted to end;
                //
-               std::rotate( found.first, found.first + 1, std::end( m_transactions));
+               std::rotate( std::begin( found), std::begin( found) + 1, std::end( m_transactions));
             }
          }
 

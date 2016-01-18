@@ -38,7 +38,7 @@ namespace casual
 
             namespace instance
             {
-               bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance);
+               bool request( State& state, const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance);
             } // instance
 
             bool request( State& state, state::pending::Request& message);

@@ -8,8 +8,9 @@
 #ifndef CASUAL_COMMON_MESSAGE_PENDING_H_
 #define CASUAL_COMMON_MESSAGE_PENDING_H_
 
-#include "common/ipc.h"
+
 #include "common/marshal/binary.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -66,7 +67,7 @@ namespace casual
                }
 
                targets_type targets;
-               common::ipc::message::Complete complete;
+               communication::message::Complete complete;
                Targets task;
             };
 
@@ -89,62 +90,80 @@ namespace casual
 
             } // policy
 
+            template< typename P>
+            bool send( Message& message, P&& policy, const communication::error::type& handler = nullptr)
+            {
+               auto send = [&]( platform::queue_id_type ipc)
+                     {
+                        try
+                        {
+                           communication::ipc::outbound::Device device{ ipc};
+                           return static_cast< bool>( device.put( message.complete, std::move( policy), handler));
+                        }
+                        catch( const exception::queue::Unavailable&)
+                        {
+                           return true;
+                        }
+                     };
+
+               if( message.task == Message::Targets::all)
+               {
+                  message.targets = range::to_vector(
+                        range::remove_if( message.targets, send));
+               }
+               else
+               {
+                  if( range::find_if( message.targets, send))
+                  {
+                     message.targets.clear();
+                  }
+               }
+
+               return message.sent();
+            }
+
             //!
             //! Tries to send a message to targets.
             //! Depending on the task it will either send to all
             //! or stop when the first is successful.
             //!
-            template< typename Q, typename EP = policy::consume_unavalibe>
+            template< typename P>
             struct Send
             {
-               using exception_policy_type = EP;
+               using send_policy = P;
 
-               Send( Q& queue) : m_queue( queue) {}
+               using error_type = communication::error::type;
+
+               Send( send_policy policy, error_type handler) : m_policy{ std::move( policy)}, m_handler{ std::move( handler)} {}
+               Send( send_policy policy) : Send( std::move( policy), nullptr) {}
+               Send( error_type handler) : Send( send_policy{}, std::move( handler)) {}
+               Send() : Send( send_policy{}, nullptr) {}
 
                //!
                //! @return true if the message has been sent
                //!
                bool operator () ( Message& message)
                {
-                  auto send = [&]( platform::queue_id_type ipc)
-                        {
-                           try
-                           {
-                              return static_cast< bool>( m_queue.send( ipc, message.complete));
-                           }
-                           catch( ...)
-                           {
-                              return exception_policy_type{}();
-                           }
-                        };
-
-                  if( message.task == Message::Targets::all)
-                  {
-                     message.targets = range::to_vector(
-                           range::remove_if( message.targets, send));
-                  }
-                  else
-                  {
-                     if( range::find_if( message.targets, send))
-                     {
-                        message.targets.clear();
-                     }
-                  }
-
-                  return message.sent();
+                  return send( message, m_policy, m_handler);
                }
             private:
-               Q& m_queue;
+               send_policy m_policy;
+               error_type m_handler;
             };
+
+
 
             //!
             //! @return a 'pending-sender' that tries to send to targets
             //!
-            template< typename Q>
-            Send< Q> sender( Q& queue)
+            template< typename P>
+            Send< P> sender( P&& policy, communication::error::type handler = nullptr)
             {
-               return Send< Q>( queue);
+               return Send< P>( std::forward< P>( policy), handler);
             }
+
+
+
          } // pending
 
       } // message

@@ -48,13 +48,17 @@ casual_common_objectfiles = [
     Compile( 'source/transaction/resource.cpp'),
     Compile( 'source/transaction/transaction.cpp'),
     
-    Compile( 'source/ipc.cpp'),
-    Compile( 'source/queue.cpp'),
+    Compile( 'source/communication/ipc.cpp'),
+    Compile( 'source/communication/message.cpp'),
+    
+    #Compile( 'source/ipc.cpp'),
+    #Compile( 'source/queue.cpp'),
     
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/dispatch.cpp'),
     Compile( 'source/message/service.cpp'),
+    Compile( 'source/message/server.cpp'),
     Compile( 'source/message/traffic.cpp'),
     Compile( 'source/message/queue.cpp'),
     Compile( 'source/message/transaction.cpp'),
@@ -141,16 +145,13 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_conformance.cpp'),  
    
    Compile( 'unittest/isolated/source/test_algorithm.cpp'),      
-   Compile( 'unittest/isolated/source/test_memory.cpp'),             
+   Compile( 'unittest/isolated/source/test_memory.cpp'),  
+           
+
                         
    Compile( 'unittest/isolated/source/test_buffer.cpp'),
    Compile( 'unittest/isolated/source/test_marshal.cpp'),
-   Compile( 'unittest/isolated/source/test_ipc.cpp'),
-   Compile( 'unittest/isolated/source/test_queue.cpp'),
-   Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
-   Compile( 'unittest/isolated/source/test_server_context.cpp'),
-   Compile( 'unittest/isolated/source/test_service.cpp'),
-   
+
    Compile( 'unittest/isolated/source/test_uuid.cpp'),
    Compile( 'unittest/isolated/source/test_arguments.cpp'),
    Compile( 'unittest/isolated/source/test_file.cpp'),
@@ -160,16 +161,29 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_error.cpp'),
    Compile( 'unittest/isolated/source/test_network_byteorder.cpp'),
    
+   Compile( 'unittest/isolated/source/test_traits.cpp'),
+   Compile( 'unittest/isolated/source/test_chronology.cpp'),
+   Compile( 'unittest/isolated/source/test_transcode.cpp'),
+   
+   
+   Compile( 'unittest/isolated/source/test_communication.cpp'),
+      
+   Compile( 'unittest/isolated/source/test_mockup.cpp'),
+   
+   
+   Compile( 'unittest/isolated/source/test_message_dispatch.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_server_context.cpp'),
+   Compile( 'unittest/isolated/source/test_service.cpp'),
+   
    Compile( 'unittest/isolated/source/test_signal.cpp'),
    
    Compile( 'unittest/isolated/source/test_transaction_id.cpp'),
    Compile( 'unittest/isolated/source/test_transaction.cpp'),
 
    
-   Compile( 'unittest/isolated/source/test_mockup.cpp'),
-   Compile( 'unittest/isolated/source/test_traits.cpp'),
-   Compile( 'unittest/isolated/source/test_chronology.cpp'),
-   Compile( 'unittest/isolated/source/test_transcode.cpp'),
+
+
 ]
 
 

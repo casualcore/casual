@@ -9,7 +9,6 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/admin/transform.h"
 
-#include "common/ipc.h"
 #include "common/process.h"
 #include "common/internal/log.h"
 #include "common/environment.h"
@@ -32,7 +31,6 @@ namespace casual
       {
          void configure( State& state, const std::string& resource_file)
          {
-            queue::blocking::Send broker( std::ref( state));
 
             {
                common::Trace trace( "connect to broker", log::internal::transaction);
@@ -46,13 +44,13 @@ namespace casual
                connect.process = common::process::handle();
                connect.identification = common::process::instance::transaction::manager::identity();
 
-               auto correlation = broker( common::ipc::broker::id(), connect);
+               auto correlation = ipc::device().blocking_send( communication::ipc::broker::id(), connect);
 
                {
-                  common::message::handle::connect::reply(
-                        queue::blocking::Reader{common::ipc::receive::queue(), std::ref( state)},
-                        correlation,
-                        common::message::transaction::manager::connect::Reply{});
+                  common::message::transaction::manager::connect::Reply reply;
+                  ipc::device().blocking_receive( reply, correlation);
+
+                  common::message::handle::connect::reply( reply);
                }
 
             }
@@ -64,9 +62,7 @@ namespace casual
                // Wait for configuration
                //
                common::message::transaction::manager::Configuration configuration;
-
-               queue::blocking::Reader read( common::ipc::receive::queue(), std::ref( state));
-               read( configuration);
+               ipc::device().blocking_receive( configuration);
 
                //
                // configure state
@@ -80,7 +76,7 @@ namespace casual
                common::message::dead::process::Registration message;
                message.process = common::process::handle();
 
-               broker( common::ipc::broker::id(), message);
+               ipc::device().blocking_send( communication::ipc::broker::id(), message);
             }
 
          }
@@ -110,7 +106,7 @@ namespace casual
                      instance.process.pid = process::spawn(
                            info.server,
                            {
-                                 "--tm-queue", std::to_string( ipc::receive::id()),
+                                 "--tm-queue", std::to_string( ipc::device().id()),
                                  "--rm-key", info.key,
                                  "--rm-openinfo", proxy.openinfo,
                                  "--rm-closeinfo", proxy.closeinfo,
@@ -153,9 +149,8 @@ namespace casual
 
 
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
-                           queue::non_blocking::Send send{ std::ref( m_state)};
 
-                           if( ! send( instance.process.queue, message::shutdown::Request{}))
+                           if( ! ipc::device().non_blocking_send( instance.process.queue, message::shutdown::Request{}))
                            {
                               //
                               // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
@@ -207,13 +202,11 @@ namespace casual
 
             namespace instance
             {
-               bool request( State& state, const common::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
+               bool request( State& state, const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance)
                {
                   Trace trace{ "transaction::action::resource::instance::request", log::internal::transaction};
 
-                  queue::non_blocking::Send sender{ std::ref( state)};
-
-                  if( sender.send( instance.process.queue, message))
+                  if( ipc::device().non_blocking_push( instance.process.queue, message))
                   {
                      instance.state( state::resource::Proxy::Instance::State::busy);
                      instance.statistics.roundtrip.start( common::platform::clock_type::now());
@@ -262,9 +255,7 @@ namespace casual
             {
                try
                {
-                  queue::non_blocking::Send send{ std::ref( m_state)};
-
-                  if( ! send.send( message.target, message.message))
+                  if( ! ipc::device().non_blocking_push( message.target, message.message))
                   {
                      common::log::internal::transaction << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
                      return false;

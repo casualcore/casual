@@ -12,7 +12,7 @@
 #include "common/call/context.h"
 
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/buffer/pool.h"
 #include "common/process.h"
 
@@ -143,9 +143,7 @@ namespace casual
                   m_state.physical_services.push_back( std::move( prospect));
                   m_state.services.emplace( prospect.origin, m_state.physical_services.back());
                }
-
-               queue::blocking::Writer writer( ipc::broker::id());
-               writer( message);
+               communication::ipc::blocking::send( communication::ipc::broker::id(), message);
             }
          }
 
@@ -163,8 +161,7 @@ namespace casual
             message.process = process::handle();
             message.services.push_back( message::Service( service));
 
-            queue::blocking::Writer writer( ipc::broker::id());
-            writer( message);
+            communication::ipc::blocking::send( communication::ipc::broker::id(), message);
          }
 
 

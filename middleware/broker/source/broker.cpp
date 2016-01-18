@@ -18,7 +18,6 @@
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
 
-#include "common/queue.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/process.h"
@@ -64,16 +63,10 @@ namespace casual
                         decltype( queue.id()) id;
                         file >> id;
 
-                        common::queue::blocking::Writer send( id);
                         common::message::server::ping::Request request;
                         request.process = common::process::handle();
-                        send( request);
 
-
-                        common::message::server::ping::Request reply;
-
-                        common::queue::blocking::Reader receive( common::ipc::receive::queue());
-                        receive( reply);
+                        auto reply = communication::ipc::call( id, request, communication::ipc::policy::Blocking{});
 
                         //
                         // There are another running broker for this domain - abort
@@ -184,7 +177,7 @@ namespace casual
             //
             // Terminate children
             //
-            common::process::children::terminate( broker::handle::dead::Process{ m_state.ipc()}, m_state.processes());
+            common::process::children::terminate( &handle::process_exit, m_state.processes());
 
 
             common::log::information << "domain '" << domain << "' is off-line\n";
@@ -259,13 +252,13 @@ namespace casual
 
                common::log::internal::debug << "start message pump\n";
 
+               //static const communication::error::handler::callback::on::Terminate callback{ handle::dead::Process{ state.ipc()}};
+
                while( true)
                {
                   if( state.pending.replies.empty())
                   {
-                     queue::blocking::Reader blockingReader( state.ipc(), handle::dead::Process{ state.ipc()});
-
-                     handler( blockingReader.next());
+                     handler( ipc::device().blocking_next());
                   }
                   else
                   {
@@ -280,11 +273,11 @@ namespace casual
                         decltype( state.pending.replies) replies;
                         std::swap( replies, state.pending.replies);
 
-                        queue::non_blocking::Send send{ handle::dead::Process{ state.ipc()}};
-
                         auto remain = std::get< 1>( common::range::partition(
                               replies,
-                              common::message::pending::sender( send)));
+                              common::message::pending::sender(
+                                    communication::ipc::policy::ignore::signal::non::Blocking{},
+                                    ipc::device().error_handler())));
 
                         range::move( remain, state.pending.replies);
                      }
@@ -293,8 +286,6 @@ namespace casual
                      // Take care of broker dispatch
                      //
                      {
-                        queue::non_blocking::Reader non_block{ state.ipc(), handle::dead::Process{ state.ipc()}};
-
                         //
                         // If we've got pending that is 'never' sent, we still want to
                         // do a lot of broker stuff. Hence, if we got into an 'error state'
@@ -304,7 +295,7 @@ namespace casual
                         //
                         auto count = common::platform::batch::transaction;
 
-                        while( handler( non_block.next()) && count-- > 0)
+                        while( handler( ipc::device().non_blocking_next()) && count-- > 0)
                            ;
                      }
 
@@ -349,7 +340,7 @@ namespace casual
 
       } // update
 
-      admin::ShutdownVO shutdown( State& state, common::ipc::receive::Queue& ipc, bool broker)
+      admin::ShutdownVO shutdown( State& state, bool broker)
       {
          common::trace::internal::Scope trace( "broker::shutdown");
 
@@ -368,14 +359,14 @@ namespace casual
 
 
 
-         handle::shutdown( state, ipc);
+         handle::shutdown( state);
 
          result.online = state.processes();
          result.offline = range::to_vector( range::difference( orginal, result.online));
 
          if( broker)
          {
-            handle::send_shutdown( state);
+            handle::send_shutdown();
          }
 
          return result;

@@ -9,11 +9,12 @@
 #define CASUAL_BROKER_STATE_H_
 
 
-#include "common/queue.h"
 
 #include "common/message/server.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
+
+#include "common/communication/ipc.h"
 
 #include "common/exception.h"
 
@@ -240,8 +241,7 @@ namespace casual
             shutdown
          };
 
-         State() : m_ipc( common::ipc::receive::queue()) {}
-         State( common::ipc::receive::Queue& ipc) : m_ipc( ipc) {}
+         State() = default;
 
          State( State&&) = default;
          State& operator = (State&&) = default;
@@ -349,47 +349,10 @@ namespace casual
          std::vector< common::platform::pid_type> processes() const;
 
 
-         common::ipc::receive::Queue& ipc() { return m_ipc.get();}
-
       private:
-         std::reference_wrapper< common::ipc::receive::Queue> m_ipc;
       };
 
 
-      namespace state
-      {
-
-
-         struct Base
-         {
-            Base( State& state) : m_state( state) {};
-
-         protected:
-            State& m_state;
-         };
-
-      } // state
-
-
-      namespace queue
-      {
-         namespace blocking
-         {
-            using Reader = common::queue::blocking::callback::basic_reader;
-            using Writer = common::queue::blocking::callback::basic_writer;
-            using Send = common::queue::blocking::callback::basic_send;
-
-         } // blocking
-
-         namespace non_blocking
-         {
-            using Reader = common::queue::non_blocking::callback::basic_reader;
-            using Writer = common::queue::non_blocking::callback::basic_writer;
-            using Send = common::queue::non_blocking::callback::basic_send;
-
-         } // non_blocking
-
-      } // queue
    } // broker
 
 

@@ -7,7 +7,7 @@
 
 #include "common/call/lookup.h"
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -24,8 +24,7 @@ namespace casual
                request.process = process::handle();
                request.context = context;
 
-               queue::blocking::Send send;
-               m_correlation = send( ipc::broker::id(), request);
+               m_correlation = communication::ipc::blocking::send( communication::ipc::broker::id(), request);
             }
 
             Lookup::Lookup( std::string service) : Lookup( std::move( service), message::service::lookup::Request::Context::regular) {}
@@ -41,7 +40,7 @@ namespace casual
 
                if( m_correlation != uuid::empty())
                {
-                  ipc::receive::queue().discard( m_correlation);
+                  communication::ipc::inbound::device().discard( m_correlation);
                }
             }
 
@@ -50,8 +49,7 @@ namespace casual
                assert(  m_correlation != uuid::empty());
 
                message::service::lookup::Reply result;
-               queue::blocking::Reader receive( ipc::receive::queue());
-               receive( result, m_correlation);
+               communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
 
                if( result.state != message::service::lookup::Reply::State::busy)
                {

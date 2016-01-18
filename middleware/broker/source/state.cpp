@@ -16,7 +16,6 @@
 #include "common/exception.h"
 #include "common/algorithm.h"
 
-#include "common/ipc.h"
 #include "common/process.h"
 
 
@@ -68,7 +67,7 @@ namespace casual
 
             if( found)
             {
-               services.erase( found.first);
+               services.erase( std::begin( found));
             }
          }
 
@@ -78,7 +77,7 @@ namespace casual
 
             if( found)
             {
-               instances.erase( found.first);
+               instances.erase( std::begin( found));
             }
 
          }
@@ -103,7 +102,7 @@ namespace casual
 
             if( found)
             {
-               instances.erase( found.first);
+               instances.erase( std::begin( found));
                return true;
             }
             return false;
@@ -289,7 +288,7 @@ namespace casual
             //
             // Try to remove the ipc-resource
             //
-            common::ipc::remove( instance.process);
+            communication::ipc::remove( instance.process);
 
             for( auto& s : instance.services)
             {
@@ -305,7 +304,7 @@ namespace casual
             server.invoked += instance.invoked;
 
 
-            instances.erase( found.first);
+            instances.erase( std::begin( found));
          }
          else
          {
@@ -328,7 +327,7 @@ namespace casual
 
             if( found)
             {
-               singeltons.erase( found.first);
+               singeltons.erase( std::begin( found));
             }
          }
       }

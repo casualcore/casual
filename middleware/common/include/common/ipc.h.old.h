@@ -219,6 +219,7 @@ namespace casual
                Complete& operator = ( const Complete&) = delete;
 
 
+               explicit operator bool() const;
 
                bool complete() const;
 
@@ -249,6 +250,41 @@ namespace casual
 
 
 
+         namespace queue
+         {
+
+            struct State
+            {
+
+               typedef std::vector< message::Complete> cache_type;
+               using range_type = decltype( range::make( cache_type::iterator(), 0));
+
+
+               template< typename IPC, typename P>
+               range_type find( IPC ipc, P predicate, const long flags);
+
+
+               template< typename P>
+               range_type find( P predicate, const long flags);
+
+               range_type cache( message::Transport& message);
+
+               bool discard( message::Transport& message);
+
+               common::file::scoped::Path m_path;
+
+               cache_type m_cache;
+
+               std::vector< Uuid> m_discarded;
+            };
+
+
+
+
+            message::Complete receive( State& state);
+
+
+         } // queue
 
 
          namespace internal

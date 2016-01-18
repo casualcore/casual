@@ -127,7 +127,7 @@ namespace casual
 
                if( found)
                {
-                  transactions.all.erase( found.first);
+                  transactions.all.erase( std::begin( found));
                }
             }
             return XA_OK;

@@ -28,9 +28,29 @@ namespace casual
 	namespace broker
 	{
 
+
+
+      namespace ipc
+      {
+         const common::communication::ipc::Helper& device();
+      } // ipc
+
+
+
+
       namespace handle
       {
-         using state::Base;
+
+         void process_exit( const common::process::lifetime::Exit& exit);
+
+         struct Base
+         {
+            Base( State& state) : m_state( state) {};
+
+         protected:
+            State& m_state;
+         };
+
 
 
          void boot( State& state);
@@ -39,9 +59,9 @@ namespace casual
          //!
          //! Shutdown
          //!
-         void shutdown( State& state, common::ipc::receive::Queue& ipc);
+         void shutdown( State& state);
 
-         void send_shutdown( State& state);
+         void send_shutdown();
 
          std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances);
 
@@ -161,15 +181,6 @@ namespace casual
 
             } // process
 
-            struct Process
-            {
-               Process( common::ipc::receive::Queue& ipc);
-
-               void operator() ( const common::process::lifetime::Exit& exit);
-            private:
-               common::ipc::receive::Queue& m_ipc;
-            };
-
          } // dead
 
          namespace lookup
@@ -268,7 +279,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
+            void connect( common::communication::ipc::inbound::Device& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::queue_id_type id, common::message::service::call::Reply& message);
 
@@ -296,6 +307,8 @@ namespace casual
       common::message::dispatch::Handler handler( State& state);
 
       common::message::dispatch::Handler handler_no_services( State& state);
+
+
 
 	} // broker
 } // casual

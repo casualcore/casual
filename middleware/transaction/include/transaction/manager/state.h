@@ -160,7 +160,7 @@ namespace casual
                base_message( base_message&&) = default;
                base_message& operator = ( base_message&&) = default;
 
-               common::ipc::message::Complete message;
+               common::communication::message::Complete message;
                common::platform::time_point created;
             };
 

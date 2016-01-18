@@ -33,7 +33,7 @@ namespace casual
 			Uuid( const Uuid&) = default;
          Uuid& operator = ( const Uuid&) = default;
 
-			Uuid( uuid_type& uuid);
+			Uuid( const uuid_type& uuid);
 			Uuid( const std::string& uuid);
 
 

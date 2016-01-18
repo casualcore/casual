@@ -147,7 +147,7 @@ namespace casual
 
       TEST( casual_common_server_context, connect)
       {
-         common::Trace trace{ "casual_common_server_context.connect", log::internal::debug};
+         common::Trace trace{ "TEST casual_common_server_context.connect", log::internal::debug};
          mockup::ipc::clear();
 
          mockup::domain::Broker broker;
@@ -161,7 +161,7 @@ namespace casual
 
       TEST( casual_common_server_context, call_service__gives_reply)
       {
-         common::Trace trace{ "casual_common_server_context.call_service__gives_reply", log::internal::debug};
+         common::Trace trace{ "TEST casual_common_server_context.call_service__gives_reply", log::internal::debug};
          mockup::ipc::clear();
 
          mockup::ipc::Instance caller;
@@ -175,11 +175,9 @@ namespace casual
             callHandler( message);
          }
 
-
-         queue::blocking::Reader reader( caller.output());
          message::service::call::Reply message;
+         communication::ipc::blocking::receive( caller.output(), message);
 
-         reader( message);
          EXPECT_TRUE( message.buffer.memory.data() == local::replyMessage());
 
       }
@@ -187,6 +185,8 @@ namespace casual
 
       TEST( casual_common_server_context, call_service__gives_broker_ack)
       {
+         common::Trace trace{ "TEST casual_common_server_context.call_service__gives_broker_ack", log::internal::debug};
+
          mockup::ipc::clear();
          mockup::ipc::Instance caller{ 42};
 
@@ -205,12 +205,11 @@ namespace casual
             callHandler( message);
          }
 
-         queue::blocking::Reader broker( mockup::ipc::broker::queue().output());
          message::service::call::ACK message;
+         communication::ipc::blocking::receive( mockup::ipc::broker::queue().output(), message);
 
-         broker( message);
          EXPECT_TRUE( message.service == "test_service");
-         EXPECT_TRUE( message.process.queue == ipc::receive::id());
+         EXPECT_TRUE( message.process.queue == communication::ipc::inbound::id());
       }
 
 
@@ -235,10 +234,9 @@ namespace casual
             callHandler( message);
          }
 
-         queue::blocking::Reader reader( traffic.output());
-
          message::traffic::Event message;
-         reader( message);
+         communication::ipc::blocking::receive( traffic.output(), message);
+
          EXPECT_TRUE( message.service == "test_service");
 
       }
@@ -272,15 +270,14 @@ namespace casual
                   return message;
                }
 
-               template< typename R>
-               message::service::call::Reply reply( R& receive, const Uuid& correlation)
+               message::service::call::Reply reply( communication::ipc::inbound::Device& receive, const Uuid& correlation)
                {
-                  queue::blocking::Reader reader( receive);
                   message::service::call::Reply message;
-                  reader( message, correlation);
+                  communication::ipc::blocking::receive( receive, message, correlation);
 
                   return message;
                }
+
 
 
             } // call

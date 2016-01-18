@@ -367,7 +367,7 @@ namespace casual
                }
 
                resource.statistics += found->statistics;
-               resource.instances.erase( found.first);
+               resource.instances.erase( std::begin( found));
 
                log::internal::transaction << "remove dead process: " << death << std::endl;
                return;

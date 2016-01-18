@@ -84,6 +84,13 @@ namespace casual
 
 			   //const std::string& executable();
 
+			   namespace broker
+            {
+               std::string device();
+            } // broker
+
+
+			   //! @deprecated use file::broker::device
 			   std::string brokerQueue();
 
 			   //!

@@ -54,6 +54,8 @@ namespace casual
                      connect::basic_request< Type::server_connect_request>::marshal( archive);
                      archive & services;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Request& rhs);
                };
 
 

@@ -9,6 +9,8 @@
 
 #include "common/transaction/context.h"
 
+#include "common/communication/ipc.h"
+
 
 namespace casual
 {
@@ -121,7 +123,7 @@ namespace casual
             //
             // Discards the correlation (directly if in cache, or later if not)
             //
-            ipc::receive::queue().discard( get( descriptor).correlation);
+            communication::ipc::inbound::device().discard( get( descriptor).correlation);
 
             unreserve( descriptor);
          }

@@ -21,6 +21,14 @@ namespace casual
    {
       namespace filter
       {
+         struct Base
+         {
+            Base( State& state) : m_state( state) {};
+
+         protected:
+            State& m_state;
+         };
+
          namespace instance
          {
             struct Idle
@@ -90,9 +98,9 @@ namespace casual
 
          } // group
 
-         struct Booted : state::Base
+         struct Booted : Base
          {
-            using state::Base::Base;
+            using Base::Base;
 
             bool operator () ( const state::Server::Instance& instance) const
             {

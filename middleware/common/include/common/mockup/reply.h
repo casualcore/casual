@@ -29,19 +29,19 @@ namespace casual
                  : result_t( process.queue, std::forward< M>( message)) {}
 
                platform::queue_id_type queue;
-               common::ipc::message::Complete complete;
+               communication::message::Complete complete;
             };
 
             class Handler
             {
                struct base_reply
                {
-                  std::vector< result_t> operator () ( common::ipc::message::Complete& complete)
+                  std::vector< result_t> operator () ( communication::message::Complete& complete)
                   {
                      return dispatch( complete);
                   }
 
-                  virtual std::vector< result_t> dispatch( common::ipc::message::Complete& complete) = 0;
+                  virtual std::vector< result_t> dispatch( communication::message::Complete& complete) = 0;
                };
 
                template< typename F>
@@ -53,7 +53,7 @@ namespace casual
                   template< typename T>
                   basic_reply( T&& functor) : m_functor( std::move( functor)) {}
 
-                  std::vector< result_t> dispatch( common::ipc::message::Complete& complete) override
+                  std::vector< result_t> dispatch( communication::message::Complete& complete) override
                   {
                      transform_t transform( complete);
 
@@ -64,7 +64,7 @@ namespace casual
 
                   struct transform_t
                   {
-                     transform_t( common::ipc::message::Complete& complete) : complete( complete) {}
+                     transform_t( communication::message::Complete& complete) : complete( complete) {}
 
                      template< typename T>
                      operator T ()
@@ -74,14 +74,14 @@ namespace casual
                         return message;
                      }
 
-                     common::ipc::message::Complete& complete;
+                     communication::message::Complete& complete;
                   };
 
                   F m_functor;
                };
 
 
-               using repliers_type = std::map< common::ipc::message::Complete::message_type_type, std::unique_ptr< base_reply>>;
+               using repliers_type = std::map< communication::message::Complete::message_type_type, std::unique_ptr< base_reply>>;
 
                repliers_type m_repliers;
 
@@ -130,7 +130,7 @@ namespace casual
                }
 
 
-               std::vector< result_t> operator () ( common::ipc::message::Complete& message)
+               std::vector< result_t> operator () ( communication::message::Complete& message)
                {
                   auto found = range::find( m_repliers, message.type);
 

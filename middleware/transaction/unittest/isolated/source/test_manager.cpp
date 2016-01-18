@@ -17,7 +17,6 @@
 #include "common/mockup/rm.h"
 
 #include "common/trace.h"
-#include "common/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/environment.h"
@@ -217,9 +216,8 @@ namespace casual
                template< typename M>
                void tm( M&& message)
                {
-                  common::queue::blocking::Send sender;
-
-                  sender( common::process::instance::transaction::manager::handle().queue, std::forward< M>( message));
+                  communication::ipc::blocking::send(
+                        common::process::instance::transaction::manager::handle().queue, message);
                }
 
             } // send

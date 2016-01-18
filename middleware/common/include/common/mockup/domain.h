@@ -16,8 +16,6 @@
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 
-#include "common/ipc.h"
-
 
 #include <vector>
 
@@ -38,7 +36,7 @@ namespace casual
                   using message_type = common::message::server::connect::Request;
                   using reply_type = common::message::server::connect::Reply;
 
-                  std::vector< common::ipc::message::Complete> operator () ( message_type message);
+                  std::vector< communication::message::Complete> operator () ( message_type message);
                };
             }
 
@@ -49,7 +47,7 @@ namespace casual
                   using message_type = common::message::transaction::client::connect::Request;
                   using reply_type = common::message::transaction::client::connect::Reply;
 
-                  std::vector< common::ipc::message::Complete> operator () ( message_type message);
+                  std::vector< communication::message::Complete> operator () ( message_type message);
                };
             }
 
@@ -60,7 +58,7 @@ namespace casual
                using message_type = common::message::service::lookup::Request;
                using reply_type = common::message::service::lookup::Reply;
 
-               std::vector< common::ipc::message::Complete> operator () ( message_type message);
+               std::vector< communication::message::Complete> operator () ( message_type message);
 
                std::map< std::string, common::message::service::lookup::Reply> m_broker;
             };
@@ -70,7 +68,7 @@ namespace casual
                struct Process
                {
                   using message_type = common::message::lookup::process::Request;
-                  std::vector< common::ipc::message::Complete> operator () ( message_type message);
+                  std::vector< communication::message::Complete> operator () ( message_type message);
 
                };
             } // loockup
@@ -91,7 +89,7 @@ namespace casual
 
                Call( std::vector< std::pair< std::string, reply_type>> replies);
 
-               std::vector< common::ipc::message::Complete> operator () ( message_type message);
+               std::vector< communication::message::Complete> operator () ( message_type message);
 
                std::map< std::string, reply_type> m_server;
             };
@@ -106,7 +104,7 @@ namespace casual
                using message_type = common::message::transaction::commit::Request;
                using reply_type = common::message::transaction::commit::Reply;
 
-               std::vector< common::ipc::message::Complete> operator () ( message_type message);
+               std::vector< communication::message::Complete> operator () ( message_type message);
             };
 
             struct Rollback
@@ -114,7 +112,7 @@ namespace casual
                using message_type = common::message::transaction::rollback::Request;
                using reply_type = common::message::transaction::rollback::Reply;
 
-               std::vector< common::ipc::message::Complete> operator () ( message_type message);
+               std::vector< communication::message::Complete> operator () ( message_type message);
             };
 
          } // transaction

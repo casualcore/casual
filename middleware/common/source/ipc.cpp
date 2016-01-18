@@ -309,6 +309,10 @@ namespace casual
                      << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << '}';
             }
 
+            Complete::operator bool() const
+            {
+               return type != common::message::Type::absent_message;
+            }
 
             void Complete::add( Transport& transport)
             {
@@ -776,11 +780,19 @@ namespace casual
 
          bool remove( platform::queue_id_type id)
          {
-            if( msgctl( id, IPC_RMID, nullptr) != 0)
+            if( id != -1)
             {
-               return false;
+               if( msgctl( id, IPC_RMID, nullptr) == 0)
+               {
+                  log::internal::ipc << "queue id: " << id << " removed\n";
+                  return true;
+               }
+               else
+               {
+                  log::error << "failed to remove ipc-queue with id: " << id << " - " << error::string() << "\n";
+               }
             }
-            return true;
+            return false;
          }
 
          bool remove( const process::Handle& owner)

@@ -127,7 +127,7 @@ namespace casual
             serverConnect.services.push_back( service);
 
 
-            ipc::message::Complete complete = marshal::complete( serverConnect, output_type{});
+            auto complete = marshal::complete( serverConnect, output_type{});
 
             message::service::Advertise result;
 
@@ -155,7 +155,7 @@ namespace casual
             service.name = "service1";
             serverConnect.services.resize( 10000, service);
 
-            ipc::message::Complete complete = marshal::complete( serverConnect, output_type{});
+            auto complete = marshal::complete( serverConnect, output_type{});
 
             message::service::Advertise result;
 
@@ -193,7 +193,7 @@ namespace casual
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
-            transaction::ID xid_source = transaction::ID::create();
+            auto xid_source = transaction::ID::create();
 
             platform::binary_type buffer;
             auto output = output_type{}( buffer);

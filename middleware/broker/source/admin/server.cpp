@@ -104,7 +104,7 @@ namespace broker
 
             service_io >> CASUAL_MAKE_NVP( broker);
 
-            auto serviceReturn = broker::shutdown( state, common::ipc::receive::queue(), broker);
+            auto serviceReturn = broker::shutdown( state, broker);
 
             service_io << CASUAL_MAKE_NVP( serviceReturn);
 

@@ -15,7 +15,7 @@
 #include "common/file.h"
 #include "common/platform.h"
 
-#include "common/ipc.h"
+#include "common/communication/ipc.h"
 #include "common/message/server.h"
 #include "common/environment.h"
 
@@ -57,13 +57,9 @@ namespace casual
 
 		private:
 
-
 			void terminate();
 
-
 			common::file::scoped::Path m_brokerQueueFile;
-			//common::ipc::receive::Queue& m_receiveQueue = common::ipc::receive::queue();
-
 			State m_state;
 
 		};
@@ -74,7 +70,7 @@ namespace casual
 
       } // update
 
-      admin::ShutdownVO shutdown( State& state, common::ipc::receive::Queue& ipc, bool broker);
+      admin::ShutdownVO shutdown( State& state, bool broker);
 
 
 		namespace message

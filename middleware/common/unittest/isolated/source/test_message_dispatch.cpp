@@ -99,7 +99,7 @@ namespace casual
                message::dispatch::Handler handler{ local::TestHandler()};
 
                local::TestHandler::message_type message;
-               ipc::message::Complete complete = marshal::complete( message);
+               auto complete = marshal::complete( message);
 
                EXPECT_TRUE( handler( complete));
             }
@@ -109,7 +109,7 @@ namespace casual
                message::dispatch::Handler handler{ local::TestHandler()};
 
                message::service::call::ACK message;
-               ipc::message::Complete complete = marshal::complete( message);
+               auto complete = marshal::complete( message);
 
                //
                // We have not handler for this message-type.

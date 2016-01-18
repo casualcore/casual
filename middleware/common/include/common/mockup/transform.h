@@ -8,7 +8,6 @@
 #ifndef CASUAL_COMMON_MOCKUP_TRANSFORM_H_
 #define CASUAL_COMMON_MOCKUP_TRANSFORM_H_
 
-#include "common/ipc.h"
 
 #include "common/traits.h"
 #include "common/mockup/ipc.h"
@@ -33,7 +32,7 @@ namespace casual
 
                   basic_transform( F functor) : m_functor( std::move( functor)) {}
 
-                  std::vector< common::ipc::message::Complete> operator () ( common::ipc::message::Complete& complete)
+                  std::vector< communication::message::Complete> operator () ( communication::message::Complete& complete)
                   {
                      transform_t transform( complete);
 
@@ -43,7 +42,7 @@ namespace casual
 
                   struct transform_t
                   {
-                     transform_t( common::ipc::message::Complete& complete) : complete( complete) {}
+                     transform_t( communication::message::Complete& complete) : complete( complete) {}
 
                      template< typename T>
                      operator T ()
@@ -53,7 +52,7 @@ namespace casual
                         return message;
                      }
 
-                     common::ipc::message::Complete& complete;
+                     communication::message::Complete& complete;
                   };
 
                   F m_functor;
@@ -62,7 +61,7 @@ namespace casual
 
 
 
-               using transformers_type = std::map< common::ipc::message::Complete::message_type_type, ipc::transform_type>;
+               using transformers_type = std::map< communication::message::Complete::message_type_type, ipc::transform_type>;
 
                transformers_type m_transformers;
 
@@ -103,7 +102,7 @@ namespace casual
                }
 
 
-               std::vector< common::ipc::message::Complete> operator () ( common::ipc::message::Complete& message)
+               std::vector< communication::message::Complete> operator () ( communication::message::Complete& message)
                {
                   auto found = range::find( m_transformers, message.type);
 

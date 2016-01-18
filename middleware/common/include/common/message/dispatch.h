@@ -10,7 +10,7 @@
 
 #include "common/marshal/binary.h"
 #include "common/execution.h"
-#include "common/queue.h"
+#include "common/communication/message.h"
 #include "common/traits.h"
 
 
@@ -62,14 +62,14 @@ namespace casual
             private:
 
 
-               bool do_dispatch( ipc::message::Complete& complete) const;
-               bool do_dispatch( std::vector<ipc::message::Complete>& complete) const;
+               bool do_dispatch( communication::message::Complete& complete) const;
+               bool do_dispatch( std::vector<communication::message::Complete>& complete) const;
 
                class base_handler
                {
                public:
                   virtual ~base_handler() = default;
-                  virtual void dispatch( ipc::message::Complete& complete) = 0;
+                  virtual void dispatch( communication::message::Complete& complete) = 0;
                };
 
 
@@ -95,7 +95,7 @@ namespace casual
                   handle_holder( handler_type&& handler) : m_handler( std::move( handler)) {}
 
 
-                  void dispatch( ipc::message::Complete& complete) override
+                  void dispatch( communication::message::Complete& complete) override
                   {
                      message_type message;
                      complete >> message;
@@ -148,14 +148,12 @@ namespace casual
                handlers_type m_handlers;
             };
 
-            template< typename RQ>
-            void pump( Handler& handler, RQ&& receiveQueue)
+            template< typename D>
+            void pump( Handler& handler, D& device)
             {
-               while( true)
+               while( handler( device.next()))
                {
-                  auto marshal = receiveQueue.next();
-
-                   handler( marshal);
+                  ;
                }
             }
          } // dispatch

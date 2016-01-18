@@ -11,7 +11,6 @@
 #include "broker/admin/server.h"
 
 #include "common/server/lifetime.h"
-#include "common/queue.h"
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
@@ -34,15 +33,35 @@ namespace casual
    namespace broker
    {
 
+      namespace ipc
+      {
+         const common::communication::ipc::Helper& device()
+         {
+            static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process_exit}};
+            return singleton;
+         }
+      } // ipc
+
       namespace handle
       {
+
+         void process_exit( const common::process::lifetime::Exit& exit)
+         {
+            //
+            // We put a dead process event on our own ipc device, that
+            // will be handled later on.
+            //
+            common::message::dead::process::Event event{ exit};
+            communication::ipc::inbound::device().push( std::move( event));
+         }
+
          namespace local
          {
             namespace
             {
-               struct Boot : state::Base
+               struct Boot : Base
                {
-                  using state::Base::Base;
+                  using Base::Base;
 
                   void operator () ( const state::Executable& executable)
                   {
@@ -62,15 +81,12 @@ namespace casual
                      //
                      // If something throws, we shutdown...
                      //
-                     common::scope::Execute scope_shutdown{ std::bind( &handle::send_shutdown, std::ref( m_state))};
+                     common::scope::Execute scope_shutdown{ &handle::send_shutdown};
 
                      common::log::information << "boot group '" << batch.group << "'\n";
 
                      common::range::for_each( batch.servers, *this);
                      common::range::for_each( batch.executables, *this);
-
-
-                     queue::blocking::Reader queueReader{ common::ipc::receive::queue(), broker::handle::dead::Process{ m_state.ipc()}};
 
                      auto handler = broker::handler( m_state);
 
@@ -87,8 +103,7 @@ namespace casual
                         {
                            common::signal::timer::Scoped timeout{ std::chrono::seconds( 10)};
 
-                           auto marshal = queueReader.next( filter);
-                           handler( marshal);
+                           handler( ipc::device().blocking_next( filter));
                         }
                         catch( const common::exception::signal::Timeout& exception)
                         {
@@ -104,9 +119,9 @@ namespace casual
                   }
                };
 
-               struct Shutdown : state::Base
+               struct Shutdown : Base
                {
-                  Shutdown( State& state, common::ipc::receive::Queue& ipc) : Base( state), m_ipc( ipc) {}
+                  using Base::Base;
 
 
                   void operator () ( State::Batch& batch)
@@ -118,17 +133,15 @@ namespace casual
 
                      auto filter = handler.types();
 
-                     queue::non_blocking::Reader non_blocking{ m_ipc, broker::handle::dead::Process{ m_ipc}};
-
                      //
                      // Take care of executables
                      //
 
                      for( auto& executable : batch.executables)
                      {
-                        server::lifetime::shutdown( broker::handle::dead::Process{ m_ipc}, {}, { executable.get().instances}, std::chrono::seconds( 2));
+                        server::lifetime::shutdown( &handle::process_exit, {}, { executable.get().instances}, std::chrono::seconds( 2));
 
-                        while( handler( non_blocking.next( filter)))
+                        while( handler( ipc::device().non_blocking_next( filter)))
                            ;
                      }
 
@@ -150,16 +163,14 @@ namespace casual
                            //
                            if( pid != process::id())
                            {
-                              server::lifetime::shutdown( broker::handle::dead::Process{ m_ipc}, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
+                              server::lifetime::shutdown( &handle::process_exit, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
 
-                              while( handler( non_blocking.next()))
+                              while( handler(ipc::device().non_blocking_next( filter)))
                                  ;
                            }
                         }
                      }
                   }
-               private:
-                  common::ipc::receive::Queue& m_ipc;
                };
 
 
@@ -181,8 +192,6 @@ namespace casual
                   template< typename M, typename R>
                   bool connect( State& state, M&& message, R&& reply)
                   {
-                     queue::blocking::Send send{ broker::handle::dead::Process{ state.ipc()}};
-
                      reply.correlation = message.correlation;
 
                      if( state.mode == State::Mode::shutdown)
@@ -193,7 +202,7 @@ namespace casual
                         // We're in a shtudown mode, we don't allow any connections
                         //
                         reply.directive = R::Directive::shutdown;
-                        send( message.process.queue, reply);
+                        ipc::device().blocking_send( message.process.queue, reply);
 
                         return false;
                      }
@@ -213,8 +222,7 @@ namespace casual
 
                               reply.directive = R::Directive::singleton;
 
-                              queue::blocking::Send send{ broker::handle::dead::Process{ state.ipc()}};
-                              send( message.process.queue, reply);
+                              ipc::device().blocking_send( message.process.queue, reply);
 
                               auto& server = state.getServer( state.getInstance( message.process.pid).server);
                               server.configured_instances = 1;
@@ -235,7 +243,7 @@ namespace casual
 
                      common::log::internal::debug << "connect reply: " << message.process << std::endl;
 
-                     send( message.process.queue, reply);
+                     ipc::device().blocking_send( message.process.queue, reply);
 
                      return true;
                   }
@@ -265,7 +273,7 @@ namespace casual
          }
 
 
-         void shutdown( State& state, common::ipc::receive::Queue& ipc)
+         void shutdown( State& state)
          {
             auto shutdown_order = range::reverse( state.bootOrder());
 
@@ -273,7 +281,7 @@ namespace casual
             {
                signal::timer::Scoped alarm( std::chrono::seconds( 10));
 
-               range::for_each( shutdown_order, local::Shutdown{ state, ipc});
+               range::for_each( shutdown_order, local::Shutdown{ state});
             }
             catch( const exception::signal::Timeout&)
             {
@@ -281,14 +289,9 @@ namespace casual
             }
          }
 
-         void send_shutdown( State& state)
+         void send_shutdown()
          {
-            queue::non_blocking::Send send{ broker::handle::dead::Process{ state.ipc()}};
-
-            common::queue::non_blocking::force::send(
-               common::ipc::receive::queue(),
-               send,
-               common::message::shutdown::Request{});
+            communication::ipc::inbound::device().push(common::message::shutdown::Request{});
          }
 
 
@@ -333,8 +336,7 @@ namespace casual
             instances = std::min( server.instances.size(), instances);
 
             auto range = common::range::make( server.instances);
-
-            range.first = range.last - instances;
+            range.advance( range.size() - instances);
 
 
             for( auto& pid : range)
@@ -349,9 +351,7 @@ namespace casual
                      auto& instance = state.getInstance( pid);
                      instance.alterState( state::Server::Instance::State::shutdown);
 
-                     queue::non_blocking::Send sender{ handle::dead::Process{ state.ipc()}};
-
-                     if( ! sender( instance.process.queue, common::message::shutdown::Request{}))
+                     if( ! ipc::device().non_blocking_send( instance.process.queue, common::message::shutdown::Request{}))
                      {
                         log::error << "could not send shutdown to: " << instance.process << std::endl;
                         //
@@ -420,7 +420,7 @@ namespace casual
 
                if( found)
                {
-                  m_state.traffic.monitors.erase( found.first);
+                  m_state.traffic.monitors.erase( std::begin( found));
                }
                else
                {
@@ -458,8 +458,7 @@ namespace casual
                      auto configuration = transform::transaction::configuration( m_state);
                      configuration.correlation = message.correlation;
 
-                     queue::blocking::Send tmQueue{ broker::handle::dead::Process{ m_state.ipc()}};
-                     tmQueue( message.process.queue, configuration);
+                     ipc::device().blocking_send( message.process.queue, configuration);
                   }
                }
 
@@ -512,8 +511,7 @@ namespace casual
                      common::message::transaction::client::connect::Reply reply;
                      reply.domain = common::environment::domain::name();
 
-                     queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
-                     send( message.process.queue, reply);
+                     ipc::device().blocking_send( message.process.queue, reply);
 
                   }
                }
@@ -572,8 +570,8 @@ namespace casual
                      // We remove from listeners if one of them has died.
                      //
                      m_state.dead.process.listeners.erase(
-                           range::find_if(
-                                 m_state.dead.process.listeners, common::process::Handle::equal::pid{ event.death.pid}).first,
+                           std::begin( range::find_if(
+                                 m_state.dead.process.listeners, common::process::Handle::equal::pid{ event.death.pid})),
                             std::end( m_state.dead.process.listeners));
 
                      if( ! m_state.dead.process.listeners.empty())
@@ -589,10 +587,8 @@ namespace casual
 
                         common::message::pending::Message message{ event, get_queues()};
 
-                        queue::non_blocking::Send send{ broker::handle::dead::Process{ m_state.ipc()}};
-                        auto sender = common::message::pending::sender( send);
-
-                        if( ! sender( message))
+                        if( ! common::message::pending::send( message,
+                              communication::ipc::policy::non::Blocking{}, ipc::device().error_handler()))
                         {
                            m_state.pending.replies.push_back( std::move( message));
                         }
@@ -619,22 +615,6 @@ namespace casual
                }
             } // process
 
-            Process::Process( common::ipc::receive::Queue& ipc) : m_ipc( ipc) {}
-
-            void Process::operator() ( const common::process::lifetime::Exit& exit)
-            {
-               //
-               // We try to send a event to our self, if it's not possible (queue is full) we put it in pending
-               //
-
-               common::message::dead::process::Event event{ exit};
-
-               queue::non_blocking::Send send{ *this};
-
-               common::queue::non_blocking::force::send( m_ipc, send, event);
-            }
-
-
          } // dead
 
          namespace lookup
@@ -650,8 +630,7 @@ namespace casual
                auto found = range::find( m_state.singeltons, message.identification);
 
                auto send_reply = [&](){
-                  queue::non_blocking::Send send{ broker::handle::dead::Process{ m_state.ipc()}};
-                  if( ! send( message.process.queue, reply))
+                  if( ! ipc::device().non_blocking_send( message.process.queue, reply))
                   {
                      m_state.pending.replies.emplace_back( reply, message.process.queue);
                   }
@@ -795,8 +774,7 @@ namespace casual
                   reply.state = decltype( reply.state)::idle;
                   reply.process = transform::Instance()( *idle);
 
-                  queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
-                  send( message.process.queue, reply);
+                  ipc::device().blocking_send( message.process.queue, reply);
 
                   service.lookedup++;
                }
@@ -815,8 +793,7 @@ namespace casual
                   //
                   reply.state = decltype( reply.state)::idle;
 
-                  queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
-                  send( message.process.queue, reply);
+                  ipc::device().blocking_send( message.process.queue, reply);
 
                }
                else
@@ -831,8 +808,7 @@ namespace casual
                   //
                   reply.state = decltype( reply.state)::busy;
 
-                  queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
-                  send( message.process.queue, reply);
+                  ipc::device().blocking_send( message.process.queue, reply);
 
                }
 
@@ -849,8 +825,7 @@ namespace casual
                reply.service.name = message.requested;
                reply.state = decltype( reply.state)::absent;
 
-               queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
-               send( message.process.queue, reply);
+               ipc::device().blocking_send( message.process.queue, reply);
             }
          }
 
@@ -887,7 +862,7 @@ namespace casual
                      //
                      // Remove pending
                      //
-                     m_state.pending.requests.erase( pending.first);
+                     m_state.pending.requests.erase( std::begin( pending));
                   }
 
                }
@@ -899,7 +874,7 @@ namespace casual
          }
 
 
-         void Policy::connect( common::ipc::receive::Queue& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
+         void Policy::connect( common::communication::ipc::inbound::Device& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
             m_state.connect_broker( std::move( services));
          }
@@ -907,8 +882,7 @@ namespace casual
 
          void Policy::reply( platform::queue_id_type id, common::message::service::call::Reply& message)
          {
-            queue::blocking::Send send( broker::handle::dead::Process{ m_state.ipc()});
-            send( id, message);
+            ipc::device().blocking_send( id, message);
          }
 
          void Policy::ack( const common::message::service::call::callee::Request& message)
@@ -963,8 +937,8 @@ namespace casual
             handle::traffic::Connect{ state},
             handle::traffic::Disconnect{ state},
             handle::transaction::client::Connect{ state},
-            handle::Call{ ipc::receive::queue(), admin::services( state), state},
-            common::message::handle::ping( broker::handle::dead::Process{ state.ipc()}),
+            handle::Call{ communication::ipc::inbound::device(), admin::services( state), state},
+            common::message::handle::Ping{},
             common::message::handle::Shutdown{},
          };
       }
@@ -987,7 +961,7 @@ namespace casual
             handle::traffic::Disconnect{ state},
             handle::transaction::client::Connect{ state},
             //handle::Call{ ipc::receive::queue(), admin::services( state), state},
-            common::message::handle::ping( broker::handle::dead::Process{ state.ipc()}),
+            common::message::handle::Ping{},
             common::message::handle::Shutdown{},
          };
       }
