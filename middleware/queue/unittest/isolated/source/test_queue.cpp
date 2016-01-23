@@ -14,7 +14,6 @@
 #include "queue/rm/switch.h"
 
 #include "common/mockup/domain.h"
-#include "common/queue.h"
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 

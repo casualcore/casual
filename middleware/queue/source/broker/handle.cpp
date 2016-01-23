@@ -25,6 +25,27 @@ namespace casual
       namespace broker
       {
 
+         namespace ipc
+         {
+            const common::communication::ipc::Helper device()
+            {
+               static common::communication::ipc::Helper ipc{
+                  common::communication::error::handler::callback::on::Terminate
+                  {
+                     []( const common::process::lifetime::Exit& exit){
+                        //
+                        // We put a dead process event on our own ipc device, that
+                        // will be handled later on.
+                        //
+                        common::message::dead::process::Event event{ exit};
+                        common::communication::ipc::inbound::device().push( std::move( event));
+                     }
+                  }
+               };
+               return ipc;
+            }
+         } // ipc
+
          namespace handle
          {
 
@@ -42,21 +63,17 @@ namespace casual
                      // Try to send it first with no blocking.
                      //
 
-                     queue::non_blocking::Send send{ state};
-
                      auto busy = common::range::partition( groups, [&]( group_type& g)
                            {
-                              return ! send( g.queue, message);
+                              return ! ipc::device().non_blocking_send( g.queue, message);
                            });
 
                      //
                      // Block for the busy ones, if any
                      //
-                     queue::blocking::Send blocking_send{ state};
-
                      for( auto&& group : std::get< 0>( busy))
                      {
-                        blocking_send( group.queue, message);
+                        ipc::device().blocking_send( group.queue, message);
                      }
 
                   }
@@ -64,6 +81,75 @@ namespace casual
                } // <unnamed>
             } // local
 
+            namespace process
+            {
+
+
+               void Exit::operator () ( message_type& message)
+               {
+                  operator()( message.death);
+               }
+
+               void Exit::operator() ( const common::process::lifetime::Exit& exit)
+               {
+                  common::Trace trace{ "handle::process::Exit", common::log::internal::queue};
+
+                  {
+                     auto found = common::range::find_if( m_state.groups, [=]( const State::Group& g){
+                        return g.process.pid == exit.pid;
+                     });
+
+                     if( found)
+                     {
+                        m_state.groups.erase( std::begin( found));
+                     }
+                     else
+                     {
+                        // error?
+                     }
+                  }
+
+                  //
+                  // Remove all queues for the group
+                  //
+                  {
+
+                     auto predicate = [=]( decltype( *m_state.queues.begin())& value){
+                        return value.second.process.pid == exit.pid;
+                     };
+
+                     auto range = common::range::make( m_state.queues);
+
+                     while( range)
+                     {
+                        range = common::range::find_if( range, predicate);
+
+                        if( range)
+                        {
+                           m_state.queues.erase( std::begin( range));
+                           range = common::range::make( m_state.queues);
+                        }
+                     }
+                  }
+                  //
+                  // Invalidate xa-requests
+                  //
+                  {
+                     for( auto& corr : m_state.correlation)
+                     {
+                        for( auto& reqeust : corr.second.requests)
+                        {
+                           if( reqeust.group.pid == exit.pid && reqeust.stage <= State::Correlation::Stage::pending)
+                           {
+                              reqeust.stage = State::Correlation::Stage::error;
+                           }
+                        }
+                     }
+                  }
+               }
+
+
+            } // process
 
             namespace shutdown
             {
@@ -72,10 +158,9 @@ namespace casual
                   std::vector< common::process::Handle> groups;
                   common::range::transform( m_state.groups, groups, std::mem_fn( &broker::State::Group::process));
 
-                  for( auto terminated : common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)))
-                  {
-                     m_state( terminated);
-                  }
+                  common::range::for_each(
+                        common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)),
+                        process::Exit{ m_state});
 
                   throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
                }
@@ -89,18 +174,16 @@ namespace casual
                {
                   common::Trace trace{ "handle::lookup::Request", common::log::internal::queue};
 
-                  queue::blocking::Send send{ std::ref( m_state)};
-
                   auto found =  common::range::find( m_state.queues, message.name);
 
                   if( found)
                   {
-                     send( message.process.queue, found->second);
+                     ipc::device().blocking_send( message.process.queue, found->second);
                   }
                   else
                   {
                      static common::message::queue::lookup::Reply reply;
-                     send( message.process.queue, reply);
+                     ipc::device().blocking_send( message.process.queue, reply);
                   }
                }
 
@@ -169,8 +252,8 @@ namespace casual
                      reply.trid = message.trid;
                      reply.resource = message.resource;
                      reply.process = common::process::handle();
-                     queue::blocking::Send send{ std::ref( state)};
-                     send( message.process.queue, reply);
+
+                     ipc::device().blocking_send( message.process.queue, reply);
                   };
 
                   if( found)
@@ -195,7 +278,7 @@ namespace casual
                               std::forward_as_tuple( std::move( found->first)),
                               std::forward_as_tuple( message.process, message.correlation, std::move( found->second)));
 
-                        state.involved.erase( found.first);
+                        state.involved.erase( std::begin( found));
 
                      }
                      catch( ...)
@@ -244,13 +327,12 @@ namespace casual
 
                      common::log::internal::queue << "all groups has responded - send reply to RM: " << found->second.caller << std::endl;
 
-                     queue::blocking::Send send{ std::ref( state)};
-                     send( found->second.caller.queue, reply);
+                     ipc::device().blocking_send( found->second.caller.queue, reply);
 
                      //
                      // We're done with the correlation.
                      //
-                     state.correlation.erase( found.first);
+                     state.correlation.erase( std::begin( found));
                   }
 
                }

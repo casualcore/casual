@@ -32,9 +32,9 @@ namespace casual
                   // Set up a tm
                   //
                   Domain()
-                     : tm{ ipc::receive::id(), mockup::create::transaction::manager()},
+                     : tm{ communication::ipc::inbound::id(), mockup::create::transaction::manager()},
                      // link the global mockup-transaction-manager-queue's output to 'our' tm
-                     link_tm_reply{ mockup::ipc::transaction::manager::queue().output().id(), tm.input()}
+                     link_tm_reply{ mockup::ipc::transaction::manager::queue().output().connector().id(), tm.input()}
                   {
 
                   }

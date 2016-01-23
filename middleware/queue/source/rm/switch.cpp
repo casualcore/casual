@@ -13,7 +13,7 @@
 #include "common/internal/log.h"
 #include "common/trace.h"
 #include "common/message/transaction.h"
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 
 #include "xa.h"
 
@@ -66,14 +66,12 @@ namespace casual
                         request.process = common::process::handle();
                         request.flags = flags;
 
-                        common::queue::blocking::Writer send{ environment::broker::queue::id()};
-                        send( request);
+                        common::communication::ipc::blocking::send( environment::broker::queue::id(), request);
                      }
 
                      reply_message reply;
 
-                     common::queue::blocking::Reader recieve{ common::ipc::receive::queue()};
-                     recieve( reply);
+                     common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
                      return reply.state;
                   }

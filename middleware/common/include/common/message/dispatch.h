@@ -148,10 +148,10 @@ namespace casual
                handlers_type m_handlers;
             };
 
-            template< typename D>
-            void pump( Handler& handler, D& device)
+            template< typename D, typename Policy>
+            void pump( Handler& handler, D& device, Policy&& policy)
             {
-               while( handler( device.next()))
+               while( handler( device.next( policy)))
                {
                   ;
                }

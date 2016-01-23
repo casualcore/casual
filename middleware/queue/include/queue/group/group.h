@@ -13,7 +13,6 @@
 #include "queue/group/database.h"
 
 #include "common/platform.h"
-#include "common/ipc.h"
 #include "common/message/pending.h"
 
 
@@ -33,15 +32,10 @@ namespace casual
 
          struct State
          {
-            State( std::string filename, std::string name, common::ipc::receive::Queue& receive)
-               : queuebase( std::move( filename), std::move( name)), receive( receive) {}
-
             State( std::string filename, std::string name)
-               : State( std::move( filename), std::move( name), common::ipc::receive::queue()) {}
+               : queuebase( std::move( filename), std::move( name)) {}
 
             Database queuebase;
-
-            common::ipc::receive::Queue& receive;
 
 
             template< typename M>

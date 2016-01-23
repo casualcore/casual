@@ -25,11 +25,6 @@ namespace casual
 
       };
 
-      namespace handle
-      {
-
-      } // handle
-
    } // queue
 } // casual
 

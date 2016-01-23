@@ -9,7 +9,7 @@
 #include "queue/common/environment.h"
 
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 
 
 namespace casual
@@ -19,21 +19,18 @@ namespace casual
 
       Lookup::Lookup( const std::string& queue)
       {
-         casual::common::queue::blocking::Writer send( queue::environment::broker::queue::id());
-
          common::message::queue::lookup::Request request;
          request.process = common::process::handle();
          request.name = queue;
 
-         send( request);
+         common::communication::ipc::blocking::send( queue::environment::broker::queue::id(), request);
       }
 
       common::message::queue::lookup::Reply Lookup::operator () () const
       {
-         common::queue::blocking::Reader receive( common::ipc::receive::queue());
-
          common::message::queue::lookup::Reply reply;
-         receive( reply);
+
+         common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
          return reply;
       }

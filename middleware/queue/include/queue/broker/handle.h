@@ -12,7 +12,7 @@
 
 #include "common/message/queue.h"
 #include "common/message/transaction.h"
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -33,36 +33,31 @@ namespace casual
 
          }
 
-
-         namespace queue
+         namespace ipc
          {
-
-            struct Policy : public handle::Base
-            {
-               using handle::Base::Base;
-
-               void apply();
-            };
+            const common::communication::ipc::Helper device();
+         } // ipc
 
 
-            namespace blocking
-            {
-               using Reader = common::queue::blocking::callback::basic_reader;
-               using Send = common::queue::blocking::callback::basic_send;
-
-            } // blocking
-
-            namespace non_blocking
-            {
-               using Reader = common::queue::non_blocking::callback::basic_reader;
-               using Send = common::queue::non_blocking::callback::basic_send;
-
-            } // non_blocking
-         } // queue
 
 
          namespace handle
          {
+            namespace process
+            {
+
+               struct Exit : Base
+               {
+                  using Base::Base;
+
+                  using message_type = common::message::dead::process::Event;
+
+                  void operator () ( message_type& message);
+
+                  void operator() ( const common::process::lifetime::Exit& exit);
+               };
+
+            } // process
 
             namespace shutdown
             {

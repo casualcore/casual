@@ -294,7 +294,7 @@ namespace casual
          }
 
          iterator begin() const { return m_first;}
-         iterator end() const { return m_first + m_size;}
+         iterator end() const { return std::next( m_first,  m_size);}
 
          void advance( std::size_t size)
          {
@@ -896,7 +896,7 @@ namespace casual
          auto for_each( R&& range, F functor) -> decltype( std::forward< R>( range))
          {
             std::for_each( std::begin( range), std::end( range), functor);
-            return range;
+            return std::forward< R>( range);
          }
 
 
@@ -1081,21 +1081,23 @@ namespace casual
          template< typename R, typename F>
          auto max( R&& range, F functor) -> decltype( make( range))
          {
+            //
+            // Just to make sure range is not an rvalue container. we could use enable_if instead
+            //
             auto result = make( std::forward< R>( range));
 
-            result.first = std::max_element( std::begin( result), std::end( result), functor);
-
-            return result;
+            return make( std::max_element( std::begin( result), std::end( result), functor), std::end( result));
          }
 
          template< typename R, typename F>
          auto min( R&& range, F functor) -> decltype( make( range))
          {
+            //
+            // Just to make sure range is not an rvalue container. we could use enable_if instead.
+            //
             auto result = make( std::forward< R>( range));
 
-            result.first = std::min_element( std::begin( result), std::end( result), functor);
-
-            return result;
+            return make( std::min_element( std::begin( result), std::end( result), functor), std::end( result));
          }
 
          //!

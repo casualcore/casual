@@ -16,7 +16,6 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/algorithm.h"
-#include "common/ipc.h"
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/exception.h"
@@ -89,10 +88,9 @@ namespace casual
                         m_state.group_executable,
                         { "--queuebase", group.queuebase, "--name", group.name});
 
-
-                     broker::queue::blocking::Reader read{ m_state.receive, m_state};
                      common::message::queue::connect::Request request;
-                     read( request);
+                     ipc::device().blocking_receive( request);
+
                      queueGroup.process.queue = request.process.queue;
 
                      common::message::queue::connect::Reply reply;
@@ -100,9 +98,7 @@ namespace casual
 
                      common::range::transform( group.queues, reply.queues, transform::Queue{});
 
-
-                     broker::queue::blocking::Send send{ std::ref( m_state)};
-                     send( request.process.queue, reply);
+                     ipc::device().blocking_send( request.process.queue, reply);
 
                      return queueGroup;
                   }
@@ -120,13 +116,11 @@ namespace casual
                      casual::common::message::dispatch::Handler handler{
                         broker::handle::connect::Request{ state}};
 
-                     broker::queue::blocking::Reader read( state.receive, state);
-
                      auto filter = handler.types();
 
                      while( ! common::range::all_of( state.groups, std::mem_fn(&State::Group::connected)))
                      {
-                        handler( read.next( filter));
+                        handler( ipc::device().blocking_next( filter));
                      }
 
                   }
@@ -154,19 +148,18 @@ namespace casual
                   broker::handle::transaction::rollback::Request{ state},
                   broker::handle::transaction::rollback::Reply{ state},
                   //broker::handle::peek::queue::Request{ m_state},
-                  common::server::handle::basic_admin_call<>{
-                     state.ipc(), broker::admin::services( state), environment::broker::identification(), state.ipc(), std::ref( state)},
-                  common::message::handle::ping( state),
+                  common::server::handle::basic_admin_call{
+                     ipc::device().device(), broker::admin::services( state), environment::broker::identification(),
+                           ipc::device().error_handler()},
+                  common::message::handle::ping(),
                };
-
-               broker::queue::blocking::Reader blockedRead( state.receive, state);
 
                common::log::information << "casual-queue-broker is on-line" << std::endl;
 
 
                while( true)
                {
-                  handler( blockedRead.next());
+                  handler( ipc::device().blocking_next());
                }
 
             }
@@ -177,17 +170,28 @@ namespace casual
          {
             common::trace::internal::Scope trace( "broker::queues", common::log::internal::queue);
 
+            auto send = [&]( const broker::State::Group& group)
+               {
+                  common::message::queue::information::queues::Request request;
+                  request.process = common::process::handle();
+                  return ipc::device().blocking_send( group.process.queue, request);
+               };
+
+            std::vector< common::Uuid> correlations;
+
+            common::range::transform( state.groups, correlations, send);
+
+
+            auto receive = [&]( const common::Uuid& correlation)
+               {
+                  common::message::queue::information::queues::Reply reply;
+                  ipc::device().blocking_receive( reply, correlation);
+                  return reply;
+               };
+
             std::vector< common::message::queue::information::queues::Reply> replies;
 
-            common::queue::batch(
-                  broker::queue::blocking::Send{ state}, state.groups,
-                  broker::queue::blocking::Reader{ state.receive, state}, replies,
-                     []( const broker::State::Group& group)
-                     {
-                        common::message::queue::information::queues::Request request;
-                        request.process = common::process::handle();
-                        return std::make_tuple( group.process.queue, std::move( request));
-                     });
+            common::range::transform( correlations, replies, receive);
 
             return replies;
          }
@@ -200,17 +204,13 @@ namespace casual
 
             if( found)
             {
-               broker::queue::blocking::Send send{ state};
-
                common::message::queue::information::messages::Request request;
                request.process = common::process::handle();
                request.qid = found->second.queue;
 
-               auto id = send( found->second.process.queue, request);
-
-
-               broker::queue::blocking::Reader receive{ state.receive, state};
-               receive( result, id);
+               ipc::device().blocking_receive(
+                     result,
+                     ipc::device().blocking_send( found->second.process.queue, request));
             }
 
             return result;
@@ -246,7 +246,8 @@ namespace casual
       {
          try
          {
-            common::process::children::terminate( std::ref( m_state), m_state.processes());
+
+            common::process::children::terminate( broker::handle::process::Exit{ m_state}, m_state.processes());
 
             common::log::information << "casual-queue-broker is off-line" << std::endl;
 

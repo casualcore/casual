@@ -9,7 +9,7 @@
 #define CASUAL_QUEUE_BROKER_STATE_H_
 
 
-#include "common/ipc.h"
+#include "common/communication/ipc.h"
 #include "common/message/queue.h"
 
 #include <string>
@@ -25,7 +25,7 @@ namespace casual
          struct State
          {
 
-            State( common::ipc::receive::Queue& receive);
+            State( common::communication::ipc::inbound::Device& receive);
             State();
 
             struct Group
@@ -49,8 +49,6 @@ namespace casual
 
 
             std::vector< common::platform::pid_type> processes() const;
-
-            void operator() ( common::process::lifetime::Exit death);
 
             std::string group_executable;
             std::string configuration;
@@ -105,9 +103,9 @@ namespace casual
 
             std::map< common::transaction::ID, Correlation> correlation;
 
-            common::ipc::receive::Queue& ipc() { return receive;}
+            common::communication::ipc::inbound::Device& ipc() { return receive;}
 
-            common::ipc::receive::Queue& receive;
+            common::communication::ipc::inbound::Device& receive;
          };
 
       } // broker

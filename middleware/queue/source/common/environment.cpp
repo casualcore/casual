@@ -12,7 +12,7 @@
 #include "common/exception.h"
 #include "common/process.h"
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/message/type.h"
 
 
@@ -43,7 +43,7 @@ namespace casual
                         request.identification = broker::identification();
                         request.process = common::process::handle();
 
-                        auto reply = common::queue::blocking::call( common::ipc::broker::id(), request);
+                        auto reply = common::communication::ipc::call( common::communication::ipc::broker::id(), request);
 
                         return reply.process.queue;
                      }

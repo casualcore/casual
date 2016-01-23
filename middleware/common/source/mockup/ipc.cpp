@@ -425,10 +425,18 @@ namespace casual
             Router::Router( id_type destination, transform_type transform)
               : m_implementation( destination, std::move( transform))
             {
-
+               log::internal::ipc << "Router created - input: " << m_implementation->input
+                     << ", output: " << m_implementation->output << std::endl;
             }
-            Router::Router( id_type destination) : m_implementation( destination) {}
-            Router::~Router() {}
+            Router::Router( id_type destination) : m_implementation( destination)
+            {
+               log::internal::ipc << "Router created - input: " << m_implementation->input
+                     << ", output: " << m_implementation->output << std::endl;
+            }
+            Router::~Router()
+            {
+               log::internal::ipc << "Router destroyed with destination: " << m_implementation->output << std::endl;
+            }
 
             Router::Router( Router&&) noexcept = default;
             Router& Router::operator = ( Router&&) noexcept = default;
@@ -590,14 +598,23 @@ namespace casual
                common::process::Handle process;
             };
 
-            Instance::Instance( platform::pid_type pid, transform_type transform) : m_implementation( pid, std::move( transform)) {}
+            Instance::Instance( platform::pid_type pid, transform_type transform) : m_implementation( pid, std::move( transform))
+            {
+               log::internal::ipc << "Instance created - process: " << m_implementation->process
+                     << ", output: " << m_implementation->output.connector().id()
+                     << ", router.input: " << m_implementation->router.input()
+                     << ", router.output: " << m_implementation->router.output() << std::endl;
+            }
             Instance::Instance( platform::pid_type pid) : Instance( pid, nullptr) {}
 
 
             Instance::Instance( transform_type transform) : Instance( process::id(), std::move( transform)) {}
             Instance::Instance() : Instance( process::id(), nullptr) {}
 
-            Instance::~Instance() {}
+            Instance::~Instance()
+            {
+               log::internal::ipc << "Instance destroyed with process: " << m_implementation->process << std::endl;
+            }
 
             Instance::Instance( Instance&&) noexcept = default;
             Instance& Instance::operator = ( Instance&&) noexcept = default;
@@ -651,7 +668,7 @@ namespace casual
                      {
                         Instance() : ipc::Instance( 6666), m_path( common::environment::file::brokerQueue())
                         {
-                           log::debug << "writing mockup broker queue file: " << m_path.path() << std::endl;
+                           log::internal::ipc << "writing mockup broker queue file: " << m_path.path() << std::endl;
 
                            std::ofstream brokerQueueFile( m_path);
 

@@ -9,7 +9,7 @@
 #include "queue/common/queue.h"
 #include "queue/api/rm/queue.h"
 
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/transaction/context.h"
@@ -92,8 +92,7 @@ namespace casual
 
             common::signal::timer::Scoped timout{ std::chrono::seconds{ 5}};
 
-            common::server::connect( common::ipc::receive::queue(), {}, resources);
-
+            common::server::connect( common::communication::ipc::inbound::device(), {}, resources);
          }
 
 

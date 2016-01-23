@@ -24,14 +24,6 @@ namespace casual
    {
       namespace group
       {
-         namespace queue
-         {
-            void Policy::apply()
-            {
-               common::queue::policy::NoAction{}.apply();
-            }
-
-         }
 
          namespace handle
          {
@@ -47,8 +39,7 @@ namespace casual
                      involved.process = common::process::handle();
                      involved.trid = message.trid;
 
-                     group::queue::blocking::Writer send{ environment::broker::queue::id(), state};
-                     send( involved);
+                     common::communication::ipc::blocking::send( environment::broker::queue::id(), involved);
                   }
 
                   namespace pending
@@ -125,8 +116,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.queues = m_state.queuebase.queues();
 
-                     queue::blocking::Writer send{ message.process.queue, m_state};
-                     send( reply);
+                     common::communication::ipc::blocking::send( message.process.queue, reply);
                   }
                } // queues
 
@@ -142,8 +132,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.messages = m_state.queuebase.messages( message.qid);
 
-                     queue::blocking::Writer send{ message.process.queue, m_state};
-                     send( reply);
+                     common::communication::ipc::blocking::send( message.process.queue, reply);
                   }
 
                } // messages
@@ -167,8 +156,7 @@ namespace casual
                      {
                         local::involved( m_state, message);
 
-                        queue::blocking::Send send{ m_state};
-                        send( message.process.queue, reply);
+                        common::communication::ipc::blocking::send( message.process.queue, reply);
                      }
                      else
                      {
@@ -224,8 +212,7 @@ namespace casual
                            local::involved( state, message);
                         }
 
-                        queue::blocking::Send send{ state};
-                        send( message.process.queue, reply);
+                        common::communication::ipc::blocking::send( message.process.queue, reply);
 
                         return true;
                      }
@@ -254,8 +241,7 @@ namespace casual
 
                         auto reply = m_state.pending.forget( message);
 
-                        queue::blocking::Send send{ m_state};
-                        send( message.process.queue, reply);
+                        common::communication::ipc::blocking::send( message.process.queue, reply);
                      }
                      catch( ...)
                      {

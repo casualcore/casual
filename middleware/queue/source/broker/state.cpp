@@ -16,8 +16,8 @@ namespace casual
       namespace broker
       {
 
-         State::State( common::ipc::receive::Queue& receive) : receive( receive) {}
-         State::State() : State( common::ipc::receive::queue()) {}
+         State::State( common::communication::ipc::inbound::Device& receive) : receive( receive) {}
+         State::State() : State( common::communication::ipc::inbound::device()) {}
 
 
          State::Group::Group() = default;
@@ -37,62 +37,6 @@ namespace casual
             }
 
             return result;
-         }
-
-         void State::operator() ( common::process::lifetime::Exit death)
-         {
-            {
-               auto found = common::range::find_if( groups, [=]( const Group& g){
-                  return g.process.pid == death.pid;
-               });
-
-               if( found)
-               {
-                  groups.erase( found.first);
-               }
-               else
-               {
-                  // error?
-               }
-            }
-
-            //
-            // Remove all queues for the group
-            //
-            {
-
-               auto predicate = [=]( decltype( *queues.begin())& value){
-                  return value.second.process.pid == death.pid;
-               };
-
-               auto range = common::range::make( queues);
-
-               while( range)
-               {
-                  range = common::range::find_if( range, predicate);
-
-                  if( range)
-                  {
-                     queues.erase( range.first);
-                     range = common::range::make( queues);
-                  }
-               }
-            }
-            //
-            // Invalidate xa-requests
-            //
-            {
-               for( auto& corr : correlation)
-               {
-                  for( auto& reqeust : corr.second.requests)
-                  {
-                     if( reqeust.group.pid == death.pid && reqeust.stage <= Correlation::Stage::pending)
-                     {
-                        reqeust.stage = Correlation::Stage::error;
-                     }
-                  }
-               }
-            }
          }
 
 

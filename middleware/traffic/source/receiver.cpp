@@ -8,16 +8,17 @@
 #include "traffic/receiver.h"
 
 
-#include "common/queue.h"
-
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/server/handle.h"
+#include "common/communication/ipc.h"
 
 #include "common/internal/trace.h"
 
 namespace casual
 {
+   using namespace common;
+
    namespace traffic
    {
       namespace local
@@ -83,18 +84,13 @@ namespace casual
             void connect()
             {
 
-               common::message::traffic::monitor::connect::Request request;
+               message::traffic::monitor::connect::Request request;
 
                request.path = common::process::path();
                request.process = common::process::handle();
 
-               common::queue::blocking::Send send;
-               auto correlation = send( common::ipc::broker::id(), request);
-
-               common::message::handle::connect::reply(
-                     common::queue::blocking::Reader{ common::ipc::receive::queue()},
-                     correlation,
-                     common::message::traffic::monitor::connect::Reply{});
+               message::handle::connect::reply(
+                     communication::ipc::call( communication::ipc::broker::id(), request));
 
             }
          } // <unnamed>
@@ -108,7 +104,7 @@ namespace casual
          //
          // Connect as a "regular" server
          //
-         common::server::connect( common::ipc::receive::queue(), {});
+         common::server::connect( communication::ipc::inbound::device(), {});
 
          //
          // Register this traffic-logger
@@ -151,7 +147,7 @@ namespace casual
                common::message::handle::ping(),
             };
 
-            common::queue::blocking::Reader reader{ common::ipc::receive::queue()};
+            communication::ipc::Helper receiver;
 
             while( true)
             {
@@ -169,17 +165,15 @@ namespace casual
                //
                // Blocking
                //
-               handler( reader.next());
+               handler( receiver.blocking_next());
 
 
                //
                // Consume until the queue is empty or we've got pending events equal to statistics_batch
                //
                {
-                  common::queue::non_blocking::Reader non_blocking( common::ipc::receive::queue());
-
                   for( auto count = common::platform::batch::statistics;
-                     handler( non_blocking.next()) && count > 0; --count)
+                     handler( receiver.non_blocking_next()) && count > 0; --count)
                   {
                      ;
                   }

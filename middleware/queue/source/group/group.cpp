@@ -59,7 +59,7 @@ namespace casual
 
             if( found)
             {
-               requests.erase( found.first);
+               requests.erase( std::begin( found));
 
                if( requests.empty())
                {
@@ -79,7 +79,7 @@ namespace casual
             if( found)
             {
                result.enqueued = std::move( found->second);
-               transactions.erase( found.first);
+               transactions.erase( std::begin( found));
 
                //
                // Move all request that is interested in committed queues to the end.
@@ -131,7 +131,7 @@ namespace casual
                };
 
 
-               group::queue::blocking::Reader blockedRead( state.receive, state);
+               common::communication::ipc::Helper ipc;
 
                while( true)
                {
@@ -145,16 +145,14 @@ namespace casual
                         // We can only block if our back log is empty...
                         //
 
-                        handler( blockedRead.next());
+                        handler( ipc.blocking_next());
                      }
 
                      //
                      // Consume until the queue is empty or we've got pending replies equal to transaction_batch
                      //
 
-                     group::queue::non_blocking::Reader nonBlocking( state.receive, state);
-
-                     while( handler( nonBlocking.next()) &&
+                     while( handler( ipc.non_blocking_next()) &&
                            state.persistent.size() < common::platform::batch::transaction)
                      {
                         ;
@@ -164,13 +162,13 @@ namespace casual
                   //
                   // queuebase is persistent - send pending persistent replies
                   //
-                  group::queue::non_blocking::Send send{ state};
+                  //group::queue::non_blocking::Send send{ state};
 
                   auto remain = common::range::remove_if(
                      state.persistent,
-                     common::message::pending::sender( send));
+                     common::message::pending::sender( common::communication::ipc::policy::non::Blocking{}));
 
-                  state.persistent.erase( remain.last, std::end( state.persistent));
+                  state.persistent.erase( std::end( remain), std::end( state.persistent));
 
 
                }
@@ -185,13 +183,12 @@ namespace casual
             // Talk to queue-broker to get configuration
             //
 
-            group::queue::blocking::Writer queueBroker{ environment::broker::queue::id(), m_state};
 
             {
                common::message::queue::connect::Request request;
-               request.process.pid = common::process::handle().pid;
-               request.process.queue = m_state.receive.id();
-               queueBroker( request);
+               request.process = common::process::handle();
+
+               common::communication::ipc::blocking::send( environment::broker::queue::id(), request);
             }
 
             //
@@ -202,8 +199,7 @@ namespace casual
                common::message::dead::process::Registration registration;
                registration.process = common::process::handle();
 
-               group::queue::blocking::Send send{ m_state};
-               send( common::ipc::broker::id(), registration);
+               common::communication::ipc::blocking::send( common::communication::ipc::broker::id(), registration);
             }
 
             {
@@ -214,10 +210,8 @@ namespace casual
                }
 
 
-
-               group::queue::blocking::Reader read( m_state.receive, m_state);
                common::message::queue::connect::Reply reply;
-               read( reply);
+               common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
                std::vector< std::string> added;
 
@@ -247,7 +241,7 @@ namespace casual
                information.process = common::process::handle();
                information.queues = m_state.queuebase.queues();
 
-               queueBroker( information);
+               common::communication::ipc::blocking::send( environment::broker::queue::id(), information);
             }
          }
 

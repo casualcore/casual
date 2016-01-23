@@ -14,6 +14,7 @@
 #include "common/mockup/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/trace.h"
 
 namespace casual
 {
@@ -69,13 +70,12 @@ namespace casual
          {
             auto handler = test::handler( state);
 
-            common::queue::blocking::Reader read( common::ipc::receive::queue());
-
             try
             {
                while( true)
                {
-                  handler( read.next());
+                  handler( common::communication::ipc::inbound::device().next(
+                        common::communication::ipc::policy::Blocking{}));
                }
             }
             catch( const common::exception::Shutdown&)
@@ -89,33 +89,33 @@ namespace casual
 
       TEST( casual_queue_broker, handle_lookup_request)
       {
+         common::Trace trace{ "TEST casual_queue_broker, handle_lookup_request" };
          test::State state;
 
-         common::mockup::ipc::Router broker{ common::ipc::receive::id()};
+         common::mockup::ipc::Router broker{ common::communication::ipc::inbound::id()};
          common::mockup::ipc::Instance requester{ 42};
 
-         common::queue::blocking::Send send;
 
          {
+            common::communication::ipc::Helper ipc;
+
             //
-            // Send reqeust
+            // Send request
             //
             common::message::queue::lookup::Request request;
             request.process = requester.process();
             request.name = "queue1";
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
 
-            send( broker.input(), common::message::shutdown::Request{});
+            ipc.blocking_send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          {
-            common::queue::blocking::Reader read( requester.output());
             common::message::queue::lookup::Reply reply;
-
-            read( reply);
+            common::communication::ipc::blocking::receive( requester.output(), reply);
 
             EXPECT_TRUE( reply.queue == 1);
             EXPECT_TRUE( reply.process == state.group10.process());
@@ -127,10 +127,10 @@ namespace casual
       {
          test::State state;
 
-         common::mockup::ipc::Router broker{ common::ipc::receive::id()};
+         common::mockup::ipc::Router broker{ common::communication::ipc::inbound::id()};
          common::mockup::ipc::Instance requester{ 42};
 
-         common::queue::blocking::Send send;
+         common::communication::ipc::Helper ipc;
 
          {
             //
@@ -139,19 +139,17 @@ namespace casual
             common::message::queue::lookup::Request request;
             request.process = requester.process();
             request.name = "absent_qeueue";
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
 
-            send( broker.input(), common::message::shutdown::Request{});
+            ipc.blocking_send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          {
-            common::queue::blocking::Reader read( requester.output());
             common::message::queue::lookup::Reply reply;
-
-            read( reply);
+            common::communication::ipc::blocking::receive( requester.output(), reply);
 
             EXPECT_TRUE( reply.queue == 0);
             EXPECT_TRUE( reply.process == common::process::Handle{}) << "reply.process: " << reply.process;
@@ -162,9 +160,9 @@ namespace casual
       {
          test::State state;
 
-         common::mockup::ipc::Router broker{ common::ipc::receive::id()};
+         common::mockup::ipc::Router broker{ common::communication::ipc::inbound::id()};
 
-         common::queue::blocking::Send send;
+         common::communication::ipc::Helper ipc;
 
          auto trid = common::transaction::ID::create();
 
@@ -175,10 +173,10 @@ namespace casual
             common::message::queue::group::Involved request;
             request.process = state.group10.process();
             request.trid = trid;
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
 
-            send( broker.input(), common::message::shutdown::Request{});
+            ipc.blocking_send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -191,9 +189,9 @@ namespace casual
       {
          test::State state;
 
-         common::mockup::ipc::Router broker{ common::ipc::receive::id()};
+         common::mockup::ipc::Router broker{ common::communication::ipc::inbound::id()};
 
-         common::queue::blocking::Send send;
+         common::communication::ipc::Helper ipc;
 
          auto trid1 = common::transaction::ID::create();
          auto trid2 = common::transaction::ID::create();
@@ -205,18 +203,18 @@ namespace casual
             common::message::queue::group::Involved request;
             request.process = state.group10.process();
             request.trid = trid1;
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
             request.process = state.group20.process();
             request.trid = trid2;
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
             request.process = state.group10.process();
             request.trid = trid2;
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
 
-            send( broker.input(), common::message::shutdown::Request{});
+            ipc.blocking_send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -234,10 +232,10 @@ namespace casual
       {
          test::State state;
 
-         common::mockup::ipc::Router broker{ common::ipc::receive::id()};
+         common::mockup::ipc::Router broker{ common::communication::ipc::inbound::id()};
          common::mockup::ipc::Instance requester{ 42};
 
-         common::queue::blocking::Send send;
+         common::communication::ipc::Helper ipc;
 
          auto trid = common::transaction::ID::create();
 
@@ -255,22 +253,20 @@ namespace casual
             request.trid = trid;
             request.resource = 42;
             request.flags = 10;
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
 
-            send( broker.input(), common::message::shutdown::Request{});
+            ipc.blocking_send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
 
          {
             // group 10 should get the request, since it's involved with the xid
-            common::queue::blocking::Reader read( state.group10.output());
             common::message::transaction::resource::commit::Request request;
+            common::communication::ipc::blocking::receive( state.group10.output(), request);
 
-            read( request);
-
-            EXPECT_TRUE( request.process.queue == common::ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == common::communication::ipc::inbound::id());
             EXPECT_TRUE( request.trid == trid);
             EXPECT_TRUE( request.resource == 42) << "request.resource: " << request.resource;
             EXPECT_TRUE( request.flags == 10);
@@ -288,10 +284,10 @@ namespace casual
       {
          test::State state;
 
-         common::mockup::ipc::Router broker{ common::ipc::receive::id()};
+         common::mockup::ipc::Router broker{ common::communication::ipc::inbound::id()};
          common::mockup::ipc::Instance requester{ 42};
 
-         common::queue::blocking::Send send;
+         common::communication::ipc::Helper ipc;
 
          auto trid = common::transaction::ID::create();
 
@@ -310,10 +306,10 @@ namespace casual
             request.trid = trid;
             request.resource = 42;
             request.flags = 10;
-            send( broker.input(), request);
+            ipc.blocking_send( broker.input(), request);
 
 
-            send( broker.input(), common::message::shutdown::Request{});
+            ipc.blocking_send( broker.input(), common::message::shutdown::Request{});
          }
 
          test::handle( state);
@@ -321,12 +317,11 @@ namespace casual
          auto check = [&]( common::mockup::ipc::Instance& group, int index)
          {
             // group 10 should get the request, since it's involved with the xid
-            common::queue::blocking::Reader read( group.output());
             common::message::transaction::resource::commit::Request request;
+            common::communication::ipc::blocking::receive( group.output(), request);
 
-            read( request);
 
-            EXPECT_TRUE( request.process.queue == common::ipc::receive::id());
+            EXPECT_TRUE( request.process.queue == common::communication::ipc::inbound::id());
             EXPECT_TRUE( request.trid == trid);
             EXPECT_TRUE( request.resource == 42);
             EXPECT_TRUE( request.flags == 10);

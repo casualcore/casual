@@ -15,7 +15,7 @@
 
 #include "common/message/queue.h"
 #include "common/message/handle.h"
-#include "common/queue.h"
+#include "common/communication/ipc.h"
 #include "common/trace.h"
 
 
@@ -163,14 +163,15 @@ namespace casual
                      common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
                      common::log::internal::queue << "enqueues - request: " << request << std::endl;
 
-                     casual::common::queue::blocking::Send send;
-                     return send( group.process.queue, request);
+                     return casual::common::communication::ipc::blocking::send( group.process.queue, request);
                   };
 
                   common::message::queue::enqueue::Reply reply;
 
-                  casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
-                  receive( reply, send_request());
+                  casual::common::communication::ipc::blocking::receive(
+                        casual::common::communication::ipc::inbound::device(),
+                        reply,
+                        send_request());
 
                   return reply.id;
                }
@@ -184,6 +185,8 @@ namespace casual
                   //
                   local::scoped::AX_reg ax_reg;
 
+                  casual::common::communication::ipc::Helper ipc;
+
                   common::scope::Execute forget_blocking{ [&]()
                   {
                      queue::Lookup lookup( queue);
@@ -194,12 +197,10 @@ namespace casual
                      auto group = lookup();
                      request.queue = group.queue;
 
-                     casual::common::queue::blocking::Send send;
-                     auto correlation = send( group.process.queue, request);
+                     auto correlation = ipc.blocking_send( group.process.queue, request);
 
-                     casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
                      common::message::queue::dequeue::forget::Reply reply;
-                     receive( reply, correlation);
+                     ipc.blocking_receive( reply, correlation);
                   }};
 
                   auto send_reqeust = [&]()
@@ -219,15 +220,14 @@ namespace casual
 
                      common::log::internal::queue << "async::dequeue - request: " << request << std::endl;
 
-                     casual::common::queue::blocking::Send send;
-                     return send( group.process.queue, request);
+                     return ipc.blocking_send( group.process.queue, request);
                   };
 
                   auto correlation = send_reqeust();
 
                   std::vector< Message> result;
 
-                  casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
+                  //casual::common::queue::blocking::Reader receive{ common::ipc::receive::queue()};
 
                   //
                   // We need to listen to shutdown-message.
@@ -235,8 +235,8 @@ namespace casual
                   // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
                   // (which we now also do) but it isn't really coherent with how casual otherwise works
                   //
-                  auto complete = receive.next( {
-                     common::message::queue::dequeue::Reply::type(),
+                  auto complete = ipc.blocking_next( std::vector< common::message::Type>{ // why does it not compile with just an initializer list?
+                     common::message::queue::dequeue::Reply::type(),    // it should just forward it to ipc::device and ADL should kick in.
                      common::message::shutdown::Request::type()});
 
                   if( complete.type == common::message::queue::dequeue::Reply::type())
