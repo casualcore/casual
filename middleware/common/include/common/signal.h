@@ -38,7 +38,7 @@ namespace casual
             child = SIGCHLD,
             terminate = SIGTERM,
             user = SIGUSR1,
-
+            pipe = SIGPIPE,
          };
 
 		   namespace type
@@ -162,9 +162,6 @@ namespace casual
 			}
 
 
-
-
-
 			//!
 			//! Sends the signal to the process
 			//!
@@ -201,11 +198,26 @@ namespace casual
                private:
                   set_type m_set;
                };
+
             } // scope
 
 
          } // thread
 
+			namespace scope
+			{
+			   //! @remark This is not thread-safe
+			   struct Ignore
+			   {
+			      Ignore( type::type signal);
+               ~Ignore();
+
+			   private:
+               const type::type m_signal;
+               const sighandler_t m_previous;
+			   };
+
+			} // scope
 
 
 		} // signal

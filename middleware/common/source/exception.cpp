@@ -19,18 +19,38 @@ namespace casual
 
          }
 
-         base::base( std::string description, std::vector< nip_type> information) : base( std::move( description) + " - [ ")
+         namespace
          {
-            auto current = std::begin( information);
-            for( ; current != std::end( information); ++ current)
+            namespace local
             {
-               m_description += "{ " + std::get< 0>( *current) + ": " + std::get< 1>( *current) + "}";
-               if( current + 1 != std::end( information))
+               std::string make_description( std::string description, std::vector< nip_type> information)
                {
-                  m_description += ", ";
+                  description += " - [ ";
+
+                  auto current = std::begin( information);
+                  for( ; current != std::end( information); ++ current)
+                  {
+                     description += "{ " + std::get< 0>( *current) + ": " + std::get< 1>( *current) + "}";
+
+                     if( current + 1 != std::end( information))
+                     {
+                        description += ", ";
+                     }
+                  }
+
+                  description += "]";
+
+                  return description;
                }
+
             }
-            m_description += "]";
+         }
+
+
+         base::base( std::string description, std::vector< nip_type> information)
+         : base( local::make_description( std::move( description), std::move( information)))
+         {
+
          }
 
          const char* base::what() const noexcept

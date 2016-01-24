@@ -33,7 +33,7 @@ namespace casual
             //!
             //! @pre @p Iter has to be a random access iterator
             //!
-            //! @throw std::logic_error on failure
+            //! @throw exception::Casual on failure
             //!
             template< typename Iter>
             std::string encode( Iter first, Iter last)
@@ -48,7 +48,7 @@ namespace casual
             //!
             //! @return Base64-encoded binary data of @p container
             //!
-            //! @throw std::logic_error on failure
+            //! @throw exception::Casual on failure
             //!
             template< typename C>
             std::string encode( C&& container)
@@ -59,7 +59,7 @@ namespace casual
             //!
             //! @return Base64-decoded binary data
             //!
-            //! @throw std::logic_error on failure
+            //! @throw exception::Casual on failure
             //!
             platform::binary_type decode( const std::string& value);
 
@@ -72,8 +72,9 @@ namespace casual
             //!
             //! @return UTF-8-encoded string
             //!
-            //! @throw std::logic_error on some failures
-            //! @throw std::runtime_error on some failures
+            //! @throw exception::limit::Memory on resource failures
+            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::Casual on other failures
             //!
             std::string encode( const std::string& value);
 
@@ -82,8 +83,9 @@ namespace casual
             //!
             //! @return String encoded in local default codeset
             //!
-            //! @throw std::logic_error on some failures
-            //! @throw std::runtime_error on some failures
+            //! @throw exception::limit::Memory on resource failures
+            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::Casual on other failures
             //!
             std::string decode( const std::string& value);
 
@@ -93,8 +95,9 @@ namespace casual
             //!
             //! @return UTF-8-encoded string
             //!
-            //! @throw std::logic_error on some failures
-            //! @throw std::runtime_error on some failures
+            //! @throw exception::limit::Memory on resource failures
+            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::Casual on other failures
             //!
             std::string encode( const std::string& value, const std::string& codeset);
 
@@ -104,8 +107,9 @@ namespace casual
             //!
             //! @return String encoded in provided codeset
             //!
-            //! @throw std::logic_error on some failures
-            //! @throw std::runtime_error on some failures
+            //! @throw exception::limit::Memory on resource failures
+            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::Casual on other failures
             //!
             std::string decode( const std::string& value, const std::string& codeset);
 

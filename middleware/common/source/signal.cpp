@@ -78,7 +78,7 @@ namespace casual
 
                   void consume( Filter filter)
                   {
-                     auto count = signal_count.load(std::memory_order_relaxed);
+                     auto count = signal_count.load( std::memory_order_relaxed);
                      if( count > 0)
                      {
                         if( child_terminate_count > 0)
@@ -428,7 +428,7 @@ namespace casual
             set_type block()
             {
                sigset_t set;
-               sigfillset(&set);
+               sigfillset( &set);
                sigset_t result;
                pthread_sigmask( SIG_BLOCK, &set, &result);
                return result;
@@ -437,7 +437,7 @@ namespace casual
             set_type mask( set_type set)
             {
                set_type result;
-               pthread_sigmask(SIG_SETMASK, &set, &result);
+               pthread_sigmask( SIG_SETMASK, &set, &result);
                return result;
             }
 
@@ -451,13 +451,31 @@ namespace casual
                }
                Block::~Block()
                {
-                  pthread_sigmask(SIG_SETMASK, &m_set, nullptr);
+                  pthread_sigmask( SIG_SETMASK, &m_set, nullptr);
                }
 
             } // scope
 
          } // thread
 
+         namespace scope
+         {
+
+            Ignore::Ignore( const type::type signal)
+            : m_signal( signal), m_previous( ::signal( signal, SIG_IGN))
+            {
+               if( m_previous == SIG_ERR)
+               {
+                  // TODO: throw some
+               }
+            }
+
+            Ignore::~Ignore()
+            {
+               ::signal( m_signal, m_previous);
+            }
+
+         } // scope
 
 		} // signal
 	} // common

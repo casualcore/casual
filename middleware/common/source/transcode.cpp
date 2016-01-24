@@ -7,9 +7,11 @@
 
 #include "common/transcode.h"
 
+#include "common/exception.h"
+#include "common/error.h"
+
 #include <resolv.h>
 
-#include <stdexcept>
 #include <locale>
 #include <algorithm>
 #include <iterator>
@@ -22,7 +24,6 @@
 #include <iconv.h>
 #include <clocale>
 #include <cerrno>
-#include <cstring>
 #include <cstdlib>
 #include <cassert>
 //#include <langinfo.h>
@@ -55,7 +56,7 @@ namespace casual
 
                   if( length < 0)
                   {
-                     throw std::logic_error( "Base64-encode failed");
+                     throw exception::Casual( "Base64-encode failed");
                   }
 
                   result.resize( length);
@@ -79,7 +80,7 @@ namespace casual
 
                if( length < 0)
                {
-                  throw std::logic_error( "Base64-decode failed");
+                  throw exception::Casual( "Base64-decode failed");
                }
 
                result.resize( length);
@@ -106,10 +107,11 @@ namespace casual
                         case EMFILE:
                         case ENFILE:
                         case ENOMEM:
-                           throw std::runtime_error( std::strerror( errno));
+                           throw exception::limit::Memory( error::string());
                         case EINVAL:
+                           throw exception::invalid::Argument( error::string());
                         default:
-                           throw std::logic_error( std::strerror( errno));
+                           throw exception::Casual( error::string());
                         }
                      }
                   }
@@ -118,7 +120,7 @@ namespace casual
                   {
                      if( iconv_close( m_descriptor) == -1)
                      {
-                        std::cerr << std::strerror( errno) << std::endl;
+                        std::cerr << error::string() << std::endl;
                      }
                   }
 
@@ -145,9 +147,9 @@ namespace casual
                               break;
                            case EILSEQ:
                            case EINVAL:
-                           case EBADF:
+                              throw exception::invalid::Argument( error::string());
                            default:
-                              throw std::logic_error( std::strerror( errno));
+                              throw exception::Casual( error::string());
                            }
                         }
 
@@ -218,6 +220,7 @@ namespace casual
             //
             // Perhaps we need to call std::setlocale() each time just in case
             //
+            //[[unused]] const auto once = std::setlocale( LC_CTYPE, "");
             const auto once = std::setlocale( LC_CTYPE, "");
 
             std::string encode( const std::string& value)
@@ -277,7 +280,8 @@ namespace casual
 
                      while( first != last)
                      {
-                        auto hex = []( decltype( *first) value){
+                        auto hex = []( decltype( *first) value)
+                        {
                            if( value >= 87)
                            {
                               return value - 87;
@@ -285,8 +289,8 @@ namespace casual
                            return value - 48;
                         };
 
-                        *out = ( 0x0f & hex( *first++)) << 4;
-                        *out += 0x0f & hex( *first++);
+                        *out = ( 0x0F & hex( *first++)) << 4;
+                        *out += 0x0F & hex( *first++);
 
                         ++out;
                      }
