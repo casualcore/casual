@@ -134,7 +134,7 @@ namespace casual
 
                using error_type = communication::error::type;
 
-               Send( send_policy policy, error_type handler) : m_policy{ std::move( policy)}, m_handler{ std::move( handler)} {}
+               Send( send_policy policy, error_type handler) : m_policy( std::move( policy)), m_handler( std::move( handler)) {}
                Send( send_policy policy) : Send( std::move( policy), nullptr) {}
                Send( error_type handler) : Send( send_policy{}, std::move( handler)) {}
                Send() : Send( send_policy{}, nullptr) {}

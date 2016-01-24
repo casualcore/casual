@@ -89,7 +89,7 @@ namespace casual
             xid.formatID = Format::cNull;
          }
 
-         ID::ID( const xid_type& xid) : xid{ xid}
+         ID::ID( const xid_type& xid) : xid( xid)
          {
          }
 

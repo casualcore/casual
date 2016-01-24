@@ -257,7 +257,8 @@ namespace casual
                      Trace trace{ "send disconnect message", log::internal::ipc};
                      local::message::Disconnect message;
 
-                     communication::ipc::blocking::send( input, message);
+                     communication::ipc::outbound::Device ipc{ input};
+                     ipc.send( message, communication::ipc::policy::ignore::signal::Blocking{});
                   }
                   catch( const std::exception& exception)
                   {
