@@ -50,7 +50,7 @@ Edit file, set correct paths and source file
      
 casual-make test
 
-**some unittest does not work on linux, we'll fix this in a few days** 
+*tested om OS X and Ubuntu so far. More unix flavors needed* 
      
 
 ### use casual-middleware
