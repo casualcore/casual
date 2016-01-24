@@ -63,6 +63,11 @@ namespace casual
                ~Broker()
                {
                   common::process::lifetime::terminate( { m_process.pid});
+
+                  //
+                  // We clear all pending signals
+                  //
+                  common::signal::clear();
                }
 
                const common::process::Handle& process() const { return m_process;}

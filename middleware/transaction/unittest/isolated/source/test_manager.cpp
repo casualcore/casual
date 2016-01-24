@@ -102,6 +102,11 @@ namespace casual
                ~Manager()
                {
                   common::process::lifetime::terminate( { m_process.pid});
+                  
+                  //
+                  // we clear all pending signals
+                  //
+                  common::signal::clear();
                }
 
                const common::process::Handle& process() const { return m_process;}
@@ -271,7 +276,7 @@ namespace casual
       {
          common::Trace trace{ "casual_transaction_manager, begin_transaction"};
          local::Domain domain{ local::configuration()};
-
+             
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
@@ -288,6 +293,7 @@ namespace casual
       {
          common::Trace trace{ "casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips"};
          local::Domain domain{ local::configuration()};
+
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
@@ -312,6 +318,7 @@ namespace casual
       {
          common::Trace trace{ "casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization"};
          local::Domain domain{ local::configuration()};
+
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
