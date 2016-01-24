@@ -54,7 +54,7 @@ namespace casual
 
                   void operator () ( message_type& message);
 
-                  void operator() ( const common::process::lifetime::Exit& exit);
+                  void apply( const common::process::lifetime::Exit& exit);
                };
 
             } // process

@@ -257,7 +257,8 @@ namespace casual
                      Trace trace{ "send disconnect message", log::internal::ipc};
                      local::message::Disconnect message;
 
-                     communication::ipc::blocking::send( input, message);
+                     communication::ipc::outbound::Device ipc{ input};
+                     ipc.send( message, communication::ipc::policy::ignore::signal::Blocking{});
                   }
                   catch( const std::exception& exception)
                   {
@@ -495,6 +496,11 @@ namespace casual
 
                   m_thread = std::thread{ []( id_type input, id_type output)
                   {
+                     //
+                     // We block all signals.
+                     //
+                     signal::thread::scope::Block block;
+
                      try
                      {
                         Trace trace{ "Link::Implementation thread function", log::internal::ipc};
@@ -521,6 +527,7 @@ namespace casual
                               //
                               // We block
                               //
+
                               communication::ipc::native::receive( input, transport, 0);
                               cache.push_back( transport);
                            }

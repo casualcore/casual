@@ -48,7 +48,7 @@ namespace casual
                template< typename M>
                bool operator () ( M&& complete) const
                {
-                  return do_dispatch( complete);
+                  return dispatch( complete);
                }
 
                std::size_t size() const;
@@ -61,9 +61,7 @@ namespace casual
 
             private:
 
-
-               bool do_dispatch( communication::message::Complete& complete) const;
-               bool do_dispatch( std::vector<communication::message::Complete>& complete) const;
+               bool dispatch( communication::message::Complete& complete) const;
 
                class base_handler
                {
