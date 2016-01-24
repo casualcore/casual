@@ -139,6 +139,7 @@ namespace casual
                common::log::internal::queue << "qeueue broker start" << std::endl;
 
                casual::common::message::dispatch::Handler handler{
+                  broker::handle::process::Exit{ state},
                   broker::handle::connect::Request{ state},
                   broker::handle::shutdown::Request{ state},
                   broker::handle::lookup::Request{ state},
@@ -247,7 +248,9 @@ namespace casual
          try
          {
 
-            common::process::children::terminate( broker::handle::process::Exit{ m_state}, m_state.processes());
+            common::process::children::terminate(
+                  std::bind( &broker::handle::process::Exit::apply, broker::handle::process::Exit{ m_state}, std::placeholders::_1),
+                  m_state.processes());
 
             common::log::information << "casual-queue-broker is off-line" << std::endl;
 

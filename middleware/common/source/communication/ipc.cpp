@@ -45,6 +45,7 @@ namespace casual
                         }
                         case EINTR:
                         {
+                           log::internal::ipc << "ipc::native::send - signal received\n";
                            common::signal::handle();
 
                            //
@@ -97,6 +98,8 @@ namespace casual
                      {
                         case EINTR:
                         {
+                           log::internal::ipc << "ipc::native::receive - signal received\n";
+
                            common::signal::handle();
 
                            //

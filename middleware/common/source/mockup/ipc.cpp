@@ -496,6 +496,11 @@ namespace casual
 
                   m_thread = std::thread{ []( id_type input, id_type output)
                   {
+                     //
+                     // We block all signals.
+                     //
+                     signal::thread::scope::Block block;
+
                      try
                      {
                         Trace trace{ "Link::Implementation thread function", log::internal::ipc};
@@ -522,6 +527,7 @@ namespace casual
                               //
                               // We block
                               //
+
                               communication::ipc::native::receive( input, transport, 0);
                               cache.push_back( transport);
                            }

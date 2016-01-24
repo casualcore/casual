@@ -87,10 +87,10 @@ namespace casual
 
                void Exit::operator () ( message_type& message)
                {
-                  operator()( message.death);
+                  apply( message.death);
                }
 
-               void Exit::operator() ( const common::process::lifetime::Exit& exit)
+               void Exit::apply( const common::process::lifetime::Exit& exit)
                {
                   common::Trace trace{ "handle::process::Exit", common::log::internal::queue};
 
@@ -160,7 +160,7 @@ namespace casual
 
                   common::range::for_each(
                         common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)),
-                        process::Exit{ m_state});
+                        std::bind( &process::Exit::apply, process::Exit{ m_state}, std::placeholders::_1));
 
                   throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
                }

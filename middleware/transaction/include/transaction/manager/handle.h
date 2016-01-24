@@ -46,15 +46,22 @@ namespace casual
 
       namespace handle
       {
-         namespace dead
+         namespace process
          {
-            struct Process : state::Base
+            struct Exit : state::Base
             {
                using Base::Base;
 
-               void operator() ( const common::message::dead::process::Event& message);
+               using message_type = common::message::dead::process::Event;
+
+               void operator () ( message_type& message);
+
+
+               void apply( const common::process::lifetime::Exit& exit);
             };
-         } // dead
+
+         } // process
+
 
          namespace resource
          {

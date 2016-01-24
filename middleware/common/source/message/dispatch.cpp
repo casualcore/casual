@@ -21,32 +21,25 @@ namespace casual
          {
 
 
-            bool Handler::do_dispatch( communication::message::Complete& complete) const
+            bool Handler::dispatch( communication::message::Complete& complete) const
             {
-               auto findIter = m_handlers.find( complete.type);
+               if( complete)
+               {
+                  auto findIter = m_handlers.find( complete.type);
 
-               if( findIter != std::end( m_handlers))
-               {
-                  findIter->second->dispatch( complete);
-                  return true;
-               }
-               else
-               {
-                  common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
+                  if( findIter != std::end( m_handlers))
+                  {
+                     findIter->second->dispatch( complete);
+                     return true;
+                  }
+                  else
+                  {
+                     common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
+                  }
                }
                return false;
             }
 
-
-            bool Handler::do_dispatch( std::vector<communication::message::Complete>& complete) const
-            {
-               if( complete.empty())
-               {
-                  return false;
-               }
-
-               return do_dispatch( complete.front());
-            }
 
 
             std::size_t Handler::size() const

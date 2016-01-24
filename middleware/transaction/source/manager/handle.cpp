@@ -22,8 +22,21 @@ namespace casual
 
          const common::communication::ipc::Helper& device()
          {
-            static common::communication::ipc::Helper singleton{};
-            return singleton;
+            static common::communication::ipc::Helper ipc{
+               common::communication::error::handler::callback::on::Terminate
+               {
+                  []( const common::process::lifetime::Exit& exit){
+                     //
+                     // We put a dead process event on our own ipc device, that
+                     // will be handled later on.
+                     //
+                     common::message::dead::process::Event event{ exit};
+                     common::communication::ipc::inbound::device().push( std::move( event));
+                  }
+               }
+            };
+            return ipc;
+
          }
 
       } // ipc
@@ -291,11 +304,20 @@ namespace casual
             } // <unnamed>
          } // local
 
-         namespace dead
+         namespace process
          {
-            void Process::operator() ( const common::message::dead::process::Event& message)
+
+
+            void Exit::operator () ( message_type& message)
+            {
+               apply( message.death);
+            }
+
+            void Exit::apply( const common::process::lifetime::Exit& exit)
             {
                common::trace::Scope trace{ "transaction::handle::dead::Process", common::log::internal::transaction};
+
+               // TODO: check if it's one of spawned resource proxies, if so, restart?
 
                //
                // Check if the now dead process is owner to any transactions, if so, roll'em back...
@@ -304,7 +326,7 @@ namespace casual
 
                for( auto& trans : m_state.transactions)
                {
-                  if( trans.trid.owner().pid == message.death.pid)
+                  if( trans.trid.owner().pid == exit.pid)
                   {
                      trids.push_back( trans.trid);
                   }
@@ -322,9 +344,7 @@ namespace casual
                   handle::Rollback{ m_state}( request);
                }
             }
-
-         } // dead
-
+         }
 
          namespace resource
          {
