@@ -204,20 +204,6 @@ namespace casual
 
          } // thread
 
-			namespace scope
-			{
-			   //! @remark This is not thread-safe
-			   struct Ignore
-			   {
-			      Ignore( type::type signal);
-               ~Ignore();
-
-			   private:
-               const type::type m_signal;
-               const sighandler_t m_previous;
-			   };
-
-			} // scope
 
 
 		} // signal

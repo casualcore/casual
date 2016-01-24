@@ -17,9 +17,10 @@
 #include <netdb.h>
 #include <unistd.h>
 
-/*
+
  #include <sys/types.h>
  #include <sys/socket.h>
+/*
  #include <netinet/tcp.h>
  */
 
@@ -87,8 +88,7 @@ namespace casual
                            throw exception::invalid::Argument( "max size exceeded", CASUAL_NIP( size));
                         }
 
-                        const constexpr auto flags = MSG_NOSIGNAL;
-                        const auto bytes = ::send( descriptor, data, size, flags);
+                        const auto bytes = ::send( descriptor, data, size, platform::flag::value( platform::flag::msg::no_signal));
 
                         if( bytes < 0)
                         {

@@ -13,6 +13,9 @@
 #include <sys/msg.h>
 #include <sys/ipc.h>
 
+// tcp
+#include <sys/socket.h>
+
 // size_t
 #include <cstddef>
 
@@ -140,6 +143,26 @@ namespace casual
 			{
 				cIPC_NO_WAIT = IPC_NOWAIT
 			};
+
+
+			namespace flag
+         {
+            enum class msg : int
+            {
+#ifdef __APPLE__
+               no_signal = SO_NOSIGPIPE,
+#else
+               no_signal = MSG_NOSIGNAL,
+#endif
+            };
+
+            template< typename F>
+            constexpr auto value( F flag) -> typename std::underlying_type< F>::type
+            {
+               return static_cast< typename std::underlying_type< F>::type>( flag);
+            }
+
+         } // flags
 
 
 			using signal_type = int;

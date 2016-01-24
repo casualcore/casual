@@ -458,24 +458,6 @@ namespace casual
 
          } // thread
 
-         namespace scope
-         {
-
-            Ignore::Ignore( const type::type signal)
-            : m_signal( signal), m_previous( ::signal( signal, SIG_IGN))
-            {
-               if( m_previous == SIG_ERR)
-               {
-                  // TODO: throw some
-               }
-            }
-
-            Ignore::~Ignore()
-            {
-               ::signal( m_signal, m_previous);
-            }
-
-         } // scope
 
 		} // signal
 	} // common

@@ -51,26 +51,6 @@ namespace casual
       {
          namespace
          {
-            namespace error
-            {
-               void handler()
-               {
-                  try
-                  {
-                     throw;
-                  }
-                  catch( const exception::signal::child::Terminate&)
-                  {
-                     // no op;
-                  }
-                  catch( ...)
-                  {
-                     throw;
-                  }
-               }
-            } // error
-
-
             struct Manager
             {
 
