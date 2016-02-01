@@ -12,9 +12,6 @@
 
 #include "../include/test_vo.h"
 
-#include <json-c/json.h>
-
-
 namespace casual
 {
 
