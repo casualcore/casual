@@ -24,6 +24,7 @@ CROSSCOMPILER = clang++
 LIBRARY_LINKER = g++
 ARCHIVE_LINKER = ar rcs
 
+STD_DIRECTIVE = -std=c++11
 
 #
 # We make sure we use bash
@@ -39,25 +40,25 @@ endif
 # Compile and link directives
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -ggdb -c -fPIC -Wall -pedantic -std=c++11
+   COMPILE_DIRECTIVES = -ggdb -c -fPIC -Wall -pedantic $(STD_DIRECTIVE)
    LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib -fPIC
    LINK_DIRECTIVES_EXE =  -ggdb -fPIC
    LINK_DIRECTIVES_ARCHIVE =  -ggdb -fPIC
    
    ifdef ANALYZE
-      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage -std=c++11
+      COMPILE_DIRECTIVES := $(COMPILE_DIRECTIVES) -fprofile-arcs -ftest-coverage $(STD_DIRECTIVE)
       LINK_DIRECTIVES_LIB := $(LINK_DIRECTIVES_LIB) -fprofile-arcs
       LINK_DIRECTIVES_EXE := $(LINK_DIRECTIVES_EXE) -lgcov -fprofile-arcs
    endif
    
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -Wno-unused-parameter -std=c++11 -pthread
-   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC -Wall -pedantic -std=c++11
-   LINK_DIRECTIVES_EXE =  -O3 -fPIC -Wall -pedantic -std=c++11
-   LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC -Wall -pedantic -std=c++11 -pthread
+   COMPILE_DIRECTIVES =  -c -O3 -fPIC -Wall -pedantic -Wno-unused-parameter $(STD_DIRECTIVE) -pthread
+   LINK_DIRECTIVES_LIB =  -dynamiclib -O3 -fPIC -Wall -pedantic $(STD_DIRECTIVE)
+   LINK_DIRECTIVES_EXE =  -O3 -fPIC -Wall -pedantic $(STD_DIRECTIVE)
+   LINK_DIRECTIVES_ARCHIVE = -O3 -fPIC -Wall -pedantic -$(STD_DIRECTIVE) -pthread
 endif
 
-CROSS_COMPILE_DIRECTIVES = -c -g -Wall -pedantic -fcolor-diagnostics -DNOWHAT -std=c++11 -stdlib=libc++ -U__STRICT_ANSI__ -DGTEST_USE_OWN_TR1_TUPLE=1
+CROSS_COMPILE_DIRECTIVES = -c -g -Wall -pedantic -fcolor-diagnostics -DNOWHAT $(STD_DIRECTIVE) -stdlib=libc++ -U__STRICT_ANSI__ -DGTEST_USE_OWN_TR1_TUPLE=1
 
 
 

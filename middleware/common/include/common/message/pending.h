@@ -98,7 +98,7 @@ namespace casual
                         try
                         {
                            communication::ipc::outbound::Device device{ ipc};
-                           return static_cast< bool>( device.put( message.complete, std::move( policy), handler));
+                           return static_cast< bool>( device.put( message.complete, policy, handler));
                         }
                         catch( const exception::queue::Unavailable&)
                         {

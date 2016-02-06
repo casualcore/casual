@@ -243,6 +243,13 @@ namespace casual
          //!
          Handle singleton( const Uuid& identification, bool wait = true);
 
+         //!
+         //! @param pid the pid to lookup
+         //!
+         //! @return handle to the process, if not found Handle::pid/queue will be 0
+         //!
+         Handle lookup( platform::pid_type pid);
+
 
          //!
          //! ping a server that owns the @p queue

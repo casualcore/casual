@@ -21,8 +21,15 @@ namespace casual
          {
             struct Settings
             {
-               std::string ipc_file_path;
+               std::string domain_path;
 
+            };
+
+            struct State
+            {
+               State( Settings settings);
+
+               std::string domain_path;
             };
 
             struct Connector
@@ -30,6 +37,9 @@ namespace casual
                Connector( Settings settings);
 
                void start();
+
+            private:
+               State m_state;
 
             };
 

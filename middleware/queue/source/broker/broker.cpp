@@ -228,7 +228,8 @@ namespace casual
          //
          // Will throw if another queue-broker is up and running.
          //
-         common::server::connect( environment::broker::identification());
+         common::server::handle::connect::reply(
+               common::server::connect( environment::broker::identification()));
 
 
 

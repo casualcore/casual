@@ -1,8 +1,5 @@
 //!
-//! main.cpp
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "gateway/manager/manager.h"

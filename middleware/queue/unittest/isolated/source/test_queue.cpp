@@ -14,6 +14,8 @@
 #include "queue/rm/switch.h"
 
 #include "common/mockup/domain.h"
+#include "common/mockup/process.h"
+
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 
@@ -36,46 +38,30 @@ namespace casual
             {
 
                Broker( const std::string& configuration)
-                  : m_filename{ common::file::name::unique( common::directory::temporary() + '/', ".yaml")}
+                  : m_filename{ configuration_file( configuration)},
+                    m_process{ "./bin/casual-queue-broker", {
+                        "-c", m_filename,
+                        "-g", "./bin/casual-queue-group",
+                      }}
                {
-                  {
-                     std::ofstream file{ m_filename};
-                     file << configuration;
-                  }
-
-                  m_process.pid = common::process::spawn( "./bin/casual-queue-broker",
-                        { "-c", m_filename,
-                          "-g", "./bin/casual-queue-group",
-                        }, {});
 
                   //
-                  // We need to re-initialize the casual-queue ipc-queue, since it's only done ones otherwise
+                  // We need to re-initialize the casual-queue ipc-queue, since it's only done once otherwise
                   //
-                  m_process.queue = queue::environment::broker::queue::initialize();
-
-
-                  //
-                  // We need to wait until the queue-broker is up and running. We send a ping.
-                  //
-                  EXPECT_TRUE( common::process::ping( m_process.queue) == m_process);
+                  queue::environment::broker::queue::initialize();
                }
 
-               ~Broker()
+               static std::string configuration_file(  const std::string& configuration)
                {
-                  common::process::lifetime::terminate( { m_process.pid});
-
-                  //
-                  // We clear all pending signals
-                  //
-                  common::signal::clear();
+                  auto filename = common::file::name::unique( common::directory::temporary() + '/', ".yaml");
+                  std::ofstream file{ filename};
+                  file << configuration;
+                  return filename;
                }
-
-               const common::process::Handle& process() const { return m_process;}
 
             private:
-               common::process::Handle m_process;
                common::file::scoped::Path m_filename;
-
+               common::mockup::Process m_process;
             };
 
             struct Domain

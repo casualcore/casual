@@ -121,7 +121,7 @@ namespace casual
                //!
                //! @return true if this transport message is the last of the logical message.
                //!
-               //! @attention this gives not any guarantees that no more transport messages will arrive...
+               //! @attention this does not give any guarantees that no more transport messages will arrive...
                //!
                bool last() const { return message.header.offset + message.header.count == message.header.complete_size;}
 
@@ -135,22 +135,8 @@ namespace casual
                   std::copy( first, last, std::begin( message.payload));
                }
 
-               //template< std::size_t message_size>
-               //friend std::ostream& operator << ( std::ostream& out, const basic_transport< message_size>& value);
                template< std::size_t m_size>
                friend std::ostream& operator << ( std::ostream& out, const basic_transport< m_size>& value);
-
-               /*
-               friend bool send( id_type id, const Transport& transport, long flags);
-               friend bool receive( id_type id, Transport& transport, long flags);
-               friend bool ignore::signal::send( id_type id, const Transport& transport, long flags);
-               friend bool ignore::signal::receive( id_type id, Transport& transport, long flags);
-               */
-
-
-            private:
-
-               //std::size_t m_size = 0;
             };
 
 
@@ -230,7 +216,7 @@ namespace casual
                      if( splitted)
                      {
                         //
-                        // transport message came out of orderl
+                        // transport message came out of order
                         //
                         m_unhandled.push_back( splitted);
                      }
@@ -246,6 +232,18 @@ namespace casual
                friend void swap( Complete& lhs, Complete& rhs);
 
                const std::vector< range_type>& unhandled() { return m_unhandled;}
+
+               //!
+               //! So we can send complete messages as part of other
+               //! messages
+               //!
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & type;
+                  archive & correlation;
+                  archive & payload;
+               })
+
 
             private:
 

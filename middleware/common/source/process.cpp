@@ -605,6 +605,16 @@ namespace casual
             return communication::ipc::call( communication::ipc::broker::id(), request).process;
          }
 
+         Handle lookup( platform::pid_type pid)
+         {
+            message::lookup::process::Request request;
+            request.directive = message::lookup::process::Request::Directive::direct;
+            request.pid = pid;
+            request.process = process::handle();
+
+            return communication::ipc::call( communication::ipc::broker::id(), request).process;
+         }
+
          Handle ping( platform::queue_id_type queue)
          {
             message::server::ping::Request request;

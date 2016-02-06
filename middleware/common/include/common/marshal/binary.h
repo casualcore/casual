@@ -342,8 +342,6 @@ namespace casual
             auto marshal = creator( complete.payload);
             marshal << message;
 
-            //complete.offset = complete.payload.size();
-
             return complete;
          }
 

@@ -205,6 +205,7 @@ namespace casual
                   std::map< std::string, common::message::service::lookup::Reply> services;
                   std::map< common::Uuid, common::process::Handle> singeltons;
                   std::map< common::Uuid, std::vector< common::message::lookup::process::Request>> singelton_request;
+                  std::vector< common::process::Handle> servers;
                };
 
                struct dummy_t {};

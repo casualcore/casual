@@ -7,6 +7,7 @@
 
 #include "gateway/outbound/ipc/connector.h"
 
+
 namespace casual
 {
    namespace gateway
@@ -17,7 +18,15 @@ namespace casual
          namespace ipc
          {
 
+            State::State( Settings settings)
+               : domain_path{ std::move( settings.domain_path)}
+            {
+
+            }
+
+
             Connector::Connector( Settings settings)
+               : m_state{ std::move( settings)}
             {
 
             }

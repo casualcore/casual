@@ -15,6 +15,7 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/rm.h"
+#include "common/mockup/process.h"
 
 #include "common/trace.h"
 #include "common/message/dispatch.h"
@@ -55,45 +56,30 @@ namespace casual
             {
 
                Manager( const std::string& configuration)
-                  : m_filename{ common::file::name::unique( common::directory::temporary() + '/', ".yaml")}
+                  : m_filename{ configuration_file( configuration)},
+                    m_process{ "./bin/casual-transaction-manager",
+                     { "-c", m_filename,
+                       "-l", ":memory:",
+                     }}
                {
-                  {
-                     std::ofstream file{ m_filename};
-                     file << configuration;
-                  }
-
-                  m_process.pid = common::process::spawn( "./bin/casual-transaction-manager",
-                        { "-c", m_filename,
-                          "-l", ":memory:",
-                        }, {});
 
                   //
-                  // We need to re-initialize the tm-queue, since it's only done ones, otherwise
+                  // We need to re-initialize the tm-queue, since it's only done once, otherwise
                   //
-                  m_process.queue = common::process::instance::transaction::manager::refetch().queue;
-
-
-                  //
-                  // We need to wait until the TM is up and running. We send a ping.
-                  //
-                  EXPECT_TRUE( common::process::ping( m_process.queue) == m_process);
+                  common::process::instance::transaction::manager::refetch();
                }
 
-               ~Manager()
+               static std::string configuration_file(  const std::string& configuration)
                {
-                  common::process::lifetime::terminate( { m_process.pid});
-                  
-                  //
-                  // we clear all pending signals
-                  //
-                  common::signal::clear();
+                  auto filename = common::file::name::unique( common::directory::temporary() + '/', ".yaml");
+                  std::ofstream file{ filename};
+                  file << configuration;
+                  return filename;
                }
-
-               const common::process::Handle& process() const { return m_process;}
 
             private:
-               common::process::Handle m_process;
                common::file::scoped::Path m_filename;
+               common::mockup::Process m_process;
 
             };
 
@@ -102,8 +88,6 @@ namespace casual
                Domain( const std::string& configuration)
                 : broker{ create_handlers()}, tm{ configuration}
                 {
-                   //common::transaction::Resource resource{ "rm-mockup", &casual_mockup_xa_switch_static};
-                   //common::transaction::Context::instance().set( { resource});
 
                 }
 

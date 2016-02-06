@@ -382,6 +382,8 @@ namespace casual
 
                      std::vector< reply::result_t> result;
 
+                     m_state.servers.push_back( r.process);
+
                      auto reply = message::reverse::type( r);
                      reply.directive = decltype( reply)::Directive::start;
 
@@ -429,18 +431,44 @@ namespace casual
                   },
                   [&]( common::message::lookup::process::Request r)
                   {
-                     auto found = range::find(  m_state.singeltons, r.identification);
+                     Trace trace{ "mockup lookup::process::Request", log::internal::debug};
 
-                     if( found)
+                     if( r.identification)
                      {
-                        auto reply = message::reverse::type( r);
-                        reply.process = found->second;
-                        reply.domain = "mockup-domain";
-                        return local::result_set( r.process, reply);
+                        log::internal::debug << "lockup for identificatin: " << r.identification << '\n';
+
+                        auto found = range::find(  m_state.singeltons, r.identification);
+
+                        if( found)
+                        {
+                           auto reply = message::reverse::type( r);
+                           reply.process = found->second;
+                           reply.domain = "mockup-domain";
+                           return local::result_set( r.process, reply);
+                        }
+                        else
+                        {
+                           m_state.singelton_request[ r.identification].push_back( std::move( r));
+                        }
                      }
-                     else
+                     else if( r.pid)
                      {
-                        m_state.singelton_request[ r.identification].push_back( std::move( r));
+                        log::internal::debug << "lockup for pid: " << r.pid << '\n';
+
+                        auto found = range::find_if( m_state.servers, [=]( const process::Handle& h){
+                           return h.pid == r.pid;
+                        });
+
+                        auto reply = message::reverse::type( r);
+
+                        reply.domain = "mockup-domain";
+
+                        if( found)
+                        {
+                           reply.process = *found;
+                           log::internal::debug << "found server from pid: " << reply.process << '\n';
+                        }
+                        return local::result_set( r.process, reply);
                      }
                      return std::vector< reply::result_t>{};
                   },
@@ -472,6 +500,8 @@ namespace casual
                   },
                   [&]( message::service::lookup::Request r)
                   {
+                     Trace trace{ "mockup service::lookup::Request", log::internal::debug};
+
                      auto found = range::find( m_state.services, r.requested);
 
                      if( found)

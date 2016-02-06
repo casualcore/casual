@@ -36,6 +36,37 @@ namespace casual
       namespace server
       {
 
+         namespace handle
+         {
+            namespace connect
+            {
+               template< typename M>
+               auto reply( M&& message) -> decltype( std::forward< M>( message))
+               {
+                  using message_type = typename std::decay< M>::type;
+
+                  switch( message.directive)
+                  {
+                     case message_type::Directive::singleton:
+                     {
+                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
+                     }
+                     case message_type::Directive::shutdown:
+                     {
+                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
+                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
+                     }
+                     default:
+                     {
+                        break;
+                     }
+                  }
+                  return std::forward< M>( message);
+               }
+            } // connect
+         } // handle
+
          message::server::connect::Reply connect( const Uuid& identification);
 
          message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services);
@@ -66,7 +97,7 @@ namespace casual
             //
             // Wait for the connect reply
             //
-            return common::message::handle::connect::reply(
+            return handle::connect::reply(
                   communication::ipc::call( communication::ipc::broker::id(), message, policy, handler, receive));
 
          }
@@ -85,9 +116,6 @@ namespace casual
 
          namespace handle
          {
-
-
-
 
             //!
             //! Handles XATMI-calls

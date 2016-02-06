@@ -40,6 +40,7 @@ namespace casual
             process_death_event,
             lookup_process_request,
             lookup_process_reply,
+            delay_message,
 
             // Server
             SERVER_BASE = 1000,
@@ -123,6 +124,7 @@ namespace casual
 
 
             GATEWAY_BASE = 6000,
+            gateway_outbound_connect,
 
 
 
@@ -420,12 +422,14 @@ namespace casual
                   };
 
                   Uuid identification;
+                  platform::pid_type pid = 0;
                   Directive directive;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      server::basic_id< Type::lookup_process_request>::marshal( archive);
                      archive & identification;
+                     archive & pid;
                      archive & directive;
                   })
                };

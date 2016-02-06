@@ -13,7 +13,7 @@
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/internal/trace.h"
-#include "common/message/handle.h"
+#include "common/server/handle.h"
 
 
 #include "sf/log.h"
@@ -50,7 +50,7 @@ namespace casual
                   common::message::transaction::manager::connect::Reply reply;
                   ipc::device().blocking_receive( reply, correlation);
 
-                  common::message::handle::connect::reply( reply);
+                  common::server::handle::connect::reply( reply);
                }
 
             }

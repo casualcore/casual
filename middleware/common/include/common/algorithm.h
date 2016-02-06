@@ -1100,6 +1100,18 @@ namespace casual
             return make( std::min_element( std::begin( result), std::end( result), functor), std::end( result));
          }
 
+         template< typename R>
+         auto min( R&& range) -> decltype( make( range))
+         {
+            //
+            // Just to make sure range is not an rvalue container. we could use enable_if instead.
+            //
+            auto result = make( std::forward< R>( range));
+
+            return make( std::min_element( std::begin( result), std::end( result)), std::end( result));
+         }
+
+
          //!
          //! @return true if all elements in @p other is found in @p source
          //!

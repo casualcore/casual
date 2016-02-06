@@ -89,7 +89,7 @@ namespace casual
                request.path = common::process::path();
                request.process = common::process::handle();
 
-               message::handle::connect::reply(
+               server::handle::connect::reply(
                      communication::ipc::call( communication::ipc::broker::id(), request));
 
             }
@@ -104,7 +104,8 @@ namespace casual
          //
          // Connect as a "regular" server
          //
-         common::server::connect( communication::ipc::inbound::device(), {});
+         server::handle::connect::reply(
+               common::server::connect( communication::ipc::inbound::device(), {}));
 
          //
          // Register this traffic-logger
