@@ -154,6 +154,22 @@ namespace casual
                   ;
                }
             }
+
+            namespace blocking
+            {
+               template< typename D>
+               void pump( Handler& handler, D& device)
+               {
+                  using device_type = typename std::decay< decltype( device)>::type;
+
+                  while( handler( device.next( typename device_type::blocking_policy{})))
+                  {
+                     ;
+                  }
+               }
+
+            } // blocking
+
          } // dispatch
       } // message
    } // common

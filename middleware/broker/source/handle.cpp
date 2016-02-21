@@ -778,40 +778,60 @@ namespace casual
 
                   service.lookedup++;
                }
-               else if(
-                  message.context == common::message::service::lookup::Request::Context::no_reply
-                  || message.context == common::message::service::lookup::Request::Context::forward)
-               {
-                  //
-                  // The intention is "send and forget", or a plain forward, we use our forward-cache for this
-                  //
-                  reply.process = m_state.forward;
-
-                  //
-                  // Caller will think that service is idle, that's the whole point
-                  // with our forward.
-                  //
-                  reply.state = decltype( reply.state)::idle;
-
-                  ipc::device().blocking_send( message.process.queue, reply);
-
-               }
                else
                {
-                  //
-                  // All instances are busy, we stack the request
-                  //
-                  m_state.pending.requests.push_back( std::move( message));
+                  switch( message.context)
+                  {
+                     case common::message::service::lookup::Request::Context::no_reply:
+                     case common::message::service::lookup::Request::Context::forward:
+                     {
+                        //
+                        // The intention is "send and forget", or a plain forward, we use our forward-cache for this
+                        //
+                        reply.process = m_state.forward;
 
-                  //
-                  // ...and send busy-message to caller, to set timeouts and stuff
-                  //
-                  reply.state = decltype( reply.state)::busy;
+                        //
+                        // Caller will think that service is idle, that's the whole point
+                        // with our forward.
+                        //
+                        reply.state = decltype( reply.state)::idle;
 
-                  ipc::device().blocking_send( message.process.queue, reply);
+                        ipc::device().blocking_send( message.process.queue, reply);
 
+                        break;
+                     }
+                     case common::message::service::lookup::Request::Context::gateway:
+                     {
+                        //
+                        // the request is from some other domain, we'll wait until
+                        // the service is idle. That is, we don't need to send timeout and
+                        // stuff to the gateway, since the other domain has provided this to
+                        // the caller (which of course can differ from our timeouts, if operation
+                        // has change the timeout, TODO: something we need to address? probably not,
+                        // since we can't make it 100% any way...)
+                        //
+                        m_state.pending.requests.push_back( std::move( message));
+
+                        break;
+                     }
+                     default:
+                     {
+                        //
+                        // All instances are busy, we stack the request
+                        //
+                        m_state.pending.requests.push_back( std::move( message));
+
+                        //
+                        // ...and send busy-message to caller, to set timeouts and stuff
+                        //
+                        reply.state = decltype( reply.state)::busy;
+
+                        ipc::device().blocking_send( message.process.queue, reply);
+
+                        break;
+                     }
+                  }
                }
-
             }
             catch( state::exception::Missing& exception)
             {

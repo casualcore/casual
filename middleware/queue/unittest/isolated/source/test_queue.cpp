@@ -15,6 +15,7 @@
 
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
+#include "common/mockup/file.h"
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
@@ -38,7 +39,7 @@ namespace casual
             {
 
                Broker( const std::string& configuration)
-                  : m_filename{ configuration_file( configuration)},
+                  : m_filename{ common::mockup::file::temporary( ".yaml", configuration)},
                     m_process{ "./bin/casual-queue-broker", {
                         "-c", m_filename,
                         "-g", "./bin/casual-queue-group",
@@ -51,13 +52,6 @@ namespace casual
                   queue::environment::broker::queue::initialize();
                }
 
-               static std::string configuration_file(  const std::string& configuration)
-               {
-                  auto filename = common::file::name::unique( common::directory::temporary() + '/', ".yaml");
-                  std::ofstream file{ filename};
-                  file << configuration;
-                  return filename;
-               }
 
             private:
                common::file::scoped::Path m_filename;

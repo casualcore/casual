@@ -61,7 +61,37 @@ namespace casual
 				{
 				   setenv( name.c_str(), value.c_str(), 1);
 				}
-			}
+
+            namespace name
+            {
+               namespace domain
+               {
+                  const std::string& id()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_ID"};
+                     return name;
+                  }
+                  const std::string& path()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_PATH"};
+                     return name;
+                  }
+                  const std::string& name()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_NAME"};
+                     return name;
+                  }
+
+
+                  const std::string& ipc()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_IPC_QUEUE"};
+                     return name;
+                  }
+               } // domain
+            } // name
+
+			} // variable
 
 
 			namespace directory
@@ -97,11 +127,6 @@ namespace casual
                }
             } // broker
 
-            std::string brokerQueue()
-            {
-               return broker::device();
-            }
-
             std::string configuration()
             {
                return common::file::find( directory::domain() + "/configuration", std::regex( "domain.(yaml|xml)" ));
@@ -119,10 +144,19 @@ namespace casual
          {
             namespace
             {
-               std::string& domainName()
+               std::string& domain_name()
                {
-                  static std::string path;
+                  static std::string path = variable::get( variable::name::domain::name(), "unknown");
                   return path;
+               }
+
+               std::string domain_id()
+               {
+                  if( ! variable::exists( variable::name::domain::id()))
+                  {
+                     variable::set( variable::name::domain::id(), uuid::string( uuid::make()));
+                  }
+                  return variable::get( variable::name::domain::id());
                }
             }
 		   }
@@ -131,12 +165,19 @@ namespace casual
          {
             const std::string& name()
             {
-               return local::domainName();
+               return local::domain_name();
             }
 
             void name( const std::string& value)
             {
-               local::domainName() = value;
+               variable::set( variable::name::domain::name(), value);
+               local::domain_name() = value;
+            }
+
+            const Uuid& id()
+            {
+               static Uuid id{ local::domain_id()};
+               return id;
             }
 
             namespace singleton

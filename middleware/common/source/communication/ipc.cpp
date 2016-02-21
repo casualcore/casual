@@ -164,6 +164,13 @@ namespace casual
                   return *this;
                }
 
+               handle_type Connector::id() const { return m_id;}
+
+               std::ostream& operator << ( std::ostream& out, const Connector& rhs)
+               {
+                  return out << "{ id: " << rhs.m_id << '}';
+               }
+
 
                void swap( Connector& lhs, Connector& rhs)
                {
@@ -182,8 +189,23 @@ namespace casual
                {
                   return device().connector().id();
                }
-
             } // inbound
+
+            namespace outbound
+            {
+               Connector::Connector( handle_type id) : m_id( id)
+               {}
+
+               Connector::operator handle_type() const { return m_id;}
+
+               Connector::handle_type Connector::id() const { return m_id;}
+
+               std::ostream& operator << ( std::ostream& out, const Connector& rhs)
+               {
+                  return out << "{ id: " << rhs.m_id << '}';
+               }
+
+            } // outbound
 
 
 
@@ -229,36 +251,13 @@ namespace casual
                } // non
             } // policy
 
-            namespace local
-            {
-               namespace
-               {
-                  outbound::Device initialize_broker_device()
-                  {
-                     static const std::string brokerFile = common::environment::file::broker::device();
-
-                     std::ifstream file( brokerFile.c_str());
-
-                     if( ! file)
-                     {
-                        log::internal::ipc << "Failed to open broker queue configuration file" << std::endl;
-                        throw common::exception::xatmi::System( "Failed to open broker queue configuration file: " + brokerFile);
-                     }
-
-                     handle_type id{ 0};
-                     file >> id;
-
-                     return { id};
-
-                  }
-               } // <unnamed>
-            } // local
 
             namespace broker
             {
                outbound::Device& device()
                {
-                  static outbound::Device singelton = local::initialize_broker_device();
+                  static outbound::Device singelton{
+                     environment::variable::get< platform::queue_id_type>( environment::variable::name::domain::ipc())};
                   return singelton;
                }
 

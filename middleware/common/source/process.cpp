@@ -217,6 +217,42 @@ namespace casual
             std::this_thread::sleep_for( time);
          }
 
+         namespace pattern
+         {
+            Sleep::Pattern::Pattern( std::chrono::microseconds time, std::size_t quantity)
+               : time{ time}, quantity{ quantity}
+            {}
+
+            Sleep::Pattern::Pattern() = default;
+
+
+            Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)) {}
+
+            void Sleep::operator () ()
+            {
+               if( m_offset < m_pattern.size())
+               {
+                  if( m_offset + 1 == m_pattern.size())
+                  {
+                     //
+                     // We're at the last pattern, we keep sleeping
+                     //
+                     sleep( m_pattern[ m_offset].time);
+                  }
+                  else
+                  {
+                     auto& pattern = m_pattern[ m_offset];
+                     sleep( pattern.time);
+
+                     if( pattern.quantity == 0 || --pattern.quantity == 0)
+                     {
+                        ++m_offset;
+                     }
+                  }
+               }
+            }
+         } // pattern
+
          namespace local
          {
             namespace

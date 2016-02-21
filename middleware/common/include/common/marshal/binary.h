@@ -327,6 +327,7 @@ namespace casual
          } // message
       } // communication
 
+      /*
       namespace marshal
       {
          template< typename M, typename C = binary::create::Output>
@@ -357,6 +358,7 @@ namespace casual
          }
 
       } // marshal
+      */
 
 
    } // common

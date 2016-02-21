@@ -12,6 +12,7 @@
 #include <sstream>
 
 #include "common/platform.h"
+#include "common/uuid.h"
 
 namespace casual
 {
@@ -56,7 +57,21 @@ namespace casual
 				   set( name, string);
 				}
 
-			}
+				namespace name
+            {
+				   namespace domain
+               {
+				      const std::string& id();
+				      const std::string& path();
+				      const std::string& name();
+
+				      //!
+				      //! @return the name of the domain-ipc-queue environment variable
+				      //!
+				      const std::string& ipc();
+               } // domain
+            } // name
+			} // variable
 
 			namespace directory
 			{
@@ -90,9 +105,6 @@ namespace casual
             } // broker
 
 
-			   //! @deprecated use file::broker::device
-			   std::string brokerQueue();
-
 			   //!
 			   //! @return domain configuration file path
 			   //!
@@ -106,16 +118,15 @@ namespace casual
 
 
 
-			//platform::seconds_type getTime();
-
 			namespace domain
          {
 			   //!
 			   //! @return the name of the casual domain.
 			   //!
 			   const std::string& name();
-
 			   void name( const std::string& value);
+
+			   const Uuid& id();
 
 			   namespace singleton
             {

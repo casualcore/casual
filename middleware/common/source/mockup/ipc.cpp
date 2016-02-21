@@ -673,24 +673,16 @@ namespace casual
                   {
                      struct Instance : ipc::Instance
                      {
-                        Instance() : ipc::Instance( 6666), m_path( common::environment::file::brokerQueue())
+                        Instance() : ipc::Instance( 6666)
                         {
-                           log::internal::ipc << "writing mockup broker queue file: " << m_path.path() << std::endl;
+                           //
+                           // Set domain ipc queue environment variable
+                           //
+                           environment::variable::set( environment::variable::name::domain::ipc(), id());
 
-                           std::ofstream brokerQueueFile( m_path);
-
-                           if( brokerQueueFile)
-                           {
-                              brokerQueueFile << id() << std::endl;
-                              brokerQueueFile.close();
-                           }
-                           else
-                           {
-                              throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + m_path.path());
-                           }
+                           log::debug << environment::variable::name::domain::ipc() << " set to: "
+                                 << environment::variable::get( environment::variable::name::domain::ipc()) << std::endl;
                         }
-
-                        file::scoped::Path m_path;
                      };
                   } // <unnamed>
                } // local

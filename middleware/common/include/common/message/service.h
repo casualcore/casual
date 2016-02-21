@@ -77,7 +77,8 @@ namespace casual
                   {
                      regular,
                      no_reply,
-                     forward
+                     forward,
+                     gateway,
                   };
                   Request() = default;
                   Request( Request&&) = default;

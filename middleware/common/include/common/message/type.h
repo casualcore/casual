@@ -125,7 +125,10 @@ namespace casual
 
             GATEWAY_BASE = 6000,
             gateway_outbound_connect,
-
+            gateway_worker_connect,
+            gateway_worker_disconnect,
+            gateway_inbound_ipc_connect_request,
+            gateway_inbound_ipc_connect_reply,
 
 
 

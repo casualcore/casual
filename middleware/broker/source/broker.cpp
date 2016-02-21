@@ -111,8 +111,10 @@ namespace casual
 
 
 		Broker::Broker( const Settings& arguments)
-		  : m_brokerQueueFile( common::process::singleton( common::environment::file::brokerQueue()))
+		  : m_brokerQueueFile( common::process::singleton( common::environment::file::broker::device()))
 		{
+		   environment::variable::set( environment::variable::name::domain::ipc(), communication::ipc::inbound::id());
+
          //
          // Configure
          //

@@ -11,7 +11,7 @@
 #include "common/platform.h"
 #include "common/message/transaction.h"
 #include "common/algorithm.h"
-#include "common/marshal/binary.h"
+#include "common/marshal/complete.h"
 
 #include "config/xa_switch.h"
 

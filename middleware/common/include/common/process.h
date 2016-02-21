@@ -179,6 +179,41 @@ namespace casual
             sleep( std::chrono::duration_cast< std::chrono::microseconds>( time));
          }
 
+         namespace pattern
+         {
+            struct Sleep
+            {
+               struct Pattern
+               {
+
+                  Pattern( std::chrono::microseconds time, std::size_t quantity);
+
+                  template< typename R, typename P>
+                  Pattern( std::chrono::duration< R, P> time, std::size_t quantity)
+                   : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
+                   {}
+
+                   Pattern();
+
+                  std::chrono::microseconds time;
+                  std::size_t quantity = 0;
+               };
+
+               Sleep( std::vector< Pattern> pattern);
+
+               void operator () ();
+
+
+            private:
+
+               std::vector< Pattern> m_pattern;
+               std::size_t m_offset = 0;
+            };
+
+         } // pattern
+
+
+
 
          //!
          //! Spawn a new application that path describes

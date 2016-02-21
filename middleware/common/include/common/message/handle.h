@@ -37,6 +37,9 @@ namespace casual
                }
             };
 
+            //!
+            //! Replies to a ping message
+            //!
             struct Ping
             {
                void operator () ( server::ping::Request& message);
@@ -49,12 +52,41 @@ namespace casual
             }
 
 
+
+            //!
+            //! @throws exception::Shutdown if message::shutdown::Request is dispatched
+            //!
             struct Shutdown
             {
                using message_type = message::shutdown::Request;
 
                void operator () ( message_type& message);
             };
+
+            //!
+            //! Dispatch and assigns a given message
+            //!
+            template< typename M>
+            struct Assign
+            {
+               using message_type = M;
+
+               Assign( message_type& message) : m_message( message) {}
+
+               void operator () ( message_type& message)
+               {
+                  m_message = message;
+               }
+            private:
+               message_type& m_message;
+            };
+
+            template< typename M>
+            Assign< M> assign( M& message)
+            {
+               return Assign< M>{ message};
+            }
+
 
          } // handle
       } // message

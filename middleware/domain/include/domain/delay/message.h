@@ -9,7 +9,7 @@
 #include "common/message/type.h"
 
 #include "common/communication/message.h"
-#include "common/marshal/binary.h"
+#include "common/marshal/complete.h"
 
 #include "common/uuid.h"
 #include "common/process.h"

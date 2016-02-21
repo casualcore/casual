@@ -106,6 +106,7 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/ipc.cpp'),
        Compile( 'source/mockup/domain.cpp'),
        Compile( 'source/mockup/process.cpp'),
+       Compile( 'source/mockup/file.cpp')
      ],
      [ common])
 

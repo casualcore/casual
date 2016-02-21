@@ -5,6 +5,7 @@
 #include "common/mockup/process.h"
 
 #include "common/process.h"
+#include "common/trace.h"
 
 namespace casual
 {
@@ -15,6 +16,7 @@ namespace casual
 
          Process::Process( const std::string& executable, const std::vector< std::string>& arguments)
          {
+            Trace trace{ "common::mockup::Process::Process()", log::internal::debug};
             auto pid = common::process::spawn( executable, arguments, {});
 
             do
@@ -33,6 +35,8 @@ namespace casual
 
          Process::~Process()
          {
+            Trace trace{ "common::mockup::Process::~Process()", log::internal::debug};
+
             common::process::lifetime::terminate( { m_process.pid});
 
             //

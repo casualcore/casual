@@ -10,6 +10,9 @@
 
 #include "sf/namevaluepair.h"
 
+#include <string>
+#include <vector>
+
 namespace casual
 {
    namespace config
@@ -17,32 +20,41 @@ namespace casual
       namespace gateway
       {
 
-         struct Listener
+         struct Connection
          {
-            std::string port;
-            std::string ip;
+            std::string name;
+            std::string type;
+            std::string address;
+            std::vector< std::string> services;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( port);
-               archive & CASUAL_MAKE_NVP( ip);
+               archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( type);
+               archive & CASUAL_MAKE_NVP( address);
+               archive & CASUAL_MAKE_NVP( services);
             )
          };
 
+         struct Gateway
+         {
+            std::string address;
+            std::vector< gateway::Connection> connections;
+
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
+               archive & CASUAL_MAKE_NVP( address);
+               archive & CASUAL_MAKE_NVP( connections);
+            )
+
+         };
+
+
+         Gateway get( const std::string& file);
+
+         Gateway get();
 
       } // gateway
-
-      struct Gateway
-      {
-         std::vector< gateway::Listener> listernes;
-
-         CASUAL_CONST_CORRECT_SERIALIZE
-         (
-            archive & CASUAL_MAKE_NVP( listernes);
-         )
-
-      };
-
    } // config
 } // casual
 

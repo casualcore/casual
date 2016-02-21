@@ -53,6 +53,8 @@ namespace casual
 
          std::string queue();
 
+         std::string gateway();
+
 
       } // file
 

@@ -19,6 +19,9 @@ namespace casual
 
          namespace message
          {
+            Complete::Complete() = default;
+
+            Complete::Complete( message_type_type type, const Uuid& correlation) : type{ type}, correlation{ correlation} {}
 
             Complete::Complete( Complete&& rhs) noexcept
             {
@@ -51,6 +54,11 @@ namespace casual
             {
                return out << "{ type: " << value.type << ", correlation: " << value.correlation << ", size: "
                      << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << '}';
+            }
+
+            bool operator == ( const Complete& complete, const Uuid& correlation)
+            {
+               return complete.correlation == correlation;
             }
 
          } // message

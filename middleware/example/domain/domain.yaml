@@ -6,28 +6,38 @@ domain:
       path: /opt/casual/bin/casual-transaction-manager # development purpose only
       database: "transaction-manager.db" #optional
 
+  #
+  # Default configuriation.
+  # These will be assigned to every instance that doesn't have them defined
+  #
   default:
   
     server:
       instances: 1
-       
+      restart: false
+   
     service:
-      timeout: 90s
+      timeout: 90s  
    
 
   groups: 
       
-    - name: group1        
+    - name: group1  # this name is used to bind servers (via membership) to one or more groups      
       note: mockup-test
+      
+      #
+      # a group can bind to 0..* resources 
+      #
       resources:
-        - key: rm-mockup
-          instances: 3
-          openinfo: "some openinfo string"
+        - key: rm-mockup  # this key have to be defined in resurces.(yaml|json|xml|ini) 
+          instances: 3    # how many resource-proxy instanses TM should spawn.
+          openinfo: "some openinfo string"  # the openinfo-string the resource needs
+          closeinfo: "some close info" # the closeinfo-string the resource needs (not very common)
         
     - name: group2
       note: some non rm group
       dependencies:
-        - group1
+        - group1  # groups can have dependencies to other groups. Affects the boot-order of servers.
 
 
     - name: casual-queue
@@ -39,12 +49,17 @@ domain:
 
     
   servers: 
-      
+    
+      #  
+      # path to the server. If servers path are in PATH environment variable
+      # one can omitt the path part, and only use the executable name
+      #  
     - path: /opt/casual/bin/casual-traffic-monitor
-      arguments: [ -db, monitor.db ]
-      instances: 1
+      
+      arguments: [ -db, monitor.db ]  # arbitary arguments that your server needs
+      instances: 1 # how many instances should be started
       note: The monitor
-      memberships:
+      memberships:  # which groups this server is member of [0..*]
         - group1
         
     - path: /opt/casual/bin/casual-traffic-log
@@ -54,10 +69,14 @@ domain:
       memberships:
         - group1
  
-    - alias: someServer
+    - alias: someServer # the name that the outside world refers to, ex: to change number of instances and such
       note: Some testserver...
       path: /opt/casual/bin/test
       instances: 5 
+      
+      # if the server terminates/cores on it's own, casaul will continue to start instances to meet 
+      # the configured number of instances. [any other value than 'true' is treated as 'false']
+      restart: true 
       memberships:
         - group1
         - casual-queue
@@ -69,7 +88,7 @@ domain:
       memberships:
         - group1
         - casual-queue
-      restriction:
+      restriction: # at most the following services will be advertised for this server.
         - casual_test1
         - casual_test2
         
@@ -128,12 +147,27 @@ domain:
       arguments: [casual is the greatest thing since sliced bread]
       instances: 0
 
-  
+  #
+  # specific configuration for services (if needed)
+  #  
   services:
-    - name: casual_test2
-      timeout: 4s
-      authorized:
-        - casual_test1 
+    - name: casual_test2  # the service this configuration is for.
+      
+      #
+      # The one and only timeout in casual. Dictates how long
+      # a caller should wait for a reply.
+      #
+      # following units can be used: us, ms, s, min, h.
+      #
+      timeout: 4s  # overridden timeout from the default
+      
+      #
+      # only the following services is allowed to call the service
+      # To enable a "protection" for a service. Could be helpfull to enforce
+      # some enterprise guidlines/policies
+      # 
+      authorized: 
+        - casual_test1  
 
 
 

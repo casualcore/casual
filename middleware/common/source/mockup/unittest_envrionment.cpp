@@ -31,19 +31,21 @@ namespace casual
             {
                void SetUp() override
                {
-                  std::string domainPath;
+
+
+                  std::string domain_path;
 
                   if( environment::variable::exists( "CASUAL_BUILD_HOME"))
                   {
-                     domainPath =  environment::variable::get( "CASUAL_BUILD_HOME") + "/.unittest_domain_home" ;
+                     domain_path =  environment::variable::get( "CASUAL_BUILD_HOME") + "/.unittest_domain_home" ;
                   }
                   else
                   {
-                     domainPath =  environment::directory::temporary() + "/casual_unittest_domain_home" ;
+                     domain_path =  environment::directory::temporary() + "/casual_unittest_domain_home" ;
                   }
-                  environment::variable::set( "CASUAL_DOMAIN_HOME", domainPath);
+                  environment::variable::set( "CASUAL_DOMAIN_HOME", domain_path);
 
-                  directory::create( domainPath);
+                  directory::create( domain_path);
 
                   log::debug << "CASUAL_DOMAIN_HOME set to: " << environment::variable::get( "CASUAL_DOMAIN_HOME") << std::endl;
                   log::debug  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
@@ -53,6 +55,7 @@ namespace casual
                   mockup::ipc::clear();
 
                   log::debug << "mockup broker queue id: " << mockup::ipc::broker::queue().id() << std::endl;
+                  log::debug << "broker queue id: " << communication::ipc::broker::id() << std::endl;
                   log::debug << "mockup TM queue id: " << mockup::ipc::transaction::manager::queue().id() << std::endl;
 
                }

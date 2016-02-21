@@ -9,6 +9,7 @@
 
 #include "common/marshal/binary.h"
 #include "common/marshal/network.h"
+#include "common/marshal/complete.h"
 
 #include "common/message/service.h"
 #include "common/message/queue.h"

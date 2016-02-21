@@ -21,6 +21,20 @@ namespace casual
       {
          namespace ipc
          {
+            //
+            // Forwards
+            //
+            namespace inbound
+            {
+               struct Connector;
+            } // inbound
+
+            namespace outbound
+            {
+               struct Connector;
+            } // inbound
+
+
             namespace message
             {
                using Transport = communication::message::basic_transport< platform::message_size>;
@@ -46,74 +60,8 @@ namespace casual
             } // native
 
 
-
-            namespace inbound
-            {
-               struct Connector
-               {
-                  using handle_type = ipc::handle_type;
-                  using transport_type = ipc::message::Transport;
-
-
-                  Connector();
-                  ~Connector();
-
-                  Connector( const Connector&) = delete;
-                  Connector& operator = ( const Connector&) = delete;
-
-                  Connector( Connector&& rhs) noexcept;
-                  Connector& operator = ( Connector&& rhs) noexcept;
-
-                  handle_type id() const { return m_id;}
-
-                  friend void swap( Connector& lhs, Connector& rhs);
-
-                  friend std::ostream& operator << ( std::ostream& out, const Connector& rhs) { return out << "{ id: " << rhs.m_id << '}';}
-
-               private:
-
-                  enum
-                  {
-                     cInvalid = -1
-                  };
-
-                  handle_type m_id = cInvalid;
-               };
-
-
-               using Device = communication::inbound::Device< Connector>;
-
-
-               Device& device();
-               handle_type id();
-
-            } // inbound
-
-            namespace outbound
-            {
-               struct Connector
-               {
-                  using handle_type = ipc::handle_type;
-                  using transport_type = ipc::message::Transport;
-
-                  Connector( handle_type id) : m_id( id) {}
-
-                  operator handle_type() const { return m_id;}
-
-                  handle_type id() const { return m_id;}
-
-                  friend std::ostream& operator << ( std::ostream& out, const Connector& rhs) { return out << "{ id: " << rhs.m_id << '}';}
-
-               private:
-                  handle_type m_id;
-               };
-
-               using Device = communication::outbound::Device< Connector>;
-            } // outbound
-
             namespace policy
             {
-
 
                template< typename Prefix, typename Policy>
                struct basic_prefix
@@ -182,6 +130,77 @@ namespace casual
                } // ignore
 
             } // policy
+
+
+            namespace inbound
+            {
+               struct Connector
+               {
+                  using handle_type = ipc::handle_type;
+                  using transport_type = ipc::message::Transport;
+                  using blocking_policy = typename policy::Blocking;
+                  using non_blocking_policy = typename policy::non::Blocking;
+
+
+                  Connector();
+                  ~Connector();
+
+                  Connector( const Connector&) = delete;
+                  Connector& operator = ( const Connector&) = delete;
+
+                  Connector( Connector&& rhs) noexcept;
+                  Connector& operator = ( Connector&& rhs) noexcept;
+
+                  handle_type id() const;
+
+                  friend void swap( Connector& lhs, Connector& rhs);
+
+                  friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
+
+               private:
+
+                  enum
+                  {
+                     cInvalid = -1
+                  };
+
+                  handle_type m_id = cInvalid;
+               };
+
+
+               using Device = communication::inbound::Device< Connector>;
+
+
+               Device& device();
+               handle_type id();
+
+            } // inbound
+
+            namespace outbound
+            {
+               struct Connector
+               {
+                  using handle_type = ipc::handle_type;
+                  using transport_type = ipc::message::Transport;
+                  using blocking_policy = typename policy::Blocking;
+                  using non_blocking_policy = typename policy::non::Blocking;
+
+                  Connector( handle_type id);
+
+                  operator handle_type() const;
+
+                  handle_type id() const;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
+
+               private:
+                  handle_type m_id;
+               };
+
+               using Device = communication::outbound::Device< Connector>;
+            } // outbound
+
+
 
 
             namespace blocking
@@ -297,7 +316,7 @@ namespace casual
             //! Uses the default inbound::device() for receive, since this is by far the
             //! most common use case.
             //!
-            //! Can be instanciated with an error-handler, since we often want to use the same handler
+            //! Can be instantiated with an error-handler, since we often want to use the same handler
             //! for every ipc-interaction within a module.
             //!
             struct Helper

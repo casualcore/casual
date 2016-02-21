@@ -160,9 +160,8 @@ namespace casual
                using payload_type = platform::binary_type;
                using range_type = decltype( range::make( payload_type::iterator(), 0));
 
-               Complete() = default;
-
-               Complete( message_type_type type, const Uuid& correlation) : type{ type}, correlation{ correlation} {}
+               Complete();
+               Complete( message_type_type type, const Uuid& correlation);
 
                template< typename T>
                Complete( T&& transport) :
@@ -188,7 +187,7 @@ namespace casual
                Uuid correlation;
                payload_type payload;
 
-               friend std::ostream& operator << ( std::ostream& out, const Complete& value);
+
 
 
                //! @param transport
@@ -229,7 +228,7 @@ namespace casual
                   m_unhandled.erase( last, std::end( m_unhandled));
                }
 
-               friend void swap( Complete& lhs, Complete& rhs);
+
 
                const std::vector< range_type>& unhandled() { return m_unhandled;}
 
@@ -244,6 +243,16 @@ namespace casual
                   archive & payload;
                })
 
+
+               friend std::ostream& operator << ( std::ostream& out, const Complete& value);
+               friend void swap( Complete& lhs, Complete& rhs);
+
+
+               friend bool operator == ( const Complete& complete, const Uuid& correlation);
+               friend inline bool operator == ( const Uuid& correlation, const Complete& complete)
+               {
+                  return complete == correlation;
+               }
 
             private:
 

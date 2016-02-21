@@ -12,6 +12,7 @@
 #include "common/communication/message.h"
 
 #include "common/marshal/binary.h"
+#include "common/marshal/complete.h"
 
 namespace casual
 {
@@ -83,6 +84,9 @@ namespace casual
                using complete_type = message::Complete;
                using message_type = typename complete_type::message_type_type;
                using transport_type = typename connector_type::transport_type;
+
+               using blocking_policy = typename connector_type::blocking_policy;
+               using non_blocking_policy = typename connector_type::non_blocking_policy;
 
                using unmarshal_type = Unmarshal;
                using error_type = std::function<void()>;
@@ -252,6 +256,13 @@ namespace casual
                connector_type& connector() { return m_connector;}
                const connector_type& connector() const { return m_connector;}
 
+
+               inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
+               {
+                  return out << "{ connector: " << device.m_connector << ", cache: "
+                        << range::make( device.m_cache) << ", discarded: " << range::make( device.m_discarded) << "}\n";
+               }
+
             private:
 
                using cache_type = std::vector< complete_type>;
@@ -394,6 +405,8 @@ namespace casual
                using complete_type = message::Complete;
                using message_type = typename complete_type::message_type_type;
                using transport_type = typename connector_type::transport_type;
+               using blocking_policy = typename connector_type::blocking_policy;
+               using non_blocking_policy = typename connector_type::non_blocking_policy;
 
                using marshal_type = Marshal;
 
@@ -465,6 +478,23 @@ namespace casual
                         complete,
                         std::forward< P>( policy),
                         handler);
+               }
+
+               template< typename M>
+               Uuid blocking_send( M& message, const error_type& handler = nullptr)
+               {
+                  return send( message, blocking_policy{}, handler);
+               }
+
+               template< typename M>
+               Uuid non_blocking_send( M& message, const error_type& handler = nullptr)
+               {
+                  return send( message, non_blocking_policy{}, handler);
+               }
+
+               inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
+               {
+                  return out << "{ connector: " << device.m_connector << "}\n";
                }
 
             private:

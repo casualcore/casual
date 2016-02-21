@@ -26,6 +26,15 @@ install_lib = []
 install_bin = []
 install_headers = []
 
+
+common_archive = LinkArchive( 'bin/casual-gateway-common',
+    [
+       Compile( 'source/outbound/routing.cpp'),
+       Compile( 'source/environment.cpp'),
+       Compile( 'source/inbound/cache.cpp')
+     ])
+        
+
 #
 # The gateway-manager
 #
@@ -36,6 +45,7 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
      Compile( 'source/manager/handle.cpp'),
     ],
     [ 
+     common_archive,
      'casual-sf', 
      'casual-common', 
      'casual-configuration', 
@@ -50,9 +60,27 @@ install_bin.append( target)
 target = LinkExecutable( 'bin/casual-gateway-outbound-ipc',
     [
      Compile( 'source/outbound/ipc/main.cpp'),
-     Compile( 'source/outbound/ipc/connector.cpp'),
     ],
-    [ 
+    [
+     common_archive, 
+     'casual-sf', 
+     'casual-common', 
+     'casual-configuration', 
+     'casual-xatmi',
+     ])
+
+install_bin.append( target)
+
+
+#
+# The inbound ipc connector
+#
+target = LinkExecutable( 'bin/casual-gateway-inbound-ipc',
+    [
+     Compile( 'source/inbound/ipc/main.cpp'),
+    ],
+    [
+     common_archive, 
      'casual-sf', 
      'casual-common', 
      'casual-configuration', 
@@ -69,8 +97,10 @@ install_bin.append( target)
 LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/isolated/source/test_manager.cpp'),
-   ],
-   [ 'casual-sf', 'casual-common']) 
+        Compile( 'unittest/isolated/source/test_inbound_cache.cpp'),
+        Compile( 'unittest/isolated/source/test_inbound.cpp'),
+   ], 
+   [ common_archive, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment']) 
 
 
 

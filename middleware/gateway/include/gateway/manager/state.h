@@ -8,7 +8,7 @@
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 
-#include "common/uuid.h"
+#include "common/process.h"
 
 namespace casual
 {
@@ -16,16 +16,25 @@ namespace casual
    {
       namespace manager
       {
+         namespace state
+         {
+
+
+
+         } // state
 
          struct State
          {
 
-            struct
+            struct Connection
             {
-               common::Uuid id = common::uuid::make();
 
-            } domain;
+               common::process::Handle process;
+            };
 
+
+
+            std::vector< Connection> connections;
          };
 
 
