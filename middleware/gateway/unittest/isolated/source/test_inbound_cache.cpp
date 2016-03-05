@@ -37,14 +37,14 @@ namespace casual
 
          auto correlation = uuid::make();
          {
-            communication::message::Complete complete{ message::Type::gateway_inbound_ipc_connect_request, correlation};
+            communication::message::Complete complete{ message::Type::gateway_ipc_connect_request, correlation};
             complete.payload = local::payload();
             cache.add( std::move( complete));
          }
          auto complete = cache.get( correlation);
 
          EXPECT_TRUE( complete.correlation == correlation);
-         EXPECT_TRUE( complete.type == message::Type::gateway_inbound_ipc_connect_request);
+         EXPECT_TRUE( complete.type == message::Type::gateway_ipc_connect_request);
          EXPECT_TRUE( complete.payload == local::payload());
       }
 
@@ -58,7 +58,7 @@ namespace casual
                {
                   while( count-- > 0)
                   {
-                     communication::message::Complete complete{ message::Type::gateway_inbound_ipc_connect_request, correlation};
+                     communication::message::Complete complete{ message::Type::gateway_ipc_connect_request, correlation};
                      complete.payload = local::payload();
                      cache.add( std::move( complete));
                   }
@@ -90,7 +90,7 @@ namespace casual
                auto complete = cache.get( correlation);
 
                EXPECT_TRUE( complete.correlation == correlation);
-               EXPECT_TRUE( complete.type == message::Type::gateway_inbound_ipc_connect_request);
+               EXPECT_TRUE( complete.type == message::Type::gateway_ipc_connect_request);
                EXPECT_TRUE( complete.payload == local::payload());
             }
          }
@@ -122,7 +122,7 @@ namespace casual
 
                auto complete = cache.get( correlation);
                EXPECT_TRUE( complete.correlation == correlation);
-               EXPECT_TRUE( complete.type == message::Type::gateway_inbound_ipc_connect_request);
+               EXPECT_TRUE( complete.type == message::Type::gateway_ipc_connect_request);
                EXPECT_TRUE( complete.payload == local::payload());
             }
          }

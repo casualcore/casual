@@ -29,9 +29,10 @@ install_headers = []
 
 common_archive = LinkArchive( 'bin/casual-gateway-common',
     [
-       Compile( 'source/outbound/routing.cpp'),
+       Compile( 'source/handle.cpp'),
        Compile( 'source/environment.cpp'),
-       Compile( 'source/inbound/cache.cpp')
+       Compile( 'source/outbound/routing.cpp'),       
+       Compile( 'source/inbound/cache.cpp'),
      ])
         
 
@@ -98,7 +99,8 @@ LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/isolated/source/test_manager.cpp'),
         Compile( 'unittest/isolated/source/test_inbound_cache.cpp'),
-        Compile( 'unittest/isolated/source/test_inbound.cpp'),
+        Compile( 'unittest/isolated/source/test_inbound_ipc.cpp'),
+        Compile( 'unittest/isolated/source/test_outbound_ipc.cpp'),
    ], 
    [ common_archive, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment']) 
 

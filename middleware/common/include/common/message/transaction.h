@@ -269,6 +269,16 @@ namespace casual
                      archive & resource;
                      archive & statistics;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const basic_reply& message)
+                  {
+                     return out << "{ trid: " << message.trid
+                           << ", process: " << message.process
+                           << ", resource: " << message.resource
+                           << ", state: " << message.state
+                           << ", statistics: " << message.statistics
+                           << '}';
+                  }
                };
 
                struct Involved : basic_transaction< Type::transaction_resource_involved>
@@ -299,6 +309,15 @@ namespace casual
                      archive & resource;
                      archive & flags;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const basic_request& message)
+                  {
+                     return out << "{ trid: " << message.trid
+                           << ", process: " << message.process
+                           << ", resurce: " << message.resource
+                           << ", flags: " << message.flags
+                           << '}';
+                  }
 
                };
 

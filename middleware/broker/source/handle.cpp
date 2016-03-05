@@ -161,7 +161,7 @@ namespace casual
                            //
                            // Make sure we don't add our self
                            //
-                           if( pid != process::id())
+                           if( pid != common::process::id())
                            {
                               server::lifetime::shutdown( &handle::process_exit, { m_state.getInstance( pid).process}, {}, std::chrono::seconds( 2));
 
@@ -627,8 +627,6 @@ namespace casual
                reply.domain = common::environment::domain::name();
                reply.identification = message.identification;
 
-               auto found = range::find( m_state.singeltons, message.identification);
-
                auto send_reply = [&](){
                   if( ! ipc::device().non_blocking_send( message.process.queue, reply))
                   {
@@ -636,18 +634,41 @@ namespace casual
                   }
                };
 
-               if( found)
+               if( message.identification)
                {
-                  reply.process = found->second;
-                  send_reply();
+                  auto found = range::find( m_state.singeltons, message.identification);
+
+                  if( found)
+                  {
+                     reply.process = found->second;
+                     send_reply();
+                  }
+                  else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+                  {
+                     send_reply();
+                  }
+                  else
+                  {
+                     m_state.pending.process_lookup.push_back( message);
+                  }
                }
-               else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+               else if( message.pid)
                {
-                  send_reply();
-               }
-               else
-               {
-                  m_state.pending.process_lookup.push_back( message);
+                  auto found = range::find_if( m_state.inbounds, [&]( const common::process::Handle& h){ return h.pid == message.pid;});
+
+                  if( found)
+                  {
+                     reply.process = *found;
+                     send_reply();
+                  }
+                  else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+                  {
+                     send_reply();
+                  }
+                  else
+                  {
+                     m_state.pending.process_lookup.push_back( message);
+                  }
                }
             }
          }
@@ -735,6 +756,41 @@ namespace casual
                common::process::terminate( message.process.pid);
             }
          }
+
+
+         namespace process
+         {
+
+            void Connect::operator () ( message_type& message)
+            {
+               auto found = range::find_if( m_state.inbounds, [&]( const common::process::Handle& h){ return h.pid == message.process.pid;});
+
+               if( found)
+               {
+                  *found = message.process;
+               }
+               else
+               {
+                  m_state.inbounds.push_back( message.process);
+               }
+
+               //
+               // Check if there are pending that is waiting for this pid
+               //
+               {
+                  auto found = range::find_if( m_state.pending.process_lookup, [&]( const common::message::lookup::process::Request& r){
+                     return r.pid == message.process.pid;
+                  });
+
+                  if( found)
+                  {
+                     auto request = std::move( *found);
+                     m_state.pending.process_lookup.erase( std::begin( found));
+                     lookup::Process{ m_state}( request);
+                  }
+               }
+            }
+         } // process
 
 
          void ServiceLookup::operator () ( message_type& message)

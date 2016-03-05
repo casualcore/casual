@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <functional>
 #include <fstream>
+#include <system_error>
+
 
 // TODO: temp
 #include <iostream>
@@ -214,7 +216,22 @@ namespace casual
 
          void sleep( std::chrono::microseconds time)
          {
-            std::this_thread::sleep_for( time);
+            timespec posix_time;
+            posix_time.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( time).count();
+            posix_time.tv_nsec = std::chrono::duration_cast< std::chrono::nanoseconds>(
+                  time - std::chrono::seconds{ posix_time.tv_sec}).count();
+
+            log::internal::debug << "sleep for " << time.count() << "us ( " << posix_time.tv_sec << "s " << posix_time.tv_nsec << "ns)\n";
+
+            if( nanosleep( &posix_time, nullptr) == -1)
+            {
+               signal::handle();
+
+               if( error::condition() == std::errc::invalid_argument)
+               {
+                  throw exception::invalid::Argument{ error::string()};
+               }
+            }
          }
 
          namespace pattern
@@ -447,14 +464,14 @@ namespace casual
 
                      if( result == -1)
                      {
-                        switch( errno)
+                        switch( std::errc( error::last()))
                         {
-                           case ECHILD:
+                           case std::errc::no_child_process:
                            {
                               // no child
                               break;
                            }
-                           case EINTR:
+                           case std::errc::interrupted:
                            {
                               signal::handle( signal::Filter::exclude_child_terminate);
 
@@ -641,10 +658,10 @@ namespace casual
             return communication::ipc::call( communication::ipc::broker::id(), request).process;
          }
 
-         Handle lookup( platform::pid_type pid)
+         Handle lookup( platform::pid_type pid, bool wait)
          {
             message::lookup::process::Request request;
-            request.directive = message::lookup::process::Request::Directive::direct;
+            request.directive = wait ? message::lookup::process::Request::Directive::wait : message::lookup::process::Request::Directive::direct;
             request.pid = pid;
             request.process = process::handle();
 
@@ -757,6 +774,22 @@ namespace casual
 
          } // lifetime
 
+         void connect( const Handle& handle)
+         {
+            message::inbound::ipc::Connect connect;
+            connect.process = handle;
+
+            communication::ipc::blocking::send( communication::ipc::broker::id(), connect);
+         }
+
+         //!
+         //! Connect the current process to the local domain. That is,
+         //! let the domain know which ipc-queue is bound to which pid
+         //!
+         void connect()
+         {
+            connect( handle());
+         }
 
       } // process
    } // common

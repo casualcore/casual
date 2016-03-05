@@ -10,6 +10,7 @@
 #include "common/signal.h"
 #include "common/process.h"
 #include "common/exception.h"
+#include "common/trace.h"
 
 namespace casual
 {
@@ -18,6 +19,8 @@ namespace casual
 
       TEST( casual_common_signal, scope_timeout)
       {
+         Trace trace{ "TEST( casual_common_signal, scope_timeout)", log::internal::trace};
+
          //
          // Start from a clean sheet
          //
@@ -27,17 +30,17 @@ namespace casual
 
          signal::timer::Scoped timer{ std::chrono::milliseconds{ 1}};
 
-         process::sleep( std::chrono::milliseconds{ 2});
-
          EXPECT_THROW(
          {
-            signal::handle();
+            process::sleep( std::chrono::milliseconds{ 2});
 
          }, exception::signal::Timeout);
       }
 
       TEST( casual_common_signal, nested_timeout)
       {
+         Trace trace{ "TEST( casual_common_signal, nested_timeout)", log::internal::trace};
+
          //
          // Start from a clean sheet
          //
@@ -50,19 +53,16 @@ namespace casual
          {
             signal::timer::Scoped timer2{ std::chrono::milliseconds{ 1}};
 
-            process::sleep( std::chrono::milliseconds{ 2});
 
             EXPECT_THROW(
             {
-               signal::handle();
+               process::sleep( std::chrono::milliseconds{ 10});
             }, exception::signal::Timeout);
          }
 
-         process::sleep( std::chrono::milliseconds{ 4});
-
          EXPECT_THROW(
          {
-            signal::handle();
+            process::sleep( std::chrono::milliseconds{ 10});
          }, exception::signal::Timeout);
       }
 

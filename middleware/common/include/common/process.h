@@ -157,6 +157,8 @@ namespace casual
          //!
          //! Sleep for a while
          //!
+         //! @throws exception::signal::* when a signal is received
+         //!
          //! @param time numbers of microseconds to sleep
          //!
          void sleep( std::chrono::microseconds time);
@@ -172,6 +174,8 @@ namespace casual
          //! // sleep for 2 minutes
          //! process::sleep( std::chrono::minutes( 2));
          //! ~~~~~~~~~~~~~~~
+         //!
+         //! @throws exception::signal::* when a signal is received
          //!
          template< typename R, typename P>
          void sleep( std::chrono::duration< R, P> time)
@@ -283,7 +287,7 @@ namespace casual
          //!
          //! @return handle to the process, if not found Handle::pid/queue will be 0
          //!
-         Handle lookup( platform::pid_type pid);
+         Handle lookup( platform::pid_type pid, bool wait = true);
 
 
          //!
@@ -379,6 +383,21 @@ namespace casual
 
 
          } // children
+
+
+         //!
+         //! Connect the process @handle to the local domain. That is,
+         //! let the domain know which ipc-queue is bound to which pid
+         //!
+         //! @param handle
+         //!
+         void connect( const Handle& handle);
+
+         //!
+         //! Connect the current process to the local domain. That is,
+         //! let the domain know which ipc-queue is bound to which pid
+         //!
+         void connect();
 
       } // process
    } // common

@@ -9,6 +9,7 @@
 #define CASUAL_ERRORHANDLER_H_
 
 #include <string>
+#include <system_error>
 
 namespace casual
 {
@@ -16,6 +17,21 @@ namespace casual
    {
       namespace error
       {
+
+         //!
+         //! @return the last error number, ie from errno
+         //!
+         int last();
+
+         //!
+         //! Get the last error condition from the system
+         //!
+         //! @return the last error condition, if any
+         //!
+         std::error_condition condition();
+
+
+
          enum Errno
          {
             cNoChildProcesses = 10

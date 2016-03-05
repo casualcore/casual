@@ -66,6 +66,12 @@ namespace casual
             {
                namespace domain
                {
+                  const std::string& home()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_HOME"};
+                     return name;
+                  }
+
                   const std::string& id()
                   {
                      static std::string name{ "CASUAL_DOMAIN_ID"};
@@ -146,7 +152,7 @@ namespace casual
             {
                std::string& domain_name()
                {
-                  static std::string path = variable::get( variable::name::domain::name(), "unknown");
+                  static std::string path = variable::get( variable::name::domain::name(), "");
                   return path;
                }
 

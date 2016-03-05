@@ -183,6 +183,11 @@ namespace casual
 
          int main( int argc, char **argv)
          {
+            //
+            // Connect to domain
+            //
+            process::connect();
+
             try
             {
                Settings settings;

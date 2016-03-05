@@ -267,6 +267,11 @@ namespace casual
 
          std::map< common::Uuid, common::process::Handle> singeltons;
 
+         //
+         // Will be handled by domain-module, as a lot of other stuff.
+         //
+         std::vector< common::process::Handle> inbounds;
+
 
          struct pending_t
          {

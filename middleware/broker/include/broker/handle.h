@@ -217,6 +217,18 @@ namespace casual
             void operator () ( message_type& message);
          };
 
+         namespace process
+         {
+            struct Connect : public Base
+            {
+               using message_type = common::message::inbound::ipc::Connect;
+
+               using Base::Base;
+
+               void operator () ( message_type& message);
+            };
+
+         } // process
 
 
 		   //!

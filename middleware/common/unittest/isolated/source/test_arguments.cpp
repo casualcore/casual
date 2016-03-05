@@ -163,7 +163,7 @@ namespace casual
 
          EXPECT_FALSE( conf.called );
 
-         arguments.parse(  "processname", { "-f"});
+         arguments.parse( { "-f"});
 
          EXPECT_TRUE( conf.called);
 
@@ -176,7 +176,7 @@ namespace casual
 
          Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setString)}};
 
-         arguments.parse(  "processname", { "-f" ,"someValue"});
+         arguments.parse( { "-f" ,"someValue"});
 
          EXPECT_TRUE( conf.string_value == "someValue");
 

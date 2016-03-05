@@ -49,9 +49,9 @@ namespace casual
                            ipc).process;
                   }
 
-                  message::inbound::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, platform::queue_id_type gateway)
+                  message::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, platform::queue_id_type gateway)
                   {
-                     message::inbound::ipc::connect::Request request;
+                     message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
                      // TODO: set our domain
@@ -63,11 +63,11 @@ namespace casual
                   }
 
 
-                  message::inbound::ipc::connect::Reply connect_domain( communication::ipc::inbound::Device& ipc, const std::string& path)
+                  message::ipc::connect::Reply connect_domain( communication::ipc::inbound::Device& ipc, const std::string& path)
                   {
                      Trace trace{ "outbound::ipc::local::connect_domain", log::internal::gateway};
 
-                     std::ifstream domain_file{ path + "/.casual-broker-queue"};
+                     std::ifstream domain_file{ path};
 
                      if( domain_file)
                      {
@@ -88,7 +88,7 @@ namespace casual
             struct Settings
             {
                std::string domain_path;
-
+               std::string domain_file;
             };
 
 
@@ -109,22 +109,22 @@ namespace casual
 
                struct State
                {
-                  std::string domain_path;
+                  std::string domain_file;
                   inbound_device_type inbound;
 
-                  process::Handle domain;
+                  process::Handle remote;
 
 
                   friend std::ostream& operator << ( std::ostream& out, const State& state)
                   {
-                     return out << "{ domain_path: " << state.domain_path << ", inbound: " << state.inbound << "}\n";
+                     return out << "{ path: " << state.domain_file << ", remote: " << state.remote << ", inbound: " << state.inbound << "}";
                   }
                };
 
 
                static void validate( const Settings& settings)
                {
-                  if( settings.domain_path.empty())
+                  if( settings.domain_path.empty() && settings.domain_file.empty())
                   {
                      throw exception::invalid::Argument{ "invalid domain path", CASUAL_NIP( settings.domain_path)};
                   }
@@ -136,7 +136,14 @@ namespace casual
                   Trace trace{ "outbound::ipc::Policy::state", log::internal::gateway};
 
                   State result;
-                  result.domain_path = std::move( settings.domain_path);
+                  if( ! settings.domain_file.empty())
+                  {
+                     result.domain_file = std::move( settings.domain_file);
+                  }
+                  else
+                  {
+                     result.domain_file = std::move( settings.domain_path) + "/.casual-broker-queue";
+                  }
 
                   return result;
                }
@@ -155,12 +162,13 @@ namespace casual
                      { std::chrono::seconds{ 5}, 0} // forever
                   }};
 
-                  while( ! state.domain)
+                  while( ! state.remote)
                   {
                      sleep();
 
-                     state.domain = local::connect_domain( state.inbound, state.domain_path).process;
+                     state.remote = local::connect_domain( state.inbound, state.domain_file).process;
                   }
+
 
                   return state.inbound;
                }
@@ -171,7 +179,7 @@ namespace casual
                   Trace trace{ "outbound::ipc::Policy::outbound_device( state)", log::internal::gateway};
 
                   outbound_configuration result;
-                  result.id = state.domain.queue;
+                  result.id = state.remote.queue;
 
                   return result;
                }
@@ -204,7 +212,8 @@ int main( int argc, char **argv)
       casual::gateway::outbound::ipc::Settings settings;
       {
          casual::common::Arguments parser{{
-            casual::common::argument::directive( { "-p", "--domain-path"}, "path to remote domain home", settings.domain_path)
+            casual::common::argument::directive( { "-p", "--domain-path"}, "path to remote domain home", settings.domain_path),
+            casual::common::argument::directive( { "--domain-file"}, "only to make unittest simple", settings.domain_file)
          }};
          parser.parse( argc, argv);
       }

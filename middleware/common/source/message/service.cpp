@@ -16,6 +16,15 @@ namespace casual
       {
          namespace service
          {
+
+            std::ostream& operator << ( std::ostream& out, const Transaction& message)
+            {
+               return out << "{ trid: " << message.trid
+                     << ", state: " << message.state
+                     << '}';
+            }
+
+
             namespace lookup
             {
 
@@ -54,6 +63,16 @@ namespace casual
                   }
 
                } // caller
+
+               std::ostream& operator << ( std::ostream& out, const Reply& message)
+               {
+                  return out << "{ descriptor: " << message.descriptor
+                        << ", transaction: " << message.transaction
+                        << ", error: " << message.error
+                        << ", code: " << message.code
+                        << ", buffer: " << message.buffer
+                        << '}';
+               }
 
             } // call
          }

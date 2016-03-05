@@ -64,6 +64,10 @@ namespace casual
 
          common::log::internal::transaction << "transaction manager start\n";
 
+         //
+         // Connect to domain
+         //
+         process::connect();
 
 
          //

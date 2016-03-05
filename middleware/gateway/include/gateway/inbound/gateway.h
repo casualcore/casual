@@ -8,6 +8,7 @@
 #include "gateway/inbound/cache.h"
 
 #include "gateway/message.h"
+#include "gateway/handle.h"
 
 
 #include "common/marshal/complete.h"
@@ -117,10 +118,47 @@ namespace casual
 
                      void operator() ( message_type& message)
                      {
+                        common::log::internal::gateway << "lookup reply: " << message << "\n";
+
                         auto request = m_cache.get( message.correlation);
 
-                        common::communication::ipc::outbound::Device ipc{ message.process.queue};
-                        ipc.put( request, common::communication::ipc::policy::ignore::signal::Blocking{});
+                        switch( message.state)
+                        {
+                           case message_type::State::idle:
+                           {
+                              try
+                              {
+                                 common::communication::ipc::outbound::Device ipc{ message.process.queue};
+                                 ipc.put( request, common::communication::ipc::policy::ignore::signal::Blocking{});
+                              }
+                              catch( const common::exception::queue::Unavailable&)
+                              {
+                                 common::log::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
+                                 send_error_reply( message);
+                              }
+                              break;
+                           }
+                           case message_type::State::absent:
+                           {
+                              common::log::error << "service: " << message.service << " is not handled by this domain (any more) - action: reply with TPESVCERR\n";
+                              send_error_reply( message);
+                              break;
+                           }
+                           default:
+                           {
+                              common::log::error << "unexpected state on lookup reply: " << message << " - action: drop message\n";
+                              break;
+                           }
+                        }
+                     }
+
+                  private:
+                     void send_error_reply( message_type& message)
+                     {
+                        common::message::service::call::Reply reply;
+                        reply.correlation = message.correlation;
+                        reply.error = TPESVCERR;
+                        common::communication::ipc::inbound::device().push( reply);
                      }
                   };
 
@@ -147,18 +185,6 @@ namespace casual
             };
 
 
-            struct Disconnect
-            {
-               using message_type = message::worker::Disconnect;
-
-               void operator() ( message_type& message)
-               {
-                  // TODO: we may need to distinguish disconnect from shutdown...
-                  throw common::exception::Shutdown{ "disconnected"};
-               }
-
-            };
-
             namespace create
             {
                template< typename M, typename D>
@@ -168,7 +194,6 @@ namespace casual
                }
 
             } // create
-
 
 
 
@@ -184,6 +209,10 @@ namespace casual
             Gateway( S&& settings)
               : m_request_thread{ request_thread< S>, std::ref( m_cache), validate_settings( std::forward< S>( settings))}
             {
+               //
+               // 'connect' to our local domain
+               //
+               common::process::connect();
             }
 
             ~Gateway()
@@ -236,7 +265,8 @@ namespace casual
                common::message::dispatch::Handler handler{
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
-                  handle::Disconnect{},
+                  gateway::handle::Disconnect{ m_request_thread},
+                  handle::call::lookup::Reply{ m_cache},
                   handle::create::reply< common::message::service::call::Reply>( outbound_device),
                   handle::create::reply< common::message::transaction::resource::domain::prepare::Request>( outbound_device),
                   handle::create::reply< common::message::transaction::resource::domain::commit::Request>( outbound_device),
@@ -250,7 +280,7 @@ namespace casual
 
          private:
 
-            static outbound_configuration connect()
+            outbound_configuration connect()
             {
                common::Trace trace{ "gateway::inbound::Gateway::connect", common::log::internal::gateway};
 
@@ -261,6 +291,7 @@ namespace casual
                common::message::dispatch::Handler handler{
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
+                  gateway::handle::Disconnect{ m_request_thread},
                   common::message::handle::assign( message),
                };
 
@@ -284,6 +315,16 @@ namespace casual
                try
                {
                   //
+                  // Make sure we always send disconnect to main thread
+                  //
+                  common::scope::Execute send_disconnect{
+                     [](){
+                        common::communication::ipc::blocking::send(
+                              common::communication::ipc::inbound::id(),
+                              message::worker::Disconnect{});
+                     }};
+
+                  //
                   // Keep a state just in case this device need one...
                   //
                   auto state = policy_type::worker_state( std::forward< S>( settings));
@@ -296,6 +337,7 @@ namespace casual
                   // domain
                   //
                   {
+
                      message::worker::Connect message;
 
                      {
@@ -320,8 +362,6 @@ namespace casual
                   };
 
                   common::message::dispatch::blocking::pump( handler, device);
-
-
                }
                catch( const common::exception::Shutdown&)
                {

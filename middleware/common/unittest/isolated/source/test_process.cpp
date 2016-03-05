@@ -14,6 +14,8 @@
 
 #include "common/signal.h"
 
+#include "common/trace.h"
+
 namespace casual
 {
    namespace common
@@ -32,7 +34,9 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process)
       {
-         platform::pid_type pid = process::spawn( local::processPath(), {});
+         Trace trace{ "TEST( casual_common_process, spawn_one_process)", log::internal::trace};
+
+         auto pid = process::spawn( local::processPath(), {});
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
@@ -45,8 +49,9 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process_with_argument)
       {
+         Trace trace{ "TEST( casual_common_process, spawn_one_process_with_argument)", log::internal::trace};
 
-         platform::pid_type pid = process::spawn( local::processPath(), { "-r", "42" });
+         auto pid = process::spawn( local::processPath(), { "-r", "42" });
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
@@ -60,17 +65,24 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process_check_termination)
       {
-         platform::pid_type pid = process::spawn( local::processPath(), {});
+         Trace trace{ "TEST( casual_common_process, spawn_one_process_check_termination)", log::internal::trace};
+
+         auto pid = process::spawn( local::processPath(), {});
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
 
          auto terminated = process::lifetime::ended();
 
-
-         while( terminated.empty())
+         //
+         // We wait for signal that the child died
+         //
+         try
          {
-            process::sleep( std::chrono::milliseconds( 1));
+            process::sleep( std::chrono::seconds( 2));
+         }
+         catch( const exception::signal::child::Terminate&)
+         {
             terminated = process::lifetime::ended();
          }
 
@@ -83,6 +95,8 @@ namespace casual
 
       TEST( casual_common_process, spawn_10_process__children_terminate)
       {
+         Trace trace{ "TEST( casual_common_process, spawn_10_process__children_terminate)", log::internal::trace};
+
          std::vector< platform::pid_type> pids( 10);
 
          for( auto& pid : pids)
@@ -104,6 +118,8 @@ namespace casual
        */
       TEST( casual_common_process, wait_timeout_non_existing_children)
       {
+         Trace trace{ "TEST( casual_common_process, wait_timeout_non_existing_children)", log::internal::trace};
+
          std::vector< platform::pid_type> pids( 10);
 
          auto terminated = process::lifetime::wait( { 666});

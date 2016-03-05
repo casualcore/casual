@@ -31,7 +31,7 @@ namespace casual
             {
                void SetUp() override
                {
-
+                  environment::domain::name( "unittest-domain");
 
                   std::string domain_path;
 
@@ -43,11 +43,11 @@ namespace casual
                   {
                      domain_path =  environment::directory::temporary() + "/casual_unittest_domain_home" ;
                   }
-                  environment::variable::set( "CASUAL_DOMAIN_HOME", domain_path);
+                  environment::variable::set( environment::variable::name::domain::home(), domain_path);
 
                   directory::create( domain_path);
 
-                  log::debug << "CASUAL_DOMAIN_HOME set to: " << environment::variable::get( "CASUAL_DOMAIN_HOME") << std::endl;
+                  log::debug << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
                   log::debug  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
 
 

@@ -205,6 +205,7 @@ namespace casual
                   std::map< std::string, common::message::service::lookup::Reply> services;
                   std::map< common::Uuid, common::process::Handle> singeltons;
                   std::map< common::Uuid, std::vector< common::message::lookup::process::Request>> singelton_request;
+                  std::map< platform::pid_type, std::vector< common::message::lookup::process::Request>> process_request;
                   std::vector< common::process::Handle> servers;
                };
 
@@ -212,6 +213,7 @@ namespace casual
 
                Broker( reply::Handler handler, dummy_t);
 
+               std::vector< reply::result_t> check_process_connect( const process::Handle& process);
 
                reply::Handler default_handler();
 
@@ -260,6 +262,14 @@ namespace casual
             } // transaction
 
 
+            //!
+            //! Exposes the following services, that just echos the payload
+            //!
+            //! - service1
+            //! - service2
+            //! - service3_2ms_timout
+            //! - removed_ipc_queue <- corresponds to an ipc-queue that does not exists
+            //!
             struct Domain
             {
                Domain();

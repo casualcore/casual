@@ -6,6 +6,8 @@
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_OUTBOUND_GATEWAY_H_
 
 #include "gateway/message.h"
+#include "gateway/handle.h"
+
 #include "gateway/outbound/routing.h"
 
 #include "common/communication/ipc.h"
@@ -76,6 +78,8 @@ namespace casual
 
                   void operator() ( message_type& message)
                   {
+                     common::log::internal::gateway << "call request: " << message << '\n';
+
                      if( message.trid)
                      {
                         //
@@ -104,6 +108,8 @@ namespace casual
 
                void operator() ( message_type& message)
                {
+                  common::log::internal::gateway << "reply: " << message << '\n';
+
                   try
                   {
                      auto destination = routing.get( message.correlation);
@@ -121,18 +127,6 @@ namespace casual
                }
             };
 
-            struct Disconnect
-            {
-               using message_type = message::worker::Disconnect;
-
-               void operator() ( message_type& message)
-               {
-                  // TODO: we may need to distinguish disconnect from shutdown...
-                  throw common::exception::Shutdown{ "disconnected"};
-               }
-
-            };
-
          } // handle
 
          template< typename Policy>
@@ -146,6 +140,10 @@ namespace casual
             Gateway( S&& settings)
                : m_reply_thread{ reply_thread< S>, std::ref( m_routing), validate_settings( std::forward< S>( settings))}
             {
+               //
+               // 'connect' to our local domain
+               //
+               common::process::connect();
             }
 
             template< typename S>
@@ -184,6 +182,8 @@ namespace casual
 
             void operator() ()
             {
+               common::Trace trace{ "gateway::outbound::Gateway::operator()", common::log::internal::gateway};
+
                //
                // Now we wait for the worker to establish connection with
                // the other domain. We're still active and can be shut down
@@ -191,12 +191,14 @@ namespace casual
 
                auto outbound_device = policy_type::outbound_device( connect());
 
+               common::log::internal::gateway << "output device from worker: " << outbound_device << '\n';
+
                using outbound_device_type = decltype( outbound_device);
 
                common::message::dispatch::Handler handler{
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
-                  handle::Disconnect{},
+                  gateway::handle::Disconnect{ m_reply_thread},
                   handle::call::Request< outbound_device_type>{ m_routing, outbound_device},
                   handle::create< common::message::transaction::resource::domain::prepare::Request>( m_routing, outbound_device),
                   handle::create< common::message::transaction::resource::domain::commit::Request>( m_routing, outbound_device),
@@ -208,7 +210,7 @@ namespace casual
 
          private:
 
-            static outbound_configuration connect()
+            outbound_configuration connect()
             {
                common::Trace trace{ "gateway::outbound::Gateway::connect", common::log::internal::gateway};
 
@@ -217,6 +219,7 @@ namespace casual
                message::worker::Connect message;
 
                common::message::dispatch::Handler handler{
+                  gateway::handle::Disconnect{ m_reply_thread},
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   common::message::handle::assign( message),
@@ -224,7 +227,7 @@ namespace casual
 
                while( ! message.execution)
                {
-                  handler( ipc.blocking_next());
+                  handler( ipc.blocking_next( handler.types()));
                }
 
                outbound_configuration configuration;
@@ -241,6 +244,17 @@ namespace casual
 
                try
                {
+                  //
+                  // Make sure we always send disconnect to main thread
+                  //
+                  common::scope::Execute send_disconnect{
+                     [](){
+                        common::communication::ipc::blocking::send(
+                              common::communication::ipc::inbound::id(),
+                              message::worker::Disconnect{});
+                     }};
+
+
                   //
                   // Keep a state just in case this device need one...
                   //
@@ -276,6 +290,8 @@ namespace casual
                      handle::basic_reply< common::message::transaction::resource::domain::commit::Reply>{ routing},
                      handle::basic_reply< common::message::transaction::resource::domain::rollback::Reply>{ routing},
                   };
+
+                  common::log::internal::gateway << "start reply message pump\n";
 
                   common::message::dispatch::blocking::pump( handler, device);
 

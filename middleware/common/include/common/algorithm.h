@@ -36,6 +36,11 @@ namespace casual
 
       namespace scope
       {
+         //!
+         //! executes an action ones.
+         //! If the action has not been executed the
+         //! destructor will perform the execution
+         //!
          struct Execute
          {
             Execute( std::function< void()> executer) : m_execute( std::move( executer)) {}
@@ -52,6 +57,10 @@ namespace casual
                }
             }
 
+            //!
+            //! executes the actions ones.
+            //! no-op if already executed
+            //!
             void operator () ()
             {
                if( m_execute)
@@ -62,6 +71,9 @@ namespace casual
                }
             }
 
+            //!
+            //! Removes the action
+            //!
             void release()
             {
                m_execute = nullptr;

@@ -41,6 +41,7 @@ namespace casual
             lookup_process_request,
             lookup_process_reply,
             delay_message,
+            inbound_ipc_connect,
 
             // Server
             SERVER_BASE = 1000,
@@ -127,8 +128,8 @@ namespace casual
             gateway_outbound_connect,
             gateway_worker_connect,
             gateway_worker_disconnect,
-            gateway_inbound_ipc_connect_request,
-            gateway_inbound_ipc_connect_reply,
+            gateway_ipc_connect_request,
+            gateway_ipc_connect_reply,
 
 
 
@@ -227,8 +228,28 @@ namespace casual
                archive & start;
                archive & end;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const Statistics& message);
+
          };
 
+         namespace inbound
+         {
+            namespace ipc
+            {
+               struct Connect : basic_message< Type::inbound_ipc_connect>
+               {
+                  common::process::Handle process;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & process;
+                  })
+
+               };
+            } // ipc
+         } // inbound
 
 
 
@@ -248,12 +269,16 @@ namespace casual
          {
             struct Request : basic_message< Type::shutdownd_request>
             {
+               inline Request() = default;
+               inline Request( process::Handle process) : process{ std::move( process)} {}
+
                process::Handle process;
                bool reply = false;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
+                  archive & process;
                   archive & reply;
                })
             };
@@ -469,7 +494,7 @@ namespace casual
 
 
             //!
-            //! declaration of helper tratis to get the
+            //! declaration of helper traits to get the
             //! "reverse type". Normally to get the Reply-type
             //! from a Request-type, and vice versa.
             //!

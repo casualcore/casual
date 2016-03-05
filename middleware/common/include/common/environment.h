@@ -61,6 +61,7 @@ namespace casual
             {
 				   namespace domain
                {
+				      const std::string& home();
 				      const std::string& id();
 				      const std::string& path();
 				      const std::string& name();

@@ -33,6 +33,8 @@ namespace casual
                   archive & trid;
                   archive & state;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
 
 
@@ -234,7 +236,6 @@ namespace casual
 
                //!
                //! Represent service reply.
-               //! @todo: change to service::call::Reply
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
@@ -260,6 +261,8 @@ namespace casual
                      archive & buffer;
                      archive & transaction;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& message);
 
                };
 

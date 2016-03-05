@@ -33,7 +33,7 @@ namespace casual
                   std::vector< communication::message::Complete> result;
                   result.emplace_back( marshal::complete( reply));
 
-                  log::internal::debug << "connect reply - message: " << range::make( result) << '\n';
+                  log::internal::debug << "mockup connect reply - message: " << range::make( result) << '\n';
 
                   return result;
                }
@@ -322,6 +322,7 @@ namespace casual
                   if( found)
                   {
                      reply = found->second;
+                     reply.correlation = request.correlation;
                      reply.state = message::service::lookup::Reply::State::idle;
                   }
                   else
@@ -371,18 +372,40 @@ namespace casual
 
             Broker::~Broker() = default;
 
+            std::vector< reply::result_t> Broker::check_process_connect( const process::Handle& process)
+            {
+               Trace trace{ "mockup check_process_connect", log::internal::debug};
+
+               std::vector< reply::result_t> result;
+
+               auto found = m_state.process_request.find( process.pid);
+
+               if( found != std::end( m_state.process_request))
+               {
+                  for( auto& target : found->second)
+                  {
+                     log::internal::debug << "mockup - process connect found waiter: " << target.process << " for: " << process << std::endl;
+
+                     auto reply = message::reverse::type( target);
+                     reply.process = process;
+                     result.push_back( local::result( target.process, reply));
+                  }
+                  m_state.process_request.erase( found);
+               }
+               return result;
+            }
+
             reply::Handler Broker::default_handler()
             {
-
 
                return reply::Handler{
                   [&]( message::server::connect::Request r)
                   {
                      Trace trace{ "mockup server::connect::Request", log::internal::debug};
 
-                     std::vector< reply::result_t> result;
-
                      m_state.servers.push_back( r.process);
+
+                     auto result = check_process_connect( r.process);
 
                      auto reply = message::reverse::type( r);
                      reply.directive = decltype( reply)::Directive::start;
@@ -393,7 +416,7 @@ namespace casual
 
                         if( found && found->second != r.process)
                         {
-                           log::internal::debug << "process: " << r.process << " is a singleton, and one is already running\n";
+                           log::internal::debug << "mockup process: " << r.process << " is a singleton, and one is already running\n";
                            reply.directive = decltype( reply)::Directive::singleton;
                            return local::result_set( r.process, reply);
                         }
@@ -429,13 +452,23 @@ namespace casual
 
                      return result;
                   },
+                  [&]( common::message::inbound::ipc::Connect c)
+                  {
+                     Trace trace{ "mockup inbound::ipc::Connect", log::internal::debug};
+
+
+                     m_state.servers.push_back( c.process);
+
+                     return check_process_connect( c.process);
+
+                  },
                   [&]( common::message::lookup::process::Request r)
                   {
                      Trace trace{ "mockup lookup::process::Request", log::internal::debug};
 
                      if( r.identification)
                      {
-                        log::internal::debug << "lockup for identificatin: " << r.identification << '\n';
+                        log::internal::debug << "mockup - lockup for identificatin: " << r.identification << '\n';
 
                         auto found = range::find(  m_state.singeltons, r.identification);
 
@@ -461,14 +494,19 @@ namespace casual
 
                         auto reply = message::reverse::type( r);
 
-                        reply.domain = "mockup-domain";
-
                         if( found)
                         {
                            reply.process = *found;
                            log::internal::debug << "found server from pid: " << reply.process << '\n';
                         }
-                        return local::result_set( r.process, reply);
+                        else if( r.directive == common::message::lookup::process::Request::Directive::wait)
+                        {
+                           m_state.process_request[ r.pid].push_back( std::move( r));
+                        }
+                        else
+                        {
+                           return local::result_set( r.process, reply);
+                        }
                      }
                      return std::vector< reply::result_t>{};
                   },

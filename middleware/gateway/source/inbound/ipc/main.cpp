@@ -49,7 +49,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const State& state)
                   {
-                     return out << "{ remote: " << state.remote << ", inbound: " << state.inbound << "}\n";
+                     return out << "{ remote: " << state.remote << ", inbound: " << state.inbound << "}";
                   }
 
 
@@ -84,7 +84,7 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::connect reply", log::internal::gateway};
 
-                     message::inbound::ipc::connect::Reply reply;
+                     message::ipc::connect::Reply reply;
                      reply.process.pid = common::process::id();
                      reply.process.queue = state.inbound.connector().id();
                      reply.domain.id = common::environment::domain::id();

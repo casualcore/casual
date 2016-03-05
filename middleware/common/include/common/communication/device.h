@@ -197,10 +197,7 @@ namespace casual
                }
 
 
-               //!
-               //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
-               //!
-               void flush();
+
 
                //!
                //! Discards any message that correlates.
@@ -249,9 +246,25 @@ namespace casual
 
 
                //!
+               //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
+               //!
+               void flush()
+               {
+                  while( next( message_type::flush_ipc, non_blocking_policy{}))
+                  {
+                     ;
+                  }
+               }
+
+               //!
                //! Clear and discard all messages in cache and on the device.
                //!
-               void clear();
+               void clear()
+               {
+                  flush();
+                  cache_type empty;
+                  std::swap( empty, m_cache);
+               }
 
                connector_type& connector() { return m_connector;}
                const connector_type& connector() const { return m_connector;}
@@ -260,7 +273,7 @@ namespace casual
                inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
                {
                   return out << "{ connector: " << device.m_connector << ", cache: "
-                        << range::make( device.m_cache) << ", discarded: " << range::make( device.m_discarded) << "}\n";
+                        << range::make( device.m_cache) << ", discarded: " << range::make( device.m_discarded) << "}";
                }
 
             private:
@@ -494,7 +507,7 @@ namespace casual
 
                inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
                {
-                  return out << "{ connector: " << device.m_connector << "}\n";
+                  return out << "{ connector: " << device.m_connector << "}";
                }
 
             private:

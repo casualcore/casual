@@ -40,41 +40,39 @@ namespace casual
 
          } // outbound
 
-         namespace inbound
+
+         namespace ipc
          {
-            namespace ipc
+            namespace connect
             {
-               namespace connect
+               template< common::message::Type type>
+               struct basic_connect : common::message::basic_message< type>
                {
-                  template< common::message::Type type>
-                  struct basic_connect : common::message::basic_message< type>
-                  {
-                     common::process::Handle process;
-                     message::Domain domain;
+                  common::process::Handle process;
+                  message::Domain domain;
 
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        common::message::basic_message< type>::marshal( archive);
-                        archive & process;
-                        archive & domain;
-                     })
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     common::message::basic_message< type>::marshal( archive);
+                     archive & process;
+                     archive & domain;
+                  })
 
-                  };
+               };
 
-                  struct Request : basic_connect< common::message::Type::gateway_inbound_ipc_connect_request>
-                  {
-                  };
+               struct Request : basic_connect< common::message::Type::gateway_ipc_connect_request>
+               {
+               };
 
-                  struct Reply : basic_connect< common::message::Type::gateway_inbound_ipc_connect_reply>
-                  {
-                  };
+               struct Reply : basic_connect< common::message::Type::gateway_ipc_connect_reply>
+               {
+               };
 
-               } // connect
+            } // connect
 
 
 
-            } // ipc
+         } // ipc
 
-         } // inbound
 
          namespace worker
          {
@@ -109,7 +107,7 @@ namespace casual
          namespace reverse
          {
             template<>
-            struct type_traits< gateway::message::inbound::ipc::connect::Request> : detail::type<  gateway::message::inbound::ipc::connect::Reply> {};
+            struct type_traits< gateway::message::ipc::connect::Request> : detail::type<  gateway::message::ipc::connect::Reply> {};
 
 
          } // reverse

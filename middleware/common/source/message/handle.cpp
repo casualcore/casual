@@ -20,6 +20,8 @@ namespace casual
 
             void Shutdown::operator () ( message_type& message)
             {
+               log::internal::debug << "shutdown received from: " << message.process << '\n';
+
                throw exception::Shutdown{ "shutdown " + process::path()};
             }
 
@@ -37,7 +39,14 @@ namespace casual
                //
                // We ignore signals
                //
-               ipc.send( reply, communication::ipc::policy::ignore::signal::Blocking{});
+               try
+               {
+                  ipc.send( reply, communication::ipc::policy::ignore::signal::Blocking{});
+               }
+               catch( common::exception::queue::Unavailable&)
+               {
+                  log::internal::debug << "queue unavailable: " << message.process << " - action: ignore\n";
+               }
             }
 
          } // handle
