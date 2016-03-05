@@ -45,7 +45,7 @@ with cd(TMP + BASENAME):
 	print("Running configure")
 	print( subprocess.check_output(['./configure', 
 	'--with-cc-opt=-Wno-deprecated',
-	'--prefix=' + os.getenv('CASUAL_HOME', '/usr/local/') + '/nginx' ,
+	'--prefix=' + os.getenv('CASUAL_HOME', '/usr/local/casual') + '/nginx' ,
 	'--add-module=' + os.getenv('CASUAL_BUILD_HOME') + '/plugin',
 	'--without-http_rewrite_module']))
 	print("Running make")
