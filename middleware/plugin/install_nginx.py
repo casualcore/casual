@@ -1,3 +1,8 @@
+
+#
+# Usage: python install_nginx.py
+#
+
 import urllib2
 import os
 import tarfile
