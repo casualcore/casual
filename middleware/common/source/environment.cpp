@@ -27,25 +27,62 @@ namespace casual
 	{
 		namespace environment
 		{
+         namespace local
+         {
+            namespace
+            {
+               namespace native
+               {
+                  struct Variable
+                  {
+                     using lock_type =  std::lock_guard< std::mutex>;
+
+                     static const Variable& instance()
+                     {
+                        static Variable singleton;
+                        return singleton;
+                     }
+                     const char* get( const std::string& name) const
+                     {
+                        lock_type lock{ m_mutex};
+                        return getenv( name.c_str());
+                     }
+
+                     void set( const std::string& name, const std::string& value) const
+                     {
+                        lock_type lock{ m_mutex};
+                        if( setenv( name.c_str(), value.c_str(), 1) == -1)
+                        {
+                           throw std::system_error{ error::last(), std::system_category()};
+                        }
+                     }
+                  private:
+                     Variable() = default;
+                     mutable std::mutex m_mutex;
+                  };
+
+               } // native
+
+            } // <unnamed>
+         } // local
+
 			namespace variable
 			{
+
 				bool exists( const std::string& name)
 				{
-					return getenv( name.c_str()) != nullptr;
+					return local::native::Variable::instance().get( name) != nullptr;
 				}
 
 				std::string get( const std::string& name)
 				{
-					const char* const result = getenv( name.c_str());
+					auto result = local::native::Variable::instance().get( name);
 
-					if( result)
+					if( ! result)
 					{
-						return result;
+					   throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
 					}
-					else
-					{
-						throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
-					}
+					return result;
 				}
 
             std::string get( const std::string& name, std::string alternative)
@@ -59,7 +96,7 @@ namespace casual
 
 				void set( const std::string& name, const std::string& value)
 				{
-				   setenv( name.c_str(), value.c_str(), 1);
+				   local::native::Variable::instance().set( name, value);
 				}
 
             namespace name
