@@ -498,6 +498,7 @@ namespace casual
                         {
                            reply.process = *found;
                            log::internal::debug << "found server from pid: " << reply.process << '\n';
+                           return local::result_set( r.process, reply);
                         }
                         else if( r.directive == common::message::lookup::process::Request::Directive::wait)
                         {

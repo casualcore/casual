@@ -17,19 +17,8 @@ namespace casual
          Process::Process( const std::string& executable, const std::vector< std::string>& arguments)
          {
             Trace trace{ "common::mockup::Process::Process()", log::internal::debug};
-            auto pid = common::process::spawn( executable, arguments, {});
 
-            do
-            {
-               process::sleep( std::chrono::milliseconds{ 1});
-               m_process = process::lookup( pid);
-            }
-            while( m_process.queue == 0);
-
-            //
-            // We need to wait until it's up'n running
-            //
-            common::process::ping( m_process.queue);
+            m_process.pid = common::process::spawn( executable, arguments, {});
          }
 
 
@@ -45,7 +34,14 @@ namespace casual
             common::signal::clear();
          }
 
-         common::process::Handle Process::handle() const { return m_process;}
+         common::process::Handle Process::handle() const
+         {
+            if( ! m_process)
+            {
+               m_process = process::lookup( m_process.pid);
+            }
+            return m_process;
+         }
 
 
 

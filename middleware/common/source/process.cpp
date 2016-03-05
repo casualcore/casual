@@ -660,6 +660,8 @@ namespace casual
 
          Handle lookup( platform::pid_type pid, bool wait)
          {
+            trace::Scope trace{ "process::lookup", log::internal::trace};
+
             message::lookup::process::Request request;
             request.directive = wait ? message::lookup::process::Request::Directive::wait : message::lookup::process::Request::Directive::direct;
             request.pid = pid;
@@ -670,6 +672,8 @@ namespace casual
 
          Handle ping( platform::queue_id_type queue)
          {
+            trace::Scope trace{ "process::ping", log::internal::trace};
+
             message::server::ping::Request request;
             request.process = process::handle();
 

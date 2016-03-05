@@ -47,6 +47,11 @@ namespace casual
                {
 
                   //
+                  // We need to wait for casual-broker to get ready, we ping it
+                  //
+                  common::process::ping( m_process.handle().queue);
+
+                  //
                   // We need to re-initialize the casual-queue ipc-queue, since it's only done once otherwise
                   //
                   queue::environment::broker::queue::initialize();
@@ -161,6 +166,8 @@ domain:
 
       TEST( casual_queue, broker_startup)
       {
+         common::Trace trace{ "TEST( casual_queue, broker_startup)"};
+
          local::Domain domain{ local::configuration()};
 
 
@@ -172,6 +179,8 @@ domain:
 
       TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)
       {
+         common::Trace trace{ "TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)"};
+
          local::Domain domain{ local::configuration()};
 
 
@@ -189,6 +198,8 @@ domain:
 
       TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)
       {
+         common::Trace trace{ "TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)"};
+
          local::Domain domain{ local::configuration()};
 
          auto count = 5;
