@@ -178,28 +178,26 @@ namespace casual
                         m_output << YAML::Key << name;
                         m_output << YAML::Value;
                      }
-                     writeValue( value);
+
+                     write( value);
                   }
 
                private:
 
-                  //
-                  // TODO: Make sure strings are UTF-8-encoded ?
-                  //
-
                   template< typename T>
-                  void writeValue( const T& value)
+                  void write( const T& value)
                   {
                      m_output << value;
                   }
 
-                  void writeValue( const platform::binary_type& value)
-                  {
-                     // TODO: Is this conformant ?
-                     const unsigned char* data = reinterpret_cast< const unsigned char*>( value.data());
-                     YAML::Binary binary( data, value.size());
-                     m_output << binary;
-                  }
+                  //
+                  // A few overloads
+                  //
+
+                  void write( const char& value);
+                  void write( const std::string& value);
+                  void write( const platform::binary_type& value);
+
 
                private:
 

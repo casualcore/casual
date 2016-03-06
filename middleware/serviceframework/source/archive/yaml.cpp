@@ -256,6 +256,24 @@ namespace casual
                   m_output << YAML::Newline;
                }
 
+               void Implementation::write( const char& value)
+               {
+                  m_output << common::transcode::utf8::encode( { value});
+               }
+
+               void Implementation::write( const std::string& value)
+               {
+                  m_output << common::transcode::utf8::encode( value);
+               }
+
+               void Implementation::write( const platform::binary_type& value)
+               {
+                  // TODO: Is this conformant ?
+                  const YAML::Binary binary{ reinterpret_cast< const unsigned char*>( value.data()), value.size()};
+                  m_output << binary;
+               }
+
+
             } // writer
 
          } // yaml
