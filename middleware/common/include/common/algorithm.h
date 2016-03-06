@@ -324,16 +324,16 @@ namespace casual
 
          reference front() { return *m_first;}
 
-         reference at( difference_type index)
+         reference at( const difference_type index)
          {
-            if( m_size <= index){ throw std::out_of_range{ "range out of bounds"};}
+            if( m_size <= index){ throw std::out_of_range{ std::to_string( index)};}
 
             return *( m_first + index);
          }
 
-         const reference at( difference_type index) const
+         const reference at( const difference_type index) const
          {
-            if( m_size <= index){ throw std::out_of_range{ "range out of bounds"};}
+            if( m_size <= index){ throw std::out_of_range{ std::to_string( index)};}
 
             return *( m_first + index);
          }

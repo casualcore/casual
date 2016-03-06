@@ -93,14 +93,10 @@ namespace casual
                            // Act (somehow) relaxed
                            //
 
-                           value = T();
+                           value = T{};
                         }
                         else
                         {
-                           //
-                           // TODO: Perhaps validate type (to avoid possible asserts/exceptions) ?
-                           //
-
                            read( value);
                         }
                      }
@@ -115,15 +111,15 @@ namespace casual
                   bool start( const char* name);
                   void end( const char* name);
 
-                  void read( bool& value);
-                  void read( short& value);
-                  void read( long& value);
-                  void read( long long& value);
-                  void read( float& value);
-                  void read( double& value);
-                  void read( std::string& value);
-                  void read( char& value);
-                  void read( platform::binary_type& value);
+                  void read( bool& value) const;
+                  void read( short& value) const;
+                  void read( long& value) const;
+                  void read( long long& value) const;
+                  void read( float& value) const;
+                  void read( double& value) const;
+                  void read( std::string& value) const;
+                  void read( char& value) const;
+                  void read( platform::binary_type& value) const;
 
                private:
 

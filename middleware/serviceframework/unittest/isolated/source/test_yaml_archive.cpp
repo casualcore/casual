@@ -260,6 +260,27 @@ value:
 
    }
 
+   TEST( casual_sf_yaml_archive, read_invalid_bool__expecting_exception)
+   {
+      static std::string yaml
+      {
+         R"(
+value:
+   m_bool: jajjemensan
+   m_long: 123
+   m_string: bla bla bla bla
+   m_short: 23
+   m_longlong: 1234567890123456789
+   m_time: 1234567890
+)"
+      };
+
+      EXPECT_THROW
+      ({
+         test::SimpleVO value;
+         local::string_to_strict_value( yaml, value);
+      }, sf::exception::archive::invalid::Node);
+   }
 
 
 } // casual

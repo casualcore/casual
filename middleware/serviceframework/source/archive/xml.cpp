@@ -58,8 +58,6 @@ namespace casual
                return m_document;
             }
 
-
-
             namespace reader
             {
 
@@ -124,30 +122,84 @@ namespace casual
                {
                   m_stack.pop_back();
                }
-
-
-               void Implementation::read( bool& value) const
+/*
+               namespace
                {
-                  std::istringstream stream( m_stack.back().text().get());
-                  stream >> std::boolalpha >> value;
-               }
+                  namespace local
+                  {
+                     //
+                     // This is a help to check some to avoid terminate (via assert)
+                     //
+                     template<typename C, typename F>
+                     auto read( const rapidjson::Value* const value, C&& checker, F&& fetcher) -> decltype( std::bind( fetcher, value)())
+                     {
+                        if( std::bind( checker, value)())
+                        {
+                           return std::bind( fetcher, value)();
+                        }
+                        else
+                        {
+                           throw exception::archive::invalid::Node{ "unexpected type"};
+                        }
+                     }
+
+                  } // local
+               } // <unnamed>
+*/
+
+               namespace
+               {
+                  namespace local
+                  {
+                     template<typename T>
+                     T read( const pugi::xml_node& node)
+                     {
+                        std::istringstream stream( node.text().get());
+                        T result;
+                        stream >> result;
+                        if( ! stream.fail() && stream.eof())   return result;
+                        throw exception::archive::invalid::Node{ "unexpected type"};
+                     }
+
+                     //
+                     // std::istream::eof() is not set when streaming bool
+                     //
+                     template<>
+                     bool read( const pugi::xml_node& node)
+                     {
+                        const std::string boolean = node.text().get();
+                        if( boolean == "true")  return true;
+                        if( boolean == "false") return false;
+                        throw exception::archive::invalid::Node{ "unexpected type"};
+                     }
+                  }
+               } // <unnamed>
+
+
+               //
+               // Various stox-functions are more cumbersome to use if you
+               // wanna make sure the whole content is processed
+               //
+               void Implementation::read( bool& value) const
+               { value = local::read<bool>( m_stack.back()); }
+               void Implementation::read( short& value) const
+               { value = local::read<short>( m_stack.back()); }
+               void Implementation::read( long& value) const
+               { value = local::read<long>( m_stack.back()); }
+               void Implementation::read( long long& value) const
+               { value = local::read<long long>( m_stack.back()); }
+               void Implementation::read( float& value) const
+               { value = local::read<float>( m_stack.back()); }
+               void Implementation::read( double& value) const
+               { value = local::read<double>( m_stack.back()); }
 
                void Implementation::read( char& value) const
-               {
-                  // If empty string this should result in '\0'
-                  value = *common::transcode::utf8::decode( m_stack.back().text().get()).c_str();
-               }
-
+               // If empty string this should result in '\0'
+               { value = *common::transcode::utf8::decode( m_stack.back().text().get()).c_str(); }
                void Implementation::read( std::string& value) const
-               {
-                  value = common::transcode::utf8::decode( m_stack.back().text().get());
-               }
-
+               { value = common::transcode::utf8::decode( m_stack.back().text().get()); }
                void Implementation::read( std::vector<char>& value) const
-               {
-                  value = common::transcode::base64::decode( m_stack.back().text().get());
-               }
-
+               { value = common::transcode::base64::decode( m_stack.back().text().get()); }
 
             } // reader
 

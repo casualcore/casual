@@ -29,7 +29,8 @@ namespace casual
                {
                   if( ! exist)
                   {
-                     throw exception::archive::invalid::Node{ "archive - failed to find role '" + std::string{ role} + "' in document"};
+                     // TODO: Fix better exception
+                     throw exception::archive::invalid::Node{ "failed to find role in document" /*, CASUAL_NIP( role)*/};
                   }
                   return exist;
                }

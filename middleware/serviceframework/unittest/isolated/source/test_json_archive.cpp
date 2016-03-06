@@ -51,9 +51,10 @@ namespace casual
             reader >> CASUAL_MAKE_NVP( value);
          }
 
-      }
+      } // <unnamed>
 
-   }
+
+   } // local
 
 
    TEST( casual_sf_json_archive, relaxed_read_serializible)
@@ -135,6 +136,77 @@ namespace casual
       }
    }
 
+   TEST( casual_sf_json_archive, load_invalid_document__expecting_exception)
+   {
+      const std::string json
+      {
+         R"({
+"value":
+{
+   "m_long"
+}
+}
+)"
+      };
+
+      EXPECT_THROW
+      ({
+         sf::archive::json::Load().serialize( json);
+      }, sf::exception::archive::invalid::Document);
+   }
+
+   TEST( casual_sf_json_archive, read_with_invalid_long__expecting_exception)
+   {
+      const std::string json
+      {
+         R"(
+{
+   "value":
+   {
+      "m_bool": true,
+      "m_long": "123456",
+      "m_string": "bla bla bla bla",
+      "m_short": 23,
+      "m_longlong": 1234567890123456789,
+      "m_time": 1234567890
+   }
+}
+)"
+      };
+
+      EXPECT_THROW
+      ({
+         test::SimpleVO value;
+         local::string_to_strict_value( json, value);
+      }, sf::exception::archive::invalid::Node);
+
+   }
+
+   TEST( casual_sf_json_archive, read_with_invalid_string__expecting_exception)
+   {
+      const std::string json
+      {
+         R"(
+{
+   "value":
+   {
+      "m_long": 123456,
+      "m_string": false,
+      "m_short": 23,
+      "m_longlong": 1234567890123456789,
+      "m_time": 1234567890
+   }
+}
+)"
+      };
+
+      EXPECT_THROW
+      ({
+         test::SimpleVO value;
+         local::string_to_strict_value( json, value);
+      }, sf::exception::archive::invalid::Node);
+
+   }
 
 
 }

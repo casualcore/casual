@@ -13,7 +13,8 @@
 #include <pugixml.hpp>
 
 
-#include <sstream>
+#include <iosfwd>
+#include <string>
 #include <vector>
 #include <utility>
 #include <tuple>
@@ -111,22 +112,12 @@ namespace casual
                   bool start( const char* name);
                   void end( const char* name);
 
-                  //
-                  // TODO: Add some error handling
-                  //
-
-                  template<typename T>
-                  void read( T& value) const
-                  {
-                     std::istringstream stream( m_stack.back().text().get());
-                     stream >> value;
-                  }
-
-                  //
-                  // A few overloads
-                  //
-
                   void read( bool& value) const;
+                  void read( short& value) const;
+                  void read( long& value) const;
+                  void read( long long& value) const;
+                  void read( float& value) const;
+                  void read( double& value) const;
                   void read( char& value) const;
                   void read( std::string& value) const;
                   void read( std::vector<char>& value) const;
@@ -207,12 +198,9 @@ namespace casual
                   void end( const char* name);
 
                   template<typename T>
-                  //typename std::enabe_if<std::is_floating_point<T>::value, void>::type
                   void write( const T& value)
                   {
-                     std::ostringstream stream;
-                     stream << std::fixed << value;
-                     m_stack.back().text().set( stream.str().c_str());
+                     m_stack.back().text().set( std::to_string( value).c_str());
                   }
 
                   //

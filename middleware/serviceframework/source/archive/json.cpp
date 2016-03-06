@@ -16,7 +16,10 @@
 
 #include <iterator>
 #include <istream>
-#include <string>
+#include <functional>
+
+
+#include <iostream> // debug
 
 namespace casual
 {
@@ -78,22 +81,29 @@ namespace casual
                      return std::make_tuple( 0, false);
                   }
 
-                  //
-                  // TODO: Perhaps verify if IsArray (else pop and exit) ?
-                  //
-
                   const auto& node = *m_stack.back();
+
+                  //
+                  // This check is to avoid terminate (via assert)
+                  //
+                  if( ! node.IsArray())
+                  {
+                     throw exception::archive::invalid::Node{ "expected array"};
+                  }
 
                   //
                   // Stack 'em backwards
                   //
 
-                  for( auto index = node.Size(); index > 0; --index)
+                  size = node.Size();
+
+                  for( auto index = size; index > 0; --index)
                   {
                      m_stack.push_back( &node[ index - 1]);
                   }
 
-                  return std::make_tuple( node.Size(), true);
+                  return std::make_tuple( size, true);
+
                }
 
                void Implementation::container_end( const char* const name)
@@ -103,7 +113,21 @@ namespace casual
 
                bool Implementation::serialtype_start( const char* const name)
                {
-                  return start( name);
+                  if( ! start( name))
+                  {
+                     return false;
+                  }
+
+                  //
+                  // This check is to avoid terminate (via assert)
+                  //
+                  if( ! m_stack.back()->IsObject())
+                  {
+                     throw exception::archive::invalid::Node{ "expected object"};
+                  }
+
+                  return true;
+
                }
 
                void Implementation::serialtype_end( const char* const name)
@@ -146,25 +170,45 @@ namespace casual
                }
 
 
-               void Implementation::read( bool& value)
-               { value = m_stack.back()->GetBool(); }
-               void Implementation::read( short& value)
-               { value = m_stack.back()->GetInt(); }
-               void Implementation::read( long& value)
-               { value = m_stack.back()->GetInt64(); }
-               void Implementation::read( long long& value)
-               { value = m_stack.back()->GetInt64(); }
-               void Implementation::read( float& value)
-               { value = m_stack.back()->GetDouble(); }
-               void Implementation::read( double& value)
-               { value = m_stack.back()->GetDouble(); }
-               void Implementation::read( char& value)
-               { value = *common::transcode::utf8::decode( m_stack.back()->GetString()).c_str(); }
-               void Implementation::read( std::string& value)
-               { value = common::transcode::utf8::decode( m_stack.back()->GetString()); }
-               void Implementation::read( platform::binary_type& value)
-               { value = common::transcode::base64::decode( m_stack.back()->GetString()); }
+               namespace
+               {
+                  namespace local
+                  {
+                     //
+                     // This is a help to check some to avoid terminate (via assert)
+                     //
+                     template<typename C, typename F>
+                     auto read( const rapidjson::Value* const value, C&& checker, F&& fetcher) -> decltype( std::bind( fetcher, value)())
+                     {
+                        if( std::bind( checker, value)())
+                        {
+                           return std::bind( fetcher, value)();
+                        }
 
+                        throw exception::archive::invalid::Node{ "unexpected type"};
+                     }
+                  } // local
+               } // <unnamed>
+
+
+               void Implementation::read( bool& value) const
+               { value = local::read( m_stack.back(), &rapidjson::Value::IsBool, &rapidjson::Value::GetBool); }
+               void Implementation::read( short& value) const
+               { value = local::read( m_stack.back(), &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
+               void Implementation::read( long& value) const
+               { value = local::read( m_stack.back(), &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
+               void Implementation::read( long long& value) const
+               { value = local::read( m_stack.back(), &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
+               void Implementation::read( float& value) const
+               { value = local::read( m_stack.back(), &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
+               void Implementation::read( double& value) const
+               { value = local::read( m_stack.back(), &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
+               void Implementation::read( char& value) const
+               { value = *common::transcode::utf8::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
+               void Implementation::read( std::string& value) const
+               { value = common::transcode::utf8::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+               void Implementation::read( platform::binary_type& value) const
+               { value = common::transcode::base64::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
 
             } // reader
 
