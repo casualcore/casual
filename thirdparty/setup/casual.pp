@@ -22,7 +22,7 @@ case $operatingsystem
 	     name => 'sqlite3-devel',
 	     ensure => installed
       }
-      warning('Install yaml-cpp-release-0.3.0 manually with sudo python install_yaml.py')
+      warning('Install yaml-cpp-release-0.3.0 manually with sudo python $CASUAL_BUILD_HOME/../thirdparty/setup/install_yaml.py')
    }
    /^(Debian|Ubuntu)$/:
    {
@@ -49,7 +49,8 @@ case $operatingsystem
    }
    'Darwin' :
    {
-      err("Install thirdparties manually!")
+      warning("Install thirdparties manually with port or homebrew!")
+      warning('Install yaml-cpp-release-0.3.0 manually with sudo python $CASUAL_BUILD_HOME/../thirdparty/setup/install_yaml.py')
    }
    default: 
    {

@@ -6,18 +6,7 @@ import urllib2
 import os
 import tarfile
 import subprocess
-
-class cd(object):
-    """Context manager for changing the current working directory"""
-    def __init__(self, newPath):
-        self.newPath = os.path.expanduser(newPath)
-
-    def __enter__(self):
-        self.savedPath = os.getcwd()
-        os.chdir(self.newPath)
-
-    def __exit__(self, etype, value, traceback):
-        os.chdir(self.savedPath)
+import platform
 
 
 URL="https://github.com/jbeder/yaml-cpp/archive/"
@@ -27,7 +16,7 @@ TMP="/tmp/"
 BASENAME="release-0.3.0"
 BUILDDIR="yaml-cpp-release-0.3.0/build"
 
-if not os.path.exists(TMP + BASENAME):
+if not os.path.exists(TMP + BUILDDIR):
     print("Fetching: " + URL + FILENAME)
     response = urllib2.urlopen(URL + FILENAME)
 
@@ -38,11 +27,16 @@ if not os.path.exists(TMP + BASENAME):
     archive.extractall(TMP)
     os.mkdir(TMP + BUILDDIR)
 
-with cd(TMP + BUILDDIR):
-    print("Start setting up: " + BASENAME)
-    print("Running cmake")
+os.chdir(TMP + BUILDDIR)
+
+print("Start setting up: " + BASENAME)
+print("Running cmake")
+if platform.system() == 'Darwin':
+	print( subprocess.check_output(['cmake', '-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_CXX_FLAGS="-stdlib=libstdc++"', '..' ]))
+else:	
     print( subprocess.check_output(['cmake', '-DBUILD_SHARED_LIBS=ON', '..' ]))
-    print("Running make")
-    print( subprocess.check_output(['make']))
-    print("Running install")
-    print( subprocess.check_output(['make', 'install']))
+
+print("Running make")
+print( subprocess.check_output(['make']))
+print("Running install")
+print( subprocess.check_output(['make', 'install']))
