@@ -12,9 +12,11 @@
 
 #include "common/transcode.h"
 
+#include <sstream>
 #include <iterator>
 #include <algorithm>
 #include <locale>
+#include <string>
 
 namespace casual
 {
@@ -403,28 +405,64 @@ namespace casual
                   m_data_stack.pop_back();
                }
 
-               void Implementation::decode( const std::string& data, bool& value) const
+               namespace
                {
-                  std::istringstream stream( data);
-                  stream >> std::boolalpha >> value;
+                  namespace local
+                  {
+
+                     template<typename T>
+                     T read( const std::string& data)
+                     {
+                        std::istringstream stream( data);
+                        T result;
+                        stream >> result;
+                        if( ! stream.fail() && stream.eof())   return result;
+                        throw exception::archive::invalid::Node{ "unexpected type"};
+                     }
+
+
+                     //
+                     // std::istream::eof() is not set when streaming bool
+                     //
+                     template<>
+                     bool read( const std::string& data)
+                     {
+                        if( data == "true")  return true;
+                        if( data == "false") return false;
+                        throw exception::archive::invalid::Node{ "unexpected type"};
+                     }
+                  }
+               } // <unnamed>
+
+               void Implementation::read( bool& value) const
+               { value = local::read<bool>( *m_data_stack.back()); }
+               void Implementation::read( short& value) const
+               { value = local::read<short>( *m_data_stack.back()); }
+               void Implementation::read( long& value) const
+               { value = local::read<long>( *m_data_stack.back()); }
+               void Implementation::read( long long& value) const
+               { value = local::read<long long>( *m_data_stack.back()); }
+               void Implementation::read( float& value) const
+               { value = local::read<float>( *m_data_stack.back()); }
+               void Implementation::read( double& value) const
+               { value = local::read<double>( *m_data_stack.back()); }
+
+               void Implementation::read( char& value) const
+               {
+                  value = m_data_stack.back()->empty() ? '\0' : m_data_stack.back()->front();
                }
 
-               void Implementation::decode( const std::string& data, char& value) const
+               void Implementation::read( std::string& value) const
                {
-                  value = data.empty() ? '\0' : data.front();
+                  value = *m_data_stack.back();
                }
 
-               void Implementation::decode( const std::string& data, std::string& value) const
-               {
-                  value = data;
-               }
-
-               void Implementation::decode( const std::string& data, std::vector<char>& value) const
+               void Implementation::read( std::vector<char>& value) const
                {
                   //
                   // Binary data might be double-decoded (in the end)
                   //
-                  value = common::transcode::base64::decode( data);
+                  value = common::transcode::base64::decode( *m_data_stack.back());
                }
 
             } // reader
@@ -586,9 +624,7 @@ namespace casual
 
                std::string Implementation::encode( const bool& value) const
                {
-                  std::ostringstream stream;
-                  stream << std::boolalpha << value;
-                  return stream.str();
+                  return value ? "true" : "false";
                }
 
                std::string Implementation::encode( const char& value) const
@@ -606,7 +642,7 @@ namespace casual
 
             } // writer
 
-         } // xml
+         } // ini
 
       } // archive
 
