@@ -65,7 +65,7 @@ namespace casual
       {
          //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
 
-         // €
+         // â‚¬
          const std::string source( u8"\u20AC");
          const std::string expect = { static_cast<std::string::value_type>(0xA4)};
          const std::string result = transcode::utf8::decode( source, "ISO-8859-15");
@@ -73,13 +73,13 @@ namespace casual
 
       }
 
-      TEST( casual_common_transcode, UT8_encode_exotic_characters)
+      // TODO: gives warning from clang and gives failure on OSX with locale "UTF-8"
+      TEST( DISABLED_casual_common_transcode, UTF8_encode_exotic_characters)
       {
-         // Bängen Trålar
-         // TODO: gives warning from clang and gives failure on OSX with locale "UTF-8"
-         //const std::string source( u8"B\u00E4ngen Tr\u00E5lar");
-         //const std::string result = transcode::utf8::encode( "Bängen Trålar");
-         //EXPECT_TRUE( result == source);
+         const std::string source{ static_cast<std::string::value_type>(0xE5), static_cast<std::string::value_type>(0xE4), static_cast<std::string::value_type>(0xF6)};
+         const std::string expect{ u8"Ã¥Ã¤Ã¶"};
+         const std::string result = transcode::utf8::encode( source, "ISO-8859-1");
+         EXPECT_TRUE( result == expect);
       }
 
 
