@@ -695,6 +695,47 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_match)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
+         ASSERT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+
+         int match = 0;
+         ASSERT_FALSE( CasualFieldMatch( buffer, R"x(FLD_STRING1\[1\] = Other string)x", &match));
+
+         EXPECT_TRUE( match);
+
+         tpfree( buffer);
+      }
+
+      TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_optimized_match)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
+         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
+         ASSERT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+
+
+         const void* regex = 0;
+         ASSERT_FALSE( CasualFieldMakeExpression( R"x(FLD_STRING1\[1\] = Other string)x", &regex));
+
+         int match = 0;
+         ASSERT_FALSE( CasualFieldMatchExpression( buffer, regex, &match));
+
+         EXPECT_TRUE( match);
+
+         ASSERT_FALSE( CasualFieldFreeExpression( regex));
+
+         tpfree( buffer);
+      }
 
 
       TEST( casual_field_buffer, add_three_remove_two_field_and_then_iterate__expecting_third_as_first)
@@ -1056,31 +1097,10 @@ namespace casual
 
       }
 
-      TEST( casual_field_buffer, match__expecting_nothing_magic_yet)
-      {
-         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
-         ASSERT_TRUE( buffer != nullptr);
-
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
-         ASSERT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
-
-
-         //
-         // TODO: Some testing
-         //
-
-
-         tpfree( buffer);
-      }
-
-
-      TEST( casual_field_buffer, performance__expecting_good_enough_speed)
+      TEST( casual_field_buffer, DISABLED_performance__expecting_good_enough_speed)
       {
          for( long idx = 0; idx < 100000; ++idx)
          {
-
             auto buffer = tpalloc( CASUAL_FIELD, "", 512);
             ASSERT_TRUE( buffer != nullptr);
 

@@ -25,7 +25,6 @@
 #include <vector>
 #include <unordered_map>
 
-
 #include <algorithm>
 #include <iterator>
 
@@ -1834,10 +1833,12 @@ namespace casual
                      case CASUAL_FIELD_DOUBLE:
                         stream << pod<double>( data);
                         break;
-                     // TODO: Handle string+binary in ... some way ... do we need escaping ?
                      case CASUAL_FIELD_STRING:
                      case CASUAL_FIELD_BINARY:
                      default:
+                        //
+                        // TODO: Handle string+binary in ... some way ... do we need escaping ?
+                        //
                         stream << data;
                         break;
                      }
@@ -1870,9 +1871,9 @@ int CasualFieldPrint( const char* const buffer)
 
 int CasualFieldMatch( const char* const buffer, const char* const expression, int* const match)
 {
-   std::ostringstream stream;
+   std::ostringstream s;
 
-   if( const auto result = casual::buffer::field::transform::stream( buffer, stream))
+   if( const auto result = casual::buffer::field::transform::stream( buffer, s))
    {
       return result;
    }
@@ -1881,17 +1882,60 @@ int CasualFieldMatch( const char* const buffer, const char* const expression, in
    {
       const std::regex x( expression);
 
-      if( match) *match = std::regex_match( stream.str(), x);
+      if( match)
+      {
+         *match = std::regex_search( s.str(), x);
+      }
    }
    catch( const std::regex_error&)
    {
       return CASUAL_FIELD_INVALID_ARGUMENT;
    }
-   catch( ...)
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
+int CasualFieldMakeExpression( const char* expression, const void** regex)
+{
+   try
    {
-      // TODO: Log or remove this
-      return CASUAL_FIELD_INTERNAL_FAILURE;
+      *regex = new std::regex( expression, std::regex::optimize);
+   }
+   catch( const std::regex_error&)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
    }
 
    return CASUAL_FIELD_SUCCESS;
 }
+
+int CasualFieldMatchExpression( const char* buffer, const void* regex, int* match)
+{
+   std::ostringstream s;
+
+   if( const auto result = casual::buffer::field::transform::stream( buffer, s))
+   {
+      return result;
+   }
+
+   try
+   {
+      if( match)
+      {
+         *match = std::regex_search( s.str(), *reinterpret_cast<const std::regex*>(regex));
+      }
+   }
+   catch( const std::regex_error&)
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
+int CasualFieldFreeExpression( const void* regex)
+{
+   delete reinterpret_cast<const std::regex*>(regex);
+   return CASUAL_FIELD_SUCCESS;
+}
+

@@ -193,14 +193,17 @@ int CasualFieldCopyMemory( char* target, const void* source, long count);
 
 
 
-
 /* prints the buffer to standard output */
 int CasualFieldPrint( const char* buffer);
 
 /* experimental */
 int CasualFieldMatch( const char* buffer, const char* expression, int* match);
-
-
+/* experimental */
+int CasualFieldMakeExpression( const char* expression, const void** regex);
+/* experimental */
+int CasualFieldMatchExpression( const char* buffer, const void* regex, int* match);
+/* experimental */
+int CasualFieldFreeExpression( const void* regex);
 
 #ifdef __cplusplus
 }
