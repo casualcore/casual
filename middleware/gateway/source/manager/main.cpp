@@ -24,7 +24,7 @@ namespace casual
                Settings settings;
                {
                   casual::common::Arguments parser{{
-
+                     casual::common::argument::directive( { "-c", "--configuration"}, "path to configuration file", settings.configuration),
                   }};
                   parser.parse( argc, argv);
                }

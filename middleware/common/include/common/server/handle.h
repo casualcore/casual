@@ -159,7 +159,8 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( communication::ipc::inbound::Device& ipc, server::Arguments arguments, Args&&... args) : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
+               basic_call( communication::ipc::inbound::Device& ipc, server::Arguments arguments, Args&&... args)
+                  : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
@@ -581,7 +582,6 @@ namespace casual
 
                struct Admin
                {
-                  Admin( const Uuid& identification, communication::error::type handler, communication::ipc::inbound::Device& ipc);
 
                   Admin( const Uuid& identification, communication::error::type handler);
                   Admin( communication::error::type handler);
@@ -605,8 +605,6 @@ namespace casual
                private:
                   Uuid m_identification;
                   communication::error::type m_error_handler;
-                  communication::ipc::inbound::Device& m_inbound;
-
                };
 
 

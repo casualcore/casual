@@ -25,6 +25,7 @@ namespace casual
             std::string name;
             std::string type;
             std::string address;
+            std::string restart;
             std::vector< std::string> services;
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -32,6 +33,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( type);
                archive & CASUAL_MAKE_NVP( address);
+               archive & CASUAL_MAKE_NVP( restart);
                archive & CASUAL_MAKE_NVP( services);
             )
          };

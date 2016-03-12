@@ -106,7 +106,6 @@ namespace casual
                         std::vector< mockup::reply::result_t> result;
 
                         auto reply = common::message::reverse::type( r);
-                        reply.domain = "mockup-domain";
                         reply.directive = decltype( reply)::Directive::start;
 
                         reply.resources.emplace_back( []( common::message::transaction::resource::Manager& m)
@@ -135,7 +134,6 @@ namespace casual
 
                            common::message::transaction::manager::Configuration conf;
                            conf.correlation = r.correlation;
-                           conf.domain = "mockup-domain";
 
                            conf.resources.emplace_back( []( common::message::transaction::resource::Manager& m)
                                  {
@@ -450,7 +448,7 @@ namespace casual
 
          // caller dies
          {
-            common::message::dead::process::Event event;
+            common::message::process::termination::Event event;
             event.death.pid = process::handle().pid;
             event.death.reason = common::process::lifetime::Exit::Reason::core;
 

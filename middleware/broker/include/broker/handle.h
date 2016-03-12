@@ -168,14 +168,14 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::dead::process::Registration& message);
+                  void operator () ( const common::message::process::termination::Registration& message);
                };
 
                struct Event : Base
                {
                   using Base::Base;
 
-                  void operator() ( const common::message::dead::process::Event& message);
+                  void operator() ( const common::message::process::termination::Event& message);
                };
 
 
@@ -189,7 +189,7 @@ namespace casual
             {
                using Base::Base;
 
-               void operator () ( const common::message::lookup::process::Request& message);
+               void operator () ( const common::message::process::lookup::Request& message);
             };
 
          } // lookup

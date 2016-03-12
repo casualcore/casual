@@ -37,8 +37,10 @@ namespace casual
 
                   process::Handle lookup_gateway( communication::ipc::inbound::Device& ipc, platform::queue_id_type broker)
                   {
-                     common::message::lookup::process::Request request;
-                     request.directive = common::message::lookup::process::Request::Directive::wait;
+                     Trace trace{ "outbound::ipc::local::lookup_gateway", log::internal::gateway};
+
+                     common::message::process::lookup::Request request;
+                     request.directive = common::message::process::lookup::Request::Directive::wait;
                      request.identification = environment::identification();
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
@@ -51,6 +53,8 @@ namespace casual
 
                   message::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, platform::queue_id_type gateway)
                   {
+                     Trace trace{ "outbound::ipc::local::lookup_inbound", log::internal::gateway};
+
                      message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
@@ -78,6 +82,8 @@ namespace casual
 
                         return lookup_inbound( ipc, gateway.queue);
                      }
+
+                     log::internal::gateway << "failed to find domain file: " << path << std::endl;
 
                      return {};
                   }
@@ -212,7 +218,7 @@ int main( int argc, char **argv)
       casual::gateway::outbound::ipc::Settings settings;
       {
          casual::common::Arguments parser{{
-            casual::common::argument::directive( { "-p", "--domain-path"}, "path to remote domain home", settings.domain_path),
+            casual::common::argument::directive( { "-a", "--address"}, "path to remote domain home", settings.domain_path),
             casual::common::argument::directive( { "--domain-file"}, "only to make unittest simple", settings.domain_file)
          }};
          parser.parse( argc, argv);

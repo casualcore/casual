@@ -73,7 +73,7 @@ namespace casual
             {
                common::Trace trace( "event registration", log::internal::transaction);
 
-               common::message::dead::process::Registration message;
+               common::message::process::termination::Registration message;
                message.process = common::process::handle();
 
                ipc::device().blocking_send( communication::ipc::broker::id(), message);
@@ -111,7 +111,6 @@ namespace casual
                                  "--rm-openinfo", proxy.openinfo,
                                  "--rm-closeinfo", proxy.closeinfo,
                                  "--rm-id", std::to_string( proxy.id),
-                                 "--domain", common::environment::domain::name()
                            }
                         );
 

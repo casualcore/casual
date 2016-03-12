@@ -41,7 +41,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator() ( const common::message::dead::process::Event& message);
+                  void operator() ( const common::message::process::termination::Event& message);
                };
             } // dead
 

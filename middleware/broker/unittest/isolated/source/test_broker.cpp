@@ -630,13 +630,13 @@ namespace casual
             }
 
             {
-               common::message::lookup::process::Request request;
+               common::message::process::lookup::Request request;
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
                communication::ipc::blocking::send( broker.queue_id, request);
 
-               common::message::lookup::process::Reply reply;
+               common::message::process::lookup::Reply reply;
                communication::ipc::blocking::receive( domain.server2.output(), reply);
 
                EXPECT_TRUE( reply.process == domain.server1.process());
@@ -653,14 +653,14 @@ namespace casual
             local::Broker broker{ domain.state};
 
             {
-               common::message::lookup::process::Request request;
-               request.directive = common::message::lookup::process::Request::Directive::direct;
+               common::message::process::lookup::Request request;
+               request.directive = common::message::process::lookup::Request::Directive::direct;
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
                communication::ipc::blocking::send( broker.queue_id, request);
 
-               common::message::lookup::process::Reply reply;
+               common::message::process::lookup::Reply reply;
                communication::ipc::blocking::receive( domain.server2.output(), reply);
 
                EXPECT_TRUE( reply.process.pid == 0);
@@ -680,8 +680,8 @@ namespace casual
             local::Broker broker{ domain.state};
 
             {
-               common::message::lookup::process::Request request;
-               request.directive = common::message::lookup::process::Request::Directive::wait;
+               common::message::process::lookup::Request request;
+               request.directive = common::message::process::lookup::Request::Directive::wait;
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
@@ -704,7 +704,7 @@ namespace casual
 
 
             {
-               common::message::lookup::process::Request request;
+               common::message::process::lookup::Request request;
                request.identification = some_uuid;
                request.process = domain.server2.process();
 
@@ -725,7 +725,7 @@ namespace casual
             }
 
             {
-               common::message::lookup::process::Reply reply;
+               common::message::process::lookup::Reply reply;
                communication::ipc::blocking::receive( domain.server2.output(), reply);
 
                EXPECT_TRUE( reply.process == domain.server1.process());

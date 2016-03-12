@@ -7,6 +7,8 @@
 
 
 #include "common/uuid.h"
+#include "common/platform.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -15,6 +17,16 @@ namespace casual
       namespace environment
       {
          const common::Uuid& identification();
+
+         namespace manager
+         {
+
+            common::communication::ipc::outbound::Device& device();
+
+            void set( common::platform::queue_id_type queue);
+
+         } // manager
+
 
       } // environment
    } // gateway

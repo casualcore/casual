@@ -22,7 +22,7 @@ namespace casual
             {
                log::internal::debug << "shutdown received from: " << message.process << '\n';
 
-               throw exception::Shutdown{ "shutdown " + process::path()};
+               throw exception::Shutdown{ "shutdown " + common::process::path()};
             }
 
             void Ping::operator () ( server::ping::Request& message)
@@ -31,8 +31,8 @@ namespace casual
 
                server::ping::Reply reply;
                reply.correlation = message.correlation;
-               reply.process = process::handle();
-               reply.uuid = process::uuid();
+               reply.process = common::process::handle();
+               reply.uuid = common::process::uuid();
 
                communication::ipc::outbound::Device ipc{ message.process.queue};
 

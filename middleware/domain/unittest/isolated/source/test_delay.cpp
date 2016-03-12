@@ -62,13 +62,13 @@ namespace casual
             auto start = common::platform::clock_type::now();
 
             {
-               common::message::lookup::process::Request message;
+               common::message::process::lookup::Request message;
                message.identification = id;
                message::send( message, ipc.id(), std::chrono::milliseconds{ 10});
             }
 
             {
-               common::message::lookup::process::Request message;
+               common::message::process::lookup::Request message;
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
@@ -90,13 +90,13 @@ namespace casual
             auto start = common::platform::clock_type::now();
 
             {
-               common::message::lookup::process::Request message;
+               common::message::process::lookup::Request message;
                message.identification = id;
                message::send( message, ipc.id(), std::chrono::milliseconds{ 0});
             }
 
             {
-               common::message::lookup::process::Request message;
+               common::message::process::lookup::Request message;
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);

@@ -87,8 +87,7 @@ namespace casual
                      message::ipc::connect::Reply reply;
                      reply.process.pid = common::process::id();
                      reply.process.queue = state.inbound.connector().id();
-                     reply.domain.id = common::environment::domain::id();
-                     reply.domain.name = common::environment::domain::name();
+                     reply.remote = common::domain::identity();
 
                      communication::ipc::blocking::send( state.remote.queue, reply);
                   }

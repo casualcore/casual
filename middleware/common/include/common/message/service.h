@@ -42,7 +42,7 @@ namespace casual
             {
 
                std::string serverPath;
-               process::Handle process;
+               common::process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -56,7 +56,7 @@ namespace casual
 
             struct Unadvertise : basic_message< Type::service_unadvertise>
             {
-               process::Handle process;
+               common::process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -87,7 +87,7 @@ namespace casual
                   Request& operator = ( Request&&) = default;
 
                   std::string requested;
-                  process::Handle process;
+                  common::process::Handle process;
                   Context context = Context::regular;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -105,7 +105,7 @@ namespace casual
                struct Reply : basic_message< Type::service_name_lookup_reply>
                {
                   Service service;
-                  process::Handle process;
+                  common::process::Handle process;
 
                   enum class State : char
                   {
@@ -146,7 +146,7 @@ namespace casual
                   base_call& operator = ( const base_call&) = delete;
 
                   platform::descriptor_type descriptor = 0;
-                  process::Handle process;
+                  common::process::Handle process;
 
                   Service service;
                   std::string parent;
@@ -274,7 +274,7 @@ namespace casual
                {
 
                   std::string service;
-                  process::Handle process;
+                  common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

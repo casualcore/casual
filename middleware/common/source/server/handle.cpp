@@ -186,20 +186,17 @@ namespace casual
                   communication::ipc::blocking::send( target.process.queue, request);
                }
 
-               Admin::Admin( const Uuid& identification, communication::error::type handler, communication::ipc::inbound::Device& ipc)
+               Admin::Admin( const Uuid& identification, communication::error::type handler)
                   : m_identification{ identification},
-                    m_error_handler{ std::move( handler)},
-                    m_inbound( ipc)
+                    m_error_handler{ std::move( handler)}
                {}
-
-              Admin::Admin( const Uuid& identification, communication::error::type handler) : Admin( identification, std::move( handler), communication::ipc::inbound::device()) {}
 
               Admin:: Admin( communication::error::type handler) : Admin( uuid::empty(), std::move( handler)) {}
 
 
                void Admin::connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                {
-                  server::connect( m_inbound, m_identification, std::move( services), m_error_handler);
+                  server::connect( ipc, m_identification, std::move( services), m_error_handler);
                }
 
                void Admin::reply( platform::queue_id_type id, message::service::call::Reply& message)

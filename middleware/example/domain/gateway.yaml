@@ -1,12 +1,23 @@
 
 gateway:
   
-  address: 127.0.0.1:7777
+  #
+  # There can be [0..*] listernes. 
+  # It's probably not so useful to have more than one listener, or is it?
+  # 0 listeners is probably usefull though.
+  #
+  listeners:
+    - type: tcp  # casual only support tcp. udp in the future?
+      address: 127.0.0.1:7777
 
   connections:
     
-    - name: some_name
-      type: tcp
+      #
+      # casual support the following protocols
+      # * tcp
+      # * ipc 
+      #
+    - type: tcp
       address: dolittle.laz.se:3432
       
       #

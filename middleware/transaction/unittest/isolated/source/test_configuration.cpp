@@ -65,7 +65,6 @@ namespace casual
                   auto conf = configuration();
 
                   conf.correlation = r.correlation;
-                  conf.domain = "mockup-domain";
 
                   result.emplace_back( r.process.queue, conf);
 

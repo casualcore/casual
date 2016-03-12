@@ -50,7 +50,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  using message_type = common::message::dead::process::Event;
+                  using message_type = common::message::process::termination::Event;
 
                   void operator () ( message_type& message);
 

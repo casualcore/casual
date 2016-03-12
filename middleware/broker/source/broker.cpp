@@ -14,6 +14,7 @@
 #include "config/domain.h"
 
 #include "common/environment.h"
+#include "common/domain.h"
 
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
@@ -21,6 +22,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/process.h"
+#include "common/domain.h"
 
 
 #include "sf/log.h"
@@ -136,7 +138,7 @@ namespace casual
             //
             // Set domain name
             //
-            environment::domain::name( domain.name);
+            common::domain::identity( common::domain::Identity{ domain.name});
 
             common::log::internal::debug << CASUAL_MAKE_NVP( domain);
 
@@ -167,9 +169,8 @@ namespace casual
 
          try
          {
-            const auto domain = common::environment::domain::name();
 
-            common::log::information << "shutting down domain '" << domain << "'\n";
+            common::log::information << "shutting down domain '" << domain::identity() << "'\n";
 
             //
             // We have to remove this process first, so we don't try to terminate our self
@@ -182,7 +183,7 @@ namespace casual
             common::process::children::terminate( &handle::process_exit, m_state.processes());
 
 
-            common::log::information << "domain '" << domain << "' is off-line\n";
+            common::log::information << "domain '" << domain::identity() << "' is off-line\n";
          }
          catch( const common::exception::signal::Timeout& exception)
          {
@@ -216,7 +217,7 @@ namespace casual
 
             auto end = common::platform::clock_type::now();
 
-            common::log::information << "domain: \'" << common::environment::domain::name() << "\' is on-line - " << m_state.processes().size() << " processes - boot time: "
+            common::log::information << "domain: " << domain::identity() << " is on-line - " << m_state.processes().size() << " processes - boot time: "
                   << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
 
 

@@ -340,8 +340,6 @@ namespace casual
             {
                common::message::transaction::manager::Configuration result;
 
-               result.domain = common::environment::domain::name();
-
                for( auto& group : state.groups)
                {
                   common::range::transform( group.resources, result.resources, Resource{});
@@ -357,8 +355,6 @@ namespace casual
                common::message::transaction::client::connect::Reply reply( broker::State& state, const state::Server::Instance& instance)
                {
                   common::message::transaction::client::connect::Reply reply;
-
-                  reply.domain = common::environment::domain::name();
 
                   try
                   {

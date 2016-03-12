@@ -67,7 +67,7 @@ namespace casual
             {
                struct Process
                {
-                  using message_type = common::message::lookup::process::Request;
+                  using message_type = common::message::process::lookup::Request;
                   std::vector< communication::message::Complete> operator () ( message_type message);
 
                };
@@ -204,8 +204,8 @@ namespace casual
 
                   std::map< std::string, common::message::service::lookup::Reply> services;
                   std::map< common::Uuid, common::process::Handle> singeltons;
-                  std::map< common::Uuid, std::vector< common::message::lookup::process::Request>> singelton_request;
-                  std::map< platform::pid_type, std::vector< common::message::lookup::process::Request>> process_request;
+                  std::map< common::Uuid, std::vector< common::message::process::lookup::Request>> singelton_request;
+                  std::map< platform::pid_type, std::vector< common::message::process::lookup::Request>> process_request;
                   std::vector< common::process::Handle> servers;
                };
 

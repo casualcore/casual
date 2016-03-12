@@ -165,8 +165,6 @@ namespace casual
          void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file)
          {
 
-            common::environment::domain::name( configuration.domain);
-
             {
                trace::internal::Scope trace( "transaction manager xa-switch configuration", log::internal::transaction);
 

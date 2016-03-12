@@ -150,8 +150,10 @@ namespace casual
                   broker::handle::transaction::rollback::Reply{ state},
                   //broker::handle::peek::queue::Request{ m_state},
                   common::server::handle::basic_admin_call{
-                     ipc::device().device(), broker::admin::services( state), environment::broker::identification(),
-                           ipc::device().error_handler()},
+                     ipc::device().device(),
+                     broker::admin::services( state),
+                     environment::broker::identification(),
+                     ipc::device().error_handler()},
                   common::message::handle::ping(),
                };
 

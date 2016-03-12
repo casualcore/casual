@@ -6,6 +6,7 @@
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MESSAGE_H_
 
 #include "common/message/type.h"
+#include "common/domain.h"
 
 namespace casual
 {
@@ -13,33 +14,24 @@ namespace casual
    {
       namespace message
       {
-         struct Domain
-         {
-            common::Uuid id;
-            std::string name;
-
-            CASUAL_CONST_CORRECT_MARSHAL({
-               archive & id;
-               archive & name;
-            })
-         };
 
          namespace outbound
          {
             struct Connect : common::message::basic_message< common::message::Type::gateway_outbound_connect>
             {
-
-               std::string connection;
+               common::process::Handle process;
+               common::domain::Identity remote;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);
-                  archive & connection;
+                  archive & process;
+                  archive & remote;
+
                })
 
             };
 
          } // outbound
-
 
          namespace ipc
          {
@@ -49,12 +41,12 @@ namespace casual
                struct basic_connect : common::message::basic_message< type>
                {
                   common::process::Handle process;
-                  message::Domain domain;
+                  common::domain::Identity remote;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
                      common::message::basic_message< type>::marshal( archive);
                      archive & process;
-                     archive & domain;
+                     archive & remote;
                   })
 
                };

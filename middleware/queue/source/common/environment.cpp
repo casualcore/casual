@@ -38,8 +38,8 @@ namespace casual
                      common::platform::queue_id_type initialize_broker_queue_id()
                      {
 
-                        common::message::lookup::process::Request request;
-                        request.directive = common::message::lookup::process::Request::Directive::wait;
+                        common::message::process::lookup::Request request;
+                        request.directive = common::message::process::lookup::Request::Directive::wait;
                         request.identification = broker::identification();
                         request.process = common::process::handle();
 

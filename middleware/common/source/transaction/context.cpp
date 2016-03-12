@@ -96,7 +96,6 @@ namespace casual
 
             auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
 
-            common::environment::domain::name( reply.domain);
             std::swap( resources, reply.resources);
 
             log::internal::transaction << "received client connect reply from broker" << std::endl;

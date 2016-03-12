@@ -89,7 +89,7 @@ namespace casual
 
             namespace dead
             {
-               void Process::operator() ( const common::message::dead::process::Event& message)
+               void Process::operator() ( const common::message::process::termination::Event& message)
                {
                   common::trace::Scope trace{ "queue::handle::dead::Process", common::log::internal::queue};
 

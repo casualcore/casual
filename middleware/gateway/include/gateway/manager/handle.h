@@ -9,6 +9,11 @@
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_HANDLE_H_
 
 #include "gateway/manager/state.h"
+#include "gateway/message.h"
+
+#include "common/message/dispatch.h"
+
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -16,34 +21,77 @@ namespace casual
    {
       namespace manager
       {
+         namespace ipc
+         {
+            const common::communication::ipc::Helper& device();
+         } // ipc
+
+
          namespace handle
          {
 
+            void shutdown( State& state);
+
+            void boot( State& state);
+
             struct Base
             {
-               Base( State& state) : m_state( &state) {}
-
+               Base( State& state);
             protected:
-               State& state() { return *m_state;}
+               State& state();
             private:
-               State* m_state;
+               std::reference_wrapper< State> m_state;
             };
 
+            namespace process
+            {
 
-            namespace inbound
+               void exit( const common::process::lifetime::Exit& exit);
+
+               struct Exit : Base
+               {
+                  using Base::Base;
+                  using message_type = common::message::process::termination::Event;
+
+                  void operator () ( message_type& message);
+
+               };
+
+
+            } // process
+
+            namespace outbound
             {
                struct Connect : Base
                {
                   using Base::Base;
+                  using message_type = message::outbound::Connect;
 
+                  void operator () ( message_type& message);
 
                };
 
             } // inbound
 
+            namespace inbound
+            {
+               namespace ipc
+               {
+                  struct Connect : Base
+                  {
+                     using Base::Base;
+                     using message_type = message::ipc::connect::Request;
 
+                     void operator () ( message_type& message);
+
+                  };
+
+               } // ipc
+            } // inbound
 
          } // handle
+
+         common::message::dispatch::Handler handler( State& state);
 
       } // manager
 

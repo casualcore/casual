@@ -49,7 +49,6 @@ namespace casual
                   reply_type reply;
 
                   reply.correlation = message.correlation;
-                  reply.domain = "unittest-domain";
 
                   {
                      common::message::transaction::resource::Manager rm;
@@ -462,7 +461,7 @@ namespace casual
                      return check_process_connect( c.process);
 
                   },
-                  [&]( common::message::lookup::process::Request r)
+                  [&]( common::message::process::lookup::Request r)
                   {
                      Trace trace{ "mockup lookup::process::Request", log::internal::debug};
 
@@ -476,7 +475,6 @@ namespace casual
                         {
                            auto reply = message::reverse::type( r);
                            reply.process = found->second;
-                           reply.domain = "mockup-domain";
                            return local::result_set( r.process, reply);
                         }
                         else
@@ -500,7 +498,7 @@ namespace casual
                            log::internal::debug << "found server from pid: " << reply.process << '\n';
                            return local::result_set( r.process, reply);
                         }
-                        else if( r.directive == common::message::lookup::process::Request::Directive::wait)
+                        else if( r.directive == common::message::process::lookup::Request::Directive::wait)
                         {
                            m_state.process_request[ r.pid].push_back( std::move( r));
                         }
@@ -516,7 +514,6 @@ namespace casual
 
                      Trace trace{ "mockup transaction::client::connect::Request", log::internal::debug};
                      auto reply = message::reverse::type( r);
-                     reply.domain = "mockup-domain";
                      reply.directive = decltype( reply)::Directive::start;
 
                      return local::result_set( r.process, reply);
@@ -532,7 +529,6 @@ namespace casual
 
                      common::message::transaction::manager::Configuration conf;
                      conf.correlation = r.correlation;
-                     conf.domain = "mockup-domain";
                      result.push_back( local::result( r.process, conf));
 
                      return result;

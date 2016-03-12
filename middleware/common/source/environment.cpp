@@ -42,14 +42,34 @@ namespace casual
                         static Variable singleton;
                         return singleton;
                      }
-                     const char* get( const std::string& name) const
+
+                     bool exists( const std::string& name) const
                      {
                         lock_type lock{ m_mutex};
-                        return getenv( name.c_str());
+
+                        return getenv( name.c_str()) != nullptr;
+                     }
+
+                     std::string get( const std::string& name) const
+                     {
+                        lock_type lock{ m_mutex};
+
+                        auto result = getenv( name.c_str());
+
+                        //
+                        // We need to return by value and copy the variable while
+                        // we have the lock
+                        //
+                        if( result)
+                        {
+                           return result;
+                        }
+                        return {};
                      }
 
                      void set( const std::string& name, const std::string& value) const
                      {
+
                         lock_type lock{ m_mutex};
                         if( setenv( name.c_str(), value.c_str(), 1) == -1)
                         {
@@ -71,18 +91,16 @@ namespace casual
 
 				bool exists( const std::string& name)
 				{
-					return local::native::Variable::instance().get( name) != nullptr;
+					return local::native::Variable::instance().exists( name);
 				}
 
 				std::string get( const std::string& name)
 				{
-					auto result = local::native::Variable::instance().get( name);
-
-					if( ! result)
+					if( ! exists( name))
 					{
 					   throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
 					}
-					return result;
+					return local::native::Variable::instance().get( name);
 				}
 
             std::string get( const std::string& name, std::string alternative)
@@ -97,10 +115,18 @@ namespace casual
 				void set( const std::string& name, const std::string& value)
 				{
 				   local::native::Variable::instance().set( name, value);
+
+				   //log::internal::debug << "environment variable: " << name << " set to: " << value << std::endl;
 				}
 
             namespace name
             {
+               const std::string& home()
+               {
+                  static std::string name{ "CASUAL_HOME"};
+                  return name;
+               }
+
                namespace domain
                {
                   const std::string& home()
@@ -141,7 +167,7 @@ namespace casual
 			{
 			   const std::string& domain()
             {
-               static const std::string result = variable::get( "CASUAL_DOMAIN_HOME");
+               static const std::string result = variable::get( variable::name::domain::home());
                return result;
             }
 
@@ -153,7 +179,7 @@ namespace casual
 
             const std::string& casual()
             {
-               static const std::string result = variable::get( "CASUAL_HOME");
+               static const std::string result = variable::get( variable::name::home());
                return result;
             }
 
@@ -183,46 +209,8 @@ namespace casual
          }
 
 
-			namespace local
-         {
-            namespace
-            {
-               std::string& domain_name()
-               {
-                  static std::string path = variable::get( variable::name::domain::name(), "");
-                  return path;
-               }
-
-               std::string domain_id()
-               {
-                  if( ! variable::exists( variable::name::domain::id()))
-                  {
-                     variable::set( variable::name::domain::id(), uuid::string( uuid::make()));
-                  }
-                  return variable::get( variable::name::domain::id());
-               }
-            }
-		   }
-
 			namespace domain
          {
-            const std::string& name()
-            {
-               return local::domain_name();
-            }
-
-            void name( const std::string& value)
-            {
-               variable::set( variable::name::domain::name(), value);
-               local::domain_name() = value;
-            }
-
-            const Uuid& id()
-            {
-               static Uuid id{ local::domain_id()};
-               return id;
-            }
-
             namespace singleton
             {
                namespace local
@@ -379,6 +367,7 @@ namespace casual
          std::string string( const std::string& value)
          {
             std::string result;
+            result.reserve( value.size());
 
             for( auto& token : local::split( value, std::string{ "${"}, std::string{ "}"}))
             {

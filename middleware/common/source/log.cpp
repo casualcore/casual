@@ -18,6 +18,7 @@
 #include "common/execution.h"
 #include "common/algorithm.h"
 #include "common/string.h"
+#include "common/domain.h"
 
 //
 // std
@@ -63,7 +64,7 @@ namespace casual
                      const std::string basename{ file::name::base( process::path())};
 
                      m_output << chronology::local()
-                        << '|' << environment::domain::name()
+                        << '|' << common::domain::identity().name
                         << '|' << execution::id()
                         << '|' << transaction::Context::instance().current().trid
                         << '|' << process::id()

@@ -59,6 +59,11 @@ namespace casual
 
 				namespace name
             {
+				   //!
+				   //! @return variable name representing casual home. Where casual is installed
+				   //!
+				   const std::string& home();
+
 				   namespace domain
                {
 				      const std::string& home();
@@ -96,10 +101,6 @@ namespace casual
 			namespace file
 			{
 
-			   //void executable( const std::string& path);
-
-			   //const std::string& executable();
-
 			   namespace broker
             {
                std::string device();
@@ -121,13 +122,6 @@ namespace casual
 
 			namespace domain
          {
-			   //!
-			   //! @return the name of the casual domain.
-			   //!
-			   const std::string& name();
-			   void name( const std::string& value);
-
-			   const Uuid& id();
 
 			   namespace singleton
             {

@@ -37,7 +37,7 @@ namespace casual
                         // We put a dead process event on our own ipc device, that
                         // will be handled later on.
                         //
-                        common::message::dead::process::Event event{ exit};
+                        common::message::process::termination::Event event{ exit};
                         common::communication::ipc::inbound::device().push( std::move( event));
                      }
                   }

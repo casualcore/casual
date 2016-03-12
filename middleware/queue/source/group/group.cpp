@@ -196,7 +196,7 @@ namespace casual
             // TODO: we could wait until we know there's a blocking dequeue
             //
             {
-               common::message::dead::process::Registration registration;
+               common::message::process::termination::Registration registration;
                registration.process = common::process::handle();
 
                common::communication::ipc::blocking::send( common::communication::ipc::broker::id(), registration);

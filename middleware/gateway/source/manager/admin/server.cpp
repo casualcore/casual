@@ -2,25 +2,25 @@
 //! casual
 //!
 
-#include "queue/broker/admin/server.h"
 
-#include "queue/broker/broker.h"
-#include "queue/common/transform.h"
+#include "gateway/manager/admin/server.h"
 
 
 #include "sf/server.h"
 
-namespace local
-{
-   namespace
-   {
-      casual::sf::server::type server;
-   }
-}
+
 
 namespace casual
 {
-   namespace queue
+   namespace local
+   {
+      namespace
+      {
+         sf::server::type server;
+      }
+   }
+
+   namespace gateway
    {
       extern "C"
       {
@@ -50,7 +50,7 @@ namespace casual
 
 
 
-      namespace broker
+      namespace manager
       {
          namespace admin
          {
@@ -60,12 +60,13 @@ namespace casual
                extern "C"
                {
 
-                  void list_queues( TPSVCINFO *serviceInfo, broker::State& state)
+                  void get_connections( TPSVCINFO *serviceInfo, manager::State& state)
                   {
                      casual::sf::service::reply::State reply;
 
                      try
                      {
+                        /*
                         auto service_io = local::server->createService( serviceInfo);
 
 
@@ -74,6 +75,7 @@ namespace casual
                         service_io << CASUAL_MAKE_NVP( serviceReturn);
 
                         reply = service_io.finalize();
+                        */
                      }
                      catch( ...)
                      {
@@ -88,40 +90,11 @@ namespace casual
                         reply.flags);
                   }
 
-
-                  void list_messages( TPSVCINFO *serviceInfo, broker::State& state)
-                  {
-                     casual::sf::service::reply::State reply;
-
-                     try
-                     {
-                        auto service_io = local::server->createService( serviceInfo);
-
-                        std::string queue;
-                        service_io >> CASUAL_MAKE_NVP( queue);
-
-                        auto serviceReturn = admin::list_messages( state, queue);
-
-                        service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                        reply = service_io.finalize();
-                     }
-                     catch( ...)
-                     {
-                        local::server->handleException( serviceInfo, reply);
-                     }
-
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
-                  }
                }
             } // service
 
 
+            /*
             admin::State list_queues( broker::State& state)
             {
                admin::State result;
@@ -136,19 +109,21 @@ namespace casual
             {
                return transform::messages( broker::messages( state, queue));
             }
+            */
 
-            common::server::Arguments services( broker::State& state)
+            common::server::Arguments services( manager::State& state)
             {
                common::server::Arguments result{ { common::process::path()}};
 
-               result.services.emplace_back( ".casual.queue.list.queues", std::bind( &service::list_queues, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-               result.services.emplace_back( ".casual.queue.list.messages", std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+               result.services.emplace_back( ".casual.gateway.get.connections",
+                     std::bind( &service::get_connections, std::placeholders::_1, std::ref( state)),
+                     common::server::Service::Type::cCasualAdmin,
+                     common::server::Service::Transaction::none);
+
 
                return result;
             }
          } // admin
-      } // broker
-   } // queue
-
-
+      } // manager
+   } // gateway
 } // casual

@@ -33,6 +33,7 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
        Compile( 'source/environment.cpp'),
        Compile( 'source/outbound/routing.cpp'),       
        Compile( 'source/inbound/cache.cpp'),
+       Compile( 'source/transform.cpp'),
      ])
         
 
@@ -44,6 +45,8 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
      Compile( 'source/manager/main.cpp'),
      Compile( 'source/manager/manager.cpp'),
      Compile( 'source/manager/handle.cpp'),
+     Compile( 'source/manager/state.cpp'),
+     Compile( 'source/manager/admin/server.cpp'),
     ],
     [ 
      common_archive,
@@ -95,7 +98,7 @@ install_bin.append( target)
 # Unittest
 #
 
-LinkUnittest( 'bin/test-casual-gateway',
+target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/isolated/source/test_manager.cpp'),
         Compile( 'unittest/isolated/source/test_inbound_cache.cpp'),
@@ -104,6 +107,10 @@ LinkUnittest( 'bin/test-casual-gateway',
    ], 
    [ common_archive, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment']) 
 
+#
+# Make sure we link the executables before we run the unittest
+#
+Dependencies( target_unittest, install_bin)
 
 
 

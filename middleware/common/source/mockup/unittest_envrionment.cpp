@@ -12,6 +12,7 @@
 #include "common/uuid.h"
 #include "common/file.h"
 #include "common/internal/log.h"
+#include "common/domain.h"
 
 #include "common/mockup/ipc.h"
 
@@ -31,7 +32,7 @@ namespace casual
             {
                void SetUp() override
                {
-                  environment::domain::name( "unittest-domain");
+                  domain::identity( domain::Identity{ "unittest-domain"});
 
                   std::string domain_path;
 

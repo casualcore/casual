@@ -51,7 +51,7 @@ namespace casual
             // We put a dead process event on our own ipc device, that
             // will be handled later on.
             //
-            common::message::dead::process::Event event{ exit};
+            common::message::process::termination::Event event{ exit};
             communication::ipc::inbound::device().push( std::move( event));
          }
 
@@ -509,7 +509,6 @@ namespace casual
                      ///log::error << "could not find instance - " << exception.what() << std::endl;
 
                      common::message::transaction::client::connect::Reply reply;
-                     reply.domain = common::environment::domain::name();
 
                      ipc::device().blocking_send( message.process.queue, reply);
 
@@ -538,7 +537,7 @@ namespace casual
          {
             namespace process
             {
-               void Registration::operator () ( const common::message::dead::process::Registration& message)
+               void Registration::operator () ( const common::message::process::termination::Registration& message)
                {
                   common::trace::internal::Scope trace{ "broker::handle::dead::process::Registration"};
 
@@ -551,7 +550,7 @@ namespace casual
                }
 
 
-               void Event::operator() ( const common::message::dead::process::Event& event)
+               void Event::operator() ( const common::message::process::termination::Event& event)
                {
                   common::trace::internal::Scope trace{ "broker::handle::dead::process::Event"};
 
@@ -619,12 +618,11 @@ namespace casual
 
          namespace lookup
          {
-            void Process::operator () ( const common::message::lookup::process::Request& message)
+            void Process::operator () ( const common::message::process::lookup::Request& message)
             {
                common::trace::internal::Scope trace{ "broker::handle::lookup::Process"};
 
                auto reply = common::message::reverse::type( message);
-               reply.domain = common::environment::domain::name();
                reply.identification = message.identification;
 
                auto send_reply = [&](){
@@ -643,7 +641,7 @@ namespace casual
                      reply.process = found->second;
                      send_reply();
                   }
-                  else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+                  else if( message.directive == common::message::process::lookup::Request::Directive::direct)
                   {
                      send_reply();
                   }
@@ -661,7 +659,7 @@ namespace casual
                      reply.process = *found;
                      send_reply();
                   }
-                  else if( message.directive == common::message::lookup::process::Request::Directive::direct)
+                  else if( message.directive == common::message::process::lookup::Request::Directive::direct)
                   {
                      send_reply();
                   }
@@ -778,7 +776,7 @@ namespace casual
                // Check if there are pending that is waiting for this pid
                //
                {
-                  auto found = range::find_if( m_state.pending.process_lookup, [&]( const common::message::lookup::process::Request& r){
+                  auto found = range::find_if( m_state.pending.process_lookup, [&]( const common::message::process::lookup::Request& r){
                      return r.pid == message.process.pid;
                   });
 

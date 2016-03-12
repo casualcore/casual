@@ -177,18 +177,12 @@ namespace casual
                {
                   trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
 
-                  common::message::lookup::process::Request request;
-                  request.directive = static_cast< message::lookup::process::Request::Directive>( directive);
+                  message::process::lookup::Request request;
+                  request.directive = static_cast< message::process::lookup::Request::Directive>( directive);
                   request.identification = identity;
                   request.process = common::process::handle();
 
                   auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
-
-                  if( ! reply.domain.empty())
-                  {
-                     environment::domain::name( reply.domain);
-                  }
-
                   return reply.process;
                }
 
@@ -650,8 +644,8 @@ namespace casual
 
          Handle singleton( const Uuid& identification, bool wait)
          {
-            message::lookup::process::Request request;
-            request.directive = wait ? message::lookup::process::Request::Directive::wait : message::lookup::process::Request::Directive::direct;
+            message::process::lookup::Request request;
+            request.directive = wait ? message::process::lookup::Request::Directive::wait : message::process::lookup::Request::Directive::direct;
             request.identification = identification;
             request.process = process::handle();
 
@@ -662,8 +656,8 @@ namespace casual
          {
             trace::Scope trace{ "process::lookup", log::internal::trace};
 
-            message::lookup::process::Request request;
-            request.directive = wait ? message::lookup::process::Request::Directive::wait : message::lookup::process::Request::Directive::direct;
+            message::process::lookup::Request request;
+            request.directive = wait ? message::process::lookup::Request::Directive::wait : message::process::lookup::Request::Directive::direct;
             request.pid = pid;
             request.process = process::handle();
 

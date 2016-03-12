@@ -1,14 +1,9 @@
-//!
-//! state.h
-//!
-//! Created on: Jan 1, 2016
-//!     Author: Lazan
-//!
 
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 
 #include "common/process.h"
+#include "common/domain.h"
 
 namespace casual
 {
@@ -18,23 +13,84 @@ namespace casual
       {
          namespace state
          {
+            struct base_connection
+            {
+               enum class Type
+               {
+                  unknown,
+                  ipc,
+                  tcp
+               };
 
+               enum class Runlevel
+               {
+                  absent,
+                  booting,
+                  online,
+                  shutdown
+               };
+
+               common::process::Handle process;
+               common::domain::Identity remote;
+               Type type = Type::unknown;
+               Runlevel runlevel = Runlevel::absent;
+
+
+               friend bool operator == ( const base_connection& lhs, common::platform::pid_type rhs);
+               inline friend bool operator == ( common::platform::pid_type lhs, const base_connection& rhs)
+               {
+                  return rhs == lhs;
+               }
+            };
+
+            namespace inbound
+            {
+               struct Connection : base_connection
+               {
+
+                  friend std::ostream& operator << ( std::ostream& out, const Connection& value);
+               };
+
+
+            } // inbound
+
+            namespace outbound
+            {
+               struct Connection : base_connection
+               {
+
+
+                  std::string address;
+
+                  bool restart = false;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Connection& value);
+               };
+
+
+            } // outbound
+
+            struct Connections
+            {
+               std::vector< outbound::Connection> outbound;
+               std::vector< inbound::Connection> inbound;
+            };
 
 
          } // state
 
          struct State
          {
-
-            struct Connection
+            enum class Runlevel
             {
-
-               common::process::Handle process;
+               startup,
+               online,
+               shutdown
             };
 
 
-
-            std::vector< Connection> connections;
+            state::Connections connections;
+            Runlevel runlevel = Runlevel::startup;
          };
 
 
