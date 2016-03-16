@@ -75,6 +75,15 @@ namespace casual
 
             namespace inbound
             {
+               struct Connect : Base
+               {
+                  using Base::Base;
+                  using message_type = message::inbound::Connect;
+
+                  void operator () ( message_type& message);
+
+               };
+
                namespace ipc
                {
                   struct Connect : Base

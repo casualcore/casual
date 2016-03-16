@@ -29,36 +29,42 @@ namespace casual
          const Uuid& id();
 
 
-         //!
-         //! Sets the current service
-         //!
-         void service( const std::string& service);
-
-         //!
-         //! Gets the current service (if any)
-         //!
-         const std::string& service();
-
-         namespace parent
+         namespace service
          {
             //!
-            //! Sets the current parent service
+            //! Sets the current service
             //!
-            void service( const std::string& service);
+            void name( const std::string& service);
 
             //!
-            //! Gets the current parent service (if any)
+            //! Gets the current service (if any)
             //!
-            const std::string& service();
+            const std::string& name();
 
-         } // parent
+            //!
+            //! clear the service name
+            //!
+            void clear();
 
 
+            namespace parent
+            {
+               //!
+               //! Sets the current parent service
+               //!
+               void name( const std::string& service);
 
+               //!
+               //! Gets the current parent service (if any)
+               //!
+               const std::string& name();
+
+               void clear();
+
+            } // parent
+         } // service
       } // execution
    } // common
-
-
 } // casual
 
 #endif // EXECUTION_H_

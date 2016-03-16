@@ -319,8 +319,8 @@ namespace casual
 
                   auto& service = found->second;
 
-                  execution::service( message.service.name);
-                  execution::parent::service( message.parent);
+                  execution::service::name( message.service.name);
+                  execution::service::parent::name( message.parent);
 
 
 

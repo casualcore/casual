@@ -4,6 +4,8 @@
 
 
 #include "gateway/manager/admin/server.h"
+#include "gateway/manager/admin/vo.h"
+#include "gateway/transform.h"
 
 
 #include "sf/server.h"
@@ -60,22 +62,20 @@ namespace casual
                extern "C"
                {
 
-                  void get_connections( TPSVCINFO *serviceInfo, manager::State& state)
+                  void get_state( TPSVCINFO *serviceInfo, manager::State& state)
                   {
                      casual::sf::service::reply::State reply;
 
                      try
                      {
-                        /*
                         auto service_io = local::server->createService( serviceInfo);
 
-
-                        auto serviceReturn = admin::list_queues( state);
+                        auto serviceReturn = gateway::transform::state( state);
 
                         service_io << CASUAL_MAKE_NVP( serviceReturn);
 
                         reply = service_io.finalize();
-                        */
+
                      }
                      catch( ...)
                      {
@@ -94,29 +94,12 @@ namespace casual
             } // service
 
 
-            /*
-            admin::State list_queues( broker::State& state)
-            {
-               admin::State result;
-
-               result.queues = transform::queues( broker::queues( state));
-               result.groups = transform::groups( state);
-
-               return result;
-            }
-
-            std::vector< Message> list_messages( broker::State& state, const std::string& queue)
-            {
-               return transform::messages( broker::messages( state, queue));
-            }
-            */
-
             common::server::Arguments services( manager::State& state)
             {
                common::server::Arguments result{ { common::process::path()}};
 
-               result.services.emplace_back( ".casual.gateway.get.connections",
-                     std::bind( &service::get_connections, std::placeholders::_1, std::ref( state)),
+               result.services.emplace_back( ".casual.gateway.state",
+                     std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
                      common::server::Service::Type::cCasualAdmin,
                      common::server::Service::Transaction::none);
 

@@ -17,6 +17,7 @@
 
 #include "common/marshal/marshal.h"
 
+
 //
 // std
 //
@@ -93,7 +94,6 @@ namespace casual
                archive & pid;
                archive & queue;
             })
-
          };
 
          //!

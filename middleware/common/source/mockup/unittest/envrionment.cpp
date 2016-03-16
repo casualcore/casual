@@ -18,6 +18,7 @@
 
 
 #include <iostream>
+#include <fstream>
 
 namespace casual
 {
@@ -31,6 +32,18 @@ namespace casual
             struct Environment : public ::testing::Environment
             {
                void SetUp() override
+               {
+                  m_singleton_file = set_up();
+
+               }
+
+               virtual void TearDown() override
+               {
+
+               }
+
+            private:
+               static file::scoped::Path set_up()
                {
                   domain::identity( domain::Identity{ "unittest-domain"});
 
@@ -59,12 +72,27 @@ namespace casual
                   log::debug << "broker queue id: " << communication::ipc::broker::id() << std::endl;
                   log::debug << "mockup TM queue id: " << mockup::ipc::transaction::manager::queue().id() << std::endl;
 
+                  if( ! directory::create( environment::domain::singleton::path()))
+                  {
+                     log::error << "failed to create domain singleton file path\n";
+                     return {};
+                  }
+                  file::scoped::Path broker_file_path{ environment::domain::singleton::path() + "/.casual-broker-queue"};
+                  std::ofstream broker_file{ broker_file_path, std::ios::trunc};
+
+                  if( ! broker_file)
+                  {
+                     log::error << "failed to create domain singleton file\n";
+                  }
+                  else
+                  {
+                     broker_file << mockup::ipc::broker::queue().id();
+                     log::debug << "mockup domain singlton file: " << broker_file_path << std::endl;
+                  }
+                  return broker_file_path;
                }
 
-               virtual void TearDown() override
-               {
-
-               }
+               file::scoped::Path m_singleton_file;
 
             };
 

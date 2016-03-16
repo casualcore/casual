@@ -70,8 +70,8 @@ namespace casual
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
-                        << '|' << execution::parent::service()
-                        << '|' << execution::service()
+                        << '|' << execution::service::parent::name()
+                        << '|' << execution::service::name()
                         << '|' << category
                         << '|' << message << std::endl;
                   }

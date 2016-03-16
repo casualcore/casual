@@ -133,31 +133,32 @@ namespace casual
          struct Gateway
          {
             using policy_type = Policy;
-            using outbound_configuration = typename policy_type::outbound_configuration;
+            using configuration_type = typename policy_type::configuration_type;
+            using internal_policy_type = typename policy_type::internal_type;
+            using external_policy_type = typename policy_type::external_type;
+
+            using ipc_policy = common::communication::ipc::policy::ignore::signal::Blocking;
 
 
             template< typename S>
             Gateway( S&& settings)
-               : m_reply_thread{ reply_thread< S>, std::ref( m_routing), validate_settings( std::forward< S>( settings))}
+               : m_reply_thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)}
             {
+
                //
                // 'connect' to our local domain
                //
                common::process::connect();
             }
 
-            template< typename S>
-            static auto validate_settings( S&& settings)
-               -> decltype( std::forward< S>( settings))
-            {
-               policy_type::validate( settings);
-               return std::forward< S>( settings);
-            }
+
 
             ~Gateway()
             {
                try
                {
+                  common::Trace trace{ "gateway::outbound::Gateway::~Gateway()", common::log::internal::gateway};
+
                   if( m_reply_thread.joinable())
                   {
 
@@ -168,6 +169,15 @@ namespace casual
                      common::signal::thread::scope::Block block;
 
                      common::signal::thread::send( m_reply_thread, common::signal::Type::terminate);
+
+                     //
+                     // Worker will always send Disconnect, we'll consume it...
+                     //
+                     {
+                        message::worker::Disconnect disconnect;
+                        common::communication::ipc::inbound::device().receive( disconnect, ipc_policy{});
+                     }
+
 
                      m_reply_thread.join();
                   }
@@ -185,13 +195,33 @@ namespace casual
                common::Trace trace{ "gateway::outbound::Gateway::operator()", common::log::internal::gateway};
 
                //
+               // We block all signals, so worker thread gets all of'em
+               //
+               common::signal::thread::scope::Block block;
+
+               //
                // Now we wait for the worker to establish connection with
                // the other domain. We're still active and can be shut down
                //
+               internal_policy_type policy{ connect()};
 
-               auto outbound_device = policy_type::outbound_device( connect());
+               auto&& outbound_device = policy.outbound();
 
-               common::log::internal::gateway << "output device from worker: " << outbound_device << '\n';
+               common::log::internal::gateway << "internal policy: " << policy << '\n';
+
+
+               //
+               // Send connect to gateway so it knows we're up'n running
+               //
+               {
+                  common::Trace trace{ "gateway::outbound::Gateway::operator() gateway connect", common::log::internal::gateway};
+
+                  message::outbound::Connect connect;
+                  connect.process = common::process::handle();
+                  connect.remote = m_remote;
+
+                  environment::manager::device().send( connect, ipc_policy{});
+               }
 
                using outbound_device_type = decltype( outbound_device);
 
@@ -205,16 +235,14 @@ namespace casual
                   handle::create< common::message::transaction::resource::domain::rollback::Request>( m_routing, outbound_device),
                };
 
-               common::message::dispatch::blocking::pump( handler, common::communication::ipc::inbound::device());
+               common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
             }
 
          private:
 
-            outbound_configuration connect()
+            configuration_type connect()
             {
                common::Trace trace{ "gateway::outbound::Gateway::connect", common::log::internal::gateway};
-
-               common::communication::ipc::Helper ipc;
 
                message::worker::Connect message;
 
@@ -227,10 +255,12 @@ namespace casual
 
                while( ! message.execution)
                {
-                  handler( ipc.blocking_next( handler.types()));
+                  handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                }
 
-               outbound_configuration configuration;
+               m_remote = message.remote;
+
+               configuration_type configuration;
                common::marshal::binary::Input marshal{ message.information};
                marshal >> configuration;
 
@@ -242,25 +272,23 @@ namespace casual
             {
                common::Trace trace{ "gateway::outbound::Gateway::reply_thread", common::log::internal::gateway};
 
+
+               auto send_disconnect = []( message::worker::Disconnect::Reason reason)
+                  {
+                     common::communication::ipc::blocking::send(
+                        common::communication::ipc::inbound::id(),
+                        message::worker::Disconnect{ reason});
+                  };
+
                try
                {
                   //
-                  // Make sure we always send disconnect to main thread
+                  // Instantiate the external policy
                   //
-                  common::scope::Execute send_disconnect{
-                     [](){
-                        common::communication::ipc::blocking::send(
-                              common::communication::ipc::inbound::id(),
-                              message::worker::Disconnect{});
-                     }};
+                  external_policy_type policy{ std::forward< S>( settings)};
 
 
-                  //
-                  // Keep a state just in case this device need one...
-                  //
-                  auto state = policy_type::worker_state( std::forward< S>( settings));
-
-                  auto&& device = policy_type::connect( state);
+                  auto&& inbound = policy.inbound();
 
 
                   //
@@ -268,10 +296,14 @@ namespace casual
                   // domain
                   //
                   {
+
+                     common::Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect", common::log::internal::gateway};
+
                      message::worker::Connect message;
+                     message.remote = policy.remote();
 
                      {
-                        auto configuration = policy_type::outbound_device( state);
+                        auto configuration = policy.configuration();
                         common::marshal::binary::Output marshal{ message.information};
                         marshal << configuration;
                      }
@@ -279,7 +311,7 @@ namespace casual
                      common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
                   }
 
-                  common::log::information << "connection established - state: " << state << "\n";
+                  common::log::information << "connection established - policy: " << policy << "\n";
 
                   //
                   // we start our reply-message-pump
@@ -293,21 +325,23 @@ namespace casual
 
                   common::log::internal::gateway << "start reply message pump\n";
 
-                  common::message::dispatch::blocking::pump( handler, device);
+                  common::message::dispatch::blocking::pump( handler, inbound);
 
                }
-               catch( const common::exception::Shutdown&)
+               catch( const common::exception::signal::Terminate&)
                {
-                  // no op
+                  send_disconnect( message::worker::Disconnect::Reason::signal);
                }
                catch( ...)
                {
                   common::error::handler();
+                  send_disconnect( message::worker::Disconnect::Reason::disconnect);
                }
             }
 
             Routing m_routing;
             std::thread m_reply_thread;
+            common::domain::Identity m_remote;
          };
 
 

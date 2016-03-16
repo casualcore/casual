@@ -4,11 +4,16 @@
 
 #include <gtest/gtest.h>
 
+#include "common/unittest.h"
+
 
 #include "gateway/message.h"
+#include "gateway/environment.h"
+
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/environment.h"
 
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"
@@ -32,12 +37,18 @@ namespace casual
             {
 
                Inbound( platform::queue_id_type ipc)
-                 : process{ "./bin/casual-gateway-inbound-ipc", {
-                        "-ipc", std::to_string( ipc)}}
+                 : process{ "./bin/casual-gateway-inbound-ipc",
+                  {
+                     "--remote-ipc-queue", std::to_string( ipc),
+                     "--correlation", uuid::string( correlation),
+                     "--remote-name", "unittest",
+                     "--remote-id", uuid::string( correlation),
+                 }}
                {
 
                }
 
+               Uuid correlation = uuid::make();
                common::mockup::Process process;
             };
 
@@ -56,17 +67,19 @@ namespace casual
                      //
 
                      message::ipc::connect::Reply reply;
-                     communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply);
+                     communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, inbound.correlation);
                      external = reply.process;
 
                      log::internal::gateway << "external: " << external << std::endl;
 
 
+                     /*
                      common::message::dispatch::Handler handler{
                         common::message::handle::ping()
                      };
 
                      handler( communication::ipc::inbound::device().next( communication::ipc::policy::Blocking{}));
+                     */
                   }
                   catch( ...)
                   {
@@ -75,6 +88,15 @@ namespace casual
                   }
 
                }
+
+               struct set_environment_t
+               {
+                  set_environment_t()
+                  {
+                     gateway::environment::manager::set( communication::ipc::inbound::id());
+                  }
+
+               } set_environment;
 
                common::mockup::domain::Domain domain;
                Inbound inbound;
@@ -86,7 +108,7 @@ namespace casual
 
       TEST( casual_gateway_inbound, shutdown_before_connection__expect_gracefull_shutdown)
       {
-         Trace trace{ "casual_gateway_inbound shutdown_before_connection__expect_gracefull_shutdown"};
+         CASUAL_UNITTEST_TRACE();
 
          //
          // We need to have a broker to 'connect the process'
@@ -102,7 +124,7 @@ namespace casual
 
       TEST( casual_gateway_inbound, connection_then_force_shutdown__expect_gracefull_shutdown)
       {
-         Trace trace{ "casual_gateway_inbound connection_then_force_shutdown__expect_gracefull_shutdown"};
+         CASUAL_UNITTEST_TRACE();
 
          EXPECT_NO_THROW({
             local::Domain doman;
@@ -112,7 +134,7 @@ namespace casual
 
       TEST( casual_gateway_inbound, connection_then_shutdown__expect_gracefull_shutdown)
       {
-         Trace trace{ "casual_gateway_inbound connection_then_shutdown__expect_gracefull_shutdown"};
+         CASUAL_UNITTEST_TRACE();
 
          EXPECT_THROW({
             local::Domain domain;
@@ -129,7 +151,7 @@ namespace casual
 
       TEST( casual_gateway_inbound, service_call__service1__expect_echo)
       {
-         Trace trace{ "TEST( casual_gateway_inbound, service_call__service1__expect_echo)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain;
 
@@ -149,7 +171,7 @@ namespace casual
 
       TEST( casual_gateway_inbound, service_call__absent_service__expect_reply_with_TPESVCERR)
       {
-         Trace trace{ "TEST( casual_gateway_inbound, service_call__absent_service__expect_reply_with_TPESVCERR)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain;
 
@@ -171,7 +193,7 @@ namespace casual
 
       TEST( casual_gateway_inbound, service_call__removed_ipc_queue___expect_reply_with_TPESVCERR)
       {
-         Trace trace{ "TEST( casual_gateway_inbound, service_call__removed_ipc_queue___expect_reply_with_TPESVCERR)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain;
 

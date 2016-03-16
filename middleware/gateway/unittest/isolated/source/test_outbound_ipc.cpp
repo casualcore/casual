@@ -3,6 +3,7 @@
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "gateway/message.h"
@@ -118,7 +119,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, shutdown_before_connection__expect_gracefull_shutdown)
       {
-         Trace trace{ "TEST( casual_gateway_outbound_ipc, shutdown_before_connection__expect_gracefull_shutdown)"};
+         CASUAL_UNITTEST_TRACE();
 
          //
          // We need to have a broker to 'connect the process'
@@ -135,7 +136,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, connection_then_force_shutdown__expect_gracefull_shutdown)
       {
-         Trace trace{ "TEST( casual_gateway_outbound_ipc, connection_then_force_shutdown__expect_gracefull_shutdown)"};
+         CASUAL_UNITTEST_TRACE();
 
          EXPECT_NO_THROW({
             local::Domain doman;
@@ -144,7 +145,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, connection_then_shutdown__expect_gracefull_shutdown)
       {
-         Trace trace{ "casual_gateway_outbound_ipc connection_then_shutdown__expect_gracefull_shutdown"};
+         CASUAL_UNITTEST_TRACE();
 
          EXPECT_THROW({
             local::Domain domain;
@@ -160,7 +161,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, service_call__expect_echo)
       {
-         Trace trace{ "TEST( casual_gateway_outbound_ipc, service_call__service1__expect_echo)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain;
 

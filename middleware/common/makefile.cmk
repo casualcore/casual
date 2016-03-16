@@ -126,7 +126,7 @@ install_libs.append( target)
 
 mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
     [ 
-      Compile( 'source/mockup/unittest_envrionment.cpp'),  
+      Compile( 'source/mockup/unittest/envrionment.cpp'),  
     ],
     [ common, mockup, 'gtest'])
 

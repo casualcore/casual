@@ -135,6 +135,9 @@ namespace casual
 
                while( ! state.connections.inbound.empty() || ! state.connections.outbound.empty())
                {
+                  log::internal::gateway << "inbound.size: " << state.connections.inbound.size()
+                        << " - outbound.size: " << state.connections.outbound.size() << std::endl;
+
                   handler( ipc::device().blocking_next());
                }
             }
@@ -169,6 +172,7 @@ namespace casual
                   // will be handled later on.
                   //
                   common::message::process::termination::Event event{ exit};
+
                   communication::ipc::inbound::device().push( std::move( event));
                }
 
@@ -188,7 +192,9 @@ namespace casual
                   }
                   else if( outbound_found)
                   {
+                     log::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
 
+                     state().connections.outbound.erase( std::begin( outbound_found));
 
                   }
                   else
@@ -206,23 +212,47 @@ namespace casual
                {
                   Trace trace{ "gateway::manager::handle::outbound::Connect", log::internal::gateway};
 
+                  log::internal::gateway << "message: " << message << '\n';
+
                   auto found = range::find( state().connections.outbound, message.process.pid);
 
                   if( found)
                   {
                      found->process = message.process;
                      found->remote = message.remote;
+                     found->runlevel = state::outbound::Connection::Runlevel::online;
 
                   }
                   else
                   {
-                     log::error << "unknown outbound connected " << message.process << " - action: discard\n";
+                     log::error << "unknown outbound connected " << message << " - action: discard\n";
                   }
                }
             } // outbound
 
             namespace inbound
             {
+               void Connect::operator () ( message_type& message)
+               {
+                  Trace trace{ "gateway::manager::handle::inbound::Connect", log::internal::gateway};
+
+                  log::internal::gateway << "message: " << message << '\n';
+
+                  auto found = range::find( state().connections.inbound, message.process.pid);
+
+                  if( found)
+                  {
+                     found->process = message.process;
+                     found->remote = message.remote;
+                     found->runlevel = state::inbound::Connection::Runlevel::online;
+
+                  }
+                  else
+                  {
+                     log::error << "unknown inbound connected " << message << " - action: discard\n";
+                  }
+               }
+
                namespace ipc
                {
                   void Connect::operator () ( message_type& message)
@@ -234,10 +264,17 @@ namespace casual
                      //
 
                      state::inbound::Connection connection;
+                     connection.runlevel = state::inbound::Connection::Runlevel::booting;
+                     connection.type = state::inbound::Connection::Type::ipc;
 
                      connection.process.pid = common::process::spawn(
                            common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
-                           { "--ipc", std::to_string( message.process.queue)});
+                           {
+                                 "--remote-name", message.remote.name,
+                                 "--remote-id", uuid::string( message.remote.id),
+                                 "--remote-ipc-queue", std::to_string( message.process.queue),
+                                 "--correlation", uuid::string( message.correlation),
+                           });
 
 
                      state().connections.inbound.push_back( std::move( connection));
@@ -260,6 +297,8 @@ namespace casual
                common::message::handle::ping(),
                common::message::handle::Shutdown{},
                manager::handle::process::Exit{ state},
+               manager::handle::inbound::Connect{ state},
+               manager::handle::outbound::Connect{ state},
                manager::handle::inbound::ipc::Connect{ state},
                std::ref( admin),
 

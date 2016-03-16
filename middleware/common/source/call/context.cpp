@@ -165,7 +165,7 @@ namespace casual
                      }
 
                      message.process = process::handle();
-                     message.parent = execution::service();
+                     message.parent = execution::service::name();
                      message.flags = flags;
 
                      return message;

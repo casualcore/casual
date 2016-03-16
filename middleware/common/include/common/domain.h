@@ -8,8 +8,6 @@
 #include "common/marshal/marshal.h"
 #include "common/uuid.h"
 
-
-
 #include <string>
 #include <iosfwd>
 

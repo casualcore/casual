@@ -174,8 +174,8 @@ namespace casual
          void Context::finalize()
          {
             buffer::pool::Holder::instance().clear();
-            execution::service( "");
-            execution::parent::service( "");
+            execution::service::clear();
+            execution::service::parent::clear();
          }
 
 

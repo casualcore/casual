@@ -235,7 +235,7 @@ namespace casual
                inline Uuid put( message::Complete&& message)
                {
                   m_cache.push_back( std::move( message));
-                  return message.correlation;
+                  return m_cache.back().correlation;
                }
 
                template< typename M>
@@ -292,17 +292,30 @@ namespace casual
                   return false;
                }
 
-               template< typename Policy>
-               bool apply( Policy&& policy, transport_type& transport, const error_type& handler)
+
+               template< typename Policy, typename Predicate>
+               range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
                   while( true)
                   {
                      try
                      {
-                        //
-                        // Delegate the invocation to the policy
-                        //
-                        return policy( m_connector, transport);
+                        transport_type transport;
+
+                        auto found = range::find_if( m_cache, predicate);
+
+                        while( ! found && policy( m_connector, transport))
+                        {
+                           //
+                           // Check if the message should be discarded
+                           //
+                           if( ! discard( transport))
+                           {
+                              cache( transport);
+                              found = range::find_if( m_cache, predicate);
+                           }
+                        }
+                        return found;
                      }
                      catch( ...)
                      {
@@ -316,28 +329,6 @@ namespace casual
                         handler();
                      }
                   }
-               }
-
-
-               template< typename Policy, typename Predicate>
-               range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
-               {
-                  transport_type transport;
-
-                  auto found = range::find_if( m_cache, predicate);
-
-                  while( ! found && apply( std::forward< Policy>( policy), transport, handler))
-                  {
-                     //
-                     // Check if the message should be discarded
-                     //
-                     if( ! discard( transport))
-                     {
-                        cache( transport);
-                        found = range::find_if( m_cache, predicate);
-                     }
-                  }
-                  return found;
                }
 
                template< typename Policy, typename... Predicates>

@@ -17,7 +17,7 @@ namespace casual
          {
             common::file::scoped::Path temporary( const std::string& extension, const std::string& content)
             {
-               common::file::scoped::Path path{ common::file::name::unique( "mockup-", extension)};
+               common::file::scoped::Path path{ common::file::name::unique( common::directory::temporary() + "/mockup-", extension)};
                std::ofstream file{ path};
                file << content;
                return path;

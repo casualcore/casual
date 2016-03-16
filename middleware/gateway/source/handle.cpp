@@ -4,6 +4,7 @@
 
 #include "gateway/handle.h"
 
+#include "common/trace.h"
 
 namespace casual
 {
@@ -16,7 +17,12 @@ namespace casual
 
          void Disconnect::operator() ( message_type& message)
          {
-            common::log::internal::gateway << "got disconnect from worker thread\n";
+            common::Trace trace{ "gateway::handle::Disconnect::operator()", common::log::internal::gateway};
+
+            if( message.reason == message_type::Reason::disconnect && message.remote.id)
+            {
+               common::log::information << "disconnect from domain: " << message.remote << '\n';
+            }
 
             //
             // We got a disconnect from the worker thread, we wait for it

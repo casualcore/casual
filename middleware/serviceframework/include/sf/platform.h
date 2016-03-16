@@ -15,6 +15,7 @@
 #include "common/algorithm.h"
 
 
+
 #include "sf/namevaluepair.h"
 
 
@@ -22,6 +23,19 @@
 
 namespace casual
 {
+   namespace common
+   {
+      namespace process
+      {
+         struct Handle;
+      } // process
+
+      namespace domain
+      {
+         struct Identity;
+      } // domain
+
+   } // common
    namespace sf
    {
 
@@ -58,6 +72,12 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name);
          void serialize( Writer& archive, const platform::Uuid& value, const char* name);
+
+         void serialize( Reader& archive, common::process::Handle& value, const char* name);
+         void serialize( Writer& archive, const common::process::Handle& value, const char* name);
+
+         void serialize( Reader& archive, common::domain::Identity& value, const char* name);
+         void serialize( Writer& archive, const common::domain::Identity& value, const char* name);
 
 
          void serialize( Reader& archive, platform::time_point& value, const char* name);

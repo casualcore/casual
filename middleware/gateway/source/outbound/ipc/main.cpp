@@ -58,12 +58,18 @@ namespace casual
                      message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
-                     // TODO: set our domain
+                     request.remote = domain::identity();
 
-                     return communication::ipc::call( gateway, request,
+                     log::internal::gateway << "reguest: " << request << '\n';
+
+                     auto reply = communication::ipc::call( gateway, request,
                            communication::ipc::policy::Blocking{},
                            nullptr,
                            ipc);
+
+                     log::internal::gateway << "reply: " << reply << '\n';
+
+                     return reply;
                   }
 
 
@@ -100,7 +106,12 @@ namespace casual
 
             struct Policy
             {
-               struct outbound_configuration
+
+               using outbound_device_type = communication::ipc::outbound::Device;
+               using inbound_device_type = communication::ipc::inbound::Device;
+
+
+               struct configuration_type
                {
                   platform::queue_id_type id;
 
@@ -109,96 +120,90 @@ namespace casual
                   )
                };
 
-               using outbound_device_type = communication::ipc::outbound::Device;
-               using inbound_device_type = communication::ipc::inbound::Device;
 
 
-               struct State
+               struct internal_type
                {
-                  std::string domain_file;
-                  inbound_device_type inbound;
-
-                  process::Handle remote;
-
-
-                  friend std::ostream& operator << ( std::ostream& out, const State& state)
+                  internal_type( configuration_type configuration) : m_outbound{ configuration.id}
                   {
-                     return out << "{ path: " << state.domain_file << ", remote: " << state.remote << ", inbound: " << state.inbound << "}";
                   }
+
+                  outbound_device_type outbound() { return { m_outbound};}
+
+                  friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
+                  {
+                     return out << "{ outbound: " << value.m_outbound
+                            << '}';
+                  }
+
+               private:
+
+                  platform::queue_id_type m_outbound;
                };
 
-
-               static void validate( const Settings& settings)
+               struct external_type
                {
-                  if( settings.domain_path.empty() && settings.domain_file.empty())
+                  external_type( Settings&& settings)
                   {
-                     throw exception::invalid::Argument{ "invalid domain path", CASUAL_NIP( settings.domain_path)};
-                  }
-               }
+                     Trace trace{ "outbound::ipc::Policy::external_type ctor", log::internal::gateway};
+
+                     if( ! settings.domain_file.empty())
+                     {
+                        m_domain_file = std::move( settings.domain_file);
+                     }
+                     else
+                     {
+                        m_domain_file = std::move( settings.domain_path) + "/.casual-broker-queue";
+                     }
+
+                     {
+                        Trace trace{ "outbound::ipc::Policy::external_type ctor connect", log::internal::gateway};
 
 
-               static State worker_state( Settings&& settings)
-               {
-                  Trace trace{ "outbound::ipc::Policy::state", log::internal::gateway};
+                        process::pattern::Sleep sleep{ {
+                           { std::chrono::milliseconds{ 50}, 20}, // 1s
+                           { std::chrono::milliseconds{ 500}, 20}, // 10s
+                           { std::chrono::seconds{ 1}, 3600}, // 1h
+                           { std::chrono::seconds{ 5}, 0} // forever
+                        }};
 
-                  State result;
-                  if( ! settings.domain_file.empty())
-                  {
-                     result.domain_file = std::move( settings.domain_file);
-                  }
-                  else
-                  {
-                     result.domain_file = std::move( settings.domain_path) + "/.casual-broker-queue";
-                  }
+                        while( ! m_process)
+                        {
+                           sleep();
 
-                  return result;
-               }
-
-
-               static inbound_device_type& connect( State& state)
-               {
-                  Trace trace{ "outbound::ipc::Policy::connect", log::internal::gateway};
-
-                  log::internal::gateway << "state: " << state << std::endl;
-
-                  process::pattern::Sleep sleep{ {
-                     { std::chrono::milliseconds{ 50}, 20}, // 1s
-                     { std::chrono::milliseconds{ 500}, 20}, // 10s
-                     { std::chrono::seconds{ 1}, 3600}, // 1h
-                     { std::chrono::seconds{ 5}, 0} // forever
-                  }};
-
-                  while( ! state.remote)
-                  {
-                     sleep();
-
-                     state.remote = local::connect_domain( state.inbound, state.domain_file).process;
+                           auto result = local::connect_domain( m_inbound, m_domain_file);
+                           m_remote = result.remote;
+                           m_process = result.process;
+                        }
+                     }
                   }
 
+                  inbound_device_type& inbound() { return m_inbound;}
 
-                  return state.inbound;
-               }
-
-
-               static outbound_configuration outbound_device( State& state)
-               {
-                  Trace trace{ "outbound::ipc::Policy::outbound_device( state)", log::internal::gateway};
-
-                  outbound_configuration result;
-                  result.id = state.remote.queue;
-
-                  return result;
-               }
+                  const domain::Identity& remote() const { return m_remote;}
 
 
-               static outbound_device_type outbound_device( outbound_configuration&& configuration)
-               {
-                  Trace trace{ "outbound::ipc::Policy::outbound_device( configuration)", log::internal::gateway};
+                  configuration_type configuration() const
+                  {
+                     return { m_process.queue};
+                  }
 
-                  return outbound_device_type{ configuration.id};
-               }
+                  friend std::ostream& operator << ( std::ostream& out, const external_type& value)
+                  {
+                     return out << "{ path: " << value.m_domain_file << ", remote: " << value.m_remote
+                           << ", inbound: " << value.m_inbound
+                           << ", process: " << value.m_process
+                           << '}';
+                  }
 
+               private:
+                  std::string m_domain_file;
+                  inbound_device_type m_inbound;
 
+                  process::Handle m_process;
+                  domain::Identity m_remote;
+
+               };
             };
 
             using Gateway = outbound::Gateway< Policy>;

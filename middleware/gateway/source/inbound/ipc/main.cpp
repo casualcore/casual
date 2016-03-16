@@ -22,10 +22,14 @@ namespace casual
             struct Settings
             {
                platform::queue_id_type ipc = 0;
+               std::string correlation;
+               struct
+               {
+                  std::string id;
+                  std::string name;
+               } remote;
 
             };
-
-
 
             struct Policy
             {
@@ -33,7 +37,8 @@ namespace casual
                using outbound_device_type = communication::ipc::outbound::Device;
                using inbound_device_type = communication::ipc::inbound::Device;
 
-               struct outbound_configuration
+
+               struct configuration_type
                {
                   platform::queue_id_type id;
 
@@ -42,89 +47,73 @@ namespace casual
                   )
                };
 
-               struct State
+               struct internal_type
                {
-                  inbound_device_type inbound;
-                  common::process::Handle remote;
-
-                  friend std::ostream& operator << ( std::ostream& out, const State& state)
+                  internal_type( configuration_type configuration) : m_outbound{ configuration.id}
                   {
-                     return out << "{ remote: " << state.remote << ", inbound: " << state.inbound << "}";
                   }
 
+                  outbound_device_type outbound() { return { m_outbound};}
 
+                  friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
+                  {
+                     return out << "{ outbound: " << value.m_outbound
+                            << '}';
+                  }
+
+               private:
+
+                  platform::queue_id_type m_outbound;
                };
 
-               static void validate( const Settings& settings)
+               struct external_type
                {
-                  if( settings.ipc == 0)
+                  external_type( ipc::Settings&& settings)
                   {
-                     throw exception::invalid::Argument{ "invalid ipc queue", CASUAL_NIP( settings.ipc)};
-                  }
-               }
+                     Trace trace{ "inbound::ipc::Policy::external_type ctor", log::internal::gateway};
 
-               static State worker_state( Settings&& settings)
-               {
-                  Trace trace{ "inbound::ipc::Policy::state", log::internal::gateway};
+                     m_remote.name = std::move( settings.remote.name);
+                     m_remote.id = Uuid{ settings.remote.id};
+                     m_process.queue = settings.ipc;
 
-                  State result;
+                     //
+                     // Send the reply
+                     //
+                     {
+                        message::ipc::connect::Reply reply;
+                        reply.correlation = Uuid{ settings.correlation};
+                        reply.process.pid = common::process::id();
+                        reply.process.queue = m_inbound.connector().id();
+                        reply.remote = common::domain::identity();
 
-                  result.remote.queue = settings.ipc;
+                        log::internal::gateway << "reply: " << reply << '\n';
 
-                  return result;
-               }
-
-               static inbound_device_type& connect( State& state)
-               {
-                  Trace trace{ "inbound::ipc::Policy::connect", log::internal::gateway};
-
-                  //
-                  // Send the reply
-                  //
-                  {
-                     Trace trace{ "inbound::ipc::Policy::connect reply", log::internal::gateway};
-
-                     message::ipc::connect::Reply reply;
-                     reply.process.pid = common::process::id();
-                     reply.process.queue = state.inbound.connector().id();
-                     reply.remote = common::domain::identity();
-
-                     communication::ipc::blocking::send( state.remote.queue, reply);
+                        communication::ipc::blocking::send( m_process.queue, reply);
+                     }
                   }
 
-                  //
-                  // We ping the remote domain. We don't really have to do this...
-                  //
+                  friend std::ostream& operator << ( std::ostream& out, const external_type& external)
                   {
-                     Trace trace{ "inbound::ipc::Policy::connect ping", log::internal::gateway};
-
-                     common::message::server::ping::Request request;
-                     request.process.pid = common::process::id();
-                     request.process.queue = state.inbound.connector().id();
-
-                     state.remote = communication::ipc::call(
-                           state.remote.queue,
-                           request,
-                           communication::ipc::policy::Blocking{},
-                           nullptr,
-                           state.inbound).process;
+                     return out << "{ remote: " << external.m_remote
+                           << ", process: " << external.m_process
+                           << ", inbound: " << external.m_inbound << "}";
                   }
-                  return state.inbound;
-               }
 
-               static outbound_configuration outbound_device( State& state)
-               {
-                  Trace trace{ "inbound::ipc::Policy::outbound_device( state)", log::internal::gateway};
+                  inbound_device_type& device() { return m_inbound;}
 
-                  return { state.remote.queue};
-               }
+                  const domain::Identity& remote() const { return m_remote;}
 
-               static outbound_device_type outbound_device( outbound_configuration configuration)
-               {
-                  Trace trace{ "inbound::ipc::Policy::outbound_device( configuration)", log::internal::gateway};
+                  configuration_type configuration() const
+                  {
+                     return { m_process.queue};
+                  }
 
-                  return { configuration.id};
-               }
+               private:
+                  inbound_device_type m_inbound;
+                  common::process::Handle m_process;
+                  domain::Identity m_remote;
+               };
+
             };
 
 
@@ -145,7 +134,10 @@ int main( int argc, char **argv)
       casual::gateway::inbound::ipc::Settings settings;
       {
          casual::common::Arguments parser{{
-            casual::common::argument::directive( { "-ipc", "--remote-ipc-queue"}, "romote domain ipc queue", settings.ipc)
+            casual::common::argument::directive( { "--remote-name"}, "romote domain name", settings.remote.name),
+            casual::common::argument::directive( { "--remote-id"}, "romote domain id", settings.remote.id),
+            casual::common::argument::directive( { "--remote-ipc-queue"}, "romote domain ipc queue", settings.ipc),
+            casual::common::argument::directive( { "--correlation"}, "message connect correlation", settings.correlation),
          }};
          parser.parse( argc, argv);
       }

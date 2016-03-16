@@ -43,6 +43,43 @@ namespace casual
 
                };
 
+               namespace vo
+               {
+                  struct Connection
+                  {
+                     manager::admin::vo::inbound::Connection operator() ( const manager::state::inbound::Connection& value) const
+                     {
+                        auto result = transform< manager::admin::vo::inbound::Connection>( value);
+
+                        return result;
+                     }
+
+                     manager::admin::vo::outbound::Connection operator() ( const manager::state::outbound::Connection& value) const
+                     {
+                        auto result = transform< manager::admin::vo::outbound::Connection>( value);
+
+                        return result;
+                     }
+
+                  private:
+
+                     template< typename R, typename T>
+                     R transform( const T& value) const
+                     {
+                        R result;
+
+                        result.process = value.process;
+                        result.remote = value.remote;
+                        result.runlevel = static_cast< typename R::Runlevel>( value.runlevel);
+                        result.type = static_cast< typename R::Type>( value.type);
+
+                        return result;
+                     }
+
+                  };
+
+               } // vo
+
             } // <unnamed>
          } // local
 
@@ -54,8 +91,21 @@ namespace casual
 
             common::range::transform( configuration.connections, state.connections.outbound, local::Connection{});
 
-
             return state;
+         }
+
+         manager::admin::vo::State state( const manager::State& state)
+         {
+            Trace trace{ "gateway::transform::state service", log::internal::gateway};
+
+            manager::admin::vo::State result;
+
+            range::transform( state.connections.inbound, result.connections.inbound, local::vo::Connection{});
+            range::transform( state.connections.outbound, result.connections.outbound, local::vo::Connection{});
+
+
+            return result;
+
          }
 
 

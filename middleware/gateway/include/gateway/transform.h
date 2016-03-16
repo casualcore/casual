@@ -7,6 +7,8 @@
 
 #include "gateway/manager/state.h"
 
+#include "gateway/manager/admin/vo.h"
+
 
 
 #include "config/gateway.h"
@@ -20,6 +22,8 @@ namespace casual
       {
 
          manager::State state( const config::gateway::Gateway& configuration);
+
+         manager::admin::vo::State state( const manager::State& state);
 
 
       } // transform
