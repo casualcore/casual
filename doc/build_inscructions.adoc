@@ -1,0 +1,85 @@
+== Build casual
+
+Build inscructions for Casual Middleware platform
+
+=== Requirements
+* git
+* python2
+* gcc-c++
+* clang (for casual-make cross)
+
+NOTE: casual assumes there is a python2 interpreter at /usr/bin/python2
+This seems to be true in most GNU/Linux distros but not OSX. So
+you might need to create this manually.
+
+
+=== Build dependencies:
+* pugixml
+* yaml-cpp0.3
+* uuid
+* sqlite3
+* json-c
+
+
+=== Distro setup
+
+A short description on how to install the needed tools and dependencies on a few popular distros.
+This section assumes you know the distro tooling, if you run into problems use https://www.google.com
+
+==== Arch Linux
+
+Install tools and dependencies via Pacman
+
+pacman -S gcc python2 git util-linux json-c sqlite3 pugixml clang
+
+NOTE: uuid is provided by 'util-linux' in Arch Linux
+
+NOTE: Arch Linux does not separate headers and binaries
+
+yaml-cpp0.3 is available via AUR, https://aur.archlinux.org/packages/yaml-cpp0.3/, build and install it
+
+==== Fedora
+
+Install tools and dependencies via yum
+
+yum install git python2 gcc-c++ clang pugixml-devel uuid-devel sqlite-devel json-c-devel yaml-cpp03-devel.x86_64
+
+WARNING: Does not build on Fedora. uuid/uuid.h is not the default. Unsure on how to fix need to write issue
+
+==== Ubuntu
+
+Install tools and dependencies via apt-get
+
+apt-get install libpugixml-dev libsqlite3-dev libjson-c-dev git gcc clang python uuid-dev libyaml-cpp0.3-dev
+
+
+==== CentOS7 / RHEL7
+
+Install tools and  dependencies via Yum
+
+yum install gcc-c++ git clang python2 json-c-devel uuid-devel sqlite-devel yaml-cpp03-devel pugixml-devel
+
+NOTE: yaml-cpp03-devel and pugixml-devel is provided by EPEL
+
+WARNING: Does not build on CentOS/RHEL7. uuid/uuid.h is not the default. Unsure on how to fix need to write issue
+
+
+== Building Casual
+
+Create your casual.env file from template:
+cp middleware/example/env/casual.env casual.env
+
+
+edit CASUAL_REPO_ROOT to the path of where you did git clone (not inside the repo) 
+
+NOTE: Why is it like this?, this is not intuitive for me //JonE
+
+
+
+source casual.env
+
+G++ compile and Link: 
+ casual-make compile && casual-make link
+
+Clang compile:
+ casual-make cross 
