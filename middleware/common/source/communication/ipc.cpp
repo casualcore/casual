@@ -257,7 +257,7 @@ namespace casual
                outbound::Device& device()
                {
                   static outbound::Device singelton{
-                     environment::variable::get< platform::queue_id_type>( environment::variable::name::domain::ipc())};
+                     environment::variable::get< platform::ipc::id::type>( environment::variable::name::domain::ipc())};
                   return singelton;
                }
 

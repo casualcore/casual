@@ -33,7 +33,7 @@ namespace casual
             std::string rm_closeinfo;
 
             casual_xa_switch_mapping* xaSwitches = nullptr;
-            common::platform::queue_id_type tm_queue = 0;
+            common::platform::ipc::id::type tm_queue = 0;
 
             template< typename A>
             void serialize( A& archive)

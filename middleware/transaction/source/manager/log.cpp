@@ -134,7 +134,7 @@ namespace casual
                   result.trid = transform::trid( row);
 
 
-                  result.pid = row.get< common::platform::pid_type>( 3);
+                  result.pid = row.get< common::platform::pid::type>( 3);
                   result.state = static_cast< Log::State>( row.get< long>( 4));
 
                   result.started = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 5)}};

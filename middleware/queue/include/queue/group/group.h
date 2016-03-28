@@ -39,7 +39,7 @@ namespace casual
 
 
             template< typename M>
-            void persist( M&& message, std::vector< common::platform::queue_id_type> destinations)
+            void persist( M&& message, std::vector< common::platform::ipc::id::type> destinations)
             {
                persistent.emplace_back( std::forward< M>( message), std::move( destinations));
             }
@@ -76,7 +76,7 @@ namespace casual
                void rollback( const common::transaction::ID& trid);
 
 
-               void erase( common::platform::pid_type pid);
+               void erase( common::platform::pid::type pid);
 
             } pending;
 

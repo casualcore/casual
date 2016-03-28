@@ -36,7 +36,7 @@ namespace casual
             struct Inbound
             {
 
-               Inbound( platform::queue_id_type ipc)
+               Inbound( platform::ipc::id::type ipc)
                  : process{ "./bin/casual-gateway-inbound-ipc",
                   {
                      "--remote-ipc-queue", std::to_string( ipc),

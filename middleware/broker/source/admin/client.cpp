@@ -124,7 +124,7 @@ namespace casual
 
          protected:
 
-            std::vector< admin::InstanceVO> instances( const std::vector< platform::pid_type>& pids) const
+            std::vector< admin::InstanceVO> instances( const std::vector< platform::pid::type>& pids) const
             {
                std::vector< admin::InstanceVO> result;
 
@@ -371,12 +371,12 @@ namespace casual
 
             struct format_pid
             {
-               platform::pid_type operator () ( const admin::InstanceVO& v) const { return v.process.pid;}
+               platform::pid::type operator () ( const admin::InstanceVO& v) const { return v.process.pid;}
             };
 
             struct format_queue
             {
-               platform::queue_id_type operator () ( const admin::InstanceVO& v) const { return v.process.queue;}
+               platform::ipc::id::type operator () ( const admin::InstanceVO& v) const { return v.process.queue;}
             };
 
 

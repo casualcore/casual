@@ -36,9 +36,9 @@ namespace casual
                } // <unnamed>
             } // local
 
-            bool operator == ( const base_connection& lhs, common::platform::pid_type rhs)
+            bool operator == ( const base_connection& lhs, common::platform::pid::type rhs)
             {
-               return lhs.process.pid;
+               return lhs.process.pid == rhs;
             }
 
 

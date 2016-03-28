@@ -166,7 +166,7 @@ namespace casual
 			//!
 			//! @return true if the signal was sent
 			//!
-			bool send( platform::pid_type pid, Type signal);
+			bool send( platform::pid::type pid, Type signal);
 
 
 			namespace thread

@@ -102,7 +102,7 @@ namespace casual
                   struct State
                   {
 
-                     State( communication::ipc::inbound::Device&& source, common::platform::queue_id_type destination, transform_type transform)
+                     State( communication::ipc::inbound::Device&& source, common::platform::ipc::id::type destination, transform_type transform)
                         : source( std::move( source)), destination( destination), transform( std::move( transform)) {}
 
                      communication::ipc::inbound::Device source;
@@ -114,12 +114,12 @@ namespace casual
                      cache_type cache;
                   };
 
-                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::queue_id_type destination)
+                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::ipc::id::type destination)
                   {
                      (*this)( std::move( source), destination, nullptr);
                   }
 
-                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::queue_id_type destination, transform_type transform)
+                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::ipc::id::type destination, transform_type transform)
                   {
                      //!
                      //! Block all signals
@@ -595,7 +595,7 @@ namespace casual
 
             struct Instance::Implementation
             {
-               Implementation( platform::pid_type pid, transform_type transform)
+               Implementation( platform::pid::type pid, transform_type transform)
                    : router( output.connector().id(), std::move( transform)), process{ pid, router.input()}
                {
                }
@@ -605,14 +605,14 @@ namespace casual
                common::process::Handle process;
             };
 
-            Instance::Instance( platform::pid_type pid, transform_type transform) : m_implementation( pid, std::move( transform))
+            Instance::Instance( platform::pid::type pid, transform_type transform) : m_implementation( pid, std::move( transform))
             {
                log::internal::ipc << "Instance created - process: " << m_implementation->process
                      << ", output: " << m_implementation->output.connector().id()
                      << ", router.input: " << m_implementation->router.input()
                      << ", router.output: " << m_implementation->router.output() << std::endl;
             }
-            Instance::Instance( platform::pid_type pid) : Instance( pid, nullptr) {}
+            Instance::Instance( platform::pid::type pid) : Instance( pid, nullptr) {}
 
 
             Instance::Instance( transform_type transform) : Instance( process::id(), std::move( transform)) {}
@@ -696,7 +696,7 @@ namespace casual
                   return singleton;
                }
 
-               platform::pid_type pid()
+               platform::pid::type pid()
                {
                   return queue().process().pid;
                }
@@ -712,7 +712,7 @@ namespace casual
             {
                namespace manager
                {
-                  platform::pid_type pid()
+                  platform::pid::type pid()
                   {
                      return queue().process().pid;
                   }

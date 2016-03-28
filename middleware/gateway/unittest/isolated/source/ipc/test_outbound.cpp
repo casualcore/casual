@@ -45,7 +45,7 @@ namespace casual
             };
 
 
-            file::scoped::Path get_domain_file( platform::queue_id_type queue)
+            file::scoped::Path get_domain_file( platform::ipc::id::type queue)
             {
                return mockup::file::temporary( "", std::to_string( queue));
             }

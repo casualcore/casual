@@ -35,7 +35,7 @@ namespace casual
                {
                   namespace
                   {
-                     common::platform::queue_id_type initialize_broker_queue_id()
+                     common::platform::ipc::id::type initialize_broker_queue_id()
                      {
 
                         common::message::process::lookup::Request request;
@@ -48,7 +48,7 @@ namespace casual
                         return reply.process.queue;
                      }
 
-                     common::platform::queue_id_type& id()
+                     common::platform::ipc::id::type& id()
                      {
                         static auto id = local::initialize_broker_queue_id();
                         return id;
@@ -57,12 +57,12 @@ namespace casual
                }
 
 
-               common::platform::queue_id_type id()
+               common::platform::ipc::id::type id()
                {
                   return local::id();
                }
 
-               common::platform::queue_id_type initialize()
+               common::platform::ipc::id::type initialize()
                {
                   local::id() = local::initialize_broker_queue_id();
                   return id();

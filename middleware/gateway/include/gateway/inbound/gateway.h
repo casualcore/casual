@@ -31,7 +31,7 @@ namespace casual
          namespace blocking
          {
             template< typename M>
-            void send( common::platform::queue_id_type id, M&& message)
+            void send( common::platform::ipc::id::type id, M&& message)
             {
                common::communication::ipc::outbound::Device ipc{ id};
                ipc.send( std::forward< M>( message), common::communication::ipc::policy::ignore::signal::Blocking{});

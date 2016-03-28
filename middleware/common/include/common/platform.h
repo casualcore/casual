@@ -15,7 +15,7 @@
 
 // tcp
 #include <sys/socket.h>
-#include <climits>
+
 
 // size_t
 #include <cstddef>
@@ -41,6 +41,8 @@
 // alarm
 #include <unistd.h>
 
+// SSIZE_MAX and others...
+#include <climits>
 
 #include <string.h>
 
@@ -109,32 +111,43 @@ namespace casual
          } // size
 
 
+		   namespace ipc
+         {
+		      namespace id
+            {
+               using type = long;
+            } // id
 
-			//
-			// ipc
-			//
-			using queue_id_type = int;
-			using message_type_type = long;
+            namespace message
+            {
 
+               using type = long;
 
 #ifdef __APPLE__
-
-			//
-			// OSX has very tight limits on IPC
-			//
-			constexpr std::size_t message_size = 1024;
+               //
+               // OSX has very tight limits on IPC
+               //
+               constexpr std::size_t size = 1024;
 #else
-			constexpr std::size_t message_size = 1024 * 8;
+               constexpr std::size_t size = 1024 * 8;
 #endif
+
+            } // message
+
+         } // ipc
 
 
 			namespace tcp
          {
             namespace message
             {
+               namespace max
+               {
+                  constexpr std::size_t size = SSIZE_MAX;
+               } // max
                constexpr std::size_t size = 1024 * 16;
 
-               static_assert( size <= SSIZE_MAX, "requested tcp message size is to big");
+               static_assert( size <= max::size, "requested tcp message size is to big");
 
             } // message
 
@@ -145,13 +158,24 @@ namespace casual
 
          } // tcp
 
+			namespace pid
+         {
+			   using type = pid_t;
+         } // pid
+
 			//
 			// uuid
 			//
-			using uuid_type = uuid_t;
-			using uuid_string_type = char[ 37];
+			namespace uuid
+         {
+			   using type = uuid_t;
 
-			using pid_type = pid_t;
+			   namespace string
+            {
+               using type = char[ 37];
+            } // string
+
+         } // uuid
 
 			//
 			// long jump

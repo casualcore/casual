@@ -21,8 +21,8 @@ namespace casual
       {
          struct Process
          {
-            sf::platform::pid_type pid;
-            sf::platform::queue_id_type queue;
+            sf::platform::pid::type pid;
+            sf::platform::ipc::id::type queue;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -165,7 +165,7 @@ namespace casual
 
             struct Reply
             {
-               sf::platform::queue_id_type queue;
+               sf::platform::ipc::id::type queue;
                sf::platform::Uuid correlation;
                long type;
 

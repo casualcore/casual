@@ -567,11 +567,11 @@ namespace casual
                {
                   void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
-                  void reply( platform::queue_id_type id, message::service::call::Reply& message);
+                  void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
                   void ack( const message::service::call::callee::Request& message);
 
-                  void statistics( platform::queue_id_type id, message::traffic::Event& event);
+                  void statistics( platform::ipc::id::type id, message::traffic::Event& event);
 
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
@@ -589,12 +589,12 @@ namespace casual
 
                   void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
-                  void reply( platform::queue_id_type id, message::service::call::Reply& message);
+                  void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
                   void ack( const message::service::call::callee::Request& message);
 
 
-                  void statistics( platform::queue_id_type id, message::traffic::Event&);
+                  void statistics( platform::ipc::id::type id, message::traffic::Event&);
 
                   void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&);
 

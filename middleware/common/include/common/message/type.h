@@ -22,7 +22,7 @@ namespace casual
    {
       namespace message
       {
-         enum class Type : platform::message_type_type
+         enum class Type : platform::ipc::message::type
          {
             //
             // message type can't be 0!
@@ -308,7 +308,7 @@ namespace casual
                   })
                };
 
-               holder_t< platform::pid_type> executables;
+               holder_t< platform::pid::type> executables;
                holder_t< common::process::Handle> servers;
 
 
@@ -347,7 +347,7 @@ namespace casual
             std::string name;
             std::uint64_t type = 0;
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            std::vector< platform::queue_id_type> traffic_monitors;
+            std::vector< platform::ipc::id::type> traffic_monitors;
             std::uint64_t transaction = 0;
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -479,7 +479,7 @@ namespace casual
                   };
 
                   Uuid identification;
-                  platform::pid_type pid = 0;
+                  platform::pid::type pid = 0;
                   Directive directive;
 
                   CASUAL_CONST_CORRECT_MARSHAL(

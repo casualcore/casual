@@ -393,7 +393,7 @@ namespace casual
          } // timer
 
 
-         bool send( platform::pid_type pid, Type signal)
+         bool send( platform::pid::type pid, Type signal)
          {
 
             log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;

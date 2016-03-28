@@ -42,8 +42,8 @@ namespace casual
                Runlevel runlevel = Runlevel::absent;
 
 
-               friend bool operator == ( const base_connection& lhs, common::platform::pid_type rhs);
-               inline friend bool operator == ( common::platform::pid_type lhs, const base_connection& rhs)
+               friend bool operator == ( const base_connection& lhs, common::platform::pid::type rhs);
+               inline friend bool operator == ( common::platform::pid::type lhs, const base_connection& rhs)
                {
                   return rhs == lhs;
                }

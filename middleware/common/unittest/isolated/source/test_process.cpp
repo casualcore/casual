@@ -97,7 +97,7 @@ namespace casual
       {
          Trace trace{ "TEST( casual_common_process, spawn_10_process__children_terminate)", log::internal::trace};
 
-         std::vector< platform::pid_type> pids( 10);
+         std::vector< platform::pid::type> pids( 10);
 
          for( auto& pid : pids)
          {
@@ -120,7 +120,7 @@ namespace casual
       {
          Trace trace{ "TEST( casual_common_process, wait_timeout_non_existing_children)", log::internal::trace};
 
-         std::vector< platform::pid_type> pids( 10);
+         std::vector< platform::pid::type> pids( 10);
 
          auto terminated = process::lifetime::wait( { 666});
 

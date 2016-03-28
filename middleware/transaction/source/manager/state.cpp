@@ -334,9 +334,9 @@ namespace casual
          return result;
       }
 
-      std::vector< common::platform::pid_type> State::processes() const
+      std::vector< common::platform::pid::type> State::processes() const
       {
-         std::vector< common::platform::pid_type> result;
+         std::vector< common::platform::pid::type> result;
 
          for( auto& resource : resources)
          {
@@ -386,7 +386,7 @@ namespace casual
          return *found;
       }
 
-      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid)
+      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id_type rm, common::platform::pid::type pid)
       {
          auto& resource = get_resource( rm);
 

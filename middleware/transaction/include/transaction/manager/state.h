@@ -166,7 +166,7 @@ namespace casual
 
             struct Reply : base_message
             {
-               typedef common::platform::queue_id_type queue_id_type;
+               typedef common::platform::ipc::id::type queue_id_type;
 
                template< typename M>
                Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}
@@ -472,12 +472,12 @@ namespace casual
          //!
          std::size_t instances() const;
 
-         std::vector< common::platform::pid_type> processes() const;
+         std::vector< common::platform::pid::type> processes() const;
 
          void operator () ( const common::process::lifetime::Exit& death);
 
          state::resource::Proxy& get_resource( common::platform::resource::id_type rm);
-         state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid);
+         state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid::type pid);
 
          using instance_range = decltype( common::range::make( std::declval< state::resource::Proxy>().instances.begin(), std::declval< state::resource::Proxy>().instances.end()));
          instance_range idle_instance( common::platform::resource::id_type rm);
@@ -498,13 +498,13 @@ namespace casual
 
             struct Instance
             {
-               Instance( common::platform::pid_type pid) : m_pid( pid) {}
+               Instance( common::platform::pid::type pid) : m_pid( pid) {}
                bool operator () ( const resource::Proxy::Instance& instance) const
                {
                   return instance.process.pid == m_pid;
                }
             private:
-               common::platform::pid_type m_pid;
+               common::platform::pid::type m_pid;
 
             };
 

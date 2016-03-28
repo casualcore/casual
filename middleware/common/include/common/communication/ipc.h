@@ -39,11 +39,11 @@ namespace casual
 
             namespace message
             {
-               using Transport = communication::message::basic_transport< platform::message_size>;
+               using Transport = communication::message::basic_transport< platform::ipc::message::size>;
             } // message
 
 
-            using handle_type = platform::queue_id_type;
+            using handle_type = platform::ipc::id::type;
 
 
 
@@ -330,14 +330,14 @@ namespace casual
 
 
                template< typename M>
-               auto blocking_send( common::platform::queue_id_type id, M&& message) const
+               auto blocking_send( common::platform::ipc::id::type id, M&& message) const
                 -> decltype( common::communication::ipc::blocking::send( id, message, nullptr))
                {
                   return common::communication::ipc::blocking::send( id, message, m_error_handler);
                }
 
                template< typename M>
-               auto non_blocking_send( common::platform::queue_id_type id, M&& message) const
+               auto non_blocking_send( common::platform::ipc::id::type id, M&& message) const
                 -> decltype( common::communication::ipc::blocking::send( id, message, nullptr))
                {
                   return common::communication::ipc::non::blocking::send( id, message, m_error_handler);
@@ -395,7 +395,7 @@ namespace casual
 
 
                inbound::Device& device() const { return inbound::device();}
-               platform::queue_id_type id() const { return inbound::device().connector().id();}
+               platform::ipc::id::type id() const { return inbound::device().connector().id();}
 
                inline const std::function<void()>& error_handler() const { return m_error_handler;}
 

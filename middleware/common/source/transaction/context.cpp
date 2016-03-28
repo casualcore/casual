@@ -109,7 +109,7 @@ namespace casual
             return singleton;
          }
 
-         platform::queue_id_type Context::Manager::queue() const
+         platform::ipc::id::type Context::Manager::queue() const
          {
             //
             // Will block until the TM is up.

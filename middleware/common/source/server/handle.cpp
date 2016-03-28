@@ -49,7 +49,7 @@ namespace casual
 
                }
 
-               void Default::reply( platform::queue_id_type id, message::service::call::Reply& message)
+               void Default::reply( platform::ipc::id::type id, message::service::call::Reply& message)
                {
                   communication::ipc::blocking::send( id, message);
                }
@@ -64,7 +64,7 @@ namespace casual
                }
 
 
-               void Default::statistics( platform::queue_id_type id,  message::traffic::Event& event)
+               void Default::statistics( platform::ipc::id::type id,  message::traffic::Event& event)
                {
                   log::internal::debug << "policy::Default::statistics - event:" << event << std::endl;
 
@@ -199,7 +199,7 @@ namespace casual
                   server::connect( ipc, m_identification, std::move( services), m_error_handler);
                }
 
-               void Admin::reply( platform::queue_id_type id, message::service::call::Reply& message)
+               void Admin::reply( platform::ipc::id::type id, message::service::call::Reply& message)
                {
                   communication::ipc::blocking::send( id, message, m_error_handler);
                }
@@ -214,7 +214,7 @@ namespace casual
                }
 
 
-               void Admin::statistics( platform::queue_id_type id, message::traffic::Event&)
+               void Admin::statistics( platform::ipc::id::type id, message::traffic::Event&)
                {
                   // no-op
                }

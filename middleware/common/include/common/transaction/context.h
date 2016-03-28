@@ -175,7 +175,7 @@ namespace casual
             {
                static const Manager& instance();
 
-               platform::queue_id_type queue() const;
+               platform::ipc::id::type queue() const;
                std::vector< message::transaction::resource::Manager> resources;
             private:
                Manager();

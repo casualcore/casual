@@ -98,9 +98,9 @@ namespace casual
          }
 
 
-         platform::pid_type id()
+         platform::pid::type id()
          {
-            static const platform::pid_type pid = getpid();
+            static const platform::pid::type pid = getpid();
             return pid;
          }
 
@@ -311,7 +311,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         platform::pid_type spawn(
+         platform::pid::type spawn(
             const std::string& path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
@@ -375,7 +375,7 @@ namespace casual
 
             posix_spawnattr_init( &attributes);
 
-            platform::pid_type pid;
+            platform::pid::type pid;
 
             log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
@@ -426,7 +426,7 @@ namespace casual
          }
 
 
-         platform::pid_type spawn( const std::string& path, std::vector< std::string> arguments)
+         platform::pid::type spawn( const std::string& path, std::vector< std::string> arguments)
          {
             return spawn( path, std::move( arguments), {});
          }
@@ -443,7 +443,7 @@ namespace casual
          {
             namespace
             {
-               lifetime::Exit wait( platform::pid_type pid, int flags = WNOHANG)
+               lifetime::Exit wait( platform::pid::type pid, int flags = WNOHANG)
                {
                   log::internal::debug << "wait - pid: " << pid << " flags: " << flags << std::endl;
 
@@ -527,7 +527,7 @@ namespace casual
                   return exit;
                }
 
-               void wait( const std::vector< platform::pid_type> pids, std::vector< lifetime::Exit>& result)
+               void wait( const std::vector< platform::pid::type> pids, std::vector< lifetime::Exit>& result)
                {
                   while( result.size() < pids.size())
                   {
@@ -551,7 +551,7 @@ namespace casual
 
          } // local
 
-         int wait( platform::pid_type pid)
+         int wait( platform::pid::type pid)
          {
             return local::wait( pid, 0).status;
          }
@@ -559,11 +559,11 @@ namespace casual
 
 
 
-         std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids)
+         std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids)
          {
             log::internal::debug << "process::terminate pids: " << range::make( pids) << '\n';
 
-            std::vector< platform::pid_type> result;
+            std::vector< platform::pid::type> result;
             for( auto pid : pids)
             {
                if( terminate( pid))
@@ -576,7 +576,7 @@ namespace casual
 
 
 
-         bool terminate( platform::pid_type pid)
+         bool terminate( platform::pid::type pid)
          {
             return signal::send( pid, signal::Type::terminate);
          }
@@ -658,7 +658,7 @@ namespace casual
             return communication::ipc::call( communication::ipc::broker::id(), request).process;
          }
 
-         Handle lookup( platform::pid_type pid, bool wait)
+         Handle lookup( platform::pid::type pid, bool wait)
          {
             trace::Scope trace{ "process::lookup", log::internal::trace};
 
@@ -670,7 +670,7 @@ namespace casual
             return communication::ipc::call( communication::ipc::broker::id(), request).process;
          }
 
-         Handle ping( platform::queue_id_type queue)
+         Handle ping( platform::ipc::id::type queue)
          {
             trace::Scope trace{ "process::ping", log::internal::trace};
 
@@ -689,8 +689,8 @@ namespace casual
                return reason == Reason::core || reason == Reason::exited || reason == Reason::signaled;
             }
 
-            bool operator == ( platform::pid_type pid, const Exit& rhs) { return pid == rhs.pid;}
-            bool operator == ( const Exit& lhs, platform::pid_type pid) { return pid == lhs.pid;}
+            bool operator == ( platform::pid::type pid, const Exit& rhs) { return pid == rhs.pid;}
+            bool operator == ( const Exit& lhs, platform::pid::type pid) { return pid == lhs.pid;}
             bool operator < ( const Exit& lhs, const Exit& rhs) { return lhs.pid < rhs.pid;}
 
             std::ostream& operator << ( std::ostream& out, const Exit& terminated)
@@ -731,7 +731,7 @@ namespace casual
 
 
 
-            std::vector< Exit> wait( const std::vector< platform::pid_type> pids)
+            std::vector< Exit> wait( const std::vector< platform::pid::type> pids)
             {
                log::internal::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
 
@@ -742,7 +742,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> wait( const std::vector< platform::pid::type> pids, std::chrono::microseconds timeout)
             {
                trace::internal::Scope trace{ "common::process::lifetime::wait"};
 
@@ -768,12 +768,12 @@ namespace casual
             }
 
 
-            std::vector< Exit> terminate( std::vector< platform::pid_type> pids)
+            std::vector< Exit> terminate( std::vector< platform::pid::type> pids)
             {
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> terminate( std::vector< platform::pid::type> pids, std::chrono::microseconds timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

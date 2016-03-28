@@ -23,7 +23,7 @@ namespace casual
 
       namespace uuid
       {
-         std::string string( const platform::uuid_type& uuid)
+         std::string string( const platform::uuid::type& uuid)
          {
             return transcode::hex::encode( uuid);
          }

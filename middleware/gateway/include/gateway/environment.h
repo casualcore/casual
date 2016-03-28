@@ -23,7 +23,7 @@ namespace casual
 
             common::communication::ipc::outbound::Device& device();
 
-            void set( common::platform::queue_id_type queue);
+            void set( common::platform::ipc::id::type queue);
 
          } // manager
 

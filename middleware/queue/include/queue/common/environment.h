@@ -29,8 +29,8 @@ namespace casual
             namespace queue
             {
 
-               common::platform::queue_id_type id();
-               common::platform::queue_id_type initialize();
+               common::platform::ipc::id::type id();
+               common::platform::ipc::id::type initialize();
 
             } // queue
 

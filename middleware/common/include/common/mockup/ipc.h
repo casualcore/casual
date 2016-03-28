@@ -28,7 +28,7 @@ namespace casual
       {
          namespace ipc
          {
-            using id_type = platform::queue_id_type;
+            using id_type = platform::ipc::id::type;
 
             using transform_type = std::function< std::vector< communication::message::Complete>( communication::message::Complete&)>;
 
@@ -144,8 +144,8 @@ namespace casual
             //!
             struct Instance
             {
-               Instance( platform::pid_type pid, transform_type transform);
-               Instance( platform::pid_type pid);
+               Instance( platform::pid::type pid, transform_type transform);
+               Instance( platform::pid::type pid);
 
                //!
                //! sets current process pid
@@ -186,7 +186,7 @@ namespace casual
 
             namespace broker
             {
-               platform::pid_type pid();
+               platform::pid::type pid();
 
                ipc::Instance& queue();
 
@@ -198,7 +198,7 @@ namespace casual
             {
                namespace manager
                {
-                  platform::pid_type pid();
+                  platform::pid::type pid();
 
                   ipc::Instance& queue();
 

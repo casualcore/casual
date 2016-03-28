@@ -21,7 +21,7 @@ namespace casual
          {
             struct Settings
             {
-               platform::queue_id_type ipc = 0;
+               platform::ipc::id::type ipc = 0;
                std::string correlation;
                struct
                {
@@ -40,7 +40,7 @@ namespace casual
 
                struct configuration_type
                {
-                  platform::queue_id_type id;
+                  platform::ipc::id::type id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -63,7 +63,7 @@ namespace casual
 
                private:
 
-                  platform::queue_id_type m_outbound;
+                  platform::ipc::id::type m_outbound;
                };
 
                struct external_type

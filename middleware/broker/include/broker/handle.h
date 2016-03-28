@@ -63,7 +63,7 @@ namespace casual
 
          void send_shutdown();
 
-         std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances);
+         std::vector< common::platform::pid::type> spawn( const State& state, const state::Executable& executable, std::size_t instances);
 
          void boot( State& state, const state::Executable& executable, std::size_t instances);
 
@@ -293,7 +293,7 @@ namespace casual
 
             void connect( common::communication::ipc::inbound::Device& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
-            void reply( common::platform::queue_id_type id, common::message::service::call::Reply& message);
+            void reply( common::platform::ipc::id::type id, common::message::service::call::Reply& message);
 
             void ack( const common::message::service::call::callee::Request& message);
 
@@ -303,7 +303,7 @@ namespace casual
 
             void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
 
-            void statistics( common::platform::queue_id_type id, common::message::traffic::Event& event);
+            void statistics( common::platform::ipc::id::type id, common::message::traffic::Event& event);
 
          private:
 

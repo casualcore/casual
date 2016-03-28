@@ -21,14 +21,14 @@ namespace casual
             struct result_t
             {
                template< typename M>
-               result_t( platform::queue_id_type queue, M&& message)
+               result_t( platform::ipc::id::type queue, M&& message)
                   : queue( queue), complete( marshal::complete( std::forward< M>( message))) {}
 
                template< typename M>
                result_t( const process::Handle& process, M&& message)
                  : result_t( process.queue, std::forward< M>( message)) {}
 
-               platform::queue_id_type queue;
+               platform::ipc::id::type queue;
                communication::message::Complete complete;
             };
 

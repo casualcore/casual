@@ -51,7 +51,7 @@ namespace casual
                   m_thread.join();
                }
 
-               common::platform::queue_id_type queue_id;
+               common::platform::ipc::id::type queue_id;
 
             private:
 
@@ -66,7 +66,7 @@ namespace casual
 
             struct domain_0 : domain_base
             {
-               void add_instance( const std::string& alias, platform::pid_type pid)
+               void add_instance( const std::string& alias, platform::pid::type pid)
                {
                   state::Server server;
                   server.alias = alias;

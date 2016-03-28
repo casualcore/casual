@@ -124,7 +124,7 @@ namespace casual
             {
                common::message::service::lookup::Reply reply(
                      const std::string& service,
-                     platform::queue_id_type queue,
+                     platform::ipc::id::type queue,
                      std::chrono::microseconds timeout = std::chrono::microseconds::zero());
 
             } // lookup
@@ -205,7 +205,7 @@ namespace casual
                   std::map< std::string, common::message::service::lookup::Reply> services;
                   std::map< common::Uuid, common::process::Handle> singeltons;
                   std::map< common::Uuid, std::vector< common::message::process::lookup::Request>> singelton_request;
-                  std::map< platform::pid_type, std::vector< common::message::process::lookup::Request>> process_request;
+                  std::map< platform::pid::type, std::vector< common::message::process::lookup::Request>> process_request;
                   std::vector< common::process::Handle> servers;
                };
 

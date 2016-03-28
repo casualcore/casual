@@ -32,8 +32,8 @@ namespace casual
             template< std::size_t message_size>
             struct basic_transport
             {
-               typedef platform::message_type_type message_type_type;
-               typedef Uuid::uuid_type correalation_type;
+               using message_type = platform::ipc::message::type;
+               using correalation_type = Uuid::uuid_type;
 
 
 
@@ -60,7 +60,7 @@ namespace casual
                enum
                {
                   message_max_size = message_size,
-                  message_type_size = sizeof( message_type_type),
+                  message_type_size = sizeof( message_type),
                   header_size = sizeof( header_t),
                   payload_max_size = message_max_size - header_size,
 
@@ -76,7 +76,7 @@ namespace casual
                   //
                   // type has to be first!
                   //
-                  message_type_type type;
+                  message_type type;
                   header_t header;
                   payload_type payload;
 

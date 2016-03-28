@@ -99,7 +99,7 @@ namespace casual
             }
 
 
-            message::service::call::callee::Request callMessage( platform::queue_id_type id)
+            message::service::call::callee::Request callMessage( platform::ipc::id::type id)
             {
                message::service::call::callee::Request message;
 
@@ -256,7 +256,7 @@ namespace casual
 
             namespace call
             {
-               message::service::call::callee::Request request( platform::queue_id_type queue, std::string service, common::transaction::ID trid = common::transaction::ID{})
+               message::service::call::callee::Request request( platform::ipc::id::type queue, std::string service, common::transaction::ID trid = common::transaction::ID{})
                {
                   message::service::call::callee::Request message;
 

@@ -116,7 +116,7 @@ namespace casual
 
          struct Executable : internal::Id< Executable>
          {
-            typedef common::platform::pid_type pid_type;
+            typedef common::platform::pid::type pid_type;
 
             std::string alias;
             std::string path;
@@ -154,7 +154,7 @@ namespace casual
 
          struct Server : Executable
          {
-            typedef common::platform::pid_type pid_type;
+            typedef common::platform::pid::type pid_type;
 
             struct Instance
             {
@@ -293,10 +293,10 @@ namespace casual
 
          struct traffic_t
          {
-            std::vector< common::platform::queue_id_type> monitors;
+            std::vector< common::platform::ipc::id::type> monitors;
          } traffic;
 
-         common::platform::queue_id_type transaction_manager = 0;
+         common::platform::ipc::id::type transaction_manager = 0;
 
          common::process::Handle forward;
 
@@ -351,7 +351,7 @@ namespace casual
 
          std::size_t size() const;
 
-         std::vector< common::platform::pid_type> processes() const;
+         std::vector< common::platform::pid::type> processes() const;
 
 
       private:

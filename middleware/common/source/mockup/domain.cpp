@@ -105,7 +105,7 @@ namespace casual
                {
                   Trace trace{ "mockup::broker::lookup::Process", log::internal::debug};
 
-                  static std::map< Uuid, platform::queue_id_type> mapping{
+                  static std::map< Uuid, platform::ipc::id::type> mapping{
                      { common::process::instance::transaction::manager::identity(), mockup::ipc::transaction::manager::id()},
                   };
 
@@ -215,7 +215,7 @@ namespace casual
             {
                common::message::service::lookup::Reply reply(
                      const std::string& service,
-                     platform::queue_id_type queue,
+                     platform::ipc::id::type queue,
                      std::chrono::microseconds timeout)
                {
                   common::message::service::lookup::Reply reply;

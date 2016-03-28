@@ -45,11 +45,11 @@ namespace casual
             common::communication::ipc::outbound::Device& device()
             {
                static common::communication::ipc::outbound::Device singelton{
-                  common::environment::variable::get< common::platform::queue_id_type>( variable::name::manager::queue())};
+                  common::environment::variable::get< common::platform::ipc::id::type>( variable::name::manager::queue())};
                return singelton;
             }
 
-            void set( common::platform::queue_id_type queue)
+            void set( common::platform::ipc::id::type queue)
             {
                common::environment::variable::set( variable::name::manager::queue(), queue);
             }

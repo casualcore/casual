@@ -503,9 +503,9 @@ namespace casual
       }
 
 
-      std::vector< common::platform::pid_type> State::processes() const
+      std::vector< common::platform::pid::type> State::processes() const
       {
-         std::vector< common::platform::pid_type> result;
+         std::vector< common::platform::pid::type> result;
          for( auto& exe : executables)
          {
             range::copy( exe.second.instances, std::back_inserter( result));

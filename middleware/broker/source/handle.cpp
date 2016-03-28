@@ -295,9 +295,9 @@ namespace casual
          }
 
 
-         std::vector< common::platform::pid_type> spawn( const State& state, const state::Executable& executable, std::size_t instances)
+         std::vector< common::platform::pid::type> spawn( const State& state, const state::Executable& executable, std::size_t instances)
          {
-            std::vector< common::platform::pid_type> pids;
+            std::vector< common::platform::pid::type> pids;
 
             //
             // Prepare environment. We use the default first and add
@@ -576,7 +576,7 @@ namespace casual
                      if( ! m_state.dead.process.listeners.empty())
                      {
                         auto get_queues = [&](){
-                           std::vector< platform::queue_id_type> result;
+                           std::vector< platform::ipc::id::type> result;
                            for( auto& listener : m_state.dead.process.listeners)
                            {
                               result.push_back( listener.queue);
@@ -954,7 +954,7 @@ namespace casual
          }
 
 
-         void Policy::reply( platform::queue_id_type id, common::message::service::call::Reply& message)
+         void Policy::reply( platform::ipc::id::type id, common::message::service::call::Reply& message)
          {
             ipc::device().blocking_send( id, message);
          }
@@ -985,7 +985,7 @@ namespace casual
             throw common::exception::xatmi::System{ "can't forward within broker"};
          }
 
-         void Policy::statistics( platform::queue_id_type id,common::message::traffic::Event&)
+         void Policy::statistics( platform::ipc::id::type id,common::message::traffic::Event&)
          {
             //
             // We don't collect statistics for the broker
