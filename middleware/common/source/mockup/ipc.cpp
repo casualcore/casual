@@ -528,10 +528,10 @@ namespace casual
                               // We block
                               //
 
-                              communication::ipc::native::receive( input, transport, 0);
+                              communication::ipc::native::receive( input, transport, {});
                               cache.push_back( transport);
                            }
-                           else if( communication::ipc::native::receive( input, transport, communication::ipc::native::c_non_blocking))
+                           else if( communication::ipc::native::receive( input, transport, communication::ipc::native::Flag::non_blocking))
                            {
                               cache.push_back( transport);
                            }
@@ -549,7 +549,7 @@ namespace casual
                               return;
                            }
 
-                           if( ! cache.empty() && communication::ipc::native::send( output, cache.front(), communication::ipc::native::c_non_blocking))
+                           if( ! cache.empty() && communication::ipc::native::send( output, cache.front(), communication::ipc::native::Flag::non_blocking))
                            {
                               cache.pop_front();
                            }

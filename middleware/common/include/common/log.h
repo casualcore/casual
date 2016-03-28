@@ -16,6 +16,7 @@
 #include <string>
 #include <ostream>
 #include <mutex>
+#include <bitset>
 
 namespace casual
 {

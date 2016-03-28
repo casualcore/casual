@@ -40,6 +40,15 @@ namespace casual
 
                      return result;
                   }
+               };
+
+               struct Listener
+               {
+
+                  communication::tcp::Address operator () ( const config::gateway::Listener& value) const
+                  {
+                     return { value.address};
+                  }
 
                };
 
@@ -89,7 +98,8 @@ namespace casual
 
             manager::State state;
 
-            common::range::transform( configuration.connections, state.connections.outbound, local::Connection{});
+            range::transform( configuration.listeners, state.configuration.listeners, local::Listener{});
+            range::transform( configuration.connections, state.connections.outbound, local::Connection{});
 
             return state;
          }
@@ -99,6 +109,7 @@ namespace casual
             Trace trace{ "gateway::transform::state service", log::internal::gateway};
 
             manager::admin::vo::State result;
+
 
             range::transform( state.connections.inbound, result.connections.inbound, local::vo::Connection{});
             range::transform( state.connections.outbound, result.connections.outbound, local::vo::Connection{});

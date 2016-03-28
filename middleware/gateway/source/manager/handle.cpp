@@ -11,7 +11,7 @@
 
 #include "common/trace.h"
 #include "common/environment.h"
-
+#include "common/process.h"
 
 namespace casual
 {
@@ -64,19 +64,20 @@ namespace casual
                            try
                            {
                               ipc::device().blocking_send( connection.process.queue, request);
+                              return false;
                            }
                            catch( const exception::queue::Unavailable&)
                            {
-                              return true;
+                              // no op, will be removed
                            }
                         }
                         else if( connection.process.pid)
                         {
-                           log::internal::gateway << "terminate signal to connection: " << connection << std::endl;
-                           signal::send( connection.process.pid, signal::Type::terminate);
-                           return true;
+                           log::internal::gateway << "terminate connection: " << connection << std::endl;
+                           common::process::lifetime::terminate( { connection.process.pid});
+
                         }
-                        return false;
+                        return true;
                      }
 
                   };
@@ -88,6 +89,10 @@ namespace casual
                         case manager::state::outbound::Connection::Type::ipc:
                         {
                            return common::environment::directory::casual() + "/bin/casual-gateway-outbound-ipc";
+                        }
+                        case manager::state::outbound::Connection::Type::tcp:
+                        {
+                           return common::environment::directory::casual() + "/bin/casual-gateway-outbound-tcp";
                         }
                         default:
                         {
@@ -104,11 +109,19 @@ namespace casual
 
                         if( connection.runlevel == manager::state::outbound::Connection::Runlevel::absent)
                         {
-                           connection.process.pid = common::process::spawn(
-                                 local::executable( connection),
-                                 { "--address", connection.address});
+                           try
+                           {
+                              connection.process.pid = common::process::spawn(
+                                    local::executable( connection),
+                                    { "--address", connection.address});
 
-                           connection.runlevel = manager::state::outbound::Connection::Runlevel::booting;
+                              connection.runlevel = manager::state::outbound::Connection::Runlevel::booting;
+                           }
+                           catch( ...)
+                           {
+                              error::handler();
+                              connection.runlevel = manager::state::outbound::Connection::Runlevel::error;
+                           }
                         }
                         else
                         {
@@ -147,8 +160,13 @@ namespace casual
             {
                Trace trace{ "gateway::manager::handle::boot", log::internal::gateway};
 
-
                range::for_each( state.connections.outbound, local::Boot{});
+
+               for( auto& listener : state.configuration.listeners)
+               {
+                  state.listeners.emplace_back( listener);
+               }
+
 
             }
 
@@ -158,6 +176,18 @@ namespace casual
             State& Base::state() { return m_state;}
 
 
+            namespace listener
+            {
+
+               void Event::operator () ( message_type& message)
+               {
+                  Trace trace{ "gateway::manager::handle::listener::Event::operator()", log::internal::gateway};
+                  log::internal::gateway << "message: " << message << '\n';
+
+                  state().event( message);
+               }
+
+            } // listener
 
             namespace process
             {
@@ -280,7 +310,41 @@ namespace casual
                      state().connections.inbound.push_back( std::move( connection));
                   }
 
+
                } // ipc
+
+               namespace tcp
+               {
+
+                  void Connect::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::inbound::tcp::Connect", log::internal::gateway};
+
+                     log::internal::gateway << "message: " << message << '\n';
+
+                     //
+                     // We take ownership of the socket until we've spawned the inbound connection
+                     //
+                     auto socket = communication::tcp::adopt( message.descriptor);
+
+
+                     state::inbound::Connection connection;
+                     connection.type = state::inbound::Connection::Type::tcp;
+
+                     connection.process.pid = common::process::spawn(
+                           common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
+                           {
+                                 "--descriptor", std::to_string( socket.descriptor()),
+                           });
+
+
+                     state().connections.inbound.push_back( std::move( connection));
+
+                     socket.release();
+                  }
+
+               } // tcp
+
             } // inbound
 
          } // handle
@@ -297,9 +361,11 @@ namespace casual
                common::message::handle::ping(),
                common::message::handle::Shutdown{},
                manager::handle::process::Exit{ state},
+               manager::handle::listener::Event{ state},
                manager::handle::inbound::Connect{ state},
                manager::handle::outbound::Connect{ state},
                manager::handle::inbound::ipc::Connect{ state},
+               manager::handle::inbound::tcp::Connect{ state},
                std::ref( admin),
 
             };

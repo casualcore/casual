@@ -1,12 +1,9 @@
 //!
-//! brokervo.h
-//!
-//! Created on: Sep 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
-#define CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
+#ifndef CASUAL_GATEWAY_MANAGER_ADMIN_VO_H
+#define CASUAL_GATEWAY_MANAGER_ADMIN_VO_H
 
 
 #include "sf/namevaluepair.h"
@@ -41,7 +38,8 @@ namespace casual
                         absent,
                         booting,
                         online,
-                        shutdown
+                        shutdown,
+                        error
                      };
 
                      common::process::Handle process;

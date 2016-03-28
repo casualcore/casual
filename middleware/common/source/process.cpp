@@ -239,6 +239,8 @@ namespace casual
 
             Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)) {}
 
+            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern{ std::move( pattern)} {}
+
             void Sleep::operator () ()
             {
                if( m_offset < m_pattern.size())
@@ -395,6 +397,8 @@ namespace casual
                         exception::make_nip( "environment", range::make( environment)),
                         CASUAL_NIP( error::string( status)));
             }
+
+            log::internal::debug << "process::spawned pid: " << pid << '\n';
 
             //
             // Try to figure out if the process started correctly..
@@ -557,6 +561,8 @@ namespace casual
 
          std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids)
          {
+            log::internal::debug << "process::terminate pids: " << range::make( pids) << '\n';
+
             std::vector< platform::pid_type> result;
             for( auto pid : pids)
             {
@@ -727,6 +733,8 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< platform::pid_type> pids)
             {
+               log::internal::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
+
                std::vector< Exit> result;
 
                local::wait( pids, result);

@@ -20,6 +20,17 @@ namespace casual
       namespace gateway
       {
 
+         struct Listener
+         {
+            std::string address;
+
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
+               archive & CASUAL_MAKE_NVP( address);
+            )
+         };
+
+
          struct Connection
          {
             std::string name;
@@ -38,17 +49,36 @@ namespace casual
             )
          };
 
+         struct Default
+         {
+            Default()
+            {
+               connection.type = "tcp";
+               connection.restart = "false";
+            }
+
+            Listener listener;
+            Connection connection;
+
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
+               archive & CASUAL_MAKE_NVP( listener);
+               archive & CASUAL_MAKE_NVP( connection);
+            )
+         };
+
          struct Gateway
          {
-            std::string address;
+            Default casual_default;
+            std::vector< gateway::Listener> listeners;
             std::vector< gateway::Connection> connections;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( address);
+               archive & sf::makeNameValuePair( "default", casual_default);
+               archive & CASUAL_MAKE_NVP( listeners);
                archive & CASUAL_MAKE_NVP( connections);
             )
-
          };
 
 

@@ -126,6 +126,24 @@ namespace casual
 			constexpr std::size_t message_size = 1024 * 8;
 #endif
 
+
+			namespace tcp
+         {
+            namespace message
+            {
+               constexpr std::size_t size = 1024 * 16;
+
+               static_assert( size <= SSIZE_MAX, "requested tcp message size is to big");
+
+            } // message
+
+            namespace descriptor
+            {
+               using type = int;
+            } // handle
+
+         } // tcp
+
 			//
 			// uuid
 			//
@@ -139,14 +157,19 @@ namespace casual
 			//
 			using long_jump_buffer_type = jmp_buf;
 
-			enum ipc_flags
-			{
-				cIPC_NO_WAIT = IPC_NOWAIT
-			};
-
 
 			namespace flag
          {
+			   enum class ipc
+			   {
+			      no_wait = IPC_NOWAIT
+			   };
+
+			   enum class tcp
+			   {
+			      no_wait = MSG_DONTWAIT
+			   };
+
             enum class msg : int
             {
 #ifdef __APPLE__
@@ -242,6 +265,8 @@ namespace casual
       value = common::platform::time_point( common::platform::time_point::duration( representation));
    }
    //! @}
+
+
 
 } // casual
 

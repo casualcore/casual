@@ -7,6 +7,7 @@
 
 #include "gateway/message.h"
 #include "gateway/handle.h"
+#include "gateway/environment.h"
 
 #include "gateway/outbound/routing.h"
 
@@ -142,13 +143,15 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
-               : m_reply_thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)}
+                //: m_reply_thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)}
             {
 
                //
                // 'connect' to our local domain
                //
                common::process::connect();
+
+               m_reply_thread = std::thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)};
             }
 
 

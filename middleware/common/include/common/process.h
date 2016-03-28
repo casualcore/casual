@@ -204,6 +204,7 @@ namespace casual
                };
 
                Sleep( std::vector< Pattern> pattern);
+               Sleep( std::initializer_list< Pattern> pattern);
 
                void operator () ();
 

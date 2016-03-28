@@ -392,7 +392,6 @@ namespace casual
                            }
 
                            errors.push_back( errno);
-
                         }
 
                         //

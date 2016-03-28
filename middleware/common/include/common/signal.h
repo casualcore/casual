@@ -29,7 +29,7 @@ namespace casual
       {
          using set_type = sigset_t;
 
-         enum Type : platform::signal_type
+         enum class Type : platform::signal_type
          {
             alarm = SIGALRM,
             interupt = SIGINT,
@@ -43,9 +43,8 @@ namespace casual
 
 		   namespace type
          {
-            using type = platform::signal_type;
-
-            std::string string( type signal);
+            std::string string( Type signal);
+            std::string string( platform::signal_type signal);
 
          } // type
 
@@ -167,7 +166,7 @@ namespace casual
 			//!
 			//! @return true if the signal was sent
 			//!
-			bool send( platform::pid_type pid, type::type signal);
+			bool send( platform::pid_type pid, Type signal);
 
 
 			namespace thread
@@ -175,7 +174,7 @@ namespace casual
 			   //!
 			   //! Send signal to thread
 			   //!
-			   void send( std::thread& thread, type::type signal);
+			   void send( std::thread& thread, Type signal);
 
 			   //!
 			   //! Blocks all signals to current thread

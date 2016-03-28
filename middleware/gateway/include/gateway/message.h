@@ -8,12 +8,66 @@
 #include "common/message/type.h"
 #include "common/domain.h"
 
+#include <thread>
+
 namespace casual
 {
    namespace gateway
    {
       namespace message
       {
+
+         namespace manager
+         {
+
+            namespace listener
+            {
+               struct Event : common::message::basic_message< common::message::Type::gateway_manager_listener_event>
+               {
+
+                  enum class State
+                  {
+                     running,
+                     exit,
+                     error
+                  };
+
+                  State state;
+
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     base_type::marshal( archive);
+                     archive & state;
+                  })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Event& value);
+               };
+
+               /*
+               namespace create
+               {
+
+                  struct Request : common::message::basic_message< common::message::Type::gateway_manager_listener_create_reqeust>
+                  {
+                     common::communication::tcp::Address address;
+
+                     CASUAL_CONST_CORRECT_MARSHAL({
+                        base_type::marshal( archive);
+                        archive & address;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+
+                  };
+
+               } // create
+               */
+
+
+            } // listener
+
+
+         } // manager
+
 
          template< common::message::Type type>
          struct basic_connect : common::message::basic_message< type>
@@ -67,9 +121,26 @@ namespace casual
 
             } // connect
 
-
-
          } // ipc
+
+         namespace tcp
+         {
+            struct Connect : common::message::basic_message< common::message::Type::gateway_manager_tcp_connect>
+            {
+               common::platform::tcp::descriptor::type descriptor;
+
+               friend std::ostream& operator << ( std::ostream& out, const Connect& value);
+
+               CASUAL_CONST_CORRECT_MARSHAL({
+                  base_type::marshal( archive);
+                  archive & descriptor;
+               })
+            };
+
+         } // tcp
+
+
+
 
 
          namespace worker

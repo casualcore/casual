@@ -43,6 +43,19 @@ namespace casual
                std::reference_wrapper< State> m_state;
             };
 
+            namespace listener
+            {
+
+               struct Event : Base
+               {
+                  using Base::Base;
+                  using message_type = message::manager::listener::Event;
+
+                  void operator () ( message_type& message);
+               };
+
+            } // listener
+
             namespace process
             {
 
@@ -96,6 +109,19 @@ namespace casual
                   };
 
                } // ipc
+
+               namespace tcp
+               {
+                  struct Connect : Base
+                  {
+                     using Base::Base;
+                     using message_type = message::tcp::Connect;
+
+                     void operator () ( message_type& message);
+
+                  };
+               } // tcp
+
             } // inbound
 
          } // handle

@@ -45,8 +45,12 @@ namespace casual
             process_lookup_request,
             process_lookup_reply,
 
+            DOMAIN_BASE = 1000,
+            domain_discover_request,
+            domain_discover_reply,
+
             // Server
-            SERVER_BASE = 1000,
+            SERVER_BASE = 2000,
             server_connect_request,
             server_connect_reply,
             server_disconnect,
@@ -54,7 +58,7 @@ namespace casual
             server_ping_reply,
 
             // Service
-            SERVICE_BASE = 2000,
+            SERVICE_BASE = 3000,
             service_advertise,
             service_unadvertise,
             service_name_lookup_request,
@@ -64,14 +68,14 @@ namespace casual
             service_acknowledge,
 
             // Monitor
-            TRAFFICMONITOR_BASE = 3000,
+            TRAFFICMONITOR_BASE = 4000,
             traffic_monitor_connect_request,
             traffic_monitor_connect_reply,
             traffic_monitor_disconnect,
             traffic_event,
 
             // Transaction
-            TRANSACTION_BASE = 4000,
+            TRANSACTION_BASE = 5000,
             transaction_client_connect_request,
             transaction_client_connect_reply,
             transaction_manager_connect_request,
@@ -107,7 +111,7 @@ namespace casual
             transaction_resource_id_reply,
 
             // casual queue
-            QUEUE_BASE = 5000,
+            QUEUE_BASE = 6000,
             queue_connect_request,
             queue_connect_reply,
             queue_enqueue_request = QUEUE_BASE + 100,
@@ -126,13 +130,16 @@ namespace casual
             queue_group_involved = QUEUE_BASE + 500,
 
 
-            GATEWAY_BASE = 6000,
+            GATEWAY_BASE = 7000,
+            gateway_manager_listener_event,
+            gateway_manager_tcp_connect,
             gateway_outbound_connect,
             gateway_inbound_connect,
             gateway_worker_connect,
             gateway_worker_disconnect,
             gateway_ipc_connect_request,
             gateway_ipc_connect_reply,
+
 
 
 

@@ -12,6 +12,8 @@
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 
+#include "common/flag.h"
+
 namespace casual
 {
    namespace common
@@ -49,13 +51,13 @@ namespace casual
 
             namespace native
             {
-               enum Flags
+               enum class Flag : long
                {
-                  c_non_blocking = platform::cIPC_NO_WAIT
+                  non_blocking = platform::flag::value( platform::flag::ipc::no_wait)
                };
 
-               bool send( handle_type id, const message::Transport& transport, long flags);
-               bool receive( handle_type id, message::Transport& transport, long flags);
+               bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags);
+               bool receive( handle_type id, message::Transport& transport, common::Flags< Flag> flags);
 
             } // native
 

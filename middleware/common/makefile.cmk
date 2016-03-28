@@ -49,10 +49,9 @@ casual_common_objectfiles = [
     Compile( 'source/transaction/transaction.cpp'),
     
     Compile( 'source/communication/ipc.cpp'),
+    Compile( 'source/communication/tcp.cpp'),
     Compile( 'source/communication/message.cpp'),
-    
-    #Compile( 'source/ipc.cpp'),
-    #Compile( 'source/queue.cpp'),
+
     
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
@@ -77,7 +76,7 @@ casual_common_objectfiles = [
     Compile( 'source/domain.cpp'),
     Compile( 'source/execution.cpp'),
     Compile( 'source/network/byteorder.cpp'),
-    Compile( 'source/network/tcp.cpp'),
+    #Compile( 'source/network/tcp.cpp'),
     Compile( 'source/transcode.cpp'),
     Compile( 'source/timeout.cpp'),
     
@@ -107,7 +106,8 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/ipc.cpp'),
        Compile( 'source/mockup/domain.cpp'),
        Compile( 'source/mockup/process.cpp'),
-       Compile( 'source/mockup/file.cpp')
+       Compile( 'source/mockup/file.cpp'),
+       Compile( 'source/mockup/thread.cpp'),
      ],
      [ common])
 
@@ -148,7 +148,9 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_conformance.cpp'),  
    
    Compile( 'unittest/isolated/source/test_algorithm.cpp'),      
-   Compile( 'unittest/isolated/source/test_memory.cpp'),  
+   Compile( 'unittest/isolated/source/test_memory.cpp'),
+   
+   Compile( 'unittest/isolated/source/test_flag.cpp'),  
            
 
                         
@@ -169,7 +171,8 @@ unittest_objectfiles = [
    Compile( 'unittest/isolated/source/test_transcode.cpp'),
    
    
-   Compile( 'unittest/isolated/source/test_communication.cpp'),
+   Compile( 'unittest/isolated/source/communication/test_tcp.cpp'),
+   Compile( 'unittest/isolated/source/communication/test_ipc.cpp'),
       
    Compile( 'unittest/isolated/source/test_mockup.cpp'),
    

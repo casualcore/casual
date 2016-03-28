@@ -60,6 +60,7 @@ namespace casual
                enum
                {
                   message_max_size = message_size,
+                  message_type_size = sizeof( message_type_type),
                   header_size = sizeof( header_t),
                   payload_max_size = message_max_size - header_size,
 
@@ -84,7 +85,7 @@ namespace casual
 
                static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
                static_assert( std::is_pod< message_t>::value, "Message has be a POD");
-               static_assert( sizeof( message_t) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
+               static_assert( sizeof( message_t) - message_type_size == message_max_size, "something is wrong with padding");
 
 
                basic_transport() { memory::set( message);}

@@ -14,6 +14,7 @@
 #include "common/process.h"
 #include "common/chronology.h"
 #include "common/memory.h"
+#include "common/cast.h"
 
 
 
@@ -140,7 +141,7 @@ namespace casual
                   }
 
                   template< typename F>
-                  void resgistration( F function, int signal, int flags = 0)
+                  void resgistration( F function, signal::Type signal, int flags = 0)
                   {
                      struct sigaction sa;
 
@@ -148,7 +149,7 @@ namespace casual
                      sa.sa_handler = function;
                      sa.sa_flags = flags; // | SA_RESTART;
 
-                     sigaction( signal, &sa, 0);
+                     sigaction( cast::underlying( signal), &sa, 0);
                   }
                };
 
@@ -195,7 +196,12 @@ namespace casual
 		   namespace type
 		   {
 
-            std::string string( type signal)
+            std::string string( Type signal)
+            {
+               return type::string( cast::underlying( signal));
+            }
+
+            std::string string( platform::signal_type signal)
             {
                return strsignal( signal);
             }
@@ -387,12 +393,12 @@ namespace casual
          } // timer
 
 
-         bool send( platform::pid_type pid, type::type signal)
+         bool send( platform::pid_type pid, Type signal)
          {
 
             log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
 
-            if( ::kill( pid, signal) == -1)
+            if( ::kill( pid, cast::underlying( signal)) == -1)
             {
                switch( errno)
                {
@@ -413,12 +419,12 @@ namespace casual
             //!
             //! Send signal to thread
             //!
-            void send( std::thread& thread, type::type signal)
+            void send( std::thread& thread, Type signal)
             {
                log::internal::debug << "signal::thread::send thread: " << thread.get_id() << " signal: " << signal << std::endl;
 
                //if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
-               if( pthread_kill( thread.native_handle(), signal) != 0)
+               if( pthread_kill( thread.native_handle(), cast::underlying( signal)) != 0)
                {
                   log::error << "failed to send signal (" << type::string( signal) << ") to thread: " << thread.get_id() << " - errno: " << errno << " - "<< error::string() << std::endl;
                }
@@ -427,9 +433,9 @@ namespace casual
 
             set_type block()
             {
-               sigset_t set;
+               set_type set;
                sigfillset( &set);
-               sigset_t result;
+               set_type result;
                pthread_sigmask( SIG_BLOCK, &set, &result);
                return result;
             }

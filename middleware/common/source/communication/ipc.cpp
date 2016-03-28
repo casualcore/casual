@@ -26,12 +26,12 @@ namespace casual
 
             namespace native
             {
-               bool send( handle_type id, const message::Transport& transport, long flags)
+               bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
                {
 
                   auto size = message::Transport::header_size + transport.size();
 
-                  auto result = msgsnd( id, &const_cast< message::Transport&>( transport).message, size, flags);
+                  auto result = msgsnd( id, &const_cast< message::Transport&>( transport).message, size, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -86,9 +86,9 @@ namespace casual
 
                   return true;
                }
-               bool receive( handle_type id, message::Transport& transport, long flags)
+               bool receive( handle_type id, message::Transport& transport, common::Flags< Flag> flags)
                {
-                  auto result = msgrcv( id, &transport.message, message::Transport::message_max_size, 0, flags);
+                  auto result = msgrcv( id, &transport.message, message::Transport::message_max_size, 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -227,12 +227,12 @@ namespace casual
 
                bool basic_blocking::operator() ( inbound::Connector& ipc, message::Transport& transport)
                {
-                  return native::receive( ipc.id(), transport, 0);
+                  return native::receive( ipc.id(), transport, {});
                }
 
                bool basic_blocking::operator() ( const outbound::Connector& ipc, const message::Transport& transport)
                {
-                  return native::send( ipc, transport, 0);
+                  return native::send( ipc, transport, {});
                }
 
 
@@ -240,12 +240,12 @@ namespace casual
                {
                   bool basic_blocking::operator() ( inbound::Connector& ipc, message::Transport& transport)
                   {
-                     return native::receive( ipc.id(), transport, platform::cIPC_NO_WAIT);
+                     return native::receive( ipc.id(), transport, native::Flag::non_blocking);
                   }
 
                   bool basic_blocking::operator() ( const outbound::Connector& ipc, const message::Transport& transport)
                   {
-                     return native::send( ipc, transport, platform::cIPC_NO_WAIT);
+                     return native::send( ipc, transport, native::Flag::non_blocking);
                   }
 
                } // non

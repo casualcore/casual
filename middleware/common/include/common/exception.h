@@ -170,15 +170,27 @@ namespace casual
          } // queue
 
 
-         namespace network
+         namespace communication
          {
+            namespace no
+            {
+               struct Message : base
+               {
+                  using base::base;
+               };
+            } // no
 
             struct Unavailable : base
             {
                using base::base;
             };
 
-         } // network
+            struct Refused : base
+            {
+               using base::base;
+            };
+
+         } // communication
 
 
          namespace signal
@@ -188,7 +200,7 @@ namespace casual
                using common::exception::base::base;
             };
 
-            template< common::platform::signal_type signal>
+            template< common::signal::Type signal>
             struct basic_signal : signal::base
             {
 
@@ -201,16 +213,16 @@ namespace casual
 
             };
 
-            typedef basic_signal< common::signal::alarm> Timeout;
+            typedef basic_signal< common::signal::Type::alarm> Timeout;
 
-            typedef basic_signal< common::signal::terminate> Terminate;
+            typedef basic_signal< common::signal::Type::terminate> Terminate;
 
-            typedef basic_signal< common::signal::user> User;
+            typedef basic_signal< common::signal::Type::user> User;
 
 
             namespace child
             {
-               typedef basic_signal< common::signal::child> Terminate;
+               typedef basic_signal< common::signal::Type::child> Terminate;
             } // child
 
          } // signal

@@ -47,7 +47,8 @@ namespace casual
                   {
                      common::environment::variable::set(
                            common::environment::variable::name::home(),
-                           directory::name::base( __FILE__) + "../../../" );
+                           "./" );
+                           //directory::name::base( __FILE__) + "../../../../" );
                   }
 
 
@@ -118,7 +119,43 @@ gateway:
                   return serviceReply;
                }
 
+
+               namespace wait
+               {
+                  namespace ready
+                  {
+
+                     bool manager_ready( const manager::admin::vo::State& state)
+                     {
+                        if( state.connections.outbound.empty())
+                           return false;
+
+
+                        return range::any_of( state.connections.outbound, []( const manager::admin::vo::outbound::Connection& c){
+                           return c.runlevel >= manager::admin::vo::outbound::Connection::Runlevel::online;
+                        });
+                     }
+
+                     manager::admin::vo::State state()
+                     {
+                        auto state = local::call::state();
+
+                        while( ! manager_ready( state))
+                        {
+                           common::process::sleep( std::chrono::milliseconds{ 5});
+                           state = local::call::state();
+                        }
+
+                        return state;
+                     }
+
+                  } // ready
+
+               } // wait
+
             } // call
+
+
 
          } // <unnamed>
       } // local
@@ -178,14 +215,7 @@ gateway:
          //
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
-         auto state = local::call::state();
-
-         while( state.connections.outbound.empty()
-               || state.connections.outbound[ 0].runlevel != manager::admin::vo::outbound::Connection::Runlevel::online)
-         {
-            common::process::sleep( std::chrono::milliseconds{ 5});
-            state = local::call::state();
-         }
+         auto state = local::call::wait::ready::state();
 
          ASSERT_TRUE( state.connections.outbound.size() == 1) << CASUAL_MAKE_NVP( state);
          auto& outbound = state.connections.outbound.at( 0);
@@ -214,14 +244,7 @@ gateway:
                   //
                   EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
-                  auto state = local::call::state();
-
-                  while( state.connections.outbound.empty()
-                        || state.connections.outbound[ 0].runlevel != manager::admin::vo::outbound::Connection::Runlevel::online)
-                  {
-                     common::process::sleep( std::chrono::milliseconds{ 5});
-                     state = local::call::state();
-                  }
+                  auto state = local::call::wait::ready::state();
 
                   return state.connections.outbound.at( 0).process.queue;
                };

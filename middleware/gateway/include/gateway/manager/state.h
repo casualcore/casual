@@ -2,8 +2,13 @@
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 
+
+#include "gateway/manager/listener.h"
+
 #include "common/process.h"
 #include "common/domain.h"
+
+#include "common/communication/tcp.h"
 
 namespace casual
 {
@@ -27,7 +32,8 @@ namespace casual
                   absent,
                   booting,
                   online,
-                  shutdown
+                  shutdown,
+                  error
                };
 
                common::process::Handle process;
@@ -77,6 +83,7 @@ namespace casual
             };
 
 
+
          } // state
 
          struct State
@@ -88,8 +95,17 @@ namespace casual
                shutdown
             };
 
+            struct
+            {
+               std::vector< common::communication::tcp::Address> listeners;
+
+            } configuration;
+
+            void event( const message::manager::listener::Event& event);
+
 
             state::Connections connections;
+            std::vector< Listener> listeners;
             Runlevel runlevel = Runlevel::startup;
          };
 
