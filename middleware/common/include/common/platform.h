@@ -15,6 +15,7 @@
 
 // tcp
 #include <sys/socket.h>
+#include <climits>
 
 // size_t
 #include <cstddef>

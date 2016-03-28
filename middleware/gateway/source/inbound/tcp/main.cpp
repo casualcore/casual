@@ -50,7 +50,7 @@ namespace casual
                   {
                   }
 
-                  outbound_device_type& outbound() { return { m_outbound};}
+                  outbound_device_type& outbound() { return m_outbound;}
 
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
                   {
