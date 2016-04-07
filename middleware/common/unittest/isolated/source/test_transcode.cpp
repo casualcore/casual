@@ -48,7 +48,8 @@ namespace casual
          EXPECT_TRUE( transcode::base64::decode( "QUJDRA==") == local::from_string( "ABCD"));
       }
 
-      TEST( casual_common_transcode, UT8_encode)
+      // TODO: Enable these tests whenever iconv -l shows that ISO-8859-15 is present on Suse
+      TEST( DISABLED_casual_common_transcode, UT8_encode_euro_sign)
       {
          //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
 
@@ -61,7 +62,8 @@ namespace casual
 
       }
 
-      TEST( casual_common_transcode, UT8_decode_euro_sign)
+      // TODO: Enable these tests whenever iconv -l shows that ISO-8859-15 is present on Suse
+      TEST( DISABLED_casual_common_transcode, UT8_decode_euro_sign)
       {
          //const auto& closure = []( const unsigned char c){std::clog << static_cast<short>(c) << std::endl;};
 
