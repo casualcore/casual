@@ -32,7 +32,8 @@ os.chdir(TMP + BASENAME)
 
 print("Start setting up: " + BASENAME)
 print("Running configure")
-print( subprocess.check_output(['./configure', 
+print( subprocess.check_output(['./configure',
+'--with-debug',
 '--with-cc-opt=-Wno-deprecated',
 '--prefix=' + os.getenv('CASUAL_HOME', '/usr/local/casual') + '/nginx' ,
 '--add-module=' + os.getenv('CASUAL_BUILD_HOME') + '/plugin',
