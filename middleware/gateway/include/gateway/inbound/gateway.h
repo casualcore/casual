@@ -302,7 +302,7 @@ namespace casual
                   handle::create::reply< common::message::transaction::resource::domain::rollback::Request>( outbound_device),
                };
 
-               common::log::internal::gateway << "start message pump\n";
+               common::log::internal::gateway << "start internal message pump\n";
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
 
             }
@@ -390,7 +390,8 @@ namespace casual
                      handle::basic_transaction_request< common::message::transaction::resource::domain::commit::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::domain::rollback::Request>{},
                   };
-
+             
+                  common::log::internal::gateway << "start external message pump\n";
                   common::message::dispatch::blocking::pump( handler, device);
                }
                catch( const common::exception::signal::Terminate&)
