@@ -124,6 +124,15 @@ namespace casual
                using base::base;
             };
 
+            //!
+            //! Something is used in a way it's not design to support.
+            //!
+            //!
+            struct Semantic : base
+            {
+               using base::base;
+            };
+
             namespace environment
             {
                struct Variable : Argument
@@ -209,20 +218,18 @@ namespace casual
                   : signal::base( description, make_nip( "signal", common::signal::type::string( signal)), std::forward< Args>( information)...) {}
 
                basic_signal()
-                  : signal::base( "signal: " + common::signal::type::string( signal)) {}
+                  : signal::base( "signal: " + common::signal::type::string( signal), make_nip( "signal", signal)) {}
 
             };
 
-            typedef basic_signal< common::signal::Type::alarm> Timeout;
-
-            typedef basic_signal< common::signal::Type::terminate> Terminate;
-
-            typedef basic_signal< common::signal::Type::user> User;
-
+            using Timeout = basic_signal< common::signal::Type::alarm>;
+            using Terminate = basic_signal< common::signal::Type::terminate>;
+            using User = basic_signal< common::signal::Type::user>;
+            using Pipe = basic_signal< common::signal::Type::pipe>;
 
             namespace child
             {
-               typedef basic_signal< common::signal::Type::child> Terminate;
+               using Terminate = basic_signal< common::signal::Type::child>;
             } // child
 
          } // signal

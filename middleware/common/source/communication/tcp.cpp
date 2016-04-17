@@ -34,7 +34,7 @@ namespace casual
 
                      namespace check
                      {
-                        void error( decltype( common::error::last()) last_error, const char* const context)
+                        void error( decltype( common::error::last()) last_error)
                         {
                            switch( last_error)
                            {
@@ -48,8 +48,6 @@ namespace casual
                                  throw common::exception::communication::no::Message{ common::error::string()};
                               case EINTR:
                               {
-                                 log::internal::debug << context << " - signal received\n";
-
                                  common::signal::handle();
 
                                  //
@@ -65,11 +63,11 @@ namespace casual
                            }
                         }
 
-                        int result( int result, const char* const context = "tcp::local::socket::error")
+                        int result( int result)
                         {
                            if( result == -1)
                            {
-                              check::error( common::error::last(), context);
+                              check::error( common::error::last());
                            }
                            return result;
                         }
@@ -200,8 +198,7 @@ namespace casual
                                  const int value = 1;
 
                                  check::result(
-                                       ::setsockopt( s.descriptor(), SOL_SOCKET, SO_REUSEADDR, &value, sizeof( value)),
-                                        "tcp::socket::local"
+                                       ::setsockopt( s.descriptor(), SOL_SOCKET, SO_REUSEADDR, &value, sizeof( value))
                                  );
 
 
@@ -219,7 +216,7 @@ namespace casual
                         //
                         //common::signal::thread::scope::Block block;
 
-                        auto copy = check::result( ::dup( descriptor), "socket::duplicate");
+                        auto copy = check::result( ::dup( descriptor));
 
                         log::internal::debug << "descriptors - original: "<< descriptor << " , copy:" << copy <<'\n';
 
@@ -280,7 +277,7 @@ namespace casual
                {
                   try
                   {
-                     local::socket::check::result( ::close( m_descriptor), "Socket::close");
+                     local::socket::check::result( ::close( m_descriptor));
                      log::internal::debug << "Socket::close - descriptor: " << m_descriptor << '\n';
                   }
                   catch( ...)
@@ -379,7 +376,7 @@ namespace casual
                //
                const int queuesize = 5;
 
-               local::socket::check::result( ::listen( m_listener.descriptor(), queuesize), "Listener::listen");
+               local::socket::check::result( ::listen( m_listener.descriptor(), queuesize));
             }
 
             Socket Listener::operator() () const
@@ -390,8 +387,7 @@ namespace casual
 
                return adopt(
                      local::socket::check::result(
-                           ::accept( m_listener.descriptor(), nullptr, nullptr),
-                            "tcp::Listener::operator()"));
+                           ::accept( m_listener.descriptor(), nullptr, nullptr)));
             }
 
 
@@ -408,8 +404,7 @@ namespace casual
                         common::signal::handle();
 
                         return tcp::local::socket::check::result(
-                              ::send( descriptor, data, size, flags.underlaying()),
-                               "tcp::native::local::send");
+                              ::send( descriptor, data, size, flags.underlaying()));
 
                      }
 
@@ -420,8 +415,7 @@ namespace casual
                         common::signal::handle();
 
                         const auto bytes = tcp::local::socket::check::result(
-                              ::recv( descriptor, data, size, flags.underlaying()),
-                               "tcp::native::local::send");
+                              ::recv( descriptor, data, size, flags.underlaying()));
 
                         if( bytes == 0)
                         {

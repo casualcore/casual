@@ -24,6 +24,8 @@ namespace casual
          {
             try
             {
+               log::internal::debug << "mockup::Thread dtor - thread: " << m_thread.get_id() << '\n';
+
                if( m_thread.joinable())
                {
                   signal::thread::send( m_thread, signal::Type::terminate);

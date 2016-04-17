@@ -210,20 +210,37 @@ namespace casual
 
          void sleep( std::chrono::microseconds time)
          {
+            log::internal::debug << "process::sleep time: " << time.count() << "us\n";
+
+            //
+            // We check signals before we sleep
+            //
+            signal::handle();
+
             timespec posix_time;
             posix_time.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( time).count();
             posix_time.tv_nsec = std::chrono::duration_cast< std::chrono::nanoseconds>(
                   time - std::chrono::seconds{ posix_time.tv_sec}).count();
 
-            log::internal::debug << "sleep for " << time.count() << "us ( " << posix_time.tv_sec << "s " << posix_time.tv_nsec << "ns)\n";
+
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
-               signal::handle();
-
-               if( error::condition() == std::errc::invalid_argument)
+               switch( std::errc( error::last()))
                {
-                  throw exception::invalid::Argument{ error::string()};
+                  case std::errc::interrupted:
+                  {
+                     signal::handle();
+                     break;
+                  }
+                  case std::errc::invalid_argument:
+                  {
+                     throw exception::invalid::Argument{ error::string()};
+                  }
+                  default:
+                  {
+                     throw std::system_error{ error::last(), std::system_category()};
+                  }
                }
             }
          }
@@ -447,17 +464,23 @@ namespace casual
                {
                   log::internal::debug << "wait - pid: " << pid << " flags: " << flags << std::endl;
 
-                  if( ! common::flag< WNOHANG>( flags))
-                  {
-                     log::internal::debug << "current timeout (us): " << signal::timer::get().count() << std::endl;
-                  }
-
-                  signal::handle( signal::Filter::exclude_child_terminate);
+                  auto handle_signal = [](){
+                     try
+                     {
+                        signal::handle();
+                     }
+                     catch( const exception::signal::child::Terminate&)
+                     {
+                        // no-op
+                     }
+                  };
 
                   lifetime::Exit exit;
 
                   auto loop = [&]()
                   {
+                     handle_signal();
+
                      auto result = waitpid( pid, &exit.status, flags);
 
                      if( result == -1)
@@ -471,7 +494,7 @@ namespace casual
                            }
                            case std::errc::interrupted:
                            {
-                              signal::handle( signal::Filter::exclude_child_terminate);
+                              handle_signal();
 
                               //
                               // We do another turn in the loop
@@ -481,7 +504,7 @@ namespace casual
                            default:
                            {
                               log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
-                              throw exception::NotReallySureWhatToNameThisException( error::string());
+                              throw std::system_error{ error::last(), std::system_category()};
                            }
                         }
                      }
@@ -523,6 +546,8 @@ namespace casual
                   };
 
                   while( loop());
+
+                  log::internal::debug << "wait exit: " << exit << '\n';
 
                   return exit;
                }
@@ -693,19 +718,23 @@ namespace casual
             bool operator == ( const Exit& lhs, platform::pid::type pid) { return pid == lhs.pid;}
             bool operator < ( const Exit& lhs, const Exit& rhs) { return lhs.pid < rhs.pid;}
 
-            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
+            std::ostream& operator << ( std::ostream& out, const Exit::Reason& value)
             {
-               out << "{pid: " << terminated.pid << ", reason: ";
-               switch( terminated.reason)
+               switch( value)
                {
-                  case Exit::Reason::unknown: out << "unknown"; break;
                   case Exit::Reason::exited: out << "exited"; break;
                   case Exit::Reason::stopped: out << "stopped"; break;
                   case Exit::Reason::continued: out << "continued"; break;
-                  case Exit::Reason::signaled: out <<  "signal[ " << signal::type::string( terminated.status) << ']'; break;
+                  case Exit::Reason::signaled: out <<  "signaled"; break;
                   case Exit::Reason::core: out <<  "core"; break;
+                  default: out << "unknown"; break;
                }
-               return out << '}';
+               return out;
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
+            {
+               return out << "{ pid: " << terminated.pid << ", reason: " << terminated.reason << '}';
             }
 
             std::vector< lifetime::Exit> ended()

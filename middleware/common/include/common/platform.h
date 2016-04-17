@@ -212,15 +212,19 @@ namespace casual
 
          } // flags
 
+			namespace signal
+         {
+			   using type = int;
 
-			using signal_type = int;
-
+         } // signal
 
 
 			namespace resource
          {
-			   using id_type = int;
-
+			   namespace id
+            {
+			      using type = int;
+            } // id
          } // resource
 
 

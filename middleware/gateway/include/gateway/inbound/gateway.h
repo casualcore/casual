@@ -33,8 +33,10 @@ namespace casual
             template< typename M>
             void send( common::platform::ipc::id::type id, M&& message)
             {
+               common::signal::thread::scope::Block block;
+
                common::communication::ipc::outbound::Device ipc{ id};
-               ipc.send( std::forward< M>( message), common::communication::ipc::policy::ignore::signal::Blocking{});
+               ipc.send( std::forward< M>( message), common::communication::ipc::policy::Blocking{});
             }
 
          } // blocking
@@ -132,7 +134,7 @@ namespace casual
                               try
                               {
                                  common::communication::ipc::outbound::Device ipc{ message.process.queue};
-                                 ipc.put( request, common::communication::ipc::policy::ignore::signal::Blocking{});
+                                 ipc.put( request, common::communication::ipc::policy::Blocking{});
                               }
                               catch( const common::exception::queue::Unavailable&)
                               {
@@ -212,7 +214,7 @@ namespace casual
             using internal_policy_type = typename policy_type::internal_type;
             using external_policy_type = typename policy_type::external_type;
 
-            using ipc_policy = common::communication::ipc::policy::ignore::signal::Blocking;
+            using ipc_policy = common::communication::ipc::policy::Blocking;
 
             template< typename S>
             Gateway( S&& settings)
@@ -239,7 +241,7 @@ namespace casual
                      //
                      common::signal::thread::scope::Block block;
 
-                     common::signal::thread::send( m_request_thread, common::signal::Type::terminate);
+                     common::signal::thread::send( m_request_thread, common::signal::Type::user);
 
                      //
                      // Worker will always send Disconnect, we'll consume it...
@@ -265,9 +267,9 @@ namespace casual
                common::Trace trace{ "gateway::inbound::Gateway::operator()", common::log::internal::gateway};
 
                //
-               // We block all signals, so worker thread gets all of'em
+               // We block sig-user so worker always gets'em
                //
-               common::signal::thread::scope::Block block;
+               common::signal::thread::scope::Block block{ { common::signal::Type::user}};
 
                //
                // Now we wait for the worker to establish connection with
@@ -339,13 +341,22 @@ namespace casual
             template< typename S>
             static void request_thread( const Cache& cache, S&& settings)
             {
+               //
+               // We're only interested in sig-user
+               //
+               common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
+
+
                common::Trace trace{ "gateway::inbound::Gateway::request_thread", common::log::internal::gateway};
 
                auto send_disconnect = []( message::worker::Disconnect::Reason reason)
                   {
-                     common::communication::ipc::blocking::send(
-                        common::communication::ipc::inbound::id(),
-                        message::worker::Disconnect{ reason});
+                     common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
+
+                     message::worker::Disconnect disconnect{ reason};
+                     common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
+
+                     ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
                   };
 
                try
@@ -393,7 +404,7 @@ namespace casual
 
                   common::message::dispatch::blocking::pump( handler, device);
                }
-               catch( const common::exception::signal::Terminate&)
+               catch( const common::exception::signal::User&)
                {
                   send_disconnect( message::worker::Disconnect::Reason::signal);
                }

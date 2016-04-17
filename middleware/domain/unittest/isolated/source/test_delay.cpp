@@ -3,6 +3,7 @@
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "domain/delay/message.h"
 
@@ -43,6 +44,8 @@ namespace casual
 
          TEST( casual_domain_delay, spawn_terminate)
          {
+            CASUAL_UNITTEST_TRACE();
+
             EXPECT_NO_THROW( {
                local::Domain domain;
                local::process::Delay delay;
@@ -52,6 +55,8 @@ namespace casual
 
          TEST( casual_domain_delay, send_delayed_message__10ms__expect_to_receive_after_at_least_10ms)
          {
+            CASUAL_UNITTEST_TRACE();
+
             local::Domain domain;
             local::process::Delay delay;
 
@@ -80,6 +85,8 @@ namespace casual
 
          TEST( casual_domain_delay, send_delayed_message__0ms__expect_to_receive_within_10ms)
          {
+            CASUAL_UNITTEST_TRACE();
+
             local::Domain domain;
             local::process::Delay delay;
 

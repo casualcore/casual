@@ -41,7 +41,8 @@ namespace casual
                //
                try
                {
-                  ipc.send( reply, communication::ipc::policy::ignore::signal::Blocking{});
+                  signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate, signal::Type::terminate})};
+                  ipc.send( reply, communication::ipc::policy::Blocking{});
                }
                catch( common::exception::queue::Unavailable&)
                {

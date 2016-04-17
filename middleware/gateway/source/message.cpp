@@ -14,19 +14,21 @@ namespace casual
          {
             namespace listener
             {
+               std::ostream& operator << ( std::ostream& out, const Event::State& value)
+               {
+                  switch( value)
+                  {
+                     case Event::State::running: return out << "running";
+                     case Event::State::exit: return out << "exit";
+                     case Event::State::signal: return out << "signal";
+                     case Event::State::error: return out << "error";
+                  }
+                  return out;
+               }
                std::ostream& operator << ( std::ostream& out, const Event& value)
                {
-                  auto get_state = []( const Event& e) {
-                     switch( e.state)
-                     {
-                        case Event::State::running: return "running";
-                        case Event::State::exit: return "exit";
-                        case Event::State::error: return "error";
-                     }
-                  };
-
                   return out << "{ correlation: " << value.correlation
-                        << ", state: " << get_state( value)
+                        << ", state: " << value.state
                         << '}';
                }
 
@@ -75,6 +77,19 @@ namespace casual
 
          namespace worker
          {
+            std::ostream& operator << ( std::ostream& out, Disconnect::Reason value)
+            {
+               switch( value)
+               {
+                  case Disconnect::Reason::signal: return out << "signal";
+                  case Disconnect::Reason::disconnect: return out << "disconnect";
+                  default: return out << "invalid";
+               }
+            }
+            std::ostream& operator << ( std::ostream& out, const Disconnect& value)
+            {
+               return out << "{ reason: " << value.reason << ", remote: " << value.remote << '}';
+            }
 
 
          } // worker

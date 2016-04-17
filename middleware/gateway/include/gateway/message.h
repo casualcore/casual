@@ -29,6 +29,7 @@ namespace casual
                   {
                      running,
                      exit,
+                     signal,
                      error
                   };
 
@@ -39,6 +40,7 @@ namespace casual
                      archive & state;
                   })
 
+                  friend std::ostream& operator << ( std::ostream& out, const Event::State& value);
                   friend std::ostream& operator << ( std::ostream& out, const Event& value);
                };
 
@@ -173,6 +175,9 @@ namespace casual
 
                common::domain::Identity remote;
                Reason reason = Reason::invalid;
+
+               friend std::ostream& operator << ( std::ostream& out, Reason value);
+               friend std::ostream& operator << ( std::ostream& out, const Disconnect& value);
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);

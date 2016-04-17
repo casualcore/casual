@@ -24,13 +24,16 @@ namespace casual
                {
                   Trace trace{ "listener_thread", log::internal::gateway};
 
+                  signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::user})};
+
+
                   auto send_event = [=]( gateway::message::manager::listener::Event::State state){
                      gateway::message::manager::listener::Event event;
                      event.state = state;
                      event.correlation = correlation;
 
                      communication::ipc::outbound::Device ipc{ communication::ipc::inbound::id()};
-                     ipc.send( event, communication::ipc::policy::ignore::signal::Blocking{});
+                     ipc.send( event, communication::ipc::policy::Blocking{});
                   };
 
 
@@ -62,9 +65,9 @@ namespace casual
                         }
                      }
                   }
-                  catch( const exception::signal::Terminate&)
+                  catch( const exception::signal::User&)
                   {
-                     send_event( gateway::message::manager::listener::Event::State::exit);
+                     send_event( gateway::message::manager::listener::Event::State::signal);
                   }
                   catch( ...)
                   {
@@ -78,23 +81,21 @@ namespace casual
          } // local
 
          Listener::Listener( common::communication::tcp::Address address)
-            : m_address{ std::move( address)},
-              m_thread{ local::listener_thread, m_address, m_correlation}
+            : m_address{ std::move( address)}
          {
-            if( m_thread.joinable())
-            {
-               message::manager::listener::Event message;
-               communication::ipc::blocking::receive( communication::ipc::inbound::device(), message, m_correlation);
-
-               event( message);
-            }
          }
 
          Listener::~Listener()
          {
+            Trace trace{ "gateway::manager::Listener::~Listener()", log::internal::gateway};
             try
             {
-               terminate();
+               if( m_thread.joinable())
+               {
+                  log::internal::gateway << "listener still active: " << *this << '\n';
+
+                  // TODO: should we try to shutdown?
+               }
             }
             catch( ...)
             {
@@ -105,18 +106,31 @@ namespace casual
          Listener::Listener( Listener&&) noexcept = default;
          Listener& Listener::operator = ( Listener&&) noexcept = default;
 
-         void Listener::terminate()
+
+         void Listener::start()
          {
-            log::internal::gateway << "terminate listener: " << *this << std::endl;
+            Trace trace{ "gateway::manager::Listener::start()", log::internal::gateway};
 
             if( m_thread.joinable())
             {
-               signal::thread::send( m_thread, signal::Type::terminate);
+               throw exception::invalid::Semantic{ "trying to start a listener that is already started", CASUAL_NIP( *this)};
+            }
 
-               message::manager::listener::Event event;
-               communication::ipc::inbound::device().receive( event, m_correlation, communication::ipc::policy::ignore::signal::Blocking{});
+            m_thread = std::thread{ local::listener_thread, m_address, m_correlation};
+            m_state = State::spawned;
+         }
 
-               m_thread.join();
+         void Listener::shutdown()
+         {
+            Trace trace{ "gateway::manager::Listener::shutdown()", log::internal::gateway};
+
+            log::internal::gateway << "shutdown listener: " << *this << std::endl;
+
+            if( m_thread.joinable() && m_state != State::signaled)
+            {
+               signal::thread::send( m_thread, signal::Type::user);
+               m_state = State::signaled;
+
             }
          }
 
@@ -136,10 +150,30 @@ namespace casual
                   m_state = State::running;
                   break;
                }
+               case message::manager::listener::Event::State::signal:
+               {
+                  m_thread.join();
+
+                  if( m_state == State::signaled)
+                  {
+                     m_state = State::exit;
+                  }
+                  else
+                  {
+                     //
+                     // Listener got signal, and we didn't send it. Our semantics is that
+                     // some other process send a sig-term
+                     //
+                     m_state = State::exit;
+                     throw exception::Shutdown{ "listener got terminate signal"};
+                  }
+
+                  break;
+               }
                case message::manager::listener::Event::State::exit:
                {
-                  m_state = State::exit;
                   m_thread.join();
+                  m_state = State::exit;
                   break;
                }
                case message::manager::listener::Event::State::error:
@@ -161,6 +195,23 @@ namespace casual
             return m_address;
          }
 
+         bool Listener::running() const
+         {
+            switch( m_state)
+            {
+               case State::spawned:
+               case State::running:
+               case State::signaled:
+               {
+                  return true;
+               }
+               default:
+               {
+                  return false;
+               }
+            }
+         }
+
          bool operator < ( const Listener& lhs, const common::Uuid& rhs)
          {
             return lhs.m_correlation < rhs;
@@ -170,21 +221,25 @@ namespace casual
             return lhs.m_correlation == rhs;
          }
 
+         std::ostream& operator << ( std::ostream& out, const Listener::State& value)
+         {
+            switch( value)
+            {
+               case Listener::State::absent: return out << "absent";
+               case Listener::State::spawned: return out << "spawned";
+               case Listener::State::running: return out << "running";
+               case Listener::State::signaled: return out << "signaled";
+               case Listener::State::exit: return out << "exit";
+               case Listener::State::error: return out << "error";
+            }
+            return out;
+         }
          std::ostream& operator << ( std::ostream& out, const Listener& value)
          {
-            auto get_state = []( const Listener& l){
-               switch( l.m_state)
-               {
-                  case Listener::State::error: return "error";
-                  case Listener::State::spawned: return "spawned";
-                  case Listener::State::running: return "running";
-                  case Listener::State::exit: return "exit";
-               }
-            };
             return out << "{ thread: " << value.m_thread.get_id()
                   << ", correlation: " << value.m_correlation
-                  << ", address: " << value.address()
-                  << ", state: " << get_state( value)
+                  << ", address: " << value.m_address
+                  << ", state: " << value.m_state
                   << '}';
          }
 

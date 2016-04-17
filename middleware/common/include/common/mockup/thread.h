@@ -6,8 +6,9 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_THREAD_H_
 
 
-
 #include <thread>
+
+#include "common/internal/log.h"
 
 namespace casual
 {
@@ -27,6 +28,7 @@ namespace casual
             Thread( Args&&... args)
                : m_thread{ std::forward< Args>( args)...}
             {
+               log::internal::debug << "mockup::Thread ctor - thread: " << m_thread.get_id() << '\n';
             }
 
             Thread( Thread&&) noexcept;

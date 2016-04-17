@@ -100,13 +100,15 @@ namespace casual
 
             void timeout( State& state)
             {
+               signal::thread::scope::Block block;
+
                for( auto&& message : state.passed())
                {
                   try
                   {
                      communication::ipc::outbound::Device ipc{ message.destination};
 
-                     if( ! ipc.put( message.message, communication::ipc::policy::ignore::signal::non::Blocking{}))
+                     if( ! ipc.put( message.message, communication::ipc::policy::non::Blocking{}))
                      {
                         log::internal::debug << "failed to send delayed message to ipc: " << message.destination << " - action: try to resend in 500ms\n";
 
