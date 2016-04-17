@@ -64,7 +64,7 @@ namespace casual
          {
             struct Proxy
             {
-               using id_type = common::platform::resource::id_type;
+               using id_type = common::platform::resource::id::type;
 
                struct Instance
                {
@@ -176,7 +176,7 @@ namespace casual
 
             struct Request : base_message
             {
-               using id_type = common::platform::resource::id_type;
+               using id_type = common::platform::resource::id::type;
 
                using base_message::base_message;
 
@@ -188,7 +188,7 @@ namespace casual
             {
                struct Request
                {
-                  using id_type = common::platform::resource::id_type;
+                  using id_type = common::platform::resource::id::type;
 
                   Request( id_type id) : m_id( id) {}
 
@@ -209,7 +209,7 @@ namespace casual
       {
          struct Resource
          {
-            using id_type = common::platform::resource::id_type;
+            using id_type = common::platform::resource::id::type;
 
             enum class Stage
             {
@@ -402,7 +402,7 @@ namespace casual
             struct ID
             {
                template< typename T>
-               common::platform::resource::id_type operator () ( const T& value) const
+               common::platform::resource::id::type operator () ( const T& value) const
                {
                   return value.id;
                }
@@ -476,11 +476,11 @@ namespace casual
 
          void operator () ( const common::process::lifetime::Exit& death);
 
-         state::resource::Proxy& get_resource( common::platform::resource::id_type rm);
-         state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid::type pid);
+         state::resource::Proxy& get_resource( common::platform::resource::id::type rm);
+         state::resource::Proxy::Instance& get_instance( common::platform::resource::id::type rm, common::platform::pid::type pid);
 
          using instance_range = decltype( common::range::make( std::declval< state::resource::Proxy>().instances.begin(), std::declval< state::resource::Proxy>().instances.end()));
-         instance_range idle_instance( common::platform::resource::id_type rm);
+         instance_range idle_instance( common::platform::resource::id::type rm);
 
 
       private:

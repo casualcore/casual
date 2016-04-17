@@ -81,7 +81,7 @@ namespace casual
 
          namespace resource
          {
-            using id_type = common::platform::resource::id_type;
+            using id_type = common::platform::resource::id::type;
 
             struct Instance
             {

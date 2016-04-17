@@ -46,41 +46,50 @@ namespace casual
                namespace
                {
 
-                  struct Shutdown
+                  namespace shutdown
                   {
-
-                     template< typename C>
-                     bool operator () ( const C& connection) const
+                     struct Connection
                      {
-                        Trace trace{ "gateway::manager::handle::local::Shutdown", log::internal::gateway};
 
-                        if( connection.process)
+                        template< typename C>
+                        void operator () ( C& connection) const
                         {
-                           log::internal::gateway << "send shutdown to connection: " << connection << std::endl;
+                           Trace trace{ "gateway::manager::handle::local::shutdown::Connection", log::internal::gateway};
 
-                           common::message::shutdown::Request request;
-                           request.process = common::process::handle();
+                           if( connection.running())
+                           {
+                              if( connection.process)
+                              {
+                                 log::internal::gateway << "send shutdown to connection: " << connection << std::endl;
 
-                           try
-                           {
-                              ipc::device().blocking_send( connection.process.queue, request);
-                              return false;
-                           }
-                           catch( const exception::queue::Unavailable&)
-                           {
-                              // no op, will be removed
+                                 common::message::shutdown::Request request;
+                                 request.process = common::process::handle();
+
+                                 try
+                                 {
+                                    communication::ipc::outbound::Device ipc{ connection.process.queue};
+                                    ipc.send( request, communication::ipc::policy::Blocking{});
+                                 }
+                                 catch( const exception::queue::Unavailable&)
+                                 {
+                                    connection.runlevel = state::base_connection::Runlevel::error;
+                                    // no op, will be removed
+                                 }
+                              }
+                              else if( connection.process.pid)
+                              {
+                                 log::internal::gateway << "terminate connection: " << connection << std::endl;
+                                 common::process::lifetime::terminate( { connection.process.pid});
+                                 connection.runlevel = state::base_connection::Runlevel::offline;
+                              }
                            }
                         }
-                        else if( connection.process.pid)
-                        {
-                           log::internal::gateway << "terminate connection: " << connection << std::endl;
-                           common::process::lifetime::terminate( { connection.process.pid});
 
-                        }
-                        return true;
-                     }
+                     };
 
-                  };
+
+                  } // connection
+
 
                   std::string executable( const manager::state::outbound::Connection& connection)
                   {
@@ -96,7 +105,7 @@ namespace casual
                         }
                         default:
                         {
-                           throw exception::invalid::Argument{ "TODO: not implemented yet..."};
+                           throw exception::invalid::Argument{ "invalid connection type", CASUAL_NIP( connection)};
                         }
                      }
                   }
@@ -139,19 +148,27 @@ namespace casual
             {
                Trace trace{ "gateway::manager::handle::shutdown", log::internal::gateway};
 
+               //
+               // We only want to handle child-signals during this stage
+               //
+               common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+
                state.runlevel = State::Runlevel::shutdown;
 
-               state.connections.inbound = range::to_vector( range::remove_if( state.connections.inbound, local::Shutdown{}));
-               state.connections.outbound = range::to_vector( range::remove_if( state.connections.outbound, local::Shutdown{}));
+               log::internal::gateway << "state: " << state << '\n';
+
+               range::for_each( state.listeners, std::mem_fn( &Listener::shutdown));
+
+               range::for_each( state.connections.inbound, local::shutdown::Connection{});
+               range::for_each( state.connections.outbound, local::shutdown::Connection{});
 
                auto handler = manager::handler( state);
 
-               while( ! state.connections.inbound.empty() || ! state.connections.outbound.empty())
+               while( state.running())
                {
-                  log::internal::gateway << "inbound.size: " << state.connections.inbound.size()
-                        << " - outbound.size: " << state.connections.outbound.size() << std::endl;
+                  log::internal::gateway << "state: " << state << '\n';
 
-                  handler( ipc::device().blocking_next());
+                  handler( ipc::device().next( communication::ipc::policy::Blocking{}));
                }
             }
 
@@ -161,13 +178,7 @@ namespace casual
                Trace trace{ "gateway::manager::handle::boot", log::internal::gateway};
 
                range::for_each( state.connections.outbound, local::Boot{});
-
-               for( auto& listener : state.configuration.listeners)
-               {
-                  state.listeners.emplace_back( listener);
-               }
-
-
+               range::for_each( state.listeners, std::mem_fn( &Listener::start));
             }
 
 
@@ -248,9 +259,16 @@ namespace casual
 
                   if( found)
                   {
-                     found->process = message.process;
-                     found->remote = message.remote;
-                     found->runlevel = state::outbound::Connection::Runlevel::online;
+                     if( found->runlevel == state::outbound::Connection::Runlevel::booting)
+                     {
+                        found->process = message.process;
+                        found->remote = message.remote;
+                        found->runlevel = state::outbound::Connection::Runlevel::online;
+                     }
+                     else
+                     {
+                        log::internal::gateway << "outbound connected is in wrong state: " << *found << " - action: discard\n";
+                     }
 
                   }
                   else
@@ -293,21 +311,25 @@ namespace casual
                      // Another ipc-domain wants to talk to us
                      //
 
-                     state::inbound::Connection connection;
-                     connection.runlevel = state::inbound::Connection::Runlevel::booting;
-                     connection.type = state::inbound::Connection::Type::ipc;
+                     if( state().runlevel != State::Runlevel::shutdown )
+                     {
 
-                     connection.process.pid = common::process::spawn(
-                           common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
-                           {
-                                 "--remote-name", message.remote.name,
-                                 "--remote-id", uuid::string( message.remote.id),
-                                 "--remote-ipc-queue", std::to_string( message.process.queue),
-                                 "--correlation", uuid::string( message.correlation),
-                           });
+                        state::inbound::Connection connection;
+                        connection.runlevel = state::inbound::Connection::Runlevel::booting;
+                        connection.type = state::inbound::Connection::Type::ipc;
+
+                        connection.process.pid = common::process::spawn(
+                              common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
+                              {
+                                    "--remote-name", message.remote.name,
+                                    "--remote-id", uuid::string( message.remote.id),
+                                    "--remote-ipc-queue", std::to_string( message.process.queue),
+                                    "--correlation", uuid::string( message.correlation),
+                              });
 
 
-                     state().connections.inbound.push_back( std::move( connection));
+                        state().connections.inbound.push_back( std::move( connection));
+                     }
                   }
 
 
@@ -328,19 +350,22 @@ namespace casual
                      auto socket = communication::tcp::adopt( message.descriptor);
 
 
-                     state::inbound::Connection connection;
-                     connection.type = state::inbound::Connection::Type::tcp;
+                     if( state().runlevel != State::Runlevel::shutdown )
+                     {
+                        state::inbound::Connection connection;
+                        connection.type = state::inbound::Connection::Type::tcp;
 
-                     connection.process.pid = common::process::spawn(
-                           common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
-                           {
-                                 "--descriptor", std::to_string( socket.descriptor()),
-                           });
+                        connection.process.pid = common::process::spawn(
+                              common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
+                              {
+                                    "--descriptor", std::to_string( socket.descriptor()),
+                              });
 
 
-                     state().connections.inbound.push_back( std::move( connection));
+                        state().connections.inbound.push_back( std::move( connection));
 
-                     socket.release();
+                        socket.release();
+                     }
                   }
 
                } // tcp

@@ -196,7 +196,7 @@ namespace casual
 
             void resources_start( const Transaction& transaction, long flags);
             void resources_end( const Transaction& transaction, long flags);
-            int resource_commit( platform::resource::id_type rm, const Transaction& transaction, long flags);
+            int resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags);
 
             int pop_transaction();
 

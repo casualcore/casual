@@ -27,7 +27,7 @@ namespace casual
          struct Resource
          {
 
-            using id_type = common::platform::resource::id_type;
+            using id_type = common::platform::resource::id::type;
 
             Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
             Resource( std::string key, xa_switch_t* xa);

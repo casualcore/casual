@@ -330,6 +330,7 @@ namespace casual
                friend bool operator == ( const Exit& lhs, platform::pid::type pid);
                friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
+               friend std::ostream& operator << ( std::ostream& out, const Reason& value);
                friend std::ostream& operator << ( std::ostream& out, const Exit& terminated);
 
                CASUAL_CONST_CORRECT_MARSHAL(

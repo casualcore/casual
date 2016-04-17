@@ -65,72 +65,52 @@ namespace casual
             namespace policy
             {
 
-               template< typename Prefix, typename Policy>
-               struct basic_prefix
-               {
-                  template< typename... Args>
-                  auto operator() ( Args&&... arguments) -> decltype( std::declval< Policy>()( std::forward< Args>( arguments)...))
-                  {
-                     Prefix prefix( arguments...);
-                     return m_policy( std::forward< Args>( arguments)...);
-                  }
-                  Policy m_policy;
-               };
-
-               namespace prefix
-               {
-                  struct Signal
-                  {
-                     Signal();
-
-                     template< typename... Args>
-                     Signal( Args&&...) : Signal() {}
-                  };
-
-                  namespace ignore
-                  {
-                     struct Signal : common::signal::thread::scope::Block
-                     {
-                        template< typename... Args>
-                        Signal( Args&&...) : common::signal::thread::scope::Block() {}
-                     };
-                  } // ignore
-
-               } // prefix
-
-               struct basic_blocking
+               struct Blocking
                {
                   bool operator() ( inbound::Connector& ipc, message::Transport& transport);
                   bool operator() ( const outbound::Connector& ipc, const message::Transport& transport);
                };
 
-               using Blocking = basic_prefix< prefix::Signal, basic_blocking>;
-
                namespace non
                {
-                  struct basic_blocking
+                  struct Blocking
                   {
                      bool operator() ( inbound::Connector& ipc, message::Transport& transport);
                      bool operator() ( const outbound::Connector& ipc, const message::Transport& transport);
                   };
 
-                  using Blocking = basic_prefix< prefix::Signal, basic_blocking>;
                } // non
 
+               /*
                namespace ignore
                {
                   namespace signal
                   {
-                     using Blocking = basic_prefix< prefix::ignore::Signal, basic_blocking>;
+                     using Blocking = communication::policy::prefix::basic< communication::policy::prefix::ignore::Signal, basic_blocking>;
 
                      namespace non
                      {
-                        using Blocking = basic_prefix< prefix::ignore::Signal, policy::non::basic_blocking>;
+                        using Blocking = communication::policy::prefix::basic< communication::policy::prefix::ignore::Signal, policy::non::basic_blocking>;
                      } // non
 
                   } // signal
                } // ignore
 
+               namespace filter
+               {
+                  namespace signal
+                  {
+                     using Blocking = communication::policy::prefix::basic< communication::policy::prefix::filter::Signal, basic_blocking>;
+
+                     namespace non
+                     {
+                        using Blocking = communication::policy::prefix::basic< communication::policy::prefix::filter::Signal, policy::non::basic_blocking>;
+                     } // non
+
+                  } // signal
+               } // filter
+
+                */
             } // policy
 
 
@@ -283,11 +263,11 @@ namespace casual
                } // blocking
             } // non
 
-            template< typename M, typename Policy = policy::ignore::signal::Blocking>
+            template< typename M, typename Policy = policy::Blocking>
             auto call(
                   outbound::Device destination,
                   M&& message,
-                  Policy&& policy = policy::ignore::signal::Blocking{},
+                  Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
                   inbound::Device& device = ipc::inbound::device())
                -> decltype( common::message::reverse::type( std::forward< M>( message)))
@@ -359,6 +339,14 @@ namespace casual
                {
                   return common::communication::ipc::non::blocking::receive(
                         common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);
+               }
+
+               template< typename... Args>
+               common::communication::message::Complete next( Args&&... args) const
+               {
+                  return common::communication::ipc::inbound::device().next(
+                        std::forward< Args>( args)...,
+                        m_error_handler);
                }
 
                template< typename... Args>

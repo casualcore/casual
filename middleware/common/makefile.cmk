@@ -73,6 +73,7 @@ casual_common_objectfiles = [
     Compile( 'source/error.cpp'),
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
+    Compile( 'source/thread.cpp'),
     Compile( 'source/domain.cpp'),
     Compile( 'source/execution.cpp'),
     Compile( 'source/network/byteorder.cpp'),
@@ -152,7 +153,7 @@ unittest_objectfiles = [
    
    Compile( 'unittest/isolated/source/test_flag.cpp'),  
            
-
+   Compile( 'unittest/isolated/source/test_signal.cpp'),
                         
    Compile( 'unittest/isolated/source/test_buffer.cpp'),
    Compile( 'unittest/isolated/source/test_marshal.cpp'),
@@ -181,8 +182,7 @@ unittest_objectfiles = [
    
    Compile( 'unittest/isolated/source/test_server_context.cpp'),
    Compile( 'unittest/isolated/source/test_service.cpp'),
-   
-   Compile( 'unittest/isolated/source/test_signal.cpp'),
+
    
    Compile( 'unittest/isolated/source/test_transaction_id.cpp'),
    Compile( 'unittest/isolated/source/test_transaction.cpp'),

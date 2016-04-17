@@ -375,7 +375,7 @@ namespace casual
          log::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
-      state::resource::Proxy& State::get_resource( common::platform::resource::id_type rm)
+      state::resource::Proxy& State::get_resource( common::platform::resource::id::type rm)
       {
          auto found = common::range::find( resources, rm);
 
@@ -386,7 +386,7 @@ namespace casual
          return *found;
       }
 
-      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id_type rm, common::platform::pid::type pid)
+      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id::type rm, common::platform::pid::type pid)
       {
          auto& resource = get_resource( rm);
 
@@ -401,7 +401,7 @@ namespace casual
          return *found;
       }
 
-      State::instance_range State::idle_instance( common::platform::resource::id_type rm)
+      State::instance_range State::idle_instance( common::platform::resource::id::type rm)
       {
          auto& resource = get_resource( rm);
 

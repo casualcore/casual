@@ -124,7 +124,7 @@ namespace casual
                      //!
                      //! Block all signals
                      //!
-                     common::signal::thread::block();
+                     common::signal::thread::scope::Block block;
 
                      State state( std::move( source), destination, std::move( transform));
 
@@ -162,9 +162,9 @@ namespace casual
                      auto next = [&](){
                         if( state.cache.empty())
                         {
-                           return state.source.next( communication::ipc::policy::ignore::signal::Blocking{});
+                           return state.source.next( communication::ipc::policy::Blocking{});
                         }
-                        return  state.source.next( communication::ipc::policy::ignore::signal::non::Blocking{});
+                        return  state.source.next( communication::ipc::policy::non::Blocking{});
                      };
 
 
@@ -209,7 +209,7 @@ namespace casual
                      {
                         log::internal::ipc << "write to destination: " <<  state.destination.connector() << " - message: " << state.cache.front() << std::endl;
 
-                        if( state.destination.put( state.cache.front(), communication::ipc::policy::ignore::signal::non::Blocking{}))
+                        if( state.destination.put( state.cache.front(), communication::ipc::policy::non::Blocking{}))
                         {
                            state.cache.pop_front();
                         }
@@ -235,7 +235,7 @@ namespace casual
                            {
                               process::sleep( std::chrono::microseconds( 10));
                            }
-                           while( state.source.next( communication::ipc::policy::ignore::signal::non::Blocking{}));
+                           while( state.source.next( communication::ipc::policy::non::Blocking{}));
 
                            return false;
                         }
@@ -252,13 +252,15 @@ namespace casual
 
                   log::internal::ipc << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
 
+                  signal::thread::scope::Block block;
+
                   try
                   {
                      Trace trace{ "send disconnect message", log::internal::ipc};
                      local::message::Disconnect message;
 
                      communication::ipc::outbound::Device ipc{ input};
-                     ipc.send( message, communication::ipc::policy::ignore::signal::Blocking{});
+                     ipc.send( message, communication::ipc::policy::Blocking{});
                   }
                   catch( const std::exception& exception)
                   {
@@ -345,7 +347,7 @@ namespace casual
                                        {
                                           process::sleep( std::chrono::microseconds{ 10});
                                        }
-                                       while( ! input.next( communication::ipc::policy::ignore::signal::non::Blocking{}));
+                                       while( ! input.next( communication::ipc::policy::non::Blocking{}));
                                        break;
                                     }
                                     default:
@@ -361,7 +363,7 @@ namespace casual
                                  for( auto& message : messages)
                                  {
                                     communication::ipc::outbound::Device send{ message.queue};
-                                    if( ! send.put( message.complete, communication::ipc::policy::ignore::signal::non::Blocking{}))
+                                    if( ! send.put( message.complete, communication::ipc::policy::non::Blocking{}))
                                     {
                                        m_pending.push_back( std::move( message));
                                     }
@@ -370,7 +372,7 @@ namespace casual
 
                            if( m_pending.empty())
                            {
-                              auto message = input.next( communication::ipc::policy::ignore::signal::Blocking{});
+                              auto message = input.next( communication::ipc::policy::Blocking{});
 
                               check_message( message);
 
@@ -379,7 +381,7 @@ namespace casual
                            else
                            {
 
-                              auto message = input.next( communication::ipc::policy::ignore::signal::non::Blocking{});
+                              auto message = input.next( communication::ipc::policy::non::Blocking{});
 
                               if( message)
                               {
@@ -646,9 +648,11 @@ namespace casual
             {
                Trace trace{ "mockup::Instance::clear", log::internal::ipc };
 
+               signal::thread::scope::Block block;
+
                communication::ipc::outbound::Device ipc{ input()};
                local::message::Clear message;
-               ipc.send( message, communication::ipc::policy::ignore::signal::Blocking{});
+               ipc.send( message, communication::ipc::policy::Blocking{});
 
                std::size_t count = 0;
 
@@ -657,7 +661,7 @@ namespace casual
                   ++count;
                   process::sleep( std::chrono::milliseconds( 10));
                }
-               while( m_implementation->output.next( communication::ipc::policy::ignore::signal::non::Blocking{}));
+               while( m_implementation->output.next( communication::ipc::policy::non::Blocking{}));
 
 
                log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;

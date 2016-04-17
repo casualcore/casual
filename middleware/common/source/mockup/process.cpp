@@ -26,12 +26,19 @@ namespace casual
          {
             Trace trace{ "common::mockup::Process::~Process()", log::internal::debug};
 
-            common::process::lifetime::terminate( { m_process.pid});
+            try
+            {
+               common::process::lifetime::terminate( { m_process.pid});
 
-            //
-            // We clear all pending signals
-            //
-            common::signal::clear();
+               //
+               // We clear all pending signals
+               //
+               common::signal::clear();
+            }
+            catch( ...)
+            {
+               error::handler();
+            }
          }
 
          common::process::Handle Process::handle() const

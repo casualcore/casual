@@ -32,9 +32,12 @@ namespace casual
                   absent,
                   booting,
                   online,
-                  shutdown,
+                  offline,
                   error
                };
+
+
+               bool running() const;
 
                common::process::Handle process;
                common::domain::Identity remote;
@@ -42,11 +45,15 @@ namespace casual
                Runlevel runlevel = Runlevel::absent;
 
 
+
                friend bool operator == ( const base_connection& lhs, common::platform::pid::type rhs);
                inline friend bool operator == ( common::platform::pid::type lhs, const base_connection& rhs)
                {
                   return rhs == lhs;
                }
+
+               friend std::ostream& operator << ( std::ostream& out, const Type& value);
+               friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);
             };
 
             namespace inbound
@@ -95,18 +102,20 @@ namespace casual
                shutdown
             };
 
-            struct
-            {
-               std::vector< common::communication::tcp::Address> listeners;
+            //!
+            //! @return true if we have any running connections or listeners
+            //!
+            bool running() const;
 
-            } configuration;
 
             void event( const message::manager::listener::Event& event);
-
 
             state::Connections connections;
             std::vector< Listener> listeners;
             Runlevel runlevel = Runlevel::startup;
+
+            friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);
+            friend std::ostream& operator << ( std::ostream& out, const State& value);
          };
 
 

@@ -1,12 +1,10 @@
 //!
-//! test_process.cpp
-//!
-//! Created on: May 12, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "common/process.h"
 #include "common/file.h"
@@ -34,7 +32,7 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process)
       {
-         Trace trace{ "TEST( casual_common_process, spawn_one_process)", log::internal::trace};
+         CASUAL_UNITTEST_TRACE();
 
          auto pid = process::spawn( local::processPath(), {});
 
@@ -49,7 +47,7 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process_with_argument)
       {
-         Trace trace{ "TEST( casual_common_process, spawn_one_process_with_argument)", log::internal::trace};
+         CASUAL_UNITTEST_TRACE();
 
          auto pid = process::spawn( local::processPath(), { "-r", "42" });
 
@@ -65,7 +63,7 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process_check_termination)
       {
-         Trace trace{ "TEST( casual_common_process, spawn_one_process_check_termination)", log::internal::trace};
+         CASUAL_UNITTEST_TRACE();
 
          auto pid = process::spawn( local::processPath(), {});
 
@@ -95,7 +93,7 @@ namespace casual
 
       TEST( casual_common_process, spawn_10_process__children_terminate)
       {
-         Trace trace{ "TEST( casual_common_process, spawn_10_process__children_terminate)", log::internal::trace};
+         CASUAL_UNITTEST_TRACE();
 
          std::vector< platform::pid::type> pids( 10);
 
@@ -113,12 +111,10 @@ namespace casual
          signal::clear();
       }
 
-      /*
-       * doesnt work...
-       */
+
       TEST( casual_common_process, wait_timeout_non_existing_children)
       {
-         Trace trace{ "TEST( casual_common_process, wait_timeout_non_existing_children)", log::internal::trace};
+         CASUAL_UNITTEST_TRACE();
 
          std::vector< platform::pid::type> pids( 10);
 
@@ -129,21 +125,15 @@ namespace casual
          signal::clear();
       }
 
-
-
-
-      /*
-       * does not work right now...
       TEST( casual_common_process, spawn_non_existing_application__gives_exception)
       {
-         auto pid = process::spawn( local::processPath() + "_non_existing_file", {});
+         CASUAL_UNITTEST_TRACE();
 
          EXPECT_THROW({
-            process::wait( pid);
-         }, exception::Base);
-
+            process::spawn( local::processPath() + "_non_existing_file", {});
+         }, exception::base);
       }
-      */
+
    }
 }
 

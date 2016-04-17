@@ -255,7 +255,6 @@ namespace casual
 
                common::log::internal::debug << "start message pump\n";
 
-               //static const communication::error::handler::callback::on::Terminate callback{ handle::dead::Process{ state.ipc()}};
 
                while( true)
                {
@@ -265,6 +264,8 @@ namespace casual
                   }
                   else
                   {
+                     signal::handle();
+                     signal::thread::scope::Block block;
 
                      //
                      // Send pending replies
@@ -279,7 +280,7 @@ namespace casual
                         auto remain = std::get< 1>( common::range::partition(
                               replies,
                               common::message::pending::sender(
-                                    communication::ipc::policy::ignore::signal::non::Blocking{},
+                                    communication::ipc::policy::non::Blocking{},
                                     ipc::device().error_handler())));
 
                         range::move( remain, state.pending.replies);

@@ -98,7 +98,7 @@ namespace casual
 
             manager::State state;
 
-            range::transform( configuration.listeners, state.configuration.listeners, local::Listener{});
+            range::transform( configuration.listeners, state.listeners, local::Listener{});
             range::transform( configuration.connections, state.connections.outbound, local::Connection{});
 
             return state;

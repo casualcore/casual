@@ -50,7 +50,7 @@ namespace casual
             //!
             //! associated rm:s to this transaction
             //!
-            std::vector< platform::resource::id_type> resources;
+            std::vector< platform::resource::id::type> resources;
 
 
 

@@ -18,7 +18,6 @@ namespace casual
 {
    namespace common
    {
-
       namespace communication
       {
          namespace error
@@ -466,7 +465,7 @@ namespace casual
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                //!
                template< typename M, typename P>
-               Uuid send( M& message, P&& policy, const error_type& handler = nullptr)
+               Uuid send( M&& message, P&& policy, const error_type& handler = nullptr)
                {
                   if( ! message.execution)
                   {
@@ -485,13 +484,13 @@ namespace casual
                }
 
                template< typename M>
-               Uuid blocking_send( M& message, const error_type& handler = nullptr)
+               Uuid blocking_send( M&& message, const error_type& handler = nullptr)
                {
                   return send( message, blocking_policy{}, handler);
                }
 
                template< typename M>
-               Uuid non_blocking_send( M& message, const error_type& handler = nullptr)
+               Uuid non_blocking_send( M&& message, const error_type& handler = nullptr)
                {
                   return send( message, non_blocking_policy{}, handler);
                }

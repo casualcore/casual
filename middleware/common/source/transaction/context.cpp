@@ -1046,7 +1046,7 @@ namespace casual
             }
          }
 
-         int Context::resource_commit( platform::resource::id_type rm, const Transaction& transaction, long flags)
+         int Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags)
          {
             Trace trace{ "transaction::Context::resources_commit", common::log::internal::transaction};
 
