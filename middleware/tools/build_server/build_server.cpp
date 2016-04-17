@@ -81,8 +81,8 @@ struct Settings
                Service result;
                result.function = service.function;
                result.name = service.name;
-               result.type = type.at( service.type);
-               result.transaction = transaction.at( service.transaction);
+               result.type = type[ service.type];
+               result.transaction = transaction[ service.transaction];
 
                return result;
             });

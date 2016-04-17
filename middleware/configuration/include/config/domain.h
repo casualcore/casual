@@ -55,7 +55,7 @@ namespace casual
          {
             struct Manager
             {
-               std::string path;
+               std::string path = "casual-transaction-manager";
                std::string database = "transaction-manager.db";
 
                CASUAL_CONST_CORRECT_SERIALIZE

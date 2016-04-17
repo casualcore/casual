@@ -191,7 +191,7 @@ namespace casual
 
 
          platform::pid_type spawn(
-            const std::string& path,
+            std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment);
 
