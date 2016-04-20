@@ -557,6 +557,11 @@ namespace casual
 
                   if( event.death.deceased())
                   {
+                     //
+                     // We don't want to handle any signals in this task
+                     //
+                     signal::thread::scope::Block block;
+
                      if( event.death.reason == common::process::lifetime::Exit::Reason::exited)
                      {
                         log::information << "process exited: " << event.death << '\n';
@@ -588,21 +593,28 @@ namespace casual
                         common::message::pending::Message message{ event, get_queues()};
 
                         if( ! common::message::pending::send( message,
-                              communication::ipc::policy::non::Blocking{}, ipc::device().error_handler()))
+                              communication::ipc::policy::ignore::signal::non::Blocking{}, ipc::device().error_handler()))
                         {
                            m_state.pending.replies.push_back( std::move( message));
                         }
                      }
 
-                     auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
-
-                     ++server.deaths;
-
-                     m_state.remove_process( event.death.pid);
-
-                     if( server.restart)
+                     try
                      {
-                        update::instances( m_state, server);
+                        auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
+
+                        ++server.deaths;
+
+                        m_state.remove_process( event.death.pid);
+
+                        if( server.restart)
+                        {
+                           update::instances( m_state, server);
+                        }
+                     }
+                     catch( const state::exception::Missing&)
+                     {
+                        m_state.remove_process( event.death.pid);
                      }
                   }
                   else
