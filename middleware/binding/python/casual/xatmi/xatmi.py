@@ -43,8 +43,7 @@ CASUAL_BUFFER_XML_SUBTYPE = ""
 #
 # ctypes definitions
 #
-_file = '../../../xatmi/bin/libcasual-xatmi.so'
-_path = os.path.join(*(os.path.split(__file__)[:-1] + (_file,)))
+_path = os.getenv("CASUAL_HOME") + '/lib/libcasual-xatmi.so'
 _mod = ctypes.cdll.LoadLibrary(_path)
 
 #
