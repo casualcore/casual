@@ -4,7 +4,6 @@ import casual.xatmi.xatmi as xatmi
 import casual.server.exception as exeption
 
 import ctypes
-from test.test_multiprocessing import c_int
 import os
 
 
@@ -58,7 +57,7 @@ def receive( id, flags=0):
     Use function to get reply from service
     """
     
-    id = c_int( id)
+    id = ctypes.c_int( id)
       
     outputbuffer = buffer.JsonBuffer()
 
@@ -73,7 +72,7 @@ def cancel( id, flags=0):
     Use function to get reply from service
     """
     
-    id = c_int( id)
+    id = ctypes.c_int( id)
     result = xatmi.tpcancel( id)
     if result == -1:
         raise exception.CallError, xatmi.tperrnostring( xatmi.tperrno)

@@ -1,6 +1,5 @@
 import ctypes
 import os
-from test.test_multiprocessing import c_int
 
 X_OCTET =  "X_OCTET"
 X_C_TYPE = "X_C_TYPE"
