@@ -114,6 +114,7 @@ namespace casual
                            throw exception::Casual( error::string());
                         }
                      }
+
                   }
 
                   ~converter()
@@ -220,9 +221,12 @@ namespace casual
             //
             // Perhaps we need to call std::setlocale() each time just in case
             //
-            //[[unused]] const auto once = std::setlocale( LC_CTYPE, "");
+            //[[maybe_unused]] const auto once = std::setlocale( LC_CTYPE, "");
+#ifdef __GNUC__
+            __attribute__((__unused__)) const auto once = std::setlocale( LC_CTYPE, "");
+#else
             const auto once = std::setlocale( LC_CTYPE, "");
-
+#endif
             std::string encode( const std::string& value)
             {
                //return encode( value, local::info().codeset);
@@ -233,6 +237,20 @@ namespace casual
             {
                //return decode( value, local::info().codeset);
                return decode( value, cCurrent);
+            }
+
+            bool exist( const std::string& codeset)
+            {
+               try
+               {
+                  local::converter{ codeset, cCurrent};
+               }
+               catch( const exception::invalid::Argument&)
+               {
+                  return false;
+               }
+
+               return true;
             }
 
             std::string encode( const std::string& value, const std::string& codeset)

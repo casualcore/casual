@@ -328,12 +328,15 @@ namespace casual
             } // <unnamed>
          } // local
 
-         platform::pid::type spawn(
-            const std::string& path,
+
+      platform::pid::type spawn(
+            std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
          {
             trace::Scope trace{ "process::spawn", log::internal::trace};
+
+            path = environment::string( path);
 
             //
             // check if path exist and process has permission to execute it.

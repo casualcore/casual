@@ -76,71 +76,47 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     const YAML::Node* node = m_nodeStack.back();
+                     const bool result = start( name);
 
-                     if( node)
+                     if( result)
                      {
-                        if( name)
+                        if( m_stack.back()->Type() == YAML::NodeType::Null)
                         {
-                           node = node->FindValue( name);
+                           //
+                           // Act (somehow) relaxed
+                           //
+
+                           value = T{};
                         }
                         else
                         {
-                           //
-                           // "unnamed", indicate we're in a container
-                           // we pop
-                           //
-                           m_nodeStack.pop_back();
+                           read( value);
                         }
                      }
 
-                     if( ! node)
-                     {
-                        return false;
-                     }
+                     end( name);
 
-                     readValue( *node, value);
-
-                     return true;
+                     return result;
                   }
 
                private:
 
-                  template< typename C>
-                  void copyBinary( YAML::Binary& binary, C& container)
-                  {
-                     const unsigned char* data = binary.data();
-                     container.assign( data, data + binary.size());
-                  }
+                  bool start( const char* name);
+                  void end( const char* name);
 
-
-                  void copyBinary( YAML::Binary& binary, std::vector< unsigned char>& container)
-                  {
-                     binary.swap( container);
-                  }
-
-                  //
-                  // TODO: Decode strings (from UTF-8 ?) to local code-page ?
-                  //
-
-
-                  template< typename T>
-                  void readValue( const YAML::Node& node, T& value)
-                  {
-                     node >> value;
-                  }
-
-                  void readValue( const YAML::Node& node, platform::binary_type& value)
-                  {
-                     YAML::Binary binary;
-                     node >> binary;
-                     copyBinary( binary, value);
-                  }
-
+                  void read( bool& value) const;
+                  void read( short& value) const;
+                  void read( long& value) const;
+                  void read( long long& value) const;
+                  void read( float& value) const;
+                  void read( double& value) const;
+                  void read( char& value) const;
+                  void read( std::string& value) const;
+                  void read( platform::binary_type& value) const;
 
                private:
 
-                  std::vector< const YAML::Node*> m_nodeStack;
+                  std::vector< const YAML::Node*> m_stack;
 
                };
 
@@ -202,28 +178,26 @@ namespace casual
                         m_output << YAML::Key << name;
                         m_output << YAML::Value;
                      }
-                     writeValue( value);
+
+                     write( value);
                   }
 
                private:
 
-                  //
-                  // TODO: Make sure strings are UTF-8-encoded ?
-                  //
-
                   template< typename T>
-                  void writeValue( const T& value)
+                  void write( const T& value)
                   {
                      m_output << value;
                   }
 
-                  void writeValue( const platform::binary_type& value)
-                  {
-                     // TODO: Is this conformant ?
-                     const unsigned char* data = reinterpret_cast< const unsigned char*>( value.data());
-                     YAML::Binary binary( data, value.size());
-                     m_output << binary;
-                  }
+                  //
+                  // A few overloads
+                  //
+
+                  void write( const char& value);
+                  void write( const std::string& value);
+                  void write( const platform::binary_type& value);
+
 
                private:
 

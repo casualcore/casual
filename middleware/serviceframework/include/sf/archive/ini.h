@@ -11,12 +11,13 @@
 #include "sf/archive/basic.h"
 
 
-#include <sstream>
 #include <tuple>
 
 #include <map>
 #include <vector>
 #include <string>
+
+#include <iosfwd>
 
 namespace casual
 {
@@ -83,7 +84,7 @@ namespace casual
                   {
                      if( value_start( name))
                      {
-                        decode( *m_data_stack.back(), value);
+                        read( value);
                      }
                      else
                      {
@@ -100,25 +101,15 @@ namespace casual
                   bool value_start( const char* name);
                   void value_end( const char* name);
 
-                  //
-                  // TODO: Add some error handling
-                  //
-
-                  template<typename T>
-                  void decode( const std::string& data, T& value) const
-                  {
-                     std::istringstream stream( data);
-                     stream >> value;
-                  }
-
-                  //
-                  // A few overloads
-                  //
-
-                  void decode( const std::string& data, bool& value) const;
-                  void decode( const std::string& data, char& value) const;
-                  void decode( const std::string& data, std::string& value) const;
-                  void decode( const std::string& data, std::vector<char>& value) const;
+                  void read( bool& value) const;
+                  void read( short& value) const;
+                  void read( long& value) const;
+                  void read( long long& value) const;
+                  void read( float& value) const;
+                  void read( double& value) const;
+                  void read( char& value) const;
+                  void read( std::string& value) const;
+                  void read( std::vector<char>& value) const;
 
                private:
 
@@ -188,12 +179,9 @@ namespace casual
 
 
                   template<typename T>
-                  //typename std::enabe_if<std::is_floating_point<T>::value, void>::type
                   std::string encode( const T& value) const
                   {
-                     std::ostringstream stream;
-                     stream << std::fixed << value;
-                     return stream.str();
+                     return std::to_string( value);
                   }
 
                   //

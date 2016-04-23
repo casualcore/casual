@@ -17,9 +17,6 @@
 
 #include <utility>
 
-// temp
-//#include <iostream>
-
 
 namespace casual
 {
@@ -158,7 +155,8 @@ namespace casual
                const auto size = archive.container_start( expected_size, name);
                if( expected_size != size)
                {
-                  throw exception::archive::invalid::Node{ "expected tuple size: " + std::to_string( expected_size) + " got: " + std::to_string( size)};
+                  // TODO: Fix exception
+                  throw exception::archive::invalid::Node{ "got unexpected size" /* CASUAL_NIP( expected_size), CASUAL_NIP( size) */};
                }
 
                tuple_read< std::tuple_size< T>::value>::serialize( archive, value);

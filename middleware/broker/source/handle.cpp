@@ -556,6 +556,11 @@ namespace casual
 
                   if( event.death.deceased())
                   {
+                     //
+                     // We don't want to handle any signals in this task
+                     //
+                     signal::thread::scope::Block block;
+
                      if( event.death.reason == common::process::lifetime::Exit::Reason::exited)
                      {
                         log::information << "process exited: " << event.death << '\n';
@@ -593,15 +598,22 @@ namespace casual
                         }
                      }
 
-                     auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
-
-                     ++server.deaths;
-
-                     m_state.remove_process( event.death.pid);
-
-                     if( server.restart)
+                     try
                      {
-                        update::instances( m_state, server);
+                        auto& server = m_state.getServer( m_state.getInstance( event.death.pid).server);
+
+                        ++server.deaths;
+
+                        m_state.remove_process( event.death.pid);
+
+                        if( server.restart)
+                        {
+                           update::instances( m_state, server);
+                        }
+                     }
+                     catch( const state::exception::Missing&)
+                     {
+                        m_state.remove_process( event.death.pid);
                      }
                   }
                   else
@@ -1002,6 +1014,7 @@ namespace casual
             handle::forward::Connect{ state},
             handle::dead::process::Registration{ state},
             handle::dead::process::Event{ state},
+            handle::process::Connect{ state},
             handle::lookup::Process{ state},
             handle::Connect{ state},
             handle::Advertise{ state},
@@ -1025,6 +1038,7 @@ namespace casual
             handle::forward::Connect{ state},
             handle::dead::process::Registration{ state},
             handle::dead::process::Event{ state},
+            handle::process::Connect{ state},
             handle::lookup::Process{ state},
             handle::Connect{ state},
             handle::Advertise{ state},

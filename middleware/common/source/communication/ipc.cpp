@@ -251,10 +251,45 @@ namespace casual
 
             namespace broker
             {
+               namespace local
+               {
+                  namespace
+                  {
+                     namespace ipc
+                     {
+                        platform::ipc::id::type id()
+                        {
+                           if( environment::variable::exists( environment::variable::name::domain::ipc()))
+                           {
+                              return environment::variable::get< platform::ipc::id::type>( environment::variable::name::domain::ipc());
+                           }
+                           else
+                           {
+                              log::internal::ipc << environment::variable::name::domain::ipc() << " not set - trying to find 'singleton file'\n";
+
+                              std::ifstream file{ common::environment::file::broker::device()};
+
+                              if( file)
+                              {
+                                 platform::ipc::id::type ipc = 0;
+                                 file >> ipc;
+                                 environment::variable::set( environment::variable::name::domain::ipc(), ipc);
+
+                                 return ipc;
+                              }
+                              else
+                              {
+                                 throw exception::invalid::Semantic{ "failed to locate broker"};
+                              }
+                           }
+                        }
+                     } // ipc
+
+                  } // <unnamed>
+               } // local
                outbound::Device& device()
                {
-                  static outbound::Device singelton{
-                     environment::variable::get< platform::ipc::id::type>( environment::variable::name::domain::ipc())};
+                  static outbound::Device singelton{ local::ipc::id()};
                   return singelton;
                }
 

@@ -12,7 +12,6 @@
 #include "common/platform.h"
 
 #include <string>
-#include <vector>
 
 namespace casual
 {
@@ -88,6 +87,19 @@ namespace casual
             //! @throw exception::Casual on other failures
             //!
             std::string decode( const std::string& value);
+
+
+
+            //!
+            //! @param codeset String-encoding
+            //!
+            //! @return Whether the provided codeset exist in the system
+            //!
+            //! @throw exception::limit::Memory on resource failures
+            //! @throw exception::Casual on other failures
+            //!
+            bool exist( const std::string& codeset);
+
 
             //!
             //! @param value String encoded in provided codeset

@@ -5,10 +5,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-//
-// Casual
-//
-#include "xatmi.h"
+#include "casual_handler.h"
 
 //
 // Local configuration. Not needed.
@@ -45,15 +42,15 @@ static ngx_int_t ngx_casual_backend_init(ngx_http_casual_loc_conf_t* cf);
 //
 // Some handlers
 //
-static ngx_str_t errorhandler(ngx_http_request_t* r);
+
 static ngx_int_t bufferhandler( ngx_http_request_t* r, ngx_str_t* body);
 static void restartCycle( ngx_http_request_t* r);
 
 //
 // Casual specific
 //
-static ngx_int_t casual_call(ngx_http_request_t* r, ngx_str_t call_buffer);
-static ngx_int_t casual_receive( ngx_http_request_t* r);
+static ngx_int_t call(ngx_http_request_t* r, ngx_str_t call_buffer);
+static ngx_int_t receive( ngx_http_request_t* r);
 
 static ngx_command_t ngx_http_casual_commands[] = {
       {
@@ -116,7 +113,7 @@ static ngx_int_t extractArgument( ngx_http_request_t* r, ngx_str_t argument, ngx
          //
          // Default
          //
-         value = defaultValue;
+         *value = *defaultValue;
          ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Using default value");
       }
       else
@@ -226,59 +223,25 @@ static ngx_int_t bufferhandler( ngx_http_request_t* r, ngx_str_t* body)
 //
 // call casual server asynchronous
 //
-static ngx_int_t casual_call(ngx_http_request_t* r, ngx_str_t call_buffer)
+static ngx_int_t call(ngx_http_request_t* r, ngx_str_t call_buffer)
 {
    ngx_http_casual_ctx_t* casual_context = ngx_http_get_module_ctx(r, ngx_http_casual_module);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Allocating buffer with len=%d", call_buffer.len);
    ngx_log_debug2(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: protocol=%s, service=%s", casual_context->protocol, casual_context->service);
 
-   char* buffer = tpalloc( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE, call_buffer.len);
-   int calling_descriptor = -1;
-
-   if (buffer)
-   {
-      ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "casual: Preparing for tpacall");
-      strncpy(buffer, (const char*)call_buffer.data, call_buffer.len);
-
-      calling_descriptor = tpacall((const char*) casual_context->service, buffer, call_buffer.len, 0);
-   }
-
-   tpfree( buffer);
-   return calling_descriptor;
-}
+   return casual_call( casual_context->service, call_buffer, r);
+ }
 
 //
 // Fetcb the reply from casual
 //
-static ngx_int_t casual_receive( ngx_http_request_t* r)
+static ngx_int_t receive( ngx_http_request_t* r)
 {
    ngx_http_casual_ctx_t* casual_context = ngx_http_get_module_ctx(r, ngx_http_casual_module);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Waiting for answer: calling_descriptor=%d", casual_context->calling_descriptor);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "casual: Allocating buffer protocol=%s with len=1024", casual_context->protocol);
 
-   char* buffer = tpalloc( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE, 1024);
-   if (buffer)
-   {
-
-      int reply = tpgetrply((int *)&casual_context->calling_descriptor, &buffer, (long*)&casual_context->reply_buffer.len, TPNOBLOCK);
-      if ( reply == -1 )
-      {
-         tpfree( buffer);
-         if (tperrno == TPEBLOCK)
-         {
-            return NGX_AGAIN;
-         }
-         else
-         {
-            return NGX_ERROR;
-         }
-      }
-
-      casual_context->reply_buffer.data = ngx_pcalloc(r->pool, casual_context->reply_buffer.len);
-      ngx_memcpy(casual_context->reply_buffer.data, buffer, casual_context->reply_buffer.len);
-      tpfree( buffer);
-   }
-   return NGX_OK;
+   return casual_receive( casual_context->calling_descriptor, &casual_context->reply_buffer, r);
 }
 
 ngx_int_t handleArguments(ngx_http_request_t* r, ngx_str_t* service, ngx_str_t* protocol, ngx_str_t* asynchronous, ngx_str_t* calling_descriptor)
@@ -413,7 +376,7 @@ static ngx_int_t ngx_casual_backend_handler(ngx_http_request_t* r)
    //
    // Make the call to casual
    //
-   casual_context->calling_descriptor = casual_call(r, call_buffer);
+   casual_context->calling_descriptor = call(r, call_buffer);
    if (casual_context->calling_descriptor == -1)
    {
       casual_context->reply_buffer = errorhandler(r);
@@ -427,7 +390,7 @@ static ngx_int_t ngx_casual_backend_handler(ngx_http_request_t* r)
 
 receive:
 
-   rc = casual_receive( r);
+   rc = receive( r);
    if ( rc == NGX_AGAIN)
    {
       if (casual_context->numberOfCalls > 1000)
@@ -503,7 +466,7 @@ produce_output:
 static char *
 ngx_http_casual_setup(ngx_conf_t* cf, ngx_command_t* cmd, void* conf)
 {
-   ngx_write_stderr("casual: ngx_http_casual_setup.\n");
+   //ngx_write_stderr("casual: ngx_http_casual_setup.\n");
 
    ngx_http_core_loc_conf_t *clcf;
    ngx_http_casual_loc_conf_t *cglcf = conf;
@@ -537,7 +500,7 @@ static ngx_int_t ngx_casual_backend_init(ngx_http_casual_loc_conf_t* cglcf)
 {
 
    strncpy(cglcf->server, "casualserver", 13);
-   ngx_write_stderr("casual: ngx_casual_backend_init.\n");
+   //ngx_write_stderr("casual: ngx_casual_backend_init.\n");
 
    return NGX_OK;
 }
@@ -546,7 +509,7 @@ static void *
 ngx_http_casual_create_loc_conf(ngx_conf_t* cf)
 {
    ngx_http_casual_loc_conf_t *conf;
-   ngx_write_stderr("casual: ngx_http_casual_create_loc_conf.\n");
+   //ngx_write_stderr("casual: ngx_http_casual_create_loc_conf.\n");
 
    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_casual_loc_conf_t));
    conf->enable = NGX_CONF_UNSET;
@@ -557,7 +520,7 @@ static char *
 ngx_http_casual_merge_loc_conf(ngx_conf_t* cf, void* parent, void* child)
 {
    ngx_http_casual_loc_conf_t *conf = child;
-   ngx_write_stderr("casual: ngx_http_casual_merge_loc_conf.\n");
+   //ngx_write_stderr("casual: ngx_http_casual_merge_loc_conf.\n");
 
    if (conf->enable)
    {
@@ -565,17 +528,6 @@ ngx_http_casual_merge_loc_conf(ngx_conf_t* cf, void* parent, void* child)
    }
 
    return NGX_CONF_OK ;
-}
-
-static ngx_str_t errorhandler(ngx_http_request_t* r)
-{
-   ngx_str_t error;
-   error.len = strlen(tperrnostring(tperrno));
-   error.data = ngx_pcalloc(r->pool, error.len);
-   strncpy((char*)error.data, tperrnostring(tperrno), error.len);
-   ngx_log_debug1(NGX_LOG_ERR, r->connection->log, 0, "casual: error: %V", &error);
-   r->headers_out.status = NGX_HTTP_BAD_REQUEST;
-   return error;
 }
 
 static void restartCycle( ngx_http_request_t* r)

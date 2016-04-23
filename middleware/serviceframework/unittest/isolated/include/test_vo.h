@@ -35,6 +35,7 @@ namespace casual
 
          SimpleVO& operator = ( const SimpleVO&) = default;
 
+         bool m_bool;
          long m_long;
          std::string m_string;
          short m_short;
@@ -44,6 +45,7 @@ namespace casual
          template< typename A>
          void serialize( A& archive)
          {
+            archive & CASUAL_MAKE_NVP( m_bool);
             archive & CASUAL_MAKE_NVP( m_long);
             archive & CASUAL_MAKE_NVP( m_string);
             archive & CASUAL_MAKE_NVP( m_short);
@@ -55,6 +57,7 @@ namespace casual
          {
             return R"(
 value:
+   m_bool: false
    m_long: 234
    m_string: bla bla bla bla
    m_short: 23
@@ -63,11 +66,12 @@ value:
 )";
          }
 
-         static const char* json()
+         static std::string json()
          {
             return R"({
-   "value":
+"value":
    {
+      "m_bool": false,
       "m_long": 234,
       "m_string": "bla bla bla bla",
       "m_short": 23,
@@ -82,6 +86,7 @@ value:
          {
             return R"(<?xml version="1.0"?>
 <value>
+   <m_bool>false</m_bool>
    <m_long>234</m_long>
    <m_string>bla bla bla bla</m_string>
    <m_short>23</m_short>
@@ -90,8 +95,6 @@ value:
 </value>
 )";
          }
-
-
 
       };
 

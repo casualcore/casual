@@ -215,7 +215,7 @@ TEST( casual_order_buffer, copy_buffer__expecting_success)
 }
 
 
-TEST( casual_order_buffer, performance__expecting_good_enough_speed)
+TEST( DISABLED_casual_order_buffer, DISABLED_performance__expecting_good_enough_speed)
 {
    for( long idx = 0; idx < 100000; ++idx)
    {

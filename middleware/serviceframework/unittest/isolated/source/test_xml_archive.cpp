@@ -152,7 +152,7 @@ namespace casual
 
    }
 
-   TEST( casual_sf_xml_archive, read_invalid_document__expecting_exception)
+   TEST( casual_sf_xml_archive, load_invalid_document__expecting_exception)
    {
       const std::string xml{ "<?xml version='1.0'?><root>" };
 
@@ -163,7 +163,76 @@ namespace casual
 
    }
 
+   TEST( casual_sf_xml_archive, read_with_invalid_long__expecting_exception)
+   {
+      const std::string xml
+      {
+         R"(<?xml version="1.0"?>
+<value>
+   <m_bool>false</m_bool>
+   <m_long>1234 foo</m_long>
+   <m_string>bla bla bla bla</m_string>
+   <m_short>23</m_short>
+   <m_longlong>1234567890123456789</m_longlong>
+   <m_time>1234567890</m_time>
+</value>
+)"
+      };
 
+      EXPECT_THROW
+      ({
+         test::SimpleVO value;
+         local::string_to_value( xml, value);
+      }, sf::exception::archive::invalid::Node);
+
+   }
+
+   TEST( casual_sf_xml_archive, read_with_invalid_bool__expecting_exception)
+   {
+      const std::string xml
+      {
+         R"(<?xml version="1.0"?>
+<value>
+   <m_bool>nein</m_bool>
+   <m_long>234</m_long>
+   <m_string>bla bla bla bla</m_string>
+   <m_short>23</m_short>
+   <m_longlong>1234567890123456789</m_longlong>
+   <m_time>1234567890</m_time>
+</value>
+)"
+      };
+
+      EXPECT_THROW
+      ({
+         test::SimpleVO value;
+         local::string_to_value( xml, value);
+      }, sf::exception::archive::invalid::Node);
+   }
+
+   TEST( casual_sf_xml_archive, read_with_too_long_short__expecting_exception)
+   {
+      const std::string xml
+      {
+         R"(<?xml version="1.0"?>
+<value>
+   <m_bool>false</m_bool>
+   <m_long>234</m_long>
+   <m_string>bla bla bla bla</m_string>
+   <m_short>1234567890123456789</m_short>
+   <m_longlong>1234567890123456789</m_longlong>
+   <m_time>1234567890</m_time>
+</value>
+)"
+      };
+
+      EXPECT_THROW
+      ({
+         test::SimpleVO value;
+         local::string_to_value( xml, value);
+      }, sf::exception::archive::invalid::Node);
+
+   }
 
 
 
