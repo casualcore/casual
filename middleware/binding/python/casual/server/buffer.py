@@ -1,6 +1,5 @@
 import ctypes
 import os
-from test.test_multiprocessing import c_int
 import casual.xatmi.xatmi as xatmi
 import casual.server.exception as exception
 

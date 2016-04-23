@@ -37,6 +37,6 @@ id = casual.send( "casual_test1", "async echo async echo async echo")
 casual.cancel( id)
 
 #
-# Another call
+#  call python service
 #
-print casual.call( "py_service_echo", "pyecho pyecho pyecho")
+# print casual.call( "py_service_echo", "pyecho pyecho pyecho")

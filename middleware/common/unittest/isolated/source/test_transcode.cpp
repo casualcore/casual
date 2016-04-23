@@ -56,7 +56,7 @@ namespace casual
       TEST( casual_common_transcode_utf8, test_existene_of_utf8_codeset__expecting_true)
       {
          // this codeset should exist (or if not we're screwed)
-         EXPECT_TRUE( transcode::utf8::exist( "UTF8"));
+         EXPECT_TRUE( transcode::utf8::exist( "UTF-8") || transcode::utf8::exist( "UTF8"));
       }
 
       TEST( casual_common_transcode_utf8, encode_euro_sign)
