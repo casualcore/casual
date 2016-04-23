@@ -61,8 +61,6 @@ value:
          }
       };
 
-
-
    }
    */
 
@@ -97,7 +95,35 @@ value:
             save.serialize( string);
          }
 
-      }
+         struct Empty
+         {
+            std::vector<long> array;
+
+            template< typename A>
+            void serialize( A& archive)
+            {
+               archive & CASUAL_MAKE_NVP( array);
+            }
+
+         };
+
+      } // <unnamed>
+   } // local
+
+
+   TEST( casual_sf_yaml_archive, read_empty_array_with_no_brackets__expecting_success)
+   {
+
+      const std::string yaml( R"(
+value:
+  array:
+)");
+
+      local::Empty value;
+
+      local::string_to_strict_value( yaml, value);
+
+      EXPECT_TRUE( value.array.empty());
    }
 
 

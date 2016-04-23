@@ -72,23 +72,31 @@ namespace casual
 
                   const auto& node = *m_stack.back();
 
-                  if( m_stack.back()->Type() != YAML::NodeType::Sequence)
-                  {
-                     throw exception::archive::invalid::Node{ "expected sequence"};
-                  }
-
-                  //
-                  // We stack 'em in reverse order
-                  //
-
                   size = node.size();
 
-                  for( auto index = size; index > 0; --index)
+                  if( size)
                   {
-                     m_stack.push_back( &node[ index - 1]);
+                     //
+                     // If there are elements, it must me a sequence
+                     //
+
+                     if( node.Type() != YAML::NodeType::Sequence)
+                     {
+                        throw exception::archive::invalid::Node{ "expected sequence"};
+                     }
+
+                     //
+                     // We stack 'em in reverse order
+                     //
+
+                     for( auto index = size; index > 0; --index)
+                     {
+                        m_stack.push_back( &node[ index - 1]);
+                     }
                   }
 
                   return std::make_tuple( size, true);
+
                }
 
                void Implementation::container_end( const char* const name)
