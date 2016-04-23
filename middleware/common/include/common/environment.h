@@ -127,6 +127,8 @@ namespace casual
             {
 			      const std::string& path();
 
+               const std::string& file();
+
             } // singleton
 
          } // domain

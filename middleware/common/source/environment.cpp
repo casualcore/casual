@@ -232,6 +232,13 @@ namespace casual
                   return path;
                }
 
+               const std::string& file()
+               {
+                  static const std::string file = path() + "/.domain-singleton";
+                  return file;
+
+               }
+
             } // singleton
 
          } // domain

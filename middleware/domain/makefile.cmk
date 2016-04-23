@@ -24,6 +24,22 @@ LibraryPaths([
     ])
 
 
+install_bins = []
+install_libs = []
+
+target = LinkExecutable( 'bin/casual-domain',
+    [
+      Compile( 'source/domain.cpp'),
+      Compile( 'source/main.cpp'),
+    ],
+    [
+     'casual-common',
+    ] 
+)
+
+
+
+
 message_lib = LinkLibrary( 'bin/casual-delay-message', 
     [
       Compile( 'source/delay/message.cpp'),
