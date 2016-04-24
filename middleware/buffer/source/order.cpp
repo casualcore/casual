@@ -9,6 +9,7 @@
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
+#include "common/exception.h"
 #include "common/network/byteorder.h"
 #include "common/platform.h"
 #include "common/log.h"
@@ -54,207 +55,71 @@ namespace casual
          namespace
          {
 
-            class Buffer : public common::buffer::Buffer
-            {
-            public:
+            typedef common::platform::binary_type::size_type size_type;
+            typedef common::platform::binary_type::const_pointer const_data_type;
+            typedef common::platform::binary_type::pointer data_type;
 
+
+            struct Buffer : public common::buffer::Buffer
+            {
                using common::buffer::Buffer::Buffer;
 
-               typedef common::platform::binary_type::size_type size_type;
-               typedef common::platform::binary_type::const_pointer const_data_type;
+               common::platform::binary_type::size_type selector = 0;
 
-
-               size_type transport( size_type user_size) const
-               {
-                  //
-                  // We could ignore user-size all together, but something is
-                  // wrong if user supplies a greater size than allocated
-                  //
-                  if( user_size > reserved())
-                  {
-                     throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
-                  }
-
-                  return utilized();
-               }
-
-               size_type reserved() const
+               size_type capacity() const noexcept
                {
                   return payload.memory.capacity();
                }
 
-               size_type utilized() const
+               void capacity( const size_type value)
+               {
+                  payload.memory.reserve( value);
+               }
+
+               size_type utilized() const noexcept
                {
                   return payload.memory.size();
                }
 
-               size_type consumed() const
+               void utilized( const size_type value)
                {
-                  return m_selector;
+                  payload.memory.resize( value);
                }
 
-            public:
-
-               void clear()
+               size_type consumed() const noexcept
                {
-                  payload.memory.clear();
-                  m_selector = 0;
+                  return selector;
                }
 
-               void reset()
+               void consumed( const size_type value) noexcept
                {
-                  m_selector = 0;
+                  selector = value;
                }
 
-               template<typename T>
-               bool append( const T value)
+               const_data_type handle() const noexcept
                {
-                  const auto encoded = common::network::byteorder::encode( value);
-                  const constexpr auto count = sizeof( encoded);
-
-                  if( (reserved() - utilized()) < count)
-                  {
-                     return false;
-                  }
-
-                  payload.memory.insert(
-                     payload.memory.end(),
-                     reinterpret_cast<const_data_type>( &encoded),
-                     reinterpret_cast<const_data_type>( &encoded) + count);
-
-                  return true;
+                  return payload.memory.data();
                }
 
-               bool append( const char* const value)
-               {
-                  const auto count = std::strlen( value) + 1;
-
-                  if( (reserved() - utilized()) < count)
-                  {
-                     return false;
-                  }
-
-                  payload.memory.insert( payload.memory.end(), value, value + count);
-
-                  return true;
-               }
-
-
-               bool append( const_data_type data, const long size)
-               {
-                  const auto total = common::network::byteorder::bytes<long>() + size;
-
-                  if( (reserved() - utilized()) < total)
-                  {
-                     return false;
-                  }
-
-                  append( size);
-
-                  payload.memory.insert( payload.memory.end(), data, data + size);
-
-                  return true;
-               }
-
-
-               template<typename T>
-               bool select( T& value)
-               {
-                  const auto where = payload.memory.data() + m_selector;
-
-                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
-
-                  const constexpr auto count = sizeof( encoded);
-
-                  if( (utilized() - consumed()) < count)
-                  {
-                     return false;
-                  }
-
-                  value = common::network::byteorder::decode<T>( encoded);
-
-                  m_selector += count;
-
-                  return true;
-               }
-
-               bool select( const char*& value)
-               {
-                  const auto where = payload.memory.data() + m_selector;
-
-                  const auto count = std::strlen( where) + 1;
-
-                  if( (utilized() - consumed()) < count)
-                  {
-                     return false;
-                  }
-
-                  value = where;
-
-                  m_selector += count;
-
-                  return true;
-               }
-
-               bool select( const_data_type& data, long& size)
-               {
-                  if( select( size))
-                  {
-                     if( (consumed() + size) > utilized())
-                     {
-                        //
-                        // Perhaps unnecessary to reverse
-                        //
-                        m_selector -= common::network::byteorder::bytes<long>();
-
-                        return false;
-                     }
-
-                  }
-                  else
-                  {
-                     return false;
-                  }
-
-                  data = payload.memory.data() + m_selector;
-
-                  m_selector += size;
-
-                  return true;
-
-               }
-
-               static bool copy( Buffer& target, const Buffer& source)
-               {
-                  if( target.reserved() < source.utilized())
-                  {
-                     return false;
-                  }
-
-                  target.payload.memory = source.payload.memory;
-
-                  //
-                  // TODO: What shall the semantics be ?
-                  //
-                  //target.m_selector = source.m_selector;
-                  target.m_selector = 0;
-
-                  return true;
-               }
-
-
-
-               typedef common::platform::raw_buffer_type data_type;
-
-               data_type handle()
+               data_type handle() noexcept
                {
                   return payload.memory.data();
                }
 
 
-            private:
+               size_type transport( const size_type user_size) const
+               {
+                  //
+                  // We could ignore user-size all together, but something is
+                  // wrong if user supplies a greater size than allocated
+                  //
+                  //if( user_size > utilized())
+                  //{
+                  //   throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
+                  //}
 
-               size_type m_selector = 0;
+                  return utilized();
+               }
 
             };
 
@@ -288,7 +153,7 @@ namespace casual
                   if( size < result->payload.memory.capacity()) result->payload.memory.shrink_to_fit();
                   // GCC returns null for std::vector::data with size zero
                   result->payload.memory.reserve( size ? size : 1);
-                  return result->handle();
+                  return result->payload.memory.data();
                }
 
                common::platform::raw_buffer_type insert( common::buffer::Payload payload)
@@ -299,7 +164,7 @@ namespace casual
 
             };
 
-         } //
+         } // <unnamed>
 
       } // order
    } // buffer
@@ -317,165 +182,259 @@ namespace casual
 
          namespace
          {
-
+/*
             struct trace : common::trace::basic::Scope
             {
                template<decltype(sizeof("")) size>
                explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
             };
+*/
 
-            Buffer* find( const char* const handle)
-            {
-               //const trace trace( "order::find");
-
-
-               try
-               {
-                  auto& buffer = pool_type::pool.get( handle);
-
-                  return &buffer;
-               }
-               catch( ...)
-               {
-                  //
-                  // TODO: Perhaps have some dedicated order-logging ?
-                  //
-                  common::error::handler();
-               }
-
-               return nullptr;
-
-            }
-
-            int explore( const char* const handle, long* const size, long* const used)
+            int explore( const char* const handle, long* const reserved, long* const utilized, long* const consumed)
             {
                //const trace trace( "order::explore");
 
-               if( const auto buffer = find( handle))
+               try
                {
-                  if( size) *size = static_cast<long>(buffer->reserved());
-                  if( used) *used = static_cast<long>(buffer->utilized());
+                  const auto& buffer = pool_type::pool.get( handle);
+
+                  if( reserved) *reserved = static_cast<long>(buffer.capacity());
+                  if( utilized) *utilized = static_cast<long>(buffer.utilized());
+                  if( consumed) *consumed = static_cast<long>(buffer.consumed());
                }
-               else
+               catch( const common::exception::xatmi::invalid::Argument&)
                {
-                  return CASUAL_ORDER_INVALID_BUFFER;
+                  return CASUAL_ORDER_INVALID_HANDLE;
                }
-
-               return CASUAL_ORDER_SUCCESS;
-
-            }
-
-            int copy( const char* const target_handle, const char* const source_handle)
-            {
-               //const trace trace( "order::copy");
-
-               const auto target = find( target_handle);
-
-               const auto source = find( source_handle);
-
-               if( target && source)
+               catch( ...)
                {
-                  if( Buffer::copy( *target, *source))
-                  {
-                     return CASUAL_ORDER_SUCCESS;
-                  }
-                  else
-                  {
-                     return CASUAL_ORDER_NO_SPACE;
-                  }
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
-
-            }
-
-            int clear( const char* const handle)
-            {
-               //const trace trace( "order::clear");
-
-               if( auto buffer = find( handle))
-               {
-                  buffer->clear();
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
+                  common::error::handler();
+                  return CASUAL_ORDER_INTERNAL_FAILURE;
                }
 
                return CASUAL_ORDER_SUCCESS;
             }
 
-            int reset( const char* const handle)
+            namespace add
             {
-               //const trace trace( "order::reset");
 
-               if( auto buffer = find( handle))
+               int reset( const char* const handle)
                {
-                  buffer->reset();
+                  //const trace trace( "order::add::reset");
+
+                  try
+                  {
+                     pool_type::pool.get( handle).utilized( 0);
+                  }
+                  catch( const common::exception::xatmi::invalid::Argument&)
+                  {
+                     return CASUAL_ORDER_INVALID_HANDLE;
+                  }
+                  catch( ...)
+                  {
+                     common::error::handler();
+                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                  }
+
+                  return CASUAL_ORDER_SUCCESS;
                }
-               else
+
+               template<typename M, typename T>
+               void append( M& memory, const T value)
                {
-                  return CASUAL_ORDER_INVALID_BUFFER;
+                  const auto encoded = common::network::byteorder::encode( value);
+                  const auto data = reinterpret_cast<const_data_type>( &encoded);
+                  const constexpr auto size = sizeof( encoded);
+
+                  memory.insert( memory.end(), data, data + size);
                }
 
-               return CASUAL_ORDER_SUCCESS;
+               template<typename M>
+               void append( M& memory, const_data_type data)
+               {
+                  const auto size = std::strlen( data) + 1;
 
-            }
+                  memory.insert( memory.end(), data, data + size);
+               }
 
-            template<typename... A>
-            int add( const char* const handle, A&&... arguments)
+
+               template<typename M>
+               void append( M& memory, const_data_type data, const long size)
+               {
+                  append( memory, size);
+
+                  memory.insert( memory.end(), data, data + size);
+               }
+
+
+               //
+               // TODO: std::function and/or lambdas are slow
+               //
+               struct exit
+               {
+                  std::function< void()> executor;
+                  exit( std::function< void()> function) : executor( std::move( function)) {}
+                  ~exit() { executor();}
+               };
+
+               template<typename... A>
+               int data( char** handle, A&&... arguments)
+               {
+                  //const trace trace( "order::add::data");
+
+                  try
+                  {
+                     auto& buffer = pool_type::pool.get( *handle);
+
+
+                     //
+                     // Make sure to reset the size in case of exception
+                     //
+                     const auto used = buffer.utilized();
+                     const exit reset
+                     { [&](){ if( std::uncaught_exception()) buffer.utilized( used);}};
+
+
+                     //
+                     // Make sure to update the handle regardless
+                     //
+                     const exit synchronize
+                     { [&]() { *handle = buffer.handle();}};
+
+
+                     //
+                     // Append the data
+                     //
+                     append( buffer.payload.memory, std::forward<A>( arguments)...);
+
+                  }
+                  catch( const std::bad_alloc&)
+                  {
+                     return CASUAL_ORDER_OUT_OF_MEMORY;
+                  }
+                  catch( const common::exception::xatmi::invalid::Argument&)
+                  {
+                     return CASUAL_ORDER_INVALID_HANDLE;
+                  }
+                  catch( ...)
+                  {
+                     common::error::handler();
+                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                  }
+
+                  return CASUAL_ORDER_SUCCESS;
+               }
+
+            } // add
+
+            namespace get
             {
-               //const trace trace( "order::add");
-
-               if( auto buffer = find( handle))
+               int reset( const char* const handle)
                {
-                  if( buffer->append( std::forward<A>( arguments)...))
-                  {
-                     return CASUAL_ORDER_SUCCESS;
-                  }
-                  else
-                  {
-                     return CASUAL_ORDER_NO_SPACE;
-                  }
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
-               }
+                  //const trace trace( "order::get::reset");
 
-            }
-
-            template<typename... A>
-            int get( const char* const handle, A&&... arguments)
-            {
-               //const trace trace( "order::get");
-
-               if( auto buffer = find( handle))
-               {
-                  if( buffer->select( std::forward<A>( arguments)...))
+                  try
                   {
-                     return CASUAL_ORDER_SUCCESS;
+                     pool_type::pool.get( handle).consumed( 0);
                   }
-                  else
+                  catch( const common::exception::xatmi::invalid::Argument&)
                   {
-                     return CASUAL_ORDER_NO_PLACE;
+                     return CASUAL_ORDER_INVALID_HANDLE;
                   }
-               }
-               else
-               {
-                  return CASUAL_ORDER_INVALID_BUFFER;
+                  catch( ...)
+                  {
+                     common::error::handler();
+                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                  }
+
+                  return CASUAL_ORDER_SUCCESS;
                }
 
-            }
+
+               template<typename T>
+               size_type select( const_data_type where, T& value) noexcept
+               {
+                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
+
+                  value = common::network::byteorder::decode<T>( encoded);
+
+                  return sizeof( encoded);
+               }
+
+               size_type select( const_data_type where, const_data_type& value) noexcept
+               {
+                  value = where;
+
+                  return std::strlen( value) + 1;
+               }
+
+               size_type select( const_data_type where, const_data_type& data, long& size) noexcept
+               {
+                  const auto read = select( where, size);
+                  data = where + read;
+                  return read + size;
+               }
+
+               template<typename... A>
+               int data( const char* const handle, A&&... arguments)
+               {
+                  //const trace trace( "order::add::data");
+
+                  try
+                  {
+                     auto& buffer = pool_type::pool.get( handle);
+
+                     //
+                     // See how much have been read so far
+                     //
+                     const auto read = buffer.consumed();
+
+                     //
+                     // Read the data and let us not how much
+                     //
+                     const auto size = select( buffer.handle() + read, std::forward<A>( arguments)...);
+
+                     //
+                     // Calculate the new cursor
+                     //
+                     const auto consumed = read + size;
+
+                     if( consumed > buffer.utilized())
+                     {
+                        //
+                        // We need to report this
+                        //
+                        return CASUAL_ORDER_OUT_OF_BOUNDS;
+                     }
+
+                     //
+                     // Update the cursor
+                     //
+                     buffer.consumed( consumed);
+
+                  }
+                  catch( const common::exception::xatmi::invalid::Argument&)
+                  {
+                     return CASUAL_ORDER_INVALID_HANDLE;
+                  }
+                  catch( ...)
+                  {
+                     common::error::handler();
+                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                  }
+
+                  return CASUAL_ORDER_SUCCESS;
+               }
 
 
-         } //
+            } // get
+
+
+         } // <unnamed>
 
       } // order
 
-   } // buffer
+   } // Buffer
 
 
 
@@ -483,20 +442,20 @@ namespace casual
 
 
 
-const char* CasualOrderDescription( const int code)
+const char* casual_order_description( const int code)
 {
    switch( code)
    {
       case CASUAL_ORDER_SUCCESS:
          return "Success";
-      case CASUAL_ORDER_NO_SPACE:
-         return "No space";
-      case CASUAL_ORDER_NO_PLACE:
-         return "No place";
-      case CASUAL_ORDER_INVALID_BUFFER:
-         return "Invalid buffer";
+      case CASUAL_ORDER_INVALID_HANDLE:
+         return "Invalid handle";
       case CASUAL_ORDER_INVALID_ARGUMENT:
          return "Invalid argument";
+      case CASUAL_ORDER_OUT_OF_BOUNDS:
+         return "Out of bounds";
+      case CASUAL_ORDER_OUT_OF_MEMORY:
+         return "Out of memory";
       case CASUAL_ORDER_INTERNAL_FAILURE:
          return "Internal failure";
       default:
@@ -504,110 +463,104 @@ const char* CasualOrderDescription( const int code)
    }
 }
 
-int CasualOrderExploreBuffer( const char* buffer, long* size, long* used)
+int casual_order_explore_buffer( const char* const buffer, long* const reserved, long* const utilized, long* const consumed)
 {
-   return casual::buffer::order::explore( buffer, size, used);
+   return casual::buffer::order::explore( buffer, reserved, utilized, consumed);
 }
 
 
-int CasualOrderAddPrepare( char* const buffer)
+int casual_order_add_prepare( const char* const buffer)
 {
-   return casual::buffer::order::clear( buffer);
+   return casual::buffer::order::add::reset( buffer);
 }
 
-int CasualOrderAddBool( char* const buffer, const bool value)
+int casual_order_add_bool( char** buffer, const bool value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddChar( char* const buffer, const char value)
+int casual_order_add_char( char** buffer, const char value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddShort( char* const buffer, const short value)
+int casual_order_add_short( char** buffer, const short value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddLong( char* const buffer, const long value)
+int casual_order_add_long( char** buffer, const long value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddFloat( char* const buffer, const float value)
+int casual_order_add_float( char** buffer, const float value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddDouble( char* const buffer, const double value)
+int casual_order_add_double( char** buffer, const double value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddString( char* const buffer, const char* const value)
+int casual_order_add_string( char** buffer, const char* const value)
 {
-   return casual::buffer::order::add( buffer, value);
+   return casual::buffer::order::add::data( buffer, value);
 }
 
-int CasualOrderAddBinary( char* const buffer, const char* const data, const long size)
+int casual_order_add_binary( char** buffer, const char* const data, const long size)
 {
    if( size < 0)
    {
       return CASUAL_ORDER_INVALID_ARGUMENT;
    }
 
-   return casual::buffer::order::add( buffer, data, size);
+   return casual::buffer::order::add::data( buffer, data, size);
 }
 
-int CasualOrderGetPrepare( char* const buffer)
+int casual_order_get_prepare( const char* const buffer)
 {
-   return casual::buffer::order::reset( buffer);
+   return casual::buffer::order::get::reset( buffer);
 }
 
-int CasualOrderGetBool( char* const buffer, bool* const value)
+int casual_order_get_bool( const char* const buffer, bool* const value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetChar( char* const buffer, char* const value)
+int casual_order_get_char( const char* const buffer, char* const value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetShort( char* const buffer, short* const value)
+int casual_order_get_short( const char* const buffer, short* const value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetLong( char* const buffer, long* const value)
+int casual_order_get_long( const char* const buffer, long* const value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetFloat( char* const buffer, float* const value)
+int casual_order_get_float( const char* const buffer, float* const value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetDouble( char* const buffer, double* const value)
+int casual_order_get_double( const char* const buffer, double* const value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetString( char* const buffer, const char** value)
+int casual_order_get_string( const char* const buffer, const char** value)
 {
-   return casual::buffer::order::get( buffer, *value);
+   return casual::buffer::order::get::data( buffer, *value);
 }
 
-int CasualOrderGetBinary( char* const buffer, const char** data, long* const size)
+int casual_order_get_binary( const char* const buffer, const char** data, long* const size)
 {
-   return casual::buffer::order::get( buffer, *data, *size);
+   return casual::buffer::order::get::data( buffer, *data, *size);
 }
-
-int CasualOrderCopyBuffer( char* target, const char* source)
-{
-   return casual::buffer::order::copy( target, source);
-}
-
 

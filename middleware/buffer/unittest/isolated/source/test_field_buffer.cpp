@@ -62,7 +62,7 @@ namespace casual
       {
          auto handle = buffer::pool::Holder::instance().allocate( common::buffer::Type{ CASUAL_FIELD, nullptr}, 666);
 
-         auto buffer = buffer::pool::Holder::instance().get( handle, 666);
+         auto buffer = buffer::pool::Holder::instance().get( handle, 0);
 
          EXPECT_TRUE( buffer.transport == 0) << "transport: " <<  buffer.transport;
          EXPECT_TRUE( buffer.reserved == 666) << "reserved: " <<  buffer.reserved;
@@ -75,13 +75,14 @@ namespace casual
 
       TEST( casual_field_buffer, tptypes)
       {
-         char* buffer = tpalloc( CASUAL_FIELD, 0, 666);
+         char* buffer = tpalloc( CASUAL_FIELD, "", 666);
          ASSERT_TRUE( buffer != 0);
 
          std::array< char, 8> type;
          std::array< char, 16> subtype;
 
-         auto size =  tptypes( buffer, type.data(), subtype.data());
+         auto size = tptypes( buffer, type.data(), subtype.data());
+
          EXPECT_TRUE( size == 666) << "size: " << size;
          EXPECT_TRUE( std::string( type.data()) == CASUAL_FIELD) << "type.data(): " << type.data();
          EXPECT_TRUE( std::string( subtype.data()).empty()) << "subtype.data(): " << subtype.data();
@@ -92,47 +93,47 @@ namespace casual
 
       TEST( casual_field_buffer, use_with_invalid_buffer__expecting_invalid_buffer)
       {
-         char invalid[] = "some invalid buffer";
+         char* invalid = nullptr;
 
-         EXPECT_TRUE( CasualFieldExploreBuffer( nullptr, nullptr, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_explore_buffer( nullptr, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldExploreBuffer( invalid, nullptr, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_explore_buffer( invalid, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldAddChar( invalid, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldAddShort( invalid, FLD_SHORT1, 123) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldAddLong( invalid, FLD_LONG1, 123456) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldAddFloat( invalid, FLD_FLOAT1, 123.456) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldAddDouble( invalid, FLD_DOUBLE1, 123456.789) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldAddString( invalid, FLD_STRING1, "Casual rules!") == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldAddBinary( invalid, FLD_BINARY1, "!#¤%&", 5) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_add_char( &invalid, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_add_short( &invalid, FLD_SHORT1, 123) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_add_long( &invalid, FLD_LONG1, 123456) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_add_float( &invalid, FLD_FLOAT1, 123.456) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_add_double( &invalid, FLD_DOUBLE1, 123456.789) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_add_string( &invalid, FLD_STRING1, "Casual rules!") == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_add_binary( &invalid, FLD_BINARY1, "!#¤%&", 5) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldGetChar( invalid, FLD_CHAR1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldGetShort( invalid, FLD_SHORT1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldGetLong( invalid, FLD_LONG1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldGetFloat( invalid, FLD_FLOAT1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldGetDouble( invalid, FLD_DOUBLE1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldGetString( invalid, FLD_STRING1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldGetBinary( invalid, FLD_BINARY1, 0, nullptr, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_get_char( invalid, FLD_CHAR1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_short( invalid, FLD_SHORT1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_long( invalid, FLD_LONG1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_float( invalid, FLD_FLOAT1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_double( invalid, FLD_DOUBLE1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_string( invalid, FLD_STRING1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_get_binary( invalid, FLD_BINARY1, 0, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldExploreValue( invalid, FLD_CHAR1, 0, nullptr) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_explore_value( invalid, FLD_CHAR1, 0, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldRemoveAll( invalid) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_remove_all( invalid) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldRemoveId( invalid, FLD_CHAR1) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_remove_id( invalid, FLD_CHAR1) == CASUAL_FIELD_INVALID_HANDLE);
 
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( invalid, FLD_CHAR1, 0) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_remove_occurrence( invalid, FLD_CHAR1, 0) == CASUAL_FIELD_INVALID_HANDLE);
 
          auto buffer = tpalloc( CASUAL_FIELD, "", 0);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldCopyBuffer( invalid, buffer) == CASUAL_FIELD_INVALID_BUFFER);
-         EXPECT_TRUE( CasualFieldCopyBuffer( buffer, invalid) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_copy_buffer( &invalid, buffer) == CASUAL_FIELD_INVALID_HANDLE);
+         EXPECT_TRUE( casual_field_copy_buffer( &buffer, invalid) == CASUAL_FIELD_INVALID_HANDLE);
 
          tpfree( buffer);
 
          long id = CASUAL_FIELD_NO_ID;
          long occurrence;
-         EXPECT_TRUE( CasualFieldNext( invalid, &id, &occurrence) == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_next( invalid, &id, &occurrence) == CASUAL_FIELD_INVALID_HANDLE);
 
       }
 
@@ -142,7 +143,7 @@ namespace casual
          auto buffer = tpalloc( binary_type.name.c_str(), binary_type.subname.c_str(), 128);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddChar( buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_BUFFER);
+         EXPECT_TRUE( casual_field_add_char( &buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_HANDLE);
 
          tpfree( buffer);
       }
@@ -152,7 +153,7 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 0);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddBinary( buffer, FLD_BINARY1, "some data", -123) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_add_binary( &buffer, FLD_BINARY1, "some data", -123) == CASUAL_FIELD_INVALID_ARGUMENT);
 
          tpfree( buffer);
       }
@@ -163,7 +164,7 @@ namespace casual
          ASSERT_TRUE( buffer != nullptr);
 
          long used = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, nullptr, &used) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_explore_buffer( buffer, nullptr, &used) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( used == 0);
          tpfree( buffer);
       }
@@ -174,14 +175,14 @@ namespace casual
          ASSERT_TRUE( buffer != nullptr);
 
          long initial_size = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, &initial_size, nullptr) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_explore_buffer( buffer, &initial_size, nullptr) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( initial_size == 64);
 
          buffer = tprealloc( buffer, 128);
          ASSERT_TRUE( buffer != nullptr);
 
          long updated_size = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, &updated_size, nullptr) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_explore_buffer( buffer, &updated_size, nullptr) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( updated_size == 128);
 
          tpfree( buffer);
@@ -194,16 +195,16 @@ namespace casual
          ASSERT_TRUE( buffer != nullptr);
 
          long initial_size = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, &initial_size, nullptr) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_explore_buffer( buffer, &initial_size, nullptr) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( initial_size == 128);
 
-         EXPECT_TRUE( CasualFieldAddString( buffer, FLD_STRING1, "goin' casual today!") == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "goin' casual today!") == CASUAL_FIELD_SUCCESS);
 
          buffer = tprealloc( buffer, 64);
          ASSERT_TRUE( buffer != nullptr);
 
          long updated_size = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, &updated_size, nullptr) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_explore_buffer( buffer, &updated_size, nullptr) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( updated_size == 64);
 
          buffer = tprealloc( buffer, 0);
@@ -211,7 +212,7 @@ namespace casual
 
          long final_size = 0;
          long final_used = 0;
-         EXPECT_TRUE( CasualFieldExploreBuffer( buffer, &final_size, &final_used) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_explore_buffer( buffer, &final_size, &final_used) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( final_size < 64);
          EXPECT_TRUE( final_size > 0);
          EXPECT_TRUE( final_size == final_used);
@@ -231,14 +232,16 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, allocate_with_small_size_and_write_much___expecting_no_space)
+      TEST( casual_field_buffer, allocate_with_small_size_and_write_much__expecting_increased_size)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 64);
          ASSERT_TRUE( buffer != nullptr);
 
          const char string[] = "A long string that is longer than what would fit in this small buffer";
 
-         EXPECT_TRUE( CasualFieldAddString( buffer, FLD_STRING1, string) == CASUAL_FIELD_NO_SPACE);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, string) == CASUAL_FIELD_SUCCESS);
+
+         EXPECT_TRUE( tptypes( buffer, nullptr, nullptr) > 64);
 
          tpfree( buffer);
       }
@@ -249,56 +252,56 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddChar( buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddDouble( buffer, FLD_DOUBLE1, 987.654) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddString( buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddBinary( buffer, FLD_BINARY1, "Some Data", 9) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_char( &buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_double( &buffer, FLD_DOUBLE1, 987.654) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_binary( &buffer, FLD_BINARY1, "Some Data", 9) == CASUAL_FIELD_SUCCESS);
 
          {
-            char character;
-            EXPECT_TRUE( CasualFieldGetChar( buffer, FLD_CHAR1, 0, &character) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( character == 'a');
+            char value{};
+            EXPECT_TRUE( casual_field_get_char( buffer, FLD_CHAR1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( value == 'a') << value;
          }
 
          {
-            short short_integer;
-            EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( short_integer == 123);
+            short value{};
+            EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( value == 123) << value;
          }
 
          {
-            long long_integer;
-            EXPECT_TRUE( CasualFieldGetLong( buffer, FLD_LONG1, 0, &long_integer) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( long_integer == 654321);
+            long value{};
+            EXPECT_TRUE( casual_field_get_long( buffer, FLD_LONG1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( value == 654321) << value;
          }
 
          {
-            float short_decimal;
-            EXPECT_TRUE( CasualFieldGetFloat( buffer, FLD_FLOAT1, 0, &short_decimal) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( short_decimal > 3.1 && short_decimal < 3.2);
+            float value{};
+            EXPECT_TRUE( casual_field_get_float( buffer, FLD_FLOAT1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( value > 3.1 && value < 3.2) << value;
          }
 
          {
-            double long_decimal;
-            EXPECT_TRUE( CasualFieldGetDouble( buffer, FLD_DOUBLE1, 0, &long_decimal) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( long_decimal > 987.6 && long_decimal < 987.7);
+            double value{};
+            EXPECT_TRUE( casual_field_get_double( buffer, FLD_DOUBLE1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( value > 987.6 && value < 987.7) << value;
          }
 
          {
-            const char* string;
-            EXPECT_TRUE( CasualFieldGetString( buffer, FLD_STRING1, 0, &string) == CASUAL_FIELD_SUCCESS);
-            EXPECT_STREQ( string, "Hello!") << string;
+            const char* value{};
+            EXPECT_TRUE( casual_field_get_string( buffer, FLD_STRING1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_STREQ( value, "Hello!") << value;
          }
 
          {
-            const char* binary;
-            long size;
-            EXPECT_TRUE( CasualFieldGetBinary( buffer, FLD_BINARY1, 0, &binary, &size) == CASUAL_FIELD_SUCCESS);
-            EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size);
-            EXPECT_TRUE( size == 9);
+            const char* data{};
+            long size{};
+            EXPECT_TRUE( casual_field_get_binary( buffer, FLD_BINARY1, 0, &data, &size) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( std::string( data, size) == "Some Data") << std::string( data, size);
+            EXPECT_TRUE( size == 9) << size;
          }
 
          tpfree( buffer);
@@ -310,27 +313,27 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddString( buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddString( buffer, FLD_STRING1, "!olleH") == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "!olleH") == CASUAL_FIELD_SUCCESS);
 
 
 
          short short_integer;
-         EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( short_integer == 123);
 
-         EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 1, &short_integer) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 1, &short_integer) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( short_integer == 321);
 
 
          const char* string;
-         EXPECT_TRUE( CasualFieldGetString( buffer, FLD_STRING1, 0, &string) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_string( buffer, FLD_STRING1, 0, &string) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( string, "Hello!") << string;
 
-         EXPECT_TRUE( CasualFieldGetString( buffer, FLD_STRING1, 1, &string) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_string( buffer, FLD_STRING1, 1, &string) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( string, "!olleH") << string;
 
          tpfree( buffer);
@@ -342,21 +345,21 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
 
          short short_integer;
-         EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 1, &short_integer) == CASUAL_FIELD_NO_OCCURRENCE);
+         EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 1, &short_integer) == CASUAL_FIELD_OUT_OF_BOUNDS);
 
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_short_with_id_of_long__expecting_invalid_id)
+      TEST( casual_field_buffer, add_short_with_id_of_long__expecting_invalid_argument)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_LONG1, 123) == CASUAL_FIELD_INVALID_ID);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_LONG1, 123) == CASUAL_FIELD_INVALID_ARGUMENT);
 
          tpfree( buffer);
       }
@@ -366,8 +369,8 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, -1, 123) == CASUAL_FIELD_INVALID_ID);
-         EXPECT_TRUE( CasualFieldAddShort( buffer, 0, 123) == CASUAL_FIELD_INVALID_ID);
+         EXPECT_TRUE( casual_field_add_short( &buffer, -1, 123) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_add_short( &buffer, 0, 123) == CASUAL_FIELD_INVALID_ARGUMENT);
 
          tpfree( buffer);
       }
@@ -376,24 +379,24 @@ namespace casual
       TEST( casual_field_buffer, get_type_from_id__expecting_success)
       {
          int type;
-         EXPECT_TRUE( CasualFieldTypeOfId( FLD_LONG1, &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_id( FLD_LONG1, &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( type == CASUAL_FIELD_LONG);
       }
 
       TEST( casual_field_buffer, type_from_invalid_id__expecting_invalid_id)
       {
          int type;
-         EXPECT_TRUE( CasualFieldTypeOfId( 0, &type) == CASUAL_FIELD_INVALID_ID);
-         EXPECT_TRUE( CasualFieldTypeOfId( -1, &type) == CASUAL_FIELD_INVALID_ID);
+         EXPECT_TRUE( casual_field_type_of_id( 0, &type) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_type_of_id( -1, &type) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
-      TEST( casual_field_buffer, remove_occurrence_with_invalid_id__expecting_invalid_id)
+      TEST( casual_field_buffer, remove_occurrence_with_invalid_id__expecting_invalid_argument)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, 0, 0) == CASUAL_FIELD_INVALID_ID);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, -1, 0) == CASUAL_FIELD_INVALID_ID);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, 0, 0) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, -1, 0) == CASUAL_FIELD_INVALID_ARGUMENT);
 
          tpfree( buffer);
       }
@@ -404,8 +407,8 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldExploreValue( buffer, FLD_LONG1, 0, nullptr) == CASUAL_FIELD_NO_OCCURRENCE);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_NO_OCCURRENCE);
+         EXPECT_TRUE( casual_field_explore_value( buffer, FLD_LONG1, 0, nullptr) == CASUAL_FIELD_OUT_OF_BOUNDS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_OUT_OF_BOUNDS);
 
          tpfree( buffer);
       }
@@ -415,8 +418,8 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
 
          tpfree( buffer);
       }
@@ -426,11 +429,11 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
          short short_integer;
-         EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( short_integer == 321);
 
          tpfree( buffer);
@@ -441,11 +444,11 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 1) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_SHORT1, 1) == CASUAL_FIELD_SUCCESS);
          short short_integer;
-         EXPECT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( short_integer == 123);
 
          tpfree( buffer);
@@ -457,11 +460,11 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_FALSE( CasualFieldAddShort( buffer, FLD_SHORT1, 123));
-         EXPECT_FALSE( CasualFieldAddShort( buffer, FLD_SHORT1, 321));
-         EXPECT_FALSE( CasualFieldExploreValue( buffer, FLD_SHORT1, 0, nullptr));
-         EXPECT_FALSE( CasualFieldRemoveId( buffer, FLD_SHORT1));
-         EXPECT_TRUE( CasualFieldExploreValue( buffer, FLD_SHORT1, 0, nullptr) == CASUAL_FIELD_NO_OCCURRENCE);
+         EXPECT_FALSE( casual_field_add_short( &buffer, FLD_SHORT1, 123));
+         EXPECT_FALSE( casual_field_add_short( &buffer, FLD_SHORT1, 321));
+         EXPECT_FALSE( casual_field_explore_value( buffer, FLD_SHORT1, 0, nullptr));
+         EXPECT_FALSE( casual_field_remove_id( buffer, FLD_SHORT1));
+         EXPECT_TRUE( casual_field_explore_value( buffer, FLD_SHORT1, 0, nullptr) == CASUAL_FIELD_OUT_OF_BOUNDS);
 
          tpfree( buffer);
       }
@@ -475,23 +478,23 @@ namespace casual
          ASSERT_TRUE( target != nullptr);
 
 
-         EXPECT_TRUE( CasualFieldAddShort( source, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         ASSERT_TRUE( CasualFieldCopyBuffer( target, source) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &source, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_copy_buffer( &target, source) == CASUAL_FIELD_SUCCESS);
 
          {
             long size = 0;
-            CasualFieldExploreBuffer( source, &size, nullptr);
-            ASSERT_TRUE( size == 64);
+            casual_field_explore_buffer( source, &size, nullptr);
+            EXPECT_TRUE( size == 64) << size;
          }
 
          {
             long size = 0;
-            CasualFieldExploreBuffer( target, &size, nullptr);
-            ASSERT_TRUE( size == 128);
+            casual_field_explore_buffer( target, &size, nullptr);
+            EXPECT_TRUE( size == 128) << size;
          }
 
          short short_integer;
-         EXPECT_TRUE( CasualFieldGetShort( target, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_get_short( target, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( short_integer == 123);
 
 
@@ -506,32 +509,32 @@ namespace casual
 
          ASSERT_TRUE( buffer != nullptr);
 
-         ASSERT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         ASSERT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
-         ASSERT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
-         ASSERT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 456) == CASUAL_FIELD_SUCCESS);
-         ASSERT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 987654321) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 456) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 987654321) == CASUAL_FIELD_SUCCESS);
 
          long id = CASUAL_FIELD_NO_ID;
          long occurrence = 0;
 
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 0) << occurrence;
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1) << id;
          EXPECT_TRUE( occurrence == 0) << occurrence;
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1) << id;
          EXPECT_TRUE( occurrence == 1) << occurrence;
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 1) << occurrence;
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1) << id;
          EXPECT_TRUE( occurrence == 2) << occurrence;
-         const auto result = CasualFieldNext( buffer, &id, &occurrence);
-         EXPECT_TRUE( result == CASUAL_FIELD_NO_OCCURRENCE) << result;
+         const auto result = casual_field_next( buffer, &id, &occurrence);
+         EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
 
          tpfree( buffer);
 
@@ -561,123 +564,123 @@ namespace casual
       TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_one__expecting_success)
       {
          const char* name;
-         ASSERT_TRUE( CasualFieldNameOfId( FLD_SHORT1, &name) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_name_of_id( FLD_SHORT1, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "FLD_SHORT1");
       }
 
       TEST_F( casual_field_buffer_repository, get_name_from_id_to_null__expecting_success_and_no_crasch)
       {
-         ASSERT_TRUE( CasualFieldNameOfId( FLD_SHORT1, nullptr) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_name_of_id( FLD_SHORT1, nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_two__expecting_success)
       {
          const char* name;
-         ASSERT_TRUE( CasualFieldNameOfId( FLD_DOUBLE2, &name) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_name_of_id( FLD_DOUBLE2, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "FLD_DOUBLE2");
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_one__expecting_success)
       {
          long id;
-         ASSERT_TRUE( CasualFieldIdOfName( "FLD_SHORT2", &id) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_id_of_name( "FLD_SHORT2", &id) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( id, FLD_SHORT2);
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_name_to_null__expecting_success_and_no_crasch)
       {
-         ASSERT_TRUE( CasualFieldIdOfName( "FLD_SHORT2", nullptr) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_id_of_name( "FLD_SHORT2", nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_two__expecting_success)
       {
          long id;
-         ASSERT_TRUE( CasualFieldIdOfName( "FLD_DOUBLE3", &id) == CASUAL_FIELD_SUCCESS);
+         ASSERT_TRUE( casual_field_id_of_name( "FLD_DOUBLE3", &id) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( id, FLD_DOUBLE3);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_from_non_existing_id__expecting_unkown_id)
       {
          const char* name;
-         ASSERT_TRUE( CasualFieldNameOfId( 666, &name) == CASUAL_FIELD_UNKNOWN_ID);
+         ASSERT_TRUE( casual_field_name_of_id( 666, &name) == CASUAL_FIELD_OUT_OF_BOUNDS);
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_non_existing_name__expecting_unknown_id)
       {
          long id;
-         ASSERT_TRUE( CasualFieldIdOfName( "NON_EXISTING_NAME", &id) == CASUAL_FIELD_UNKNOWN_ID);
+         ASSERT_TRUE( casual_field_id_of_name( "NON_EXISTING_NAME", &id) == CASUAL_FIELD_OUT_OF_BOUNDS);
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_from_invalid_id__expecting_invalid_id)
+      TEST_F( casual_field_buffer_repository, get_name_from_invalid_id__expecting_invalid_argument)
       {
          const char* name;
-         ASSERT_TRUE( CasualFieldNameOfId( -666, &name) == CASUAL_FIELD_INVALID_ID);
+         ASSERT_TRUE( casual_field_name_of_id( -666, &name) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_argument)
       {
          long id;
-         ASSERT_TRUE( CasualFieldIdOfName( nullptr, &id) == CASUAL_FIELD_INVALID_ARGUMENT);
+         ASSERT_TRUE( casual_field_id_of_name( nullptr, &id) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_of_type__expecting_success)
       {
          const char* name = nullptr;
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_SHORT, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_SHORT, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "short");
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_LONG, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_LONG, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "long");
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_CHAR, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_CHAR, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "char");
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_FLOAT, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_FLOAT, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "float");
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_DOUBLE, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_DOUBLE, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "double");
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_STRING, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_STRING, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "string");
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_BINARY, &name) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_BINARY, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "binary");
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_of_invalid_type__expecting_invalid_type)
+      TEST_F( casual_field_buffer_repository, get_name_of_invalid_type__expecting_invalid_argument)
       {
          const char* name = nullptr;
-         EXPECT_TRUE( CasualFieldNameOfType( 666, &name) == CASUAL_FIELD_INVALID_TYPE);
+         EXPECT_TRUE( casual_field_name_of_type( 666, &name) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_of_type_to_null__expecting_success_and_no_crasch)
       {
-         EXPECT_TRUE( CasualFieldNameOfType( CASUAL_FIELD_STRING, nullptr) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_STRING, nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, get_type_of_name__expecting_success)
       {
          int type = -1;
-         EXPECT_TRUE( CasualFieldTypeOfName( "short", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "short", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_SHORT);
-         EXPECT_TRUE( CasualFieldTypeOfName( "long", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "long", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_LONG);
-         EXPECT_TRUE( CasualFieldTypeOfName( "char", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "char", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_CHAR);
-         EXPECT_TRUE( CasualFieldTypeOfName( "float", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "float", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_FLOAT);
-         EXPECT_TRUE( CasualFieldTypeOfName( "double", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "double", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_DOUBLE);
-         EXPECT_TRUE( CasualFieldTypeOfName( "string", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "string", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_STRING);
-         EXPECT_TRUE( CasualFieldTypeOfName( "binary", &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "binary", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_BINARY);
       }
 
-      TEST_F( casual_field_buffer_repository, get_type_of_invalid_name__expecting_invalid_type)
+      TEST_F( casual_field_buffer_repository, get_type_of_invalid_name__expecting_invalid_argument)
       {
          int type = -1;
-         EXPECT_TRUE( CasualFieldTypeOfName( "666", &type) == CASUAL_FIELD_INVALID_TYPE);
+         EXPECT_TRUE( casual_field_type_of_name( "666", &type) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
       TEST_F( casual_field_buffer_repository, get_type_of_name_to_null__expecting_success_and_no_crasch)
       {
-         EXPECT_TRUE( CasualFieldTypeOfName( "string", nullptr) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_type_of_name( "string", nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, print__expecting_success)
@@ -685,12 +688,12 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
-         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
-         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
-         EXPECT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
+         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "First string 2"));
+         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string 1"));
+         EXPECT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
 
-         EXPECT_FALSE( CasualFieldPrint( buffer));
+         EXPECT_FALSE( casual_field_print( buffer));
 
          tpfree( buffer);
       }
@@ -700,13 +703,13 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
-         ASSERT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "First string 2"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string 1"));
+         ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
 
          int match = 0;
-         ASSERT_FALSE( CasualFieldMatch( buffer, R"x(FLD_STRING1\[1\] = Other string)x", &match));
+         ASSERT_FALSE( casual_field_match( buffer, R"x(FLD_STRING1\[1\] = Other string)x", &match));
 
          EXPECT_TRUE( match);
 
@@ -718,21 +721,21 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
-         ASSERT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
-         ASSERT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "First string 2"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string 1"));
+         ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
 
 
          const void* regex = 0;
-         ASSERT_FALSE( CasualFieldMakeExpression( R"x(FLD_STRING1\[1\] = Other string)x", &regex));
+         ASSERT_FALSE( casual_field_make_expression( R"x(FLD_STRING1\[1\] = Other string)x", &regex));
 
          int match = 0;
-         ASSERT_FALSE( CasualFieldMatchExpression( buffer, regex, &match));
+         ASSERT_FALSE( casual_field_match_expression( buffer, regex, &match));
 
          EXPECT_TRUE( match);
 
-         ASSERT_FALSE( CasualFieldFreeExpression( regex));
+         ASSERT_FALSE( casual_field_free_expression( regex));
 
          tpfree( buffer);
       }
@@ -743,21 +746,21 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
 
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_SHORT1, 0) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
 
          long id = CASUAL_FIELD_NO_ID;
          long occurrence;
 
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_FLOAT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_OUT_OF_BOUNDS);
 
          tpfree( buffer);
       }
@@ -768,23 +771,23 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( CasualFieldRemoveOccurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 123456) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_remove_occurrence( buffer, FLD_LONG1, 0) == CASUAL_FIELD_SUCCESS);
 
          long id = CASUAL_FIELD_NO_ID;
          long occurrence;
 
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_FLOAT1) << id;
          EXPECT_TRUE( occurrence == 0);
 
-         EXPECT_TRUE( CasualFieldNext( buffer, &id, &occurrence) == CASUAL_FIELD_NO_OCCURRENCE);
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_OUT_OF_BOUNDS);
 
          tpfree( buffer);
       }
@@ -793,19 +796,19 @@ namespace casual
       {
 
          long size = 0;
-         EXPECT_FALSE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_SHORT, &size));
+         EXPECT_FALSE( casual_field_plain_type_host_size( CASUAL_FIELD_SHORT, &size));
          EXPECT_TRUE( size == sizeof( short));
-         EXPECT_FALSE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_LONG, &size));
+         EXPECT_FALSE( casual_field_plain_type_host_size( CASUAL_FIELD_LONG, &size));
          EXPECT_TRUE( size == sizeof( long));
-         EXPECT_FALSE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_CHAR, &size));
+         EXPECT_FALSE( casual_field_plain_type_host_size( CASUAL_FIELD_CHAR, &size));
          EXPECT_TRUE( size == sizeof( char));
-         EXPECT_FALSE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_FLOAT, &size));
+         EXPECT_FALSE( casual_field_plain_type_host_size( CASUAL_FIELD_FLOAT, &size));
          EXPECT_TRUE( size == sizeof( float));
-         EXPECT_FALSE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_DOUBLE, &size));
+         EXPECT_FALSE( casual_field_plain_type_host_size( CASUAL_FIELD_DOUBLE, &size));
          EXPECT_TRUE( size == sizeof( double));
-         EXPECT_TRUE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_STRING, &size) == CASUAL_FIELD_INVALID_TYPE);
-         EXPECT_TRUE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_BINARY, &size) == CASUAL_FIELD_INVALID_TYPE);
-         EXPECT_TRUE( CasualFieldPlainTypeHostSize( CASUAL_FIELD_SHORT, nullptr) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_plain_type_host_size( CASUAL_FIELD_STRING, &size) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_plain_type_host_size( CASUAL_FIELD_BINARY, &size) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_plain_type_host_size( CASUAL_FIELD_SHORT, nullptr) == CASUAL_FIELD_INVALID_ARGUMENT);
 
       }
 
@@ -817,58 +820,58 @@ namespace casual
 
          {
             short source = 123;
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_SHORT1, &source, 0));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_SHORT1, &source, 0));
             short target{};
-            EXPECT_FALSE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &target));
+            EXPECT_FALSE( casual_field_get_short( buffer, FLD_SHORT1, 0, &target));
             EXPECT_TRUE( source == target);
          }
 
          {
             long source = 123456;
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_LONG1, &source, 0));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_LONG1, &source, 0));
             long target{};
-            EXPECT_FALSE( CasualFieldGetLong( buffer, FLD_LONG1, 0, &target));
+            EXPECT_FALSE( casual_field_get_long( buffer, FLD_LONG1, 0, &target));
             EXPECT_TRUE( source == target);
          }
 
          {
             char source = 'a';
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_CHAR1, &source, 0));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_CHAR1, &source, 0));
             char target{};
-            EXPECT_FALSE( CasualFieldGetChar( buffer, FLD_CHAR1, 0, &target));
+            EXPECT_FALSE( casual_field_get_char( buffer, FLD_CHAR1, 0, &target));
             EXPECT_TRUE( source == target);
          }
 
          {
             float source = 3.14;
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_FLOAT1, &source, 0));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_FLOAT1, &source, 0));
             float target{};
-            EXPECT_FALSE( CasualFieldGetFloat( buffer, FLD_FLOAT1, 0, &target));
+            EXPECT_FALSE( casual_field_get_float( buffer, FLD_FLOAT1, 0, &target));
             EXPECT_TRUE( source == target);
          }
 
          {
             double source = 123.456;
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_DOUBLE1, &source, 0));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_DOUBLE1, &source, 0));
             double target{};
-            EXPECT_FALSE( CasualFieldGetDouble( buffer, FLD_DOUBLE1, 0, &target));
+            EXPECT_FALSE( casual_field_get_double( buffer, FLD_DOUBLE1, 0, &target));
             EXPECT_TRUE( source == target);
          }
 
          {
             const char* source = "Hello World!";
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_STRING1, source, 0));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_STRING1, source, 0));
             const char* target{};
-            EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+            EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 0, &target));
             EXPECT_STREQ( source, target);
          }
 
          {
             const char source[] = "Hello World!";
-            EXPECT_FALSE( CasualFieldAddValue( buffer, FLD_BINARY1, source, sizeof(source)));
+            EXPECT_FALSE( casual_field_add_value( &buffer, FLD_BINARY1, source, sizeof(source)));
             const char* target{};
             long count{};
-            EXPECT_FALSE( CasualFieldGetBinary( buffer, FLD_BINARY1, 0, &target, &count));
+            EXPECT_FALSE( casual_field_get_binary( buffer, FLD_BINARY1, 0, &target, &count));
             EXPECT_STREQ( source, target);
             EXPECT_TRUE( count == sizeof(source));
          }
@@ -883,70 +886,70 @@ namespace casual
 
          {
             short source = 123;
-            EXPECT_FALSE( CasualFieldAddShort( buffer, FLD_SHORT1, source));
+            EXPECT_FALSE( casual_field_add_short( &buffer, FLD_SHORT1, source));
             short target{};
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_SHORT1, 0, &target, nullptr));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_SHORT1, 0, &target, nullptr));
             EXPECT_TRUE( source == target);
          }
 
          {
             long source = 123456;
-            EXPECT_FALSE( CasualFieldAddLong( buffer, FLD_LONG1, source));
+            EXPECT_FALSE( casual_field_add_long( &buffer, FLD_LONG1, source));
             long target{};
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_LONG1, 0, &target, nullptr));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_LONG1, 0, &target, nullptr));
             EXPECT_TRUE( source == target);
          }
 
          {
             char source = 'a';
-            EXPECT_FALSE( CasualFieldAddChar( buffer, FLD_CHAR1, source));
+            EXPECT_FALSE( casual_field_add_char( &buffer, FLD_CHAR1, source));
             char target{};
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_CHAR1, 0, &target, nullptr));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_CHAR1, 0, &target, nullptr));
             EXPECT_TRUE( source == target);
          }
 
          {
             float source = 3.14;
-            EXPECT_FALSE( CasualFieldAddFloat( buffer, FLD_FLOAT1, source));
+            EXPECT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, source));
             float target{};
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_FLOAT1, 0, &target, nullptr));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_FLOAT1, 0, &target, nullptr));
             EXPECT_TRUE( source == target);
          }
 
          {
             double source = 123.456;
-            EXPECT_FALSE( CasualFieldAddDouble( buffer, FLD_DOUBLE1, source));
+            EXPECT_FALSE( casual_field_add_double( &buffer, FLD_DOUBLE1, source));
             double target{};
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_DOUBLE1, 0, &target, nullptr));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_DOUBLE1, 0, &target, nullptr));
             EXPECT_TRUE( source == target);
          }
 
          {
             const char source[] = "Hello World!";
-            EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, source));
+            EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, source));
             char target[64];
             long count = sizeof( target);
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_STRING1, 0, target, &count));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_STRING1, 0, target, &count));
             EXPECT_STREQ( source, target);
             EXPECT_TRUE( count == sizeof( source));
          }
 
          {
             const char source[] = "Hello World!";
-            EXPECT_FALSE( CasualFieldAddBinary( buffer, FLD_BINARY1, source, sizeof( source)));
+            EXPECT_FALSE( casual_field_add_binary( &buffer, FLD_BINARY1, source, sizeof( source)));
             char target[64];
             long count = sizeof( target);
-            EXPECT_FALSE( CasualFieldGetValue( buffer, FLD_STRING1, 0, target, &count));
+            EXPECT_FALSE( casual_field_get_value( buffer, FLD_STRING1, 0, target, &count));
             EXPECT_STREQ( source, target);
             EXPECT_TRUE( count == sizeof( source));
          }
 
          {
             const char source[] = "Hello World!";
-            EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, source));
+            EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, source));
             char target[4];
             long count = sizeof( target);
-            EXPECT_TRUE( CasualFieldGetValue( buffer, FLD_STRING1, 0, target, &count) == CASUAL_FIELD_NO_SPACE);
+            EXPECT_TRUE( casual_field_get_value( buffer, FLD_STRING1, 0, target, &count) == CASUAL_FIELD_INVALID_ARGUMENT);
          }
 
 
@@ -963,17 +966,17 @@ namespace casual
          {
             {
                short source = 123;
-               EXPECT_FALSE( CasualFieldAddShort( buffer, FLD_SHORT1, source));
+               EXPECT_FALSE( casual_field_add_short( &buffer, FLD_SHORT1, source));
                short target{};
-               EXPECT_FALSE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &target));
+               EXPECT_FALSE( casual_field_get_short( buffer, FLD_SHORT1, 0, &target));
                EXPECT_TRUE( source == target);
             }
 
             {
                short source = 321;
-               EXPECT_FALSE( CasualFieldUpdateShort( buffer, FLD_SHORT1, 0, source));
+               EXPECT_FALSE( casual_field_set_short( &buffer, FLD_SHORT1, 0, source));
                short target{};
-               EXPECT_FALSE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &target));
+               EXPECT_FALSE( casual_field_get_short( buffer, FLD_SHORT1, 0, &target));
                EXPECT_TRUE( source == target);
             }
          }
@@ -989,48 +992,48 @@ namespace casual
          {
             {
                const char source[] = "A normal string";
-               EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, source));
+               EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, source));
                const char* target{};
-               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+               EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 0, &target));
                EXPECT_STREQ( source, target);
             }
 
             const char other[] = "An other string";
-            EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, other));
+            EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, other));
 
             {
                const char* target{};
-               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 1, &target));
+               EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 1, &target));
                EXPECT_STREQ( other, target);
             }
 
             {
                const char source[] = "A looooooooooooooong string";
-               EXPECT_FALSE( CasualFieldUpdateString( buffer, FLD_STRING1, 0, source));
+               EXPECT_FALSE( casual_field_set_string( &buffer, FLD_STRING1, 0, source));
                const char* target{};
-               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+               EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 0, &target));
                EXPECT_STREQ( source, target);
             }
 
 
             {
                const char* target{};
-               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 1, &target));
+               EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 1, &target));
                EXPECT_STREQ( other, target);
             }
 
 
             {
                const char source[] = "A tiny string";
-               EXPECT_FALSE( CasualFieldUpdateString( buffer, FLD_STRING1, 0, source));
+               EXPECT_FALSE( casual_field_set_string( &buffer, FLD_STRING1, 0, source));
                const char* target{};
-               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 0, &target));
+               EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 0, &target));
                EXPECT_STREQ( source, target);
             }
 
             {
                const char* target{};
-               EXPECT_FALSE( CasualFieldGetString( buffer, FLD_STRING1, 1, &target));
+               EXPECT_FALSE( casual_field_get_string( buffer, FLD_STRING1, 1, &target));
                EXPECT_STREQ( other, target);
             }
 
@@ -1046,19 +1049,19 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "First string 1"));
-         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING2, "First string 2"));
-         EXPECT_FALSE( CasualFieldAddString( buffer, FLD_STRING1, "Other string 1"));
+         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
+         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "First string 2"));
+         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string 1"));
 
          {
             long occurrences{};
-            EXPECT_FALSE( CasualFieldOccurrencesOfId( buffer, FLD_STRING1, &occurrences));
+            EXPECT_FALSE( casual_field_occurrences_of_id( buffer, FLD_STRING1, &occurrences));
             EXPECT_TRUE( occurrences == 2);
          }
 
          {
             long occurrences{};
-            EXPECT_FALSE( CasualFieldOccurrencesInBuffer( buffer, &occurrences));
+            EXPECT_FALSE( casual_field_occurrences_in_buffer( buffer, &occurrences));
             EXPECT_TRUE( occurrences == 3);
          }
 
@@ -1070,11 +1073,11 @@ namespace casual
          auto source = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( source != nullptr);
 
-         EXPECT_FALSE( CasualFieldAddString( source, FLD_STRING1, "Casual"));
+         EXPECT_FALSE( casual_field_add_string( &source, FLD_STRING1, "Casual"));
 
          long memory_size{};
 
-         ASSERT_FALSE( CasualFieldExploreBuffer( source, nullptr, &memory_size));
+         ASSERT_FALSE( casual_field_explore_buffer( source, nullptr, &memory_size));
 
          std::vector<char> memory( source, source + memory_size);
 
@@ -1083,12 +1086,12 @@ namespace casual
 
          auto target = tpalloc( CASUAL_FIELD, "", memory_size);
 
-         ASSERT_FALSE( CasualFieldCopyMemory( target, memory.data(), memory.size()));
+         ASSERT_FALSE( casual_field_copy_memory( &target, memory.data(), memory.size()));
 
 
          const char* string = nullptr;
 
-         ASSERT_FALSE( CasualFieldGetString( target, FLD_STRING1, 0, &string));
+         ASSERT_FALSE( casual_field_get_string( target, FLD_STRING1, 0, &string));
 
          EXPECT_STREQ( string, "Casual");
 
@@ -1097,51 +1100,55 @@ namespace casual
 
       }
 
-      TEST( casual_field_buffer, DISABLED_performance__expecting_good_enough_speed)
+      TEST( casual_field_buffer, performance__expecting_good_enough_speed)
       {
          for( long idx = 0; idx < 100000; ++idx)
          {
-            auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+            auto buffer = tpalloc( CASUAL_FIELD, "", 5120);
             ASSERT_TRUE( buffer != nullptr);
 
-            ASSERT_TRUE( CasualFieldAddChar( buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_SUCCESS);
-            ASSERT_TRUE( CasualFieldAddShort( buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
-            ASSERT_TRUE( CasualFieldAddLong( buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
-            ASSERT_TRUE( CasualFieldAddFloat( buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
-            ASSERT_TRUE( CasualFieldAddDouble( buffer, FLD_DOUBLE1, 987.654) == CASUAL_FIELD_SUCCESS);
-            ASSERT_TRUE( CasualFieldAddString( buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
-            ASSERT_TRUE( CasualFieldAddBinary( buffer, FLD_BINARY1, "Some Data", 9) == CASUAL_FIELD_SUCCESS);
+            const long iterations = 10;
 
+            for( long idx = 0; idx < iterations; ++idx)
+            {
+               ASSERT_TRUE( casual_field_add_char( &buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_SUCCESS);
+               ASSERT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+               ASSERT_TRUE( casual_field_add_long( &buffer, FLD_LONG1, 654321) == CASUAL_FIELD_SUCCESS);
+               ASSERT_TRUE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14) == CASUAL_FIELD_SUCCESS);
+               ASSERT_TRUE( casual_field_add_double( &buffer, FLD_DOUBLE1, 987.654) == CASUAL_FIELD_SUCCESS);
+               ASSERT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
+               ASSERT_TRUE( casual_field_add_binary( &buffer, FLD_BINARY1, "Some Data", 9) == CASUAL_FIELD_SUCCESS);
+            }
 
-            char character;
-            ASSERT_TRUE( CasualFieldGetChar( buffer, FLD_CHAR1, 0, &character) == CASUAL_FIELD_SUCCESS);
+            for( long idx = 0; idx < iterations; ++idx)
+            {
+               char character;
+               ASSERT_TRUE( casual_field_get_char( buffer, FLD_CHAR1, idx, &character) == CASUAL_FIELD_SUCCESS);
 
-            short short_integer;
-            ASSERT_TRUE( CasualFieldGetShort( buffer, FLD_SHORT1, 0, &short_integer) == CASUAL_FIELD_SUCCESS);
+               short short_integer;
+               ASSERT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, idx, &short_integer) == CASUAL_FIELD_SUCCESS);
 
-            long long_integer;
-            ASSERT_TRUE( CasualFieldGetLong( buffer, FLD_LONG1, 0, &long_integer) == CASUAL_FIELD_SUCCESS);
+               long long_integer;
+               ASSERT_TRUE( casual_field_get_long( buffer, FLD_LONG1, idx, &long_integer) == CASUAL_FIELD_SUCCESS);
 
-            float short_decimal;
-            ASSERT_TRUE( CasualFieldGetFloat( buffer, FLD_FLOAT1, 0, &short_decimal) == CASUAL_FIELD_SUCCESS);
+               float short_decimal;
+               ASSERT_TRUE( casual_field_get_float( buffer, FLD_FLOAT1, idx, &short_decimal) == CASUAL_FIELD_SUCCESS);
 
-            double long_decimal;
-            ASSERT_TRUE( CasualFieldGetDouble( buffer, FLD_DOUBLE1, 0, &long_decimal) == CASUAL_FIELD_SUCCESS);
+               double long_decimal;
+               ASSERT_TRUE( casual_field_get_double( buffer, FLD_DOUBLE1, idx, &long_decimal) == CASUAL_FIELD_SUCCESS);
 
-            const char* string;
-            ASSERT_TRUE( CasualFieldGetString( buffer, FLD_STRING1, 0, &string) == CASUAL_FIELD_SUCCESS);
+               const char* string;
+               ASSERT_TRUE( casual_field_get_string( buffer, FLD_STRING1, idx, &string) == CASUAL_FIELD_SUCCESS);
 
-            const char* binary;
-            long size;
-            ASSERT_TRUE( CasualFieldGetBinary( buffer, FLD_BINARY1, 0, &binary, &size) == CASUAL_FIELD_SUCCESS);
+               const char* binary;
+               long size;
+               ASSERT_TRUE( casual_field_get_binary( buffer, FLD_BINARY1, idx, &binary, &size) == CASUAL_FIELD_SUCCESS);
+
+            }
 
             tpfree( buffer);
          }
       }
-
-
-
-
 
    }
 

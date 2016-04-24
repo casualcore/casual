@@ -40,22 +40,46 @@ namespace casual
                using common::buffer::Buffer::Buffer;
 
                typedef common::platform::binary_type::size_type size_type;
+               typedef common::platform::raw_buffer_type data_type;
 
+               size_type size() const noexcept
+               {
+                  return payload.memory.size();
+               }
 
-               size_type transport( size_type user_size) const
+               size_type used() const noexcept
+               {
+                  return std::strlen( payload.memory.data()) + 1;
+               }
+
+               size_type transport( const size_type user_size) const
                {
                   //
                   // We could ignore user-size all together, but something is
                   // wrong if user supplies a greater size than allocated
                   //
-                  if( user_size > payload.memory.size())
+                  if( user_size > size())
                   {
                      throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
                   }
 
-                  return std::strlen( payload.memory.data()) + 1;
+                  if( used() > size())
+                  {
+                     throw common::exception::xatmi::invalid::Argument{ "string is longer than allocated size"};
+                  }
 
+                  return used();
                }
+
+               //
+               //
+               //
+               size_type reserved() const
+               {
+                  return size();
+               }
+
+
 
             };
 
@@ -145,21 +169,20 @@ namespace casual
 
 } // casual
 
-const char* CasualStringDescription( const int code)
+const char* casual_string_description( const int code)
 {
-
    switch( code)
    {
       case CASUAL_STRING_SUCCESS:
          return "Success";
-      case CASUAL_STRING_NO_SPACE:
-         return "No space";
-      case CASUAL_STRING_NO_PLACE:
-         return "No place";
-      case CASUAL_STRING_INVALID_BUFFER:
-         return "Invalid buffer";
+      case CASUAL_STRING_INVALID_HANDLE:
+         return "Invalid handle";
       case CASUAL_STRING_INVALID_ARGUMENT:
          return "Invalid argument";
+      case CASUAL_STRING_OUT_OF_BOUNDS:
+         return "Out of bounds";
+      case CASUAL_STRING_OUT_OF_MEMORY:
+         return "Out of memory";
       case CASUAL_STRING_INTERNAL_FAILURE:
          return "Internal failure";
       default:
@@ -168,36 +191,28 @@ const char* CasualStringDescription( const int code)
 
 }
 
-int CasualStringExploreBuffer( const char* const handle, long* const size, long* const used)
+int casual_string_explore_buffer( const char* const handle, long* const size, long* const used)
 {
    const auto buffer = casual::buffer::string::find( handle);
 
    if( buffer)
    {
-      const auto reserved = buffer->payload.memory.size();
-      const auto utilized = std::strlen( buffer->payload.memory.data()) + 1;
 
-      if( size) *size = static_cast<long>(reserved);
-      if( used) *used = static_cast<long>(utilized);
-
-      if( utilized > reserved)
-      {
-         // We need to report this
-         return CASUAL_STRING_NO_PLACE;
-      }
+      if( size) *size = static_cast<long>(buffer->size());
+      if( used) *used = static_cast<long>(buffer->used());
 
    }
    else
    {
-      return CASUAL_STRING_INVALID_BUFFER;
+      return CASUAL_STRING_INVALID_HANDLE;
    }
 
    return CASUAL_STRING_SUCCESS;
 }
 
-int CasualStringWriteString( char* const handle, const char* const value)
+int casual_string_write( char** const handle, const char* const value)
 {
-   auto buffer = casual::buffer::string::find( handle);
+   auto buffer = casual::buffer::string::find( *handle);
 
    if( buffer)
    {
@@ -207,14 +222,21 @@ int CasualStringWriteString( char* const handle, const char* const value)
 
          if( count > buffer->payload.memory.size())
          {
-            return CASUAL_STRING_NO_SPACE;
+            try
+            {
+               buffer->payload.memory.resize( count);
+            }
+            catch( const std::bad_alloc &)
+            {
+               return CASUAL_STRING_OUT_OF_MEMORY;
+            }
          }
-         else
-         {
-            casual::common::memory::copy(
-                  casual::common::range::make( value, count),
-                  casual::common::range::make( buffer->payload.memory));
-         }
+
+         casual::common::memory::copy(
+            casual::common::range::make( value, count),
+            casual::common::range::make( buffer->payload.memory));
+
+         *handle = buffer->payload.memory.data();
 
       }
       else
@@ -225,14 +247,14 @@ int CasualStringWriteString( char* const handle, const char* const value)
    }
    else
    {
-      return CASUAL_STRING_INVALID_BUFFER;
+      return CASUAL_STRING_INVALID_HANDLE;
    }
 
    return CASUAL_STRING_SUCCESS;
 
 }
 
-int CasualStringParseString( const char* handle, const char** value)
+int casual_string_parse( const char* handle, const char** value)
 {
    const auto buffer = casual::buffer::string::find( handle);
 
@@ -240,15 +262,14 @@ int CasualStringParseString( const char* handle, const char** value)
    {
       if( value)
       {
-         const auto count = std::strlen( buffer->payload.memory.data()) + 1;
+         *value = buffer->payload.memory.data();
 
-         if( count > buffer->payload.memory.size())
+         if( buffer->used() > buffer->size())
          {
-            return CASUAL_STRING_NO_PLACE;
-         }
-         else
-         {
-            *value = buffer->payload.memory.data();
+            //
+            // We need to report this
+            //
+            return CASUAL_STRING_OUT_OF_BOUNDS;
          }
 
       }
@@ -260,7 +281,7 @@ int CasualStringParseString( const char* handle, const char** value)
    }
    else
    {
-      return CASUAL_STRING_INVALID_BUFFER;
+      return CASUAL_STRING_INVALID_HANDLE;
    }
 
    return CASUAL_STRING_SUCCESS;

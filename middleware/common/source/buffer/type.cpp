@@ -122,10 +122,9 @@ namespace casual
             return user_size;
          }
 
-
          platform::binary_type::size_type Buffer::reserved() const
          {
-            return payload.memory.size();
+            return payload.memory.capacity();
          }
 
       } // buffer
