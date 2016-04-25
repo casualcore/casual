@@ -81,7 +81,7 @@ namespace casual
 
 
             Yaml::Yaml( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Yaml::doYaml"};
 
@@ -124,7 +124,7 @@ namespace casual
             }
 
             Json::Json( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Json::Json"};
 
@@ -167,7 +167,7 @@ namespace casual
 
 
             Xml::Xml( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Xml::Xml"};
 

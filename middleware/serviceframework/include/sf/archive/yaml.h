@@ -37,15 +37,15 @@ namespace casual
 
                const YAML::Node& serialize( std::istream& stream);
                const YAML::Node& serialize( const std::string& yaml);
-               // TODO: make this a binary::Stream instead
+               const YAML::Node& serialize( const char* yaml, std::size_t size);
                const YAML::Node& serialize( const char* yaml);
 
                const YAML::Node& source() const;
 
-               template<typename T>
-               const YAML::Node& operator() ( T&& yaml)
+               template<typename... A>
+               const YAML::Node& operator() ( A&&... arguments)
                {
-                  return serialize( std::forward<T>( yaml));
+                  return serialize( std::forward<A>( arguments)...);
                }
 
 

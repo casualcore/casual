@@ -46,6 +46,12 @@ namespace casual
                return source();
             }
 
+            const pugi::xml_document& Load::serialize( const char* const xml, const std::size_t size)
+            {
+               check( m_document.load_buffer( xml, size));
+               return source();
+            }
+
             const pugi::xml_document& Load::serialize( const char* const xml)
             {
                //check( m_document.load_string( xml));

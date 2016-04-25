@@ -36,6 +36,9 @@ namespace casual
 
             const rapidjson::Document& Load::serialize( std::istream& stream)
             {
+               //
+               // TODO: Use ParseStream with newer version of rapidjson
+               //
                const std::string json{
                   std::istream_iterator< char>( stream),
                   std::istream_iterator< char>()};
@@ -48,10 +51,14 @@ namespace casual
                return serialize( json.c_str());
             }
 
+            const rapidjson::Document& Load::serialize( const char* const json, const std::size_t size)
+            {
+               // To ensure null-terminated string
+               return serialize( std::string( json, size).c_str());
+            }
+
             const rapidjson::Document& Load::serialize( const char* const json)
             {
-               //return m_document.Parse( json);
-
                m_document.Parse( json);
 
                if( m_document.HasParseError())

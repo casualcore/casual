@@ -43,16 +43,16 @@ namespace casual
 
                const rapidjson::Document& serialize( std::istream& stream);
                const rapidjson::Document& serialize( const std::string& json);
-               // TODO: make this a binary::Stream instead
+               const rapidjson::Document& serialize( const char* json, std::size_t size);
                const rapidjson::Document& serialize( const char* json);
 
                const rapidjson::Document& source() const;
 
 
-               template<typename T>
-               const rapidjson::Document& operator() ( T&& json)
+               template<typename... A>
+               const rapidjson::Document& operator() ( A&&... arguments)
                {
-                  return serialize( std::forward<T>( json));
+                  return serialize( std::forward<A>( arguments)...);
                }
 
 

@@ -48,6 +48,13 @@ namespace casual
                return serialize( stream);
             }
 
+            const YAML::Node& Load::serialize( const char* const yaml, const std::size_t size)
+            {
+               std::istringstream stream( std::string( yaml, size));
+               return serialize( stream);
+            }
+
+
             const YAML::Node& Load::serialize( const char* const yaml)
             {
                std::istringstream stream( yaml);

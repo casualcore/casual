@@ -50,16 +50,16 @@ namespace casual
 
                const pugi::xml_document& serialize( std::istream& stream);
                const pugi::xml_document& serialize( const std::string& xml);
-               // TODO: make this a binary::Stream instead
+               const pugi::xml_document& serialize( const char* xml, std::size_t size);
                const pugi::xml_document& serialize( const char* xml);
 
                const pugi::xml_document& source() const;
 
 
-               template<typename T>
-               const pugi::xml_document& operator() ( T&& xml)
+               template<typename... A>
+               const pugi::xml_document& operator() ( A&&... arguments)
                {
-                  return serialize( std::forward<T>( xml));
+                  return serialize( std::forward<A>( arguments)...);
                }
 
             private:
@@ -152,7 +152,6 @@ namespace casual
                {
                   return target();
                }
-
 
             private:
 

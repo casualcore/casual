@@ -49,11 +49,10 @@ namespace casual
 
                const tree& source() const;
 
-
-               template<typename T>
-               const tree& operator() ( T&& ini)
+               template<typename... A>
+               const tree& operator() ( A&&... arguments)
                {
-                  return serialize( std::forward<T>( ini));
+                  return serialize( std::forward<A>( arguments)...);
                }
 
             private:
@@ -139,6 +138,13 @@ namespace casual
 
                tree& operator() ()
                {
+                  return target();
+               }
+
+               template<typename T>
+               tree& operator() ( T&& ini)
+               {
+                  serialize( std::forward<T>( ini));
                   return target();
                }
 
