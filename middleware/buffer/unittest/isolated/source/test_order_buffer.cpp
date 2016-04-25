@@ -189,7 +189,7 @@ TEST( casual_order_buffer, add_binary_data_with_negative_size__expecting_invalid
 }
 
 
-TEST( casual_order_buffer, performance__expecting_good_enough_speed)
+TEST( casual_order_buffer, DISABLED_performance__expecting_good_enough_speed)
 {
    for( long idx = 0; idx < 100000; ++idx)
    {

@@ -60,11 +60,22 @@ namespace casual
             typedef common::platform::binary_type::pointer data_type;
 
 
-            struct Buffer : public common::buffer::Buffer
+            class Buffer : public common::buffer::Buffer
             {
-               using common::buffer::Buffer::Buffer;
+
+            private:
 
                common::platform::binary_type::size_type selector = 0;
+
+            public:
+
+
+               using common::buffer::Buffer::Buffer;
+
+               void shrink()
+               {
+                  payload.memory.shrink_to_fit();
+               }
 
                size_type capacity() const noexcept
                {
@@ -107,18 +118,24 @@ namespace casual
                }
 
 
+               //!
+               //! Implement Buffer::transport
+               //!
                size_type transport( const size_type user_size) const
                {
                   //
-                  // We could ignore user-size all together, but something is
-                  // wrong if user supplies a greater size than allocated
+                  // Just ignore user-size all together
                   //
-                  //if( user_size > utilized())
-                  //{
-                  //   throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
-                  //}
 
                   return utilized();
+               }
+
+               //!
+               //! Implement Buffer::reserved
+               //!
+               size_type reserved() const
+               {
+                  return capacity();
                }
 
             };
@@ -141,8 +158,8 @@ namespace casual
                {
                   m_pool.emplace_back( type, 0);
                   // GCC returns null for std::vector::data with size zero
-                  m_pool.back().payload.memory.reserve( size ? size : 1);
-                  return m_pool.back().payload.memory.data();
+                  m_pool.back().capacity( size ? size : 1);
+                  return m_pool.back().handle();
                }
 
 
@@ -150,16 +167,16 @@ namespace casual
                {
                   const auto result = find( handle);
                   // Allow user to reduce allocation
-                  if( size < result->payload.memory.capacity()) result->payload.memory.shrink_to_fit();
+                  if( size < result->capacity()) result->shrink();
                   // GCC returns null for std::vector::data with size zero
-                  result->payload.memory.reserve( size ? size : 1);
-                  return result->payload.memory.data();
+                  result->capacity( size ? size : 1);
+                  return result->handle();
                }
 
                common::platform::raw_buffer_type insert( common::buffer::Payload payload)
                {
                   m_pool.emplace_back( std::move( payload));
-                  return m_pool.back().payload.memory.data();
+                  return m_pool.back().handle();
                }
 
             };
@@ -190,41 +207,21 @@ namespace casual
             };
 */
 
-            int explore( const char* const handle, long* const reserved, long* const utilized, long* const consumed)
+            namespace error
             {
-               //const trace trace( "order::explore");
-
-               try
+               int handle()
                {
-                  const auto& buffer = pool_type::pool.get( handle);
-
-                  if( reserved) *reserved = static_cast<long>(buffer.capacity());
-                  if( utilized) *utilized = static_cast<long>(buffer.utilized());
-                  if( consumed) *consumed = static_cast<long>(buffer.consumed());
-               }
-               catch( const common::exception::xatmi::invalid::Argument&)
-               {
-                  return CASUAL_ORDER_INVALID_HANDLE;
-               }
-               catch( ...)
-               {
-                  common::error::handler();
-                  return CASUAL_ORDER_INTERNAL_FAILURE;
-               }
-
-               return CASUAL_ORDER_SUCCESS;
-            }
-
-            namespace add
-            {
-
-               int reset( const char* const handle)
-               {
-                  //const trace trace( "order::add::reset");
-
                   try
                   {
-                     pool_type::pool.get( handle).utilized( 0);
+                     throw;
+                  }
+                  catch( const std::bad_alloc&)
+                  {
+                     return CASUAL_ORDER_OUT_OF_MEMORY;
+                  }
+                  catch( const std::out_of_range&)
+                  {
+                     return CASUAL_ORDER_OUT_OF_BOUNDS;
                   }
                   catch( const common::exception::xatmi::invalid::Argument&)
                   {
@@ -234,6 +231,71 @@ namespace casual
                   {
                      common::error::handler();
                      return CASUAL_ORDER_INTERNAL_FAILURE;
+                  }
+               }
+            } // error
+
+
+            namespace explore
+            {
+
+               int buffer( const char* const handle, long* const reserved, long* const utilized, long* const consumed) noexcept
+               {
+                  //const trace trace( "order::explore::buffer");
+
+                  try
+                  {
+                     const auto& buffer = pool_type::pool.get( handle);
+
+                     if( reserved) *reserved = static_cast<long>(buffer.capacity());
+                     if( utilized) *utilized = static_cast<long>(buffer.utilized());
+                     if( consumed) *consumed = static_cast<long>(buffer.consumed());
+                  }
+                  catch( ...)
+                  {
+                     return error::handle();
+                  }
+
+                  return CASUAL_ORDER_SUCCESS;
+               }
+
+            } // explore
+
+
+            namespace scope
+            {
+               namespace quard
+               {
+                  template<typename lambda>
+                  struct exit
+                  {
+                     const lambda function;
+                     ~exit() { function();}
+                  };
+
+                  template<typename lambda>
+                  exit<lambda> make( const lambda& function)
+                  {
+                     return { function};
+                  }
+
+               } // quard
+            } // scope
+
+            namespace add
+            {
+
+               int reset( const char* const handle) noexcept
+               {
+                  //const trace trace( "order::add::reset");
+
+                  try
+                  {
+                     pool_type::pool.get( handle).utilized( 0);
+                  }
+                  catch( ...)
+                  {
+                     return error::handle();
                   }
 
                   return CASUAL_ORDER_SUCCESS;
@@ -266,19 +328,8 @@ namespace casual
                   memory.insert( memory.end(), data, data + size);
                }
 
-
-               //
-               // TODO: std::function and/or lambdas are slow
-               //
-               struct exit
-               {
-                  std::function< void()> executor;
-                  exit( std::function< void()> function) : executor( std::move( function)) {}
-                  ~exit() { executor();}
-               };
-
                template<typename... A>
-               int data( char** handle, A&&... arguments)
+               int data( char** handle, A&&... arguments) noexcept
                {
                   //const trace trace( "order::add::data");
 
@@ -291,15 +342,18 @@ namespace casual
                      // Make sure to reset the size in case of exception
                      //
                      const auto used = buffer.utilized();
-                     const exit reset
-                     { [&](){ if( std::uncaught_exception()) buffer.utilized( used);}};
+                     //const exit reset
+                     //{ [&](){ if( std::uncaught_exception()) buffer.utilized( used);}};
+
+                     const auto guard = scope::quard::make
+                     ( [&](){ if( std::uncaught_exception()) buffer.utilized( used);});
 
 
                      //
                      // Make sure to update the handle regardless
                      //
-                     const exit synchronize
-                     { [&]() { *handle = buffer.handle();}};
+                     const auto synchronize = scope::quard::make
+                     ( [&]() { *handle = buffer.handle();});
 
 
                      //
@@ -308,18 +362,9 @@ namespace casual
                      append( buffer.payload.memory, std::forward<A>( arguments)...);
 
                   }
-                  catch( const std::bad_alloc&)
-                  {
-                     return CASUAL_ORDER_OUT_OF_MEMORY;
-                  }
-                  catch( const common::exception::xatmi::invalid::Argument&)
-                  {
-                     return CASUAL_ORDER_INVALID_HANDLE;
-                  }
                   catch( ...)
                   {
-                     common::error::handler();
-                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                     return error::handle();
                   }
 
                   return CASUAL_ORDER_SUCCESS;
@@ -329,7 +374,7 @@ namespace casual
 
             namespace get
             {
-               int reset( const char* const handle)
+               int reset( const char* const handle) noexcept
                {
                   //const trace trace( "order::get::reset");
 
@@ -337,14 +382,9 @@ namespace casual
                   {
                      pool_type::pool.get( handle).consumed( 0);
                   }
-                  catch( const common::exception::xatmi::invalid::Argument&)
-                  {
-                     return CASUAL_ORDER_INVALID_HANDLE;
-                  }
                   catch( ...)
                   {
-                     common::error::handler();
-                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                     return error::handle();
                   }
 
                   return CASUAL_ORDER_SUCCESS;
@@ -376,7 +416,7 @@ namespace casual
                }
 
                template<typename... A>
-               int data( const char* const handle, A&&... arguments)
+               int data( const char* const handle, A&&... arguments) noexcept
                {
                   //const trace trace( "order::add::data");
 
@@ -413,14 +453,9 @@ namespace casual
                      buffer.consumed( consumed);
 
                   }
-                  catch( const common::exception::xatmi::invalid::Argument&)
-                  {
-                     return CASUAL_ORDER_INVALID_HANDLE;
-                  }
                   catch( ...)
                   {
-                     common::error::handler();
-                     return CASUAL_ORDER_INTERNAL_FAILURE;
+                     return error::handle();
                   }
 
                   return CASUAL_ORDER_SUCCESS;
@@ -465,7 +500,7 @@ const char* casual_order_description( const int code)
 
 int casual_order_explore_buffer( const char* const buffer, long* const reserved, long* const utilized, long* const consumed)
 {
-   return casual::buffer::order::explore( buffer, reserved, utilized, consumed);
+   return casual::buffer::order::explore::buffer( buffer, reserved, utilized, consumed);
 }
 
 

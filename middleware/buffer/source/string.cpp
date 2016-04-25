@@ -42,44 +42,33 @@ namespace casual
                typedef common::platform::binary_type::size_type size_type;
                typedef common::platform::raw_buffer_type data_type;
 
-               size_type size() const noexcept
-               {
-                  return payload.memory.size();
-               }
 
-               size_type used() const noexcept
-               {
-                  return std::strlen( payload.memory.data()) + 1;
-               }
-
+               //!
+               //! Implement Buffer::transport
+               //!
                size_type transport( const size_type user_size) const
                {
                   //
                   // We could ignore user-size all together, but something is
                   // wrong if user supplies a greater size than allocated
                   //
-                  if( user_size > size())
+
+                  const auto size = payload.memory.size();
+
+                  if( user_size > size)
                   {
                      throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
                   }
 
-                  if( used() > size())
+                  const auto used = std::strlen( payload.memory.data()) + 1;
+
+                  if( used > size)
                   {
                      throw common::exception::xatmi::invalid::Argument{ "string is longer than allocated size"};
                   }
 
-                  return used();
+                  return used;
                }
-
-               //
-               //
-               //
-               size_type reserved() const
-               {
-                  return size();
-               }
-
-
 
             };
 
@@ -140,28 +129,114 @@ namespace casual
          namespace
          {
 
-            Buffer* find( const char* const handle)
+            int error() noexcept
             {
-               //const trace trace( "string::find");
-
                try
                {
-                  auto& buffer = pool_type::pool.get( handle);
-
-                  return &buffer;
+                  throw;
+               }
+               catch( const std::out_of_range&)
+               {
+                  return CASUAL_STRING_OUT_OF_BOUNDS;
+               }
+               catch( const std::bad_alloc&)
+               {
+                  return CASUAL_STRING_OUT_OF_MEMORY;
+               }
+               catch( const common::exception::xatmi::invalid::Argument&)
+               {
+                  return CASUAL_STRING_INVALID_HANDLE;
                }
                catch( ...)
                {
-                  //
-                  // TODO: Perhaps have some dedicated string-logging ?
-                  //
                   common::error::handler();
+                  return CASUAL_STRING_INTERNAL_FAILURE;
+               }
+            }
+
+
+            int explore( const char* const handle, long* const size, long* const used)
+            {
+               //const trace trace( "string::explore");
+
+               try
+               {
+                  const auto& buffer = pool_type::pool.get( handle);
+
+                  if( size) *size = buffer.payload.memory.size();
+                  if( used) *used = std::strlen( buffer.payload.memory.data()) + 1;
+               }
+               catch( ...)
+               {
+                  return error();
                }
 
-               return nullptr;
+               return CASUAL_STRING_SUCCESS;
+            }
+
+
+            int write( char** const handle, const char* const value)
+            {
+               //const trace trace( "string::write");
+
+               try
+               {
+                  auto& buffer = pool_type::pool.get( *handle);
+
+                  const auto count = std::strlen( value) + 1;
+
+                  if( count > buffer.payload.memory.size())
+                  {
+                     buffer.payload.memory.resize( count);
+                     *handle = buffer.payload.memory.data();
+                  }
+
+                  casual::common::memory::copy(
+                     casual::common::range::make( value, count),
+                     casual::common::range::make( buffer.payload.memory));
+
+               }
+               catch( ...)
+               {
+                  return error();
+               }
+
+               return CASUAL_STRING_SUCCESS;
 
             }
-         }
+
+            int parse( const char* handle, const char** value)
+            {
+               //const trace trace( "string::parse");
+
+               try
+               {
+                  const auto& buffer = pool_type::pool.get( handle);
+
+                  const auto used = std::strlen( buffer.payload.memory.data()) + 1;
+                  const auto size = buffer.payload.memory.size();
+
+                  if( used > size)
+                  {
+                     //
+                     // We need to report this
+                     //
+                     buffer.payload.memory.at( used);
+                  }
+
+                  if( value) *value = buffer.payload.memory.data();
+
+               }
+               catch( ...)
+               {
+                  return error();
+               }
+
+               return CASUAL_STRING_SUCCESS;
+
+            }
+
+         } // <unnamed>
 
       } // string
 
@@ -193,98 +268,16 @@ const char* casual_string_description( const int code)
 
 int casual_string_explore_buffer( const char* const handle, long* const size, long* const used)
 {
-   const auto buffer = casual::buffer::string::find( handle);
-
-   if( buffer)
-   {
-
-      if( size) *size = static_cast<long>(buffer->size());
-      if( used) *used = static_cast<long>(buffer->used());
-
-   }
-   else
-   {
-      return CASUAL_STRING_INVALID_HANDLE;
-   }
-
-   return CASUAL_STRING_SUCCESS;
+   return casual::buffer::string::explore( handle, size, used);
 }
 
 int casual_string_write( char** const handle, const char* const value)
 {
-   auto buffer = casual::buffer::string::find( *handle);
-
-   if( buffer)
-   {
-      if( value)
-      {
-         const auto count = std::strlen( value) + 1;
-
-         if( count > buffer->payload.memory.size())
-         {
-            try
-            {
-               buffer->payload.memory.resize( count);
-            }
-            catch( const std::bad_alloc &)
-            {
-               return CASUAL_STRING_OUT_OF_MEMORY;
-            }
-         }
-
-         casual::common::memory::copy(
-            casual::common::range::make( value, count),
-            casual::common::range::make( buffer->payload.memory));
-
-         *handle = buffer->payload.memory.data();
-
-      }
-      else
-      {
-         return CASUAL_STRING_INVALID_ARGUMENT;
-      }
-
-   }
-   else
-   {
-      return CASUAL_STRING_INVALID_HANDLE;
-   }
-
-   return CASUAL_STRING_SUCCESS;
-
+   return casual::buffer::string::write( handle, value);
 }
 
 int casual_string_parse( const char* handle, const char** value)
 {
-   const auto buffer = casual::buffer::string::find( handle);
-
-   if( buffer)
-   {
-      if( value)
-      {
-         *value = buffer->payload.memory.data();
-
-         if( buffer->used() > buffer->size())
-         {
-            //
-            // We need to report this
-            //
-            return CASUAL_STRING_OUT_OF_BOUNDS;
-         }
-
-      }
-      else
-      {
-         return CASUAL_STRING_INVALID_ARGUMENT;
-      }
-
-   }
-   else
-   {
-      return CASUAL_STRING_INVALID_HANDLE;
-   }
-
-   return CASUAL_STRING_SUCCESS;
-
+   return casual::buffer::string::parse( handle, value);
 }
 

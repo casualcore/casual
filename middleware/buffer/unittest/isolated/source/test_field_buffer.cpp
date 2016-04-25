@@ -1100,7 +1100,7 @@ namespace casual
 
       }
 
-      TEST( casual_field_buffer, performance__expecting_good_enough_speed)
+      TEST( casual_field_buffer, DISABLED_performance__expecting_good_enough_speed)
       {
          for( long idx = 0; idx < 100000; ++idx)
          {

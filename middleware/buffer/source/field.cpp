@@ -96,42 +96,27 @@ namespace casual
 
             // TODO: Perhaps move this to common/algorithm.h
             template<typename Iterator, typename Predicate, typename Index>
-            static Iterator find_if_index( Iterator first, Iterator last, Predicate p, Index i) noexcept
+            Iterator find_if_index( Iterator first, Iterator last, Predicate p, Index i) noexcept
             {
                using Reference = typename std::iterator_traits<Iterator>::reference;
                return std::find_if( first, last, [&]( Reference item) { return p( item) && ! ( i--);});
             }
 
             template<typename Container, typename Predicate, typename Index>
-            static auto find_if_index( Container& c, Predicate p, Index i) noexcept -> decltype( c.begin())
+            auto find_if_index( Container& c, Predicate p, Index i) noexcept -> decltype( c.begin())
             {
                return find_if_index( std::begin( c), std::end( c), p, i);
             }
 
-            template<typename Container, typename Predicate, typename Index>
-            static auto find_if_index( const Container& c, Predicate p, Index i) noexcept -> decltype( c.begin())
-            {
-               return find_if_index( std::begin( c), std::end( c), p, i);
-            }
-
-
             template<typename Container, typename Integer>
-            static auto find_index( const Container& c, Integer id, Integer index) noexcept -> decltype( c.begin())
+            auto find_index( Container& c, Integer id, Integer index) noexcept -> decltype( c.begin())
             {
                return find_if_index( c, compare_first{ id}, index);
             }
-
-            template<typename Container, typename Integer>
-            static auto find_index( Container& c, Integer id, Integer index) noexcept -> decltype( c.begin())
-            {
-               return find_if_index( c, compare_first{ id}, index);
-            }
-
-
 
 
             template<typename T>
-            static T decode( const_data_type where) noexcept
+            T decode( const_data_type where) noexcept
             {
                using network_type = common::network::byteorder::type<T>;
                const auto encoded = *reinterpret_cast< const network_type*>( where);
@@ -145,9 +130,7 @@ namespace casual
                item_offset = common::network::byteorder::bytes<long>() * 0,
             };
 
-
-
-            struct Buffer : public common::buffer::Buffer
+            struct Buffer : common::buffer::Buffer
             {
                std::vector< std::pair< long, long> > index;
 
@@ -169,18 +152,9 @@ namespace casual
                   }
                }
 
-               size_type transport( const size_type user_size) const
+               void shrink()
                {
-                  //
-                  // We could ignore user-size all together, but something is
-                  // wrong if user supplies a greater size than allocated
-                  //
-                  //if( user_size > utilized())
-                  //{
-                  //   throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
-                  //}
-
-                  return utilized();
+                  payload.memory.shrink_to_fit();
                }
 
                size_type capacity() const noexcept
@@ -214,15 +188,24 @@ namespace casual
                   return payload.memory.data();
                }
 
-               const_data_type find( const long id, const long occurrence) const noexcept
+               //!
+               //! Implement Buffer::transport
+               //!
+               size_type transport( const size_type user_size) const
                {
-                  const auto result = find_if_index( index.begin(), index.end(), compare_first{ id}, occurrence);
-                  if( result != index.end())
-                  {
-                     return handle() + result->second;
-                  }
+                  //
+                  // Just ignore user-size all together
+                  //
 
-                  return nullptr;
+                  return utilized();
+               }
+
+               //!
+               //! Implement Buffer::reserved
+               //!
+               size_type reserved() const
+               {
+                  return capacity();
                }
 
             };
@@ -254,25 +237,26 @@ namespace casual
                   // GCC returns null for std::vector::data with size zero, so
                   // we need to ensure that at least some allocation occurs
                   //
-                  m_pool.back().payload.memory.reserve( size ? size : 1);
-                  return m_pool.back().payload.memory.data();
+                  m_pool.back().capacity( size ? size : 1);
+                  return m_pool.back().handle();
                }
 
                common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
 
+
                   //
                   // Allow user to reduce allocation
                   //
-                  if( size < result->payload.memory.capacity()) result->payload.memory.shrink_to_fit();
+                  if( size < result->capacity()) result->shrink();
 
                   //
                   // GCC returns null for std::vector::data with size zero, so
                   // we need to ensure that at least some allocation occurs
                   //
-                  result->payload.memory.reserve( size ? size : 1);
-                  return result->payload.memory.data();
+                  result->capacity( size ? size : 1);
+                  return result->handle();
                }
 
                common::platform::raw_buffer_type insert( common::buffer::Payload payload)
@@ -339,63 +323,96 @@ namespace casual
                }
             }
 
-            namespace exit
+            namespace scope
             {
-               //
-               // TODO: std::function and/or lambdas are slow
-               //
-               struct handle
+
+               namespace guard
                {
-                  std::function< void()> executor;
-                  handle( std::function< void()> function) : executor( std::move( function)) {}
-                  ~handle() { executor();}
-               };
-            }
+                  template<typename lambda>
+                  struct exit
+                  {
+                     const lambda function;
+                     ~exit() { function();}
+                  };
+
+                  template<typename lambda>
+                  exit<lambda> make( const lambda& function)
+                  {
+                     return { function};
+                  }
+
+               } // guard
+            } // scope
+
+
 
             namespace add
             {
 
-               template<typename M, typename T>
-               void append( M& memory, const T value)
+               template<typename B>
+               void append( B& buffer, const_data_type data, const long size)
+               {
+                  buffer.payload.memory.insert( buffer.payload.memory.end(), data, data + size);
+               }
+
+
+               template<typename B, typename T>
+               void append( B& buffer, const T value)
                {
                   const auto encoded = common::network::byteorder::encode( value);
-                  const auto data = reinterpret_cast<const_data_type>( &encoded);
-                  const constexpr auto size = sizeof( encoded);
-                  memory.insert( memory.end(), data, data + size);
+                  append( buffer, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
                }
 
 
-               template<typename M>
-               void append( M& memory, const long id, const_data_type data, const long size)
+               template<typename B>
+               void append( B& buffer, const long id, const_data_type data, const long size)
                {
-                  //
-                  // Append id to buffer
-                  //
-                  append( memory, id);
+                  const auto used = buffer.utilized();
 
-                  //
-                  // Append size to buffer
-                  //
-                  append( memory, size);
+                  try
+                  {
+                     //
+                     // Append id to buffer
+                     //
+                     append( buffer, id);
 
-                  //
-                  // Append data to buffer
-                  //
-                  memory.insert( memory.end(), data, data + size);
+                     //
+                     // Append size to buffer
+                     //
+                     append( buffer, size);
+
+                     //
+                     // Append data to buffer
+                     //
+                     append( buffer, data, size);
+
+                     //
+                     // Append current offset to index
+                     //
+                     buffer.index.emplace_back( id, used);
+
+                  }
+                  catch( ...)
+                  {
+                     //
+                     // Make sure to reset the size in case of exception
+                     //
+                     buffer.utilized( used);
+                     throw;
+                  }
                }
 
-               template<typename M>
-               void append( M& memory, const long id, const char* const value)
+               template<typename B>
+               void append( B& buffer, const long id, const char* const value)
                {
-                  append( memory, id, value, std::strlen( value) + 1);
+                  append( buffer, id, value, std::strlen( value) + 1);
                }
 
-
-               template<typename M, typename T>
-               void append( M& memory, const long id, const T value)
+               template<typename B, typename T>
+               void append( B& buffer, const long id, const T value)
                {
                   const auto encoded = common::network::byteorder::encode( value);
-                  append( memory, id, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+                  append( buffer, id, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
                }
 
                template<typename... A>
@@ -412,31 +429,16 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-                     const auto used = buffer.utilized();
-
-                     //
-                     // Make sure to reset the size in case of exception
-                     //
-                     const exit::handle reset
-                     { [&](){ if( std::uncaught_exception()) buffer.utilized( used);}};
-
-
                      //
                      // Make sure to update the handle regardless
                      //
-                     const exit::handle synchronize
-                     { [&]() { *handle = buffer.handle();}};
-
+                     const auto synchronize = scope::guard::make
+                     ( [&]() { *handle = buffer.handle();});
 
                      //
                      // Append the data
                      //
-                     append( buffer.payload.memory, id, std::forward<A>( arguments)...);
-
-                     //
-                     // Append current offset to index
-                     //
-                     buffer.index.emplace_back( id, used);
+                     append( buffer, id, std::forward<A>( arguments)...);
 
                   }
                   catch( ...)
@@ -451,7 +453,6 @@ namespace casual
 
             namespace get
             {
-
                template<typename I>
                size_type offset( const I& index, const long id, const long occurrence)
                {
@@ -515,7 +516,6 @@ namespace casual
                   return CASUAL_FIELD_SUCCESS;
 
                }
-
 
             } // get
 
@@ -595,7 +595,6 @@ namespace casual
                   return CASUAL_FIELD_SUCCESS;
 
                }
-
 
             } // cut
 
@@ -686,8 +685,8 @@ namespace casual
                      //
                      // Make sure to update the handle regardless
                      //
-                     const exit::handle synchronize
-                     { [&]() { *handle = buffer.handle();}};
+                     const auto synchronize = scope::guard::make
+                     ( [&]() { *handle = buffer.handle();});
 
                      //
                      // Update the data
@@ -888,8 +887,8 @@ namespace casual
                      auto& target = pool_type::pool.get( *target_handle);
                      const auto& source = pool_type::pool.get( source_handle);
 
-                     const exit::handle synchronize
-                     { [&]() { *target_handle = target.handle();}};
+                     const auto synchronize = scope::guard::make
+                     ( [&]() { *target_handle = target.handle();});
 
                      auto index = source.index;
                      target.payload.memory = source.payload.memory;
@@ -912,8 +911,8 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-                     const exit::handle synchronize
-                     { [&]() { *handle = buffer.handle();}};
+                     const auto synchronize = scope::guard::make
+                     ( [&]() { *handle = buffer.handle();});
 
                      const auto data = static_cast<const_data_type>(source);
                      const auto size = count;
