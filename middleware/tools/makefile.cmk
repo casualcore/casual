@@ -39,6 +39,13 @@ target = LinkExecutable( 'bin/casual-build-resource-proxy',
 install_bin.append( target)
 
 
+target = LinkExecutable( 'bin/casual-log-format',
+   [ Compile( 'log/source/format.cpp')],
+   [ 'casual-common'])
+
+install_bin.append( target)
+
+
 Install( install_bin, '$(CASUAL_HOME)/bin')
 
 
