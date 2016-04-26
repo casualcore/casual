@@ -1,4 +1,4 @@
-# common
+# buffer
 
 Provides some abstractions to fill - and read data in buffers allocated with tpalloc()
 
