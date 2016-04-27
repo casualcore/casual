@@ -123,7 +123,7 @@ namespace casual
 
                void shrink()
                {
-                  payload.memory.shrink_to_fit();
+                  return payload.memory.shrink_to_fit();
                }
 
                size_type capacity() const noexcept
@@ -202,11 +202,9 @@ namespace casual
                {
                   m_pool.emplace_back( type, 0);
 
-                  //
-                  // GCC returns null for std::vector::data with size zero, so
-                  // we need to ensure that at least some allocation occurs
-                  //
+                  // GCC returns null for std::vector::data with capacity zero
                   m_pool.back().capacity( size ? size : 1);
+
                   return m_pool.back().handle();
                }
 
@@ -214,25 +212,20 @@ namespace casual
                {
                   const auto result = find( handle);
 
+                  if( size < result->utilized())
+                  {
+                     // Allow user to reduce allocation
+                     result->shrink();
+                  }
+                  else
+                  {
+                     // GCC returns null for std::vector::data with size zero
+                     result->capacity( size ? size : 1);
+                  }
 
-                  //
-                  // Allow user to reduce allocation
-                  //
-                  if( size < result->capacity()) result->shrink();
-
-                  //
-                  // GCC returns null for std::vector::data with size zero, so
-                  // we need to ensure that at least some allocation occurs
-                  //
-                  result->capacity( size ? size : 1);
                   return result->handle();
                }
 
-               common::platform::raw_buffer_type insert( common::buffer::Payload payload)
-               {
-                  m_pool.push_back( std::move( payload));
-                  return m_pool.back().payload.memory.data();
-               }
             };
 
          } // <unnamed>
@@ -920,10 +913,10 @@ const char* casual_field_description( const int code)
          return "Invalid handle";
       case CASUAL_FIELD_INVALID_ARGUMENT:
          return "Invalid argument";
-      case CASUAL_FIELD_OUT_OF_BOUNDS:
-         return "Out of bounds";
       case CASUAL_FIELD_OUT_OF_MEMORY:
          return "Out of memory";
+      case CASUAL_FIELD_OUT_OF_BOUNDS:
+         return "Out of bounds";
       case CASUAL_FIELD_INTERNAL_FAILURE:
          return "Internal failure";
       default:

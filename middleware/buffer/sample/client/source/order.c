@@ -30,6 +30,8 @@ int call_with_order()
    const char* name;
    double cost;
 
+   int result;
+
    id = "123";
    count = 2;
 
@@ -42,14 +44,26 @@ int call_with_order()
 
    buffer = tpalloc( CASUAL_ORDER, NULL, length);
 
-   casual_order_add_string( &buffer, id);
-   casual_order_add_long( &buffer, count);
+   result = CASUAL_ORDER_SUCCESS;
 
+   result |= casual_order_add_string( &buffer, id);
+   result |= casual_order_add_long( &buffer, count);
+
+   if( result)
+   {
+      /* something went wrong */
+   }
 
    tpcall( "some_service", buffer, length, &buffer, &length, TPSIGRSTRT);
 
-   casual_order_get_string( buffer, &name);
-   casual_order_get_double( buffer, &cost);
+
+   result |= casual_order_get_string( buffer, &name);
+   result |= casual_order_get_double( buffer, &cost);
+
+   if( result)
+   {
+      /* something went wrong */
+   }
 
    printf( "name %s", name);
    printf( "cost %f", cost);

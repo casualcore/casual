@@ -19,12 +19,12 @@
 #define CASUAL_FIELD_INVALID_HANDLE 1
 /* some argument is invalid (application/logic error) */
 #define CASUAL_FIELD_INVALID_ARGUMENT 2
-/* something does not exist in (perhaps normal behavior) */
-#define CASUAL_FIELD_OUT_OF_BOUNDS 3
 /* out of memory (system/runtime error) */
 #define CASUAL_FIELD_OUT_OF_MEMORY 4
+/* something does not exist in (perhaps normal behavior) */
+#define CASUAL_FIELD_OUT_OF_BOUNDS 8
 /* internal casual defect */
-#define CASUAL_FIELD_INTERNAL_FAILURE 9
+#define CASUAL_FIELD_INTERNAL_FAILURE 128
 
 
 #define CASUAL_FIELD_NO_ID 0

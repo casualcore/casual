@@ -35,6 +35,7 @@ int call_with_field()
    const char* name;
    double cost;
 
+   int result;
 
    /*
     * The buffer auto-resizes, so we do not need to give it a size
@@ -44,14 +45,22 @@ int call_with_field()
 
    buffer = tpalloc( CASUAL_FIELD, NULL, length);
 
-   casual_field_add_string( &buffer, FLD_ID, "123");
-   casual_field_add_long( &buffer, FLD_COUNT, 2);
+   result = CASUAL_FIELD_SUCCESS;
+
+   result |= casual_field_add_string( &buffer, FLD_ID, "123");
+   result |= casual_field_add_long( &buffer, FLD_COUNT, 2);
 
 
    tpcall( "some_service", buffer, length, &buffer, &length, TPSIGRSTRT);
 
-   casual_field_get_string( buffer, FLD_NAME, 0, &name);
-   casual_field_get_double( buffer, FLD_COST, 0, &cost);
+   result |= casual_field_get_string( buffer, FLD_NAME, 0, &name);
+   result |= casual_field_get_double( buffer, FLD_COST, 0, &cost);
+
+   if( result)
+   {
+      /* something went wrong */
+   }
+
 
    printf( "name %s", name);
    printf( "cost %f", cost);

@@ -28,39 +28,29 @@ namespace casual
          namespace
          {
 
+/*
             struct trace : common::trace::basic::Scope
             {
                template<decltype(sizeof("")) size>
                explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
             };
+*/
+
+            typedef common::platform::binary_type::size_type size_type;
+            typedef common::platform::raw_buffer_type data_type;
 
 
-            struct Buffer : common::buffer::Buffer
+            namespace local
             {
-               using common::buffer::Buffer::Buffer;
-
-               typedef common::platform::binary_type::size_type size_type;
-               typedef common::platform::raw_buffer_type data_type;
-
-
-               //!
-               //! Implement Buffer::transport
-               //!
-               size_type transport( const size_type user_size) const
+               size_type validate( const common::buffer::Payload& payload)
                {
-                  //
-                  // We could ignore user-size all together, but something is
-                  // wrong if user supplies a greater size than allocated
-                  //
-
                   const auto size = payload.memory.size();
-
-                  if( user_size > size)
-                  {
-                     throw common::exception::xatmi::invalid::Argument{ "user supplied size is larger than allocated size"};
-                  }
-
                   const auto used = std::strlen( payload.memory.data()) + 1;
+
+                  //
+                  // We do need to check that it is a real null-terminated
+                  // string within allocated area
+                  //
 
                   if( used > size)
                   {
@@ -68,6 +58,27 @@ namespace casual
                   }
 
                   return used;
+
+               }
+
+            }
+
+
+            struct Buffer : common::buffer::Buffer
+            {
+               using common::buffer::Buffer::Buffer;
+
+               //!
+               //! Implement Buffer::transport
+               //!
+               size_type transport( const size_type user_size) const
+               {
+                  //
+                  // Just ignore user-size all together
+                  //
+                  // ... but we do need to validate it
+                  //
+                  return local::validate( payload);
                }
 
             };
@@ -89,7 +100,7 @@ namespace casual
 
                common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
                {
-                  m_pool.emplace_back( type, size > 0 ? size : 1);
+                  m_pool.emplace_back( type, size ? size : 1);
 
                   m_pool.back().payload.memory.front() = '\0';
 
@@ -100,15 +111,31 @@ namespace casual
                {
                   const auto result = find( handle);
 
-                  result->payload.memory.resize( size > 0 ? size : 1);
+                  result->payload.memory.resize( size ? size : 1);
 
                   result->payload.memory.back() = '\0';
 
+                  // Allow user to reduce allocation
+                  result->payload.memory.shrink_to_fit();
+
                   return result->payload.memory.data();
                }
+
+               common::platform::raw_buffer_type insert( common::buffer::Payload payload)
+               {
+                  //
+                  // Validate it before we move it
+                  //
+                  local::validate( payload);
+
+                  m_pool.emplace_back( std::move( payload));
+
+                  return m_pool.back().payload.memory.data();
+               }
+
             };
 
-         } //
+         } // <unnamed>
 
       } // string
 
@@ -175,9 +202,9 @@ namespace casual
             }
 
 
-            int write( char** const handle, const char* const value)
+            int set( char** const handle, const char* const value)
             {
-               //const trace trace( "string::write");
+               //const trace trace( "string::set");
 
                try
                {
@@ -205,9 +232,9 @@ namespace casual
 
             }
 
-            int parse( const char* handle, const char** value)
+            int get( const char* const handle, const char** value)
             {
-               //const trace trace( "string::parse");
+               //const trace trace( "string::get");
 
                try
                {
@@ -254,10 +281,10 @@ const char* casual_string_description( const int code)
          return "Invalid handle";
       case CASUAL_STRING_INVALID_ARGUMENT:
          return "Invalid argument";
-      case CASUAL_STRING_OUT_OF_BOUNDS:
-         return "Out of bounds";
       case CASUAL_STRING_OUT_OF_MEMORY:
          return "Out of memory";
+      case CASUAL_STRING_OUT_OF_BOUNDS:
+         return "Out of bounds";
       case CASUAL_STRING_INTERNAL_FAILURE:
          return "Internal failure";
       default:
@@ -271,13 +298,13 @@ int casual_string_explore_buffer( const char* const handle, long* const size, lo
    return casual::buffer::string::explore( handle, size, used);
 }
 
-int casual_string_write( char** const handle, const char* const value)
+int casual_string_set( char** const handle, const char* const value)
 {
-   return casual::buffer::string::write( handle, value);
+   return casual::buffer::string::set( handle, value);
 }
 
-int casual_string_parse( const char* handle, const char** value)
+int casual_string_get( const char* handle, const char** value)
 {
-   return casual::buffer::string::parse( handle, value);
+   return casual::buffer::string::get( handle, value);
 }
 

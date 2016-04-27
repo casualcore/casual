@@ -19,6 +19,7 @@ int call_with_string()
    char* buffer;
    long length;
 
+   int result;
 
    /*
     * The buffer auto-resizes (if used with casual_string-functions), so we do not need to give it a size
@@ -28,7 +29,14 @@ int call_with_string()
 
    buffer = tpalloc( CASUAL_STRING, NULL, length);
 
-   casual_string_write( &buffer, "Hello Casual");
+   result = casual_string_set( &buffer, "Hello Casual");
+
+   if( result)
+   {
+      /* something went wrong */
+   }
+
+
 
    tpcall( "some_service", buffer, length, &buffer, &length, TPSIGRSTRT);
 

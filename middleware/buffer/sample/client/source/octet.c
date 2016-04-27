@@ -29,20 +29,30 @@ int call_with_octet()
 
    const char* json;
 
+   int result;
 
    json = "{ 'id': 25}";
 
    length = strlen( json);
 
-   buffer = tpalloc( CASUAL_OCTET, CASUAL_OCTET_JSON, length);
+   buffer = tpalloc( CASUAL_OCTET, CASUAL_OCTET_JSON, 0);
 
-   memcpy( buffer, json, length);
+   result = casual_octet_set( &buffer, json, length);
+
+   if( result)
+   {
+      /* something went wrong */
+   }
+
 
    tpcall( "some_service", buffer, length, &buffer, &length, TPSIGRSTRT);
 
-   /*
-    * Handle the reply
-    */
+   result = casual_octet_get( buffer, &json, &length);
+
+   if( result)
+   {
+      /* something went wrong */
+   }
 
 
    tpfree( buffer);

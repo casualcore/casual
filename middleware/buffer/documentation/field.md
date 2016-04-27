@@ -8,29 +8,27 @@
 
 ### Description
 
-This implementation contain a C-interface that offers functionality for a replacement to FML32 (non-standard (compared to XATMI))
-
-The content of the is a multi-key-value-pair binary buffer and the casual\_field-functions can (must) be used to add, set and get data
+This implementation contain a C-interface that offers functionality for a replacement to FML32 (non-standard (compared to XATMI)) to fill and read data into and from a buffer in a platform-indenpendent multi-key-value-pair-like way
 
 ### Remarks
 
-- Don't manipulate the buffer in other ways than by casual\_field-functions (such as memcpy())
+- No encoding of strings occurs
 
-- The buffer is automaticly resized
+- The buffer is automaticly resized and thus might update the buffer-handle
 
-- A field-repository is just needed for certain functionality
+- Don't manipulate the buffer in other ways (such as memcpy()) than by casual\_field-functions 
 
-### Tools
+- A field-repository might be needed for certain functionality
+
+## Tools
 
 - casual\_field\_make\_header
 
-### Implemtation
-
-The implementation is quite cumbersome since "stateless" interface
+## Implemtation
 
 The main idea is to keep the buffer "ready to go" without the need for extra marshalling when transported and thus data is stored in network byteorder etc from start
 
-The values layout is [ id ][ size ][ data... ]
+The values layout is [ id ] [ size ] [ data... ]
 
 The id - and size type are network-long
 
@@ -39,7 +37,7 @@ repository and that has to be improved and many other things can be improved as 
 
 The repository-implementation is a bit comme ci comme ca and to provide something like 'mkfldhdr32' the functionality has to be accessible from there (or vice versa)
 
-### ToDo:s
+## ToDo:s
 
 - casual\_field\_match (and such) need to be better
 

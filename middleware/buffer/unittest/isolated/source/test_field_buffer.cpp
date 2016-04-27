@@ -200,12 +200,12 @@ namespace casual
 
          EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "goin' casual today!") == CASUAL_FIELD_SUCCESS);
 
-         buffer = tprealloc( buffer, 64);
+         buffer = tprealloc( buffer, 10);
          ASSERT_TRUE( buffer != nullptr);
 
          long updated_size = 0;
          EXPECT_TRUE( casual_field_explore_buffer( buffer, &updated_size, nullptr) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( updated_size == 64);
+         EXPECT_TRUE( updated_size < 128);
 
          buffer = tprealloc( buffer, 0);
          ASSERT_TRUE( buffer != nullptr);

@@ -24,34 +24,6 @@ namespace casual
    {
       namespace order
       {
-
-         /*
-          * This implementation contain a C-interface that offers functionality
-          * for serializing data in an XATMI-environment
-          *
-          * To use it you need to get the data in the same order as you add it
-          * since no validation of types or fields what so ever occurs. The
-          * only validation that occurs is to check whether you try to consume
-          * (get) beyond what's inserted
-          *
-          * The implementation is quite cumbersome since the user-handle is the
-          * actual underlying buffer which is a std::vector<char>::data() so we
-          * cannot just use append data which might imply reallocation since
-          * this is a "semi-stateless" interface
-          *
-          * The main idea is to keep the buffer "ready to go" without the need
-          * for extra marshalling when transported and thus data is stored in
-          * network byteorder etc from start
-          *
-          * The inserted-parameter is offset just past last write
-          * The selected-parameter is offset just past last parse
-          *
-          * String is stored with null-termination
-          *
-          * Binary is stored with a size (network-long) and then it's data
-          *
-          */
-
          namespace
          {
 
@@ -74,7 +46,7 @@ namespace casual
 
                void shrink()
                {
-                  payload.memory.shrink_to_fit();
+                  return payload.memory.shrink_to_fit();
                }
 
                size_type capacity() const noexcept
@@ -157,8 +129,10 @@ namespace casual
                common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, 0);
-                  // GCC returns null for std::vector::data with size zero
+
+                  // GCC returns null for std::vector::data with capacity zero
                   m_pool.back().capacity( size ? size : 1);
+
                   return m_pool.back().handle();
                }
 
@@ -166,17 +140,19 @@ namespace casual
                common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
                {
                   const auto result = find( handle);
-                  // Allow user to reduce allocation
-                  if( size < result->capacity()) result->shrink();
-                  // GCC returns null for std::vector::data with size zero
-                  result->capacity( size ? size : 1);
-                  return result->handle();
-               }
 
-               common::platform::raw_buffer_type insert( common::buffer::Payload payload)
-               {
-                  m_pool.emplace_back( std::move( payload));
-                  return m_pool.back().handle();
+                  if( size < result->utilized())
+                  {
+                     // Allow user to reduce allocation
+                     result->shrink();
+                  }
+                  else
+                  {
+                     // GCC returns null for std::vector::data with size zero
+                     result->capacity( size ? size : 1);
+                  }
+
+                  return result->handle();
                }
 
             };
@@ -487,10 +463,10 @@ const char* casual_order_description( const int code)
          return "Invalid handle";
       case CASUAL_ORDER_INVALID_ARGUMENT:
          return "Invalid argument";
-      case CASUAL_ORDER_OUT_OF_BOUNDS:
-         return "Out of bounds";
       case CASUAL_ORDER_OUT_OF_MEMORY:
          return "Out of memory";
+      case CASUAL_ORDER_OUT_OF_BOUNDS:
+         return "Out of bounds";
       case CASUAL_ORDER_INTERNAL_FAILURE:
          return "Internal failure";
       default:

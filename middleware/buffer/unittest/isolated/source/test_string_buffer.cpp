@@ -26,7 +26,7 @@ TEST( casual_string_buffer, allocate_with_normal_size__expecting_success)
    tpfree( buffer);
 }
 
-TEST( casual_string_buffer, raw_write_to_allocated_buffer__expecting_correct_parse)
+TEST( casual_string_buffer, raw_set_to_allocated_buffer__expecting_correct_parse)
 {
    auto buffer = tpalloc( CASUAL_STRING, "", 16);
 
@@ -35,24 +35,24 @@ TEST( casual_string_buffer, raw_write_to_allocated_buffer__expecting_correct_par
 
    const char* value = "";
 
-   EXPECT_FALSE( casual_string_parse( buffer, &value));
+   EXPECT_FALSE( casual_string_get( buffer, &value));
 
    EXPECT_STREQ( source, value);
 
    tpfree( buffer);
 }
 
-TEST( casual_string_buffer, write_to_small_allocated_buffer__expecting_resized_buffer)
+TEST( casual_string_buffer, set_to_small_allocated_buffer__expecting_resized_buffer)
 {
    auto buffer = tpalloc( CASUAL_STRING, "", 4);
 
    const char* source = "Hello Casual";
 
-   EXPECT_FALSE( casual_string_write( &buffer, source));
+   EXPECT_FALSE( casual_string_set( &buffer, source));
 
    const char* value = "";
 
-   EXPECT_FALSE( casual_string_parse( buffer, &value));
+   EXPECT_FALSE( casual_string_get( buffer, &value));
 
    EXPECT_STREQ( source, value);
 
@@ -67,13 +67,13 @@ TEST( casual_string_buffer, destroy_buffer__expecting_out_of_bounds)
 
    const char* source = "Hello Casual";
 
-   EXPECT_FALSE( casual_string_write( &buffer, source));
+   EXPECT_FALSE( casual_string_set( &buffer, source));
 
    buffer[std::strlen( source)] = 'x';
 
    const char* value = "";
 
-   EXPECT_TRUE( casual_string_parse( buffer, &value) == CASUAL_STRING_OUT_OF_BOUNDS);
+   EXPECT_TRUE( casual_string_get( buffer, &value) == CASUAL_STRING_OUT_OF_BOUNDS);
 
    tpfree( buffer);
 }
