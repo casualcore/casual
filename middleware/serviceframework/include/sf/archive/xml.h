@@ -53,7 +53,7 @@ namespace casual
                const pugi::xml_document& serialize( const char* xml, std::size_t size);
                const pugi::xml_document& serialize( const char* xml);
 
-               const pugi::xml_document& source() const;
+               const pugi::xml_document& source() const noexcept;
 
 
                template<typename... A>
@@ -137,19 +137,26 @@ namespace casual
 
             public:
 
-               typedef pugi::xml_document target_type;
-
                Save();
                ~Save();
 
-               void serialize( std::ostream& stream) const;
+               void serialize( std::ostream& xml) const;
                void serialize( std::string& xml) const;
-               // TODO: make a binary::Stream overload
 
-               const pugi::xml_document& target() const;
-
-               const pugi::xml_document& operator() () const
+               pugi::xml_document& target() noexcept
                {
+                  return m_document;
+               }
+
+               pugi::xml_document& operator() () noexcept
+               {
+                  return target();
+               }
+
+               template<typename T>
+               pugi::xml_document& operator() ( T&& xml)
+               {
+                  serialize( std::forward<T>( xml));
                   return target();
                }
 

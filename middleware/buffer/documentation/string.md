@@ -14,7 +14,7 @@ This implementation contain a C-interface that offers functionality to set and g
 
 - No encoding of strings occurs
 
-- You may write to the buffer in other ways (such as strcpy() but the the size in tpalloc() tprealloc() and nulltermination etc will the be relevant
+- You may write to the buffer in other ways (such as `strcpy()` but the the size in `tpalloc()` and `tprealloc()` will then be relevant
 
 ## Tools
 

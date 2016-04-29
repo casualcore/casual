@@ -126,17 +126,18 @@ namespace casual
 
             public:
 
-               typedef tree target_type;
-
                Save();
                ~Save();
 
-               void serialize( std::ostream& stream) const;
+               void serialize( std::ostream& ini) const;
                void serialize( std::string& ini) const;
 
-               tree& target();
+               tree& target() noexcept
+               {
+                  return m_document;
+               }
 
-               tree& operator() ()
+               tree& operator() () noexcept
                {
                   return target();
                }

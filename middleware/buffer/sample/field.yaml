@@ -1,0 +1,90 @@
+groups:
+  - base: 1000
+    fields:
+      - id: 1
+        name: FLD_SHORT1
+        type: short
+
+      - id: 2
+        name: FLD_SHORT2
+        type: short
+
+      - id: 3
+        name: FLD_SHORT3
+        type: short
+
+      - id: 1
+        name: FLD_LONG1
+        type: long
+
+      - id: 2
+        name: FLD_LONG2
+        type: long
+
+      - id: 3
+        name: FLD_LONG3
+        type: long
+
+      - id: 1
+        name: FLD_CHAR1
+        type: char
+
+      - id: 2
+        name: FLD_CHAR2
+        type: char
+
+      - id: 3
+        name: FLD_CHAR3
+        type: char
+
+
+
+  - base: 2000
+    fields:
+      - id: 1
+        name: FLD_FLOAT1
+        type: float
+
+      - id: 2
+        name: FLD_FLOAT2
+        type: float
+
+      - id: 3
+        name: FLD_FLOAT3
+        type: float
+
+      - id: 1
+        name: FLD_DOUBLE1
+        type: double
+
+      - id: 2
+        name: FLD_DOUBLE2
+        type: double
+
+      - id: 3
+        name: FLD_DOUBLE3
+        type: double
+
+      - id: 1
+        name: FLD_STRING1
+        type: string
+
+      - id: 2
+        name: FLD_STRING2
+        type: string
+
+      - id: 3
+        name: FLD_STRING3
+        type: string
+
+      - id: 1
+        name: FLD_BINARY1
+        type: binary
+
+      - id: 2
+        name: FLD_BINARY2
+        type: binary
+
+      - id: 3
+        name: FLD_BINARY3
+        type: binary

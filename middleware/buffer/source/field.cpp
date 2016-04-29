@@ -16,6 +16,7 @@
 #include "common/platform.h"
 #include "common/internal/trace.h"
 
+
 #include "sf/namevaluepair.h"
 #include "sf/archive/maker.h"
 
@@ -1353,7 +1354,7 @@ namespace casual
 
                struct group
                {
-                  long base;
+                  long base = 0;
                   std::vector< field> fields;
 
                   template< typename A>
@@ -1377,11 +1378,9 @@ namespace casual
                   const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
 
                   auto archive = sf::archive::reader::from::file( file);
-
                   archive >> CASUAL_MAKE_NVP( groups);
 
                   return groups;
-
                }
 
                std::vector<field> fetch_fields()

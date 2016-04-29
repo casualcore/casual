@@ -14,7 +14,7 @@ This buffer-type additionally supports 3 subtypes ("JSON", "XML" and "YAML") but
 
 ### Remarks
 
-- You may write to the buffer in other ways (such as memcpy() but the the size in tpalloc() or tprealloc() will the be relevant
+- You may write to the buffer in other ways (such as `memcpy()` but the the size in `tpalloc()` or `tprealloc()` will the be relevant
 
 ## Tools
 

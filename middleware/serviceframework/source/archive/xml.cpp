@@ -23,43 +23,48 @@ namespace casual
       {
          namespace xml
          {
-            namespace
-            {
-               void check( const pugi::xml_parse_result& result)
-               {
-                  if( !result) throw exception::archive::invalid::Document{ result.description()};
-               }
-            }
 
             Load::Load() = default;
             Load::~Load() = default;
 
+            namespace
+            {
+               namespace local
+               {
+                  void check( const pugi::xml_parse_result& result)
+                  {
+                     if( !result) throw exception::archive::invalid::Document{ result.description()};
+                  }
+               } // local
+            }
+
+
             const pugi::xml_document& Load::serialize( std::istream& stream)
             {
-               check( m_document.load( stream));
+               local::check( m_document.load( stream));
                return source();
             }
 
             const pugi::xml_document& Load::serialize( const std::string& xml)
             {
-               check( m_document.load_buffer( xml.data(), xml.size()));
+               local::check( m_document.load_buffer( xml.data(), xml.size()));
                return source();
             }
 
             const pugi::xml_document& Load::serialize( const char* const xml, const std::size_t size)
             {
-               check( m_document.load_buffer( xml, size));
+               local::check( m_document.load_buffer( xml, size));
                return source();
             }
 
             const pugi::xml_document& Load::serialize( const char* const xml)
             {
-               //check( m_document.load_string( xml));
-               check( m_document.load( xml));
+               //local::check( m_document.load_string( xml));
+               local::check( m_document.load( xml));
                return source();
             }
 
-            const pugi::xml_document& Load::source() const
+            const pugi::xml_document& Load::source() const noexcept
             {
                return m_document;
             }
@@ -213,9 +218,9 @@ namespace casual
             Save::Save() = default;
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& stream) const
+            void Save::serialize( std::ostream& xml) const
             {
-               m_document.save( stream, " ");
+               m_document.save( xml, " ");
             }
 
 /*
@@ -248,12 +253,6 @@ namespace casual
                serialize( stream);
                xml.assign( stream.str());
             }
-
-            const pugi::xml_document& Save::target() const
-            {
-               return m_document;
-            }
-
 
             namespace writer
             {

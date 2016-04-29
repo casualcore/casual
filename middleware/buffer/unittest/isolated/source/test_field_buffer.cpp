@@ -549,7 +549,10 @@ namespace casual
             void SetUp() override
             {
                /* This is a semi-isolated-unittest */
-               casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "CASUAL_FIELD_TABLE.json");
+               //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.xml");
+               //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.json");
+               //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.ini");
+               casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.yaml");
             }
 
             void TearDown() override

@@ -40,14 +40,18 @@ namespace casual
                const YAML::Node& serialize( const char* yaml, std::size_t size);
                const YAML::Node& serialize( const char* yaml);
 
-               const YAML::Node& source() const;
-
                template<typename... A>
                const YAML::Node& operator() ( A&&... arguments)
                {
                   return serialize( std::forward<A>( arguments)...);
                }
 
+               const YAML::Node& source() const noexcept;
+
+               const YAML::Node& operator() () const noexcept
+               {
+                  return source();
+               }
 
             private:
 
@@ -127,19 +131,26 @@ namespace casual
             {
             public:
 
-               typedef YAML::Emitter target_type;
-
                Save();
                ~Save();
 
-               void serialize( std::ostream& stream) const;
+               void serialize( std::ostream& yaml) const;
                void serialize( std::string& yaml) const;
-               // TODO: make a binary::Stream overload
 
-               YAML::Emitter& target();
-
-               YAML::Emitter& operator() ()
+               YAML::Emitter& target() noexcept
                {
+                  return m_emitter;
+               }
+
+               YAML::Emitter& operator() () noexcept
+               {
+                  return target();
+               }
+
+               template<typename T>
+               YAML::Emitter& operator() ( T&& yaml)
+               {
+                  serialize( std::forward<T>( yaml));
                   return target();
                }
 

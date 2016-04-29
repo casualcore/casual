@@ -61,7 +61,7 @@ namespace casual
                return serialize( stream);
             }
 
-            const YAML::Node& Load::source() const
+            const YAML::Node& Load::source() const noexcept
             {
                return m_document;
             }
@@ -212,21 +212,15 @@ namespace casual
             Save::Save() = default;
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& stream) const
+            void Save::serialize( std::ostream& yaml) const
             {
-               stream << m_emitter.c_str();
+               yaml << m_emitter.c_str();
             }
 
             void Save::serialize( std::string& yaml) const
             {
                yaml = m_emitter.c_str();
             }
-
-            YAML::Emitter& Save::target()
-            {
-               return m_emitter;
-            }
-
 
             namespace writer
             {

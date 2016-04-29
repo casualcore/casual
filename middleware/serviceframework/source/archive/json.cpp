@@ -19,8 +19,6 @@
 #include <functional>
 
 
-#include <iostream> // debug
-
 namespace casual
 {
    namespace sf
@@ -34,42 +32,52 @@ namespace casual
             Load::Load() = default;
             Load::~Load() = default;
 
+            namespace
+            {
+               namespace local
+               {
+
+                  rapidjson::Document& parse( rapidjson::Document& document, const char* const json)
+                  {
+                     document.Parse( json);
+
+                     if( document.HasParseError())
+                     {
+                        throw exception::archive::invalid::Document{ rapidjson::GetParseError_En( document.GetParseError())};
+                     }
+
+                     return document;
+                  }
+
+               } // local
+            }
+
             const rapidjson::Document& Load::serialize( std::istream& stream)
             {
-               //
-               // TODO: Use ParseStream with newer version of rapidjson
-               //
-               const std::string json{
-                  std::istream_iterator< char>( stream),
-                  std::istream_iterator< char>()};
-
-               return serialize( json);
+               return local::parse(
+                  m_document,
+                  std::string{
+                     std::istream_iterator< char>( stream),
+                     std::istream_iterator< char>()}.c_str());
             }
 
             const rapidjson::Document& Load::serialize( const std::string& json)
             {
-               return serialize( json.c_str());
+               return local::parse( m_document, json.c_str());
             }
 
             const rapidjson::Document& Load::serialize( const char* const json, const std::size_t size)
             {
                // To ensure null-terminated string
-               return serialize( std::string( json, size).c_str());
+               return local::parse( m_document, std::string( json, size).c_str());
             }
 
             const rapidjson::Document& Load::serialize( const char* const json)
             {
-               m_document.Parse( json);
-
-               if( m_document.HasParseError())
-               {
-                  throw exception::archive::invalid::Document{ rapidjson::GetParseError_En( m_document.GetParseError())};
-               }
-
-               return m_document;
+               return local::parse( m_document, json);
             }
 
-            const rapidjson::Document& Load::source() const
+            const rapidjson::Document& Load::source() const noexcept
             {
                return m_document;
             }
@@ -227,13 +235,13 @@ namespace casual
 
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& stream) const
+            void Save::serialize( std::ostream& json) const
             {
                rapidjson::StringBuffer buffer;
                rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
                if( m_document.Accept( writer))
                {
-                  stream << buffer.GetString();
+                  json << buffer.GetString();
                }
                else
                {
@@ -264,12 +272,6 @@ namespace casual
                }
 
             }
-
-            rapidjson::Document& Save::target()
-            {
-               return m_document;
-            }
-
 
             namespace writer
             {
