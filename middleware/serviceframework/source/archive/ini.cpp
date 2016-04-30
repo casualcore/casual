@@ -545,15 +545,16 @@ namespace casual
 */
 
                } // local
+
             } //
 
 
             Save::Save() = default;
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& stream) const
+            void Save::serialize( std::ostream& ini) const
             {
-               local::write_flat( m_document, stream);
+               local::write_flat( m_document, ini);
             }
 
             void Save::serialize( std::string& ini) const
@@ -562,13 +563,6 @@ namespace casual
                serialize( stream);
                ini.assign( stream.str());
             }
-
-
-            tree& Save::target()
-            {
-               return m_document;
-            }
-
 
             namespace writer
             {

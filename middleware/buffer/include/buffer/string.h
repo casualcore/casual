@@ -12,28 +12,23 @@
 #define CASUAL_STRING "CSTRING"
 
 #define CASUAL_STRING_SUCCESS 0
-
-#define CASUAL_STRING_NO_SPACE 1
-
-#define CASUAL_STRING_NO_PLACE 2
-
-#define CASUAL_STRING_INVALID_BUFFER 3
-
-#define CASUAL_STRING_INVALID_ARGUMENT 4
-
-#define CASUAL_STRING_INTERNAL_FAILURE 9
+#define CASUAL_STRING_INVALID_HANDLE 1
+#define CASUAL_STRING_INVALID_ARGUMENT 2
+#define CASUAL_STRING_OUT_OF_MEMORY 4
+#define CASUAL_STRING_OUT_OF_BOUNDS 8
+#define CASUAL_STRING_INTERNAL_FAILURE 128
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-const char* CasualStringDescription( int code);
+const char* casual_string_description( int code);
 
-int CasualStringExploreBuffer( const char* buffer, long* size, long* used);
+int casual_string_explore_buffer( const char* buffer, long* size, long* used);
 
-int CasualStringWriteString( char* buffer, const char* value);
-int CasualStringParseString( const char* buffer, const char** value);
+int casual_string_set( char** buffer, const char* value);
+int casual_string_get( const char* buffer, const char** value);
 
 
 #ifdef __cplusplus

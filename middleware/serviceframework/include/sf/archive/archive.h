@@ -25,8 +25,6 @@ namespace casual
       namespace archive
       {
 
-
-
          class Base
          {
 

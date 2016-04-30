@@ -18,7 +18,7 @@
 
 #include <cstdlib>
 #include <ctime>
-#include <wordexp.h>
+//#include <wordexp.h>
 
 
 namespace casual
@@ -36,7 +36,7 @@ namespace casual
 
 				std::string get( const std::string& name)
 				{
-					const char* const result = getenv( name.c_str());
+				   const auto result = getenv( name.c_str());
 
 					if( result)
 					{
