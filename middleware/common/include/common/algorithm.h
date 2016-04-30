@@ -12,6 +12,7 @@
 #include "common/traits.h"
 #include "common/error.h"
 #include "common/platform.h"
+#include "common/move.h"
 
 #include <algorithm>
 #include <numeric>
@@ -83,6 +84,55 @@ namespace casual
 
             std::function< void()> m_execute;
          };
+
+         template< typename E>
+         struct basic_execute
+         {
+            using execute_type = E;
+
+            basic_execute( execute_type&& execute) : m_execute( std::move( execute)) {}
+
+            ~basic_execute()
+            {
+               try
+               {
+                  (*this)();
+               }
+               catch( ...)
+               {
+                  error::handler();
+               }
+            }
+
+            basic_execute( basic_execute&&) noexcept = default;
+            basic_execute& operator = ( basic_execute&&) noexcept = default;
+
+            //!
+            //! executes the actions ones.
+            //! no-op if already executed
+            //!
+            void operator () ()
+            {
+               if( ! m_moved)
+               {
+                  m_execute();
+                  release();
+               }
+            }
+
+            void release() { m_moved.release();}
+
+         private:
+            execute_type m_execute;
+            move::Moved m_moved;
+         };
+
+         template< typename E>
+         auto execute( E&& executor) -> decltype( basic_execute< E>{ std::forward< E>( executor)})
+         {
+            return basic_execute< E>{ std::forward< E>( executor)};
+         }
+
       } // scope
 
       namespace chain
@@ -793,11 +843,11 @@ namespace casual
          //! @return std::vector with the transformed values
          //!
          template< typename R, typename T>
-         auto transform( R&& range, T transform) -> std::vector< decltype( transform( *std::begin( range)))>
+         auto transform( R&& range, T transformer) -> std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type>
          {
-            std::vector< decltype( transform( *std::begin( range)))> result;
+            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
             result.reserve( range.size());
-            std::transform( std::begin( range), std::end( range), std::back_inserter( result), transform);
+            std::transform( std::begin( range), std::end( range), std::back_inserter( result), transformer);
             return result;
          }
 

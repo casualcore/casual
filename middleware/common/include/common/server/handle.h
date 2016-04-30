@@ -264,12 +264,12 @@ namespace casual
                   //
                   // Make sure we do some cleanup...
                   //
-                  scope::Execute execute_finalize{ [](){ server::Context::instance().finalize();}};
+                  auto execute_finalize = scope::execute( [](){ server::Context::instance().finalize();});
 
                   //
                   // Make sure we'll always send ACK to broker
                   //
-                  scope::Execute execute_ack{ [&](){ m_policy.ack( message); } };
+                  auto execute_ack = scope::execute( [&](){ m_policy.ack( message);});
 
 
                   //
@@ -281,21 +281,21 @@ namespace casual
                   //
                   // Make sure we always send reply to caller
                   //
-                  scope::Execute execute_reply{ [&](){
+                  auto execute_reply = scope::execute( [&](){
                      if( ! flag< TPNOREPLY>( message.flags))
                      {
                         //
                         // Send reply to caller.
                         //
                         m_policy.reply( message.process.queue, reply);
-                     } } };
+                     }});
 
 
                   //
                   // If something goes wrong, make sure to rollback before reply with error.
                   // this will execute before execute_reply
                   //
-                  scope::Execute execute_error_reply{ [&](){ m_policy.transaction( reply, TPESVCERR); } };
+                  auto execute_error_reply = scope::execute( [&](){ m_policy.transaction( reply, TPESVCERR); });
 
 
                   auto& state = server::Context::instance().state();
@@ -446,7 +446,7 @@ namespace casual
                   // Do transaction stuff...
                   // - commit/rollback transaction if service has "auto-transaction"
                   //
-                  scope::Execute execute_transaction{ [&](){ m_policy.transaction( reply, state.jump.state.value); } };
+                  auto execute_transaction = scope::execute( [&](){ m_policy.transaction( reply, state.jump.state.value); });
 
                   //
                   // Nothing did go wrong
@@ -457,7 +457,7 @@ namespace casual
                   //
                   // Take end time
                   //
-                  scope::Execute execute_monitor{ [&](){
+                  auto execute_monitor = scope::execute( [&](){
                      if( ! message.service.traffic_monitors.empty())
                      {
                         state.traffic.end = platform::clock_type::now();
@@ -471,7 +471,7 @@ namespace casual
                            m_policy.statistics( queue, state.traffic);
                         }
                      }
-                  }};
+                  });
 
 
 

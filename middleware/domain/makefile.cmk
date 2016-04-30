@@ -9,7 +9,7 @@ IncludePaths([
    '../common/include',
    #'../configuration/include',
    '../xatmi/include',
-   #'../serviceframework/include',
+   '../serviceframework/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
    ])
 
@@ -18,8 +18,8 @@ LibraryPaths([
     'bin',
     '../common/bin',
     #'../configuration/bin',
-    #'../xatmi/bin',
-    #'../serviceframework/bin',
+    '../xatmi/bin',
+    '../serviceframework/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
@@ -27,16 +27,40 @@ LibraryPaths([
 install_bins = []
 install_libs = []
 
-target = LinkExecutable( 'bin/casual-domain',
+manager_objecs = [
+    Compile( 'source/manager/manager.cpp'),
+    Compile( 'source/manager/handle.cpp'),
+    Compile( 'source/manager/state.cpp'),
+    Compile( 'source/manager/configuration.cpp'),
+    Compile( 'source/common.cpp'),
+    Compile( 'source/transform.cpp'),
+
+]
+
+target = LinkExecutable( 'bin/casual-domain-manager',
     [
-      Compile( 'source/domain.cpp'),
-      Compile( 'source/main.cpp'),
-    ],
+      Compile( 'source/manager/main.cpp'),
+      
+      Compile( 'source/manager/admin/server.cpp'),
+    ] + manager_objecs,
     [
      'casual-common',
+     'casual-xatmi',
+     'casual-sf'
     ] 
 )
 
+
+
+target_test_delay = LinkUnittest( 'bin/test-casual-domain', 
+    [ 
+        Compile( 'unittest/isolated/source/manager/test_state.cpp'),
+    ] + manager_objecs,
+    [
+     'casual-common',
+     'casual-mockup',
+     'casual-mockup-unittest-environment',
+    ]) 
 
 
 

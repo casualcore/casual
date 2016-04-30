@@ -56,6 +56,7 @@ namespace casual
          struct Handle
          {
             Handle() = default;
+            Handle( platform::pid::type pid) : pid{ pid} {}
             Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
 
             platform::pid::type pid = 0;
@@ -81,6 +82,17 @@ namespace casual
                   bool operator() ( const Handle& lhs) { return lhs.pid == m_pid;}
                private:
                   platform::pid::type m_pid;
+               };
+            };
+
+            struct order
+            {
+               struct pid
+               {
+                  struct Ascending
+                  {
+                     bool operator() ( const Handle& lhs, const Handle& rhs) { return lhs.pid < rhs.pid;}
+                  };
                };
             };
 
