@@ -48,19 +48,19 @@ namespace casual
                {
                   sf::archive::json::Save save;
 
-                  sf::archive::json::Writer writer( save.target());
+                  sf::archive::json::Writer writer( save());
 
                   writer << CASUAL_MAKE_NVP( value);
 
-                  save.serialize( data);
+                  save( data);
 
                }
 
                {
                   sf::archive::json::Load load;
-                  load.serialize( data);
+                  load( data);
 
-                  archive::json::basic_reader< policy_type> reader( load.source());
+                  archive::json::basic_reader< policy_type> reader( load());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -80,18 +80,18 @@ namespace casual
                archive::yaml::Save save;
 
                {
-                  archive::yaml::Writer writer( save.target());
+                  archive::yaml::Writer writer( save());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
                std::string yaml;
-               save.serialize( yaml);
+               save( yaml);
 
                archive::yaml::Load load;
-               load.serialize( yaml);
+               load( yaml);
 
                {
-                  sf::archive::yaml::basic_reader< policy_type> reader( load.source());
+                  sf::archive::yaml::basic_reader< policy_type> reader( load());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -110,18 +110,18 @@ namespace casual
                archive::xml::Save save;
 
                {
-                  archive::xml::Writer writer( save.target());
+                  archive::xml::Writer writer( save());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
                std::string xml;
-               save.serialize( xml);
+               save( xml);
 
                archive::xml::Load load;
-               load.serialize( xml);
+               load( xml);
 
                {
-                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( load.source());
+                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( load());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
 
@@ -142,20 +142,20 @@ namespace casual
                archive::ini::Save save;
 
                {
-                  archive::ini::Writer writer( save.target());
+                  archive::ini::Writer writer( save());
                   writer << CASUAL_MAKE_NVP( value);
                }
 
                std::string ini;
-               save.serialize( ini);
+               save( ini);
 
                std::cout << ini << std::endl;
 
                archive::ini::Load load;
-               load.serialize( ini);
+               load( ini);
 
                {
-                  archive::basic_reader< archive::ini::reader::Implementation, P> reader( load.source());
+                  archive::basic_reader< archive::ini::reader::Implementation, P> reader( load());
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
 

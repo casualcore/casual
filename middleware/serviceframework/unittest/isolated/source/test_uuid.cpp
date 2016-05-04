@@ -16,18 +16,18 @@ namespace casual
    {
 
       sf::archive::yaml::Save save;
-      sf::archive::yaml::Writer writer( save.target());
+      sf::archive::yaml::Writer writer( save());
 
       sf::platform::Uuid uuid( sf::platform::uuid::make());
 
       writer << CASUAL_MAKE_NVP( uuid);
 
       std::string yaml;
-      save.serialize( yaml);
+      save( yaml);
 
       sf::archive::yaml::Load load;
-      load.serialize( yaml);
-      sf::archive::yaml::Reader reader( load.source());
+      load( yaml);
+      sf::archive::yaml::Reader reader( load());
 
       sf::platform::Uuid out;
       reader >> sf::makeNameValuePair( "uuid", out);

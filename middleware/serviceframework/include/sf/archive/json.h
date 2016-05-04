@@ -41,19 +41,12 @@ namespace casual
                Load();
                ~Load();
 
-               const rapidjson::Document& serialize( std::istream& stream);
-               const rapidjson::Document& serialize( const std::string& json);
-               const rapidjson::Document& serialize( const char* json, std::size_t size);
-               const rapidjson::Document& serialize( const char* json);
+               const rapidjson::Document& operator() () const noexcept;
 
-               const rapidjson::Document& source() const noexcept;
-
-
-               template<typename... A>
-               const rapidjson::Document& operator() ( A&&... arguments)
-               {
-                  return serialize( std::forward<A>( arguments)...);
-               }
+               const rapidjson::Document& operator() ( std::istream& stream);
+               const rapidjson::Document& operator() ( const std::string& json);
+               const rapidjson::Document& operator() ( const char* json, std::size_t size);
+               const rapidjson::Document& operator() ( const char* json);
 
 
             private:
@@ -135,25 +128,11 @@ namespace casual
                Save();
                ~Save();
 
-               void serialize( std::ostream& json) const;
-               void serialize( std::string& json) const;
+               rapidjson::Document& operator() () noexcept;
 
-               rapidjson::Document& target() noexcept
-               {
-                  return m_document;
-               }
+               void operator() ( std::ostream& json) const;
+               void operator() ( std::string& json) const;
 
-               rapidjson::Document& operator() () noexcept
-               {
-                  return target();
-               }
-
-               template<typename T>
-               rapidjson::Document& operator() ( T&& json)
-               {
-                  serialize( std::forward<T>( json));
-                  return target();
-               }
 
             private:
 

@@ -28,16 +28,16 @@ namespace casual
          void value_to_string( const T& value, std::string& string)
          {
             sf::archive::ini::Save save;
-            sf::archive::ini::Writer writer( save.target());
+            sf::archive::ini::Writer writer( save());
             writer << CASUAL_MAKE_NVP( value);
-            save.serialize( string);
+            save( string);
          }
 
          template<typename T>
          void string_to_value( const std::string& string, T& value)
          {
             sf::archive::ini::Load load;
-            sf::archive::ini::Reader reader( load.serialize( string));
+            sf::archive::ini::Reader reader( load( string));
             reader >> CASUAL_MAKE_NVP( value);
          }
 
