@@ -9,7 +9,7 @@ casual has a few 'products' that could be split into separated repos in the futu
 we keep them all in this repository. 
 
 ### middleware
-casual main purpose is [casual-middelware](/middleware/readme.md), which is an XATMI implementation
+casual main purpose is [casual-middleware](/middleware/readme.md), which is an XATMI implementation
 
 ### make
 [casual-make](/tools/casual/make/readme.md) is a 'build system' that is easy to use.
