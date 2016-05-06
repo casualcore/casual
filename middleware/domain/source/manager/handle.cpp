@@ -61,6 +61,34 @@ namespace casual
             {
                Trace trace{ "domain::manager::handle::boot"};
 
+               //
+               // We only want child and alarm signals
+               //
+               signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child, signal::Type::alarm})};
+
+               auto handle = handler( state);
+
+
+               range::for_each( state.bootorder(), [&]( state::Batch& batch){
+                  try
+                  {
+                     signal::timer::Scoped timer{ batch.timeout()};
+
+                     log::information << "boot group " << batch.group.get().name << '\n';
+
+                     range::for_each( batch.executables, scale::Executable{ state});
+
+                     while( ! batch.online())
+                     {
+                        handle( ipc::device().blocking_next());
+                     }
+                  }
+                  catch( const exception::signal::Timeout&)
+                  {
+                     log::error << "failed to boot batch in a timely manner - action: keep going... - batch: " << batch << '\n';
+                     //timeouts.push_back( std::move( batch));
+                  }
+               });
 
             }
 

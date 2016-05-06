@@ -90,13 +90,13 @@ namespace casual
 
             for( ; current != std::end( range); ++current)
             {
-               if( current + 1 != std::end( range))
+               if( current == std::begin( range))
                {
-                  result += *current + delimiter;
+                  result = static_cast< const std::string&>( *current);
                }
                else
                {
-                  result += *current;
+                  result += delimiter + static_cast< const std::string&>( *current);
                }
             }
             return result;

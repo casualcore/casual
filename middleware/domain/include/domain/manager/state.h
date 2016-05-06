@@ -34,9 +34,15 @@ namespace casual
                {
                   using id_type = std::size_t;
 
+
+                  //inline id_type id() const { return m_id;}
+
                   id_type id = nextId();
 
                private:
+
+                  //id_type m_id = nextId();
+
                   inline static id_type nextId()
                   {
                      static id_type id = 10;
@@ -90,6 +96,8 @@ namespace casual
 
                friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
                friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
+
+               friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
 
                friend std::ostream& operator << ( std::ostream& out, const Group& value);
 

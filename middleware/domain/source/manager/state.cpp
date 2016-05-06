@@ -95,6 +95,7 @@ namespace casual
                      << ", path: " << value.path
                      << ", arguments: " << range::make( value.arguments)
                      << ", restart: " << value.restart
+                     << ", memberships: " << range::make( value.memberships)
                      << ", configured-instances: " << value.configured_instances
                      << ", instances: " << range::make( value.instances)
                      << '}';

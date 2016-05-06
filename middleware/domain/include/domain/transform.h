@@ -10,6 +10,13 @@
 
 namespace casual
 {
+   namespace config
+   {
+      namespace domain
+      {
+         struct Domain;
+      } // domain
+   } // config
    namespace domain
    {
       namespace transform
@@ -17,6 +24,8 @@ namespace casual
 
          manager::admin::vo::State state( const manager::State& state);
 
+
+         manager::State state( const config::domain::Domain& domain);
 
       } // transform
 

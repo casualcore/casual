@@ -49,6 +49,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( memberships);
                archive & CASUAL_MAKE_NVP( environment);
             )
+
+            friend bool operator == ( const Executable& lhs, const Executable& rhs);
          };
 
          namespace transaction
@@ -94,6 +96,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( transaction);
             )
+
+            friend bool operator == ( const Service& lhs, const Service& rhs);
          };
 
          struct Resource
@@ -129,6 +133,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( resources);
                archive & CASUAL_MAKE_NVP( dependencies);
             )
+
+            friend bool operator == ( const Group& lhs, const Group& rhs);
          };
 
 
@@ -176,6 +182,11 @@ namespace casual
                archive & CASUAL_MAKE_NVP( executables);
                archive & CASUAL_MAKE_NVP( services);
             )
+
+            Domain& operator += ( const Domain& rhs);
+            Domain& operator += ( Domain&& rhs);
+
+            friend Domain operator + ( const Domain& lhs, const Domain& rhs);
          };
 
          Domain get( const std::string& file);

@@ -294,6 +294,74 @@ namespace casual
 
       } // compare
 
+      namespace detail
+      {
+         namespace coalesce
+         {
+            template< typename T>
+            bool empty( T& value) { return value.empty();}
+
+            template< typename T>
+            bool empty( T* value) { return value == nullptr;}
+
+            template< typename R, typename T>
+            R implementation( T&& value)
+            {
+               return std::forward< T>( value);
+            }
+
+            template< typename R, typename T, typename... Args>
+            R implementation( T&& value, Args&&... args)
+            {
+               if( empty( value)) { return implementation< R>( std::forward< Args>( args)...);}
+               return std::forward< T>( value);
+            }
+
+         } // coalesce
+
+      } // detail
+
+
+
+      template< typename T1, typename T2, typename... Args>
+      struct is_same : std::integral_constant< bool, is_same< T1, T2>::value && is_same< T2, Args...>::value>
+      {
+
+      };
+
+      template< typename T1, typename T2>
+      struct is_same< T1, T2> : std::is_same< T1, T2>
+      {
+      };
+
+
+      //!
+      //! Chooses the first argument that is not 'empty'
+      //!
+      //! @note if all parameters has exactly the same type the return type will be
+      //!  exactly that. Otherwise it will be the common type of all types
+      //!
+      //! @return the first argument that is not 'empty'
+      //!
+      template< typename T, typename... Args>
+      auto coalesce( T&& value,  Args&&... args)
+         -> typename std::conditional<
+               is_same< T, Args...>::value,
+               T, // only if T1 and T1 are exactly the same
+               typename std::common_type< T, Args...>::type
+            >::type
+
+
+      {
+         using return_type = typename std::conditional<
+               is_same< T, Args...>::value,
+               T, // only if T1 and T1 are exactly the same
+               typename std::common_type< T, Args...>::type
+            >::type;
+
+         return detail::coalesce::implementation< return_type>( std::forward< T>( value), std::forward< Args>( args)...);
+      }
+
 
       template< typename Enum>
       auto as_integer( Enum value) -> typename std::underlying_type< Enum>::type
