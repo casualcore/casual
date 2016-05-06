@@ -22,10 +22,10 @@ install_include = []
 
 lib_buffer = LinkLibrary( 'bin/casual-buffer',
     [
-     Compile( 'source/string.cpp'),
+     Compile( 'source/field.cpp'),
      Compile( 'source/octet.cpp'),
      Compile( 'source/order.cpp'),
-     Compile( 'source/field.cpp'),
+     Compile( 'source/string.cpp'),
     ],
     [
      'casual-common', 'casual-sf'
@@ -33,6 +33,7 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
 
 install_lib.append( lib_buffer)
 install_include.append( 'include/buffer/field.h')
+install_include.append( 'include/buffer/octet.h')
 install_include.append( 'include/buffer/order.h')
 install_include.append( 'include/buffer/string.h')
 
@@ -40,7 +41,7 @@ install_bin = []
 
 casual_field_make_header = LinkExecutable( 'bin/casual_field_make_header', 
     [
-     Compile( 'source/tools/field.cpp'),
+     Compile( 'tools/source/field.cpp'),
     ], 
     [ 
      'casual-common', 
@@ -64,7 +65,9 @@ LinkUnittest( 'bin/test-buffer',
     Compile( 'unittest/isolated/source/test_order_buffer.cpp'),
     Compile( 'unittest/isolated/source/test_string_buffer.cpp'),
    ],
-   [ lib_buffer, 'casual-common', 'casual-xatmi'])  
+   [ 
+    lib_buffer, 'casual-common', 'casual-xatmi'
+   ])  
    
 #
 # Install
@@ -72,4 +75,19 @@ LinkUnittest( 'bin/test-buffer',
 Install( install_lib, '$(CASUAL_HOME)/lib')
 Install( install_include, '$(CASUAL_HOME)/include/buffer')
 
+
+#
+# Sample
+#
+
+lib_casual_buffer_sample = LinkLibrary( 'bin/casual_buffer_sample',
+    [
+     Compile( 'sample/client/source/field.c'),
+     Compile( 'sample/client/source/octet.c'),
+     Compile( 'sample/client/source/order.c'),
+     Compile( 'sample/client/source/string.c'),
+    ],
+    [
+     lib_buffer, 'casual-xatmi'
+    ])
 

@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": [ "groups"],
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": [{
+        "type": "object",
+        "optional": [ "base"],
+        "properties": {
+          "base": { "type": "integer"},
+          "fields": {
+            "type": "array",
+            "items": [{
+              "type": "object",
+              "required": [ "id", "name", "type"],
+              "properties": {
+                "id": { "type": "integer"},
+                "name": { "type": "string"},
+                "type": { "type": "string"}
+              }
+            }]
+          }
+        }
+      }]
+    }
+  }
+}

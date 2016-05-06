@@ -3,8 +3,9 @@
 //!
 
 
+#include <functional>
+#include <algorithm>
 #include <string>
-#include <ostream>
 #include <iterator>
 #include <array>
 #include <iostream>
@@ -74,18 +75,21 @@ namespace casual
 
             struct basic_color
             {
-               basic_color( std::array< char, 11> value) : value{ std::move( value)} {}
+               //basic_color( std::array< char, 11> value) : value{ std::move( value)} {}
+               basic_color( const char* const value) : value{ value} {}
 
                void operator() ( std::ostream& out, const string::view& view)
                {
-                  out << value.data() << view << end();
+                  //out << value.data() << view << end();
+                  out << value << view << end();
                }
 
-               std::array< char, 11> value;
+               //std::array< char, 11> value;
+               const char* const value;
             };
 
-            basic_color white{ { "\033[0;37m"}};
-            basic_color yellow{ { "\033[0;33m"}};
+            basic_color white{ "\033[0;37m"};
+            basic_color yellow{ "\033[0;33m"};
 
          } // color
 

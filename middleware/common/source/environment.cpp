@@ -18,7 +18,7 @@
 
 #include <cstdlib>
 #include <ctime>
-#include <wordexp.h>
+//#include <wordexp.h>
 
 
 namespace casual

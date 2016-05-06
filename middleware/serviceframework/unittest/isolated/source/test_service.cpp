@@ -37,7 +37,7 @@ namespace casual
 
             writer << CASUAL_MAKE_NVP( value);
 
-            sf::buffer::Binary buffer( sf::buffer::type::yaml(), 128);
+            sf::buffer::Binary buffer( sf::buffer::type::yaml(), emitter.size());
 
             buffer.str( emitter.c_str());
 
