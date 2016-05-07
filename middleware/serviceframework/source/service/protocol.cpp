@@ -111,7 +111,7 @@ namespace casual
 
 
                std::string yaml;
-               m_save.serialize( yaml);
+               m_save( yaml);
 
                buffer::Binary buffer{ buffer::type::yaml(), yaml.size()};
                buffer.str( yaml);
@@ -153,7 +153,7 @@ namespace casual
                //
 
                std::string json;
-               m_save.serialize( json);
+               m_save( json);
 
                buffer::Binary buffer{ buffer::type::json(), json.size()};
                buffer.str( json);
@@ -197,7 +197,7 @@ namespace casual
                //
 
                std::string xml;
-               m_save.serialize( xml);
+               m_save( xml);
 
                buffer::Binary buffer{ common::buffer::type::xml(), xml.size()};
                buffer.str( xml);

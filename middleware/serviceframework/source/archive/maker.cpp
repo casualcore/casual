@@ -6,6 +6,7 @@
 //!
 
 #include "sf/archive/maker.h"
+
 #include "sf/archive/yaml.h"
 #include "sf/archive/json.h"
 #include "sf/archive/xml.h"
@@ -21,100 +22,171 @@ namespace casual
    {
       namespace archive
       {
-         namespace holder
+         namespace maker
          {
-            template< typename B, typename A, typename S>
-            class basic : public base< B>
+
+            namespace
             {
-            public:
-               typedef B base_type;
-               typedef A archive_type;
-               typedef S source_type;
 
-               ~basic() noexcept {};
-
-               template< typename... Arguments>
-               basic( Arguments&&... arguments)
-                  : m_archive( m_source( std::forward< Arguments>( arguments)...))
+               template<typename T, typename F, typename S, typename A>
+               class Basic : public Base<T>
                {
-               }
+               public:
+                  typedef T base_type;
+                  typedef F file_type;
+                  typedef S stream_type;
+                  typedef A archive_type;
 
-               virtual archive_type& archive() override
+                  explicit Basic( const std::string& name) : m_file( name), m_archive( m_stream())
+                  {
+                     if( ! m_file.is_open())
+                     {
+                        throw exception::FileNotOpen( name);
+                     }
+                  }
+
+                  virtual ~Basic() noexcept {}
+
+                  virtual void serialize() override
+                  {
+                     m_stream( m_file);
+                  }
+
+                  virtual archive_type& archive() override
+                  {
+                     return m_archive;
+                  }
+
+               private:
+
+                  file_type m_file;
+                  stream_type m_stream;
+                  archive_type m_archive;
+               };
+
+
+               namespace from
                {
-                  return m_archive;
-               }
+                  template<typename D>
+                  auto file( const D& dispatch, const std::string& name) -> decltype(common::range::find( dispatch, name)->second( name))
+                  {
+                     const auto extension = common::file::name::extension( name);
 
-            private:
+                     auto found = common::range::find( dispatch, extension);
 
-               source_type m_source;
-               archive_type m_archive;
+                     if( found)
+                     {
+                        return found->second( name);
+                     }
 
-            };
+                     throw exception::Validation{ "Could not deduce archive for file " + name};
+                  }
+               } // from
 
+            } // <unnamed>
 
-         }
+         } // maker
+
 
          namespace reader
          {
+            namespace local
+            {
+               namespace
+               {
+                  template<typename S, typename A>
+                  using Basic = maker::Basic<Reader, std::ifstream, S, A>;
+
+                  using function = std::function< Holder( const std::string&)>;
+
+                  template< typename S, typename A>
+                  struct factory
+                  {
+                     Holder operator () ( const std::string& name) const
+                     {
+                        return Holder::base_type{ new Basic<S,A>{ name}};
+                     }
+                  };
+
+               } // <unnamed>
+            } // local
 
             namespace from
             {
-               namespace local
+
+               Holder file( const std::string& name)
                {
-                  namespace
+                  static const auto dispatch = std::map< std::string, local::function>
                   {
-                     using factory_function = std::function< Holder::base_value_type( std::ifstream&)>;
-
-                     template< typename A>
-                     struct factory
-                     {
-                        Holder::base_value_type operator () ( std::ifstream& file)
-                        {
-                           return Holder::base_value_type{ new A{ file}};
-                        }
-                     };
-                  } // <unnamed>
-               } // local
-
-               template< typename A, typename S>
-               using basic_holder = holder::basic< Reader, A, S>;
-
-               Holder file( const std::string& filename)
-               {
-                  std::ifstream file( filename);
-
-                  if( ! file.is_open())
-                  {
-                     throw exception::FileNotFound( filename);
-                  }
-
-                  const auto extension = common::file::name::extension( filename);
-
-                  static const auto dispatch = std::map< std::string, local::factory_function>{
-                     { "yaml", local::factory< basic_holder< yaml::relaxed::Reader, yaml::Load >>{}},
-                     { "yml", local::factory< basic_holder< yaml::relaxed::Reader, yaml::Load >>{}},
-                     { "json", local::factory< basic_holder< json::relaxed::Reader, json::Load >>{}},
-                     { "jsn", local::factory< basic_holder< json::relaxed::Reader, json::Load >>{}},
-                     { "xml", local::factory< basic_holder< xml::relaxed::Reader, xml::Load >>{}},
-                     { "ini", local::factory< basic_holder< ini::relaxed::Reader, ini::Load >>{}}
+                     { "yaml",   local::factory< yaml::Load,   yaml::relaxed::Reader>{}},
+                     { "yml",    local::factory< yaml::Load,   yaml::relaxed::Reader>{}},
+                     { "json",   local::factory< json::Load,   json::relaxed::Reader>{}},
+                     { "jsn",    local::factory< json::Load,   json::relaxed::Reader>{}},
+                     { "xml",    local::factory< xml::Load,    xml::relaxed::Reader>{}},
+                     { "ini",    local::factory< ini::Load,    ini::relaxed::Reader>{}},
                   };
 
-                  auto found = common::range::find( dispatch, extension);
-
-                  if( found)
-                  {
-                     return Holder( found->second( file));
-                  }
-                  else
-                  {
-                     throw exception::Validation( "Could not deduce protocol for file " + filename);
-                  }
+                  return maker::from::file( dispatch, name);
                }
 
             } // from
+
          } // reader
+
+
+         namespace writer
+         {
+            namespace local
+            {
+               namespace
+               {
+
+                  template<typename S, typename A>
+                  using Basic = maker::Basic<Writer, std::ofstream,S,A>;
+
+                  using function = std::function< Holder( const std::string&)>;
+
+                  template< typename S, typename A>
+                  struct factory
+                  {
+                     Holder operator () ( const std::string& name) const
+                     {
+                        return Holder::base_type{ new Basic<S,A>{ name}};
+                     }
+                  };
+
+               } // <unnamed>
+
+            } // local
+
+
+            namespace from
+            {
+               Holder file( const std::string& name)
+               {
+                  static const auto dispatch = std::map< std::string, local::function>
+                  {
+                     { "yaml",   local::factory< yaml::Save,   yaml::Writer>{}},
+                     { "yml",    local::factory< yaml::Save,   yaml::Writer>{}},
+                     { "json",   local::factory< json::Save,   json::Writer>{}},
+                     { "jsn",    local::factory< json::Save,   json::Writer>{}},
+                     { "xml",    local::factory< xml::Save,    xml::Writer>{}},
+                     { "ini",    local::factory< ini::Save,    ini::Writer>{}},
+                  };
+
+                  return maker::from::file( dispatch, name);
+               }
+
+            } // from
+
+
+         } // writer
+
+
       } // archive
+
    } // sf
+
 } // casual
 
 

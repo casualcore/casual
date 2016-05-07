@@ -35,23 +35,12 @@ namespace casual
                Load();
                ~Load();
 
-               const YAML::Node& serialize( std::istream& stream);
-               const YAML::Node& serialize( const std::string& yaml);
-               const YAML::Node& serialize( const char* yaml, std::size_t size);
-               const YAML::Node& serialize( const char* yaml);
+               const YAML::Node& operator() () const noexcept;
 
-               template<typename... A>
-               const YAML::Node& operator() ( A&&... arguments)
-               {
-                  return serialize( std::forward<A>( arguments)...);
-               }
-
-               const YAML::Node& source() const noexcept;
-
-               const YAML::Node& operator() () const noexcept
-               {
-                  return source();
-               }
+               const YAML::Node& operator() ( std::istream& stream);
+               const YAML::Node& operator() ( const std::string& yaml);
+               const YAML::Node& operator() ( const char* yaml, std::size_t size);
+               const YAML::Node& operator() ( const char* yaml);
 
             private:
 
@@ -131,28 +120,15 @@ namespace casual
             {
             public:
 
+               typedef YAML::Emitter target_type;
+
                Save();
                ~Save();
 
-               void serialize( std::ostream& yaml) const;
-               void serialize( std::string& yaml) const;
+               YAML::Emitter& operator() () noexcept;
 
-               YAML::Emitter& target() noexcept
-               {
-                  return m_emitter;
-               }
-
-               YAML::Emitter& operator() () noexcept
-               {
-                  return target();
-               }
-
-               template<typename T>
-               YAML::Emitter& operator() ( T&& yaml)
-               {
-                  serialize( std::forward<T>( yaml));
-                  return target();
-               }
+               void operator() ( std::ostream& yaml) const;
+               void operator() ( std::string& yaml) const;
 
 
             private:

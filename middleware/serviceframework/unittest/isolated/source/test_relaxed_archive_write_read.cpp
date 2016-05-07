@@ -42,19 +42,19 @@ namespace casual
 
                {
                   sf::archive::json::Save save;
-                  sf::archive::json::Writer writer( save.target());
+                  sf::archive::json::Writer writer( save());
 
                   writer << sf::makeNameValuePair( "value", from);
 
-                  save.serialize( data);
+                  save( data);
 
                }
 
                {
                   sf::archive::json::Load load;
-                  load.serialize( data);
+                  load( data);
 
-                  archive::json::relaxed::Reader reader( load.source());
+                  archive::json::relaxed::Reader reader( load());
                   reader >> sf::makeNameValuePair( "value", result);
                }
                return result;
@@ -71,18 +71,18 @@ namespace casual
                archive::yaml::Save save;
 
                {
-                  archive::yaml::Writer writer( save.target());
+                  archive::yaml::Writer writer( save());
                   writer << sf::makeNameValuePair( "value", from);
                }
 
                std::string yaml;
-               save.serialize( yaml);
+               save( yaml);
 
                archive::yaml::Load load;
-               load.serialize( yaml);
+               load( yaml);
 
                {
-                  sf::archive::yaml::relaxed::Reader reader( load.source());
+                  sf::archive::yaml::relaxed::Reader reader( load());
                   reader >> sf::makeNameValuePair( "value", result);
                }
                return result;
@@ -99,18 +99,18 @@ namespace casual
                archive::xml::Save save;
 
                {
-                  archive::xml::Writer writer( save.target());
+                  archive::xml::Writer writer( save());
                   writer << sf::makeNameValuePair( "value", from);
                }
 
                std::string xml;
-               save.serialize( xml);
+               save( xml);
 
                archive::xml::Load load;
-               load.serialize( xml);
+               load( xml);
 
                {
-                  archive::xml::relaxed::Reader reader( load.source());
+                  archive::xml::relaxed::Reader reader( load());
                   reader >> sf::makeNameValuePair( "value", result);
                }
                return result;

@@ -24,7 +24,13 @@ namespace casual
             Load::Load() = default;
             Load::~Load() = default;
 
-            const YAML::Node& Load::serialize( std::istream& stream)
+            const YAML::Node& Load::operator() () const noexcept
+            {
+               return m_document;
+            }
+
+
+            const YAML::Node& Load::operator() ( std::istream& stream)
             {
                try
                {
@@ -39,31 +45,26 @@ namespace casual
                   throw exception::archive::invalid::Document{ e.what()};
                }
 
-               return source();
+               return m_document;
             }
 
-            const YAML::Node& Load::serialize( const std::string& yaml)
+            const YAML::Node& Load::operator() ( const std::string& yaml)
             {
                std::istringstream stream( yaml);
-               return serialize( stream);
+               return (*this)( stream);
             }
 
-            const YAML::Node& Load::serialize( const char* const yaml, const std::size_t size)
+            const YAML::Node& Load::operator() ( const char* const yaml, const std::size_t size)
             {
                std::istringstream stream( std::string( yaml, size));
-               return serialize( stream);
+               return (*this)( stream);
             }
 
 
-            const YAML::Node& Load::serialize( const char* const yaml)
+            const YAML::Node& Load::operator() ( const char* const yaml)
             {
                std::istringstream stream( yaml);
-               return serialize( stream);
-            }
-
-            const YAML::Node& Load::source() const noexcept
-            {
-               return m_document;
+               return (*this)( stream);
             }
 
             namespace reader
@@ -212,12 +213,16 @@ namespace casual
             Save::Save() = default;
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& yaml) const
+            YAML::Emitter& Save::operator() () noexcept
+            {
+               return m_emitter;
+            }
+            void Save::operator() ( std::ostream& yaml) const
             {
                yaml << m_emitter.c_str();
             }
 
-            void Save::serialize( std::string& yaml) const
+            void Save::operator() ( std::string& yaml) const
             {
                yaml = m_emitter.c_str();
             }

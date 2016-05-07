@@ -44,16 +44,10 @@ namespace casual
                Load();
                ~Load();
 
-               const tree& serialize( std::istream& stream);
-               const tree& serialize( const std::string& ini);
+               const tree& operator() () const noexcept;
 
-               const tree& source() const;
-
-               template<typename... A>
-               const tree& operator() ( A&&... arguments)
-               {
-                  return serialize( std::forward<A>( arguments)...);
-               }
+               const tree& operator() ( std::istream& stream);
+               const tree& operator() ( const std::string& ini);
 
             private:
 
@@ -129,25 +123,10 @@ namespace casual
                Save();
                ~Save();
 
-               void serialize( std::ostream& ini) const;
-               void serialize( std::string& ini) const;
+               tree& operator() () noexcept;
 
-               tree& target() noexcept
-               {
-                  return m_document;
-               }
-
-               tree& operator() () noexcept
-               {
-                  return target();
-               }
-
-               template<typename T>
-               tree& operator() ( T&& ini)
-               {
-                  serialize( std::forward<T>( ini));
-                  return target();
-               }
+               void operator() ( std::ostream& ini) const;
+               void operator() ( std::string& ini) const;
 
             private:
 

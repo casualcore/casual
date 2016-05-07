@@ -29,9 +29,6 @@ namespace casual
          namespace json
          {
 
-            Load::Load() = default;
-            Load::~Load() = default;
-
             namespace
             {
                namespace local
@@ -52,7 +49,15 @@ namespace casual
                } // local
             }
 
-            const rapidjson::Document& Load::serialize( std::istream& stream)
+            Load::Load() = default;
+            Load::~Load() = default;
+
+            const rapidjson::Document& Load::operator() () const noexcept
+            {
+               return m_document;
+            }
+
+            const rapidjson::Document& Load::operator() ( std::istream& stream)
             {
                return local::parse(
                   m_document,
@@ -61,27 +66,21 @@ namespace casual
                      std::istream_iterator< char>()}.c_str());
             }
 
-            const rapidjson::Document& Load::serialize( const std::string& json)
+            const rapidjson::Document& Load::operator() ( const std::string& json)
             {
                return local::parse( m_document, json.c_str());
             }
 
-            const rapidjson::Document& Load::serialize( const char* const json, const std::size_t size)
+            const rapidjson::Document& Load::operator() ( const char* const json, const std::size_t size)
             {
                // To ensure null-terminated string
                return local::parse( m_document, std::string( json, size).c_str());
             }
 
-            const rapidjson::Document& Load::serialize( const char* const json)
+            const rapidjson::Document& Load::operator() ( const char* const json)
             {
                return local::parse( m_document, json);
             }
-
-            const rapidjson::Document& Load::source() const noexcept
-            {
-               return m_document;
-            }
-
 
             namespace reader
             {
@@ -235,7 +234,12 @@ namespace casual
 
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& json) const
+            rapidjson::Document& Save::operator() () noexcept
+            {
+               return m_document;
+            }
+
+            void Save::operator() ( std::ostream& json) const
             {
                rapidjson::StringBuffer buffer;
                rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
@@ -253,7 +257,7 @@ namespace casual
                }
             }
 
-            void Save::serialize( std::string& json) const
+            void Save::operator() ( std::string& json) const
             {
                rapidjson::StringBuffer buffer;
                rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);

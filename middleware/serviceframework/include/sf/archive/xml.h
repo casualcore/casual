@@ -48,19 +48,12 @@ namespace casual
                Load();
                ~Load();
 
-               const pugi::xml_document& serialize( std::istream& stream);
-               const pugi::xml_document& serialize( const std::string& xml);
-               const pugi::xml_document& serialize( const char* xml, std::size_t size);
-               const pugi::xml_document& serialize( const char* xml);
+               const pugi::xml_document& operator() () const noexcept;
 
-               const pugi::xml_document& source() const noexcept;
-
-
-               template<typename... A>
-               const pugi::xml_document& operator() ( A&&... arguments)
-               {
-                  return serialize( std::forward<A>( arguments)...);
-               }
+               const pugi::xml_document& operator() ( std::istream& stream);
+               const pugi::xml_document& operator() ( const std::string& xml);
+               const pugi::xml_document& operator() ( const char* xml, std::size_t size);
+               const pugi::xml_document& operator() ( const char* xml);
 
             private:
 
@@ -137,28 +130,16 @@ namespace casual
 
             public:
 
+               typedef pugi::xml_document target_type;
+
                Save();
                ~Save();
 
-               void serialize( std::ostream& xml) const;
-               void serialize( std::string& xml) const;
+               pugi::xml_document& operator() () noexcept;
 
-               pugi::xml_document& target() noexcept
-               {
-                  return m_document;
-               }
+               void operator() ( std::ostream& xml) const;
+               void operator() ( std::string& xml) const;
 
-               pugi::xml_document& operator() () noexcept
-               {
-                  return target();
-               }
-
-               template<typename T>
-               pugi::xml_document& operator() ( T&& xml)
-               {
-                  serialize( std::forward<T>( xml));
-                  return target();
-               }
 
             private:
 
