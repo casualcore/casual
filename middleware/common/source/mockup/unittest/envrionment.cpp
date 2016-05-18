@@ -33,18 +33,6 @@ namespace casual
             {
                void SetUp() override
                {
-                  m_singleton_file = set_up();
-
-               }
-
-               virtual void TearDown() override
-               {
-
-               }
-
-            private:
-               static file::scoped::Path set_up()
-               {
                   domain::identity( domain::Identity{ "unittest-domain"});
 
                   std::string domain_path;
@@ -65,34 +53,18 @@ namespace casual
                   log::debug  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
 
 
-                  // poke all global queues
-                  mockup::ipc::clear();
-
-                  log::debug << "mockup broker queue id: " << mockup::ipc::broker::queue().id() << std::endl;
-                  log::debug << "broker queue id: " << communication::ipc::broker::id() << std::endl;
-                  log::debug << "mockup TM queue id: " << mockup::ipc::transaction::manager::queue().id() << std::endl;
-
                   if( ! directory::create( environment::domain::singleton::path()))
                   {
-                     log::error << "failed to create domain singleton file path\n";
-                     return {};
+                     log::error << "failed to create domain singleton directory\n";
                   }
-                  file::scoped::Path broker_file_path{ environment::domain::singleton::path() + "/.casual-broker-queue"};
-                  std::ofstream broker_file{ broker_file_path, std::ios::trunc};
-
-                  if( ! broker_file)
-                  {
-                     log::error << "failed to create domain singleton file\n";
-                  }
-                  else
-                  {
-                     broker_file << mockup::ipc::broker::queue().id();
-                     log::debug << "mockup domain singlton file: " << broker_file_path << std::endl;
-                  }
-                  return broker_file_path;
                }
 
-               file::scoped::Path m_singleton_file;
+               virtual void TearDown() override
+               {
+
+               }
+
+            private:
 
             };
 

@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/message/transaction.h"
+#include "common/message/domain.h"
 #include "common/algorithm.h"
 #include "common/marshal/complete.h"
 
@@ -555,7 +556,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file);
+         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file);
 
 
 

@@ -1,15 +1,17 @@
 //!
-//! domain.cpp
-//!
-//! Created on: Feb 15, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/mockup/domain.h"
+#include "common/environment.h"
+#include "common/message/traffic.h"
+
 
 #include "common/flag.h"
 #include "common/trace.h"
 
+
+#include <fstream>
 
 namespace casual
 {
@@ -18,393 +20,109 @@ namespace casual
       namespace mockup
       {
 
-         namespace broker
+
+         namespace domain
          {
 
-            namespace server
+            namespace service
             {
-               std::vector< communication::message::Complete> Connect::operator () ( message_type message)
+               void Echo::operator()( message::service::call::callee::Request& request)
                {
-                  Trace trace{ "mockup::broker::server::Connect", log::internal::debug};
+                  Trace trace{ "mockup domain::service::Echo", log::internal::debug};
 
-                  reply_type reply;
-                  reply.correlation = message.correlation;
+                  if( ! common::flag< TPNOREPLY>( request.flags))
+                  {
+                     auto reply = message::reverse::type( request);
 
-                  std::vector< communication::message::Complete> result;
-                  result.emplace_back( marshal::complete( reply));
+                     reply.buffer = std::move( request.buffer);
+                     reply.transaction.trid = request.trid;
+                     reply.descriptor = request.descriptor;
 
-                  log::internal::debug << "mockup connect reply - message: " << range::make( result) << '\n';
+                     if( range::search( request.service.name, std::string{ "urcode"}))
+                     {
+                        reply.code = 42;
+                     }
 
-                  return result;
+
+                     ipc::eventually::send( request.process.queue, reply);
+                  }
+                  else
+                  {
+                     log::internal::debug << "TPNOREPLY was set, no echo\n";
+                  }
                }
 
             } // server
 
-            namespace client
-            {
-               std::vector< communication::message::Complete> Connect::operator () ( message_type message)
-               {
-                  Trace trace{ "mockup::broker::client::Connect", log::internal::debug};
-
-                  reply_type reply;
-
-                  reply.correlation = message.correlation;
-
-                  {
-                     common::message::transaction::resource::Manager rm;
-                     rm.key = "rm-mockup";
-                     reply.resources.push_back( std::move( rm));
-                  }
-
-                  std::vector< communication::message::Complete> result;
-                  result.emplace_back( marshal::complete( reply));
-                  return result;
-               }
-
-            } // client
-
-
-            Lookup::Lookup( std::vector< common::message::service::lookup::Reply> replies)
-            {
-               log::internal::debug << "replies: " << range::make( replies) << "\n";
-
-               for( auto& reply : replies)
-               {
-                  m_broker.emplace( reply.service.name, std::move( reply));
-               }
-            }
-
-            std::vector< communication::message::Complete> Lookup::operator () ( message_type message)
-            {
-               Trace trace{ "mockup::broker::Lookup", log::internal::debug};
-
-               common::message::service::lookup::Reply reply;
-
-               auto found = range::find( m_broker, message.requested);
-
-               if( found)
-               {
-                  reply = found->second;
-                  reply.state = message::service::lookup::Reply::State::idle;
-               }
-               else
-               {
-                  reply.state = message::service::lookup::Reply::State::absent;
-               }
-
-               reply.correlation = message.correlation;
-
-               std::vector< communication::message::Complete> result;
-               result.emplace_back( marshal::complete( reply));
-               return result;
-            }
-
-            namespace lookup
-            {
-               std::vector< communication::message::Complete> Process::operator () ( message_type message)
-               {
-                  Trace trace{ "mockup::broker::lookup::Process", log::internal::debug};
-
-                  static std::map< Uuid, platform::ipc::id::type> mapping{
-                     { common::process::instance::transaction::manager::identity(), mockup::ipc::transaction::manager::id()},
-                  };
-
-                  auto reply = message::reverse::type( message);
-                  reply.process.queue = mapping[ message.identification];
-
-                  std::vector< communication::message::Complete> result;
-                  result.emplace_back( marshal::complete( reply));
-                  return result;
-               }
-            }
-
-         } // broker
-
-         namespace service
-         {
-
-            Call::Call( std::vector< std::pair< std::string, reply_type>> replies)
-            {
-               for( auto& reply : replies)
-               {
-                  m_server.emplace( reply.first, std::move( reply.second));
-               }
-            }
-
-            std::vector< communication::message::Complete> Call::operator () ( message_type message)
-            {
-               Trace trace{ "mockup::service::Call", log::internal::debug};
-
-               if( common::flag< TPNOREPLY>( message.flags))
-               {
-                  //common::log::error << "message.descriptor: " << message.descriptor << " correlation: " << message.correlation << std::endl;
-                  return {};
-               }
-
-               auto reply = message::reverse::type( message);
-               auto found = range::find( m_server, message.service.name);
-
-               if( found)
-               {
-                  reply = found->second;
-               }
-
-               reply.correlation = message.correlation;
-               reply.buffer.memory = message.buffer.memory;
-               reply.buffer.type = message.buffer.type;
-               reply.transaction.trid = message.trid;
-               reply.descriptor = message.descriptor;
-
-
-               std::vector< communication::message::Complete> result;
-               result.emplace_back( marshal::complete( reply));
-               return result;
-            }
-
-         } // service
-
-         namespace transaction
-         {
-
-            std::vector< communication::message::Complete> Commit::operator () ( message_type message)
-            {
-               Trace trace{ "mockup::transaction::Commit", log::internal::debug};
-
-               std::vector< communication::message::Complete> result;
-
-               {
-                  common::message::transaction::commit::Reply reply;
-
-                  reply.correlation = message.correlation;
-                  reply.process = common::mockup::ipc::transaction::manager::queue().process();
-                  reply.state = XA_OK;
-                  reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
-                  reply.trid = message.trid;
-
-                  result.emplace_back( marshal::complete( reply));
-
-                  reply.stage = common::message::transaction::commit::Reply::Stage::commit;
-                  result.emplace_back( marshal::complete( reply));
-               }
-               return result;
-            }
-
-            std::vector< communication::message::Complete> Rollback::operator () ( message_type message)
-            {
-               Trace trace{ "mockup::transaction::Rollback", log::internal::debug};
-
-               reply_type reply;
-
-               reply.correlation = message.correlation;
-               reply.process = common::mockup::ipc::transaction::manager::queue().process();
-               reply.state = XA_OK;
-               reply.trid = message.trid;
-
-               std::vector< communication::message::Complete> result;
-               result.emplace_back( marshal::complete( reply));
-               return result;
-            }
-
-         } // transaction
-
-
-         namespace create
-         {
-
-            namespace lookup
-            {
-               common::message::service::lookup::Reply reply(
-                     const std::string& service,
-                     platform::ipc::id::type queue,
-                     std::chrono::microseconds timeout)
-               {
-                  common::message::service::lookup::Reply reply;
-                  reply.process.queue = queue;
-                  reply.process.pid = common::process::id();
-                  reply.service.name = service;
-                  reply.service.timeout = timeout;
-
-                  return reply;
-
-               }
-
-            } // lookup
-
-            transform::Handler broker( std::vector< message::service::lookup::Reply> replies)
-            {
-               return transform::Handler{
-                  broker::Lookup{ std::move( replies)},
-                  broker::server::Connect{},
-                  broker::client::Connect{},
-                  broker::lookup::Process{},
-               };
-            }
-
-            transform::Handler broker()
-            {
-               return transform::Handler{ broker::server::Connect{}, broker::client::Connect{}};
-            }
-
-            common::mockup::transform::Handler server( std::vector< std::pair< std::string, message::service::call::Reply>> replies)
-            {
-               return transform::Handler{ service::Call{ std::move( replies)}};
-            }
-
-            namespace transaction
-            {
-               common::mockup::transform::Handler manager()
-               {
-                  return transform::Handler{ mockup::transaction::Commit{}, mockup::transaction::Rollback{}};
-               }
-            } // transaction
-
-
-         } // create
-
-         namespace domain
-         {
             namespace local
             {
                namespace
                {
-                  template< typename M>
-                  reply::result_t result( const process::Handle& process, M&& message)
+                  void prepare_domain_manager( platform::ipc::id::type ipc)
                   {
-                     return { process.queue, std::forward< M>( message)};
+                     common::environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
+
+                     log::internal::debug << environment::variable::name::ipc::domain::manager() << " set to: "
+                           << common::environment::variable::get( environment::variable::name::ipc::domain::manager()) << '\n';
+
+                     std::ofstream file{ common::environment::domain::singleton::file()};
+
+                     if( file)
+                     {
+                        file << ipc;
+                        log::internal::debug << "ipc: " << ipc << " to: " << common::environment::domain::singleton::file() << '\n';
+                     }
+                     else
+                     {
+                        log::error << "faild to create mockup domain singleton file: " << common::environment::domain::singleton::file() << '\n';
+                     }
                   }
 
-                  template< typename M>
-                  std::vector< reply::result_t> result_set( const process::Handle& process, M&& message)
-                  {
-                     std::vector< reply::result_t> result;
-                     result.emplace_back( process.queue, std::forward< M>( message));
-                     return result;
-                  }
 
+                  namespace handle
+                  {
+
+                     namespace connect
+                     {
+                        struct Reply
+                        {
+                           Reply( std::string information) : information{ std::move( information)} {}
+
+                           void operator () ( message::domain::process::connect::Reply& r)
+                           {
+                              log::internal::debug << "mockup " << information << " - connected to the domain\n";
+                           }
+
+                           std::string information;
+                        };
+                     } // connect
+                  } // handle
                } // <unnamed>
             } // local
 
-            namespace service
+            Manager::Manager() : Manager( default_handler())
             {
-               std::vector< reply::result_t> Echo::operator()( message::service::call::callee::Request request)
-               {
-                  auto reply = message::reverse::type( request);
-
-                  reply.buffer = std::move( request.buffer);
-                  reply.transaction.trid = request.trid;
-
-                  return local::result_set( request.process, std::move( reply));
-               }
-
-            } // server
-
-            namespace broker
-            {
-               Lookup::Lookup( std::vector< common::message::service::lookup::Reply> replies)
-               {
-                  log::internal::debug << "replies: " << range::make( replies) << "\n";
-
-                  for( auto& reply : replies)
-                  {
-                     m_services.emplace( reply.service.name, std::move( reply));
-                  }
-               }
-
-               std::vector< reply::result_t> Lookup::operator()( message::service::lookup::Request request)
-               {
-                  Trace trace{ "mockup::broker::Lookup", log::internal::debug};
-
-                  auto reply = message::reverse::type( request);
-
-                  auto found = range::find( m_services, request.requested);
-
-                  if( found)
-                  {
-                     reply = found->second;
-                     reply.correlation = request.correlation;
-                     reply.state = message::service::lookup::Reply::State::idle;
-                  }
-                  else
-                  {
-                     reply.state = message::service::lookup::Reply::State::absent;
-                  }
-
-                  return local::result_set( request.process, std::move( reply));
-               }
-
-               namespace transaction
-               {
-                  namespace client
-                  {
-
-                     std::vector< reply::result_t> Connect::operator () ( message::transaction::client::connect::Request r)
-                     {
-                        Trace trace{ "mockup::broker::transaction::client::Connect", log::internal::debug};
-
-                        auto reply = m_reply;
-                        reply.correlation = r.correlation;
-
-                        return local::result_set( r.process, std::move( reply));
-                     }
-                  }
-               }
-
-            } // broker
 
 
+            }
 
-            Broker::Broker( reply::Handler handler, dummy_t)
+            Manager::Manager( message::dispatch::Handler&& handler)
                : m_replier{ std::move( handler)}
-               , m_broker_replier_link{ mockup::ipc::broker::queue().output().connector().id(), m_replier.input()}
             {
-
+               local::prepare_domain_manager( m_replier.input());
             }
 
-            Broker::Broker() : Broker( default_handler())
+            Manager::~Manager() = default;
+
+            message::dispatch::Handler Manager::default_handler()
             {
-               //
-               // Set up TM identification, so we can use the broker without setting up a mockup-TM.
-               // If a real or mockup TM connects this will be overwritten
-               //
-               m_state.singeltons[ process::instance::transaction::manager::identity()].queue = mockup::ipc::transaction::manager::id();
-            }
 
-            Broker::~Broker() = default;
-
-            std::vector< reply::result_t> Broker::check_process_connect( const process::Handle& process)
-            {
-               Trace trace{ "mockup check_process_connect", log::internal::debug};
-
-               std::vector< reply::result_t> result;
-
-               auto found = m_state.process_request.find( process.pid);
-
-               if( found != std::end( m_state.process_request))
-               {
-                  for( auto& target : found->second)
+               return message::dispatch::Handler{
+                  [&]( message::domain::process::connect::Request& r)
                   {
-                     log::internal::debug << "mockup - process connect found waiter: " << target.process << " for: " << process << std::endl;
+                     Trace trace{ "mockup domain::process::connect::Request", log::internal::debug};
 
-                     auto reply = message::reverse::type( target);
-                     reply.process = process;
-                     result.push_back( local::result( target.process, reply));
-                  }
-                  m_state.process_request.erase( found);
-               }
-               return result;
-            }
-
-            reply::Handler Broker::default_handler()
-            {
-
-               return reply::Handler{
-                  [&]( message::server::connect::Request r)
-                  {
-                     Trace trace{ "mockup server::connect::Request", log::internal::debug};
-
-                     m_state.servers.push_back( r.process);
-
-                     auto result = check_process_connect( r.process);
+                     m_state.executables.push_back( r.process);
 
                      auto reply = message::reverse::type( r);
                      reply.directive = decltype( reply)::Directive::start;
@@ -417,226 +135,367 @@ namespace casual
                         {
                            log::internal::debug << "mockup process: " << r.process << " is a singleton, and one is already running\n";
                            reply.directive = decltype( reply)::Directive::singleton;
-                           return local::result_set( r.process, reply);
+
+                           ipc::eventually::send( r.process.queue, reply);
+
+                           return;
                         }
-                        else
-                        {
-                           m_state.singeltons[ r.identification] = r.process;
+                        m_state.singeltons[ r.identification] = r.process;
+                     }
 
-                           auto found = range::find(  m_state.singelton_request, r.identification);
+                     ipc::eventually::send( r.process.queue, reply);
 
-                           if( found)
+                     //
+                     // Check pending
+                     //
+                     range::trim( m_state.pending, range::remove_if( m_state.pending, [&]( const common::message::domain::process::lookup::Request& p)
                            {
-                              for( auto& target : found->second)
+                              if( ( p.identification && p.identification == r.identification)
+                                    || ( p.pid && p.pid == r.process.pid))
                               {
-                                 auto reply = message::reverse::type( target);
+                                 log::internal::debug << "mockup found pending: " << p << " for connected process: " << r.process << "\n";
+
+                                 auto reply = message::reverse::type( p);
                                  reply.process = r.process;
-                                 result.push_back( local::result( target.process, reply));
+                                 ipc::eventually::send( p.process.queue, reply);
+                                 return true;
                               }
-                              m_state.singelton_request.erase( found.begin());
-                           }
-                        }
-                     }
-
-                     for( auto& service : r.services)
-                     {
-                        auto& reply = m_state.services[ service.name];
-                        reply.service = service;
-                        reply.process = r.process;
-
-                        log::internal::debug << "mockup - service added: " << reply << std::endl;
-                     }
-
-                     result.push_back( local::result( r.process, reply));
-
-                     return result;
-                  },
-                  [&]( common::message::inbound::ipc::Connect c)
-                  {
-                     Trace trace{ "mockup inbound::ipc::Connect", log::internal::debug};
-
-
-                     m_state.servers.push_back( c.process);
-
-                     return check_process_connect( c.process);
+                              return false;
+                           }));
 
                   },
-                  [&]( common::message::process::lookup::Request r)
+                  [&]( common::message::domain::process::lookup::Request& r)
                   {
-                     Trace trace{ "mockup lookup::process::Request", log::internal::debug};
+                     Trace trace{ "mockup domain::process::lookup::Request", log::internal::debug};
+
+                     auto reply = message::reverse::type( r);
 
                      if( r.identification)
                      {
-                        log::internal::debug << "mockup - lockup for identificatin: " << r.identification << '\n';
-
                         auto found = range::find(  m_state.singeltons, r.identification);
 
                         if( found)
                         {
-                           auto reply = message::reverse::type( r);
+                           log::internal::debug << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
+
                            reply.process = found->second;
-                           return local::result_set( r.process, reply);
-                        }
-                        else
-                        {
-                           m_state.singelton_request[ r.identification].push_back( std::move( r));
+                           ipc::eventually::send( r.process.queue, reply);
+                           return;
                         }
                      }
                      else if( r.pid)
                      {
-                        log::internal::debug << "lockup for pid: " << r.pid << '\n';
-
-                        auto found = range::find_if( m_state.servers, [=]( const process::Handle& h){
+                        auto found = range::find_if( m_state.executables, [=]( const process::Handle& h){
                            return h.pid == r.pid;
                         });
 
-                        auto reply = message::reverse::type( r);
-
                         if( found)
                         {
+
                            reply.process = *found;
-                           log::internal::debug << "found server from pid: " << reply.process << '\n';
-                           return local::result_set( r.process, reply);
-                        }
-                        else if( r.directive == common::message::process::lookup::Request::Directive::wait)
-                        {
-                           m_state.process_request[ r.pid].push_back( std::move( r));
-                        }
-                        else
-                        {
-                           return local::result_set( r.process, reply);
+                           log::internal::debug << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
+                           ipc::eventually::send( r.process.queue, reply);
+                           return;
                         }
                      }
-                     return std::vector< reply::result_t>{};
-                  },
-                  []( message::transaction::client::connect::Request r)
-                  {
 
-                     Trace trace{ "mockup transaction::client::connect::Request", log::internal::debug};
-                     auto reply = message::reverse::type( r);
-                     reply.directive = decltype( reply)::Directive::start;
-
-                     return local::result_set( r.process, reply);
-                  },
-                  []( common::message::transaction::manager::connect::Request r)
-                  {
-                     Trace trace{ "mockup transaction::manager::connect::Request", log::internal::debug};
-
-                     auto reply = message::reverse::type( r);
-                     reply.directive = decltype( reply)::Directive::start;
-
-                     auto result = local::result_set( r.process, reply);
-
-                     common::message::transaction::manager::Configuration conf;
-                     conf.correlation = r.correlation;
-                     result.push_back( local::result( r.process, conf));
-
-                     return result;
-                  },
-                  [&]( message::service::lookup::Request r)
-                  {
-                     Trace trace{ "mockup service::lookup::Request", log::internal::debug};
-
-                     auto found = range::find( m_state.services, r.requested);
-
-                     if( found)
+                     // not found
+                     if( r.directive == common::message::domain::process::lookup::Request::Directive::wait)
                      {
-                        auto reply = found->second;
-                        reply.correlation = r.correlation;
-                        return local::result_set( r.process, reply);
+                        log::internal::debug << "mockup - lockup wait with request: " << r << '\n';
+                        m_state.pending.push_back( std::move( r));
                      }
-
-                     auto reply = message::reverse::type( r);
-                     reply.state = decltype( reply)::State::absent;
-
-                     return local::result_set( r.process, reply);
+                     else
+                     {
+                        ipc::eventually::send( r.process.queue, reply);
+                     }
                   },
-                  []( common::message::transaction::manager::Ready r)
+                  [&]( message::domain::process::termination::Registration& m)
                   {
-                     Trace trace{ "mockup common::message::transaction::manager::Ready", log::internal::debug};
-                     return std::vector< reply::result_t>{};
-                  },
-                  []( common::message::forward::connect::Request r)
-                  {
-                     Trace trace{ "mockup forward::connect::Request", log::internal::debug};
-                     auto reply = message::reverse::type( r);
-                     reply.directive = decltype( reply)::Directive::start;
-
-                     return local::result_set( r.process, reply);
+                     Trace trace{ "mockup domain process::termination::Registration", log::internal::debug};
                   },
                };
             }
 
 
-            namespace transaction
+            namespace local
             {
-               reply::Handler Manager::default_handler()
+               namespace
                {
 
-                  return reply::Handler{
-                     []( common::message::transaction::commit::Request message)
+                  namespace send
+                  {
+                     namespace connect
+                     {
+                        void domain( const mockup::ipc::Replier& replier)
+                        {
+                           message::domain::process::connect::Request request;
+                           request.process = replier.process();
+
+                           communication::ipc::blocking::send( communication::ipc::domain::manager::device(), request);
+                        }
+
+                        void domain( const mockup::ipc::Replier& replier, const Uuid& identity)
+                        {
+                           message::domain::process::connect::Request request;
+                           request.identification = identity;
+                           request.process = replier.process();
+
+                           communication::ipc::blocking::send( communication::ipc::domain::manager::device(), request);
+                        }
+                     } // connect
+                  } // send
+               } // <unnamed>
+            } // local
+
+
+            Broker::Broker() : Broker( default_handler())
+            {
+            }
+
+            Broker::Broker( message::dispatch::Handler&& handler)
+               : m_replier{ std::move( handler)}
+            {
+               //
+               // Connect to the domain
+               //
+               local::send::connect::domain( m_replier, process::instance::identity::broker());
+
+               //
+               // Set environment variable to make it easier for other processes to
+               // reach this broker (should work any way...)
+               //
+               environment::variable::set( environment::variable::name::ipc::broker(), m_replier.input());
+
+            }
+
+            Broker::~Broker() = default;
+
+
+            message::dispatch::Handler Broker::default_handler()
+            {
+
+
+               return message::dispatch::Handler{
+
+                  [&]( message::service::lookup::Request& r)
+                  {
+                     Trace trace{ "mockup service::lookup::Request", log::internal::debug};
+
+                     auto reply = message::reverse::type( r);
+
+                     auto found = range::find( m_state.services, r.requested);
+
+                     if( found)
+                     {
+                        reply = found->second;
+                        reply.correlation = r.correlation;
+                     }
+                     else
+                     {
+                        reply.service.name = r.requested;
+                        reply.state = decltype( reply)::State::absent;
+                     }
+                     ipc::eventually::send( r.process.queue, reply);
+                  },
+                  [&]( message::service::call::ACK& m)
+                  {
+                     Trace trace{ "mockup service::call::ACK", log::internal::debug};
+
+                  },
+                  [&]( message::service::Advertise& m)
+                  {
+                     Trace trace{ "mockup service::Advertise", log::internal::debug};
+
+                     for( auto& service : m.services)
+                     {
+                        auto& lookup = m_state.services[ service.name];
+                        lookup.service = service;
+                        lookup.process = m.process;
+                     }
+                  },
+                  [&]( message::traffic::monitor::connect::Request& m)
+                  {
+                     m_state.traffic_monitors.push_back( m.process.queue);
+                     ipc::eventually::send( m.process.queue, message::reverse::type( m));
+                  },
+                  [&]( message::traffic::monitor::Disconnect& m)
+                  {
+                     range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
+                  },
+                  local::handle::connect::Reply{ "broker"},
+
+               };
+
+
+
+            }
+
+            namespace transaction
+            {
+               message::dispatch::Handler Manager::default_handler()
+               {
+
+                  return message::dispatch::Handler{
+                     [&]( common::message::transaction::commit::Request& message)
                      {
                         Trace trace{ "mockup::transaction::Commit", log::internal::debug};
 
                         common::message::transaction::commit::Reply reply;
 
                         reply.correlation = message.correlation;
-                        reply.process = common::mockup::ipc::transaction::manager::queue().process();
+                        reply.process = m_replier.process();
                         reply.state = XA_OK;
                         reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
                         reply.trid = message.trid;
 
-                        auto result = local::result_set( message.process, reply);
+                        ipc::eventually::send( message.process.queue, reply);
 
                         reply.stage = common::message::transaction::commit::Reply::Stage::commit;
-                        result.push_back( local::result( message.process, reply));
-
-                        return result;
+                        ipc::eventually::send( message.process.queue, reply);
 
                      },
-                     []( common::message::transaction::rollback::Request message)
+                     [&]( common::message::transaction::rollback::Request& message)
                      {
                         Trace trace{ "mockup::transaction::Rollback", log::internal::debug};
 
                         common::message::transaction::rollback::Reply reply;
 
                         reply.correlation = message.correlation;
-                        reply.process = common::mockup::ipc::transaction::manager::queue().process();
+                        reply.process = m_replier.process();
                         reply.state = XA_OK;
                         reply.trid = message.trid;
 
-                        return local::result_set( message.process, reply);
-                     }
+                        ipc::eventually::send( message.process.queue, reply);
+                     },
+                     local::handle::connect::Reply{ "transaction manager"},
+
                   };
                }
 
                Manager::Manager() : Manager( default_handler()) {}
 
-               Manager::Manager( reply::Handler handler)
+               Manager::Manager( message::dispatch::Handler handler)
                   : m_replier{ std::move( handler)}
-                  , m_tm_replier_link{ mockup::ipc::transaction::manager::queue().output().connector().id(), m_replier.input()}
                {
 
+                  //
+                  // Connect to the domain
+                  //
+                  local::send::connect::domain( m_replier, process::instance::transaction::manager::identity());
                }
 
             } // transaction
 
-
-            Domain::Domain()
-               : server1{ reply::Handler{ service::Echo{}}},
-                  m_broker{
-                  broker::Lookup
-                  {
-                     {
-                       mockup::create::lookup::reply( "service1", server1.input()),
-                       mockup::create::lookup::reply( "service2", server1.input()),
-                       mockup::create::lookup::reply( "service3_2ms_timout", server1.input(), std::chrono::milliseconds{ 2}),
-                       mockup::create::lookup::reply( "removed_ipc_queue", 0),
-                     }
-                  }}
+            namespace local
             {
+               namespace
+               {
+                  void advertise( std::vector< message::Service> services, const process::Handle& process)
+                  {
+                     message::service::Advertise advertise;
+                     advertise.process = process;
+                     advertise.services = std::move( services);
 
-            }
+                     communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
+
+                  }
+               } // <unnamed>
+            } // local
+
+            namespace echo
+            {
+               namespace create
+               {
+                  message::Service service(
+                        std::string name,
+                        std::chrono::microseconds timeout)
+                  {
+                     message::Service result;
+
+                     result.name = std::move( name);
+                     result.timeout = timeout;
+
+                     return result;
+                  }
+               } // create
+
+
+
+
+               Server::Server( std::vector< message::Service> services)
+                : m_replier{ message::dispatch::Handler{ service::Echo{}, local::handle::connect::Reply{ "echo server"},}}
+               {
+                  //
+                  // Connect to the domain
+                  //
+                  local::send::connect::domain( m_replier);
+
+                  advertise( std::move( services));
+               }
+
+               Server::Server( message::Service service) : Server{ std::vector< message::Service>{ std::move( service)}}
+               {
+
+               }
+
+
+               void Server::advertise( std::vector< message::Service> services) const
+               {
+                  Trace trace{ "mockup echo::Server::advertise", log::internal::debug};
+
+                  //
+                  // Advertise services
+                  //
+                  local::advertise( std::move( services),  m_replier.process());
+               }
+
+               void Server::undadvertise( std::vector< message::Service> services) const
+               {
+                  Trace trace{ "mockup echo::Server::unadvertise", log::internal::debug};
+
+                  message::service::Unadvertise unadvertise;
+                  unadvertise.process = m_replier.process();
+                  unadvertise.services = std::move( services);
+
+                  communication::ipc::blocking::send( communication::ipc::broker::device(), unadvertise);
+               }
+
+               void Server::send_ack( std::string service) const
+               {
+                  message::service::call::ACK message;
+                  message.service = std::move( service);
+                  message.process = process();
+
+                  communication::ipc::blocking::send( communication::ipc::broker::device(), message);
+               }
+
+               process::Handle Server::process() const
+               {
+                  return m_replier.process();
+               }
+
+
+            } // echo
+
+            namespace minimal
+            {
+               Domain::Domain()
+                  : server{ {
+                     echo::create::service( "service1"),
+                     echo::create::service( "service2"),
+                     echo::create::service( "service3_2ms_timout", std::chrono::milliseconds{ 2})}}
+               {
+                  //
+                  // Advertise "removed" ipc queue
+                  //
+                  process::Handle process{ mockup::pid::next()};
+                  local::advertise( { { "removed_ipc_queue"}}, process);
+               }
+
+            } // minimal
+
+
 
 
          } // domain

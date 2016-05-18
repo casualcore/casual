@@ -17,6 +17,8 @@
 #include "common/error.h"
 #include "common/exception.h"
 
+#include "common/message/domain.h"
+
 
 
 #include <map>
@@ -65,11 +67,12 @@ namespace casual
 
 
 
+         /*
          void handleXAresponse( std::vector< int>& result)
          {
 
          }
-
+         */
 
 
          Context& Context::instance()
@@ -81,47 +84,8 @@ namespace casual
 
          Context::Context()
          {
-
          }
 
-         Context::Manager::Manager()
-         {
-            common::trace::Scope trace{ "transaction::Context::Manager::Manager", common::log::internal::transaction};
-
-            message::transaction::client::connect::Request request;
-            request.process = process::handle();
-            request.path = process::path();
-
-            log::internal::transaction << "send client connect request" << std::endl;
-
-            auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
-
-            std::swap( resources, reply.resources);
-
-            log::internal::transaction << "received client connect reply from broker" << std::endl;
-
-         }
-
-
-         const Context::Manager& Context::Manager::instance()
-         {
-            static const Manager singleton = Manager();
-            return singleton;
-         }
-
-         platform::ipc::id::type Context::Manager::queue() const
-         {
-            //
-            // Will block until the TM is up.
-            //
-            return process::instance::transaction::manager::handle().queue;
-         }
-
-
-         const Context::Manager& Context::manager()
-         {
-            return Manager::instance();
-         }
 
          Transaction& Context::current()
          {
@@ -147,33 +111,59 @@ namespace casual
             return false;
          }
 
+         namespace local
+         {
+            namespace
+            {
+               namespace resource
+               {
+
+                  message::domain::configuration::transaction::resource::Reply configuration()
+                  {
+                     common::trace::Scope trace{ "transaction::local::resource::configuration", common::log::internal::transaction};
+
+                     message::domain::configuration::transaction::resource::Request request;
+                     request.process = process::handle();
+
+                     return communication::ipc::call( communication::ipc::domain::manager::device(), request);
+                  }
+
+               } // resource
+
+            } // <unnamed>
+         } // local
+
          void Context::set( const std::vector< Resource>& resources)
          {
             common::trace::Scope trace{ "transaction::Context::set", common::log::internal::transaction};
 
-
-            using RM = message::transaction::resource::Manager;
-
-            //
-            // We don't need resources from 'manager' after this, no point
-            // occupying memory -> we move it.
-            //
-            auto configuration = std::move( manager().resources);
-
-            auto configRange = range::make( configuration);
-
-
-            for( auto& resource : resources)
+            if( ! resources.empty())
             {
-               //
-               // It could be several RM-configuration for one linked RM.
-               //
 
-               auto configPartition = range::stable_partition( configRange, [&]( const RM& rm){ return resource.key == rm.key;});
+               using RM = message::domain::configuration::transaction::Resource;
 
-               if( std::get< 0>( configPartition))
+
+               auto reply = local::resource::configuration();
+
+               auto configuration = range::make( reply.resources);
+
+
+               for( auto& resource : resources)
                {
-                  for( auto& rm : std::get< 0>( configPartition))
+                  //
+                  // It could be several RM-configuration for one linked RM.
+                  //
+
+                  auto splitted = range::stable_partition( configuration, [&]( const RM& rm){ return resource.key == rm.key;});
+
+                  auto partition = std::get< 0>( splitted);
+
+                  if( ! partition)
+                  {
+                     throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships");
+                  }
+
+                  for( auto& rm : partition)
                   {
                      m_resources.all.emplace_back(
                            resource.key,
@@ -182,16 +172,14 @@ namespace casual
                            std::move( rm.openinfo),
                            std::move( rm.closeinfo));
                   }
-               }
-               else
-               {
-                  throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships");
-               }
 
-               //
-               // Continue with the rest
-               //
-               configRange = std::get< 1>( configPartition);
+
+
+                  //
+                  // Continue with the rest
+                  //
+                  configuration = std::get< 1>( splitted);
+               }
             }
 
             //
@@ -277,7 +265,7 @@ namespace casual
 
                common::log::internal::transaction << "involved message: " << message << '\n';
 
-               communication::ipc::blocking::send( manager().queue(), message);
+               communication::ipc::blocking::send( communication::ipc::transaction::manager::device(), message);
             }
          }
 
@@ -721,7 +709,7 @@ namespace casual
                // Get reply
                //
                {
-                  auto reply = communication::ipc::call( manager().queue(), request);
+                  auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
                   //
                   // We could get commit-reply directly in an one-phase-commit
@@ -819,7 +807,7 @@ namespace casual
             request.resources = resources();
             range::append( transaction.resources, request.resources);
 
-            auto reply = communication::ipc::call( manager().queue(), request);
+            auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
             log::internal::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
 

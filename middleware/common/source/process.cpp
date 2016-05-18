@@ -16,6 +16,7 @@
 #include "common/environment.h"
 #include "common/uuid.h"
 
+#include "common/message/domain.h"
 #include "common/message/server.h"
 #include "common/communication/ipc.h"
 #include "common/flag.h"
@@ -121,6 +122,25 @@ namespace casual
                   return singleton;
                }
 
+               namespace forward
+               {
+                  const Uuid& cache()
+                  {
+                     const static Uuid singleton{ "f17d010925644f728d432fa4a6cf5257"};
+                     return singleton;
+                  }
+               } // forward
+
+
+               namespace gateway
+               {
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "b9624e2f85404480913b06e8d503fce5"};
+                     return singleton;
+                  }
+               } // domain
+
                namespace traffic
                {
                   const Uuid& manager()
@@ -141,32 +161,6 @@ namespace casual
                      const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
                      return singleton;
                   }
-
-                  namespace local
-                  {
-                     namespace
-                     {
-                        Handle& handle()
-                        {
-                           static Handle singleton = fetch::handle( manager::identity(), fetch::Directive::wait);
-                           return singleton;
-                        }
-                     } // <unnamed>
-                  } // local
-
-                  const Handle& handle()
-                  {
-                     return local::handle();
-                  }
-
-                  const Handle& refetch()
-                  {
-                     local::handle() = fetch::handle( manager::identity(), fetch::Directive::wait);
-                     return handle();
-                  }
-
-
-
                } // manager
 
             } // transaction
@@ -177,16 +171,90 @@ namespace casual
                {
                   trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
 
-                  message::process::lookup::Request request;
-                  request.directive = static_cast< message::process::lookup::Request::Directive>( directive);
+                  message::domain::process::lookup::Request request;
+                  request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
                   request.identification = identity;
                   request.process = common::process::handle();
 
-                  auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
+                  auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+                  return reply.process;
+               }
+
+               Handle handle( platform::pid::type pid , Directive directive)
+               {
+                  trace::Scope trace{ "instance::handle::fetch (pid)", log::internal::trace};
+
+                  message::domain::process::lookup::Request request;
+                  request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
+                  request.pid = pid;
+                  request.process = common::process::handle();
+
+                  auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
                   return reply.process;
                }
 
             } // fetch
+
+            namespace local
+            {
+               namespace
+               {
+                  template< typename M>
+                  void connect_reply( M&& message)
+                  {
+                     switch( message.directive)
+                     {
+                        case M::Directive::singleton:
+                        {
+                           log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
+                           throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
+                        }
+                        case M::Directive::shutdown:
+                        {
+                           log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
+                           throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
+                        }
+                        default:
+                        {
+                           break;
+                        }
+                     }
+                  }
+
+               } // <unnamed>
+            } // local
+
+            void connect( const Uuid& identity, const Handle& process)
+            {
+               trace::Scope trace{ "process::instance::connect identity", log::internal::trace};
+
+               message::domain::process::connect::Request request;
+               request.identification = identity;
+               request.process = process;
+
+               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+            }
+
+            void connect( const Uuid& identity)
+            {
+               connect( identity, handle());
+            }
+
+            void connect( const Handle& process)
+            {
+               trace::Scope trace{ "process::instance::connect process", log::internal::trace};
+
+               message::domain::process::connect::Request request;
+               request.process = process;
+
+               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+            }
+
+            void connect()
+            {
+               connect( handle());
+            }
+
          } // instance
 
 
@@ -336,6 +404,9 @@ namespace casual
          {
             trace::Scope trace{ "process::spawn", log::internal::trace};
 
+            signal::thread::scope::Block block;
+
+
             path = environment::string( path);
 
             //
@@ -391,11 +462,36 @@ namespace casual
 
             auto c_environment = local::current::environment( environment);
 
-            posix_spawnattr_t attributes;
+            struct attribute_t
+            {
+               attribute_t()
+               {
+                  check_error( posix_spawnattr_init( &attributes), "posix_spawnattr_init");
+                  check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
+                  auto mask = signal::set::empty();
+                  check_error( posix_spawnattr_setsigmask( &attributes, &mask.set), "posix_spawnattr_setsigmask");
+               }
+               ~attribute_t()
+               {
+                  check_error( posix_spawnattr_destroy( &attributes), "posix_spawnattr_destroy");
+               }
 
-            posix_spawnattr_init( &attributes);
+               posix_spawnattr_t attributes;
 
-            platform::pid::type pid;
+            private:
+               void check_error( int code, const char* message)
+               {
+                  if( code != 0)
+                  {
+                     log::error << "failed to " << message << " - " << error::string( code) << '\n';
+                  }
+               }
+            } spawn;
+
+
+
+
+            platform::pid::type pid = 0;
 
             log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
@@ -403,7 +499,7 @@ namespace casual
                   &pid,
                   path.c_str(),
                   nullptr,
-                  &attributes,
+                  &spawn.attributes,
                   const_cast< char* const*>( c_arguments.data()),
                   const_cast< char* const*>( c_environment.data())
                   );
@@ -465,7 +561,7 @@ namespace casual
             {
                lifetime::Exit wait( platform::pid::type pid, int flags = WNOHANG)
                {
-                  log::internal::debug << "wait - pid: " << pid << " flags: " << flags << std::endl;
+
 
                   auto handle_signal = [](){
                      try
@@ -550,7 +646,7 @@ namespace casual
 
                   while( loop());
 
-                  log::internal::debug << "wait exit: " << exit << '\n';
+                  //log::internal::debug << "wait exit: " << exit << '\n';
 
                   return exit;
                }
@@ -581,6 +677,11 @@ namespace casual
 
          int wait( platform::pid::type pid)
          {
+            //
+            // We'll only handle child signals.
+            //
+            signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+
             return local::wait( pid, 0).status;
          }
 
@@ -609,94 +710,7 @@ namespace casual
             return signal::send( pid, signal::Type::terminate);
          }
 
-         file::scoped::Path singleton( std::string path)
-         {
-            std::ifstream file( path);
 
-            if( file)
-            {
-               try
-               {
-
-                  common::signal::timer::Scoped alarm{ std::chrono::seconds( 5)};
-
-                  decltype( communication::ipc::inbound::id()) id;
-                  std::string uuid;
-                  file >> id;
-                  file >> uuid;
-
-                  {
-
-                     common::message::server::ping::Request request;
-                     request.process = handle();
-
-                     auto reply = communication::ipc::call( id, request, communication::ipc::policy::Blocking{});
-
-                     if( reply.uuid == Uuid( uuid))
-                     {
-
-                        //
-                        // There are another process for this domain - abort
-                        //
-                        throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
-                     }
-
-                     common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
-                  }
-
-               }
-               catch( const common::exception::signal::Timeout&)
-               {
-                  common::log::error << "failed to get ping response from potentially running process - to risky to start - action: terminate" << std::endl;
-                  throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
-               }
-               catch( const common::exception::queue::Unavailable&)
-               {
-                  common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
-               }
-            }
-
-            file::scoped::Path result( std::move( path));
-
-
-            std::ofstream output( result);
-
-            if( output)
-            {
-               output << communication::ipc::inbound::id() << std::endl;
-               output << uuid() << std::endl;
-            }
-            else
-            {
-               throw common::exception::invalid::File( "failed to write process singleton queue file: " + path);
-            }
-
-            return result;
-         }
-
-
-
-         Handle singleton( const Uuid& identification, bool wait)
-         {
-            message::process::lookup::Request request;
-            request.directive = wait ? message::process::lookup::Request::Directive::wait : message::process::lookup::Request::Directive::direct;
-            request.identification = identification;
-            request.process = process::handle();
-
-            return communication::ipc::call( communication::ipc::broker::id(), request).process;
-         }
-
-         Handle lookup( platform::pid::type pid, bool wait)
-         {
-            trace::Scope trace{ "process::lookup", log::internal::trace};
-
-            message::process::lookup::Request request;
-            request.directive = wait ? message::process::lookup::Request::Directive::wait : message::process::lookup::Request::Directive::direct;
-            request.pid = pid;
-            request.process = process::handle();
-
-            return communication::ipc::call( communication::ipc::broker::id(), request).process;
-         }
 
          Handle ping( platform::ipc::id::type queue)
          {
@@ -742,23 +756,28 @@ namespace casual
 
             std::vector< lifetime::Exit> ended()
             {
-               std::vector< lifetime::Exit> result;
+               trace::internal::Scope trace{ "process::lifetime::ended"};
 
-               Exit exit;
+               //
+               // We'll only handle child signals.
+               //
+               signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+
+               std::vector< lifetime::Exit> terminations;
 
                while( true)
                {
                   auto exit = local::wait( -1);
                   if( exit)
                   {
-                     result.push_back( exit);
+                     terminations.push_back( exit);
                   }
                   else
                   {
-                     return result;
+                     log::internal::debug << "terminations: " << range::make( terminations) << '\n';
+                     return terminations;
                   }
                }
-               return result;
             }
 
 
@@ -812,22 +831,6 @@ namespace casual
 
          } // lifetime
 
-         void connect( const Handle& handle)
-         {
-            message::inbound::ipc::Connect connect;
-            connect.process = handle;
-
-            communication::ipc::blocking::send( communication::ipc::broker::id(), connect);
-         }
-
-         //!
-         //! Connect the current process to the local domain. That is,
-         //! let the domain know which ipc-queue is bound to which pid
-         //!
-         void connect()
-         {
-            connect( handle());
-         }
 
       } // process
    } // common

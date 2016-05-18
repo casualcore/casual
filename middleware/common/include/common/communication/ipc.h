@@ -81,36 +81,6 @@ namespace casual
 
                } // non
 
-               /*
-               namespace ignore
-               {
-                  namespace signal
-                  {
-                     using Blocking = communication::policy::prefix::basic< communication::policy::prefix::ignore::Signal, basic_blocking>;
-
-                     namespace non
-                     {
-                        using Blocking = communication::policy::prefix::basic< communication::policy::prefix::ignore::Signal, policy::non::basic_blocking>;
-                     } // non
-
-                  } // signal
-               } // ignore
-
-               namespace filter
-               {
-                  namespace signal
-                  {
-                     using Blocking = communication::policy::prefix::basic< communication::policy::prefix::filter::Signal, basic_blocking>;
-
-                     namespace non
-                     {
-                        using Blocking = communication::policy::prefix::basic< communication::policy::prefix::filter::Signal, policy::non::basic_blocking>;
-                     } // non
-
-                  } // signal
-               } // filter
-
-                */
             } // policy
 
 
@@ -173,16 +143,59 @@ namespace casual
 
                   handle_type id() const;
 
+                  inline void reconnect() const { throw; }
+
                   friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
 
-               private:
+               protected:
                   handle_type m_id;
                };
 
                using Device = communication::outbound::Device< Connector>;
+
+               namespace instance
+               {
+                  struct Connector : outbound::Connector
+                  {
+                     Connector( const Uuid& identity, std::string environment);
+
+                     void reconnect();
+
+                  private:
+                     Uuid m_identity;
+                     std::string m_environment;
+                  };
+
+                  using Device = communication::outbound::Device< Connector>;
+               } // instance
+
+               namespace domain
+               {
+                  struct Connector : outbound::Connector
+                  {
+                     Connector();
+                     void reconnect();
+                  };
+                  using Device = communication::outbound::Device< Connector>;
+               } // domain
+
             } // outbound
 
 
+            using error_type = typename outbound::Device::error_type;
+
+            template< typename D, typename M, typename P>
+            auto send( D& ipc, M&& message, P&& policy, const error_type& handler = nullptr)
+             -> typename std::enable_if< ! std::is_same< D, platform::ipc::id::type>::value, Uuid>::type
+            {
+               return ipc.send( message, policy, handler);
+            }
+
+            template< typename M, typename P>
+            Uuid send( platform::ipc::id::type ipc, M&& message, P&& policy, const error_type& handler = nullptr)
+            {
+               return outbound::Device{ ipc}.send( message, policy, handler);
+            }
 
 
             namespace blocking
@@ -206,16 +219,17 @@ namespace casual
                   return ipc.next( policy::Blocking{}, handler);
                }
 
-               template< typename M>
-               Uuid send( outbound::Device ipc, M&& message, const error_type& handler = nullptr)
+               template< typename D, typename M>
+               Uuid send( D&& ipc, M&& message, const error_type& handler = nullptr)
                {
-                  return ipc.send( message, policy::Blocking{}, handler);
+                  return ipc::send( std::forward< D>( ipc), message, policy::Blocking{}, handler);
                }
 
+               /*
                namespace force
                {
-                  template< typename M>
-                  Uuid send( inbound::Device ipc, M&& message, const error_type& handler = nullptr)
+                  template< typename D, typename M>
+                  Uuid send( D& ipc, M&& message, const error_type& handler = nullptr)
                   {
                      Uuid result;
 
@@ -227,6 +241,7 @@ namespace casual
                      return result;
                   }
                } // force
+               */
 
             } // blocking
 
@@ -253,26 +268,24 @@ namespace casual
                      return ipc.next( policy::non::Blocking{}, handler);
                   }
 
-                  template< typename M>
-                  Uuid send( outbound::Device ipc, M&& message, const error_type& handler = nullptr)
+                  template< typename D, typename M>
+                  Uuid send( D&& ipc, M&& message, const error_type& handler = nullptr)
                   {
-                     return ipc.send( message, policy::non::Blocking{}, handler);
+                     return ipc::send( std::forward< D>( ipc), message, policy::non::Blocking{}, handler);
                   }
-
-
                } // blocking
             } // non
 
-            template< typename M, typename Policy = policy::Blocking>
+            template< typename D, typename M, typename Policy = policy::Blocking>
             auto call(
-                  outbound::Device destination,
+                  D&& destination,
                   M&& message,
                   Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
                   inbound::Device& device = ipc::inbound::device())
                -> decltype( common::message::reverse::type( std::forward< M>( message)))
             {
-               auto correlation = destination.send( message, policy, handler);
+               auto correlation = ipc::send( std::forward< D>( destination), message, policy, handler);
 
                auto reply = common::message::reverse::type( std::forward< M>( message));
                device.receive( reply, correlation, policy, handler);
@@ -282,11 +295,33 @@ namespace casual
 
             namespace broker
             {
-               outbound::Device& device();
-
-               handle_type id();
-
+               outbound::instance::Device& device();
             } // broker
+
+            namespace transaction
+            {
+               namespace manager
+               {
+                  outbound::instance::Device& device();
+               } // manager
+            } // transaction
+
+            namespace gateway
+            {
+               namespace manager
+               {
+                  outbound::instance::Device& device();
+               } // manager
+            } // gateway
+
+
+            namespace domain
+            {
+               namespace manager
+               {
+                  outbound::domain::Device& device();
+               } // manager
+            } // domain
 
             bool exists( handle_type id);
 
@@ -309,18 +344,18 @@ namespace casual
                inline Helper() : Helper( nullptr) {}
 
 
-               template< typename M>
-               auto blocking_send( common::platform::ipc::id::type id, M&& message) const
-                -> decltype( common::communication::ipc::blocking::send( id, message, nullptr))
+               template< typename D, typename M>
+               auto blocking_send( D&& device, M&& message) const
+                -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
                {
-                  return common::communication::ipc::blocking::send( id, message, m_error_handler);
+                  return common::communication::ipc::blocking::send( std::forward< D>( device), message, m_error_handler);
                }
 
-               template< typename M>
-               auto non_blocking_send( common::platform::ipc::id::type id, M&& message) const
-                -> decltype( common::communication::ipc::blocking::send( id, message, nullptr))
+               template< typename D, typename M>
+               auto non_blocking_send( D&& device, M&& message) const
+                -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
                {
-                  return common::communication::ipc::non::blocking::send( id, message, m_error_handler);
+                  return common::communication::ipc::non::blocking::send( std::forward< D>( device), message, m_error_handler);
                }
 
                template< typename M, typename... Args>

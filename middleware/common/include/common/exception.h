@@ -168,16 +168,6 @@ namespace casual
 
          } // limit
 
-         namespace queue
-         {
-
-            struct Unavailable : base
-            {
-               using base::base;
-            };
-
-         } // queue
-
 
          namespace communication
          {
@@ -200,6 +190,12 @@ namespace casual
             };
 
          } // communication
+
+         namespace queue
+         {
+            using Unavailable = communication::Unavailable;
+
+         } // queue
 
 
          namespace signal

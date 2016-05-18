@@ -29,21 +29,66 @@ namespace casual
             }
          } // ipc
 
+         namespace local
+         {
+            namespace
+            {
+               namespace task
+               {
+                  struct base_batch
+                  {
+                     base_batch( state::Batch batch) : m_batch{ std::move( batch)} {}
+
+                     void start()
+                     {
+                        Trace trace{ "domain::manager::handle::task::base_batch::start"};
+
+                        message::domain::scale::Executable message;
+                        range::transform( m_batch.executables, message.executables, []( const state::Executable& e){ return e.id;});
+
+                        communication::ipc::inbound::device().push( std::move( message));
+                     }
+
+
+                  protected:
+                     state::Batch m_batch;
+                  };
+
+                  struct Boot : base_batch
+                  {
+                     using base_batch::base_batch;
+
+                     bool done() const
+                     {
+                        return m_batch.online();
+                     }
+
+                     friend std::ostream& operator << ( std::ostream& out, const Boot& value)
+                     {
+                        return out << "{ done: " << value.done() << ", batch: " << value.m_batch << '}';
+                     }
+                  };
+
+                  struct Shutdown : base_batch
+                  {
+                     using base_batch::base_batch;
+
+                     bool done() const
+                     {
+                        return m_batch.offline();
+                     }
+
+                     friend std::ostream& operator << ( std::ostream& out, const Shutdown& value)
+                     {
+                        return out << "{ done: " << value.done() << ", batch: " << value.m_batch << '}';
+                     }
+                  };
+               } // task
+
+            } // <unnamed>
+         } // local
          namespace handle
          {
-
-
-
-            namespace adjust
-            {
-               void instances( State& state)
-               {
-                  Trace trace{ "domain::manager::handle::adjust::instances"};
-
-               }
-
-
-            } // adjust
 
             namespace mandatory
             {
@@ -61,80 +106,22 @@ namespace casual
             {
                Trace trace{ "domain::manager::handle::boot"};
 
-               //
-               // We only want child and alarm signals
-               //
-               signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child, signal::Type::alarm})};
-
-               auto handle = handler( state);
-
-
                range::for_each( state.bootorder(), [&]( state::Batch& batch){
-                  try
-                  {
-                     signal::timer::Scoped timer{ batch.timeout()};
-
-                     log::information << "boot group " << batch.group.get().name << '\n';
-
-                     range::for_each( batch.executables, scale::Executable{ state});
-
-                     while( ! batch.online())
-                     {
-                        handle( ipc::device().blocking_next());
-                     }
-                  }
-                  catch( const exception::signal::Timeout&)
-                  {
-                     log::error << "failed to boot batch in a timely manner - action: keep going... - batch: " << batch << '\n';
-                     //timeouts.push_back( std::move( batch));
-                  }
-               });
-
+                     state.tasks.add( local::task::Boot{ batch});
+                  });
             }
-
 
             void shutdown( State& state)
             {
                Trace trace{ "domain::manager::handle::shutdown"};
 
-               //
-               // We only want child and alarm signals
-               //
-               signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child, signal::Type::alarm})};
+               range::for_each( state.executables, []( state::Executable& e){
+                  e.configured_instances = 0;
+               });
 
-               auto handle = handler( state);
-
-               auto shutdown = state.shutdownorder();
-
-               //
-               // Configure instances to 0
-               //
-               range::for_each( shutdown, []( state::Batch& b){
-                  range::for_each( b.executables, []( state::Executable& e){
-                     e.configured_instances = 0;
+               range::for_each( state.shutdownorder(), [&]( state::Batch& batch){
+                     state.tasks.add( local::task::Shutdown{ batch});
                   });
-               });
-
-               range::for_each( shutdown, [&]( state::Batch& batch){
-                  try
-                  {
-                     signal::timer::Scoped timer{ batch.timeout()};
-
-                     log::information << "shutdown group " << batch.group.get().name << '\n';
-
-                     range::for_each( batch.executables, scale::Executable{ state});
-
-                     while( ! batch.offline())
-                     {
-                        handle( ipc::device().blocking_next());
-                     }
-                  }
-                  catch( const exception::signal::Timeout&)
-                  {
-                     log::error << "failed to shutdown batch in a timely manner - action: keep going... - batch: " << batch << '\n';
-                     //timeouts.push_back( std::move( batch));
-                  }
-               });
             }
 
 
@@ -217,17 +204,25 @@ namespace casual
                   }
                } //
 
-               void Executable::operator () ( state::Executable& executable) const
+               void Executable::operator () ( common::message::domain::scale::Executable& executable)
                {
                   Trace trace{ "domain::manager::handle::scale::executable"};
 
-                  if( executable.instances.size() < executable.configured_instances)
+                  for( auto id : executable.executables)
                   {
-                     scale::out( executable);
-                  }
-                  else if( executable.instances.size() > executable.configured_instances)
-                  {
-                     scale::in( state(), executable);
+                     auto found = range::find( state().executables, id);
+
+                     if( found)
+                     {
+                        if( found->instances.size() < found->configured_instances)
+                        {
+                           scale::out( *found);
+                        }
+                        else if( found->instances.size() > found->configured_instances)
+                        {
+                           scale::in( state(), *found);
+                        }
+                     }
                   }
                }
 
@@ -244,11 +239,11 @@ namespace casual
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
                      //
-                     common::message::process::termination::Event event{ exit};
+                     common::message::domain::process::termination::Event event{ exit};
                      communication::ipc::inbound::device().push( std::move( event));
                   }
 
-                  void Registration::operator () ( const common::message::process::termination::Registration& message)
+                  void Registration::operator () ( const common::message::domain::process::termination::Registration& message)
                   {
                      Trace trace{ "domain::manager::handle::process::termination::Registration"};
 
@@ -268,7 +263,7 @@ namespace casual
 
                   }
 
-                  void Event::operator () ( common::message::process::termination::Event& message)
+                  void Event::operator () ( common::message::domain::process::termination::Event& message)
                   {
                      Trace trace{ "domain::manager::handle::process::termination::Event"};
 
@@ -279,13 +274,18 @@ namespace casual
                         //
                         signal::thread::scope::Block block;
 
-                        if( message.death.reason == common::process::lifetime::Exit::Reason::exited)
+                        switch( message.death.reason)
                         {
-                           log::information << "process exited: " << message.death << '\n';
-                        }
-                        else
-                        {
-                           log::error << "process terminated: " << message.death << '\n';
+                           case common::process::lifetime::Exit::Reason::core:
+                           {
+                              log::error << "process cored: " << message.death << '\n';
+                              break;
+                           }
+                           default:
+                           {
+                              log::information << "process exited: " << message.death << '\n';
+                              break;
+                           }
                         }
 
 
@@ -319,7 +319,7 @@ namespace casual
                      {
                         using Base::Base;
 
-                        bool operator () ( const common::message::process::lookup::Request& message)
+                        bool operator () ( const common::message::domain::process::lookup::Request& message)
                         {
                            auto reply = common::message::reverse::type( message);
                            reply.identification = message.identification;
@@ -340,7 +340,7 @@ namespace casual
                                  reply.process = found->second;
                                  send_reply();
                               }
-                              else if( message.directive == common::message::process::lookup::Request::Directive::direct)
+                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct)
                               {
                                  send_reply();
                               }
@@ -358,7 +358,7 @@ namespace casual
                                  reply.process = found->second;
                                  send_reply();
                               }
-                              else if( message.directive == common::message::process::lookup::Request::Directive::direct)
+                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct)
                               {
                                  send_reply();
                               }
@@ -379,7 +379,7 @@ namespace casual
                   } // <unnamed>
                } // local
 
-               void Connect::operator () ( common::message::inbound::ipc::Connect& message)
+               void Connect::operator () ( common::message::domain::process::connect::Request& message)
                {
                   Trace trace{ "domain::manager::handle::process::Connect"};
 
@@ -392,7 +392,7 @@ namespace casual
 
                }
 
-               void Lookup::operator () ( const common::message::process::lookup::Request& message)
+               void Lookup::operator () ( const common::message::domain::process::lookup::Request& message)
                {
                   Trace trace{ "domain::manager::handle::process::Lookup"};
 
@@ -414,6 +414,7 @@ namespace casual
             return {
                common::message::handle::ping(),
                common::message::handle::Shutdown{},
+               manager::handle::scale::Executable{ state},
                manager::handle::process::termination::Event{ state},
                manager::handle::process::termination::Registration{ state},
                manager::handle::process::Connect{ state},

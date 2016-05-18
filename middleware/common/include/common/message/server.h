@@ -43,29 +43,6 @@ namespace casual
 
             } // ping
 
-            namespace connect
-            {
-               struct Request : public connect::basic_request< Type::server_connect_request>
-               {
-                  std::vector< Service> services;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     connect::basic_request< Type::server_connect_request>::marshal( archive);
-                     archive & services;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const Request& rhs);
-               };
-
-
-               //!
-               //! Sent from the broker with "start-up-information" for a server
-               //!
-               using Reply = connect::basic_reply< Type::server_connect_reply>;
-
-
-            } // connect
          } // server
 
          namespace reverse
@@ -73,8 +50,7 @@ namespace casual
             template<>
             struct type_traits< server::ping::Request> : detail::type< server::ping::Reply> {};
 
-            template<>
-            struct type_traits< server::connect::Request> : detail::type< server::connect::Reply> {};
+
 
          } // reverse
 

@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Dec 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_SESRVER_HANDLE_H_
@@ -35,83 +32,6 @@ namespace casual
    {
       namespace server
       {
-
-         namespace handle
-         {
-            namespace connect
-            {
-               template< typename M>
-               auto reply( M&& message) -> decltype( std::forward< M>( message))
-               {
-                  using message_type = typename std::decay< M>::type;
-
-                  switch( message.directive)
-                  {
-                     case message_type::Directive::singleton:
-                     {
-                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
-                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
-                     }
-                     case message_type::Directive::shutdown:
-                     {
-                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
-                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
-                     }
-                     default:
-                     {
-                        break;
-                     }
-                  }
-                  return std::forward< M>( message);
-               }
-            } // connect
-         } // handle
-
-         message::server::connect::Reply connect( const Uuid& identification);
-
-         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services);
-
-         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
-
-
-         template< typename Policy = communication::ipc::policy::Blocking>
-         message::server::connect::Reply connect(
-               communication::ipc::inbound::Device& receive,
-               const Uuid& identification,
-               std::vector< message::Service> services,
-               const communication::error::type& handler = nullptr,
-               Policy&& policy = communication::ipc::policy::Blocking{})
-         {
-            Trace trace{ "server::connect", log::internal::ipc};
-
-            message::server::connect::Request message;
-
-            message.process.pid = common::process::handle().pid;
-            message.process.queue = receive.connector().id();
-            message.path = common::process::path();
-            message.services = std::move( services);
-            message.identification = identification;
-
-            log::internal::ipc << "connect::Request: " << message << '\n';
-
-            //
-            // Wait for the connect reply
-            //
-            return handle::connect::reply(
-                  communication::ipc::call( communication::ipc::broker::id(), message, policy, handler, receive));
-
-         }
-
-         template< typename Policy = communication::ipc::policy::Blocking>
-         message::server::connect::Reply connect(
-               communication::ipc::inbound::Device& receive,
-               std::vector< message::Service> services,
-               const communication::error::type& handler = nullptr,
-               Policy&& policy = communication::ipc::policy::Blocking{})
-         {
-            return connect( receive, uuid::empty(), std::move( services), handler, std::forward< Policy>( policy));
-         }
-
 
 
          namespace handle
@@ -159,8 +79,8 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( communication::ipc::inbound::Device& ipc, server::Arguments arguments, Args&&... args)
-                  : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
+               basic_call( server::Arguments arguments, Args&&... args)
+                  : m_policy( std::forward< Args>( args)...)
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
@@ -184,7 +104,7 @@ namespace casual
                   //
                   // Connect to casual
                   //
-                  m_policy.connect( m_ipc, std::move( services), arguments.resources);
+                  m_policy.connect( std::move( services), arguments.resources);
 
                   //
                   // Call tpsrvinit
@@ -193,14 +113,6 @@ namespace casual
                   {
                      throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
-
-               }
-
-               template< typename... Args>
-               basic_call( server::Arguments arguments, Args&&... args)
-                  : basic_call( communication::ipc::inbound::device(), std::move( arguments), std::forward< Args>( args)...)
-               {
-
                }
 
 
@@ -233,7 +145,6 @@ namespace casual
                   //
                   // Set the call-chain-id for this "chain"
                   //
-                  //call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
 
@@ -550,7 +461,6 @@ namespace casual
 
                };
 
-               communication::ipc::inbound::Device& m_ipc;
                policy_type m_policy;
                move::Moved m_moved;
             };
@@ -565,7 +475,7 @@ namespace casual
                //!
                struct Default
                {
-                  void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
@@ -582,12 +492,10 @@ namespace casual
 
                struct Admin
                {
-
-                  Admin( const Uuid& identification, communication::error::type handler);
                   Admin( communication::error::type handler);
 
 
-                  void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
@@ -603,7 +511,6 @@ namespace casual
                   void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
 
                private:
-                  Uuid m_identification;
                   communication::error::type m_error_handler;
                };
 

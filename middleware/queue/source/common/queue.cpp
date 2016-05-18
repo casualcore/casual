@@ -23,7 +23,7 @@ namespace casual
          request.process = common::process::handle();
          request.name = queue;
 
-         common::communication::ipc::blocking::send( queue::environment::broker::queue::id(), request);
+         common::communication::ipc::blocking::send( queue::environment::ipc::broker::device(), request);
       }
 
       common::message::queue::lookup::Reply Lookup::operator () () const

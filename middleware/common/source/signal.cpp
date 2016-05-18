@@ -51,6 +51,7 @@ namespace casual
                      switch( errno)
                      {
                         case ESRCH:
+                           log::internal::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
                            break;
                         default:
                            log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
@@ -239,25 +240,29 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Handler& value)
                   {
 
-                     out << "{ pending: [";
-
-                     bool empty = true;
-                     for( auto& handler : value.m_handlers)
+                     if( out)
                      {
-                        if( handler->pending())
+                        out << "{ pending: [";
+
+                        bool empty = true;
+                        for( auto& handler : value.m_handlers)
                         {
-                           if( empty)
+                           if( handler->pending())
                            {
-                              out << handler->signal();
-                              empty = false;
-                           }
-                           else
-                           {
-                              out << ',' << handler->signal();
+                              if( empty)
+                              {
+                                 out << handler->signal();
+                                 empty = false;
+                              }
+                              else
+                              {
+                                 out << ',' << handler->signal();
+                              }
                            }
                         }
+                        out << "], blocked: " << signal::pending() << '}';
                      }
-                     return out << "]}";
+                     return out;
                   }
 
                private:
@@ -336,7 +341,7 @@ namespace casual
                   {
                      virtual ~base_handle() = default;
                      virtual void signal( signal::Type) = 0;
-                     virtual void handle( const signal::set::Mask&) = 0;
+                     virtual void handle( const signal::Set&) = 0;
                      virtual void clear() = 0;
                      virtual handler::Type signal() const = 0;
                      virtual bool pending() const = 0;
@@ -378,7 +383,7 @@ namespace casual
                         }
                      }
 
-                     void handle( const signal::set::Mask& current) override
+                     void handle( const signal::Set& current) override
                      {
                         auto signal = m_pending.exchange( 0);
 
@@ -677,79 +682,91 @@ namespace casual
          }
 
 
+         Set::Set() : Set( empty_t{})
+         {
+
+         }
+
+         Set::Set( set::type set) : set{ std::move( set)}
+         {
+
+         }
+
+
+         Set::Set( std::initializer_list< Type> signals) : Set( empty_t{})
+         {
+            for( auto&& signal : signals)
+            {
+               add( signal);
+            }
+         }
+
+         void Set::add( Type signal)
+         {
+            sigaddset( &set, cast::underlying( signal));
+         }
+
+         void Set::remove( Type signal)
+         {
+            sigdelset( &set, cast::underlying( signal));
+         }
+
+
+         bool Set::exists( Type signal) const
+         {
+            return sigismember( &set, cast::underlying( signal)) == 1;
+         }
+
+
+
+         Set::Set( filled_t)
+         {
+            sigfillset( &set);
+         }
+         Set::Set( empty_t)
+         {
+            sigemptyset( &set);
+         }
+
+         std::ostream& operator << ( std::ostream& out, const Set& value)
+         {
+            out << "[";
+
+            bool exists = false;
+            for( auto& signal : { Type::alarm, Type::child, Type::interupt, Type::kill, Type::pipe, Type::quit, Type::terminate, Type::user})
+            {
+               if( value.exists( signal))
+               {
+                  if( exists)
+                     out << ", " << signal;
+                  else
+                  {
+                     out << signal;
+                     exists = true;
+                  }
+               }
+            }
+
+            return out << ']';
+         }
+
+
+         Set pending()
+         {
+            Set result;
+            sigpending( &result.set);
+            return result;
+         }
+
          namespace set
          {
 
-            Mask::Mask() : Mask( empty_t{})
+            signal::Set filled()
             {
-
+               return { signal::Set::filled_t{}};
             }
 
-
-            Mask::Mask( std::initializer_list< Type> signals) : Mask( empty_t{})
-            {
-               for( auto&& signal : signals)
-               {
-                  add( signal);
-               }
-            }
-
-            void Mask::add( Type signal)
-            {
-               sigaddset( &set, cast::underlying( signal));
-            }
-
-            void Mask::remove( Type signal)
-            {
-               sigdelset( &set, cast::underlying( signal));
-            }
-
-
-            bool Mask::exists( Type signal) const
-            {
-               return sigismember( &set, cast::underlying( signal)) == 1;
-            }
-
-
-
-            Mask::Mask( filled_t)
-            {
-               sigfillset( &set);
-            }
-            Mask::Mask( empty_t)
-            {
-               sigemptyset( &set);
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Mask& value)
-            {
-               out << "[";
-
-               bool exists = false;
-               for( auto& signal : { Type::alarm, Type::child, Type::interupt, Type::kill, Type::pipe, Type::quit, Type::terminate, Type::user})
-               {
-                  if( value.exists( signal))
-                  {
-                     if( exists)
-                        out << ", " << signal;
-                     else
-                     {
-                        out << signal;
-                        exists = true;
-                     }
-                  }
-               }
-
-               return out << ']';
-            }
-
-
-            Mask filled()
-            {
-               return { Mask::filled_t{}};
-            }
-
-            Mask filled( const std::vector< Type>& excluded)
+            signal::Set filled( const std::vector< Type>& excluded)
             {
                auto mask = filled();
 
@@ -761,7 +778,7 @@ namespace casual
                return mask;
             }
 
-            Mask empty()
+            signal::Set empty()
             {
                return {};
             }
@@ -769,33 +786,33 @@ namespace casual
 
          namespace mask
          {
-            signal::set::Mask set( signal::set::Mask mask)
+            signal::Set set( signal::Set mask)
             {
                pthread_sigmask( SIG_SETMASK, &mask.set, &mask.set);
                return mask;
             }
 
-            signal::set::Mask block( signal::set::Mask mask)
+            signal::Set block( signal::Set mask)
             {
                pthread_sigmask( SIG_BLOCK, &mask.set, &mask.set);
                return mask;
             }
 
-            signal::set::Mask unblock( signal::set::Mask mask)
+            signal::Set unblock( signal::Set mask)
             {
                pthread_sigmask( SIG_UNBLOCK, &mask.set, &mask.set);
                return mask;
             }
 
-            signal::set::Mask block()
+            signal::Set block()
             {
                return set( set::filled());
             }
 
 
-            signal::set::Mask current()
+            signal::Set current()
             {
-               signal::set::Mask mask;
+               signal::Set mask;
                pthread_sigmask( SIG_SETMASK, nullptr, &mask.set);
                return mask;
             }
@@ -833,7 +850,7 @@ namespace casual
 
             namespace scope
             {
-               Reset::Reset( set::Mask mask) : m_mask( std::move( mask)) {}
+               Reset::Reset( signal::Set mask) : m_mask( std::move( mask)) {}
 
                Reset::~Reset()
                {
@@ -843,7 +860,7 @@ namespace casual
                   }
                }
 
-               Mask::Mask( set::Mask mask) : Reset( mask::set( mask)) {}
+               Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
 
 
 
@@ -851,11 +868,11 @@ namespace casual
                {
                }
 
-               Block::Block( set::Mask mask) : Reset( mask::block( mask))
+               Block::Block( signal::Set mask) : Reset( mask::block( mask))
                {
                }
 
-               Unblock::Unblock( set::Mask mask) : Reset( mask::unblock( mask))
+               Unblock::Unblock( signal::Set mask) : Reset( mask::unblock( mask))
                {
                }
 

@@ -20,6 +20,7 @@ namespace casual
          struct Process
          {
             Process( const std::string& executable, const std::vector< std::string>& arguments);
+            Process( const std::string& executable);
 
             ~Process();
 

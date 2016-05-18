@@ -24,7 +24,7 @@ namespace casual
                request.process = process::handle();
                request.context = context;
 
-               m_correlation = communication::ipc::blocking::send( communication::ipc::broker::id(), request);
+               m_correlation = communication::ipc::blocking::send( communication::ipc::broker::device(), request);
             }
 
             Lookup::Lookup( std::string service) : Lookup( std::move( service), message::service::lookup::Request::Context::regular) {}

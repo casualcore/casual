@@ -9,6 +9,7 @@
 
 
 #include "common/message/type.h"
+#include "common/message/domain.h"
 #include "common/message/dispatch.h"
 
 namespace casual
@@ -26,17 +27,6 @@ namespace casual
          namespace handle
          {
 
-            namespace adjust
-            {
-               void instances( State& state);
-
-
-
-
-            } // adjust
-
-
-
 
             namespace mandatory
             {
@@ -50,7 +40,7 @@ namespace casual
             } // mandatory
 
 
-
+            void boot( State& state);
             void shutdown( State& state);
 
 
@@ -73,7 +63,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator () ( state::Executable& executable) const;
+                  void operator () ( common::message::domain::scale::Executable& executable);
                };
 
             } // scale
@@ -90,7 +80,7 @@ namespace casual
                   {
                      using Base::Base;
 
-                     void operator () ( const common::message::process::termination::Registration& message);
+                     void operator () ( const common::message::domain::process::termination::Registration& message);
                   };
 
 
@@ -100,7 +90,7 @@ namespace casual
                   {
                      using Base::Base;
 
-                     void operator () ( common::message::process::termination::Event& message);
+                     void operator () ( common::message::domain::process::termination::Event& message);
                   };
                } // termination
 
@@ -108,14 +98,14 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator () ( common::message::inbound::ipc::Connect& message);
+                  void operator () ( common::message::domain::process::connect::Request& message);
                };
 
                struct Lookup : public Base
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::process::lookup::Request& message);
+                  void operator () ( const common::message::domain::process::lookup::Request& message);
                };
 
             } // process

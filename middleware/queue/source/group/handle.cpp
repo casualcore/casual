@@ -39,7 +39,7 @@ namespace casual
                      involved.process = common::process::handle();
                      involved.trid = message.trid;
 
-                     common::communication::ipc::blocking::send( environment::broker::queue::id(), involved);
+                     common::communication::ipc::blocking::send( environment::ipc::broker::device(), involved);
                   }
 
                   namespace pending
@@ -89,7 +89,7 @@ namespace casual
 
             namespace dead
             {
-               void Process::operator() ( const common::message::process::termination::Event& message)
+               void Process::operator() ( const common::message::domain::process::termination::Event& message)
                {
                   common::trace::Scope trace{ "queue::handle::dead::Process", common::log::internal::queue};
 

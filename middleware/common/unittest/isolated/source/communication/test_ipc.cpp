@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "common/communication/ipc.h"
-#include "common/message/type.h"
+#include "common/message/domain.h"
 
 #include <random>
 
@@ -136,7 +136,7 @@ namespace casual
          {
             ipc::inbound::Device device;
 
-            common::message::process::lookup::Reply message;
+            common::message::domain::process::lookup::Reply message;
             EXPECT_FALSE( ( device.receive( message, ipc::policy::non::Blocking{})));
 
          }
@@ -148,14 +148,14 @@ namespace casual
 
             auto send = []( ipc::handle_type id)
             {
-               common::message::process::lookup::Reply message;
+               common::message::domain::process::lookup::Reply message;
                return ipc::non::blocking::send( id, message);
             };
 
             auto correlation = send( destination.connector().id());
 
 
-            common::message::process::lookup::Reply message;
+            common::message::domain::process::lookup::Reply message;
             EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
 
          }

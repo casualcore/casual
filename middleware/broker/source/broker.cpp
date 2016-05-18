@@ -1,8 +1,5 @@
 //!
-//! casual_broker.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "broker/broker.h"
@@ -43,107 +40,16 @@ namespace casual
 
 	namespace broker
 	{
-		namespace local
+
+
+		Broker::Broker( Settings&& arguments)
 		{
-			namespace
-			{
-				template< typename Q>
-				void exportBrokerQueueKey( const Q& queue, const std::string& path)
-				{
+		   Trace trace{ "Broker::Broker ctor", log::internal::debug};
 
-					if( common::file::exists( path))
-					{
-					   std::ifstream file( path);
-
-					   if( file)
-					   {
-					      try
-					      {
-
-					         common::signal::timer::Scoped alarm{ std::chrono::seconds( 5)};
-
-                        decltype( queue.id()) id;
-                        file >> id;
-
-                        common::message::server::ping::Request request;
-                        request.process = common::process::handle();
-
-                        auto reply = communication::ipc::call( id, request, communication::ipc::policy::Blocking{});
-
-                        //
-                        // There are another running broker for this domain - abort
-                        //
-                        common::log::error << "Other running broker - action: terminate" << std::endl;
-                        throw common::exception::signal::Terminate( "other running broker", __FILE__, __LINE__);
-
-					      }
-					      catch( const common::exception::signal::Timeout&)
-					      {
-					         common::log::error << "failed to get ping response from potentially running broker - to risky to start - action: terminate" << std::endl;
-					         throw common::exception::signal::Terminate( "other running broker", __FILE__, __LINE__);
-					      }
-					   }
-
-					   //
-                  // TODO: ping to see if there are another broker running
-                  //
-					   common::file::remove( path);
-					}
-
-					log::internal::debug << "writing broker queue file: " << path << std::endl;
-
-					std::ofstream brokerQueueFile( path);
-
-					if( brokerQueueFile)
-					{
-                  brokerQueueFile << queue.id() << std::endl;
-                  brokerQueueFile.close();
-					}
-					else
-					{
-					   throw exception::NotReallySureWhatToNameThisException( "failed to write broker queue file: " + path);
-					}
-
-				}
-
-			}
-		}
-
-
-
-
-		Broker::Broker( const Settings& arguments)
-		  : m_brokerQueueFile( common::process::singleton( common::environment::file::broker::device()))
-		{
-		   environment::variable::set( environment::variable::name::domain::ipc(), communication::ipc::inbound::id());
-
-         //
-         // Configure
-         //
-         {
-            common::trace::internal::Scope trace{ "broker configuration"};
-
-
-            config::domain::Domain domain;
-
-            try
-            {
-               domain = config::domain::get( arguments.configurationfile);
-            }
-            catch( const exception::invalid::File& exception)
-            {
-               common::log::information << "failed to open '" << arguments.configurationfile << "' - start anyway..." << std::endl;
-            }
-
-            //
-            // Set domain name
-            //
-            common::domain::identity( common::domain::Identity{ domain.name});
-
-            common::log::internal::debug << CASUAL_MAKE_NVP( domain);
-
-            m_state = transform::configuration::Domain{}( domain);
-         }
+		   //
+		   // Connect to domain
+		   //
+		   process::instance::connect( process::instance::identity::broker());
 		}
 
 
@@ -155,7 +61,6 @@ namespace casual
             //
             // Terminate
             //
-            terminate();
 		   }
          catch( ...)
          {
@@ -163,67 +68,12 @@ namespace casual
          }
 		}
 
-		void Broker::terminate()
-		{
-		   common::trace::internal::Scope trace{ "Broker::terminate()"};
-
-         try
-         {
-
-            common::log::information << "shutting down domain '" << domain::identity() << "'\n";
-
-            //
-            // We have to remove this process first, so we don't try to terminate our self
-            //
-            m_state.remove_process( common::process::id());
-
-            //
-            // Terminate children
-            //
-            common::process::children::terminate( &handle::process_exit, m_state.processes());
-
-
-            common::log::information << "domain '" << domain::identity() << "' is off-line\n";
-         }
-         catch( const common::exception::signal::Timeout& exception)
-         {
-            auto pids  = m_state.processes();
-            common::log::error << "failed to get response for terminated processes in a timely manner - pids: " << range::make( pids) << " - action: abort" << std::endl;
-         }
-         catch( ...)
-         {
-            common::error::handler();
-         }
-
-		}
 
       void Broker::start()
       {
          try
          {
-
-            auto start = common::platform::clock_type::now();
-
-
-            {
-               common::trace::internal::Scope trace( "boot domain");
-
-               //
-               // boot the domain...
-               //
-               handle::boot( m_state);
-            }
-
-
-            auto end = common::platform::clock_type::now();
-
-            common::log::information << "domain: " << domain::identity() << " is on-line - " << m_state.processes().size() << " processes - boot time: "
-                  << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
-
-
             message::pump( m_state);
-
-
          }
          catch( const common::exception::signal::Terminate&)
          {
@@ -321,60 +171,6 @@ namespace casual
 
       } // message
 
-
-      namespace update
-      {
-         void instances( State& state, const std::vector< admin::update::InstancesVO>& instances)
-         {
-            common::trace::internal::Scope trace( "broker::update::instances");
-
-            auto updateInstances = [&]( const admin::update::InstancesVO& value)
-                  {
-                     for( auto&& server : state.servers)
-                     {
-                        if( server.second.alias == value.alias)
-                        {
-                           server.second.configured_instances = value.instances;
-                           handle::update::instances( state, server.second);
-                        }
-                     }
-                  };
-            common::range::for_each( instances, updateInstances);
-         }
-
-      } // update
-
-      admin::ShutdownVO shutdown( State& state, bool broker)
-      {
-         common::trace::internal::Scope trace( "broker::shutdown");
-
-         admin::ShutdownVO result;
-
-
-         if( state.mode == State::Mode::shutdown)
-         {
-            log::error << "broker already in shutdown mode" << std::endl;
-            return result;
-         }
-
-
-
-         auto orginal = state.processes();
-
-
-
-         handle::shutdown( state);
-
-         result.online = state.processes();
-         result.offline = range::to_vector( range::difference( orginal, result.online));
-
-         if( broker)
-         {
-            handle::send_shutdown();
-         }
-
-         return result;
-      }
 	} // broker
 } // casual
 

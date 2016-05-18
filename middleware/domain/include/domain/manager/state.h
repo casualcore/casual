@@ -5,7 +5,9 @@
 #ifndef CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_STATE_H_
 #define CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_STATE_H_
 
-#include "common/message/type.h"
+#include "domain/manager/task.h"
+
+#include "common/message/domain.h"
 #include "common/message/pending.h"
 #include "common/uuid.h"
 #include "common/platform.h"
@@ -38,6 +40,8 @@ namespace casual
                   //inline id_type id() const { return m_id;}
 
                   id_type id = nextId();
+
+                  friend bool operator == ( const Id& lhs, id_type rhs) { return lhs.id == rhs;}
 
                private:
 
@@ -145,6 +149,11 @@ namespace casual
                bool offline() const;
                bool online() const;
 
+               //!
+               //! @return true if number of instances >= configured_instances
+               //!
+               bool complete() const;
+
                friend std::ostream& operator << ( std::ostream& out, const Executable& value);
 
             };
@@ -192,7 +201,7 @@ namespace casual
             struct
             {
                std::vector< common::message::pending::Message> replies;
-               std::vector< common::message::process::lookup::Request> lookup;
+               std::vector< common::message::domain::process::lookup::Request> lookup;
             } pending;
 
             struct
@@ -200,12 +209,29 @@ namespace casual
                std::vector< common::process::Handle> listeners;
             } termination;
 
-            Runlevel runlevel = Runlevel::startup;
+            //!
+            //! check if task are done, and if so, start the next task
+            //!
+            bool execute();
+            task::Queue tasks;
+
+            //!
+            //! Runlevel can only "go forward"
+            //!
+            //! @{
+            inline Runlevel runlevel() const { return m_runlevel;}
+            void runlevel( Runlevel runlevel);
+            //! @}
 
             std::vector< state::Batch> bootorder();
             std::vector< state::Batch> shutdownorder();
 
             void remove_process( common::platform::pid::type pid);
+
+            friend std::ostream& operator << ( std::ostream& out, const State& state);
+
+         private:
+            Runlevel m_runlevel = Runlevel::startup;
 
 
          };

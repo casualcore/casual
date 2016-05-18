@@ -49,9 +49,9 @@ namespace casual
          Trace trace{ "gateway::Manager::Manager", log::internal::gateway};
 
          //
-         // Set environment variables for children
+         // Connect to domain
          //
-         gateway::environment::manager::set( manager::ipc::device().id());
+         process::instance::connect( process::instance::identity::gateway::manager());
       }
 
       Manager::~Manager()

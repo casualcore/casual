@@ -3,8 +3,10 @@
 //!
 
 #include "domain/manager/state.h"
-
 #include "domain/common.h"
+
+
+#include "common/message/domain.h"
 
 namespace casual
 {
@@ -86,6 +88,11 @@ namespace casual
             bool Executable::online() const
             {
                return configured_instances == 0 || ! instances.empty();
+            }
+
+            bool Executable::complete() const
+            {
+               return instances.size() >= configured_instances;
             }
 
             std::ostream& operator << ( std::ostream& out, const Executable& value)
@@ -198,6 +205,18 @@ namespace casual
             Trace trace{ "domain::manager::State::remove_process"};
 
             //
+            // Vi remove from listeners if one of them has died
+            //
+            {
+               auto found = range::find_if( termination.listeners, common::process::Handle::equal::pid{ pid});
+               if( found)
+               {
+                  termination.listeners.erase( std::begin( found));
+               }
+            }
+
+
+            //
             // Find and remove process
             //
             {
@@ -214,26 +233,56 @@ namespace casual
                }
                else
                {
-                  log::error << "could not remove processes with pid: " << pid << '\n';
+                  log << "process with pid: " << pid << " has not register - action: assume it's a basic executable\n";
                }
             }
 
-
             //
-            // Vi remove from listeners if one of them has died
+            // Find and remove from executable
             //
             {
-               auto found = range::find_if( termination.listeners, common::process::Handle::equal::pid{ pid});
+               auto found = range::find_if( executables, [pid]( state::Executable& e){
+                  return e.remove( pid);
+               });
+
                if( found)
                {
-                  termination.listeners.erase( std::begin( found));
+                  log << "removed executable with pid: " << pid << '\n';
+
+                  if( ! found->complete() && found->restart)
+                  {
+                     communication::ipc::inbound::device().push( message::domain::scale::Executable{ found->id });
+                  }
+               }
+               else
+               {
+                  log::error << "failed to find executable with pid: " << pid << " - this should not happen! - action: ignore\n";
                }
             }
-
-
          }
 
+         bool State::execute()
+         {
+            tasks.execute();
 
+            return ! ( runlevel() >= Runlevel::shutdown && tasks.empty());
+         }
+
+         void State::runlevel( Runlevel runlevel)
+         {
+            if( runlevel > m_runlevel)
+            {
+               m_runlevel = runlevel;
+            }
+         }
+
+         std::ostream& operator << ( std::ostream& out, const State& state)
+         {
+            return out << "{ groups: " << range::make( state.groups)
+               << ", executables: " << range::make( state.executables)
+               << ", tasks: " << state.tasks
+                  << '}';
+         }
 
 
       } // manager

@@ -90,9 +90,8 @@ namespace casual
                throw common::exception::invalid::Argument{ "only one task is allowed"};
             }
 
-            common::signal::timer::Scoped timout{ std::chrono::seconds{ 5}};
-
-            common::server::connect( common::communication::ipc::inbound::device(), {}, resources);
+            common::process::instance::connect();
+            common::transaction::Context::instance().set( resources);
          }
 
 

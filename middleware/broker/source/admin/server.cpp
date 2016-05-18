@@ -3,7 +3,6 @@
 //## includes protected section begin [.10]
 
 #include "broker/admin/server.h"
-#include "broker/admin/transform.h"
 
 
 #include "broker/broker.h"
@@ -74,7 +73,7 @@ namespace broker
 
             service_io >> CASUAL_MAKE_NVP( instances);
 
-            broker::update::instances( state, instances);
+            //broker::update::instances( state, instances);
 
             reply = service_io.finalize();
          }
@@ -104,9 +103,9 @@ namespace broker
 
             service_io >> CASUAL_MAKE_NVP( broker);
 
-            auto serviceReturn = broker::shutdown( state, broker);
+            //auto serviceReturn = broker::shutdown( state, broker);
 
-            service_io << CASUAL_MAKE_NVP( serviceReturn);
+            //service_io << CASUAL_MAKE_NVP( serviceReturn);
 
             reply = service_io.finalize();
          }
@@ -162,6 +161,7 @@ namespace broker
       {
          admin::StateVO result;
 
+         /*
          {
             common::range::transform( state.groups, result.groups,
                   admin::transform::Group{});
@@ -201,6 +201,7 @@ namespace broker
                   admin::transform::Pending{});
          }
 
+         */
          return result;
       }
 

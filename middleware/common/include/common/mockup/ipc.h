@@ -1,8 +1,5 @@
 //!
-//! ipc.h
-//!
-//! Created on: May 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMON_MOCKUP_IPC_H_
@@ -14,92 +11,56 @@
 #include "common/move.h"
 #include "common/platform.h"
 #include "common/message/type.h"
+#include "common/message/dispatch.h"
 
 #include "common/marshal/binary.h"
-
-#include "common/mockup/reply.h"
 
 
 namespace casual
 {
    namespace common
    {
+      namespace message
+      {
+         namespace mockup
+         {
+            using Disconnect =  common::message::basic_message< common::message::Type::mockup_disconnect>;
+            using Clear =  common::message::basic_message< common::message::Type::mockup_clear>;
+         }
+      }
+
       namespace mockup
       {
+         namespace pid
+         {
+            platform::pid::type next();
+
+         } // pid
+
          namespace ipc
          {
+
             using id_type = platform::ipc::id::type;
 
             using transform_type = std::function< std::vector< communication::message::Complete>( communication::message::Complete&)>;
 
-
-
-            //!
-            //! Replies to a request
-            //!
-            //!
-            struct Replier
+            namespace eventually
             {
-               //!
-               //! @param replier invoked on receive, and could send a reply
-               //!
-               Replier( reply::Handler replier);
-
-               ~Replier();
 
 
-               Replier( Replier&&) noexcept;
-               Replier& operator = ( Replier&&) noexcept;
+               void send( id_type destination, communication::message::Complete&& complete);
 
-               //!
-               //! input-queue is owned by the Replier
-               //!
-               id_type input() const;
+               template< typename M>
+               void send( id_type destination, M&& message)
+               {
+                  send( destination, marshal::complete( std::move( message)));
+               }
 
-            private:
-               struct Implementation;
-               move::basic_pimpl< Implementation> m_implementation;
-            };
+
+            } // eventually
 
 
 
-            //!
-            //! Routes messages from it's own ipc-queue to another
-            //! and caches messages if the target is full
-            //!
-            //!
-            struct Router
-            {
-               //!
-               //! @param output where to send messages
-               //! @param transform invoked before send, hence one can transform
-               //!   complete messages (mostly to transform request->reply and keep correlation)
-               //!
-               Router( id_type output, transform_type transform);
-               Router( id_type output);
-
-               ~Router();
-
-
-               Router( Router&&) noexcept;
-               Router& operator = ( Router&&) noexcept;
-
-
-
-               //!
-               //! input-queue is owned by the Router
-               //!
-               id_type input() const;
-
-               //!
-               //! output-queue is NOT owned by the router
-               //!
-               id_type output() const;
-
-            private:
-               class Implementation;
-               move::basic_pimpl< Implementation> m_implementation;
-            };
 
             //!
             //! Links one queue to another.
@@ -120,59 +81,37 @@ namespace casual
                id_type input() const;
                id_type output() const;
 
+               void clear() const;
+
             private:
                class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
             };
 
-
-
-
             //!
-            //! Acts as an instance.
+            //! Collects messages from input and put them in output
+            //! caches messages if the output is full
             //!
-            //! In a separate thread:
-            //!  - consumes from ipc-queue denoted by @p input()
-            //!  - apply transformation (if supplied)
-            //!  - writes to ipc-queue denoted by @p output()
             //!
-            //! The source queue @p input() will always be writable
-            //!
-            //! input- and output-queue is owned by an instance of Instance
-            //!
-            //! messages can be read from @p output(), or forward to another queue via Link
-            //!
-            struct Instance
+            struct Collector
             {
-               Instance( platform::pid::type pid, transform_type transform);
-               Instance( platform::pid::type pid);
+               Collector();
+               ~Collector();
+
 
                //!
-               //! sets current process pid
+               //! input-queue is owned by the Collector
                //!
-               Instance();
-               Instance( transform_type transform);
-               ~Instance();
-
-               Instance( Instance&&) noexcept;
-               Instance& operator = ( Instance&&) noexcept;
-
-
-               const common::process::Handle& process() const;
-
-
                id_type input() const;
-               communication::ipc::inbound::Device& output();
-
-
-               //!
-               //! To enable the instance to act as a regular queue, non intrusive
-               //!
-               id_type id() const { return input();}
+               inline id_type id() const { return input();}
 
                //!
-               //! consumes and discard all messages on @p receive()
+               //! output-queue is owned by the Collector
                //!
+               communication::ipc::inbound::Device& output() const;
+
+               process::Handle process() const;
+
                void clear();
 
             private:
@@ -182,36 +121,34 @@ namespace casual
 
 
 
-
-
-            namespace broker
-            {
-               platform::pid::type pid();
-
-               ipc::Instance& queue();
-
-               id_type id();
-
-            } // broker
-
-            namespace transaction
-            {
-               namespace manager
-               {
-                  platform::pid::type pid();
-
-                  ipc::Instance& queue();
-
-                  id_type id();
-               } // manager
-
-            } // transaction
-
-
             //!
-            //! Clears all global mockup-ipc-queues
+            //! Replies to a request
             //!
-            void clear();
+            //!
+            struct Replier
+            {
+               //!
+               //! @param replier invoked on receive, and could send a reply
+               //!
+               Replier( message::dispatch::Handler&& replier);
+
+               ~Replier();
+
+
+               Replier( Replier&&) noexcept;
+               Replier& operator = ( Replier&&) noexcept;
+
+               //!
+               //! input-queue is owned by the Replier
+               //!
+               id_type input() const;
+               process::Handle process() const;
+
+            private:
+               struct Implementation;
+               move::basic_pimpl< Implementation> m_implementation;
+            };
+
 
          } // ipc
 

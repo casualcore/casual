@@ -71,12 +71,14 @@ namespace casual
             //
             // Set our ipc-queue so children easy can send messages to us.
             //
-            environment::variable::set( environment::variable::name::domain::ipc(), communication::ipc::inbound::id());
+            environment::variable::set( environment::variable::name::ipc::domain::manager(), communication::ipc::inbound::id());
 
             if( ! settings.bare)
             {
                handle::mandatory::boot( m_state);
             }
+
+            handle::boot( m_state);
          }
 
          Manager::~Manager()
@@ -85,6 +87,7 @@ namespace casual
 
             try
             {
+               //handle::shutdown( m_state);
 
 
             }
@@ -103,53 +106,77 @@ namespace casual
                {
                   void pump( State& state)
                   {
-
-                     log << "domain start message pump\n";
+                     Trace trace{ "domain message pump"};
 
                      auto handler = manager::handler( state);
 
 
-                     while( true)
+                     while( state.execute())
                      {
-
-                        while( state.pending.replies.empty())
+                        try
                         {
-                           //
-                           // We can block
-                           //
-                           handler( manager::ipc::device().blocking_next());
-                        }
+                           if( state.pending.replies.empty())
+                           {
+                              //
+                              // We can block
+                              //
+                              handler( manager::ipc::device().blocking_next());
+                           }
+                           else
+                           {
 
-                        //
-                        // Take care of pending replies
-                        //
+                              //
+                              // Take care of pending replies
+                              //
+                              {
+                                 signal::thread::scope::Block block;
+
+                                 auto& pending = state.pending.replies;
+
+                                 log << "pending replies: " << range::make( pending) << '\n';
+
+                                 range::trim( pending, range::remove_if( pending,
+                                       common::message::pending::sender(
+                                             communication::ipc::policy::non::Blocking{})));
+                              }
+
+
+                              {
+                                 //
+                                 // If we've got pending that is 'never' sent, we still want to
+                                 // do a lot of domain stuff. Hence, if we got into an 'error state'
+                                 // we'll still function...
+                                 //
+                                 // TODO: Should we have some sort of TTL for the pending?
+                                 //
+                                 auto count = common::platform::batch::transaction;
+
+                                 while( handler( ipc::device().non_blocking_next()) && count-- > 0)
+                                    ;
+                              }
+                           }
+
+                           log << "state: " << state << '\n';
+
+                        }
+                        catch( const exception::Shutdown&)
                         {
-                           signal::thread::scope::Block block;
-
-                           auto& pending = state.pending.replies;
-
-                           domain::log << "pending replies: " << range::make( pending) << '\n';
-
-                           range::trim( pending, range::remove_if( pending,
-                                 common::message::pending::sender(
-                                       communication::ipc::policy::non::Blocking{})));
+                           state.runlevel( State::Runlevel::shutdown);
+                           handle::shutdown( state);
                         }
-
-
+                        catch( const exception::queue::Unavailable&)
                         {
-                           //
-                           // If we've got pending that is 'never' sent, we still want to
-                           // do a lot of domain stuff. Hence, if we got into an 'error state'
-                           // we'll still function...
-                           //
-                           // TODO: Should we have some sort of TTL for the pending?
-                           //
-                           auto count = common::platform::batch::transaction;
-
-                           while( handler( ipc::device().non_blocking_next()) && count-- > 0)
-                              ;
+                           error::handler();
+                           state.runlevel( State::Runlevel::error);
+                           handle::shutdown( state);
+                           throw;
                         }
-
+                        catch( ...)
+                        {
+                           error::handler();
+                           state.runlevel( State::Runlevel::error);
+                           handle::shutdown( state);
+                        }
                      }
 
                   }
@@ -166,12 +193,12 @@ namespace casual
             }
             catch( const exception::Shutdown&)
             {
-               m_state.runlevel = State::Runlevel::shutdown;
+               m_state.runlevel( State::Runlevel::shutdown);
             }
             catch( ...)
             {
                error::handler();
-               m_state.runlevel = State::Runlevel::error;
+               m_state.runlevel( State::Runlevel::error);
             }
          }
 

@@ -53,28 +53,6 @@ namespace casual
 
 
 
-         void boot( State& state);
-
-
-         //!
-         //! Shutdown
-         //!
-         void shutdown( State& state);
-
-         void send_shutdown();
-
-         std::vector< common::platform::pid::type> spawn( const State& state, const state::Executable& executable, std::size_t instances);
-
-         void boot( State& state, const state::Executable& executable, std::size_t instances);
-
-         void shutdown( State& state, const state::Server& server, std::size_t instances);
-
-         namespace update
-         {
-            void instances( State& state, const state::Server& server);
-         } // update
-
-
          namespace traffic
          {
             //!
@@ -100,54 +78,6 @@ namespace casual
 
 
 
-         namespace transaction
-         {
-
-            namespace manager
-            {
-
-               //!
-               //! Transaction Manager Connect
-               //!
-               struct Connect : public Base
-               {
-                  using Base::Base;
-
-                  void operator () ( common::message::transaction::manager::connect::Request& message);
-               };
-
-               //!
-               //! Transaction Manager Ready
-               //!
-               struct Ready : public Base
-               {
-                  using message_type = common::message::transaction::manager::Ready;
-
-                  using Base::Base;
-
-                  void operator () ( message_type& message);
-               };
-
-            } // manager
-
-
-            namespace client
-            {
-               //!
-               //! Transaction Client Connect
-               //!
-               struct Connect : public Base
-               {
-
-                  using message_type = common:: message::transaction::client::connect::Request;
-
-                  using Base::Base;
-
-                  void operator () ( message_type& message);
-               };
-            } // client
-         } // transaction
-
          namespace forward
          {
             struct Connect : Base
@@ -160,39 +90,6 @@ namespace casual
          } // forward
 
 
-         namespace dead
-         {
-            namespace process
-            {
-               struct Registration : Base
-               {
-                  using Base::Base;
-
-                  void operator () ( const common::message::process::termination::Registration& message);
-               };
-
-               struct Event : Base
-               {
-                  using Base::Base;
-
-                  void operator() ( const common::message::process::termination::Event& message);
-               };
-
-
-            } // process
-
-         } // dead
-
-         namespace lookup
-         {
-            struct Process : Base
-            {
-               using Base::Base;
-
-               void operator () ( const common::message::process::lookup::Request& message);
-            };
-
-         } // lookup
 
 
          //!
@@ -208,29 +105,6 @@ namespace casual
          };
 
 
-         struct Connect : public Base
-         {
-            typedef common::message::server::connect::Request message_type;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
-
-         namespace process
-         {
-            struct Connect : public Base
-            {
-               using message_type = common::message::inbound::ipc::Connect;
-
-               using Base::Base;
-
-               void operator () ( message_type& message);
-            };
-
-         } // process
-
-
 		   //!
          //! Unadvertise 0..N services for a server.
          //!
@@ -244,18 +118,23 @@ namespace casual
          };
 
 
-		   //!
-         //! Looks up a service-name
-         //!
-         struct ServiceLookup : public Base
+		   namespace service
          {
-            typedef common::message::service::lookup::Request message_type;
+	         //!
+	         //! Looks up a service-name
+	         //!
+	         struct Lookup : public Base
+	         {
+	            typedef common::message::service::lookup::Request message_type;
 
-            using Base::Base;
+	            using Base::Base;
 
-            void operator () ( message_type& message);
+	            void operator () ( message_type& message);
 
-         };
+	         };
+
+         } // service
+
 
          //!
          //! Handles ACK from services.
@@ -291,7 +170,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect( common::communication::ipc::inbound::Device& ipc, std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
+            void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::ipc::id::type id, common::message::service::call::Reply& message);
 

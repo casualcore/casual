@@ -41,18 +41,6 @@ namespace casual
 
                }
 
-               struct prepare_environment_type
-               {
-                  prepare_environment_type()
-                  {
-                     common::environment::variable::set(
-                           common::environment::variable::name::home(),
-                           "./" );
-                           //directory::name::base( __FILE__) + "../../../../" );
-                  }
-
-
-               } prepare_environment;
 
                file::scoped::Path file;
                mockup::Process process;
@@ -65,8 +53,17 @@ namespace casual
 
                }
 
-               common::mockup::domain::Broker broker;
-               common::mockup::domain::transaction::Manager tm;
+               struct set_environment_t
+               {
+                  set_environment_t()
+                  {
+                     environment::variable::set( environment::variable::name::home(), "./" );
+                  }
+               } set_environment;
+
+               mockup::domain::Manager manager;
+               mockup::domain::Broker broker;
+               mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
             };

@@ -30,13 +30,11 @@ namespace casual
       {
          namespace blocking
          {
-            template< typename M>
-            void send( common::platform::ipc::id::type id, M&& message)
+            template< typename D, typename M>
+            void send( D&& device, M&& message)
             {
                common::signal::thread::scope::Block block;
-
-               common::communication::ipc::outbound::Device ipc{ id};
-               ipc.send( std::forward< M>( message), common::communication::ipc::policy::Blocking{});
+               common::communication::ipc::blocking::send( std::forward< D>( device), std::forward< M>( message));
             }
 
          } // blocking
@@ -58,7 +56,7 @@ namespace casual
                   // Change 'sender' so we (our main thread) get the reply
                   //
                   message.process = common::process::handle();
-                  blocking::send( common::process::instance::transaction::manager::handle().queue, message);
+                  blocking::send( common::communication::ipc::transaction::manager::device(), message);
                }
             };
 
@@ -109,7 +107,7 @@ namespace casual
                      //
                      // Send lookup
                      //
-                     blocking::send( common::communication::ipc::broker::id(), request);
+                     blocking::send( common::communication::ipc::broker::device(), request);
                   }
                };
 
@@ -223,7 +221,18 @@ namespace casual
                //
                // 'connect' to our local domain
                //
-               common::process::connect();
+               common::process::instance::connect();
+
+               //
+               // We need to make sure that we got the broker queue.
+               // the worker thread is the one that sends request to broker, hence
+               // is the first one to initialize broker queue lookup, and
+               // it's possible that the main thread consumes the process-lookup-reply
+               //
+               // TOOD: Can we do something about this?
+               //
+               common::communication::ipc::broker::device();
+
             }
 
             ~Gateway()
@@ -289,7 +298,7 @@ namespace casual
                   message::inbound::Connect connect;
                   connect.process = common::process::handle();
                   connect.remote = m_remote;
-                  environment::manager::device().send( connect, ipc_policy{});
+                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
                }
 
 

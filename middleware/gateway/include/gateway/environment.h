@@ -16,17 +16,19 @@ namespace casual
    {
       namespace environment
       {
-         const common::Uuid& identification();
-
-         namespace manager
+         namespace variable
          {
+            namespace name
+            {
+               namespace manager
+               {
+                  const std::string& queue();
+               } // manager
 
-            common::communication::ipc::outbound::Device& device();
 
-            void set( common::platform::ipc::id::type queue);
+            } // name
 
-         } // manager
-
+         } // variable
 
       } // environment
    } // gateway

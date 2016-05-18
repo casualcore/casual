@@ -219,6 +219,14 @@ namespace casual
 
       }
 
+
+      TEST( casual_common_algorithm, search)
+      {
+         auto found = range::search( "some text to search", std::string{ "some"});
+         EXPECT_TRUE( ! found.empty());
+
+      }
+
       TEST( casual_common_algorithm, uniform__true)
       {
          std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 1, 1};

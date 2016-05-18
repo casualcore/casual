@@ -69,7 +69,7 @@ namespace casual
 
                   platform::ipc::id::type ipc()
                   {
-                     std::ifstream file;
+                     std::ifstream file{ environment::domain::singleton::file()};
 
                      while( ! file.is_open())
                      {
@@ -77,7 +77,7 @@ namespace casual
                         file.open( environment::domain::singleton::file());
                      }
 
-                     platform::ipc::id::type result;
+                     platform::ipc::id::type result = 0;
 
                      file >> result;
 
@@ -95,11 +95,50 @@ namespace casual
                   std::string empty()
                   {
                      return R"(
-domain:
+domain: {}
 
 )";
 
                   }
+
+                  std::string echo()
+                  {
+                     return R"(
+domain:
+  executables:
+    - path: echo
+      instances: 4    
+
+)";
+                  }
+
+                  std::string echo_restart()
+                  {
+                     return R"(
+domain:
+  executables:
+    - path: echo
+      instances: 4
+      arguments: [poop]
+      restart: true    
+
+)";
+                  }
+
+
+                  std::string sleep()
+                  {
+                     return R"(
+domain:
+  executables:
+    - path: sleep
+      arguments: [100]
+      instances: 4    
+
+)";
+                  }
+
+
 
                } // configuration
 
@@ -112,14 +151,45 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::empty()}};
-
                process::ping( local::manager::ipc());
 
             });
-
-
          }
 
+         TEST( casual_domain_manager, echo_configuration__expect_boot)
+         {
+            CASUAL_UNITTEST_TRACE();
+
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { local::configuration::echo()}};
+               process::ping( local::manager::ipc());
+
+            });
+         }
+
+         /*
+         TEST( casual_domain_manager, echo_restart_configuration__expect_boot)
+         {
+            CASUAL_UNITTEST_TRACE();
+
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { local::configuration::echo_restart()}};
+               process::ping( local::manager::ipc());
+
+            });
+         }
+         */
+
+         TEST( casual_domain_manager, sleep_configuration__expect_boot)
+         {
+            CASUAL_UNITTEST_TRACE();
+
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { local::configuration::sleep()}};
+               process::ping( local::manager::ipc());
+
+            });
+         }
 
 
 

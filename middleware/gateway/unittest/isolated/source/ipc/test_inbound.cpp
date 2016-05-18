@@ -62,6 +62,7 @@ namespace casual
                   try
                   {
 
+
                      //
                      // Do the connection dance...
                      //
@@ -89,16 +90,22 @@ namespace casual
 
                }
 
-               struct set_environment_t
+               common::mockup::domain::Manager manager;
+
+               struct connect_gateway_t
                {
-                  set_environment_t()
+                  connect_gateway_t()
                   {
-                     gateway::environment::manager::set( communication::ipc::inbound::id());
+                     //
+                     // Act as the gateway
+                     //
+                     process::instance::connect( process::instance::identity::gateway::manager());
                   }
 
-               } set_environment;
+               } connect_gateway;
 
-               common::mockup::domain::Domain domain;
+               common::mockup::domain::Broker broker;
+               common::mockup::domain::transaction::Manager tm;
                Inbound inbound;
                process::Handle external;
             };
@@ -111,9 +118,9 @@ namespace casual
          CASUAL_UNITTEST_TRACE();
 
          //
-         // We need to have a broker to 'connect the process'
+         // We need to have a domain manager to 'connect the process'
          //
-         common::mockup::domain::Broker broker;
+         common::mockup::domain::Manager manager;
 
          EXPECT_NO_THROW({
             local::Inbound inbound{ communication::ipc::inbound::id()};
@@ -154,6 +161,9 @@ namespace casual
          CASUAL_UNITTEST_TRACE();
 
          local::Domain domain;
+
+         mockup::domain::echo::Server server{ { "service1"}};
+
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 

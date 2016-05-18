@@ -26,59 +26,33 @@ namespace casual
    {
       namespace environment
       {
-         namespace broker
+
+         namespace ipc
          {
-
-            namespace queue
+            namespace broker
             {
-               namespace local
+               common::communication::ipc::outbound::instance::Device& device()
                {
-                  namespace
-                  {
-                     common::platform::ipc::id::type initialize_broker_queue_id()
-                     {
+                  static common::communication::ipc::outbound::instance::Device singleton{
+                     identity::broker(), common::environment::variable::name::ipc::queue::broker()};
 
-                        common::message::process::lookup::Request request;
-                        request.directive = common::message::process::lookup::Request::Directive::wait;
-                        request.identification = broker::identification();
-                        request.process = common::process::handle();
-
-                        auto reply = common::communication::ipc::call( common::communication::ipc::broker::id(), request);
-
-                        return reply.process.queue;
-                     }
-
-                     common::platform::ipc::id::type& id()
-                     {
-                        static auto id = local::initialize_broker_queue_id();
-                        return id;
-                     }
-                  }
+                  return singleton;
                }
 
+            } // broker
 
-               common::platform::ipc::id::type id()
-               {
-                  return local::id();
-               }
+         } // ipc
 
-               common::platform::ipc::id::type initialize()
-               {
-                  local::id() = local::initialize_broker_queue_id();
-                  return id();
-               }
-
-
-
-
-            } // queue
-
-            const common::Uuid& identification()
+         namespace identity
+         {
+            const common::Uuid& broker()
             {
                static const common::Uuid id{ "c0c5a19dfc27465299494ad7a5c229cd"};
                return id;
             }
-         } // broker
+
+         } // identity
+
 
       } // environment
    } // queue

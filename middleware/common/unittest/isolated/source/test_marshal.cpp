@@ -114,7 +114,6 @@ namespace casual
             message::service::Advertise serverConnect;
 
             serverConnect.process.queue = 666;
-            serverConnect.serverPath = "/bla/bla/bla/sever";
 
             message::Service service;
 
@@ -135,7 +134,6 @@ namespace casual
             marshal::complete( complete, result, input_type{});
 
             EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
-            EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 3) << result.services.size();
 
          }
@@ -149,7 +147,6 @@ namespace casual
             message::service::Advertise serverConnect;
 
             serverConnect.process.queue = 666;
-            serverConnect.serverPath = "/bla/bla/bla/sever";
 
 
             message::Service service;
@@ -163,7 +160,6 @@ namespace casual
             marshal::complete( complete, result, input_type{});
 
             EXPECT_TRUE( result.process.queue == 666) << result.process.queue;
-            EXPECT_TRUE( result.serverPath == "/bla/bla/bla/sever") << result.serverPath;
             EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
 
          }

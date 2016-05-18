@@ -91,7 +91,6 @@ namespace casual
 
          void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))
          {
-            //trace::internal::Scope trace{ "server::Context advertise service: " + service};
             trace::internal::Scope trace{ "server::Context::advertise"};
 
             Service prospect{ service, adress};
@@ -123,9 +122,7 @@ namespace casual
             else
             {
                message::service::Advertise message;
-
                message.process = process::handle();
-               message.serverPath = process::path();
 
                auto found = range::find_if( m_state.physical_services, [&]( const Service& s){
                   return s == prospect;
@@ -143,13 +140,12 @@ namespace casual
                   m_state.physical_services.push_back( std::move( prospect));
                   m_state.services.emplace( prospect.origin, m_state.physical_services.back());
                }
-               communication::ipc::blocking::send( communication::ipc::broker::id(), message);
+               communication::ipc::blocking::send( communication::ipc::broker::device(), message);
             }
          }
 
          void Context::unadvertise( const std::string& service)
          {
-            //trace::internal::Scope log{ "server::Context unadvertise service: " + service};
             trace::internal::Scope log{ "server::Context::unadvertise"};
 
             if( m_state.services.erase( service) != 1)
@@ -161,7 +157,7 @@ namespace casual
             message.process = process::handle();
             message.services.push_back( message::Service( service));
 
-            communication::ipc::blocking::send( communication::ipc::broker::id(), message);
+            communication::ipc::blocking::send( communication::ipc::broker::device(), message);
          }
 
 

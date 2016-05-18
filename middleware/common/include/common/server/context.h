@@ -113,6 +113,8 @@ namespace casual
             //!
             void advertise( const std::string& service, void (*adress)( TPSVCINFO *));
 
+
+
             //!
             //! Being called from tpunadvertise
             //!

@@ -6,18 +6,19 @@
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "common/mockup/ipc.h"
+#include "common/mockup/domain.h"
+
 
 #include "common/message/service.h"
+#include "common/call/lookup.h"
 
 #include "common/communication/ipc.h"
 #include "common/log.h"
 #include "common/trace.h"
 #include "common/internal/log.h"
-
-#include "common/signal.h"
-
 
 #include "common/environment.h"
 
@@ -27,22 +28,24 @@ namespace casual
    namespace common
    {
 
-      TEST( casual_common_mockup, ipc_Instance_startup)
+      TEST( casual_common_mockup, ipc_Collector_startup)
       {
+         CASUAL_UNITTEST_TRACE();
+
          EXPECT_NO_THROW({
-            mockup::ipc::Instance instance;
+            mockup::ipc::Collector instance;
          });
       }
 
 
       TEST( casual_common_mockup, ipc_Instance_one_message)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_one_message)", log::internal::ipc};
+         CASUAL_UNITTEST_TRACE();
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
-         mockup::ipc::Instance instance;
+         mockup::ipc::Collector instance;
 
          {
             message::service::lookup::Request request;
@@ -63,15 +66,15 @@ namespace casual
       }
 
 
-      TEST( casual_common_mockup, ipc_link_2_instances__send_one_message)
+      TEST( casual_common_mockup, ipc_link_2_Collector__send_one_message)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_one_message)", log::internal::ipc};
+         CASUAL_UNITTEST_TRACE();
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
-         mockup::ipc::Instance source;
-         mockup::ipc::Instance destination;
+         mockup::ipc::Collector source;
+         mockup::ipc::Collector destination;
 
          //
          // Link "output" of source to "input" of destination
@@ -97,14 +100,14 @@ namespace casual
       }
 
 
-      TEST( casual_common_mockup, ipc_Instance_200_messages)
+      TEST( casual_common_mockup, ipc_Collector_200_messages)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, ipc_Instance_200_messages)",  log::internal::ipc};
+         CASUAL_UNITTEST_TRACE();
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
-         mockup::ipc::Instance instance;
+         mockup::ipc::Collector instance;
 
 
          {
@@ -141,14 +144,15 @@ namespace casual
          }
       }
 
-      TEST( casual_common_mockup, ipc_link_2_instances__send_200_messages)
+      TEST( casual_common_mockup, ipc_link_2_Collector__send_200_messages)
       {
+         CASUAL_UNITTEST_TRACE();
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
 
-         mockup::ipc::Instance source;
-         mockup::ipc::Instance destination;
+         mockup::ipc::Collector source;
+         mockup::ipc::Collector destination;
 
          //
          // Link "output" of source to "input" of destination
@@ -189,74 +193,135 @@ namespace casual
          }
       }
 
-
-      TEST( casual_common_mockup, ipc_router_one_messages)
+      TEST( casual_common_mockup, domain_manager__instanciate)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, handle_router_one_messages)", log::internal::ipc};
+         CASUAL_UNITTEST_TRACE();
 
-         // so we don't hang for ever, if something is wrong...
-         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
+         EXPECT_NO_THROW({
+            mockup::domain::Manager manager;
+         });
+      }
 
-         mockup::ipc::Router router{ communication::ipc::inbound::id()};
+      TEST( casual_common_mockup, domain_manager__process_connect__expect_ok)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         mockup::domain::Manager manager;
+
+         message::domain::process::connect::Request request;
+         request.process = process::handle();
+
+         auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+
+         EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
+
+      }
+
+      TEST( casual_common_mockup, domain_manager__process_connect__process_lookup___expect_found)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         mockup::domain::Manager manager;
 
          {
-            message::service::lookup::Request request;
-            request.requested = "someService";
+            message::domain::process::connect::Request request;
             request.process = process::handle();
 
-            communication::ipc::blocking::send( router.input(), request);
+            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+
+            EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
          }
 
          {
+            message::domain::process::lookup::Request request;
+            request.process = process::handle();
+            request.pid = process::id();
 
-            message::service::lookup::Request request;
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
+            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
 
-            EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
-
+            EXPECT_TRUE( reply.process == process::handle());
          }
       }
 
 
-      TEST( casual_common_mockup, ipc_router_200_messages)
+      TEST( casual_common_mockup, domain_manager__process_connect__singleton___process_lookup___expect_found)
       {
-         trace::Scope trace{ "TEST( casual_common_mockup, handle_router_200_messages)", log::internal::ipc};
+         CASUAL_UNITTEST_TRACE();
 
-         // so we don't hang for ever, if something is wrong...
-         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
+         mockup::domain::Manager manager;
 
-         mockup::ipc::Router router{ communication::ipc::inbound::id()};
-
-         //ipc::receive::queue().clear();
+         auto identification = uuid::make();
 
          {
-            message::service::lookup::Request request;
-            request.requested = "someService";
+            message::domain::process::connect::Request request;
             request.process = process::handle();
+            request.identification = identification;
 
-            for( auto count = 0; count < 200; ++count)
-            {
-               communication::ipc::blocking::send( router.input(), request);
-            }
+            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
 
-
-            common::log::debug << "wrote 200 messages to " << router.input() << std::endl;
+            EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
          }
 
          {
-            for( auto count = 0; count < 200; ++count)
-            {
-               message::service::lookup::Request request;
-               communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
+            message::domain::process::lookup::Request request;
+            request.process = process::handle();
+            request.identification = identification;
 
-               //EXPECT_TRUE( read( request)) << "count: " << count;
-               EXPECT_TRUE( request.requested == "someService");
-               EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
-            }
-            common::log::debug << "environment::directory::domain(): " << environment::directory::domain() << std::endl;
+            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
 
+            EXPECT_TRUE( reply.process == process::handle());
          }
+      }
+
+      TEST( casual_common_mockup, domain_manager__process_lookup_singleton___process_connect____expect_found)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         mockup::domain::Manager manager;
+
+         auto identification = uuid::make();
+
+         auto lookup = [&]()
+         {
+            message::domain::process::lookup::Request request;
+            request.process = process::handle();
+            request.directive = message::domain::process::lookup::Request::Directive::wait;
+            request.identification = identification;
+
+            return communication::ipc::blocking::send( communication::ipc::domain::manager::device(), request);
+         };
+
+         auto correlation = lookup();
+
+         {
+            message::domain::process::connect::Request request;
+            request.process = process::handle();
+            request.identification = identification;
+
+            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+
+            EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
+         }
+
+         {
+            message::domain::process::lookup::Reply reply;
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
+
+            EXPECT_TRUE( reply.process == process::handle()) << "reply.process: " << reply.process;
+         }
+      }
+
+
+      TEST( casual_common_mockup, minimal_domain__service1_lookup__expect_found)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         mockup::domain::minimal::Domain domain;
+
+         auto reply = call::service::Lookup{ "service1"}();
+         EXPECT_TRUE( reply.state == decltype( reply)::State::idle);
+         EXPECT_TRUE( reply.service.name == "service1") << "reply.service.name: " << reply.service.name;
+         EXPECT_TRUE( reply.process == domain.server.process()) << "reply.process: " << reply.process;
       }
 
 

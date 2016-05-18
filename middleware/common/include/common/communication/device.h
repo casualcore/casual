@@ -233,6 +233,11 @@ namespace casual
                //!
                inline Uuid put( message::Complete&& message)
                {
+                  //
+                  // Make sure we consume messages from the real queue first.
+                  //
+                  flush();
+
                   m_cache.push_back( std::move( message));
                   return m_cache.back().correlation;
                }
@@ -249,6 +254,11 @@ namespace casual
                //!
                void flush()
                {
+                  //
+                  // We don't want to handle any signals while we're flushing
+                  //
+                  signal::thread::scope::Block block;
+
                   while( next( message_type::flush_ipc, non_blocking_policy{}))
                   {
                      ;
@@ -513,6 +523,13 @@ namespace casual
                         // Delegate the invocation to the policy
                         //
                         return policy( m_connector, transport);
+                     }
+                     catch( const exception::communication::Unavailable&)
+                     {
+                        //
+                        // Let connector take a crack at resolving this problem...
+                        //
+                       m_connector.reconnect();
                      }
                      catch( ...)
                      {

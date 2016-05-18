@@ -150,9 +150,7 @@ namespace casual
                   broker::handle::transaction::rollback::Reply{ state},
                   //broker::handle::peek::queue::Request{ m_state},
                   common::server::handle::basic_admin_call{
-                     ipc::device().device(),
                      broker::admin::services( state),
-                     environment::broker::identification(),
                      ipc::device().error_handler()},
                   common::message::handle::ping(),
                };
@@ -228,11 +226,9 @@ namespace casual
       Broker::Broker( broker::Settings settings) : m_state{ broker::local::transform::state( settings)}
       {
          //
-         // Will throw if another queue-broker is up and running.
+         // Connect to domain
          //
-         common::server::handle::connect::reply(
-               common::server::connect( environment::broker::identification()));
-
+         common::process::instance::connect( environment::identity::broker());
 
 
          if( ! settings.configuration.empty())

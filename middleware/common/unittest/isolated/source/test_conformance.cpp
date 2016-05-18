@@ -120,6 +120,18 @@ namespace casual
          }
       }
 
+
+
+
+      TEST( casual_common_conformance, search)
+      {
+         std::string source{ "some string to search in"};
+         std::string to_find{ "some"};
+
+
+         EXPECT_TRUE( std::search( std::begin( source), std::end( source), std::begin( to_find), std::end( to_find)) != std::end( source));
+      }
+
       /*
        * To bad std::function does not support move-only functors...
        *

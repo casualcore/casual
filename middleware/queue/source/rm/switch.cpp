@@ -66,7 +66,7 @@ namespace casual
                         request.process = common::process::handle();
                         request.flags = flags;
 
-                        common::communication::ipc::blocking::send( environment::broker::queue::id(), request);
+                        common::communication::ipc::blocking::send( environment::ipc::broker::device(), request);
                      }
 
                      reply_message reply;

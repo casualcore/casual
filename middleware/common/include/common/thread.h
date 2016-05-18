@@ -26,10 +26,7 @@ namespace casual
 
 
       } // thread
-
    } // common
-
-
 } // casual
 
 #endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_THREAD_H_

@@ -188,7 +188,7 @@ namespace casual
                common::message::queue::connect::Request request;
                request.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( environment::broker::queue::id(), request);
+               common::communication::ipc::blocking::send( environment::ipc::broker::device(), request);
             }
 
             //
@@ -196,10 +196,10 @@ namespace casual
             // TODO: we could wait until we know there's a blocking dequeue
             //
             {
-               common::message::process::termination::Registration registration;
+               common::message::domain::process::termination::Registration registration;
                registration.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::broker::id(), registration);
+               common::communication::ipc::blocking::send( environment::ipc::broker::device(), registration);
             }
 
             {
@@ -241,7 +241,7 @@ namespace casual
                information.process = common::process::handle();
                information.queues = m_state.queuebase.queues();
 
-               common::communication::ipc::blocking::send( environment::broker::queue::id(), information);
+               common::communication::ipc::blocking::send( environment::ipc::broker::device(), information);
             }
          }
 

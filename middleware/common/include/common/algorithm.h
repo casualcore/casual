@@ -962,6 +962,13 @@ namespace casual
             return container;
          }
 
+         template< typename R, typename T>
+         auto remove( R&& range, const T& value) -> decltype( make( std::forward< R>( range)))
+         {
+            return make( std::begin( range), std::remove( std::begin( range), std::end( range), value));
+         }
+
+
          template< typename R, typename P>
          auto remove_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
@@ -1093,6 +1100,12 @@ namespace casual
             return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
          }
 
+         template< typename R1, typename R2>
+         auto search( R1&& range, R2&& to_find) -> decltype( make( range))
+         {
+            auto first = std::search( std::begin( range), std::end( range), std::begin( to_find), std::end( to_find));
+            return { first, std::end( range)};
+         }
 
 
          template< typename R1, typename R2, typename F>

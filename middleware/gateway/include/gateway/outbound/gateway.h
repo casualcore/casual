@@ -149,7 +149,7 @@ namespace casual
                //
                // 'connect' to our local domain
                //
-               common::process::connect();
+               common::process::instance::connect();
 
                m_reply_thread = std::thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)};
             }
@@ -223,7 +223,7 @@ namespace casual
                   connect.process = common::process::handle();
                   connect.remote = m_remote;
 
-                  environment::manager::device().send( connect, ipc_policy{});
+                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
                }
 
                using outbound_device_type = decltype( outbound_device);

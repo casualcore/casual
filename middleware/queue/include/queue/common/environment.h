@@ -1,8 +1,5 @@
 //!
-//! environment.h
-//!
-//! Created on: Jul 9, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_ENVIRONMENT_H_
@@ -11,6 +8,7 @@
 
 #include "common/platform.h"
 #include "common/uuid.h"
+#include "common/communication/ipc.h"
 
 #include <string>
 
@@ -22,19 +20,24 @@ namespace casual
    {
       namespace environment
       {
-         namespace broker
+         namespace ipc
          {
-            const common::Uuid& identification();
-
-            namespace queue
+            namespace broker
             {
+               //!
+               //! @return ipc device to queue broker
+               //!
+               common::communication::ipc::outbound::instance::Device& device();
 
-               common::platform::ipc::id::type id();
-               common::platform::ipc::id::type initialize();
+            } // broker
 
-            } // queue
+         } // ipc
 
-         } // broker
+         namespace identity
+         {
+            const common::Uuid& broker();
+
+         } // identity
 
       } // environment
    } // queue

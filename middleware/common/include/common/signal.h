@@ -164,43 +164,59 @@ namespace casual
 			//!
 			bool send( platform::pid::type pid, Type signal);
 
-			namespace set
+			struct Set;
+         namespace set
+         {
+            signal::Set filled();
+         }
+
+         struct Set
          {
 			   using type = sigset_t;
 
-            struct Mask
-            {
-			      Mask();
-               Mask( std::initializer_list< Type> signals);
+			   Set();
+			   Set( type set);
+			   Set( std::initializer_list< Type> signals);
 
-               void add( Type signal);
-               void remove( Type signal);
+            void add( Type signal);
+            void remove( Type signal);
 
-               set::type set;
 
-               friend Mask filled();
 
-               //!
-               //! @return true if @signal is present in the mask
-               //!
-               bool exists( Type signal) const;
+            friend signal::Set signal::set::filled();
 
-               friend std::ostream& operator << ( std::ostream& out, const Mask& value);
+            type set;
 
-            private:
-               struct filled_t{};
-               struct empty_t{};
+            //!
+            //! @return true if @signal is present in the mask
+            //!
+            bool exists( Type signal) const;
 
-               Mask( filled_t);
-               Mask( empty_t);
+            friend std::ostream& operator << ( std::ostream& out, const Set& value);
 
-            };
+         private:
+            struct filled_t{};
+            struct empty_t{};
 
+            Set( filled_t);
+            Set( empty_t);
+
+         };
+
+         //!
+         //! @return current pending signals that has been blocked
+         //!
+         Set pending();
+
+
+			namespace set
+         {
+			   using type = typename Set::type;
 
             //!
             //! @return a filled mask, that is, all signals are represented
             //!
-            Mask filled();
+			   signal::Set filled();
 
             //!
             //!
@@ -209,13 +225,13 @@ namespace casual
             //! @return filled() - excluded
             //!
             //Mask filled( std::initializer_list< Type> excluded);
-            Mask filled( const std::vector< Type>& excluded);
+			   signal::Set filled( const std::vector< Type>& excluded);
 
 
             //!
             //! @return an empty set, that is, no signals are represented
             //!
-            Mask empty();
+			   signal::Set empty();
 
          } // set
 
@@ -227,7 +243,7 @@ namespace casual
 			   //! @param mask to replace the current mask
 			   //! @return the old mask
 			   //!
-			   signal::set::Mask set( signal::set::Mask mask);
+			   signal::Set set( signal::Set mask);
 
             //!
             //! Adds @mask to the current signal mask for current thread
@@ -235,7 +251,7 @@ namespace casual
             //! @param mask to be added to the current mask
             //! @return the old mask
             //!
-			   signal::set::Mask block( signal::set::Mask mask);
+			   signal::Set block( signal::Set mask);
 
             //!
             //! Removes @mask from the current signal mask for current thread
@@ -243,21 +259,21 @@ namespace casual
             //! @param mask to be removed from the current mask
             //! @return the old mask
             //!
-			   signal::set::Mask unblock( signal::set::Mask mask);
+			   signal::Set unblock( signal::Set mask);
 
             //!
             //! Blocks all signals to current thread
             //!
             //! @return the old mask
             //!
-            signal::set::Mask block();
+			   signal::Set block();
 
 
 
             //!
             //! @return the current mask for current thread
             //!
-            signal::set::Mask current();
+			   signal::Set current();
 
          } // mask
 
@@ -290,14 +306,14 @@ namespace casual
                //!
 			      struct Reset
 			      {
-			         Reset( set::Mask mask);
+			         Reset( signal::Set mask);
 			         ~Reset();
 
 			         Reset( Reset&&) = default;
 			         Reset& operator = ( Reset&&) = default;
 
                private:
-                  set::Mask m_mask;
+			         signal::Set m_mask;
                   move::Moved m_moved;
 			      };
 
@@ -307,7 +323,7 @@ namespace casual
                //!
                struct Mask : Reset
                {
-                  Mask( set::Mask mask);
+                  Mask( signal::Set mask);
                };
 
 
@@ -323,7 +339,7 @@ namespace casual
                   //! Adds @p mask to the current blocking mask,
                   //! @param mask to be added to the blocking set
                   //!
-                  Block( set::Mask mask);
+                  Block( signal::Set mask);
 
                };
 
@@ -334,7 +350,7 @@ namespace casual
                   //! remove @p mask from the current blocking mask,
                   //! @param mask to be removed from the blocking set
                   //!
-                  Unblock( set::Mask mask);
+                  Unblock( signal::Set mask);
 
                };
 

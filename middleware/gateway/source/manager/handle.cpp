@@ -56,6 +56,11 @@ namespace casual
                         {
                            Trace trace{ "gateway::manager::handle::local::shutdown::Connection", log::internal::gateway};
 
+                           //
+                           // We only want to handle terminate during this
+                           //
+                           common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate})};
+
                            if( connection.running())
                            {
                               if( connection.process)
@@ -212,7 +217,7 @@ namespace casual
                   // We put a dead process event on our own ipc device, that
                   // will be handled later on.
                   //
-                  common::message::process::termination::Event event{ exit};
+                  common::message::domain::process::termination::Event event{ exit};
 
                   communication::ipc::inbound::device().push( std::move( event));
                }
@@ -377,9 +382,7 @@ namespace casual
          common::message::dispatch::Handler handler( State& state)
          {
             static common::server::handle::basic_admin_call admin{
-               ipc::device().device(),
                manager::admin::services( state),
-               gateway::environment::identification(),
                ipc::device().error_handler()};
 
             return {

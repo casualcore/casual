@@ -64,19 +64,17 @@ namespace casual
 
          common::log::internal::transaction << "transaction manager start\n";
 
+
          //
          // Connect to domain
          //
-         process::connect();
-
+         process::instance::connect( process::instance::transaction::manager::identity());
 
          //
-         // Connect and get configuration from broker
+         // get configuration from domain manager
          //
-         {
-            trace::internal::Scope trace( "configure", common::log::internal::transaction);
-            action::configure( m_state, settings.configuration);
-         }
+         action::configure( m_state, settings.configuration);
+
 
          //
          // Start resource-proxies
@@ -206,14 +204,9 @@ namespace casual
                   handle::domain::resource::reply::Commit{ state},
                   handle::domain::resource::reply::Rollback{ state},
                   common::server::handle::basic_admin_call{
-                     ipc::device().device(), admin::services( state), common::process::instance::transaction::manager::identity(),
-                           ipc::device().error_handler()},
+                     admin::services( state),
+                     ipc::device().error_handler()},
                   common::message::handle::ping(),
-
-                  //
-                  // We discard the connect reply message
-                  //
-                  common::message::handle::Discard< common::message::server::connect::Reply>{},
                };
 
 

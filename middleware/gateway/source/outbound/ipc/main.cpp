@@ -13,7 +13,8 @@
 #include "common/communication/ipc.h"
 #include "common/marshal/network.h"
 #include "common/marshal/binary.h"
-#include "common/message/type.h"
+#include "common/message/domain.h"
+#include "common/environment.h"
 
 
 #include <fstream>
@@ -39,9 +40,9 @@ namespace casual
                   {
                      Trace trace{ "outbound::ipc::local::lookup_gateway", log::internal::gateway};
 
-                     common::message::process::lookup::Request request;
-                     request.directive = common::message::process::lookup::Request::Directive::wait;
-                     request.identification = environment::identification();
+                     common::message::domain::process::lookup::Request request;
+                     request.directive = common::message::domain::process::lookup::Request::Directive::wait;
+                     request.identification = process::instance::identity::gateway::manager();
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
 
@@ -83,6 +84,8 @@ namespace casual
                      {
                         platform::ipc::id::type domain_qid{ 0};
                         domain_file >> domain_qid;
+
+                        log::internal::gateway << "domain file: " << path << " - qid: " << domain_qid << '\n';
 
                         auto gateway = lookup_gateway( ipc, domain_qid);
 
@@ -153,7 +156,7 @@ namespace casual
                      }
                      else
                      {
-                        m_domain_file = std::move( settings.domain_path) + "/.casual-broker-queue";
+                        m_domain_file = common::environment::domain::singleton::file();
                      }
 
                      {

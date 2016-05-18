@@ -81,6 +81,8 @@ namespace casual
 
                   inline message::service::lookup::Request::Context input( const char* buffer, long size, long flags)
                   {
+                     Trace trace( "call::validate::input", log::internal::transaction);
+
                      if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && transaction::Context::instance().current())
                      {
                         throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
@@ -230,7 +232,7 @@ namespace casual
                   message::service::call::ACK ack;
                   ack.process = target.process;
                   ack.service = target.service.name;
-                  communication::ipc::blocking::send( communication::ipc::broker::id(), ack);
+                  communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
                }};
 
 
@@ -267,7 +269,7 @@ namespace casual
 
          void Context::reply( descriptor_type& descriptor, char** odata, long& olen, long flags)
          {
-            trace::internal::Scope trace( "calling::Context::getReply");
+            trace::internal::Scope trace( "calling::Context::reply");
 
             log::internal::debug << "descriptor: " << descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
@@ -306,7 +308,7 @@ namespace casual
             //
             // We unreserve pending (at end of scope, regardless of outcome)
             //
-            common::scope::Execute discard{ [&](){ m_state.pending.unreserve( descriptor);}};
+            auto discard = scope::execute( [&](){ m_state.pending.unreserve( descriptor);});
 
             //
             // Update transaction state
