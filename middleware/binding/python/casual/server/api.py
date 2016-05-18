@@ -1,7 +1,7 @@
 
 import casual.server.buffer as buffer
 import casual.xatmi.xatmi as xatmi
-import casual.server.exception as exeption
+import casual.server.exception as exception
 
 import ctypes
 import os
