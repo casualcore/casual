@@ -39,6 +39,18 @@ target = LinkExecutable( 'bin/casual-build-resource-proxy',
 install_bin.append( target)
 
 
+target = LinkExecutable( 'bin/casual-call-service',
+   [ Compile( 'call_service/call_service.cpp')],
+   [ 
+    'casual-common', 
+    'casual-xatmi',
+    ])
+
+install_bin.append( target)
+
+
+
+
 target = LinkExecutable( 'bin/casual-log-format',
    [ Compile( 'log/source/format.cpp')],
    [ 'casual-common'])

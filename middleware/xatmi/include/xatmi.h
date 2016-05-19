@@ -41,9 +41,9 @@ struct tpsvcinfo {
 };
 typedef struct tpsvcinfo TPSVCINFO;
 
-#define X_OCTET	"X_OCTET"
+#define X_OCTET   "X_OCTET"
 #define X_C_TYPE  "X_C_TYPE"
-#define X_COMMON	"X_COMMON"
+#define X_COMMON  "X_COMMON"
 
 #define TPEBADDESC 2
 #define TPEBLOCK 3
@@ -113,12 +113,14 @@ extern long casual_get_tpurcode(void); // CLIENT
 
 #define CASUAL_BUFFER_BINARY_TYPE ".binary"
 #define CASUAL_BUFFER_BINARY_SUBTYPE 0
+#define CASUAL_BUFFER_INI_TYPE ".ini"
+#define CASUAL_BUFFER_INI_SUBTYPE 0
 #define CASUAL_BUFFER_JSON_TYPE ".json"
 #define CASUAL_BUFFER_JSON_SUBTYPE 0
-#define CASUAL_BUFFER_YAML_TYPE ".yaml"
-#define CASUAL_BUFFER_YAML_SUBTYPE 0
 #define CASUAL_BUFFER_XML_TYPE ".xml"
 #define CASUAL_BUFFER_XML_SUBTYPE 0
+#define CASUAL_BUFFER_YAML_TYPE ".yaml"
+#define CASUAL_BUFFER_YAML_SUBTYPE 0
 
 
 extern const char* tperrnostring( int error);
