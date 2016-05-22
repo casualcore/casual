@@ -1,0 +1,31 @@
+{
+    "name": "Casual",
+    "authors": [
+        "Alex <engla.alex@gmail.com>"
+    ],
+    "description": "",
+    "main": "",
+    "license": "MIT",
+    "homepage": "",
+    "private": true,
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "test",
+        "tests"
+    ],
+    "dependencies": {
+        "paper-drawer-panel": "^1.0.9",
+        "paper-material": "^1.0.6",
+        "paper-menu": "^1.2.2",
+        "paper-toast": "^1.2.2",
+        "paper-datatable": "^0.9.8",
+        "iron-pages": "^1.0.7",
+        "iron-icons": "^1.1.3",
+        "paper-scroll-header-panel": "^1.0.15",
+        "paper-toolbar": "^1.1.4",
+        "page": "page.js#^1.7.1",
+        "paper-styles": "^1.1.4"
+    }
+}

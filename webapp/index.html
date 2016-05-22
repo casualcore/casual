@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="generator" content="Polymer Starter Kit">
+	<title>Casual</title>
+
+	<!-- build:css styles/main.css -->
+	<link rel="stylesheet" href="styles/main.css">
+	<!-- endbuild-->
+
+	<!-- build:js bower_components/webcomponentsjs/webcomponents-lite.min.js -->
+	<script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+	<!-- endbuild -->
+
+	<!-- Because this project uses vulcanize this should be your only html import
+			 in this file. All other imports should go in elements.html -->
+	<link rel="import" href="elements/elements.html">
+
+	<!-- For shared styles, shared-styles.html import in elements.html -->
+	<style is="custom-style" include="shared-styles"></style>
+	
+</head>
+
+<body unresolved>
+	<!-- build:remove -->
+	<span id="browser-sync-binding"></span>
+	<!-- endbuild -->
+
+	<template is="dom-bind" id="app">
+
+		<paper-drawer-panel id="paperDrawerPanel" responsive-width="1280px">
+			<!-- Drawer Scroll Header Panel -->
+			<paper-scroll-header-panel drawer fixed>
+
+				<!-- Drawer Content -->
+				<paper-menu class="app-menu" attr-for-selected="data-route" selected="[[route]]">
+					<a data-route="home" href="{{baseUrl}}">
+						<iron-icon icon="home"></iron-icon>
+						<span>Home</span>
+					</a>
+
+					<a data-route="servers" href="{{baseUrl}}servers">
+						<span>Servers</span>
+					</a>
+
+					<a data-route="groups" href="{{baseUrl}}groups">
+						<span>Groups</span>
+					</a>
+
+					<a data-route="instances" href="{{baseUrl}}instances">
+						<span>Instances</span>
+					</a>
+
+					<a data-route="services" href="{{baseUrl}}services">
+						<span>Services</span>
+					</a>
+
+				</paper-menu>
+			</paper-scroll-header-panel>
+
+			<!-- Main Area -->
+			<paper-scroll-header-panel main id="headerPanelMain" fixed keep-condensed-header>
+				<!-- Main Toolbar -->
+				<paper-toolbar id="mainToolbar">
+					<paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle></paper-icon-button>
+
+					<span class="space"></span>
+
+					<!-- Application name -->
+					<div class="middle middle-container">
+						<div class="app-name">Casual</div>
+					</div>
+
+				</paper-toolbar>
+
+				<!-- Main Content -->
+				<div class="content">
+					<iron-pages attr-for-selected="data-route" selected="{{route}}">
+
+						<iron-ajax id="serviceReturn"
+							url="/assets/reply.json"
+							handle-as="json" 
+							method="GET"
+							last-response="{{response}}">
+						</iron-ajax>
+
+						<section data-route="home" tabindex="-1">
+							<paper-material elevation="1">
+								<h1 class="page-title" tabindex="-1">Home</h1>
+							</paper-material>
+						</section>
+
+						<section data-route="servers" tabindex="-1">
+							<paper-material elevation="1">
+								<h1 class="page-title" tabindex="-1">Servers</h1>
+								<paper-datatable data="{{response.serviceReturn.servers}}" resize-behavior="overflow">
+									<paper-datatable-column header="Id" property="id" sortable></paper-datatable-column>
+									<paper-datatable-column header="Alias" property="alias" sortable></paper-datatable-column>
+									<paper-datatable-column header="Path" property="path" sortable></paper-datatable-column>
+									<paper-datatable-column header="Instances" property="instances"></paper-datatable-column>
+									<paper-datatable-column header="Configured instances" property="configured_instances" sortable></paper-datatable-column>
+									<paper-datatable-column header="Restart" property="restart" sortable></paper-datatable-column>
+									<paper-datatable-column header="Deaths" property="deaths" sortable></paper-datatable-column>
+									<paper-datatable-column header="Memberships" property="memberships"></paper-datatable-column>
+									<paper-datatable-column header="Invoked" property="invoked" sortable></paper-datatable-column>
+									<paper-datatable-column header="Restrictions" property="restrictions" sortable></paper-datatable-column>
+								</paper-datatable>
+							</paper-material>
+						</section>
+
+						<section data-route="groups" tabindex="-1">
+							<paper-material elevation="1">
+								<h1 class="page-title" tabindex="-1">Groups</h1>
+								<paper-datatable data="{{response.serviceReturn.groups}}" resize-behavior="overflow">
+									<paper-datatable-column header="Id" property="id" sortable></paper-datatable-column>
+									<paper-datatable-column header="Name" property="name" sortable></paper-datatable-column>
+									<paper-datatable-column header="Note" property="note" sortable></paper-datatable-column>
+									<paper-datatable-column header="Resources" property="resources" sortable></paper-datatable-column>
+									<paper-datatable-column header="Dependencies" property="dependencies" sortable></paper-datatable-column>
+								</paper-datatable>
+							</paper-material>
+						</section>
+
+						<section data-route="instances" tabindex="-1">
+							<paper-material elevation="1">
+								<h1 class="page-title" tabindex="-1">Instances</h1>
+								<paper-datatable data="{{response.serviceReturn.instances}}" resize-behavior="overflow">
+									<paper-datatable-column header="Server" property="server" sortable></paper-datatable-column>
+									<paper-datatable-column header="Process" property="process" sortable></paper-datatable-column>
+									<paper-datatable-column header="State" property="state" sortable></paper-datatable-column>
+									<paper-datatable-column header="Invoked" property="invoked" sortable></paper-datatable-column>
+									<paper-datatable-column header="Last" property="last" sortable></paper-datatable-column>
+								</paper-datatable>
+							</paper-material>
+						</section>
+
+						<section data-route="services" tabindex="-1">
+							<paper-material elevation="1"> 
+								<h1 class="page-title" tabindex="-1">Services</h1>
+								<paper-datatable data="{{response.serviceReturn.services}}" resize-behavior="overflow">
+									<paper-datatable-column header="Name" property="name" sortable></paper-datatable-column>
+									<paper-datatable-column header="Instances" property="instances" sortable></paper-datatable-column>
+									<paper-datatable-column header="Type" property="type" sortable></paper-datatable-column>
+									<paper-datatable-column header="Mode" property="mode" sortable></paper-datatable-column>
+									<paper-datatable-column header="Lookedup" property="lookedup" sortable></paper-datatable-column>
+									<paper-datatable-column header="Timeout" property="timeout" sortable></paper-datatable-column>
+								</paper-datatable>
+							</paper-material>
+						</section>
+
+					</iron-pages>
+				</div>
+			</paper-scroll-header-panel>
+		</paper-drawer-panel>
+
+		<paper-toast id="toast">
+			<span class="toast-hide-button" role="button" tabindex="0" onclick="app.$.toast.hide()">Ok</span>
+		</paper-toast>
+
+	</template>
+
+	<!-- build:js scripts/app.js -->
+	<script src="scripts/app.js"></script>
+	<!-- endbuild-->
+</body>
+
+</html>
