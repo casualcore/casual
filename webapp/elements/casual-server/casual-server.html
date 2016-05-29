@@ -1,0 +1,112 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="casual-server">
+  <template>
+    <style>
+
+    	.server-content{
+    		height: 80px;
+    		width: 100%;
+    		border: 1px solid #ECEFF1;
+    		border-radius: 10px;
+    		overflow: hidden;
+
+    		/* Shadow */
+			-webkit-box-shadow: -1px 2px 15px 0px rgba(217,217,217,1);
+			-moz-box-shadow: -1px 2px 15px 0px rgba(217,217,217,1);
+			box-shadow: -1px 2px 15px 0px rgba(217,217,217,1);
+
+    		/* Display divs in a row */
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			justify-content: space-between; 
+
+
+			margin-bottom: 10px;
+    	}
+
+    	.server-content ul{
+    		list-style: none;
+    		margin: 0;
+    		padding: 0;
+    	}
+
+    	.left-content{
+    		height: 100%;
+    		min-width: 40px;
+    		display: table;
+    		border-right: 1px solid #ECEFF1;
+    	}
+
+    	.middle-content{
+    		height: 100%;
+    		width: 100%;
+    		margin: 5px 0 0 5px;
+    	}
+
+    	.right-content{
+    		height: 100%;
+    		width: 130px;
+    		margin: 5px 0 0 5px;
+    	}
+
+    	.server-id{
+    		display: table-cell;
+    		text-align: center;
+  			vertical-align: middle;
+    		font-size: 1.2em;
+    		color: white;
+    		background-color: #43A047;
+    	}
+
+    	.server-alias{
+    		font-size: 1.1em;
+    		font-weight: bold;
+    	}
+
+    	.server-path{
+    		font-size: 0.8em;
+    	}
+
+    </style>
+
+    <template is="dom-repeat" items={{serverdata}}>
+    	<div class="server-content">
+    		<div class="left-content">
+	    		<span class="server-id">{{item.id}}</span>
+    		</div>
+    		<div class="middle-content">
+    			<ul>
+    				<li><span class="server-alias">{{item.alias}}</span></li>
+    				<li><span class="server-path">{{item.path}}</span></li>
+    			</ul>
+    		</div>
+    		<div class="right-content">
+    			<ul>
+    				<li><span>{{item.instances.length}} instances</span></li>
+    				<li><span>{{item.deaths}} deaths</span></li>
+    			</ul>
+    		</div> 
+    	</div>
+
+    </template>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'casual-server',
+
+        properties: {
+          serverdata: {
+            type: Object,
+            notify: true
+          }
+        }
+      });
+    })();
+  </script>
+</dom-module>

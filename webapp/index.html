@@ -18,6 +18,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	<meta name="generator" content="Polymer Starter Kit">
 	<title>Casual</title>
 
+	<link rel="icon" type="image/png" href="/assets/ico.png" />
+
 	<!-- build:css styles/main.css -->
 	<link rel="stylesheet" href="styles/main.css">
 	<!-- endbuild-->
@@ -48,10 +50,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 				<!-- Drawer Content -->
 				<paper-menu class="app-menu" attr-for-selected="data-route" selected="[[route]]">
-					<a data-route="home" href="{{baseUrl}}">
-						<iron-icon icon="home"></iron-icon>
-						<span>Home</span>
-					</a>
 
 					<a data-route="servers" href="{{baseUrl}}servers">
 						<span>Servers</span>
@@ -98,28 +96,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							last-response="{{response}}">
 						</iron-ajax>
 
-						<section data-route="home" tabindex="-1">
-							<paper-material elevation="1">
-								<h1 class="page-title" tabindex="-1">Home</h1>
-							</paper-material>
-						</section>
-
 						<section data-route="servers" tabindex="-1">
 							<paper-material elevation="1">
 								<h1 class="page-title" tabindex="-1">Servers</h1>
-								<paper-datatable data="{{response.serviceReturn.servers}}" resize-behavior="overflow">
-									<paper-datatable-column header="Id" property="id" sortable></paper-datatable-column>
-									<paper-datatable-column header="Alias" property="alias" sortable></paper-datatable-column>
-									<paper-datatable-column header="Path" property="path" sortable></paper-datatable-column>
-									<paper-datatable-column header="Instances" property="instances"></paper-datatable-column>
-									<paper-datatable-column header="Configured instances" property="configured_instances" sortable></paper-datatable-column>
-									<paper-datatable-column header="Restart" property="restart" sortable></paper-datatable-column>
-									<paper-datatable-column header="Deaths" property="deaths" sortable></paper-datatable-column>
-									<paper-datatable-column header="Memberships" property="memberships"></paper-datatable-column>
-									<paper-datatable-column header="Invoked" property="invoked" sortable></paper-datatable-column>
-									<paper-datatable-column header="Restrictions" property="restrictions" sortable></paper-datatable-column>
-								</paper-datatable>
-							</paper-material>
+								<casual-server serverdata={{response.serviceReturn.servers}}></casual-server>
 						</section>
 
 						<section data-route="groups" tabindex="-1">
@@ -132,7 +112,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 									<paper-datatable-column header="Resources" property="resources" sortable></paper-datatable-column>
 									<paper-datatable-column header="Dependencies" property="dependencies" sortable></paper-datatable-column>
 								</paper-datatable>
-							</paper-material>
+							</paper-material> 
 						</section>
 
 						<section data-route="instances" tabindex="-1">
