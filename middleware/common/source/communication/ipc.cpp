@@ -383,7 +383,7 @@ namespace casual
                   outbound::instance::Device& device()
                   {
                      static outbound::instance::Device singelton{
-                        process::instance::transaction::manager::identity(),
+                        process::instance::identity::transaction::manager(),
                         environment::variable::name::ipc::transaction::manager()};
                      return singelton;
                   }
@@ -405,6 +405,21 @@ namespace casual
                   }
                } // manager
             } // gateway
+
+            namespace queue
+            {
+               namespace broker
+               {
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::queue::broker(),
+                        environment::variable::name::ipc::queue::broker()};
+
+                     return singelton;
+                  }
+               } // broker
+            } // queue
 
 
             namespace domain

@@ -228,7 +228,7 @@ namespace casual
          //
          // Connect to domain
          //
-         common::process::instance::connect( environment::identity::broker());
+         common::process::instance::connect( common::process::instance::identity::queue::broker());
 
 
          if( ! settings.configuration.empty())

@@ -307,6 +307,8 @@ namespace casual
                   {
                      Trace trace{ "mockup service::Advertise", log::internal::debug};
 
+                     log::internal::debug << "message: " << m << '\n';
+
                      for( auto& service : m.services)
                      {
                         auto& lookup = m_state.services[ service.name];
@@ -382,7 +384,7 @@ namespace casual
                   //
                   // Connect to the domain
                   //
-                  local::send::connect::domain( m_replier, process::instance::transaction::manager::identity());
+                  local::send::connect::domain( m_replier, process::instance::identity::transaction::manager());
                }
 
             } // transaction

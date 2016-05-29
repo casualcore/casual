@@ -1,8 +1,5 @@
 //!
-//! casual_utility_environment.h
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_ENVIRONMENT_H_

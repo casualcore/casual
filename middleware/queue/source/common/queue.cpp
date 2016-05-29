@@ -1,8 +1,5 @@
 //!
-//! queue.cpp
-//!
-//! Created on: Nov 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/common/queue.h"
@@ -14,6 +11,7 @@
 
 namespace casual
 {
+   using namespace common;
    namespace queue
    {
 
@@ -23,7 +21,7 @@ namespace casual
          request.process = common::process::handle();
          request.name = queue;
 
-         common::communication::ipc::blocking::send( queue::environment::ipc::broker::device(), request);
+         common::communication::ipc::blocking::send( communication::ipc::queue::broker::device(), request);
       }
 
       common::message::queue::lookup::Reply Lookup::operator () () const

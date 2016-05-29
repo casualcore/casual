@@ -29,6 +29,8 @@ namespace casual
                      base_type::marshal( archive);
                      archive & executables;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Executable& value);
                };
 
             } // scale
@@ -201,6 +203,8 @@ namespace casual
                         archive & openinfo;
                         archive & closeinfo;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Resource& value);
                   };
 
                   namespace resource
@@ -234,6 +238,8 @@ namespace casual
                            base_reply::marshal( archive);
                            archive & resources;
                         })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                      };
 
 

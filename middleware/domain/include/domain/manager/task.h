@@ -35,7 +35,10 @@ namespace casual
            Task& operator = ( Task&&) noexcept = default;
 
             void start();
+
+            bool started() const;
             bool done() const;
+
 
             friend std::ostream& operator << ( std::ostream& out, const Task& task);
 
@@ -47,8 +50,10 @@ namespace casual
                virtual ~base_task() = default;
                virtual void start() = 0;
                virtual bool done() const = 0;
+               virtual bool started() const = 0;
                virtual void print( std::ostream& out) const = 0;
             };
+
 
             template< typename T>
             struct basic_task : base_task
@@ -56,11 +61,35 @@ namespace casual
                basic_task( T task) : m_task( std::move( task)) {}
                ~basic_task() = default;
 
-               void start() override { m_task.start();}
-               bool done() const override { return m_task.done();}
+               enum class State : char
+               {
+                  not_started,
+                  started,
+                  done
+               };
+
+               void start() override
+               {
+                  if( m_state == State::not_started)
+                  {
+                     m_task.start();
+                     m_state = State::started;
+                  }
+               }
+
+               bool started() const override { return m_state != State::not_started;}
+               bool done() const override
+               {
+                  if( m_state == State::started)
+                  {
+                     m_state = m_task.done() ? State::done : State::started;
+                  }
+                  return m_state == State::done;
+               }
                void print( std::ostream& out) const override { out << m_task;}
 
                T m_task;
+               mutable State m_state = State::not_started;
             };
 
             template< typename T>
@@ -82,9 +111,10 @@ namespace casual
                template< typename T>
                void add( T&& task)
                {
-                  domain::log << "added task\n";
 
                   m_tasks.push_back( std::forward< T>( task));
+
+                  domain::log << "added task: " << m_tasks.back() << '\n';
 
                   if( m_tasks.size() == 1)
                   {

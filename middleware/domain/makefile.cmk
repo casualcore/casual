@@ -27,24 +27,24 @@ LibraryPaths([
 install_bins = []
 install_libs = []
 
-manager_objecs = [
+manager_archive = LinkArchive( 'bin/casual-domain-manager', 
+ [
     Compile( 'source/manager/manager.cpp'),
     Compile( 'source/manager/handle.cpp'),
+    Compile( 'source/manager/admin/server.cpp'),
     Compile( 'source/manager/state.cpp'),
     Compile( 'source/manager/task.cpp'),
     Compile( 'source/manager/configuration.cpp'),
     Compile( 'source/common.cpp'),
     Compile( 'source/transform.cpp'),
-
-]
+])
 
 target = LinkExecutable( 'bin/casual-domain-manager',
     [
       Compile( 'source/manager/main.cpp'),
-      
-      Compile( 'source/manager/admin/server.cpp'),
-    ] + manager_objecs,
+    ],
     [
+     manager_archive,
      'casual-common',
      'casual-xatmi',
      'casual-configuration',
@@ -52,19 +52,39 @@ target = LinkExecutable( 'bin/casual-domain-manager',
     ] 
 )
 
+install_bins.append( target)
 
 
-target_test_delay = LinkUnittest( 'bin/test-casual-domain', 
+target = LinkExecutable( 'bin/casual-domain-admin',
+    [
+     Compile( 'source/manager/admin/client.cpp'),
+     ],
+    [
+     manager_archive,
+     'casual-common',
+     'casual-xatmi',
+     'casual-sf'
+     ]
+)
+
+Install( target,'$(CASUAL_HOME)/internal/bin')
+
+
+
+
+LinkUnittest( 'bin/test-casual-domain', 
     [ 
         Compile( 'unittest/isolated/source/manager/test_state.cpp'),
-        Compile( 'unittest/isolated/source/manager/test_manager.cpp'),
-        
-    ] + manager_objecs,
+        Compile( 'unittest/isolated/source/manager/test_manager.cpp'),        
+    ],
     [
+      manager_archive,
      'casual-common',
      'casual-mockup',
      'casual-configuration',
      'casual-mockup-unittest-environment',
+     'casual-sf',
+     'casual-xatmi',
     ]) 
 
 
@@ -108,6 +128,10 @@ target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay',
 #
 Dependencies( target_test_delay, [ target_delay_message ]);
 
+
+
+Install( install_bins,'$(CASUAL_HOME)/bin')
+Install( install_libs,'$(CASUAL_HOME)/lib')
 
 
 

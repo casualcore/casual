@@ -141,6 +141,15 @@ namespace casual
                   }
                } // domain
 
+               namespace queue
+               {
+                  const Uuid& broker()
+                  {
+                     const static Uuid singleton{ "c0c5a19dfc27465299494ad7a5c229cd"};
+                     return singleton;
+                  }
+               } // queue
+
                namespace traffic
                {
                   const Uuid& manager()
@@ -149,27 +158,37 @@ namespace casual
                      return singleton;
                   }
                } // traffic
-            } // identity
 
 
-            namespace transaction
-            {
-               namespace manager
+               namespace transaction
                {
-                  const Uuid& identity()
+                  const Uuid& manager()
                   {
                      const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
                      return singleton;
                   }
-               } // manager
+               } // transaction
 
-            } // transaction
+            } // identity
+
 
             namespace fetch
             {
+               std::ostream& operator << ( std::ostream& out, Directive directive)
+               {
+                  switch( directive)
+                  {
+                     case Directive::wait: return out << "wait";
+                     case Directive::direct: return out << "direct";
+                  }
+                  return out << "unknown";
+               }
+
                Handle handle( const Uuid& identity, Directive directive)
                {
                   trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
+
+                  log::internal::debug << "identity: " << identity << ", directive: " << directive << '\n';
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -183,6 +202,8 @@ namespace casual
                Handle handle( platform::pid::type pid , Directive directive)
                {
                   trace::Scope trace{ "instance::handle::fetch (pid)", log::internal::trace};
+
+                  log::internal::debug << "pid: " << pid << ", directive: " << directive << '\n';
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -206,13 +227,13 @@ namespace casual
                      {
                         case M::Directive::singleton:
                         {
-                           log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
-                           throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
+                           log::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
+                           throw exception::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
                         }
                         case M::Directive::shutdown:
                         {
-                           log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
-                           throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
+                           log::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
+                           throw exception::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
                         }
                         default:
                         {
@@ -680,7 +701,7 @@ namespace casual
             //
             // We'll only handle child signals.
             //
-            signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+            //signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
 
             return local::wait( pid, 0).status;
          }

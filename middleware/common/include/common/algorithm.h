@@ -1,8 +1,5 @@
 //!
-//! algorithm.h
-//!
-//! Created on: Nov 10, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_ALGORITHM_H_
@@ -1438,6 +1435,12 @@ namespace casual
       bool operator == ( C& lhs, const Range< Iter>& rhs)
       {
          return range::equal( lhs, rhs);
+      }
+
+      template< typename Iter>
+      bool operator == ( const Range< Iter>& lhs, bool rhs)
+      {
+         return static_cast< bool>( lhs) ==  rhs;
       }
 
 

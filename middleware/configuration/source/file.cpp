@@ -1,8 +1,5 @@
 //!
-//! file.cpp
-//!
-//! Created on: Jul 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "config/file.h"

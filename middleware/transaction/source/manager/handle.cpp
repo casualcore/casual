@@ -192,6 +192,8 @@ namespace casual
                      template< typename M, typename F>
                      void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
                      {
+                        common::trace::Scope trace{ "transaction::handle::send::resource::request", common::log::internal::transaction};
+
                         M message;
                         message.process = common::process::handle();
                         message.trid = transaction.trid;
@@ -221,6 +223,8 @@ namespace casual
                            // Could not send to all RM-proxy-instances. We put the request
                            // in pending.
                            //
+                           common::log::internal::transaction << "could not send to all RM-proxy-instances - action: try later\n";
+
                            state.pendingRequests.push_back( std::move( request));
                         }
                      }

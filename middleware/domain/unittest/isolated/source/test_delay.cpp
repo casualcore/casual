@@ -25,7 +25,7 @@ namespace casual
             {
                struct Domain
                {
-                  common::mockup::domain::Broker broker;
+                  common::mockup::domain::Manager manager;
                };
 
                namespace process

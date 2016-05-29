@@ -110,6 +110,21 @@ namespace casual
 
             } // process
 
+            namespace configuration
+            {
+               namespace transaction
+               {
+                  struct Resource : public Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( const common::message::domain::configuration::transaction::resource::Request& message);
+                  };
+
+               } // transaction
+
+            } // configuration
+
          } // handle
 
 

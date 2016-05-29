@@ -109,6 +109,8 @@ namespace casual
 
       Receiver::~Receiver()
       {
+         common::trace::internal::Scope trace( "traffic::Receiver::~Receiver");
+
          //
          // We could try to process pending traffic messages, but if this
          // is a shutdown of this instance of traffic-logger and the rest of the system

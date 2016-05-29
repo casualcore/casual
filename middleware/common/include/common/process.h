@@ -134,18 +134,21 @@ namespace casual
                   const Uuid& manager();
                } // domain
 
+               namespace queue
+               {
+                  const Uuid& broker();
+               } // queue
+
+               namespace transaction
+               {
+                  const Uuid& manager();
+               } // transaction
+
             } // identity
 
 
 
-            namespace transaction
-            {
-               namespace manager
-               {
-                  const Uuid& identity();
 
-               } // manager
-            } // transaction
 
             namespace fetch
             {
@@ -154,6 +157,8 @@ namespace casual
                   wait,
                   direct
                };
+
+               std::ostream& operator << ( std::ostream& out, Directive directive);
 
                Handle handle( const Uuid& identity, Directive directive = Directive::wait);
 

@@ -42,9 +42,9 @@ namespace casual
                      //
                      // Rollback unless we commit
                      //
-                     common::scope::Execute rollback{ [](){
+                     auto rollback = common::scope::execute( [](){
                            tx_rollback();
-                     }};
+                     });
 
                      task.dispatch( rm::blocking::dequeue( task.queue));
 

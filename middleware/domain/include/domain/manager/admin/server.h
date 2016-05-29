@@ -22,6 +22,7 @@ namespace casual
          {
             common::server::Arguments services( manager::State& state);
 
+
          } // admin
       } // manager
    } // admin

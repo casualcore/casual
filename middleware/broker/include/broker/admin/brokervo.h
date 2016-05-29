@@ -210,22 +210,6 @@ namespace casual
 
          };
 
-         namespace update
-         {
-            struct InstancesVO
-            {
-               std::string alias;
-               std::size_t instances;
-
-               template< typename A>
-               void serialize( A& archive)
-               {
-                  archive & CASUAL_MAKE_NVP( alias);
-                  archive & CASUAL_MAKE_NVP( instances);
-               }
-            };
-         } // update
-
 
 
       } // admin

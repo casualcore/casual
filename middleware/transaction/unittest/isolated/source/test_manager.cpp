@@ -66,7 +66,7 @@ namespace casual
                   //
                   common::process::ping(
                         common::process::instance::fetch::handle(
-                              common::process::instance::transaction::manager::identity()).queue);
+                              common::process::instance::identity::transaction::manager()).queue);
                }
 
             private:

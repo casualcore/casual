@@ -49,6 +49,8 @@ namespace casual
                   archive & process;
                   archive & services;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
             };
 
             struct Unadvertise : basic_message< Type::service_unadvertise>

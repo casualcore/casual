@@ -225,24 +225,6 @@ namespace casual
                   return ipc::send( std::forward< D>( ipc), message, policy::Blocking{}, handler);
                }
 
-               /*
-               namespace force
-               {
-                  template< typename D, typename M>
-                  Uuid send( D& ipc, M&& message, const error_type& handler = nullptr)
-                  {
-                     Uuid result;
-
-                     while( ! (result = send( ipc.connector().id(), message, handler)))
-                     {
-                        ipc.flush();
-                     }
-
-                     return result;
-                  }
-               } // force
-               */
-
             } // blocking
 
             namespace non
@@ -313,6 +295,14 @@ namespace casual
                   outbound::instance::Device& device();
                } // manager
             } // gateway
+
+            namespace queue
+            {
+               namespace broker
+               {
+                  outbound::instance::Device& device();
+               } // broker
+            } // queue
 
 
             namespace domain

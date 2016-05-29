@@ -36,6 +36,9 @@ namespace casual
 
          namespace handle
          {
+
+            void shutdown( State& state);
+
             namespace dead
             {
                struct Process : Base

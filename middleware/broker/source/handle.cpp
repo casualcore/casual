@@ -1,8 +1,5 @@
 //!
-//! handle.cpp
-//!
-//! Created on: Jun 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "broker/handle.h"
@@ -23,7 +20,6 @@
 //
 #include <vector>
 #include <string>
-#include <fstream>
 
 namespace casual
 {
@@ -58,39 +54,16 @@ namespace casual
 
 
 
-         /*
-         std::vector< common::platform::pid::type> spawn( const State& state, const state::Executable& executable, std::size_t instances)
-         {
-            std::vector< common::platform::pid::type> pids;
-
-            //
-            // Prepare environment. We use the default first and add
-            // specific for the executable
-            //
-            auto environment = state.standard.environment;
-            environment.insert(
-               std::end( environment),
-               std::begin( executable.environment.variables),
-               std::end( executable.environment.variables));
-
-            while( instances-- > 0)
-            {
-               pids.push_back( common::process::spawn( executable.path, executable.arguments, environment));
-            }
-
-            return pids;
-         }
-         */
-
-
-
          namespace traffic
          {
             void Connect::operator () ( common::message::traffic::monitor::connect::Request& message)
             {
-               trace::internal::Scope trace{ "broker::handle::monitor::Connect"};
+               trace::internal::Scope trace{ "broker::handle::traffic::Connect"};
 
                m_state.traffic.monitors.add( message.process);
+
+               auto reply = common::message::reverse::type( message);
+               ipc::device().blocking_send( message.process.queue, reply);
             }
 
             void Disconnect::operator () ( message_type& message)

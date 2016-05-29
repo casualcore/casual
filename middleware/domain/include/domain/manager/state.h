@@ -73,13 +73,6 @@ namespace casual
                   std::string openinfo;
                   std::string closeinfo;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE({
-                     archive & CASUAL_MAKE_NVP( instances);
-                     archive & CASUAL_MAKE_NVP( key);
-                     archive & CASUAL_MAKE_NVP( openinfo);
-                     archive & CASUAL_MAKE_NVP( closeinfo);
-                  })
-
                   friend std::ostream& operator << ( std::ostream& out, const Resource& value);
                };
 
@@ -90,13 +83,6 @@ namespace casual
                std::vector< Resource> resources;
                std::vector< id_type> dependencies;
 
-               CASUAL_CONST_CORRECT_SERIALIZE({
-                  archive & CASUAL_MAKE_NVP( id);
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( note);
-                  archive & CASUAL_MAKE_NVP( resources);
-                  archive & CASUAL_MAKE_NVP( dependencies);
-               })
 
                friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
                friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
@@ -174,6 +160,12 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Batch& value);
             };
 
+            namespace configuration
+            {
+
+
+
+            } // configuration
 
          } // state
 
@@ -192,7 +184,7 @@ namespace casual
 
             std::vector< state::Group> groups;
             std::vector< state::Executable> executables;
-            std::vector< common::process::Handle> mandatory;
+
 
             processes_type processes;
 
@@ -227,6 +219,11 @@ namespace casual
             std::vector< state::Batch> shutdownorder();
 
             void remove_process( common::platform::pid::type pid);
+
+
+            state::Executable& executable( common::platform::pid::type pid);
+            state::Group& group( state::Group::id_type id);
+
 
             friend std::ostream& operator << ( std::ostream& out, const State& state);
 

@@ -26,6 +26,11 @@ namespace casual
             m_holder->start();
          }
 
+         bool Task::started() const
+         {
+            return m_holder->started();
+         }
+
          bool Task::done() const
          {
             Trace trace{ "domain::manager::Task::done"};
@@ -43,18 +48,26 @@ namespace casual
          {
             void Queue::execute()
             {
-               if( ! empty())
+
+               while( ! empty())
                {
                   Trace trace{ "domain::manager::task::Queue::execute"};
+
+                  if( ! m_tasks.front().started())
+                  {
+                     log << "task start: " << m_tasks.front() << '\n';
+                     m_tasks.front().start();
+                  }
 
                   if( m_tasks.front().done())
                   {
                      log << "task done: " << m_tasks.front() << '\n';
                      m_tasks.pop_front();
-                     if( ! empty())
-                     {
-                        m_tasks.front().start();
-                     }
+                  }
+                  else
+                  {
+                     log << "task NOT done: " << m_tasks.front() << '\n';
+                     return;
                   }
                }
             }

@@ -157,7 +157,11 @@ namespace casual
 
                      auto executable = range::make( excutable_wrappers);
 
-                     for( auto& group : groups)
+                     //
+                     // Reverse the order, so we 'consume' executable based on the group
+                     // that is the farthest in the dependency chain
+                     //
+                     for( auto& group : range::reverse( groups))
                      {
                         state::Batch batch{ group};
 
@@ -177,8 +181,10 @@ namespace casual
                         result.push_back( std::move( batch));
                      }
 
-                     return result;
-
+                     //
+                     // We reverse the result so the dependency order is correct
+                     //
+                     return range::reverse( result);
                   }
                } // order
 
@@ -259,6 +265,30 @@ namespace casual
                   log::error << "failed to find executable with pid: " << pid << " - this should not happen! - action: ignore\n";
                }
             }
+         }
+
+         state::Executable& State::executable( common::platform::pid::type pid)
+         {
+            auto found = range::find_if( executables, [=]( const state::Executable& e){
+               return range::find( e.instances, pid) == true;
+            });
+            if( found)
+            {
+               return *found;
+            }
+            throw exception::invalid::Argument{ "failed to locate executable", CASUAL_NIP( pid)};
+         }
+
+         state::Group& State::group( state::Group::id_type id)
+         {
+            auto found = range::find_if( groups, [=]( const state::Group& g){
+               return g.id == id;
+            });
+            if( found)
+            {
+               return *found;
+            }
+            throw exception::invalid::Argument{ "failed to locate group", CASUAL_NIP( id)};
          }
 
          bool State::execute()

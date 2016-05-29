@@ -45,7 +45,7 @@ namespace casual
          {
             std::string file()
             {
-               return config::file::domain() + "/transaction/log.db";
+               return config::directory::domain() + "/transaction/log.db";
             }
          } // log
 
@@ -68,7 +68,7 @@ namespace casual
          //
          // Connect to domain
          //
-         process::instance::connect( process::instance::transaction::manager::identity());
+         process::instance::connect( process::instance::identity::transaction::manager());
 
          //
          // get configuration from domain manager

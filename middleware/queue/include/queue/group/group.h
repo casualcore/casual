@@ -90,6 +90,7 @@ namespace casual
          struct Server
          {
             Server( Settings settings);
+            ~Server();
 
 
             int start() noexcept;
