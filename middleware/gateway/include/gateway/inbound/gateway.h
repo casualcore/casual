@@ -313,7 +313,7 @@ namespace casual
                   handle::create::reply< common::message::transaction::resource::domain::rollback::Request>( outbound_device),
                };
 
-               common::log::internal::gateway << "start message pump\n";
+               common::log::internal::gateway << "start internal message pump\n";
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
 
             }
@@ -360,12 +360,20 @@ namespace casual
 
                auto send_disconnect = []( message::worker::Disconnect::Reason reason)
                   {
-                     common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
+                     try
+                     {
+                        common::signal::thread::scope::Block block;
+                        common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
 
-                     message::worker::Disconnect disconnect{ reason};
-                     common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
+                        message::worker::Disconnect disconnect{ reason};
+                        common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
 
-                     ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
+                        ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
+                     }
+                     catch( ...)
+                     {
+                        common::error::handler();
+                     }
                   };
 
                try
@@ -410,7 +418,8 @@ namespace casual
                      handle::basic_transaction_request< common::message::transaction::resource::domain::commit::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::domain::rollback::Request>{},
                   };
-
+             
+                  common::log::internal::gateway << "start external message pump\n";
                   common::message::dispatch::blocking::pump( handler, device);
                }
                catch( const common::exception::signal::User&)
