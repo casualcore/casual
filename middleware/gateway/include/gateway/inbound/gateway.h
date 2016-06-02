@@ -351,12 +351,20 @@ namespace casual
 
                auto send_disconnect = []( message::worker::Disconnect::Reason reason)
                   {
-                     common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
+                     try
+                     {
+                        common::signal::thread::scope::Block block;
+                        common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
 
-                     message::worker::Disconnect disconnect{ reason};
-                     common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
+                        message::worker::Disconnect disconnect{ reason};
+                        common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
 
-                     ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
+                        ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
+                     }
+                     catch( ...)
+                     {
+                        common::error::handler();
+                     }
                   };
 
                try
