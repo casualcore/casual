@@ -1,8 +1,5 @@
 //!
-//! casual_logger.cpp
-//!
-//! Created on: Jun 21, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/log.h"

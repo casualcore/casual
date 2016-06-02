@@ -26,3 +26,11 @@ bin/
 
 *.log
 /Debug/
+
+
+#
+# casual stuff
+#
+.casual/
+
+

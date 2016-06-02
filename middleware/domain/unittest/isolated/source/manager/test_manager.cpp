@@ -16,6 +16,7 @@
 #include "common/mockup/file.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
+#include "common/call/lookup.h"
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 
@@ -213,8 +214,37 @@ domain:
                namespace call
                {
 
+                  namespace service
+                  {
+                     namespace wait
+                     {
+                        void online( const std::string& service)
+                        {
+                           auto count = 100;
+
+                           while( count-- > 0)
+                           {
+                              auto reply = common::call::service::Lookup{ service}();
+
+                              if( reply.process)
+                              {
+                                 return;
+                              }
+                              process::sleep( std::chrono::microseconds{ 10});
+                           }
+                           throw exception::xatmi::service::NoEntry{ service};
+                        }
+                     } // wait
+
+
+
+                  } // service
+
+
                   admin::vo::State state()
                   {
+                     service::wait::online( ".casual.domain.state");
+
                      sf::xatmi::service::binary::Sync service( ".casual.domain.state");
 
                      auto reply = service();
@@ -229,6 +259,8 @@ domain:
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
+                     service::wait::online( ".casual.domain.scale.instances");
+
                      sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
                      service << CASUAL_MAKE_NVP( instances);
 
