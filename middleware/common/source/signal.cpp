@@ -687,7 +687,7 @@ namespace casual
 
          }
 
-         Set::Set( set::type set) : set{ std::move( set)}
+         Set::Set( set::type set) : set( std::move( set))
          {
 
          }
