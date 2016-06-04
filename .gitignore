@@ -11,6 +11,10 @@ casual.env
 
 .unittest_domain_home/
 
+
+core
+
+
 #
 # Build directories
 #
